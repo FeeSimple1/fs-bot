@@ -254,7 +254,7 @@ scenarios, count any Settlements on the map as “Allies”.
 Also, Battle against the Aedui Diviciacus Leader only if the Aedui
 are currently at a victory score of 0 or better (7.3).
 For Non-player Roman March, upon a die roll of 1-2 (March box
-bullet , sub-bullet ), count Arverni Allies plus Citadels instead
+bullet 2, sub-bullet 2), count Arverni Allies plus Citadels instead
 of Germanic Allies; March to Arverni Allies and Citadels rather
 than to Germanic Allies.
 SCOUT: In Ariovistus scenarios, ignore the “if Frost” priority on

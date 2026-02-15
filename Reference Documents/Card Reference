@@ -1,0 +1,756 @@
+This section reproduces the full text of each Event card and notes
+its Faction Order (2.3.2; Ae=Aedui, Ar=Arverni, Be=Belgae,
+Ro=Romans) followed by, if applicable, Non-Player Instruction symbols (8.2.1;
+C=Carnyx, L=Laurels, S=Swords). The listings add tips on
+how to implement the Event.
+
+1. Cicero Ro L Ar L Ae S Be L
+Defender of the Republic returns to politics: Shift the Senate 1
+box in either direction (or flip to Firm if already at top or bottom).
+Tips. The Senate would shift regardless of any Fallen Legions If
+the Senate is already Firm, the Event would flip the marker in place,
+back to its normal side (6.5.1).
+
+2. Legiones Xiiii et XV Ro L Ar C Ae L Be L
+Personal army: Romans may shift Senate 1 box up (toward Up-
+roar) to place 2 Legions total from Legions track and/or Fallen into
+Provincia
+Green legionaries: Free Battle against Romans in a Region The
+first Loss removes a Legion automatically, if any there.
+Tips. Unshaded Legions here can come from Fallen not just the
+track (1.4.1) Shift to place the Legions must move the marker one
+box up or instead flip it (5.1.1, 6.5.1), so could not occur if already
+at Firm Uproar.
+
+3. Pompey Ro Ar L Ae S Be L
+Consul supports Gaul campaign: If Adulation, place 1 Legion in
+Provincia If not, shift the Senate 1 box down (toward Adulation)
+Rival requests legions for the East: If the Legions track has 4 or
+fewer Legions, Romans remove 2 Legions to the Legions track.
+
+4. Circumvallation Ro Ar S Be S Ae L
+Counter-fort: Romans may free March to an adjacent Citadel and put
+Circumvallation marker on Citadel Faction’s pieces there Marked
+group may not move from Region; if it attacks alone, Romans defend
+as if Fort Remove marker if group attacks Romans in Battle or is
+eliminated, or if no Romans there
+Tips. Keep the pieces affected by the marker grouped underneath
+it (or around the Citadel piece with the marker on that), separate
+from any other group of pieces that might enter or be placed in the
+Region. Roman origin Regions count as selected for March (flip
+Auxilia Hidden).
+
+5. Gallia Togata Ro Ar C Be L Ae L
+Strategic rear: Place Gallia Togata marker and 3 Auxilia in Cis-
+alpina It is a Supply Line Region where only Romans may stack,
+March out costs 0, and each Recruit places 2 Auxilia
+Cisalpines require garrison: Unless Senate in Adulation, Romans
+remove 1 Legion to track and 2 Auxilia to Available
+Tips. The unshaded Event is one of the few that alter stacking (1.4.2,
+5.1.1) Cisalpina is adjacent to the Ubii and Sequani Regions and to
+Provincia Supply Lines are described in rule 3 2 1 Mark Control
+(either Roman or No Control) and, in Quarters Phases, move into or
+out of Cisalpina and pay Quarters costs there as for other Regions
+Shaded Legion removal is to track not Fallen (1.4.1)
+
+6. Marcus Antonius Ro Ar L Be L Ae L
+Cavalry commander: Romans may free Scout, then may free Battle
+in 1 Region, Auxilia causing twice usual Losses
+To Rome as Quaestor: Move up to 4 on-map Auxilia to Provincia
+Romans Ineligible through next card Executing Faction Eligible
+Tips. Unshaded free Scout could move any Auxilia but could Reveal
+enemy Warbands and mark them as Scouted only within one Region
+of Caesar or with the Roman Successor (4.2.2, 5.1.1, 5.4) A Gallic
+Faction executing the Shaded Event, not the Romans, would get to
+choose which Auxilia move.
+
+7. Alaudae Ro Ae L Ar C Be L
+Legion formed in Gaul: Romans place 1 Legion and 1 Auxilia in
+a Roman Controlled Region
+Locally raised Legion unreliable: If the Legions track has 7 or fewer
+Legions, remove 1 Legion to the track and 1 Auxilia to Available
+Tips. Unshaded Legion could not be placed from Fallen (1.4.1)
+Shaded Legions track does not include Fallen Legions (1.4.1).
+
+8. Baggage Trains Ro Ae L Ar Be
+Well-stocked: Take this card and place it at your Forces display
+Your March costs 0 Resources
+CAPABILITY
+Slow wagons: Take this card Your Raids may use 3 Warbands per
+Region and steal Resources despite Citadels or Forts
+Tip. Shaded Raids may flip up to three Warbands from Hidden to
+Revealed instead of just two taking one Resource each (3.3.3).
+
+9. Mons Cevenna Ro Ae Ar Be
+Army crosses mountain thought impassable: Free March from a
+Region into an adjacent Region, both within 1 Region of Provincia
+Then execute a free Command and any free Special Ability (in any
+order) in (or from) the destination Region
+Tips. “Within 1 Region of Provincia” means in Provincia, Sequani,
+or Arverni Regions March origin Region counts as selected for
+March (flip Hidden there). The free Command could include March
+out of the destination Region.
+
+10. Ballistae Ro Ae L Be S Ar S
+Siege machines: Besiege cancels Citadel’s halving of Losses Battle
+rolls remove Forts on 1-2 not 1-3
+CAPABILITY
+Siege stratagems: Place near a Gallic Faction That Faction after
+Ambush may remove defending Fort or Citadel
+Tips. Unshaded Capability both makes Roman Besiege more potent
+and Roman Forts more defensible Shaded Capability in effect adds
+a modified Besiege Special Ability to the receiving Gallic Faction’s
+Ambushes.
+
+11. Numidians Ro L Ae L Be L Ar L
+Potent flankers: Romans place 3 Auxilia in a Region within 1 of
+their Leader and free Battle there, with Auxilia causing double
+Losses (before rounding)
+Africans called away: Remove any 4 Auxilia
+Tips. For unshaded Losses, count up total Losses from all Auxilia
+including any halving such as from an enemy Citadel, then round that total This would include the extra initial Losses caused by
+unshaded Balearic Slingers
+
+12. Titus Labienus Ro Ae L Be L Ar
+Able lieutenant: Roman Special Abilities may select Regions re-
+gardless of where the Roman leader is located
+CAPABILITY
+Opponents suborn Caesar’s 2nd: Build and Scout Reveal are
+maximum 1 Region
+Tips. Shaded Build or Scout Reveal and marking of enemy Warbands
+as Scouted would still require the Roman leader in the space or
+Caesar adjacent; Scout could still move Auxilia from any Regions
+across the map except Britannia (4.2.2).
+
+13. Balearic Slingers Ro Be L Ar C Ae L
+Sharp skirmishers: Romans choose 1 Region per enemy Battle
+Command. Auxilia there first inflict ½ Loss each on attacker. Then
+resolve Battle
+CAPABILITY
+Reliance on foreign contingents: Recruit only where Supply Line,
+paying 2 Resources per Region
+Tips. For the unshaded Capability, any Ambush is a Battle Command
+(3.3.4, 5.4) Romans could have Auxilia cause Losses to an attacker
+Battling another Faction in the Region If Romans have unshaded
+Balearic Slingers and unshaded Germanic Horse, Auxilia inflict
+one Loss each not ½ before enemy Battle.
+
+14. Clodius Pulcher Ro Be Ar C Ae L
+Popularist Senate leader: Shift the Senate 1 box down (toward
+Adulation, or flip to Firm if there).
+Caesar stalwart murdered: Roman Leader (if on map) to Provincia
+Romans Ineligible through next card Executing Faction Eligible.
+Tip. Place the cylinder of the Faction executing the shaded Event at
+the left edge of the appropriate “Event” box on the Sequence track
+as a reminder that it will stay Eligible.
+
+15. Legio X Ro Be L Ar C Ae L
+Reliable elite: In Battles that have Roman Leader and Legion, final
+Losses against Romans -1 and final Losses that Romans inflict +2.
+CAPABILITY
+Playing favorites: Caesar attacking in Battle doubles Loss inflicted
+by 1 Legion only (not by all Legions)
+Tip. For unshaded Capability, first fully calculate the Loss total,
+then subtract or add.
+
+16. Ambacti Ro Be L Ae L Ar L
+Gallic retinues in Roman service: Place 4 Auxilia in a Region with
+Romans or 6 with Caesar
+Gallic vassals head home: Roll a die and remove either 3 or that
+number of Auxilia from anywhere
+Tip. Unshaded “Romans” means any Roman Forces piece.
+
+17. Germanic Chieftains Ro L Be S Ae S Ar
+Fate of Ariovistus remembered: Romans March up to 3 German
+groups, then Ambush with Germans in any 1 Region
+Fate of Ariovistus forgotten: Conduct an immediate Germans Phase
+as if Winter
+Tips. Unshaded action with German pieces would be guided by the
+Romans, not by the Germans Phase sequence (6.2); shaded would
+follow the full 6 2 procedure.
+
+18. Rhenus Bridge Ro Be Ae Ar
+Punitive expedition: Romans may remove all Germans from 1
+Germania Region under or adjacent to Roman Control
+Bogged down: If a Legion is within 1 Region of Germania, Romans
+-6 Resources and Ineligible through next card
+Tips. Unshaded “all Germans” means all Germanic pieces: Allies
+and Warbands Shaded “within 1 Region” means either in or adjacent
+to a Germania Region.
+
+19. Lucterius Ar C Ro L Ae L Be
+Thrust at Narbo checked: Either remove up to 6 Arverni Warbands
+within 1 Region of Provincia, or place up to 5 Auxilia in Provincia
+Daring Cadurcan: If Arverni Successor on map or Available,
+Arverni place him anywhere, symbol up, as if Vercingetorix
+Tips. Unshaded Event if removing Warbands would remove up to six
+total from among Provincia, Sequani, Aedui, and Arverni Regions
+Shaded Event is the only way that the Arverni can recover their
+named Leader piece after removal—representing Lucterius taking
+charge of the Great Revolt.
+
+20. Optimates Ar L Ro S Ae S Be S
+Civil war looms: Keep this card by the Winter track Upon the
+game’s 2nd and each later Victory Phase, if Roman victory exceeds
+12, first remove all Legions to the Legions track, then end the game
+and determine victory
+Tips. “Roman victory exceeds 12” means that the red
+Subdued+Dispersed+Allies marker is at 13 or above (1.9, 7.2)
+The upshot of this Event is under certain circumstances to end the
+game early and remove from the Arverni the burden of one of their
+victory conditions As long as Caesar is doing well enough in Gaul
+(to remain a political threat in Rome) but the Gallic revolts continue,
+he will have to withdraw his legions to fight a Roman civil war with-
+out Vercingetorix having to throw them out The Arverni will still
+have to achieve their other measure of success, maintaining nine or
+more Allies and Citadels Flip the Winter track marker as an added
+reminder of the effect on later Victory Phase checks.
+
+21. The Province Ar C Ro L Ae L Be S
+Funnel from the Empire: If only Roman pieces in Provincia, either
+place 5 Auxilia there, or add +10 Roman Resources
+Cavalry probes: If Arverni Control Provincia, shift Senate 2 boxes
+up (toward Uproar) If not, Arverni place 4 Warbands there and free
+Raid or Battle there as if no Fort
+Tips. Shaded Warbands must be Arverni (5.1) As if no Fort means
+that defending Romans would not halve Losses for the presence of a
+Fort alone, nor could the Fort absorb any Losses upon Retreat (3.3.4).
+
+22. Hostages Ar Ro Be L Ae
+Incentive: Among Regions that you Control, remove or replace a
+total of up to 4 Warbands or Auxilia with your own
+Casus belli: Place a Gallic Ally and any 1 Warband at each of 1 or
+2 Subdued Tribes where Roman pieces
+Tips. Shaded Allies need not be those of the executing Faction.
+
+23. Sacking Ar C Ro Be Ae S
+Revenge: Romans may place Razed marker on a City at Roman
+Control (replace anything) for +8 Resources It permanently Dis-
+perses the City
+Costly, drawn-out siege: If a Legion where your Citadel, remove
+the Legion and Romans Ineligible through next card
+Tips. Unshaded marker is the equivalent of a Dispersed marker for
+all purposes except it is not removed in Spring (1.4.2, 3.2.3, 6.6,
+7.2) A few Events can remove it, however Shaded Legion removal
+is to Fallen (1.4.1) Mark shaded Ineligibility by placing the Roman
+cylinder under the executing Faction’s cylinder.
+
+24. Sappers Ar C Ro L Be L Ae L
+Key workers diverted to fortification: A Gallic Faction with a Citadel
+loses 10 Resources
+Iron miners cause siege disaster: In a Region with an Arverni
+Citadel, remove a total of 2 Legions and/or Auxilia
+Tips. Any Faction can execute either version of the Event, but the
+shaded target Region must have an Arverni Citadel Legion removal
+would be to Fallen (1.4.1).
+
+25. Aquitani Ar Ae L Ro L Be S
+Invasion of Celtica: Free Battle in either Pictones or Arverni Region,
+inflicting 3 extra Losses, 1 Ally (not Citadel) first.
+Nitiobrigan horse: Your Rally in Pictones and Arverni Regions
+places 2 extra Warbands each
+CAPABILITY
+Tips. Unshaded Battle would be possible even without friendly
+Forces in the Region, because Event text decrees Battle there (5.1.1)
+and the three Losses would add to 0 Losses Shaded Rally would
+place two extra Warbands in each of the Regions even if 0 would
+normally be placed, but Rally would have to be possible, so not in
+Devastated unless Arverni with Vercingetorix (3.3.1).
+
+26. Gobannitio Ar Ae Ro Be S
+Vercingetorix’s wary uncle: Remove anything at Gergovia Place
+a Roman Ally or Aedui Ally or Citadel there (despite Arverni-only
+stacking)
+Nephew in charge: Arverni may remove and place Allies as desired
+in Arverni Region, then free Rally within 1 Region of Vercingetorix
+Tips. The unshaded Event is one of a handful that alter stacking
+(1.4.2, 5.1.1); the shaded Event does not, so Arverni would not be
+able to place Allies at Dispesed, for example “Within 1 Region of”
+means in any Regions with or adjacent to Vercingetorix.
+
+27. Massed Gallic Archers Ar C AeRo Be L
+Reliance on light arms: Arverni Battle each Region inflicts 1 fewer
+Defender Loss (before any halving).
+“An enormous number”: At start of Battles with 6 or more Arverni
+Warbands, the other side first must absorb 1 extra Loss.
+Tips. Unshaded applies only to Arverni attack during Arverni Battle
+Command, not Arverni defense during others’ Battle Commands
+Shaded applies to all Battles involving that number of Arverni at-
+tacking or defending.
+
+28. Oppida Ar Ae Be Ro S
+Hillforts: Place any Available Gallic Allied Tribes desired at any
+Subdued Cities not under Roman Control Then replace any Gal-
+lic Allies at any Cities desired with Available Citadels of the same
+Faction
+Tips. The Event can place any Citadels available and desired at
+Subdued (not Dispersed or Razed) Cities, and can replace Gallic
+Allied Tribes already there with Citadels of the same Faction The
+Faction executing the Event could first remove its own pieces from
+elsewhere to Available to enable such placement (1.4.1).
+
+29. Suebi Mobilize Ar Ae S Be Ro S
+Germanic pressure: Remove any Dispersed from both Suebi Place
+a (black) Germanic Ally at each (that has none) Then conduct an
+immediate Germans Phase as if Winter, but skip Rally
+Tips. The Event provides a rare opportunity for early removal of
+Dispersed markers After placing Allies (if both not already in place),
+implement the sequence in 6.2 but without Germanic Rally (6.2.1).
+
+30. Vercingetorix’s Elite Ar C Ae Be L Ro
+Harsh punishments unpopular: Arverni Rally places Warbands up
+to Allies+Citadels (not Leader+1)
+CAPABILITY
+Roman-style discipline: In any Battles with their Leader, Arverni
+pick 2 Arverni Warbands—they take & inflict Losses as if Legions.
+Tip. If the shaded two picked Warbands are defending, are chosen to
+absorb Losses, and both roll a 1-3, the Counterattack would not inflict
+Losses as if with any Legions If removed, the picked Warbands go
+to Arverni Available Forces as normal (1.4.1, not Fallen Legions).
+
+31. Cotuatus & Conconnetodumnus Ar Be Ro Ae L
+Chieftains’ atrocity angers Rome: Place 1 Legion in Provincia
+Slaughter of traders cows allies: Remove 3 Allies—1 Roman, 1
+Aedui, and 1 Roman or Aedui (not Citadels)
+Tip. Unshaded Legion must be placed from the Legions track, not
+Fallen (1.4.1).
+
+32. Forced Marches Ar L Be S Ro L Ae S
+Double time: Relocate any of your Warbands or Legions and Auxilia
+and/or Leader from any Regions other than Britannia to any Regions
+except Britannia Pieces moved go Hidden
+Tip. Relocating pieces could include any mobile forces of the
+executing Faction only The Regions do not need to be adjacent
+Scouted Warbands would remove their marker rather than flipping
+Hidden (4.2.2).
+
+33. Lost Eagle Ar C Be L Ro Ae
+Recovered: Romans place 1 Fallen Legion into a Region that has a
+non-Aedui Warband and a Legion already
+Stolen totem: Remove 1 Fallen Legion permanently from play This
+upcoming Senate Phase, no shift down (mark)
+Tips. The Legion must come from the Fallen Legions box, not the
+Legions track or the map Shaded places Lost Eagle marker in either
+Fallen Legions box or Senate Phase box as a reminder that no Senate
+shift toward Adulation or flip to Firm Adulation (6.5) is possible this
+coming Winter (only) After this Senate Phase, remove the marker.
+
+34. Acco Ar L Be L Ae Ro
+Flogging stirs response: A Gaul or Roman free Rallies or Recruits
+in any 3 Regions, as if with Control
+Chief organizes revolt: In Carnutes and Mandubii Regions, replace
+all Allies with Arverni Allies and Citadels with Arverni Citadels
+Tip. The unshaded Rally may include Devastated Regions and may
+place Allies even without Control
+Background. While Caesar was dealing with the 53BC emergency
+in Belgica, the nearby Senones instigated a defection of tribes from
+him He later had the “ringleader” Acco arrested and, as he put it,
+“punished in accordance with ancestral custom”, by which he meant
+flogged to death. The act bred such resentment that it helped spark
+the revolt that Vercingetorix would lead the next year [6.4, 6.4.4, 7.1].
+
+35. Gallic Shouts Ar Be Ae L Ro S
+Messages reveal plans: Romans may look at the next 2 facedown
+cards and either execute a free Limited Command or be Eligible
+Rapid relay of messages: A Gallic Faction executes 1 Command
+and 1 Limited Command, in either order, free, no Battles
+Tips. If another Faction executes the unshaded Event and no other
+Faction executes Command and Special Ability, Romans could then
+do so, even if they had been Ineligible (2 3 4) Unshaded Event
+grants a free Command in several Regions, plus any other Limited
+Command in one Region (3.1, 3.1.2, 2.3.5).
+
+36. Morasses Ar Be L Ae L Ro
+Hideout found: Free Battle against a Gallic Faction in 1 Region
+No Retreat, Counterattack, or Citadel effect on Losses Attackers
+Hidden
+Warrior armies hide in terrain: A Gallic Faction free Battles with
+Ambush anywhere, then free Marches
+Tip. Shaded free Battles can add Ambush regardless of Hidden
+pieces or location of Leaders (4.3.3, 5.1.1).
+
+37. Boii Ae Ro Ar Be S
+Word of Aedui client’s resistance: Aedui or Romans place 2 Allies
+and 2 Warbands or Auxilia at or adjacent to Aedui Control
+Client left to self-defense: At or adjacent to Arverni Control, replace
+1 or 2 Aedui Allies (not Citadels) with Arverni Allies
+Tips. Unshaded pieces placed must belong to the placing Faction
+(5.1) Place Allies at Subdued Tribes only (1.4.2) The total number
+of pieces placed and/or replaced could be spread among several
+Regions.
+
+38. Diviciacus Ae Ro Ar Be
+Caesar’s druid: If Aedui and Romans agree, their Command or
+defense in Battle may treat Aedui Warbands or Auxilia where to-
+gether as the other
+CAPABILITY
+Pro-Roman sidelined: Romans and Aedui may not transfer Re-
+sources to one another
+Tips. Once the two Factions agree, that agreement holds during that
+action (1.5.2) and allows use of the other’s pieces in all applicable
+Regions desired.
+
+39. River Commerce Ae Ro S Ar Be S
+Goods arteries: Aedui Allies and Citadels in Supply Lines always
+yield +2 Resources each in Trade
+CAPABILITY
+War interferes: Trade is maximum 1 Region
+Tip. Unshaded Capability means that Aedui Trade will always add
+two Aedui Resources per blue Ally and Citadel—whether or not
+Romans agreed—as long as they have a Supply Line to Cisalpina
+(3.2.1, 4.4.1) Subdued and Roman-Allied Tribes under Aedui
+Control would still yield the varying amounts depending on Roman
+agreement The overall effect is to make the Aedui less dependent
+on Roman consent for their earnings.
+
+40. Alpine Tribes Ae Ro Be L Ar
+Join Gallic campaign: Place up to any 3 Warbands, 2 Auxilia, or
+1 Ally in each Region adjacent to Cisalpina Gain +4 Resources
+Threaten communications: For each Region adjacent to Cisalpina
+that is not under Roman Control, 5 Roman Resources Stay Eligible
+Tips. Unshaded placement could include any Faction’s Warbands or
+Allies The choice of piece type could be different for each Region
+The Regions adjacent to Cispalpina are Ubii, Sequani, and Provincia
+Place the cylinder of the Faction executing the shaded Event at the
+left edge of the appropriate “Event” box on the Sequence track as
+a reminder that it will stay Eligible.
+
+41. Avaricum Ae Ro Be Ar
+“Finest city in the whole of Gaul”: If Avaricum is your Ally or
+Citadel, do any or all of these with your pieces within 1 Region
+of it—place up to 2 Allies; replace 1 Ally with a Citadel; place 1
+Fort; then receive +1 Resource per Ally, Citadel, and Fort that you
+have there
+Tip. The opportunities would apply among all Regions adjacent to
+Avaricum (Bituriges Region) as well as that Region itself.
+
+42. Roman Wine Ae L Ro Be L Ar
+Luxury good: Remove either up to any 4 Allied Tribes (not Citadels)
+under Roman Control or up to 2 adjacent to Roman Control
+Romanizing tribes lose taste for war: Remove 1-3 Roman or Aedui
+Allies (not Citadels) total from Roman-Aedui Supply Lines
+Tips. Unshaded Allies adjacent to Roman Control are those in Re-
+gions adjacent to a Roman Control Region Shaded Roman-Aedui
+Supply Lines are any Regions that would at that moment be in Supply
+Lines (3.2.1) if Romans and Aedui both agreed.
+
+43. Convictolitavis Ae Ar Ro S Be
+Dispute over leadership resolved: Suborn is maximum 2 Regions
+CAPABILITY
+Contest with Cotus escalates: Resource costs of Aedui Commands
+are doubled
+Tips. Unshaded Suborn works the same within each of the two
+Regions—each requires an Underground Aedui Warband, 1 Ally
+could be affected in each, all costs paid in each, and so on (4.4.2)
+
+44. Dumnorix Loyalists Ae L Ar L Ro Be
+Betrayed by Caesar’s informants: Replace any 4 Warbands with
+Auxilia or Aedui Warbands They free Scout (as if Auxilia)
+“Dumnorix’s madness” lingers: Replace any 3 Auxilia or Aedui
+Warbands total with any Warbands They all free Raid
+Tips. Unshaded free Scout could move only the four pieces just
+placed; those four could Reveal enemy Warbands (not Auxilia)
+and mark them as Scouted only within one Region of Caesar or
+with the Roman Successor (even if they are Aedui Warbands, 4.2.2,
+5.1.1, 5.4).
+
+45. Litaviccus Ae Ar Ro Be L
+Arverni plot thwarted: In each of 2 Regions, replace up to 2 Arverni
+Warbands with Aedui Warbands 4 Arverni Resources to Aedui
+Maneuver behind Caesar: Free Battle against Romans in 1 Region,
+using Aedui pieces as your own, Ambushing if able
+Tip. Shaded Battle could use Ambush only if the resulting number
+of Hidden attackers exceeded Hidden Auxilia defending (4.3.3).
+
+46. Celtic Rites Ae L Ar Be Ro L
+“Much given to religion”: Select 1 or more Gallic Factions Each
+loses 3 Resources and is Ineligible through next card
+“The immortal gods propitiated”: A Gallic Faction executes a free
+Command (in multiple Regions) Stay Eligible
+Tip. Place the cylinder of the Faction executing the shaded Event at
+the left edge of the appropriate “Event” box on the Sequence track
+as a reminder that it will stay Eligible.
+
+47. Chieftains’ Council Ae S Ar S Be S Ro S
+Leaders convene: Select a Region with at least 2 non-German Fac-
+tions’ pieces Two or more player Factions there in above order look
+at next 2 facedown cards, then may either execute a free Limited
+Command (anywhere) or become Eligible
+Tip. If the Faction executing the Event selected itself as one of the
+player Factions and chose to become Eligible, place its cylinder at
+the left edge of the appropriate “Event” box on the Sequence track
+as a reminder.
+
+48. Druids Ae Ar Be Ro S
+Arbiters of Celtic society: Select 1-3 Gallic Factions In the initiative
+order above, each executes a free Limited Command that may add
+a free Special Ability Become Eligible after this card
+Tips. The free Special Abilities would each have to be those allowed
+to accompany that Faction’s Command Place the cylinder of the Fac-
+tion executing the Event at the left edge of the appropriate “Event”
+box on the Sequence track as a reminder that it will stay Eligible.
+
+49. Drought Ae L Be Ro L Ar
+Food shortage: Each Faction drops to half its current Resources
+(rounded down) Place 1 Devastated marker Each Faction then
+removes 1 of its pieces from each Devastated Region (Legions to
+Fallen; German Warbands before German Allied Tribes)
+Tips. The executing Faction must place a Devastated marker into
+any one Region that does not already have one Each Faction gets to
+choose which of its own forces piece (1.4) in the Region to remove
+If the Romans remove a Legion, it goes into the Fallen Legions box
+(1.4.1) The Germans avoid removing their Ally discs if at all pos-
+sible After the Event, the Devastated marker will have the usual
+effects until Spring (4.3.2).
+
+50. Shifting Loyalties Ae L Be L Ro L Ar L
+“In Gaul there are factions…”: Choose 1 Capability of any Fac-
+tion Remove it from play
+Tip. The Event can be used to permanently remove a disadvanta-
+geous Capability from the executing or another, friendly Faction,
+or an advantageous Capability from a foe
+Background. “He knew how unreliable were his Gallic allies…”
+[4.13] Though Caesar wrote this regarding events in a specific
+context of 55 BC, it was a motif of all the Gallic wars—and from
+all sides’ perspectives.
+
+51. Surus Ae Be Ro S Ar
+Aeduan rebel defeated: Replace any 4 Warbands in a Region within
+1 of Treveri with Aedui Warbands Then the Aedui execute a free
+Command
+Anti-Roman Aeduan: In a Region within 1 of Treveri, replace up to
+4 Aedui Warbands with German March, Raid, or Battle with them
+Tips. The candidate Regions are Treveri, Atrebates, Nervii, both
+Germania Regions, Sequani, and Mandubii Shaded action with
+German pieces would be guided by the executing Faction, not by
+the Germans Phase sequence (6.2).
+
+52. Assembly of Gaul Ae L Be S Ar L Ro L
+“The middle of Gaul”: If Carnutes are Roman Ally, Subdued, or
+Dispersed, drop 1 or more Gallic Factions’ Resources each -8
+“A sacred spot”: Faction Controlling Carnutes Region executes a
+Command that may add 2 Special Abilities, free
+Tips. The shaded actions are all free but have to follow the usual
+rules for space selection and so forth; the free Command could select
+several spaces; the two free Special Abilities would each have to be
+those allowed to accompany that Command.
+
+53. Consuetudine Ae S Be S Ar Ro S
+“Whole life in hunting and military activity”: All Germanic
+Warbands to Hidden Then conduct an immediate Germans Phase
+as if Winter, but skip March, and all Germans Ambush
+Tip. Implement the sequence in 6 2 but without Germanic March
+(6.2.2) and Battling with Ambush regardless of the numbers of
+Hidden enemies (3.4.4).
+
+54. Joined Ranks Ae S Be S Ar S Ro S
+Relief force: Executing Faction may free March a group of up to
+8 pieces to a Region that already has at least 2 other Gallic and/or
+Roman Factions The executing Faction, then a 2nd player Faction,
+may each free Battle there against a 3rd Faction. In the first Battle,
+no Retreat allowed
+Tips. March can be by one group (so one origin Region) only, could
+include a Leader among the eight pieces, and for Romans or Vercin-
+getorix could cover a distance of more than one adjacent Region
+(3.2.2, 3.3.2) March origin Region counts as selected for March
+(flip Hidden there). The second Faction already in the destination
+Region may be a Non-player (8.0) but if so would not Battle The
+Battles would each be at the option of the attacking player Faction
+and would add neither Besiege nor Ambush (4.2.3, 4.3.3) The sec-
+ond Battle would have to be against the same defender as the first.
+Retreat would be allowed only from the second Battle.
+
+55. Commius Be Ro Ar S Ae L
+Atrebatian friend: Belgica Regions for Roman Recruit count as
+Roman Controlled and +1 Roman Ally
+CAPABILITY
+Conspirator: Belgic Rally costs 0 and treats any Region with Belgic
+pieces as Belgic Controlled.
+Tip. Unshaded Recruit allows Romans in each Belgica Region to
+place a Roman Ally at a Subdued Tribe without the need for Roman
+Control or even any Roman pieces at all, or to place one more Auxilia
+in that Region than they normally would, include one Auxilia if they
+normally could place none (3.2.1) Shaded Rally allows Belgae to
+place Allies on Subdued Tribes where they have any pieces without
+the Belgic Control usually required (3.3.1).
+
+56. Flight of Ambiorix Be Ro Ar Ae L
+Chased off: If Ambiorix is in a Roman Controlled Region, or if
+Belgic victory is less than 10, remove Ambiorix
+Returned: If Ambiorix is not on the map, place the Belgic Leader
+within 1 Region of Germania, symbol up (as Ambiorix)
+Tips. Unshaded “Belgic victory” means Belgic Control value plus
+Belgic Allies and Citadels (7.2), as shown by the Belgic Control-
+Allies marker (1.9) Shaded places Ambiorix in a Germania Region
+or in Morini, Nervii, Treveri, or Sequani Region.
+
+57. Land of Mist and Mystery Be L Ro Ar Ae
+Beckons: A non-German Faction may free March into Britannia,
+add any free Special Ability there, then—if in Britannia—add +4
+Resources
+Revolts: Remove an Ally or Dispersed from Britannia, and place
+any 1 Gallic Ally and up to 4 Warbands there
+Tips. Unshaded Special Ability need not be one that usually ac-
+companies March (4.1) but could not be Besiege or Ambush, which
+merely modify Battle Commands (4.2.3, 4.3.3, 5.4) Forces must be
+able to reach Britannia by normal March rules; origin Regions count
+as selected for March (flip Hidden there). Shaded Event can remove
+a Dispersed marker or any Faction’s Ally, and can place any Gallic
+Ally and Warbands (not just the executing Faction’s).
+
+58. Aduatuca Be Ro Ae S Ar
+P. Sextius Baculus—Heroic Roman defense: Remove 9 Belgic and/
+or Germanic Warbands from a Region with a Fort
+Sugambri strike unprepared fort: March Germans to 1 Region
+with a Fort They Ambush Romans there, 1 Loss per 2 Warbands
+Tips. Shaded March would have to be from adjacent Regions
+(3.4.2); Ambush regardless of numbers of Hidden pieces (3.4.4,
+5.1.1). Inflict one Loss per two Warbands despite the presence of
+a defending Fort—the Fort in effect does not in this case halve the
+Losses suffered by the defending Romans.
+
+59. Germanic Horse Be Ro Ae L Ar C
+Hard-hitting auxiliaries: Romans may inflict 1 Loss per Auxilia
+(not ½) in 1 Region per Battle Command
+CAPABILITY
+Shock cavalry: If Gallic, take this card Each Battle Command,
+you double enemy’s Losses in 1 Region unless Defender with Fort/
+Citadel
+Tips. Unshaded Auxilia inflict one Loss before other modifications
+such as halving for Retreat or Citadel (3.2.4) and do so in one Re-
+gion during both Roman and non-Roman Battle Commands (that
+is, on both attack and defense/counterattack) If Romans have both
+unshaded Germanic Horse and Balearic Slingers, Auxilia also
+inflict one Loss each not ½ before enemy Battle. Shaded doubling
+of Losses is of the total before rounding down (3.3.4) and both
+when the holder of the Capability is attacking and when defending,
+but not if attacking against a defender with a Fort or Citadel, or if
+defending with a Citadel.
+
+60. Indutiomarus Be Ro Ae Ar S
+Loses power to Cingetorix: Remove 6 Belgic Warbands and/or Allies
+(not Citadels) from the Treveri Region or 1 Region adjacent to it
+Belgic-inspired revolt: Remove any Ally or marker from Treveri and
+Ubii Place Belgic Ally, 2 Belgic and 1 German Warband at each
+Tips. Shaded Treveri and Ubii mean at those Tribe circles specifi-
+cally and can remove Dispersed markers.
+
+61. Catuvolcus Be Ar S Ro Ae L
+Eburones chief poisons himself: Remove 1 or more Allied Tribes
+of the same Faction in the Nervii Region and 5 Warbands there
+Ambiorix co-King: Place Belgic Allies at Nervii and Eburones,
+replacing any Allies or Dispersed there Add +6 Belgic Resources
+Tips. The unshaded Warbands can be of the same or any other
+Faction(s) as the Allied Tribes (Allies) The shaded Allies are a rare
+opportunity to remove Dispersed markers immediately.
+
+62. War Fleet Be L Ar L Ro L Ae L
+Coastal maneuver: Move any of your Warbands, Auxilia, Legions,
+or Leaders among the Arverni Region, Pictones Region, and Regions
+within 1 of Britannia Then execute a free Command in (or from)
+1 of those Regions
+Tips. The candidate Regions include all that touch the ocean west
+and north The Command could be a March out of the Region chose.
+
+63. Winter Campaign Be Ar Ro Ae L
+Corn storage: Romans pay costs of Quarters only in Devastated
+Regions
+CAPABILITY
+Cold war: Place this card near a Gallic Faction After each Harvest,
+it may do any 2 Commands and/or Special Abilities (paying costs)
+Tips. Shaded Special Abilities can be any that apply, without regard
+to accompanying Commands, and can be chosen even if the other
+action is a March into or out of Britannia Besiege or Ambush
+(4.2.3, 4.3.3), however, would only apply as one of the two actions
+in modifying a Battle Command as the other action.
+
+64. Correus Be L Ar S Ae Ro
+Deal: Replace up to 8 Belgic Allies plus Warbands in Atrebates
+Region with yours (Auxilia for Warbands)
+Bellovaci rebel: Remove 2 Allies from the Atrebates Region Bel-
+gae place up to 2 Allies there, then free Rally in 1 Belgica Region
+Tips. Unshaded replacement is of up to eight pieces total, Allies plus
+Warbands Shaded in effect replaces other Allies with Belgic Allies
+in the Atrebates Region, or leaves Belgic Allies there in place, then
+allows Belgic Rally there or in either the Morini or Nervii Region.
+
+65. German Allegiances Be L Ar Ae L Ro L
+Intervention: March Germans from up to 2 Regions, then Ambush
+with all Germans able
+Fealty: Where you have Control, remove or replace 5 Germanic
+Warbands and 1 German Ally with your own (Auxilia for Warbands)
+Tips. Unshaded action with German pieces would be guided by the
+executing Faction, not by the Germans Phase sequence (6.2); Am-
+bush would have to have sufficient Hidden Warbands as usual (3.4.4).
+
+66. Migration Be L Ar S Ae L Ro L
+Drang nach Westen: Execute a Germanic Rally then March in/from
+up to 2 Regions each
+New pastures: A Gallic Faction moves its Warbands and Leader
+as desired to a Region where No Control and places an Ally there
+Tips. Unshaded action with German pieces would be guided by the
+executing Faction, not by the Germans Phase sequence (6.2) Shaded
+move could be from several Regions and need not be to an adjacent
+Region Ally placement would have to be at Subdued (1.4.2).
+
+67. Arduenna Be Ae Ro Ar L
+Gaul’s great forest: Romans or a Gallic Faction may free March
+into either or both the Nervii or Treveri Regions, then execute a
+free Command except March in one or both, then flip all friendly
+pieces there to Hidden
+Tips. Free March could be from any number of origin Regions
+from which the Faction could normally March to those destinations
+(3.2.2, 3.3.2). Origin Regions count as selected for March (flip Hid-
+den there) Scouted Warbands that Marched into Nervii or Treveri
+would remove their marker on the March then flip Hidden after the
+Command; Scouted Warbands that did not March at the end would
+remove the marker and stay Revealed (4.2.2, 5.1.1).
+
+68. Remi Influence Be L Ae L Ro Ar L
+Protection: If Remi are a Roman Ally or Subdued, replace 1 or 2
+Allies (not Citadels) within 1 Region of Remi with Roman Allies
+Mediation: A Gallic Faction with Remi as Ally may remove anything
+at Alesia or Cenabum and place a Citadel there with 4 Warbands
+Tips. Dispersed Remi would not qualify for unshaded; Allies
+replaced could belong to any Faction Shaded allows removal of
+Citadel, Ally, or Dispersed or Razed marker from that City; the
+Citadel and four Warbands placed into that Region would have to
+belong to the placing Faction (5.1).
+
+69. Segni & Condrusi Be S Ae S Ro S Ar
+West bank Germans: Place 4 Germanic Warbands each in the Nervii
+and Treveri Regions Then conduct an immediate Germans Phase
+as if Winter, but skip Rally
+Tip. All Germans March, Raid, and Battle per 6.2.
+
+70. Camulogenus Be Ae L Ar Ro
+Labienus sent: Romans may free March up to 4 Legions & any Aux-
+ilia to Atrebates, Carnutes, or Mandubii Region and free Battle there
+Parisii arise: Place 0-6 Warbands among Atrebates, Carnutes, and
+Mandubii Regions; select 1 for a free Command + Special Ability
+Tips. Unshaded free Roman March could include movement into
+second and with Caesar third Regions (3.2.2) but only one destina-
+tion, which must be among those listed, and therefore no drop off
+Only the listed, moving forces are involved, so no flipping of pieces
+that do not move Shaded Warbands must belong to the placing
+Faction (5 1); the Special Ability must be allowed to accompany
+the chosen Command (4.1.1).
+
+71. Colony Be Ae Ar Ro
+Settlers arrive: In a Region that you Control or has no Control,
+place +1 marker, Colony marker, and your Ally on it Add +1 to
+that Control Value The Colony is a Tribe
+Tip. This is one of the few Events that alter stacking (1.4.2, 5.1.1).
+
+72. Impetuosity Be L Ae S Ar L Ro L
+Rising to the bait: Free March into 1 Region from any adjacent
+Either Arverni or Belgae in that Region free Battle against you
+Charging in: Free March 1 group of your Hidden Warbands (no
+Leader) That group then may free Battle (alone)
+Tips. Unshaded March would have to include a move from at least
+one Region (possibly several) to an adjacent Region; origin Region
+counts as selected for March (flip Hidden there). Unshaded or shaded
+free Battle would not include Ambush Shaded free Battle could
+be with Warbands that Marched within that Region or from one
+adjacent Region; it would attack only with the group of Warbands
+that just Marched.

@@ -1,0 +1,159 @@
+6.0 WINTER
+As each Winter card is played, conduct a Winter Round
+in the sequence of phases below. The Sequence of Play
+sheet and game board also list this sequence.
+NOTE: The next card may be viewed normally dur-
+ing resolution of a Winter card (2.3.7).
+6.1 Victory Phase
+If any Faction has met its Victory condition, the game ends now
+(EXCEPTIONS: Spare Factions, 1.5.1; 54BC scenario, 2.1; and
+1-Player, 8.9); see Victory (7.0) to determine winner and rank order.
+If it is the final Winter card (2.4.1), the game also ends; determine
+victory per 7.3. If neither, continue the Winter Round.
+6.2 Germans Phase
+Germanic Forces Rally, March, Raid, and Battle with
+Ambush as follows.
+NOTE: Individual Germanic pieces may participate
+in several types of Commands during the course of a single
+Germans Phase.
+6.2.1 Germanic Rally.
+• First, Rally to place as many Germanic Allied Tribes as possible
+per the Rally procedure (3.3.1, 3.4.1), starting with Suebi, then
+others in the Germania Regions, then elsewhere.
+• Then Rally in those and other Regions to place as many Germanic
+Warbands as possible (including where Allies were just placed,
+and in un-Devastated Germania Regions even if no Germanic
+Allies there).
+• Choose among otherwise equal locations randomly (using an
+equal chance die roll).
+• Adjust Control as needed.
+6.2.2 Germanic March.
+• Next, form a group of Germanic Warbands to March out of each
+Region that has at least one Germanic Warband beyond the pieces
+needed for Germanic Control (1.6), regardless of any Rally there.
+NOTE: Germans where no Germanic Control or where exactly
+enough for such Control therefore would not move.
+• March out with as many Warbands as possible without losing
+Germanic Control. Move the largest Warband groups first.
+• Move into at most one Region with each group (3.3.2, 3.4.2).
+Select destination Regions first so that the moving groups can add
+Germanic Control (so, not yet German-Controlled), then (among
+such Regions if possible, otherwise among others) Regions that are
+Controlled by player Factions (not Non-players, 8.0), then other
+Regions. Choose among equal candidate locations randomly.
+• Adjust Control as needed.
+• Flip all Germanic Warbands to Hidden (or remove their Scouted
+markers, 4.2.2). (Warbands that did not move in effect Marched
+within their Regions.)
+6.2.3 Germanic Raid.
+• Then, Raid (3.3.3, 3.4.3) with as many Germanic Warbands as
+able per below, only against Factions.
+• Raid only against Factions that have more than 0 Resources (and
+no Fort or Citadel) and only until they reach 0 Resources.
+• Raid against player before Non-player Factions (8.0). Otherwise,
+choose randomly among target Factions within a Region.
+6.2.4 Germanic Battle with Ambush.
+• Finally, Battle with Ambush (3.3.4, 3.4.4, 4.1) in each Region
+where the Germans currently are able to do so (only wherever
+Hidden Germanic Warbands are with another Faction with fewer
+Hidden pieces) and would cause an enemy Loss. Adjust Control
+as needed.
+• Battle player before Non-player Factions (8.0).
+• Choose the order of the Battles and among otherwise equal
+candidates in each randomly.
+6.3 Quarters Phase
+Each Faction relocates its Forces on the map as follows (adjusting
+Control as needed, 1.6).
+NOTE: Factions may transfer Resources during the Quarters
+and Harvest Phases (1.5.2).
+6.3.1 Germans. All Germanic Warbands in Devastated
+Regions (4.3.2) without German Allies and outside Ger-
+mania relocate to Germania. Roll a die and relocate all
+of them to the Sugambri Region on 1, 2, or 3, or the Ubii Region
+on a 4, 5, or 6.
+6.3.2 Gauls. First the Belgae, then the Aedui, then the Arverni
+relocate and roll for their own Warbands and Leaders on the map
+as follows:
+• They may relocate any such pieces to any adjacent Regions
+without Devastated markers (4.3.2) and under Control (1.6) of
+their Faction or a Faction that agrees (not No Control nor German
+Control).
+• Then they must roll a die for each Warband they have in
+Devastated Regions in which they have neither Allied Tribe nor
+Citadel and remove the Warband on a roll of 1-3.
+6.3.3 Romans. The Romans may relocate any Legions, Auxilia,
+and Roman Leader on the map to adjacent, un-Devastated Regions
+under Roman Control or Control of a Faction that agrees (not No
+Control nor German Control, 1.6). Then, the Romans may relocate
+any Legions and Auxilia from Supply Line Regions (3.2.1, deter-
+mined at this time for the rest of the Quarters Phase) and then the
+Roman Leader from any Region to Provincia. Finally, for each
+Legion and Auxilia piece in Regions outside Provincia, the Romans
+must choose one:
+• Pay to keep it in place—one Roman Resource if the Region has
+a Roman Allied Tribe, or two Roman Resources if not, or twice
+that amount (two or four total) if it is Devastated (4.3.2). One
+such piece per Roman Ally and per Fort may stay in that Region
+without such payment.
+• Roll a die and remove the piece on a 1-3 (Legion to Fallen).
+NOTE: Getting the Roman Leader to Provincia adds Auxilia
+during the Senate Phase (6.5.3).
+6.4 Harvest Phase
+Add to each Faction’s Resources, to a maximum of 45 each (1.8),
+as follows.
+6.4.1 Roman Earnings. The Romans receive Resources equal to
+their current Victory score (Subdued plus Dispersed plus Roman
+Allied Tribes, 7.2).
+6.4.2 Gallic Earnings. The Arverni, Aedui, and Belgae each receive
+Resources equal to twice the number of that Faction’s Allied Tribes
+and Citadels.
+6.4.3 River Tolls. The Aedui receive a further +4 Resources.
+6.5 Senate Phase
+The Roman Senate weighs in on the Gal-
+lic campaign and sends reinforcements
+to Gaul.
+DESIGN NOTE: The Senate marker embodies all political affairs
+in Rome affecting the Gallic war.
+6.5.1 Senate Marker. Various Events (5.0) and this Senate Phase
+shift the Senate marker up or down or flip it between “Firm” and not:
+• Any shift toward “Uproar” (or “up”) when the Senate marker is
+already at Uproar instead flips it to Firm (if not already Firm); any
+shift toward “Adulation” (or “down”) when already at Adulation,
+also flips it to Firm instead. Any other shift (toward the opposite
+end) when Firm instead flips the marker back to normal (without
+moving it).
+• In this phase, if the current Roman Victory score is below 10, shift
+the Roman Senate marker by one box (row) toward Uproar (or
+flip the marker per above). If Roman Victory is anywhere from
+10 to 12, shift Roman Senate toward Intrigue. If Roman Victory
+exceeds 12, shift Roman Senate one row toward Adulation (or flip
+per above). EXCEPTION: Do not shift down (toward Adulation,
+including to Intrigue from Uproar) if any Legions are in the Fallen
+box.
+6.5.2 Legions. One half (rounded down) of Legions in the Fallen
+Legions box will remain unavailable to reenter the map this Winter.
+Move the rest from Fallen to the Legions Track, filling lowest rows
+first. Then place into Provincia all Legions that are on the same row
+as the Roman Senate marker or above that row.
+NOTE: The Roman player may not decline these Legions, nor are
+any Legions removed from the map in this phase. Adjust Control
+of Provincia, if needed.
+6.5.3 Auxilia. If the Roman Leader is in Provincia, place the fol-
+lowing number of Auxilia from Available into that Region: three
+Auxilia if the Senate is in Uproar, four if Intrigue, five if Adulation.
+6.6 Spring Phase
+Prepare for the coming year as follows:
+• Factions place any Successor Leaders (symbol end down, 1.4.3)
+that they have in Available Forces onto the map where that Faction
+has a piece or a Home Region “Rally” or “Recruit” symbol (1.3.1).
+• Move any remaining Fallen Legions to the Legions Track (1.4.1).
+• Remove all Scouted markers (4.2.2), then flip all Revealed
+Warbands and Auxilia to Hidden (1.4.3). (All such pieces end the
+phase Hidden.)
+• Remove all Devastated markers (4.3.2).
+• Remove all Dispersed-Gathering markers (only), then flip all
+Dispersed Tribes to Dispersed-Gathering (1.7, 3.2.3). (Do not
+remove or flip Razed marker from the Sacking Event, 5.0)
+• Mark all Factions Eligible (2.3.1).
+• Play the next card from the draw deck and reveal the draw deck’s
+new top card (2.3.7).

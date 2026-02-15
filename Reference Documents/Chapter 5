@@ -1,0 +1,107 @@
+5.0 EVENTS
+Each Event bears a Faction Order (2.3), title, italicized flavor text,
+and Event text. Flavor text adds historical interest; it has no effect
+on play.
+5.1 Executing Events
+When a Faction executes an Event, it carries out the Event text
+literally and in the order given (sometimes involving actions or deci-
+sions by other Factions). Unless otherwise specified, the executing
+Faction makes all selections allowed for in implementing the text,
+such as which pieces are affected. Some Events with lasting effects
+have markers as aids to play. NOTE: Instructions to place pieces,
+unless otherwise specified (such as by “any”), mean the placing
+Faction’s pieces.
+5.0 EVENTS
+Each Event bears a Faction Order (2.3), title, italicized flavor text,
+and Event text. Flavor text adds historical interest; it has no effect
+on play.
+5.1 Executing Events
+When a Faction executes an Event, it carries out the Event text
+literally and in the order given (sometimes involving actions or deci-
+sions by other Factions). Unless otherwise specified, the executing
+Faction makes all selections allowed for in implementing the text,
+such as which pieces are affected. Some Events with lasting effects
+have markers as aids to play. NOTE: Instructions to place pieces,
+unless otherwise specified (such as by “any”), mean the placing
+Faction’s pieces.
+Laurels (regards
+Non-players, 8.2.1)
+Italicized
+Flavor Text
+Capability
+Indicator (5.3)
+Shaded Text
+(see Dual Use 5.2)
+Event Text
+Faction Order
+Title
+5.1.1 Events vs Rules. When executing Event text, follow normal
+rules, such as restrictions and procedures for free actions granted
+(5.4), unless otherwise specified. Where Event text contradicts rules,
+the Event takes precedence, except that:
+• Events never place pieces that are not Available (1.4.1); they
+remove rather than replace if the replacement is not available.
+NOTE: The executing Faction can remove own pieces to make
+them Available (1.4.1).
+• Events may not violate stacking (1.4.2) unless their text explicitly
+changes stacking rules. NOTE: The only Events that do so are
+Colony, Gallia Togata, and Gobannitio. Events remove rather
+than replace pieces if the new piece would violate stacking.
+• Events do not raise Resources above 45; any excess Resources
+are lost (1.8).
+• Instructions to Reveal or Hide pieces affect only Warbands and
+Auxilia (1.4.3). Events that flip Scouted Warbands to Hidden
+instead remove the Scouted marker (4.2.2).
+• Events that shift the Senate when Firm (toward the opposite end)
+instead flip the Senate marker (regardless of boxes to be shifted,
+6.5.1) and that shift up from Uproar or down from Adulation
+instead set it to Firm.
+EXAMPLE: Event text that says “free March” allows March
+even upon Frost (2.3.8).
+NOTE: For help executing a particular Event, see the “tips” in
+the Playbook Event Notes.
+5.1.2 Dueling Events. If two Events contradict, the currently played
+Event takes precedence.
+5.1.3 Partial Execution. All of an executed Event’s text that can
+be carried out (within any selections that the text allows, 5.1), must
+be; if not all can be, carry out that which can.
+5.1.4 Event Markers. A few Events with lasting effects note in
+their text to place or flip reminder markers on the map. (See also
+Capabilities, 5.3.)
+5.2 Dual Use
+Most Events have both shaded and unshaded Event text. The execut-
+ing Faction may select either the unshaded or shaded text to carry
+out (not both). While the shaded text often favors various Gauls, a
+player may select either text option regardless of Faction.
+DESIGN NOTE: Dual-use events represent opposed effects
+of the same cause, alternative interpretations, or forks in the
+historical road.
+5.3 Capabilities
+Events marked “CAPABILITY” have lasting
+effects that either help or hurt one or more
+Factions. When executing such text, put the
+card near the most affected player and place a “Capability” marker
+on its appropriate side (shaded or unshaded) onto the card. The
+Event’s effects last for the rest of the game (unless altered by a
+later Event, 5.1.2).
+NOTE: “CAPABILITY” marked on the
+boundary between unshaded and
+shaded Dual-use text (5.2) means that both versions are Capa-
+bilities.
+5.4 Free Actions
+Many Events allow the Executing or other Factions immediate
+Commands or Special Abilities that interrupt the usual sequence and
+are free: they cost no Resources and do not further affect Eligibility
+(3.1.2, 2.3.1). Other aspects such as location requirements remain,
+unless modified by Event text (5.1.1). Events granting an unspeci-
+fied “Special Ability” may only select Besiege (4.2.3) and Ambush
+(4.3.3) if an accompanying Battle Command (3.2.4, 3.3.4, 4.1.1) is
+also occurring as part of the Event. Events stating “Ambush” alone
+grant an inherent accompanying Battle Command.
+EXAMPLE: Aedui free Rally (3.3.1) would cost 0 Resources and
+not affect Aedui Eligibility but still could not occur in Devastated
+Regions unless otherwise specified, such as by allowing “Rally in
+any Region”. Aedui free Suborn (4.4.2) would allow placement
+and/or removal of three pieces in one Region at 0 cost.
+NOTE: Free March or Scout “in” a Region allows Forces there
+to move out to other Regions (3.2.2, 4.2.2).

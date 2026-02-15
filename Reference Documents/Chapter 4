@@ -1,0 +1,203 @@
+4.2 Roman Special Abilities
+The Romans may choose from Build, Scout, or Besiege
+Special Abilities.
+4.2.1 Build. Building constructs forts or public works to subdue or
+ally with tribes under Roman control. It may accompany Recruit,
+March, or Seize Commands (3.2.1-.3), not Battle (but see restric-
+tion below on Seize Regions). Select Regions for Build that both:
+• Have a Roman Ally in them already, or are part of a Supply Line
+to Cisalpina (3.2.1) and have any Roman piece in it.
+• Are within one Region of Caesar (the same Region as Caesar is
+in, or adjacent to him) or is the Region that the Roman Successor
+Leader (1.4) is in.
+PROCEDURE: The Romans select Regions desired for Build and
+Supply Lines. Factions declare whether or not they agree to have the
+Supply Line include Regions they Control. In each Build Region,
+the Romans do one or both:
+• Place a Fort (if none already there, 1.4, 1.4.2).
+• And/or, if the Region is now under Roman Control (1.6, including
+due to the new Fort) and if that Region is not selected for a Seize
+that accompanying Command (3.2.3, 4.1.1), either Subdue
+(remove) any one Gallic or Germanic Allied Tribe there (a disc,
+not a Citadel), or place a Roman Ally at an already Subdued Tribe
+there (not at Aedui [Bibracte], Arverni [Gergovia], or Suebi, 1.4.2)
+The Romans must pay two Resources for each Fort and each Ally
+placed or removed above.
+PLAY NOTE: A Roman tactic is to March into an enemy’s Region
+and immediately Build a Fort. Doing so requires enough Forces
+to cancel enemy Control in order to establish a Supply Line, or
+already having a Roman Ally there.
+4.2.2 Scout. Scouting can move Auxilia, Reveal Hidden
+Warbands, and keep them Revealed longer. It may ac-
+company any type of Command. Select any Regions with
+Auxilia (even if no Leader nearby).
+PROCEDURE: Move Auxilia as desired from any Regions to
+adjacent Regions, but not into or out of Britannia (Revealed stay
+Revealed, Hidden stay Hidden; no piece may move more than once).
+Then, in any Regions desired that are within one Region of Caesar
+or with his Successor in it, each Hidden Auxilia piece may flip to
+Revealed in order to Reveal up to two Warbands (flip from Hidden
+to Revealed, or leave Revealed, 1.4.3) in that Region and place
+Scouted markers on them (if none already).
+NOTE: Scout movement may combine with accompanying March
+movement (3.2.2).
+SCOUTED: Scouted markers delay Revealed Warbands flipping
+back to Hidden: whenever an action (such as March, 3.3.2, 3.4.2)
+or an Event (5.0) would flip a Scouted Warband to Hidden, instead
+remove the Scouted marker and keep the Warband Revealed.
+(Scouted markers are removed and all Warbands go Hidden at the
+end of Winter, 6.6.)
+NOTE: Put a single Scouted marker on each group of Scouted
+Warbands of the same Faction in a Region.
+4.2.3 Besiege. Besieging helps subdue enemy tribes, especially
+Citadels. It may only accompany Battle (3.2.4). Once announced,
+it may modify any Battle Regions during that Command that both
+have at least one Legion and a Defender who has a Citadel or Allied
+Tribe. NOTE: Besiege does not have a Special Ability’s usual need
+of a nearby Leader (4.1.2).
+PROCEDURE: In those Battles, before and in addition to any Losses
+(even 0 Losses) inflicted on the Defender, the (Roman) Attacker
+may automatically remove (Subdue) a Defending Citadel or Allied
+Tribe (no roll, Attacker’s choice which), regardless of whether or
+not the Defender is Retreating. NOTE: A Defender with a Citadel
+still suffers only half Losses that Battle, even after the Citadel is
+removed (3.2.4).
+4.3 Arverni Special Abilities
+The Arverni choose from Entreat, Devastate, or Ambush
+Special Abilities.
+4.3.1 Entreat. Entreaties sponsor betrayals of allegiance
+from the enemy to the Arverni. They may accompany any type of
+Command. Select Regions that have a Hidden Arverni Warband, and
+are either within one Region of Vercingetorix or the same Region
+as his Successor.
+PROCEDURE: Pay one Resource per Region selected to replace
+either any one non-Arverni Warband or Auxilia there or—only if
+the Region is already Arverni Controlled—one Aedui, Belgic, or
+Germanic Allied Tribe there (not a Citadel, Roman Ally, or Subdued
+Tribe) with their Arverni counterparts (one Arverni Warband for
+each enemy Warband or Auxilia, one Allied Tribe per enemy Allied
+Tribe). If the specified Arverni piece is not available or could not
+stack (such as at Aedui [Bibracte] or Suebi), remove rather than
+replace the target piece (1.4.1, 1.4.2).
+4.3.2 Devastate. Devastation starves armies and hinders
+many actions. It may accompany any Commands. Select
+any Arverni-Controlled Regions that either are within
+one Region of Vercingetorix or have his Successor in it.
+PROCEDURE: In each Region, the Arverni remove one in four of
+their Warbands there, and each other Faction removes one in three
+of its total number of Warbands, Auxilia, and Legions there (round
+down; owners choose which pieces among candidates; Legions to
+Fallen). Place a Devastated marker in each selected Region that
+does not already have one. A Region may have only one Devastated
+marker.
+NOTE: Devastated markers block Recruit (3.2.1) and Rally by all
+except Vercingetorix (Arverni Leader, 3.3.1), double the Resource
+costs of many Commands (3.2.2,-.4; 3.3.1,-.2,-.4), halt Roman
+and Vercingetorix March (3.2.2, 3.3.2), block Roman Seizure of
+Resources (3.2.3), hinder Raid (3.3.3), and make it harder for
+Forces to Quarter in a Region over Winter (6.3).
+4.3.3 Ambush. Ambush improves the attacker’s prospects in battles
+about to be fought. It may only accompany Battle. Once announced,
+it may modify any Battle Regions during that Command that both
+begin with more Hidden Arverni than Hidden Defenders and occur
+either within one Region of Vercingetorix or in the same Region as
+his Successor.
+PROCEDURE: Battles modified by Ambush alter their procedure
+(3.2.4, 3.3.4, 3.4.4) thus—
+• The Defender may not Retreat (but may use any Fort or Citadel
+normally).
+• The Defender must remove a piece for each Loss suffered,
+including Leader, Legion, Citadel, or Fort without first rolling
+a 1-3. EXCEPTION: Romans Defending in the same Region as
+Caesar on a die roll of 4, 5, or 6 retain the usual ability to absorb
+Losses by rolling a die and removing only on 1-3.
+• There is no Counterattack (Attacker takes no Losses) except if
+Caesar rolled a 4-6 above.
+4.4 Aedui Special Abilities
+The Aedui choose from Trade, Suborn, or Ambush Spe-
+cial Abilities.
+4.4.1 Trade. Trade garners Aedui Resources, represent-
+ing profit from the distribution of imported Roman goods. It may
+accompany any type of Command. It occurs in Regions that are part
+of any Supply Lines to Cisalpina (3.2.1).
+PROCEDURE: Player Factions declare whether or not they agree to
+Supply Lines in Regions they Control; the Romans declare regardless
+of whether they Control any relevant Regions. (The Aedui may call
+off the Trade if unhappy with any disagreement, 1.5.2.) The Aedui
+then receive +1 Resource—or, if the Romans agreed above, +2
+Resources—for each of the following within Supply Lines:
+• Each Aedui Allied Tribe and Aedui Citadel.
+• Where Aedui Control only—each Subdued Tribe and, only if the
+Romans agreed above, each Roman Allied Tribe.
+PLAY NOTE: The Aedui can offer some of the added Resources
+to gain agreement.
+4.4.2 Suborn. Suborning buys allegiance to the Aedui or others,
+greater or less subservience to Rome, or neutrality. It may accompany
+Rally, March, or Raid and occur in any one Region with a Hidden
+Aedui Warband.
+PROCEDURE: Pay two Aedui Resources per Ally and one Aedui
+Resource per Warband or Auxilia to remove and/or place a total of
+up to three such pieces in the Suborn Region (in any combination).
+A maximum of one of the three pieces removed or placed in the
+Region may be an Allied Tribe (no Citadels). Any Faction’s pieces
+may be involved. Place Allies only at Subdued Tribes (place only
+Aedui at Aedui [Bibracte], only Arverni at Arverni [Gergovia], only
+Germanic at Suebi, 1.4.2).
+NOTES: Control is not needed to Suborn Allies. The Convicto-
+litavis Capability (5.3) would enable the Aedui to Suborn a total
+of six pieces (at most two Allies), three in each of two Regions.
+4.4.3 Ambush. Aedui Ambush works the same as Arverni Ambush
+(4.3.3) except using Aedui instead of Arverni pieces. No Leader is
+required, but the Aedui may only Ambush in a maximum of one
+Region per Battle Command.
+4.5 Belgic Special Abilities
+The Belgae choose from Enlist, Rampage, or Ambush
+Special Abilities.
+4.5.1 Enlist. Enlist invites help from Germanic kinsmen. It may
+accompany any Command and affect Regions in or adjacent to Ger-
+mania or Regions that are further from Germania but have Germanic
+pieces in them. The affected Regions also must be within one Region
+of Ambiorix or have the Belgic Successor in it.
+PROCEDURE: Choose one of two options below.
+• Either, in the affected Regions
+desired, the accompanying
+B e l g i c C o m m a n d t r e a t s
+Germanic Warbands (black) as if they were Belgic Warbands
+(yellow), including for placing new Warbands by Rally, Marching
+groups out of an affected Region into adjacent Regions (whether
+the destination is affected by Enlist or not), flipping Marching
+Warbands to Hidden, resolving Raid or Battle, or determining
+Belgic Control. Command costs and other Command restrictions
+and procedures apply normally. The Belgae may not voluntarily
+remove the Germanic Warbands, however (1.4.1). As soon as
+execution of the current Belgic Command is completed, so is
+Enlist, and all Germanic Warbands again are treated as Germanic
+(adjust Control).
+• Or, execute one free Limited Command with Germanic pieces
+(per 3.4, making choices as if a Germanic player; no March upon
+Frost, 2.3.8). The Region need not be one selected for the Belgic
+Command, but must be in the usual vicinity of the Belgic Leader
+for a Special Ability. Marching Germans must begin in but need
+not stay within the affected Regions; they may enter or leave
+Britannia. Battling Germans must be able to Ambush (3.4.4), and
+Ambush whenever they Battle.
+4.5.2 Rampage. Rampaging demonstrates Belgic ferocity, in order
+to frighten enemy Forces out of one or more Regions and sometimes
+to compel their surrender. It may accompany Rally, Raid, or Battle.
+It may occur in any Regions both with Hidden Belgic Warbands
+present and either within one Region of Ambiorix or with the Belgic
+Successor present.
+PROCEDURE: In each Rampage Region, a Region at a time—
+• Select one target Roman or Gallic Faction (not Germanic) that
+has neither a Leader, nor a Citadel, nor a Fort in the Region.
+• That target Faction must either remove or Retreat one of its
+Warbands, Auxilia, and/or Legions (no roll) per Hidden Belgic
+Warband in the Region that the Belgae flip to Revealed. Removed
+Legions go to Fallen (1.4.1).
+• Retreat per the Battle procedure (3.2.4 & 3.3.4)—into one adjacent
+Region where the targeted Faction or a Faction that agrees at that
+moment has Control (not No Control nor Germanic Control).
+4.5.3 Ambush. Belgic Ambush works like Arverni Ambush (4.3.3),
+but uses Belgic instead of Arverni pieces (including Ambiorix instead
+of Vercingetorix), and Caesar must roll a 5 or 6 for Romans to roll
+for Losses and Counterattack.

@@ -1,0 +1,444 @@
+3.0 COMMANDS
+3.1 Commands in General
+A Faction executing a Command chooses one of the four Commands
+listed on its Faction sheet and selects one or more Regions to be
+involved. Commands usually cost Resources per Region selected;
+the executing Faction must have the Resources to pay. Select a given
+Region only once for a given Command.
+The executing Faction chooses the order in which the Command’s
+Regions are selected, resolved, and paid for, and chooses own pieces
+to be affected or other Factions or pieces targeted. Some Commands
+may target only one Faction per Region, others several Factions.
+3.1.1 Pawns. Mark Regions selected for various actions such as
+Commands and Special Abilities with white and gray pawns. The
+pawns are an aid, not a limit on play.
+3.1.2 Free Actions. Certain Events (5.4) grant free Commands or
+Special Abilities: they cost no Resources and, if executed by a Fac-
+tion other than the one playing an Event, do not affect its Eligibility
+(2.3.6). Other requirements and procedures still apply unless modi-
+fied by Event text (5.1.1).
+3.2 Roman Commands
+The Romans choose from Recruit, March, Seize, or
+Battle Commands.
+3.2.1 Recruit. Recruiting places Auxilia and Roman Allied Tribes.
+Select any Regions that are not Devastated (4.3.2) and (to have
+effect) that have either Roman Control or a Roman Leader, Ally
+or Fort. Select just one such Region if this is a Limited Command
+(2.3.5). Pay two Resources per Region selected; if the Region is a
+part of (within) a Supply Line, instead pay 0.
+SUPPLY LINE: A Supply Line is a chain of adjacent Regions reach-
+ing a border with Cisalpina (1.4.2), each Region in the chain—in-
+cluding where the action is to occur—either having No Control or
+under Control (1.6) of a Faction that agrees to the Supply Line at the
+moment that the action’s Region is selected. Germans never agree
+(3.4.5). NOTE: The Ubii, Sequani, and Provincia Regions border
+Cisalpina. One of them alone under friendly or No Control would
+qualify. Supply Lines affect Roman Build (4.2.1), Aedui Trade (4.4.1),
+and Roman Quarters (6.3.3). See example below.
+PROCEDURE: Romans select Regions desired for Recruit and Sup-
+ply Lines. Factions declare whether or not they agree to have the
+Supply Line include Regions they Control. (The Romans may call
+off the Recruit if unhappy with any disagreement, 1.5.2.) Then, in
+each Recruit Region, Romans may do one of the following (adjusting
+Control, 1.6)—
+• If under Roman Control, or if Caesar is there, place one Available
+Roman Ally piece at a Subdued Tribe (not the Aedui, Arverni, or
+Suebi, 1.4.2, nor at a Dispersed Tribe, 4.2.3).
+• If the Region already has a Roman Leader, Allied Tribe, or Fort,
+place Available Auxilia (Hidden, 1.4.3) up to the number of Roman
+Allied Tribes plus one per Leader and Fort there.
+HOME REGION: If placing Auxilia in the Provincia Region, place
+one extra, if desired.
+3.2.2 Roman March. Marching moves Roman Forces and hides
+Revealed Auxilia. Romans may not March upon Frost (2.3.8). Se-
+lect any Regions as origins. Pay two Resources per origin Region,
+four if Devastated (4.3.2). Form Marching groups as desired from
+Roman pieces that begin together in an origin Region—the groups
+may include a Leader, Legions, and Auxilia but not Allied Tribes nor
+Forts. Pieces within a Region may make up multiple groups. March
+no piece more than once. If this is a Limited Command (2.3.5), select
+just one origin Region (with multiple groups, if desired).
+PROCEDURE: Origin Region by origin Region, flip all Revealed
+Auxilia to Hidden; then, as desired, move each Marching group one
+by one together into an adjacent Region and, if desired, March into
+a 2nd Region that is now adjacent to the group.
+• Caesar and any Legions or Auxilia moving with him may March
+into a 3rd such Region.
+• Any of a group’s pieces may drop off in a Region before the rest
+move on, or split off to move by accompanying Scout (4.2.2).
+• Upon moving into or out of Britannia (1.3.4) or Germania
+(crossing the Rhenus, 1.3.5), and whenever entering (as opposed
+to beginning in) a Devastated Region (4.3.2), the group must stop
+for that March (even with Caesar).
+BRITANNIA: If any group moves into or out of Britannia, no Special
+Ability may accompany this March Command (1.3.4, 4.1.3); if a
+Special Ability has already been added, no pieces may move into
+or out of Britannia on this March.
+HARASSMENT: If any part of a group both enters and then leaves a
+Region during a single March Command, any Factions with enough
+Hidden Warbands there may opt to inflict Losses on the moving
+pieces as those pieces depart (not on any dropped off pieces). An-
+nounce and inflict Losses in the Faction Order shown on the currently
+played Event card (2.3.2), then do so with Germans (3.4.5). Any
+agreement earlier that Command not to Harass applies (1.5.2). (For
+every three Hidden Warbands that the Faction has there (rounded
+down), the Romans must either remove one departing Auxilia or—if
+any Legions or Leader remain with the group—may instead roll a
+die. If the roll is a 1, 2, or 3 (only), the Romans must remove the
+Legion or Leader.
+3.2.3 Seize. Seizure extracts Resources from Subdued Tribes, and
+can disperse them to keep them in submission. Select any Regions
+that have Roman pieces. Pay no Resources.
+PROCEDURE: In each selected Region, a Region at a time—
+• Dispersal. If the Region has Roman Control, as
+the Romans desire, and as long as Dispersed
+markers remain available (there are fewer than
+four on the map), place a Dispersed Tribe marker
+(not yet Gathering, 6.6) onto one or more Subdued
+Tribe circles in the Region.
+• Rally. For each Tribe just Dispersed (receiving a Dispersed
+marker), the Arverni then the Belgae each roll a die and, on a
+1, 2, or 3, may free Rally in each Region possible (3.3.1, not in
+Devastated) adjacent to that Dispersed Tribe’s Region.
+• Forage. Then, only if the selected Region has no Devastated
+marker (4.3.2), add +2 Roman Resources for each Subdued or
+Roman Allied (not Dispersed) Tribe in the Region, and +6 Roman
+Resources for each Dispersed marker that was just placed per the
+above.
+• Harassment. Lastly, each Faction with Warbands in the selected
+Region may opt to inflict Losses on Roman pieces there. Announce
+and inflict Losses in the Faction Order shown on the currently
+played Event card (2.3.2), then do so with Germans (3.4.5). For
+every three Hidden Warbands that the Faction has there, Romans
+select and remove one Auxilia or Roman Ally or—if any Legions,
+Leader, or Fort there—may instead roll a die. If the roll is a 1, 2,
+or 3 (only), the Romans must remove a Legion, Leader, or Fort.
+NOTE: This Harassment works the same as that of Marching
+Romans (3.2.2).
+NOTE: Keep unused Dispersed markers on the Roman Forces
+display. Dispersal temporarily blocks placement of Allies (1.4.2)
+and cancels the Belgic Control Value of that Tribe for Belgic
+Victory (7.2), as the “-1” on the marker reminds.
+DESIGN NOTE: The free Rally represents the resentment of
+Roman brutality, the Harassment attacks on Roman foraging
+parties.
+3.2.4 Roman Battle. Battle destroys enemy Forces, including Sub-
+duing enemy Allied Tribes and Citadels. Select any Regions with
+both Roman and non-Roman Forces. Romans pay two Resources per
+Region, four if Devastated (4.3.2). NOTE: A Battle play aid sheet
+shows the procedure below as a flowchart.
+PROCEDURE: In each of the selected Regions at a time, execute
+Battle in the following order.
+• Step 1 Target—The Attacker selects exactly one enemy Faction
+with pieces in the Region as the Defender.
+• Step 2 Declare Retreat—Unless the Defender is Germanic or
+has only Allied Tribes (discs) and/or Citadels, it declares whether
+or not it will Retreat after the Attack. Germans never Retreat.
+Allied Tribe and/or Citadel pieces alone may not Retreat. If the
+Retreat is to be to a Region Controlled by another Faction, the
+Defender must obtain that Faction’s agreement during this Step.
+The Germans never agree. NOTE: Agreement is binding for the
+rest of the Battle in this Region.
+• Step 3 Attack—Roman Forces in the Battle cause Losses to the
+Defending Faction’s Forces as specified under “LOSSES” below.
+• Step 4 Counterattack—If the Defender declared a Retreat, skip
+this step. If not, surviving Defending Forces cause Losses to
+Roman Attackers per below.
+• Step 5 Reveal—If a Retreat, skip this step also. If not, flip all
+Hidden Warbands and Auxilia of both the Attacker and Defender
+in the Region that survived to Revealed.
+• Step 6 Retreat—If the Defender did declare a Retreat, the
+Defender selects one adjacent Region (it may be across the
+adjacency arrows in and out of Britannia). The Region must be
+under Control of the Defender or of a Faction that agreed at Step
+2 above (not No Control). The Defender must either move all its
+surviving Leader and Warbands to that Region or remove them.
+EXCEPTION: The Defender may opt to have any Retreating Leader
+and/or Hidden Warbands stay put. All Allied Tribes and Citadels
+stay in the Region.
+LOSSES: The Faction suffering Losses to its Forces, when an op-
+tion, chooses which of its own pieces to remove and whether to roll
+a die to possibly remove a piece, or to instead automatically remove
+other pieces, as follows.
+• A Faction must either remove pieces or roll dice, in a sum equal
+to ½ for each enemy Warband or Auxilia, plus one per enemy
+Leader, plus one per enemy Legion in the Battle. A Defender
+taking such Losses when Caesar is Attacking must take two per
+Legion instead of just one per Legion.
+• The above sum is cut in half for Defenders who Retreat or started
+with a Citadel in the Region (even if removed by Besiege, 4.2.3).
+• After determining Losses per above, round any fractions down.
+• While a Faction has at least one Legion, Citadel, Fort, or Leader
+in the Battle, and that piece is able per the bullets below to absorb
+a Loss, the Faction may roll a die instead of removing a piece. If
+the roll is a 1, 2, or 3 (only), the Faction must remove the Legion,
+Citadel, Fort, or Leader (Legion to Fallen, 1.4.1). If the roll is a
+4, 5, or 6, the Loss is absorbed without removing any piece. Such
+a piece that survives on a roll of 4-6 may be the target of more
+rolls to absorb further Losses, until removed on 1-3.
+• If the Faction taking Losses is a Defender who has opted to Retreat,
+the first Losses taken must be any Allied Tribes and (via die rolls)
+any Citadel. In all other cases, any Allied Tribes, Citadel, or Fort
+may only take Losses after all other pieces of that Faction in the
+Region have already been removed. (Thus, Germans remove their
+Warbands before any of their Allied Tribes, see 3.4.5.) NOTE: The
+Roman Besiege Special Ability allows easier removal of Allies and
+Citadels (4.2.3).
+• The Provincia Fort never absorbs Losses (1.4.2).
+NOTE: In general, Leaders and Legions cause one enemy Loss
+each, Warbands and Auxilia ½ each; a Loss removes an enemy
+piece, except for certain hard targets—Leaders, Legions, Forts,
+and Citadels—which instead roll and are removed only on a 1-3.
+PLAY NOTE: When taking Losses, roll no more dice at a time
+than your total Legions, Leaders, Citadels, and Forts, in case
+all rolls are 1-3.
+NOTE: No Control blocks Retreat (unlike for Supply Line,
+3.2.1)—under pressure of enemy cavalry, a retreating force needs
+cover from friendly Forces to make it to sanctuary.
+NOTE: It is possible for Defenders to Retreat into a Region, then
+immediately Battle again.
+3.3 Gallic Commands
+The Arverni, Aedui, and Belgae
+choose from Rally, March, Raid,
+or Battle.
+3.3.1 Rally. Rally places own pieces. Pay one Resource per Region
+selected. Select any Regions that are not Devastated (4.3.2) and
+(to have effect) with that Faction’s Control, Ally, Citadel, Arverni
+Leader, or “Rally” Symbol.
+EXCEPTIONS:
+• The Belgae outside Belgica (1.3.1) pay two Resources per Region,
+not one.
+• The Arverni can select a Region with Vercingetorix in it for Rally
+even if that Region is Devastated, paying two Resources.
+PROCEDURE: In each selected Region, the executing Faction may
+do one of the following—
+• If it Controls the Region (1.6), place one of its Ally pieces (not a
+Citadel) at a Subdued Tribe there (only Aedui at Aedui [Bibracte]
+and Arverni at Arverni [Gergovia], none at Suebi, 1.4.2, nor at
+Dispersed, 3.2.3).
+• If Aedui or Belgae and the Region already has at least one of that
+Faction’s Allied Tribes or Citadels, place its Warbands up to the
+number of its Allied Tribes and Citadels there.
+• If Arverni and the Region has an Arverni Allied Tribe, Citadel,
+or Leader, place Arverni Warbands up to the number of Arverni
+Ally, Citadel, and Leader pieces there plus one.
+• If the Faction has an Allied Tribe at a City, replace the Ally with
+that Faction’s Citadel.
+HOME REGION: A Faction that Rallies in a Region marked with
+its symbol and “Rally”—Arverni in the Arverni Region, Aedui in
+the Aedui Region, or Belgae in any Belgica Region—may place
+at least one of its Warbands there even if it has no Ally, Leader, or
+Citadel there.
+VERCINGETORIX: The Arverni may Rally even in a Devastated
+Region if that Region has Vercingetorix. Arverni Rally in a Region
+that has Vercingetorix may place an Ally even without Arverni
+Control. Finally, it may place either an Ally or Citadel and also
+place Warbands, in either order; placement must otherwise be per
+the above procedures.
+DESIGN NOTE: Placing Citadels represents the readying of
+existing fortified places for war by gathering arms, provisions,
+and warriors.
+PLAY NOTE: Gauls can Rally to exchange a Citadel and Ally
+between two Cities by first replacing the Citadel with an Ally
+disc (1.4.1).
+3.3.2 March. Marching moves and/or hides Gallic Forces. Gauls
+may not March upon Frost (2.3.8). Select and pay one Resource
+for each origin Region, two if Devastated (4.3.2) at the moment se-
+lected. Form groups of the executing Faction’s pieces—groups may
+include a Leader and Warbands but not Allied Tribes nor Citadels.
+Pieces within a Region may make up multiple groups. March no
+piece more than once. If this is a Limited Command (2.3.5), select
+just one origin Region.
+PROCEDURE: Origin Region by origin Region, flip all the March-
+ing Faction’s Revealed Warbands there to Hidden; or, for Scouted
+Warbands (4.2.2), instead remove the Scouted marker and leave them
+Revealed; then move each Marching group one by one together into
+an adjacent Region, if desired.
+BRITANNIA: If any group moves into or out of Britannia, no Spe-
+cial Ability may accompany this March Command (1.3.4, 4.0); if
+a Special Ability has already been added, no pieces may move into
+or out of Britannia on this March.
+VERCINGETORIX: Vercingetorix and any group of Warbands
+Marching with him may enter a 2nd adjacent Region at no added
+cost. Restrictions are the same as Roman March into a 2nd Region
+(3.2.2), including drop off, Harassment, Devastated, Rhenus, and
+Britannia. Romans may use Hidden Auxilia in the 1st Region to
+Harass (inflict Losses on) the Arverni passing through.
+3.3.3 Raid. Raids add Resources, including stealing from enemies.
+Select any Regions where the executing Faction has Hidden
+Warbands. Pay no Resources.
+PROCEDURE: In each selected Region, the executing Faction flips
+one or two of its Hidden Warbands to Revealed. For each Warband
+that flipped, it either:
+• Adds one Resource, but only if the Region is not Devastated
+(4.3.2), OR
+• Takes one Resource from a non-Germanic enemy that has pieces
+in the Region but neither Citadel nor Fort.
+3.3.4 Gallic Battle. Battle destroys enemy Forces, including Sub-
+duing enemy Allied Tribes and Citadels. Select any Regions with
+both own and other Forces. Pay one Resource per Region, two if
+Devastated (4.3.2). NOTE: Gallic Battle repeats much of the Roman
+Battle Procedure (3.2.4). See also the Battle play aid.
+PROCEDURE: In each of the selected Regions at a time, execute
+Battle in the following order.
+• Step 1 Target—Attacker selects one Faction with pieces in the
+Region as the Defender.
+• Step 2 Declare Retreat—Unless the Defender is facing an
+Ambush (3.4.4, 4.3.3, 4.4.3, 4.5.3), is Germanic, or has only
+Allied Tribe (disc), Citadel, or Fort pieces, it declares whether it
+will Retreat. Defenders may not Retreat from Ambush. Germans
+never Retreat. Allied Tribe, Citadel, and Fort pieces alone may
+not Retreat. If the Retreat (in Step 6) is to be to another Faction’s
+Control, that Faction must agree (1.5.2) during this Step. The
+Germans never agree.
+• Step 3 Attack—Attacking Forces in the Battle cause Losses to
+the Defending Faction’s Forces as specified under “LOSSES”
+below.
+• Step 4 Counterattack—If the Defender declared a Retreat, skip
+this step. If not, surviving Defenders cause Losses to Attackers
+per below. NOTE: Ambush can block Counterattack (3.4.4, 4.3.3,
+4.4.3, 4.5.3).
+• Step 5 Reveal—If a Retreat, skip this step. If not, flip all Hidden
+Warbands and Auxilia of both the Attacking and Defending
+Factions in the Region that survived to Revealed.
+• Step 6 Retreat—If the Defender did declare a Retreat, the
+Defender selects one adjacent Region that is under Control of
+the Defender or a Faction that has agreed (not No Control). The
+Defender must either move all its surviving Leader, Warbands,
+Auxilia, and Legions to that Region or remove them. Allied Tribes,
+Citadels, and Forts stay in the Region. NOTE: Unlike in a Roman
+Attack, no Retreating Leaders nor Warbands may stay.
+LOSSES: The Faction suffering Losses to its Forces, when an option,
+chooses which of its own pieces to remove and whether to roll a
+die to possibly remove a piece, or to instead automatically remove
+other pieces, as follows.
+• A Faction must either remove pieces or roll dice, in a sum equal to
+½ for each enemy Warband or Auxilia, plus one per enemy Leader,
+plus one per enemy Legion in the Battle. A Defender taking such
+Losses when Ambiorix (yellow, Belgic Leader) is Attacking must
+take one for each Belgic Warband, not just ½.
+• The above sum is cut in half for Defenders who are either
+Retreating or have a Citadel or Fort. NOTE: Roman Forts in Battle
+work the same as Gallic Citadels.
+• After totaling Losses, round fractions down.
+• While a Faction has at least one Legion, Citadel, Fort, or Leader
+in the Battle, and that piece is able per the bullets below to absorb
+a Loss, the Faction may roll a die instead of removing a piece. If
+the roll is a 1, 2, or 3 (only), the Faction must remove the Legion,
+Citadel, Fort, or Leader (Legion to Fallen, 1.4.1). If the roll is a
+4, 5, or 6, the Loss is absorbed without removing any piece. Such
+a piece that survives on a roll of 4-6 may be the target of more
+rolls to absorb further Losses, until removed on 1-3. (See Ambush,
+3.4.4, 4.3.3.)
+• If the Faction taking Losses is a Defender who has opted to Retreat,
+the first Losses taken must be any Allied Tribes and (via die rolls)
+any Citadel or Fort. In all other cases, any Allied Tribes, Citadel, or
+Fort may only take Losses after all other pieces of that Faction in
+the Region have already been removed. (Germans always remove
+their Warbands before any of their Allied Tribes, see 3.4.5.)
+• Provincia Fort never absorbs Losses (1.4.2).
+3.4 Germanic Commands
+The Germanic Tribes Faction during the Germans Phase
+(6.2) or when guided by another Faction via Enlist (4.5.1)
+or Event (5.0) uses Commands similar to those of the
+Gauls (3.3), but costing 0 and differing as follows.
+3.4.1 Germanic Rally. Place a Germanic Ally only if the Region
+already has Germanic Control (1.6, and never at Aedui [Bibracte]
+or Arverni [Gergovia], 1.4.2). Then place Germanic Warbands up
+to the number of Germanic Allied Tribes—even if an Ally was just
+placed in that Region on the same Rally.
+HOME REGION: In Germania Regions, Germanic Rally places at
+least one Warband even if no Germanic Ally is present.
+NOTE: Similar to Gauls, Germans may not Rally in Devastated
+Regions (3.3.1, 4.3.2).
+3.4.2 Germanic March. Germanic Warbands within a March ori-
+gin Region may form at most a single moving Group to enter one
+adjacent Region (any Warbands may stay behind). All Warbands in
+Regions selected for March flip to Hidden (or remove their Scouted
+marker, 4.2.2), whether or not they move.
+3.4.3 Germanic Raid. The target of Germanic Raid is always a
+Faction. The target reduces its Resources, but the Germans do not
+receive them, as Germanic Resources are not tracked (1.8).
+3.4.4 Germanic Battle and Ambush. Germans only initiate Battle
+when they can Ambush—the Germans’ only Special Ability (4.1,
+4.3.3, 6.2.4)—and always Ambush when they Battle. Therefore,
+they only opt for Battle where they have more Hidden pieces than
+an enemy. NOTE: Germanic Battle repeats Gallic Battle Procedure
+(3.3.4), minus Steps 2 and 6.
+PROCEDURE: Execute Germanic Battle in each applicable Region
+as follows.
+• Step 1 Target—Germans select one non-German Faction with
+pieces in the Region (usually randomly, 6.2.4) as the Defender.
+NOTE: Skip Step 2; there will be no Retreat.
+• Step 3 Attack—The Defending Faction takes Losses as specified
+below. (If the Romans are Defending with Caesar, they roll to
+determine how they may absorb Losses.)
+• Step 4 Counterattack—If and only if Caesar rolled a 4-6 in Step
+3, Germans take Losses.
+• Step 5 Reveal—Reveal surviving German and Defending Hidden
+Warbands and Auxilia.
+NOTE: Skip Step 6; there is no Retreat.
+LOSSES: The Defender, when an option, chooses which of its own
+pieces to remove. Unlike normal Battle and as in other Ambush
+(4.3.3), the Defender must remove a piece for each Loss suffered,
+including Leader, Legion, Citadel, or Fort without first rolling a 1-3.
+• The Defender must remove pieces in a sum equal to ½ per
+Germanic Warband there, or half that sum if Defenders have a
+Citadel or Fort (then round down).
+• The Defender must remove a piece for each Loss suffered,
+including Leader, Legion, Citadel, or Fort without first rolling
+a 1-3. EXCEPTION: Romans Defending in the same Region as
+Caesar on a die roll of 4, 5, or 6 may absorb Losses by rolling a
+die and removing Legion, Caesar, or Fort only on 1-3.
+• Any Defending Allied Tribes, Citadel, or Fort may only take
+Losses after all other Defending pieces there have been removed.
+• Germans Counterattacked by Caesar (on a 4-6) remove Warbands
+then Allies (3.4.5) equal to ½ per Auxilia (round down), plus one
+for Caesar, plus one per Legion in the Battle.
+3.4.5 Germanic Losses, Harassment, and Agreement. Germans
+suffering Losses in Battle (3.2.4, 3.3.4) remove their Scouted, then
+their other Revealed, then Hidden Warbands; finally they remove
+their Allies, from Cities last (if any), otherwise chosen at random.
+Germans always Harass (3.2.2, 3.2.3, 3.3.2) and never agree to
+Supply Lines or Retreat in Regions with German Control (3.2.1,
+3.2.4, 3.3.4).
+4.0 SPECIAL ABILITIES
+4.1 Special Abilities in General
+When a Faction per the Event card sequence of play (2.3) executes
+a Command in at least one Region (3.0), it may also execute one
+type of its Special Abilities (EXCEPTION: Limited Commands,
+2.3.5). The Germanic Tribes have only one Special Ability—Am-
+bush—which they use each time they initiate Battle (3.4.4, 6.2.4).
+Some Special Abilities (Build, Entreat, Suborn) cost Resources.
+Events may grant free Special Abilities (they neither cost Resources
+nor further affect Eligibility, 3.1.2, 5.4). As with Commands, the
+executing Faction selects Regions, Tribes, Factions, or pieces af-
+fected and in what order. Select a given Region only once for a
+given Special Ability.
+• A Faction may execute its Special Ability at any one time
+immediately before, during, or immediately after its Command.
+EXAMPLE: The Aedui run out of Resources while Rallying,
+Trade to gain Resources (4.4.1), then continue Rally in additional
+Regions.
+• Certain Special Abilities—Besiege (4.2.3) and Ambush (4.3.3,
+etc.)—modify the procedures of accompanying Battle Commands
+rather than interrupting them with separate actions.
+NOTE: If the 1st Eligible Faction uses a Special Ability, the
+2nd Eligible will have the option to execute the Event, and vice
+versa (2.3.4).
+4.1.1. Accompanying Commands. Some Special Abilities specify
+that they may only be added to certain Commands (3.0), some only
+whether the Special Ability and Command may or must select the
+same Regions.
+4.1.2 Leaders and Special Abilities. As noted in each case below,
+most Roman, Arverni, and Belgae Special Abilities may select only
+Regions within one Region of the Faction’s named Leader (same
+Region or adjacent), or the same Region that has its Successor Leader
+(1.4, 1.4.3, 6.6). Roman Scout and Besiege are less restrictive in the
+requirement for a Leader (4.2.2, 4.2.3). Aedui have no Leader; their
+Special Abilities are limited to a maximum number of Regions (4.5).
+Germanic Ambush requires only enough Hidden Warbands (3.4.4).
+NOTE: “Within 1 Region of” means in the same and/or adjacent
+Regions (1.3.1).
+4.1.3 Britannia. No Special Ability may accompany March into or
+out of Britannia (1.3.4, 3.2.2, 3.3.2)

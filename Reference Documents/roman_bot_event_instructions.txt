@@ -1,0 +1,43 @@
+# roman_bot_event_instructions.txt
+# Non-Player Romans — Event Instructions
+# Base game (2nd Edition)
+
+# Event Instructions (8.1.1, 8.2.1, 8.8.2)
+# Gray swords around the card's Roman symbol means that the Event is
+# "No Romans", gray laurels that it has specific Instructions listed below.
+
+general:
+  Ineffective: "(8.1.1) If nothing would happen, continue on the flowchart with a Command & Special Ability."
+  Capabilities: "(8.1.1) If the next Winter will be the last of the game, continue on the flowchart."
+  No Romans: |
+    (8.1.1) Chieftains' Council, Consuetudine, Convictolitavis, Druids,
+    Gallic Shouts, Joined Ranks, Oppida, Optimates, River Commerce,
+    Segni & Condrusi, Suebi Mobilize, Surus: Continue on flowchart instead.
+
+per_card:
+  "Aquitani, Assembly of Gaul, Celtic Rites, Sappers":
+    instruction: "Target Arverni and then Belgae, not Aedui."
+
+  "German Allegiances, Germanic Chieftains, Migration":
+    instruction: "March from Romans to no Romans; Ambush per Roman Battle (8.8.1); avoid placing any Germanic Allies; if not possible, treat as 'No Romans'."
+
+  "Cicero":
+    instruction: "Shift down (toward Adulation, or flip to Firm if already in Adulation and not yet Firm)."
+
+  "Drought":
+    instruction: "Place marker to remove player Arverni and/or Belgae (not Non-player) and no Romans."
+
+  "Forced Marches, War Fleet":
+    instruction: "Move Forces using Roman March priorities (8.8.3), then use the full Roman flowchart for any follow-on actions (8.2.3)."
+
+  "Impetuosity":
+    instruction: "Unless Roman March priorities (8.2.3, 8.8.3) would result in a Battle, treat as 'No Romans'."
+
+  "Legiones XIIII et XV":
+    instruction: "Place the 2 Legions; if fewer would be placed, treat as 'No Romans'."
+
+  "Lucterius, Numidians, The Province":
+    instruction: "Place the full number of Auxilia; if not able, treat as 'No Romans'."
+
+  "Shifting Loyalties":
+    instruction: "Select a shaded Capability affecting player Arverni or Belgae, then Romans."

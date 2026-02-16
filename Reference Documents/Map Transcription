@@ -1,0 +1,97 @@
+# Falling Sky — Map Data 
+# 
+# Format: Region header, then indented tribe lines
+# [CITY_NAME] = tribe has a city (gray diamond, caps on map)
+# (rhenus) = adjacency crosses the Rhenus river (March halts, 1.3.5)
+# (coastal) = adjacency is Britannia's sea connection (March/Scout restricted, 1.3.4)
+# aedui-only / arverni-only / germanic-only = stacking restriction on that tribe circle
+
+# 30 tribes total in base game (1.3.2)
+# In Ariovistus: -Catuvellauni +Nori = still 30 (A1.3.2)
+
+
+### BELGICA (3 regions, 7 tribes)
+
+Morini | Belgica | CV 2 | adj: Nervii, Atrebates, Sugambri(rhenus), Catuvellauni(coastal)
+  Menapii
+  Morini
+
+Nervii | Belgica | CV 2 | adj: Morini, Atrebates, Treveri, Sugambri(rhenus)
+  Eburones
+  Nervii
+
+Atrebates | Belgica | CV 3 | adj: Morini, Nervii, Treveri, Carnutes, Mandubii, Catuvellauni(coastal), Veneti
+  Bellovaci
+  Atrebates
+  Remi
+
+
+### GERMANIA (2 regions, 4 tribes)
+# Design note 7.2: CV = tribe count excluding Suebi
+
+Sugambri | Germania | CV 1 | adj: Ubii, Morini(rhenus), Nervii(rhenus), Treveri(rhenus)
+  Suebi (North) germanic-only
+  Sugambri
+
+Ubii | Germania | CV 1 | adj: Sugambri, Treveri(rhenus), Sequani(rhenus), Cisalpina 
+  Suebi (South) germanic-only
+  Ubii
+
+
+### CELTICA (9 regions, 17 tribes)
+
+Treveri | Celtica | CV 1 | adj: Nervii, Atrebates, Mandubii, Sequani, Sugambri(rhenus), Ubii(rhenus) 
+  Treveri  
+
+Carnutes | Celtica | CV 2 | adj: Atrebates, Mandubii, Pictones, Bituriges, Veneti
+  Carnutes [CENABUM]
+  Aulerci
+
+Mandubii | Celtica | CV 3 | adj: Atrebates, Treveri, Carnutes, Aedui, Sequani, Bituriges
+  Mandubii [ALESIA]
+  Senones 
+  Lingones
+
+Veneti | Celtica | CV 2 | adj: Pictones, Catuvellauni(coastal), Carnutes
+  Veneti
+  Namnetes
+
+Pictones | Celtica | CV 2 | adj: Veneti, Carnutes, Bituriges, Arverni
+  Pictones
+  Santones
+
+Bituriges | Celtica | CV 1 | adj: Carnutes, Pictones, Aedui, Arverni, Mandubii
+  Bituriges [AVARICUM]
+
+Aedui | Celtica | CV 1 | adj: Mandubii, Bituriges, Sequani, Arverni, Helvii
+  Aedui [BIBRACTE] aedui-only
+
+Sequani | Celtica | CV 2 | adj: Treveri, Mandubii, Aedui, Arverni, Ubii(rhenus), Helvii, Cisalpina
+  Sequani [VESONTIO]
+  Helvetii
+
+Arverni | Celtica | CV 3 | adj: Pictones, Bituriges, Aedui, Sequani, Helvii
+  Arverni [GERGOVIA] arverni-only
+  Cadurci
+  Volcae
+
+
+### BRITANNIA (1 region, 1 tribe)
+
+Catuvellauni | Britannia | CV 1 | coastal-adj: Morini, Atrebates, Veneti
+  Catuvellauni
+  NOTE: in Ariovistus — not playable, Catuvellauni removed (A1.3.4)
+
+
+### PROVINCIA (1 region, 1 tribe)
+
+Helvii | Provincia | CV 1 | adj: Arverni, Sequani, Cisalpina, Aedui 
+  Helvii 
+  NOTE: permanent fort, supply line terminus, Roman home region
+
+
+### CISALPINA (1 region, 0 tribes base / 1 tribe Ariovistus)
+
+Cisalpina | Cisalpina | CV 0 | adj: Provincia, Sequani, Ubii
+  NOTE: not playable unless Gallia Togata event (card 5) makes it a region
+  NOTE: in Ariovistus — always playable, add Nori tribe (CV becomes 1), alps crossing rules (A3.2.2)

@@ -1,0 +1,43 @@
+# aedui_bot_event_instructions.txt
+# Non-Player Aedui — Event Instructions
+# Base game (2nd Edition)
+
+# Event Instructions (8.1.1, 8.2.1, 8.6.1)
+# Gray swords around the card's Aedui symbol means that the Event is
+# "No Aedui", gray laurels that it has specific Instructions listed below.
+
+general:
+  Ineffective: "(8.1.1) If nothing would happen, continue on the flowchart with a Command & Special Ability."
+  Capabilities: "(8.1.1) If the next Winter will be the last of the game, continue on the flowchart."
+  No Aedui: |
+    (8.1.1) Aduatuca, Chieftains' Council, Cicero, Consuetudine,
+    Forced Marches, Germanic Chieftains, Impetuosity, Joined Ranks,
+    Optimates, Sacking, Segni & Condrusi, Suebi Mobilize:
+    Continue on the flowchart instead.
+  No Aedui if Roman player or Roman victory exceeds 12: |
+    Alaudae, Ambacti, Balearic Slingers, Circumvallation,
+    Clodius Pulcher, Commius, Cotuatus & Conconnetodumnus,
+    Flight of Ambiorix, Gallia Togata, Legio X, Legiones XIIII et XV,
+    Marcus Antonius, Numidians, Pompey, The Province,
+    Titus Labienus — If the Romans are a player, or if Non-player
+    Roman victory (Subdued+Allies+Dispersed) exceeds 12, treat as
+    "No Aedui" instead.
+
+per_card:
+  "Aquitani, Baggage Trains, Ballistae, Camulogenus, Celtic Rites, Gallic Shouts, German Allegiances, Germanic Horse, Remi Influence, Winter Campaign":
+    instruction: "Use shaded text; if 'Remi Influence' and Remi are not an Aedui Ally, treat as 'No Aedui' instead."
+
+  "Assembly of Gaul, Catuvolcus, Drought, Lucterius, Morasses, Roman Wine, Sappers":
+    instruction: "Select Factions, Regions, and pieces to target player Arverni and/or Belgae only (not Non-player)."
+
+  "Dumnorix Loyalists":
+    instruction: "Move no pieces on the Scout; Scout Hidden Arverni, then Belgae, then Germans."
+
+  "Migration":
+    instruction: "Use shaded text; move 2 random Warbands."
+
+  "Shifting Loyalties":
+    instruction: "Select a shaded Capability affecting a player Gaul, then with Aedui symbol 1st on the card."
+
+  "War Fleet":
+    instruction: "Move single largest group possible to a random Region; Rally if places pieces, otherwise Raid."

@@ -1,0 +1,290 @@
+# aedui_bot_flowchart.txt
+# Non-Player Aedui — 2nd Edition
+# Transcribed from flowchart sheet, enhanced with Chapter 8 detail where
+# the prose is more specific than the printed flowchart.
+# Chapter 8 additions are marked with [Ch8] comments.
+
+nodes:
+
+  A1:
+    type: decision
+    ref: "8.6.1"
+    text: "Aedui 1st on upcoming but not current card, and roll 1-4?"
+    # [Ch8] 8.6.1: "Check the Faction order on the currently played and next
+    # showing cards. If the Aedui symbol is 1st on the next upcoming card but
+    # not on the currently played card (regardless of Faction Eligibility
+    # cylinders), roll a die: on a roll of 1-4, the Aedui Pass (2.3.3)."
+    edges:
+      Yes: PASS
+      No:  A2
+
+  A2:
+    type: decision
+    text: "Aedui by Sequence of Play may use Event?"
+    # [Ch8] 8.6.1: "check if the Aedui have the option to play the Event
+    # (because they are 1st Eligible, or the 1st Eligible Faction used a
+    # Special Ability, 2.3.4); if not, they proceed to 8.6.2."
+    edges:
+      Yes: A3
+      No:  A4            # (8.6.2)
+
+  A3:
+    type: decision
+    text: "Event Ineffective, or Capability in final year, or 'No Aedui'?"
+    # [Ch8] 8.6.1: Also check Non-player Aedui Event Instructions (8.2.1) —
+    # they may render the Event Ineffective or "No Aedui"; if so, proceed
+    # to 8.6.2 Battle.
+    edges:
+      No:  A_EVENT       # execute the event
+      Yes: A4            # (8.6.2)
+
+  A4:
+    type: decision
+    ref: "8.6.2"
+    text: "Battle would force Loss on enemy Leader, Ally, Citadel, or Legion?"
+    # [Ch8] 8.6.2: "If Aedui Battle in any Region would be sure to inflict a
+    # Loss on an enemy Leader, Ally, Citadel, or Legion (accounting for which
+    # enemy the Aedui would Battle, any Aedui Ambush, a possible enemy Retreat,
+    # Aedui Resources, and so on), the Aedui Battle."
+    edges:
+      Yes: A_BATTLE
+      No:  A5
+
+  A5:
+    type: decision
+    ref: "8.6.3"
+    text: "0-4 Aedui Warbands on map, or Rally would place Citadel, Ally, or 3+ pieces?"
+    edges:
+      Yes: A_RALLY
+      No:  A6
+
+  A6:
+    type: decision
+    ref: "8.6.4"
+    text: "Aedui have 0-3 Resources and roll 1-4?"
+    edges:
+      Yes: A_RAID
+      No:  A_MARCH        # (8.6.5)
+
+  A_EVENT:
+    type: process
+    title: "Execute Event"
+    text: |
+      1. See Instructions (8.2.1) if gray laurels on card's Aedui symbol.
+      2. Use Unshaded text.
+
+  A_BATTLE:
+    type: process
+    title: "Battle"
+    ref: "8.6.2"
+    text: |
+      Battle versus Gauls, Germans, and — if Aedui are at victory (7.2) — Romans:
+      1. Ambush in first Battle below where box at right applies.
+      2. Attack to inflict Losses on enemy Leaders, Allies, Citadels, OR Legions.
+      3. Attack where enemy will take Losses AND at least as many Losses as Aedui.
+    # [Ch8] 8.6.2: "Battle against other Gauls or Germans; Battle against Romans
+    # only if the Aedui are at that moment exceeding their victory threshold
+    # (the Aedui have more Allies plus Citadels than any other Faction, 7.2)."
+    # [Ch8] 8.6.2: Step 3 — "Battle in additional Regions where the Aedui are
+    # sure to inflict at least one Loss and at least as many Losses on the enemy
+    # as they will take (again accounting for Ambush and so on)."
+    # [Ch8] 8.6.2: "For all Battle Regions, pay Resources as soon as selected."
+    edges:
+      with: A_AMBUSH
+
+  A_RALLY:
+    type: process
+    title: "Rally"
+    ref: "8.6.3"
+    text: |
+      Rally wherever able to place a piece:
+      1. Replace City Allies with Citadels.
+      2. Place all Allies able.
+      3. Place all Warbands able.
+    edges:
+      then:    A_TRADE
+      If none: A_RAID      # Raid per 8.6.4
+
+  A_RAID:
+    type: process
+    title: "Raid"
+    ref: "8.6.4"
+    text: |
+      Raid if would gain 2+ Resources total:
+      1. Versus players at 0+ victory margin.
+      2. Versus other non-Roman enemies.
+      3. In non-Devastated Regions, versus no Faction (only).
+    # [Ch8] 8.6.4: "do not take Resources from Romans unless player at 0+
+    # victory."
+    edges:
+      then:    A_TRADE
+      If none: PASS
+
+  A_MARCH:
+    type: process
+    title: "March"
+    ref: "8.6.5"
+    text: |
+      March Leave 1 Aedui Warband per Region. Lose no Aedui Control.
+      1. Move from 1 Region to add 1 Hidden Aedui to up to 3 Regions where none:
+        a. To enemy Allies or Citadels.
+        b. To those of enemies with the most Allies + Citadels.
+      2. Move to add Aedui Control to 1 Region (beyond or among the above):
+        a. With fewest Warbands needed.
+    # [Ch8] 8.6.5: "Move Warbands to achieve the following only as possible
+    # without removing last Aedui Warband or Aedui Control from any Region."
+    # [Ch8] 8.6.5: Step 1 — "move out of just one Region to add one Hidden
+    # Aedui to each of up to three adjacent Regions that has no Hidden Aedui
+    # Warband at the moment." The destinations must be adjacent to origin.
+    # [Ch8] 8.6.5: Step 1 priorities — "Select as the first destinations, Regions
+    # with Allies or Citadels of the enemy Factions that currently have the most
+    # Allies or Citadels total."
+    # [Ch8] 8.6.5: Step 2 — "possibly in addition to Control just added, or to
+    # add Control to a destination above."
+    edges:
+      then:            A_SUBORN
+      If none (or Frost): A_RAID
+    # [Ch8] 8.6.5: "TRADE OR SUBORN: After Marching, the Aedui Trade or
+    # Suborn per 8.6.3 above (unless the March moved into or out of Britannia,
+    # 4.1.3)." The flowchart routes March directly to Suborn; Ch8 allows Trade
+    # as well. In practice the Trade conditions (8.6.3) handle this: Trade's
+    # Britannia exclusion prevents SA if Marched into/out of Britannia.
+
+  PASS:
+    type: terminator
+    text: "Pass"
+
+
+# ────────────────────────────────────────────
+# Special Abilities (8.6.2, 8.6.3)
+# ────────────────────────────────────────────
+
+  A_AMBUSH:
+    type: process
+    title: "Ambush"
+    text: |
+      1. In the first Battle for which Retreat out could lessen removals
+         and/or any Counterattack Loss to Aedui is possible.
+    # [Ch8] 8.6.2: "Ambush in the first of those Battles in which the enemy's
+    # Retreat out of that Region could lower how many pieces it would remove,
+    # and/or a Counterattack could inflict at least one Loss on the Aedui (3.3.4)."
+    edges:
+      If no Ambush: A_TRADE    # "Trade after Battle"
+      If none:      end_SA     # Ambush occurred, no further SA
+
+  A_TRADE:
+    type: process
+    title: "Trade"
+    text: |
+      Trade only if:
+      - Aedui Battled OR Aedui Resources 0-9 OR Aedui + Roman Resources < 15
+      - AND Aedui are 2nd Eligible OR Trade would add 3+ Resources
+      1. Trade for all Resources possible — players must now agree or not
+         (Non-player Romans agree).
+    # [Ch8] 8.6.3: "if either the Aedui just Battled (8.6.2), or Aedui Resources
+    # are at that moment below 10, or if Aedui plus Roman Resources together
+    # add up to less than 15, the Aedui might Trade. They Trade only if either
+    # the Aedui are currently acting as the 2nd Eligible Faction (2.3.4) or if
+    # Trading would earn the Aedui more than two Resources, accounting for which
+    # other Factions agree to a Supply Line (4.4.1)."
+    edges:
+      If no Trade and no Battle: A_SUBORN
+      If no Trade but Aedui Battled, OR if Marched into/out of Britannia: end_SA_none
+        # no Special Ability
+
+  A_SUBORN:
+    type: process
+    title: "Suborn"
+    text: |
+      Suborn in 1 Region, or in each of 2 Regions if unshaded "Convictolitavis":
+      1. Place Aedui Ally.
+      2. If none placed, remove enemy Ally:
+        a. Enemy with most Allies+Citadels.
+        b. Non-player Romans last.
+      3. Place all Aedui Warbands able.
+      4. Remove most enemy Warbands able:
+        (1) Arverni  (2) Belgae  (3) Germans
+      5. Remove Auxilia.
+    # [Ch8] 8.6.3: "remove an enemy's Ally—first, from the Faction that
+    # currently has the most Allies plus Citadels total (and therefore is most
+    # hindering Aedui victory); within that priority, remove a Non-player Roman's
+    # Allies only when no other enemy Ally can be removed."
+    # [Ch8] 8.6.3: "Once no more Allies can be affected, continue by placing all
+    # Aedui Warbands able; then by removing most Arverni, then Belgae, then
+    # Germanic Warbands able; finally, by removing Auxilia."
+    edges:
+      If none: end_SA_none     # no Special Ability
+
+
+# ────────────────────────────────────────────
+# Winter (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  A_QUARTERS:
+    type: process
+    title: "Quarters"
+    ref: "6.3.2, 8.6.7"
+    text: |
+      - Move only to depart Devastated where no Aedui Ally/Citadel.
+    # [Ch8] 8.6.7: "Non-player Aedui move only to leave Devastated Regions
+    # where they have no Ally or Citadel, if they can."
+
+
+# ────────────────────────────────────────────
+# Agreements (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  A_AGREEMENTS:
+    type: info
+    title: "Agreements"
+    ref: "8.4.2, 8.6.6"
+    text: |
+      Harass Vercingetorix BUT NOT Romans.
+      Transfer 10 Resources to Romans when Romans at 0-1 Resources AND
+        Aedui at 21+ Resources.
+      Agree to Retreat, Supply Line, Quarters:
+      - To Arverni, Belgae: Never.
+      - To a Roman player:
+        * If Roman victory <10: Yes.
+        * If Roman victory 10-12: only on a die roll of 1-4.
+          (if 5-6 on Supply Line, Roman player may re-choose action)
+        * If Roman victory >12: No.
+      - To Non-player Roman: Always.
+    # [Ch8] 8.6.6: "Non-player Aedui do not voluntarily transfer Resources
+    # (1.5.2) to Arverni or Belgae." "will transfer 10 Resources to the Romans
+    # at each instant that Roman Resources drop below two while the Aedui have
+    # more than 20 Resources."
+    # [Ch8] 8.6.6: "will allow Roman Retreat or Quarters into Aedui Control,
+    # and will agree to a Supply Line (3.2.1) in Aedui-Controlled Regions during
+    # Roman actions" per the victory score tiers.
+    # [Ch8] 8.6.6: "If Non-player Aedui failed to agree to a Roman Supply Line
+    # because the above roll was a 5 or 6, the Roman player may rechoose the
+    # current action (Recruit, 3.2.1; Build, 4.2.1; or Quarters relocation,
+    # 6.3.3), if desired."
+    # [Ch8] 8.6.6: "They never Harass Roman March or Seize; they Retreat the
+    # same as other Non-players (see 8.4.2-.3)."
+
+
+# ────────────────────────────────────────────
+# Diviciacus (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  A_DIVICIACUS:
+    type: info
+    title: "Diviciacus"
+    ref: "8.6.8"
+    text: |
+      If unshaded in effect:
+      - During Roman Commands or defense, agree only while Roman victory
+        is <13 (7.2), BUT NOT if they are Scouting or Battling Aedui.
+      - During Aedui Commands, use Auxilia as able while Romans agree.
+      - Place Auxilia only if Non-player Roman AND once no Aedui
+        Warbands Available.
+    # [Ch8] 8.6.8: "agree to have Aedui Warbands act as Auxilia during Roman
+    # Command or defense only while the Roman victory score
+    # (Subdued+Dispersed+Allies, 7.2) is 12 or less and never where Romans are
+    # Battling or Scouting against Aedui."
+    # [Ch8] 8.6.8: "During their own Commands, Non-player Aedui use Auxilia as
+    # Aedui Warbands to the maximum degree that Romans agree (including removing
+    # Auxilia instead of Warbands), except that they place Auxilia by Rally only
+    # if the Roman is a Non-player and no Aedui Warbands are Available."

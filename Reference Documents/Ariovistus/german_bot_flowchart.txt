@@ -1,0 +1,357 @@
+# german_bot_flowchart.txt
+# Non-Player Germans — Ariovistus expansion only
+# Transcribed from flowchart sheet, enhanced with Chapter A8 detail where
+# the prose is more specific than the printed flowchart.
+# Chapter A8 additions are marked with [ChA8] comments.
+# NOTE: This faction exists only in Ariovistus scenarios (replaces Arverni).
+
+nodes:
+
+  G1:
+    type: decision
+    ref: "A8.7.1"
+    text: "Ariovistus or 6+ German Warbands where enemy has Ally, Citadel, Legion, or 4+ pieces?"
+    # [ChA8] A8.7.1: "If the Germans have Ariovistus or a group of at least
+    # six Germanic Warbands in any Region where any enemy has an Ally, a
+    # Citadel, a Legion, or separately at least four pieces."
+    # NOTE: Unlike Belgae, Germans consider ALL enemies, not just non-Germans.
+    edges:
+      Yes: G_BATTLE
+      No:  G1b
+
+  G1b:
+    type: decision
+    text: "Enemy at 0+ victory and Ariovistus with 12+ German Warbands?"
+    # [ChA8] A8.7.1: "if the condition did not apply but an enemy Faction
+    # currently has a victory margin of 0 or better (7.3) and Ariovistus has
+    # at least 12 Germanic Warbands in his Region."
+    edges:
+      Yes: G_MARCH_THREAT
+      No:  G2
+
+  G2:
+    type: decision
+    ref: "A8.7.2"
+    text: "Germans 1st on upcoming but not current card, and roll 1-4?"
+    # [ChA8] A8.7.2: "If the Germanic Tribes symbol is first of the four
+    # symbols on the next upcoming card but not on the currently played card
+    # (regardless of Faction Eligibility cylinders), roll a die: on a roll of
+    # 1-4, they Pass. NOTE: Thus, they do not Pass if 1st on both cards or
+    # if WINTER is showing."
+    edges:
+      Yes: PASS
+      No:  G3
+
+  G3:
+    type: decision
+    text: "Germans by Sequence of Play may use Event?"
+    edges:
+      Yes: G3b
+      No:  G4
+
+  G3b:
+    type: decision
+    text: "Event Ineffective, or Capability in final year, or 'No Germans'?"
+    # [ChA8] A8.7.2: Also check Non-player Germans Event Instructions
+    # (A8.2.1) — they may render the Event Ineffective or "No Germans";
+    # if so, proceed to A8.7.3.
+    edges:
+      No:  G_EVENT
+      Yes: G4
+
+  G4:
+    type: decision
+    ref: "A8.7.3"
+    text: "Germans have 0-3 Resources and roll 1-4?"
+    edges:
+      Yes: G_RAID
+      No:  G5
+
+  G5:
+    type: decision
+    ref: "A8.7.4"
+    text: "Rally (with Settle) would add German Ally, Settlement, 4+ German Warbands, or German Control?"
+    # [ChA8] A8.7.4: "they Rally and Settle if doing either would place a
+    # Germanic Ally, a Settlement, or at least four Germanic Warbands total,
+    # or if it would add to Germanic Control."
+    edges:
+      Yes: G_RALLY
+      No:  G_MARCH_EXPAND   # (A8.7.5)
+
+  G_EVENT:
+    type: process
+    title: "Execute Event"
+    text: |
+      1. See Instructions (A8.2.1) if gray laurels or carnyx on card's
+         Germans or Arverni symbol.
+      2. Use Shaded text, if any.
+    # [ChA8] A8.7.2: Germans check both the Germans symbol and the Arverni
+    # symbol for swords/laurels/carnyx. "Gray swords at the card's Germans or
+    # Arverni symbol means that the Event is 'No Germans', laurels or carnyx
+    # that it has specific instructions."
+
+  G_BATTLE:
+    type: process
+    title: "Battle"
+    ref: "A8.7.1"
+    text: |
+      Battle only where German Losses less than enemy's AND no Loss on
+      Ariovistus*:
+      1. If Ariovistus meets condition at left BUT will not Battle, March instead.
+      2. Check boxes at right for Ambush OR Intimidate before Battle.
+      3. Fight enemies meeting condition at left:
+        a. Ariovistus versus enemy with fewer mobile forces than Germans.
+      4. Fight other enemies.
+      * Presuming all Defender Loss rolls result in removals (best for Germanic Attack).
+    # [ChA8] A8.7.1: "only in Regions where they will inflict more Losses on
+    # the enemy than they will suffer, and no Loss on Ariovistus."
+    # [ChA8] A8.7.1: Step 3a — "first Ariovistus fights against such an enemy
+    # that has fewer mobile pieces (Leader, Legions, Auxilia, Warbands) than
+    # the Germans do."
+    # [ChA8] A8.7.1: Step 4 — "Finally, the Germans Battle other enemies where
+    # they can... They select applicable Battle Regions until they run out of
+    # candidate Regions or of Resources."
+    edges:
+      with:    G_AMBUSH
+      If none: G_MARCH_THREAT
+
+  G_MARCH_THREAT:
+    type: process
+    title: "March (from threat)"
+    ref: "A8.7.1"
+    text: |
+      March with all Warbands and Leader. Split no origin's moving forces.
+      1. From Regions that meet upper-left condition AND Leader's Region:
+        a. Germanic Leader's Region.
+      2. To at least 1 Region, up to number of origin Regions, NOT any origins:
+        a. If Romans at victory, to most Dispersed Tribes.
+        b. If any Gauls at victory, to most Allies of those Gauls.
+        c. Add most Germanic Control able.
+    # [ChA8] A8.7.1: "March all mobile Germanic Forces out of each Region that
+    # either meets the 'Battle or March under Threat' condition above or has
+    # the Germanic Leader. Keep Marching groups from each origin together.
+    # March first with the Germanic Leader (and the Germanic Warbands with
+    # him) then with other groups."
+    # [ChA8] A8.7.1: "They do not enter any of the above Regions that other
+    # Germans are departing."
+    # [ChA8] A8.7.1: "if the Romans are at victory (have a margin of 1 or
+    # better, 7.3), the Germans first March to Regions that have the most
+    # Dispersed Tribes that they can reach. Within that objective (if it
+    # applies), if either Aedui or Belgae (or both) are at victory, the Germans
+    # first March to Regions with most Allied Tribes of those Gallic Factions
+    # at victory. Within any of those objectives that apply, they first choose
+    # destination Regions that have no Germanic Control so as to add the most
+    # Germanic Control possible."
+    edges:
+      then: G_INTIMIDATE_OR_SETTLE
+
+  G_RAID:
+    type: process
+    title: "Raid"
+    ref: "A8.7.3"
+    text: |
+      Raid if would gain 2+ Resources total:
+      1. Versus Factions:
+        (1) Romans OR Aedui  (2) Belgae
+      2. Versus no Faction.
+    # [ChA8] A8.7.3: "from Romans or Aedui where able, then from Belgae,
+    # then (in other Regions) from no Faction (3.3.3)."
+    edges:
+      then:    G_INTIMIDATE
+      If none: PASS
+
+  G_RALLY:
+    type: process
+    title: "Rally"
+    ref: "A8.7.4"
+    text: |
+      Rally wherever able to place a piece:
+      1. Settle before Rally, if able.
+      2. Place all Allies able.
+      3. Place all Warbands able:
+        a. At Settlements OR in Germania.
+    # [ChA8] A8.7.4: "Before Rallying, they Settle to place any Settlements
+    # that they can (A8.7.1). Then, they Rally to place all Germanic Allies
+    # possible. Finally, they place all Germanic Warbands possible, starting
+    # with any Settlement Regions and/or Germania (thereby reducing Resource
+    # costs when their Resources are few)."
+    edges:
+      with:    G_SETTLE
+      If none: G_RAID     # If cannot Rally, Raid per A8.7.3
+
+  G_MARCH_EXPAND:
+    type: process
+    title: "March (to expand or mass)"
+    ref: "A8.7.5"
+    text: |
+      March into up to 3 Regions with Leader and all Warbands except 1 per
+      origin. Lose no German Control. Split no origin's moving forces.
+      1. To add Control to up to 2 Regions:
+        a. In OR adjacent to Germania.
+      2. To 1 other Region to move largest group of Germanic Warbands without
+         Leader toward Leader OR Leader—if in and adjacent only to German
+         Control—toward Region without German Control.
+    # [ChA8] A8.7.5: "the Germans move in with their Leader and the most
+    # Warbands able, but leave one Germanic Warband behind per origin Region
+    # and enough not to remove any German Control. Also, they keep Marching
+    # groups of Warbands together (to the same destination)."
+    # [ChA8] A8.7.5: Step 1 — "March Warbands to add German Control to up to
+    # two Regions—Regions that are in or adjacent to Germania, if possible."
+    # [ChA8] A8.7.5: Step 2 — "March into one additional Region as needed to
+    # move the largest group of Germanic Warbands on the map that is not with
+    # the Germanic Leader toward the Leader, or the Leader (and Warbands with
+    # him, per above) if he is in and adjacent only to German Control Regions
+    # toward a Region without German Control. (Among these latter actions,
+    # choose randomly, 8.3.4.)"
+    edges:
+      then:                    G_INTIMIDATE_OR_SETTLE
+      If none (or Frost):      G_RALLY
+      If none Rally either:    G_RAID
+
+  PASS:
+    type: terminator
+    text: "Pass"
+
+
+# ────────────────────────────────────────────
+# Special Abilities (A8.7.1)
+# ────────────────────────────────────────────
+
+  G_AMBUSH:
+    type: process
+    title: "Ambush"
+    text: |
+      1. In 1st Battle per box at left, BUT only if Retreat out could lessen
+         removals AND/OR any Counterattack Loss to Germans is possible.
+      2. In all other Battles only if Germans Ambushed in the 1st Battle.
+    # [ChA8] A8.7.1: "but only where the enemy's Retreat out of that Region
+    # could lower the number of pieces it would remove, or Battle could allow
+    # a Counterattack to inflict at least one Loss on the Germans. NOTE: A
+    # defending Legion or Leader would meet the 2nd requirement."
+    # [ChA8] A8.7.1: "If they Ambushed in the 1st Battle per above, they also
+    # do so in each other Battle possible."
+    edges:
+      If no Ambush: G_INTIMIDATE_BEFORE_BATTLE
+
+  G_INTIMIDATE_BEFORE_BATTLE:
+    type: note
+    text: "If no Ambush, Intimidate before Battle."
+    edges:
+      to: G_INTIMIDATE
+
+  G_INTIMIDATE:
+    type: process
+    title: "Intimidate"
+    text: |
+      Intimidate before Battle OR after Raid or March:
+      1. To remove all pieces below able that will not be removed in Battle:
+        (1) Player Allies:
+          a. Roman  b. Aedui  c. Belgae
+        (2) Player Warbands OR Auxilia:
+          a. Roman  b. Aedui  c. Belgae
+        (3) Non-Player Roman OR Aedui Allies.
+        (4) Other Non-player Roman OR Aedui pieces.
+      2. Place Intimidated marker at Ariovistus Raid AND — only if removed
+         piece(s) elsewhere — wherever else able.
+      If none or only free Intimidated AND Raided or will Battle, no Special Ability.
+      AND Raided or will Battle, no Special Ability.
+      If none and Marched, Settle.
+    # [ChA8] A8.7.1: "Intimidate to remove enemy pieces that would not be
+    # guaranteed to be removed in an immediately subsequent Battle. They first
+    # Intimidate to remove player (not Non-player or Arverni) Allies, choosing
+    # within that Romans, then Aedui, then Belgae. Then next Intimidate to
+    # remove player Roman Auxilia, then player Aedui Warbands, then player
+    # Belgic Warbands. Then they remove Non-player Roman then Aedui Allies
+    # (not Non-player Belgae or Arverni). Finally, they remove other Non-player
+    # Roman or Aedui pieces (Auxilia or Warbands) only."
+    # [ChA8] A8.7.1: "the Germans place Intimidated markers in Ariovistus's
+    # Region if the Germans Raided there, as part of their free Intimidate
+    # (A3.4.3). Then, if they removed any pieces above, they place Intimidated
+    # markers wherever they can (per A4.6.2). NOTE: Outside of Raid with free
+    # Intimidate, Non-player Germans will not Intimidate merely to place
+    # markers without removing pieces."
+    # [ChA8] A8.7.1: "If the Germans did not Intimidate or only free
+    # Intimidated within Ariovistus's Raid Region, the Germans instead add no
+    # Special Ability (Command only, 2.3.4) to a Raid or Battle Command or
+    # instead Settle after Marching (see below)."
+    edges:
+      If none and Marched: G_SETTLE
+      If none/only free Intimidated and Raided or Battle: end_SA_none
+
+  G_SETTLE:
+    type: process
+    title: "Settle"
+    text: |
+      Settle before OR after Rally, OR after March:
+      1. Place all Settlements able.
+    # [ChA8] A8.7.1: "If Rallying, they Settle first if they can place any
+    # Settlement(s), otherwise after Rallying, if they are able. If Marching,
+    # they Settle all Settlements possible after resolving the March. If the
+    # Germans are unable to place any Settlements in the above cases, they
+    # instead add no Special Ability (executing the Command only, 2.3.4)."
+    edges:
+      If none: end_SA_none
+
+  G_INTIMIDATE_OR_SETTLE:
+    type: note
+    text: "Intimidate OR Settle per boxes above."
+    edges:
+      to_intimidate: G_INTIMIDATE
+      to_settle:     G_SETTLE
+
+  G_ENLIST:
+    type: note
+    text: "Enlist per box below."
+    # This refers to the Belgae Enlist mechanic when Belgae use Germans.
+    # When Germans are a Non-player faction, "Enlist" on this flowchart
+    # is the arrow label for the March-from-threat SA path — it routes
+    # to Intimidate or Settle.
+    edges:
+      to: G_INTIMIDATE_OR_SETTLE
+
+
+# ────────────────────────────────────────────
+# Agreements (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  G_AGREEMENTS:
+    type: info
+    title: "Agreements"
+    ref: "A8.4.2"
+    text: |
+      - Never transfer or agree.
+      - Always Harass Romans.
+    # [ChA8] A8.4: "Throughout section 8.4, treat references to 'Arverni' as
+    # 'Germans', 'Gauls' as 'Gauls or Germans', and 'Germans' as 'Arverni'."
+    # So per 8.4.2: Germans never voluntarily transfer Resources, nor agree
+    # to Supply Lines/Retreat/Quarters. Germans Harass Roman March and Seize.
+
+
+# ────────────────────────────────────────────
+# Winter (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  G_QUARTERS:
+    type: process
+    title: "Quarters"
+    ref: "6.3.2, A8.7.6"
+    text: |
+      - Leave Devastated if no Ally/Settlement.
+      - Move Leader/Warband group to join most, end next to most
+        Regions with Germans able; leave 1+ Warbands AND enough
+        to keep Control.
+    # [ChA8] A8.7.6: "first leave any (Drought) Devastated Region where they
+    # have no Ally or Settlement for random adjacent Regions that they Control
+    # (if they can). They then (or thereby) move their Leader and/or one group
+    # of Warbands, so as to join the Leader with the largest group of Germanic
+    # Warbands able and, within that, to get or keep the Leader within one
+    # Region of the most Regions with Germanic Forces able. They leave behind
+    # at least one Warband and at least the number Warbands needed to retain
+    # any German Control."
+
+  G_SPRING:
+    type: process
+    title: "Spring"
+    ref: "6.6, 8.3.2"
+    text: |
+      - Place Successor at most Germans.

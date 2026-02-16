@@ -1,0 +1,53 @@
+# german_bot_event_instructions_ariovistus.txt
+# Non-Player Germans — Event Instructions
+# Ariovistus expansion only (no base game version — Germans replace Arverni)
+
+# Event Instructions (8.1.1, A8.2.1, 8.7.2)
+# Gray swords at the card's Germans or Arverni symbol means that the Event
+# is "No Germans", laurels or carnyx that it has specific Instructions
+# listed below.
+
+general:
+  Ineffective: "(8.1.1) If nothing would happen, continue on the flowchart with a Command & Special Ability."
+  Capabilities: "(8.1.1) If the next Winter will be the last of the game, continue on the flowchart instead."
+  No Germans: |
+    (A8.1.1) Ballistae, Bellovaci, Catuvolcus, Chieftains' Council,
+    Circumvallation, Commius, Galba, Iccius & Andecomborius,
+    Joined Ranks, Nervii: Continue on flowchart instead.
+
+per_card:
+  "Admagetobriga, Legiones XIIII et XV, Sabis, Vosegus":
+    instruction: "Battle only where Counterattack would not leave Ariovistus with fewer than 4 Warbands."
+
+  "Alaudae, Ambacti, Dumnorix Loyalists, Marcus Antonius, Numidians, Publius Licinius Crassus":
+    instruction: "Select Roman pieces to remove the most possible from Germania or where Settlement, then adjacent to Germania or Settlement; if none, treat as 'No Germans'."
+
+  "Arduenna, Impetuosity":
+    instruction: "Move as many Warbands and Leader (if applicable) as possible without losing Germanic Control to take Germanic Control of a Region with player pieces — Roman, then Aedui, then Belgae — then Battle that player there."
+
+  "Assembly of Gaul":
+    instruction: "Select Germans then Non-player Belgae if they qualify, otherwise treat as 'No Germans'."
+
+  "Balearic Slingers, Clodius Pulcher, Legio X, Pompey":
+    instruction: "If Romans are a Non-Player, treat as 'No Germans'."
+
+  "Cicero":
+    instruction: "Shift up (toward Uproar, or flip to Firm if already in Uproar and not yet Firm)."
+
+  "Divico, Orgetorix, Seduni Uprising!":
+    instruction: "Remove no German Allies or Control; if not possible, treat as 'No Germans'."
+
+  "Germanic Horse, Remi Influence, War Fleet":
+    instruction: "Treat as 'No Germans'."
+
+  "Kinship":
+    instruction: "If Belgae Non-player, treat as 'No Germans'."
+
+  "Shifting Loyalties":
+    instruction: "Select an unshaded Capability affecting player Romans or Aedui, then Germans."
+
+  "Winter Uprising!":
+    instruction: "If next Winter is the last, treat as 'No Germans'; if not, place in Germania, remove when able."
+
+  "Gaius Valerius Procillus, Parley":
+    instruction: "Play only to move to where no Fort and Germans will outnumber Romans."

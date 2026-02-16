@@ -1,0 +1,51 @@
+# belgae_bot_event_instructions_ariovistus.txt
+# Non-Player Belgae — Event Instructions
+# Ariovistus expansion
+
+# Event Instructions (8.1.1, 8.2.1, 8.5.2)
+# Gray swords around the card's Belgae symbol means that the Event is
+# "No Belgae", gray laurels that it has specific Instructions listed below.
+
+general:
+  Ineffective: "(8.1.1) If nothing would happen, continue on the flowchart with a Command & Special Ability."
+  Capabilities: "(8.1.1) If the next Winter will be the last of the game, continue on the flowchart."
+  No Belgae: |
+    (8.1.1) Ariovistus's Wife, Assembly of Gaul, Ballistae,
+    Chieftains' Council, Circumvallation, Dread, German Phalanx,
+    Harudes, Joined Ranks, Nasua & Cimberius, River Commerce,
+    Usipetes & Tencteri, Wailing Women:
+    Continue on flowchart instead.
+
+per_card:
+  "Admagetobriga, Legiones XIIII et XV, Sabis, Vosegus":
+    instruction: "Battle where most Losses forced on Legions; if none, 'No Belgae'."
+
+  "Savage Dictates":
+    instruction: "If Germans a player, use unshaded text; otherwise, treat as 'No Belgae'."
+
+  "Alaudae, Cicero, Gallia Togata, Pompey":
+    instruction: "If German player or if Roman Non-player, treat as 'No Belgae' instead. If playing 'Cicero', shift up."
+
+  "Alpine Tribes, Balearic Slingers, Legio X, Titus Labienus":
+    instruction: "If Roman Non-player, treat as 'No Belgae'."
+
+  "Ambacti, Marcus Antonius, Numidians, Publius Licinius Crassus, Roman Wine":
+    instruction: "Select Belgica Regions first."
+
+  "Impetuosity":
+    instruction: "Only as Belgic Leader ends with at least 4 Belgic Warbands, move most pieces able to Battle player with highest victory margin."
+
+  "Kinship":
+    instruction: "If Germans Non-player, treat as 'No Belgae'."
+
+  "Remi Influence":
+    instruction: "Unless adding to total number of Belgic Allies plus Citadels, treat as 'No Belgae'."
+
+  "Shifting Loyalties":
+    instruction: "Select an unshaded Capability affecting player Romans or Aedui, then Belgae."
+
+  "War Fleet":
+    instruction: "Losing no Belgic Control, move just enough Warbands to add Belgic Control where a Subdued Tribe; then Rally."
+
+  "Winter Uprising!":
+    instruction: "If next Winter is the last, treat as 'No Belgae'; if not, place in Belgica, remove when able."

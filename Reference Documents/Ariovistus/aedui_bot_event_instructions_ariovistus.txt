@@ -1,0 +1,49 @@
+# aedui_bot_event_instructions_ariovistus.txt
+# Non-Player Aedui — Event Instructions
+# Ariovistus expansion
+
+# Event Instructions (8.1.1, 8.2.1, 8.6.1)
+# Gray swords around the card's Aedui symbol means that the Event is
+# "No Aedui", gray laurels that it has specific Instructions listed below.
+
+general:
+  Ineffective: "(8.1.1) If nothing would happen, continue on the flowchart with a Command & Special Ability."
+  Capabilities: "(8.1.1) If the next Winter will be the last of the game, continue on the flowchart."
+  No Aedui: |
+    (8.1.1) Chieftains' Council, Cicero, Divination,
+    Gaius Valerius Procillus, Impetuosity, Joined Ranks,
+    Seduni Uprising!, Sotiates Uprising!, Veneti Uprising!,
+    Winter Uprising!: Continue on flowchart instead.
+  No Aedui if Roman player or Roman victory exceeds 12: |
+    Alaudae, Ambacti, Ariovistus's Wife, Balearic Slingers,
+    Circumvallation, Clodius Pulcher, Commius, Dread, Gallia Togata,
+    Iccius & Andecomborius, Legio X, Legiones XIIII et XV,
+    Marcus Antonius, Numidians, Pompey, Publius Licinius Crassus,
+    Titus Labienus — If the Romans are a player, or if Non-player
+    Roman victory (Subdued+Allies+Dispersed-Settlement) exceeds 12,
+    treat as "No Aedui".
+
+per_card:
+  "All Gaul Gathers, Dumnorix Loyalists":
+    instruction: "Move no pieces; Scout Hidden Germans, then Belgae, then Arverni."
+
+  "Assembly of Gaul, Catuvolcus, Drought, Galba, Roman Wine":
+    instruction: "Select Factions, Regions, and pieces to target player Germans and/or Belgae only (not Non-player)."
+
+  "Baggage Trains, Ballistae, Celtic Rites, Germanic Horse, Remi Influence, Winter Campaign":
+    instruction: "Use shaded text; if 'Remi Influence' and Remi are not an Aedui Ally, treat as 'No Aedui' instead."
+
+  "Divico, Morbihan, Orgetorix":
+    instruction: "If Aedui have both more Warbands and more Allies+Citadels than Arverni, treat as 'No Aedui'."
+
+  "Frumentum":
+    instruction: "If Roman player, treat as 'No Aedui'; otherwise, transfer Resources per A8.6.6."
+
+  "Nervii":
+    instruction: "If Belgae Non-player, treat as 'No Aedui'."
+
+  "Shifting Loyalties":
+    instruction: "Select a shaded Capability affecting player Germans or Belgae, then with Aedui symbol 1st on the card."
+
+  "War Fleet":
+    instruction: "Move single largest group possible to a random Region; Rally if places pieces, otherwise Raid."

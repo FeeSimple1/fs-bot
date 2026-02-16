@@ -1,0 +1,50 @@
+# belgae_bot_event_instructions.txt
+# Non-Player Belgae — Event Instructions
+# Base game (2nd Edition)
+
+# Event Instructions (8.1.1, 8.2.1, 8.5.2)
+# Gray swords around the card's Belgae symbol means that the Event is
+# "No Belgae", gray laurels that it has specific Instructions listed below.
+
+general:
+  Ineffective: "(8.1.1) If nothing would happen, continue on the flowchart with a Command & Special Ability."
+  Capabilities: "(8.1.1) If the next Winter will be the last of the game, continue on the flowchart."
+  No Belgae: |
+    (8.1.1) Aquitani, Assembly of Gaul, Ballistae, Boii, Chieftains' Council,
+    Circumvallation, Consuetudine, Forced Marches, Germanic Chieftains,
+    Gobannitio, Joined Ranks, Optimates, River Commerce, Segni & Condrusi,
+    The Province: Continue on the flowchart instead.
+
+per_card:
+  "Acco":
+    instruction: "Use unshaded text."
+
+  "Alaudae, Cicero, Gallia Togata, Lost Eagle, Pompey, Sappers":
+    instruction: "If Arverni are meeting their victory condition (7.2), or if Roman Non-player, treat as 'No Belgae' instead. If playing 'Cicero', shift up."
+
+  "Alpine Tribes, Balearic Slingers, Legio X, Titus Labienus":
+    instruction: "If Roman Non-player, treat as 'No Belgae'."
+
+  "Ambacti, Hostages, Marcus Antonius, Numidians, Roman Wine":
+    instruction: "Select Belgica Regions first."
+
+  "Correus, German Allegiances, Land of Mist and Mystery, Remi Influence":
+    instruction: "Unless adding to total number of Belgic Allies plus Citadels, treat as 'No Belgae'."
+
+  "Impetuosity":
+    instruction: "Move most pieces able to Battle player with highest victory margin."
+
+  "Legiones XIIII et XV, Litaviccus":
+    instruction: "Battle where most Losses forced on Legions; if none, treat as 'No Belgae'."
+
+  "Massed Gallic Archers, Vercingetorix's Elite":
+    instruction: "If Arverni are a player and Romans are a Non-player, use unshaded text; otherwise, treat as 'No Belgae' instead."
+
+  "Migration, War Fleet":
+    instruction: "Losing no Belgic Control, move just enough Warbands to add Belgic Control where a Subdued Tribe; for Migration, place an Ally; for War Fleet, Rally."
+
+  "Morasses":
+    instruction: "Ambush all Romans then Gauls where Losses possible, then March in place to go Hidden."
+
+  "Shifting Loyalties":
+    instruction: "Select an unshaded Capability affecting player Romans or Aedui, then Belgae."

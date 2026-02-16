@@ -1,0 +1,342 @@
+# belgae_bot_flowchart.txt
+# Non-Player Belgae — 2nd Edition
+# Transcribed from flowchart sheet, enhanced with Chapter 8 detail where
+# the prose is more specific than the printed flowchart.
+# Chapter 8 additions are marked with [Ch8] comments.
+
+nodes:
+
+  B1:
+    type: decision
+    ref: "8.5.1"
+    text: "Ambiorix or 4+ Belgic Warbands where non-German enemy has an Ally, Citadel, Legion, or 4+ pieces?"
+    # [Ch8] 8.5.1: "If the Belgae have Ambiorix or a group of at least four
+    # Belgic Warbands in any Region where any non-Germanic enemy (Romans,
+    # Arverni, or Aedui) has an Ally, a Citadel, a Legion, or separately at
+    # least four pieces."
+    # [Ch8] 8.5.1: "NOTE: Non-player Belgae do not Battle against Germans."
+    edges:
+      Yes: B_BATTLE
+      No:  B2
+
+  B2:
+    type: decision
+    ref: "8.5.2"
+    text: "Belgae 1st on upcoming but not current card, and roll 1-4?"
+    # [Ch8] 8.5.2: "Check the Faction order (2.3.3) on the currently played
+    # and next showing cards. If the Belgic symbol is first of the four symbols
+    # on the next upcoming card but not on the currently played card (regardless
+    # of Faction Eligibility cylinders), roll a die: on a roll of 1-4, they Pass.
+    # NOTE: Thus, they do not Pass if 1st on both cards or if Winter is showing."
+    edges:
+      Yes: PASS
+      No:  B3
+
+  B3:
+    type: decision
+    text: "Belgae by Sequence of Play may use Event?"
+    # [Ch8] 8.5.2: "check whether they have the option to execute the Event
+    # (because they are 1st Eligible, or because the 1st Eligible Faction used
+    # a Special Ability, 2.3.4). If not, proceed to 8.5.3."
+    edges:
+      Yes: B3b
+      No:  B4
+
+  B3b:
+    type: decision
+    text: "Event Ineffective, or Capability in final year, or 'No Belgae'?"
+    # [Ch8] 8.5.2: Also check Non-player Belgae Event Instructions (8.2.1) —
+    # they may render the Event Ineffective or "No Belgae"; if so, proceed
+    # to 8.5.3.
+    edges:
+      No:  B_EVENT
+      Yes: B4
+
+  B4:
+    type: decision
+    ref: "8.5.3"
+    text: "Rally would add Belgic Ally, Citadel, 3+ Belgic Warbands, or Belgic Control?"
+    # [Ch8] 8.5.3: "they Rally if doing so would place a Belgic Ally, a Citadel,
+    # or at least three Belgic Warbands total, or if it would add to Belgic
+    # Control. NOTE: If the Belgae have 0 Resources, a normal (not free, 5.4)
+    # Rally would not place any pieces."
+    edges:
+      Yes: B_RALLY
+      No:  B5
+
+  B5:
+    type: decision
+    ref: "8.5.4"
+    text: "Belgae have 0-3 Resources and roll 1-4?"
+    edges:
+      Yes: B_RAID
+      No:  B_MARCH        # (8.5.5)
+
+  B_EVENT:
+    type: process
+    title: "Execute Event"
+    text: |
+      1. See Instructions (8.2.1) if gray laurels on card's Belgae symbol.
+      2. Use Shaded text, if any.
+    # [Ch8] 8.5.2: Belgae use shaded text like Arverni.
+
+  B_BATTLE:
+    type: process
+    title: "Battle"
+    ref: "8.5.1"
+    text: |
+      Battle only where Belgic Losses less than enemy's AND no Loss on Ambiorix*:
+      1. If Ambiorix meets condition at left BUT will not Battle, March instead.
+      2. Check boxes at right for Ambush, Rampage before Battle, OR Enlist.
+      3. Fight enemies meeting condition at left:
+        a. Ambiorix versus enemy with fewer mobile forces than Belgae.
+      4. Fight other non-Germans.
+      * Presuming all Defender Loss rolls result in removals (best for Belgic Attack).
+    # [Ch8] 8.5.1: "only in Regions where they will inflict more Losses on the
+    # enemy (3.3.4) than they will suffer, and no Loss on Ambiorix."
+    # [Ch8] 8.5.1: Step 3a — "first Ambiorix fights against such an enemy that
+    # has fewer mobile pieces (Leader, Legions, Auxilia, Warbands) than the
+    # Belgae do (if it is possible within the Loss requirements above)."
+    # [Ch8] 8.5.1: Step 4 — "Finally, the Belgae next Battle non-German enemies
+    # where they can (where the Belgae are able to inflict more Losses than they
+    # will suffer). (Set order or targets among equal candidates randomly, 8.3.4).
+    # They select applicable Battle Regions until they run out of candidate
+    # Regions or of Resources."
+    # [Ch8] 8.5.1: "For all Battle Regions, pay Resources as soon as selected."
+    # (implied by general 8.4 rules)
+    edges:
+      with:    B_AMBUSH
+      If none: B_MARCH_THREAT
+
+  B_MARCH_THREAT:
+    type: process
+    title: "March (from threat)"
+    ref: "8.5.1"
+    text: |
+      March with all Warbands and Leader. Split no origin's moving forces.
+      1. From Regions that meet upper-left condition AND Leader's Region
+         if not already with largest Warband group:
+        a. Belgic Leader's Region.
+      2. To at least 1 Region, up to number of origin Regions, NOT any origins:
+        a. Move to Regions within 1 of most Regions that have Belgae.
+        b. Add most Belgic Control able.
+    # [Ch8] 8.5.1: "March all mobile Belgic Forces out of each Region that
+    # either meets the 'Battle or March under Threat' condition above or has the
+    # Belgic Leader but not the single largest group of Belgic Warbands on the
+    # map. Keep Marching groups from each origin together. March first with the
+    # Belgic Leader (and the Belgic Warbands with him) then with other groups."
+    # [Ch8] 8.5.1: "They do not enter any of the above Regions that other Belgae
+    # are departing."
+    # [Ch8] 8.5.1: "Within those restrictions, they March so that each Marching
+    # group ends within a distance of one Region of (same or adjacent to) the
+    # most Regions that have Belgic pieces possible. Within that objective, they
+    # choose Regions that have no Belgic Control so as to add the most Belgic
+    # Control (victory score, 7.2) possible (if any, and otherwise random)."
+    edges:
+      then: B_ENLIST      # Enlist after March
+
+  B_RALLY:
+    type: process
+    title: "Rally"
+    ref: "8.5.3"
+    text: |
+      Rally wherever able to place a piece:
+      1. Replace City Ally with Citadel.
+      2. Place all Allies able.
+      3. Place all Warbands able:
+        a. To add any Belgic Control.
+    # [Ch8] 8.5.3: "First, replace a Belgic Ally in a City with a Citadel. Then,
+    # place all Belgic Allies possible. Finally, place all Belgic Warbands
+    # possible, first where they would add any Belgic Control."
+    edges:
+      then: B_RAMPAGE
+
+  B_RAID:
+    type: process
+    title: "Raid"
+    ref: "8.5.4"
+    text: |
+      Raid if would gain 2+ Resources total:
+      1. Versus players (only):
+        (1) Romans  (2) Aedui  (3) Other
+      2. In non-Devastated Regions, versus no Faction.
+    # [Ch8] 8.5.4: "First, Raid to take Resources from players; within that,
+    # Romans then Aedui then others. Then Raid in non-Devastated Regions
+    # without taking Resources from any Faction (do not take Non-players'
+    # Resources)."
+    edges:
+      then:    B_RAMPAGE
+      If none: PASS
+
+  B_MARCH:
+    type: process
+    title: "March (to add Control)"
+    ref: "8.5.5"
+    text: |
+      March into up to 3 Regions:
+      1. To add Control to up to 2 Regions:
+        (1) In Belgica, with most Warbands able except 1 Warband per origin,
+            while losing no Belgic Control.
+        (2) Outside Belgica, with fewest Warbands needed to take Control.
+      2. With Leader alone, to 1 Region above if needed to join most Belgic
+         pieces able, OR to another Region to end Leader where >3 Belgic Warbands.
+    # [Ch8] 8.5.5: "First, March Warbands to add Control to one Region—a
+    # Belgica Region if possible; within that, where the movement of the fewest
+    # Warbands is needed to do so."
+    # [Ch8] 8.5.5: "If the above destination is in Belgica, move in with the
+    # most Warbands able, but leaving one Belgic Warband behind per origin
+    # Region and enough not to remove any Belgic Control; if not in Belgica,
+    # move in the fewest Warbands to take Belgic Control."
+    # [Ch8] 8.5.5: "Then, March into a 2nd Region per the above priorities."
+    # [Ch8] 8.5.5: "Finally, March the Belgic Leader alone into one of the
+    # destination Regions above if needed to join him with the largest number
+    # of Belgic pieces able, or alone to another Region if needed to end the
+    # Command with a group of at least four Belgic Warbands. NOTE: The
+    # Leader's move may result in the removal of Belgic Control from a Region."
+    edges:
+      then:                         B_ENLIST
+      If none (or 0 Resources, Frost): B_RAID
+
+  PASS:
+    type: terminator
+    text: "Pass"
+
+
+# ────────────────────────────────────────────
+# Special Abilities (8.5.1)
+# ────────────────────────────────────────────
+
+  B_AMBUSH:
+    type: process
+    title: "Ambush"
+    text: |
+      1. In 1st Battle per box at left, BUT only if Retreat out could lessen
+         removals AND/OR any Counterattack Loss to Belgae is possible.
+      2. In all other Battles only if Belgae Ambushed in the 1st Battle.
+    # [Ch8] 8.5.1: "but only where the enemy's Retreat out of that Region could
+    # lower the number of pieces it would remove, or Battle could allow a
+    # Counterattack to inflict at least one Loss on the Belgae (3.3.4). NOTE:
+    # A defending Legion or Leader would meet the 2nd requirement, because it
+    # could survive multiple die roll Losses to then inflict one Loss in
+    # Counterattack."
+    # [Ch8] 8.5.1: "If they Ambushed in the 1st Battle per above, they also do
+    # so in each other Battle possible."
+    edges:
+      If no Ambush: B_RAMPAGE_BEFORE_BATTLE
+        # Rampage before Battle, or Enlist, per boxes below
+
+  B_RAMPAGE_BEFORE_BATTLE:
+    type: note
+    text: "If no Ambush, Rampage before Battle or Enlist, per boxes below."
+    edges:
+      to: B_RAMPAGE
+
+  B_RAMPAGE:
+    type: process
+    title: "Rampage"
+    text: |
+      Rampage before Battle OR after Rally or Raid with all Warbands able to
+      remove or Retreat enemies. If Battle, no Rampage against enemy's last piece.
+      1. To force removal of pieces, assuming no one grants Retreat.
+      2. To add most Belgic Control.
+      3. Elsewhere:
+        Versus (1) Romans  (2) Aedui  (3) Arverni
+    # [Ch8] 8.5.1: "They do so with whatever Hidden Warbands possible and as
+    # needed to remove or Retreat enemies."
+    # [Ch8] 8.5.1: "First, to force removal of pieces, assuming no Faction
+    # grants Retreat to their Control (4.5.2). Then, to add the most Belgic
+    # Control value. Then elsewhere, first to Retreat or Remove as many Romans
+    # as possible, then Aedui, then Arverni."
+    # [Ch8] 8.5.1: "the Belgae do not Rampage against the last target piece in
+    # any Battle Region (so that there will always still be a Battle)."
+    # [Ch8] 8.5.1: "If no such Rampage is possible—or if the Command was
+    # March—the Belgae instead Enlist per below."
+    edges:
+      If none: B_ENLIST
+
+  B_ENLIST:
+    type: process
+    title: "Enlist"
+    text: |
+      If Battle, Enlist Germans as Belgae:
+      1. Only where Battles already AND only to have Germans add/absorb Losses.
+      If none, Enlist after Command to add a free German Command in 1 Region:
+      1. Battle if able to cause enemy Loss:
+        Versus  a. player  b. other Non-player.
+      2. March 2+ and most Germans able:
+        (1) From Belgica OR Germania to Roman, Aedui, or Arverni Control:
+          a. Player's  b. Non-player's Control.
+        (2) In place with 2+ Revealed/Scouted Warbands to Hide/remove marker.
+      3. Rally to place a piece:
+        (1) Ally  (2) most Warbands able.
+      4. Raid to take 1-2 Resources from player.
+      If none, OR if Belgae Marched into or out of Britannia, no Special Ability.
+    # [Ch8] 8.5.1: "If there is any already selected Battle Region in which the
+    # Belgae could Enlist Germanic Warbands to add to enemy Losses and/or absorb
+    # Losses from a possible Counterattack, the Belgae do so (absorb Losses with
+    # Germanic Warbands before Belgic Warbands)."
+    # [Ch8] 8.5.1: "If not, the Belgae instead Enlist to add a free Germanic
+    # Command in (or from) one Region, after executing their Command."
+    # [Ch8] 8.5.1: Step 1 — "If possible to inflict any Loss on an enemy, they
+    # cause the Germans to Battle against a player Faction or, if none, another
+    # Non-player."
+    # [Ch8] 8.5.1: Step 2 — "If not possible, they cause a Germanic March with
+    # at least two Warbands and the most Warbands able... If able, move them out
+    # of a Belgica or Germania Region and into a Region Controlled by a player
+    # then Non-player enemy (Romans, Arverni, or Aedui). If not, March within a
+    # Region in order to Hide or remove Scouted markers from at least two
+    # Revealed Warbands and the most possible."
+    # [Ch8] 8.5.1: Step 3 — "If not able to so March, and if a German Rally
+    # could place a piece, they cause a Rally to place an Ally if able then most
+    # Warbands able."
+    # [Ch8] 8.5.1: Step 4 — "If not able to so Rally, they cause a German Raid
+    # against a player (only) who would lose at least one Resource to the Raid."
+    # [Ch8] 8.5.1: Britannia restriction per 4.1.3.
+
+
+# ────────────────────────────────────────────
+# Agreements (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  B_AGREEMENTS:
+    type: info
+    title: "Agreements"
+    ref: "8.4.2"
+    text: |
+      - Never transfer or agree.
+      - Always Harass Romans.
+    # [Ch8] 8.4.2: "Non-player Belgae and Arverni never voluntarily transfer
+    # Resources (1.5.2), nor agree to have Regions they Control be part of a
+    # Supply Line (3.2.1) or used for another Faction's Retreat (3.2.4) or
+    # Quarters (6.3)."
+    # [Ch8] 8.4.2: "Non-player Belgae and Arverni Harass Roman March and
+    # Seize (3.2.2, 3.2.3) wherever they can."
+
+
+# ────────────────────────────────────────────
+# Winter (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  B_QUARTERS:
+    type: process
+    title: "Quarters"
+    ref: "6.3.2, 8.5.6"
+    text: |
+      - Leave Devastated if no Ally/Citadel.
+      - Move Leader/Warband group to join most, end next to most
+        Regions with Belgae able; leave 1+ Warbands AND enough to
+        keep Control.
+    # [Ch8] 8.5.6: "first leave Devastated Regions where they have no Ally or
+    # Citadel for random adjacent Regions that they Control (if they can). They
+    # then (or thereby) move their Leader and/or one group of Warbands, so as to
+    # join the Leader with the largest group of Belgic Warbands able and, within
+    # that, to get or keep the Leader within one Region of the most Regions with
+    # Belgic Forces able. They leave behind at least one Warband and at least the
+    # number of Warbands needed to retain any Belgic Control."
+
+  B_SPRING:
+    type: process
+    title: "Spring"
+    ref: "6.6, 8.3.2"
+    text: |
+      - Place Successor at most Belgae.

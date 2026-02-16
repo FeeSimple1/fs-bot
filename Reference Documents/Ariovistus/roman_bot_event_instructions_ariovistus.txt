@@ -1,0 +1,53 @@
+# roman_bot_event_instructions_ariovistus.txt
+# Non-Player Romans — Event Instructions
+# Ariovistus expansion
+
+# Event Instructions (8.1.1, 8.2.1, 8.8.2)
+# Gray swords around the card's Roman symbol means that the Event is
+# "No Romans", gray laurels that it has specific Instructions listed below.
+
+general:
+  Ineffective: "(8.1.1) If nothing would happen, continue on the flowchart with a Command & Special Ability."
+  Capabilities: "(8.1.1) If the next Winter will be the last of the game, continue on the flowchart."
+  No Romans: |
+    (8.1.1) Abatis, All Gaul Gathers, Chieftains' Council, Divination,
+    Druids, Joined Ranks, River Commerce, Seduni Uprising!,
+    Sotiates Uprising!, Veneti Uprising!, Winter Uprising!:
+    Continue on flowchart instead.
+
+per_card:
+  "Assembly of Gaul, Celtic Rites":
+    instruction: "Target Belgae, not Aedui."
+
+  "Cicero":
+    instruction: "Shift down (toward Adulation, or flip to Firm if already in Adulation and not yet Firm)."
+
+  "Drought":
+    instruction: "Place marker to remove player Germans and/or Belgae (not Non-player) and no Romans."
+
+  "Frumentum":
+    instruction: "If Aedui player, treat as 'No Romans'; otherwise, use flowchart (8.2.3), Aedui transfer per A8.6.6."
+
+  "Harudes, Nasua & Cimberius, Numidians":
+    instruction: "Place the full number of Auxilia; if not able, treat as 'No Romans'."
+
+  "Impetuosity":
+    instruction: "Unless Roman March priorities (8.2.3, 8.8.3) would result in a Battle, treat as 'No Romans'."
+
+  "Legiones XIIII et XV":
+    instruction: "Place the 2 Legions; if fewer would be placed, treat as 'No Romans'."
+
+  "Nervii":
+    instruction: "If Belgae Non-player, treat as 'No Romans'."
+
+  "Parley":
+    instruction: "Play only to move Romans and/or Germans to where Fort and Romans will outnumber Germans."
+
+  "Publius Licinius Crassus, War Fleet":
+    instruction: "Move Forces using Roman March priorities (8.8.3), then for 'Publius' use Roman Battle priorities (8.8.1), for 'War Fleet' the full Roman flowchart for a follow-on Command (8.2.3)."
+
+  "Shifting Loyalties":
+    instruction: "Select a shaded Capability affecting player Germans or Belgae, then Romans."
+
+  "Vergobret":
+    instruction: "If Aedui player, treat as 'No Romans'."

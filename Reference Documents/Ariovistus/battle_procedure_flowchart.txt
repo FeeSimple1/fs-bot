@@ -1,0 +1,148 @@
+# battle_procedure_flowchart.txt
+# Battle Procedure — Play Aid Sheet (2nd Edition)
+# Transcribed from flowchart image.
+#
+# ASSESSMENT: This flowchart is a SUMMARY of rules already captured in our
+# reference documents (3.2.4, 3.3.4, 3.4.4, 4.2.3, 4.3.3, 4.4.3, 4.5.3).
+# Unlike the bot flowcharts, it contains no new decision logic — everything
+# here is stated in the rules text. However, it IS useful as a coding
+# reference because it unifies Roman, Gallic, and Germanic Battle procedures
+# into a single flow with clear branch points, and the Losses sub-procedure
+# is particularly well-organized.
+#
+# The authoritative source is always the rules text. This transcription is
+# a convenience reference for structuring the battle resolution code.
+
+# References: 3.2.4, 3.3.4, 3.4.4, 4.2.3, 4.3.3, 4.4.3, 4.5.3
+
+steps:
+
+  Step_1_Target:
+    text: "Attacker selects 1 Faction to Defend."
+
+  Step_2_Declare_Retreat:
+    text: |
+      Defender opts for Retreat?
+      If Ambush, Germanic, or no mobile: No (cannot Retreat).
+    decision:
+      No:  Step_3_Attack_No_Retreat
+      Yes: retreat_agreement
+    retreat_agreement:
+      text: "Retreat Region: Control Faction agrees now."
+      then: Step_3_Attack_Retreat
+
+  Step_3_Attack_Retreat:
+    text: |
+      Romans Attacking Gauls?
+    # [Rule 3.2.4] Roman Attack — "Caesar Defending" check does not apply
+    # here because Romans are the Attacker. The "Romans Attacking Gauls?"
+    # branch determines whether Defender takes half Losses (Gauls defending
+    # vs Romans always take half when Retreating? No — this is the
+    # Citadel/Retreat halving.)
+    # Actually looking more carefully at the flowchart: this diamond asks
+    # "Romans Attacking Gauls?" and branches to different Loss calculations.
+    # This is about the Step 3 Attack phase when Defender IS Retreating.
+    decision:
+      Yes: "Defender takes half Losses*. Allies, Forts, Citadels first**"
+      No:  "Defender takes half Losses*. Allies, Forts, Citadels first**"
+    # Both branches show "half Losses" because the Defender IS Retreating.
+    # The flowchart then skips to Step 6 (no Counterattack, no Reveal).
+    besiege_note: |
+      ** Besiege: Before Losses, Attacker may remove 1 Defending Citadel or Ally.
+    then: Step_6_Retreat
+
+  Step_3_Attack_No_Retreat:
+    text: "Defender has Citadel or Fort?"
+    decision:
+      Yes: "Defender takes half Losses*. Allies, Forts, Citadels last**"
+      No:  Step_3_Ambush_Check
+
+  Step_3_Ambush_Check:
+    text: "Ambush or Germanic Attack?"
+    decision:
+      Yes: "Defender takes normal Losses* (as removals, no rolls). Allies, Forts, Citadels last**"
+      No:  Step_3_Caesar_Check
+
+  Step_3_Caesar_Check:
+    text: "Caesar Defending?"
+    decision:
+      No:  "Defender removes pieces without rolls (Losses step b)"
+        # This label on the flowchart is confusing — it seems to be the
+        # NON-Caesar, NON-Ambush, NON-Retreat path. Actually re-reading:
+        # this is the normal Losses path where Defender takes normal Losses
+        # with the standard roll mechanic.
+      Yes: Step_3_Caesar_Roll
+
+  Step_3_Caesar_Roll:
+    text: "Roll: 4-6, or vs Belgae 5-6?"
+    # [Rule 4.3.3] Arverni/Aedui Ambush: Caesar on 4-6 retains roll ability.
+    # [Rule 4.5.3] Belgic Ambush: Caesar needs 5-6 instead.
+    decision:
+      Yes: "Defender takes normal Losses*. Allies, Forts, Citadels last**"
+        # Caesar rolled high enough — Romans get to use die rolls for Losses.
+      No:  "Defender removes pieces without rolls (Losses step b)"
+        # Caesar rolled low — Romans must remove pieces directly.
+
+  Step_4_Counterattack:
+    text: "Attacker takes normal Losses*. Allies, Forts, Citadels last."
+    # [Rule 3.2.4/3.3.4] Only if Defender did NOT Retreat.
+    # [Rule 4.3.3] Ambush: No Counterattack EXCEPT if Caesar rolled 4-6
+    # (or 5-6 vs Belgae).
+
+  Step_5_Reveal:
+    text: "All Attacking and Defending survivors flip to Revealed."
+    # Only if no Retreat declared.
+
+  Step_6_Retreat:
+    text: |
+      Remaining mobile Defenders Retreat to adjacent Region
+      — or are removed. Region Control by Defender or Faction that agreed
+      (not No Control).
+    defender_opts: |
+      Defender opts for any Hidden Warbands and/or Leader to stay.
+    # [Rule 3.2.4] Roman Battle: Defender may opt to have Hidden Warbands
+    # and/or Leader stay.
+    # [Rule 3.3.4] Gallic Battle: "Unlike in a Roman Attack, no Retreating
+    # Leaders nor Warbands may stay."
+    # The flowchart shows the Roman-favorable version. The Gallic
+    # distinction (no stay option) is in the rules but not on this flowchart.
+
+
+# ────────────────────────────────────────────
+# * Losses sub-procedure
+# ────────────────────────────────────────────
+
+  Losses:
+    text: |
+      * Losses:
+      a) Determine how many Losses.
+      b) Owner resolves Losses 1 by 1.
+
+  Losses_a:
+    title: "a) Losses = A + B"
+    text: "Round down final total."
+    decision: "Defending vs Caesar or Ambiorix?"
+    if_yes:
+      A: "Enemy's Legions x2 or Warbands x1"
+      B: "Enemy's Leader x1 and Auxilia x1/2"
+      # [Rule 3.2.4] "A Defender taking such Losses when Caesar is Attacking
+      # must take two per Legion instead of just one per Legion."
+      # [Rule 3.3.4] "A Defender taking such Losses when Ambiorix is Attacking
+      # must take one for each Belgic Warband, not just 1/2."
+    if_no:
+      A: "Enemy's Legions x1 or Warbands x1/2"
+      B: "Enemy's Leader x1 and Auxilia x1/2"
+    halving: "Defender Fort, Citadel, or Retreat: halve this sum."
+
+  Losses_b:
+    title: "b) Owner chooses piece"
+    branch_1:
+      pieces: "Leader, Legion, Fort, Citadel"
+      resolution: "Remove if 1-3, or if Defending vs Ambush***"
+      # *** Ambush: If Caesar will Counterattack, remove only on 1-3.
+    branch_2:
+      pieces: "Warband, Auxilia, Ally"
+      resolution: "Remove piece."
+    loop: "More Losses? Yes → Owner chooses piece. No → Next Step."
+    footnote_1: "** Ally, Fort, Citadel first if Defender Retreat; else last."
+    footnote_2: "*** Ambush: If Caesar will Counterattack, remove only on 1-3."

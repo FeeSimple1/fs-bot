@@ -1,0 +1,99 @@
+# available_forces.txt
+# Available Forces — Piece Inventory (Base Game)
+# Transcribed from physical Available Forces displays.
+# These displays are the AUTHORITATIVE source for piece limits (1.4.1).
+#
+# Applies to: Pax Gallica?, Reconquest of Gaul, The Great Revolt
+
+
+# ════════════════════════════════════════════════════════════════
+# ROMAN REPUBLIC
+# ════════════════════════════════════════════════════════════════
+
+ROMANS:
+  Leader:   1  (Caesar / Successor)
+  Auxilia:  20
+  Forts:    6
+  Legions:  12  (keep on Legions track, Fallen, or map)
+  Allies:   6   (numbered spaces 1-6)
+
+# NOTE: Legions are NOT on the Available Forces display. They use
+# the Legions track and Fallen Legions box (1.4.1). The display
+# shows 12x Legions as a reminder of the total count.
+# NOTE: One Fort is permanent in Provincia (1.4.2) and can never
+# be removed, so effectively 5 Forts are mobile.
+
+
+# ════════════════════════════════════════════════════════════════
+# ARVERNI CONFEDERATION
+# ════════════════════════════════════════════════════════════════
+
+ARVERNI:
+  Leader:    1   (Vercingetorix / Successor)
+  Warbands:  35
+  Allies:    10  (numbered spaces 1-10)
+  Citadels:  3   (numbered spaces 11, 12, 13)
+
+# NOTE: Ally discs fill Citadel spaces when Citadels are on the
+# map (1.4.1). Spaces 11-13 are diamond-shaped Citadel spaces;
+# Available Allies overflow into them.
+
+
+# ════════════════════════════════════════════════════════════════
+# BELGIC TRIBES
+# ════════════════════════════════════════════════════════════════
+
+BELGAE:
+  Leader:    1   (Ambiorix / Successor)
+  Warbands:  25
+  Allies:    10  (numbered spaces 1-10)
+  Citadels:  1   (numbered space 11)
+
+
+# ════════════════════════════════════════════════════════════════
+# AEDUI CONFEDERATION
+# ════════════════════════════════════════════════════════════════
+
+AEDUI:
+  Leader:    0   (no Leader piece in base game)
+  Warbands:  20
+  Allies:    6   (numbered spaces 1-6)
+  Citadels:  2   (numbered spaces 7, 8)
+
+# VICTORY TRACK (on display): "Other Faction with most Allies has:"
+# Numbered spaces 1, 2, 3, 4, 5, 6, 7, 8+
+# Used to track Aedui victory condition (7.2): Aedui Allies + Citadels
+# must exceed those of each other Faction.
+
+
+# ════════════════════════════════════════════════════════════════
+# GERMANIC TRIBES
+# ════════════════════════════════════════════════════════════════
+
+GERMANS:
+  Leader:    0   (no Leader in base game)
+  Warbands:  15
+  Allies:    6   (numbered spaces 1-6)
+
+# NOTE: Germans are not a player Faction in the base game. They
+# activate during the Germans Phase (6.2) and via Events. Their
+# display tracks Available pieces for Rally/March/Battle.
+
+
+# ════════════════════════════════════════════════════════════════
+# TOTAL PIECE COUNT
+# ════════════════════════════════════════════════════════════════
+#
+#   Romans:   1 + 20 + 6 + 12 + 6          = 45
+#   Arverni:  1 + 35 + 10 + 3              = 49
+#   Belgae:   1 + 25 + 10 + 1              = 37
+#   Aedui:    20 + 6 + 2                   = 28
+#   Germans:  15 + 6                       = 21
+#   Forces subtotal:                        180
+#
+# Chapter 1 says "200 wooden Forces pieces, cylinders, and pawns."
+# The remaining 20 are non-Forces wooden pieces: 4 Eligibility
+# cylinders (2.2), 4 Resource cylinders (1.8), 4 dice, and
+# assorted tracking pawns/markers (3.1.1).
+#
+# Verified against all base game scenario setups.

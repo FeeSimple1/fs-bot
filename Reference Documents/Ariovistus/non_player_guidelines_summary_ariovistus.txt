@@ -1,0 +1,90 @@
+# non_player_guidelines_summary_ariovistus.txt
+# Non-Player Guidelines Summary (8.1 - 8.4) — Ariovistus
+# Ariovistus expansion
+# This is a summary card. All content here is found in Chapter 8 sections
+# 8.1-8.4 and Chapter A8. Transcribed for coding reference.
+#
+# DIFFERENCES FROM BASE GAME marked with [ARIO] comments.
+
+Limited Commands (8.1.2, 2.3.5):
+  Non-player Factions entitled to a Limited Command by the Sequence of
+  Play (not by Event) instead execute a full Command and Special Ability.
+
+Frost (8.4.4):
+  While Winter is showing, Non-players take no action that directly could
+  advance a player Faction above or any further beyond its victory threshold.
+  # [ARIO] Base game cites (8.4.4, 2.3.8, 7.2); Ariovistus cites only (8.4.4).
+  # No functional difference.
+
+Dual Use Events (A8.2.2, 5.2):
+  Non-players executing Dual Use Events choose the following text, unless
+  their Event Instructions (8.1.2) say otherwise:
+  - Aedui and Romans: unshaded.
+  - Belgae and Germans: shaded.
+  # [ARIO] "Arverni" replaced by "Germans" per A8.2.2 and A8.4.
+
+Random Selection (8.3.4):
+  For any candidates of equal priority, choose by equal-chance die rolls.
+
+Retreat (8.4.3, 3.2.4, 3.3.4, 8.4.2):
+  - Non-players Retreat to save their last piece, or — if Romans — to
+    reduce Losses on Legions, or if:
+    (1) They have no Citadel or Fort, and
+    (2) They would inflict <1/2 the Losses as they would suffer, and
+    (3) Retreat itself removes no pieces.
+  - Warbands stay in place when able; Leaders join most friendly pieces.
+  - Most Non-players do not allow other Factions to Retreat into their
+    Control; Aedui and Romans might for the other (8.6.6, 8.8.6).
+
+Event Actions (A8.2.3, 5.1):
+  Non-players when executing Events:
+  - For free Commands and Special Abilities, follow their flowcharts.
+  - For actions by Arverni, follow the Arverni Phase rules (A6.2).
+  # [ARIO] Base game: "For actions by Germans, follow the Germans Phase
+  # rules (6.2)." Ariovistus: "For actions by Arverni, follow the Arverni
+  # Phase rules (A6.2)." This is the A8.4 swap: Arverni now fill the
+  # role that Germans had in the base game.
+  - When a choice who gets benefits, select themselves only.
+
+Event Locations (A8.3.1):
+  Within above and any Instructions (8.2.1), select Regions to place or
+  remove the most Legions, then Settlements/Citadels, Allies, other pieces
+  (then within 8.4.1).
+  # [ARIO] "Settlements" added alongside Citadels per A8.2.3/A8.3.1:
+  # "Settlements receive an equal priority as Citadels for placement or
+  # removal by Event."
+  - Use Capabilities wherever first applicable (8.3.3).
+
+Resources & Supply Lines (8.4.2, 1.5.2, 3.2.1):
+  Most Non-players do not give away Resources or agree to Supply Lines;
+  Aedui-Romans might (8.6.6, 8.8.6).
+
+Place, Move, and Remove (A8.4.1, 1.4.1):
+  - Once Regions picked, target enemy Leaders; then Legions;
+    Settlements/Citadels/Forts; Allies (Cities or Remi first);
+    Warbands/Auxilia (Hidden, Revealed, Scouted).
+  # [ARIO] "Settlements" added to the priority list alongside Citadels/Forts.
+  # [ARIO] "Cities or Remi first" — base game just says "Cities first".
+  - Place or move own pieces in above order; take Losses on or remove own
+    in the reverse order.
+  # [ARIO] "Place or move" — base game says "Place" only. Ariovistus adds
+  # "move" explicitly.
+  - If able, move to end Leader with at least 4 friendly Warbands/Auxilia.
+  # [ARIO] This bullet appears on Ariovistus card but not on base game card.
+  # However, it IS in Ch8 8.4.1, so it's not new — just newly surfaced.
+  - Belgae/Germans target Romans, then Aedui, each other, Arverni.
+  - Romans/Aedui target Germans, then Belgae, Arverni, each other.
+  # [ARIO] Faction targeting swapped per A8.4: "Arverni" ↔ "Germans".
+  # Base game: Belgae/Arverni target Romans→Aedui→each other→Germans.
+  #            Romans/Aedui target Arverni→Belgae→Germans→each other.
+  # Ariovistus: Belgae/Germans target Romans→Aedui→each other→Arverni.
+  #             Romans/Aedui target Germans→Belgae→Arverni→each other.
+
+Harassment (A8.4.2, 3.2.2, 3.2.3, 3.3.2):
+  Belgae and Germans always Harass Roman March and Seize.
+  # [ARIO] Base game: "Belgae and Arverni Harass only Roman March and Seize;
+  # Aedui and Romans Harass only Vercingetorix March."
+  # Ariovistus: "Belgae and Germans always Harass Roman March and Seize."
+  # The Aedui/Romans Harassing Vercingetorix line is dropped because
+  # Vercingetorix is not in Ariovistus scenarios. The "always" wording
+  # matches the A8.4 swap of Arverni→Germans.

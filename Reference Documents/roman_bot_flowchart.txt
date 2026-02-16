@@ -1,0 +1,312 @@
+# roman_bot_flowchart.txt
+# Non-Player Romans — 2nd Edition
+# Transcribed from flowchart sheet, enhanced with Chapter 8 detail where
+# the prose is more specific than the printed flowchart.
+# Chapter 8 additions are marked with [Ch8] comments.
+
+nodes:
+
+  R1:
+    type: decision
+    ref: "8.8.1"
+    text: "Caesar or Legion with enemy Ally, Citadel, Leader, or Control, or where enemy Battle or Rampage now would force Loss on Legion or Caesar?"
+    edges:
+      Yes: R_BATTLE
+      No:  R2
+
+  R2:
+    type: decision
+    text: "Enemy at 0+ victory and Caesar with at least 2 Legions and 4+ Auxilia?"
+    # [Ch8] Flowchart says "Legions"; Ch8 8.8.1 specifies "at least two Legions
+    # and at least four Auxilia."
+    edges:
+      Yes: R_MARCH
+      No:  R3
+
+  R3:
+    type: decision
+    ref: "8.8.2"
+    text: "Romans by Sequence of Play may use Event?"
+    # [Ch8] 8.8.2: "If the Romans have no option to play the Event (because they
+    # are 2nd Eligible, and the 1st Eligible Faction executed the Event or a
+    # Command only, 2.3.4), proceed to 8.8.3."
+    edges:
+      Yes: R4
+      No:  R5            # (8.8.3)
+
+  R4:
+    type: decision
+    text: "Event Ineffective, Capability in final year, or 'No Romans'?"
+    # [Ch8] 8.8.2: Also check Non-player Roman Event Instructions (8.2.1) —
+    # they may render the Event Ineffective or "No Romans"; if so, proceed
+    # to 8.8.3.
+    edges:
+      Yes: R5            # (8.8.3) — skip event, check Auxilia
+      No:  R_EVENT       # execute the event
+
+  R5:
+    type: decision
+    ref: "8.8.3"
+    text: "9+ Auxilia Available?"
+    # [Ch8] 8.8.3: "if eight or fewer, the Romans March per 8.8.1 above,
+    # including Build or Scout."
+    # 8.8.4: "If the Romans have more than eight Auxilia Available, they
+    # Recruit..."
+    edges:
+      No:  R_MARCH       # 8 or fewer → March per 8.8.1
+      Yes: R_RECRUIT     # 9+ → skip to Recruit (8.8.4)
+
+  R_EVENT:
+    type: process
+    title: "Execute Event"
+    text: |
+      1. See Instructions (8.2.1) if gray laurels on card's Roman symbol.
+      2. Use Unshaded text.
+    # [Ch8] 8.8.2: "the Romans execute the Event per 8.2."
+
+  R_BATTLE:
+    type: process
+    title: "Battle"
+    ref: "8.8.1"
+    text: |
+      Battle where Roman Losses will be <1/2 enemy's AND no Loss on Caesar*:
+      1. If Caesar meets condition at left but will not Battle, March instead.
+      2. Check boxes at right for Besiege at start of Battle, OR Scout after Battle.
+      3. Fight enemies meeting condition at left:
+        a. Leaders
+        b. Most Warbands
+        c. Players
+        d. Most Allies+Citadels
+        e. Highest victory margins (7.3)
+      * Presuming all Defender Loss rolls result in removals (best for Roman Attack).
+    # [Ch8] Item (e) from 8.8.1: "finally, highest victory margins (7.3)."
+    # Not on printed flowchart.
+    edges:
+      with:    R_BESIEGE    # check Special Ability
+      If none: R_MARCH
+
+  R_MARCH:
+    type: process
+    title: "March"
+    ref: "8.8.1"
+    text: |
+      March with Leader; most Legions able; and at least 1 Auxilia, plus most
+      Auxilia able without losing Roman or No Control. Take only 1 Harassment
+      Loss per group, none on Legion or lone moving piece.+
+      1. From up to these 3 Regions:
+        (1) 1 meeting upper-left condition
+        (2) 1 also meeting upper-left condition BUT not destination of 1st origin
+        (3) 1 where no enemy Ally/Citadel
+      2. To enemy Allies/Citadels in 2 Regions OR to only 1 Region if 0-6 Legions
+         on map and able; if 2 Regions, to end with more Romans of each type in
+         1st Region than in 2nd Region, as able:
+        (1) Enemies with 0+ victory margin
+          a. Players before Non-players
+        (2) On roll of 1-2 AND if 2+ Germanic Allies on map — Germanic
+        (3) On 3-4 — player Factions
+        (4) Otherwise — enemies with most Allies/Citadels
+      Within (1)-(4):
+        b. Where Losses to enemy Battle would be fewest
+        c. To most such Allies and Citadels
+        d. Ending in Supply
+        e. Suffering least Harassment
+      + Scout as needed to enable above moves by reducing Harassment.
+    # [Ch8] 8.8.1: March routes must "inflict the fewest possible Harassment
+    # Losses" and only to Regions reachable "suffering no more than one Loss
+    # per group per destination Region and 0 on a Legion or piece moving alone."
+    # [Ch8] 8.8.1: If tied at priority (1), "players before Non-players, then
+    # randomly."
+    # [Ch8] 8.8.1: Priority (2) — "only if there are at least two Germanic
+    # Allies total on the map."
+    # [Ch8] 8.8.1: Priority (4) includes "on a roll of 5 or 6."
+    edges:
+      with:    R_SCOUT_MARCH    # Scout during March
+      If none (or Frost): R_RECRUIT
+
+  R_RECRUIT:
+    type: process
+    title: "Recruit"
+    ref: "8.8.4"
+    text: |
+      Recruit if would add 2+ Allies or 6+ pieces total:
+      1. Build before Recruit, OR Scout after.
+      2. Place all Allies able.             Within 2 & 3:
+      3. Place all Auxilia able.              a. at Supply Line
+    # [Ch8] 8.8.4: "first in Regions that are part of a Supply Line (3.2.1,
+    # in order to save Resources)."
+    edges:
+      with:    R_BUILD
+      If none: R_SEIZE
+
+  R_SEIZE:
+    type: process
+    title: "Seize"
+    ref: "8.8.5"
+    text: |
+      Seize only where no Harassment Loss:
+      1. Disperse all Tribes able, NOT Helvii.
+        a. At player pieces
+        b. In Belgica
+      2. For all other Resources able.
+    # [Ch8] 8.8.5: Disperse "starting with those in Regions that have any
+    # players' pieces; within that, first in Belgica (then elsewhere)."
+    # Seize without Dispersing "so as to add all further Resources possible
+    # (without suffering any Harassment)."
+    edges:
+      with:    R_BUILD     # Build after Seize
+      If none: PASS
+
+  PASS:
+    type: terminator
+    text: "Pass"
+
+
+# ────────────────────────────────────────────
+# Special Abilities (8.8.1)
+# ────────────────────────────────────────────
+
+  R_BESIEGE:
+    type: process
+    title: "Besiege"
+    text: |
+      Besiege at start of Battle:
+      1. In the first Battle for which needed to ensure removal of a
+         Citadel that might suffer <3 Losses OR of an Ally.
+      2. If anywhere, then wherever else able.
+    # [Ch8] 8.8.1: "If the Romans would Besiege in any Battle Region per
+    # the above, they also do so in each other Battle possible."
+    edges:
+      with:    R_BUILD            # if Besiege occurred
+      If no Besiege: R_SCOUT_POST_BATTLE   # Scout after Battle instead
+
+  R_SCOUT_POST_BATTLE:
+    type: note
+    text: "If no Besiege, Scout after Battle."
+    edges:
+      to: R_SCOUT
+
+  R_SCOUT_MARCH:
+    type: process
+    title: "Scout during March"
+    text: |
+      1. Only as needed to reach March destination by reducing Harassment.
+      2. If any above, then also as below.
+    # [Ch8] 8.8.1: "If the Romans Marched, they Scout as needed and as able
+    # to diminish Harassment so as to reach March destinations (by Revealing
+    # Hidden Warbands in intervening Regions). If so, they continue to Scout
+    # with other Auxilia as detailed below (instead of Building)."
+    edges:
+      to: R_BUILD       # single arrow out to Build
+
+  R_BUILD:
+    type: process
+    title: "Build"
+    text: |
+      Build before Recruit OR after March or Seize:
+      1. Place all Forts able.
+        a. At non-Aedui Warbands.
+      2. Subdue all Allies able.
+        a. Best victory margins.
+        b. Players'.
+      3. Place all Roman Allies able.
+    # [Ch8] 8.8.1: "spending no more Resources once Roman Resources drop
+    # below six (and not where any Seize occurred)."
+    # [Ch8] 8.8.1: Place Forts "first wherever Arverni, Belgae, or Germans
+    # have Warbands." Flowchart says "non-Aedui Warbands" — same meaning.
+    # [Ch8] 8.8.1: Subdue "first any Allies of Gallic Factions that have the
+    # highest victory margins (7.3); if tied, the Allies of players before others."
+    edges:
+      done:    end_SA
+      If no Build: R_SCOUT   # Scout after Command instead
+
+  R_SCOUT:
+    type: process
+    title: "Scout"
+    text: |
+      Scout per Command. Lose no Roman or No Control or Roman Supply.
+      Move only Auxilia exceeding Legions by Region.
+      1. Move Auxilia:
+        (1) To join/keep 4 Auxilia with Caesar.
+        (2) To add Supply Lines to most Regions with Roman pieces.
+        (3) From where no Legions to join Legions in equal number by Region.
+        (4) To enable Scout of most Hidden Warbands able.
+      2. Scout Warbands:
+        a. Hidden first.
+        b. If Frost, German first.
+      If none, OR if Romans Marched into or out of Britannia, no Special Ability.
+    # [Ch8] 8.8.1: "Move Auxilia only so as to keep Roman Control, add no
+    # enemy Control, and lose no Supply Line from any Region that has Roman
+    # pieces."
+    # [Ch8] 8.8.1: Step (1) — "and keep at least four there for all of this Scout."
+    # [Ch8] 8.8.1: Step (2) — add Supply Lines "by removing Arverni, Belgae,
+    # player Aedui, or Germanic Control."
+    # [Ch8] 8.8.1: Step (3) — "without diminishing the number of Regions with
+    # guaranteed Supply Lines per the above."
+    # [Ch8] 8.8.1: Step 2 — "flipping Hidden Warbands to Revealed (and placing
+    # markers on them) before placing markers on already Revealed Warbands."
+    # [Ch8] 8.8.1: Scout only "if doing so would have any effect (Auxilia would
+    # move, or any Warbands would be Revealed or have a Scouted marker placed
+    # on them, 4.2.2)."
+    # [Ch8] 8.8.1: Britannia restriction per 4.1.3.
+
+
+# ────────────────────────────────────────────
+# Winter (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  R_QUARTERS:
+    type: process
+    title: "Quarters"
+    ref: "6.3.3, 8.8.7"
+    text: |
+      - 1 Auxilia per Fort & Roman Ally stays in place.
+      - All others — including Leader — as able move to Provincia,
+        including by first moving to an adjacent Supply Line Region.
+      - Move from Devastated to other (if not able to reach Provincia).
+      - Then pay to avoid rolls, first at Roman Allies, then where no
+        Devastation, Devastated last.
+    # [Ch8] 8.8.7: "including by first moving to an adjacent Supply Line Region"
+    # was absent from flowchart. Pay order: "starting with those at Roman Allies,
+    # then those where no Devastation, finally those at Devastation last."
+
+  R_SPRING:
+    type: process
+    title: "Spring"
+    ref: "6.6, 8.3.2"
+    text: |
+      - If Roman Leader off map, place with most Romans.
+
+
+# ────────────────────────────────────────────
+# Agreements and Diviciacus (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  R_AGREEMENTS:
+    type: info
+    title: "Agreements"
+    ref: "8.4.2, 8.8.6"
+    text: |
+      - Never transfer Resources.
+      - Retreat, Supply Line, Quarters: agree only to Non-player Aedui.
+      - Always Harass Vercingetorix.
+    # [Ch8] 8.4.2: "Non-player Belgae and Arverni Harass Roman March and
+    # Seize wherever they can. Non-player Aedui and Romans Harass
+    # Vercingetorix March (3.3.2)."
+
+  R_DIVICIACUS:
+    type: info
+    title: "Diviciacus"
+    ref: "8.8.8"
+    text: |
+      If unshaded:
+      - During Aedui Commands, agree unless Aedui at victory (7.2),
+        BUT NOT if they are Raiding/Battling Romans.
+      - During Roman Commands, use Warbands as able BUT Recruit none.
+      - During Aedui defense in Battle, do not agree.
+      - During Roman defense in Battle, do agree.
+    # [Ch8] 8.8.8: "They do not agree to use of Auxilia during Aedui defense
+    # in Battle. (They do during Roman defense.)" Second sentence was absent
+    # from flowchart.
+    # [Ch8] 8.8.8: "use Aedui Warbands as Auxilia to the maximum degree that
+    # Aedui agree (including removing Aedui instead of Auxilia)."
+

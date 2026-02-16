@@ -12,7 +12,7 @@
 
 ### BELGICA (3 regions, 7 tribes)
 
-Morini | Belgica | CV 2 | adj: Nervii, Atrebates, Sugambri(rhenus), Catuvellauni(coastal)
+Morini | Belgica | CV 2 | adj: Nervii, Atrebates, Sugambri(rhenus), Britannia(coastal)
   Menapii
   Morini
 
@@ -20,7 +20,7 @@ Nervii | Belgica | CV 2 | adj: Morini, Atrebates, Treveri, Sugambri(rhenus)
   Eburones
   Nervii
 
-Atrebates | Belgica | CV 3 | adj: Morini, Nervii, Treveri, Carnutes, Mandubii, Catuvellauni(coastal), Veneti
+Atrebates | Belgica | CV 3 | adj: Morini, Nervii, Treveri, Carnutes, Mandubii, Britannia(coastal), Veneti
   Bellovaci
   Atrebates
   Remi
@@ -52,7 +52,7 @@ Mandubii | Celtica | CV 3 | adj: Atrebates, Treveri, Carnutes, Aedui, Sequani, B
   Senones 
   Lingones
 
-Veneti | Celtica | CV 2 | adj: Pictones, Catuvellauni(coastal), Carnutes
+Veneti | Celtica | CV 2 | adj: Pictones, Britannia(coastal), Carnutes, Atrebates
   Veneti
   Namnetes
 
@@ -63,14 +63,14 @@ Pictones | Celtica | CV 2 | adj: Veneti, Carnutes, Bituriges, Arverni
 Bituriges | Celtica | CV 1 | adj: Carnutes, Pictones, Aedui, Arverni, Mandubii
   Bituriges [AVARICUM]
 
-Aedui | Celtica | CV 1 | adj: Mandubii, Bituriges, Sequani, Arverni, Helvii
+Aedui | Celtica | CV 1 | adj: Mandubii, Bituriges, Sequani, Arverni, Provincia
   Aedui [BIBRACTE] aedui-only
 
-Sequani | Celtica | CV 2 | adj: Treveri, Mandubii, Aedui, Arverni, Ubii(rhenus), Helvii, Cisalpina
+Sequani | Celtica | CV 2 | adj: Treveri, Mandubii, Aedui, Arverni, Ubii(rhenus), Provincia, Cisalpina
   Sequani [VESONTIO]
   Helvetii
 
-Arverni | Celtica | CV 3 | adj: Pictones, Bituriges, Aedui, Sequani, Helvii
+Arverni | Celtica | CV 3 | adj: Pictones, Bituriges, Aedui, Sequani, Provincia
   Arverni [GERGOVIA] arverni-only
   Cadurci
   Volcae
@@ -78,14 +78,14 @@ Arverni | Celtica | CV 3 | adj: Pictones, Bituriges, Aedui, Sequani, Helvii
 
 ### BRITANNIA (1 region, 1 tribe)
 
-Catuvellauni | Britannia | CV 1 | coastal-adj: Morini, Atrebates, Veneti
+Britannia | Britannia | CV 1 | coastal-adj: Morini, Atrebates, Veneti
   Catuvellauni
   NOTE: in Ariovistus — not playable, Catuvellauni removed (A1.3.4)
 
 
 ### PROVINCIA (1 region, 1 tribe)
 
-Helvii | Provincia | CV 1 | adj: Arverni, Sequani, Cisalpina, Aedui 
+Provincia | Provincia | CV 1 | adj: Arverni, Sequani, Cisalpina, Aedui
   Helvii 
   NOTE: permanent fort, supply line terminus, Roman home region
 

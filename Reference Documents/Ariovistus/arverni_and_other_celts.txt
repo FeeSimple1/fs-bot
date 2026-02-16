@@ -1,0 +1,219 @@
+# arverni_and_other_celts.txt
+# Arverni and Other Celts — Arverni Phase (A2.3.9, A6.2)
+# Ariovistus expansion aid sheet
+# Transcribed from physical component image.
+#
+# This sheet summarizes the Arverni Phase, the game-run activation
+# system for Arverni in Ariovistus (they are neither a player nor a
+# standard Non-player bot). Full rules in Chapter A6.
+#
+# KEY NEW CONTENT: The "Roll to Select Targets" die table (A6.2) is
+# referenced but not printed in Chapter A6. This sheet is its only source.
+
+
+# ════════════════════════════════════════════════════════════════
+# SELECT TARGETS (A6.2)
+# ════════════════════════════════════════════════════════════════
+
+# Entry condition (diamond):
+# If At War — any non-Arverni Forces in Arverni Home Regions or
+# with Arverni Allies or Citadels:
+
+SELECT_TARGETS:
+  1. Roll to select target Region from those above.
+  2. Then roll again to select target Faction there.
+  - Each roll, track down column and back to top until suitable
+    candidate is selected.
+  3. Mark Target Faction in Target Region.
+  If At Peace, no Arverni Phase.
+
+
+# ════════════════════════════════════════════════════════════════
+# ARVERNI HOME REGIONS (A1.3.1, A6.2)
+# ════════════════════════════════════════════════════════════════
+
+# - Veneti Region
+# - Carnutes Region
+# - Pictones Region
+# - Arverni Region
+# [Sheet includes a map image highlighting these four regions]
+
+
+# ════════════════════════════════════════════════════════════════
+# ROLL TO SELECT TARGETS (A6.2)
+# ════════════════════════════════════════════════════════════════
+#
+# This table is THE AUTHORITATIVE SOURCE for the die-to-target
+# mapping. Chapter A6 describes the procedure but does not list
+# which die face maps to which Region or Faction.
+#
+# Die Roll  | Target Region        | Target Faction
+# ----------|----------------------|-------------------
+# 1-2       | Most Enemy Pieces    | Enemy With Most
+# 3         | Arverni              | Aedui
+# 4         | Carnutes             | Germans
+# 5         | Pictones             | Romans
+# 6         | Veneti               | Belgae
+#
+# PROCEDURE (from A6.2):
+# - Roll a die. Check if that result yields a valid candidate:
+#   Region column: must be an "At War" Region (has non-Arverni
+#   Forces in an Arverni Home Region, or has Arverni Allies/Citadels
+#   with non-Arverni Forces). For roll 1-2, select the triggering
+#   Region with the most enemy pieces total.
+#   Faction column: must have Forces in the Target Region. For
+#   roll 1-2, select the enemy Faction with the most pieces there.
+# - If the roll does not yield a valid candidate, track down the
+#   column (3→4→5→6→1→2→3→...) until a valid one is found.
+# - Choose among equal candidates randomly.
+#
+# NOTE: The two columns are rolled INDEPENDENTLY — first a roll
+# for Region, then a separate roll for Faction. The Region and
+# Faction rolls need not match.
+
+
+# ════════════════════════════════════════════════════════════════
+# RALLY (A6.2.1)
+# ════════════════════════════════════════════════════════════════
+
+# Header: Per Arverni Rally rules (3.3.1), in Regions that are
+# neither Intimidated nor Devastated (A6.2.1):
+
+RALLY:
+  1. Only in "At War" Regions, only once per Region.
+  2. Replace City Allies with Citadels in Regions able.
+  3. Then elsewhere, place Arverni Allies as able, first at Cities,
+     then in Arverni Region, then elsewhere.
+  4. Then elsewhere, place Arverni Warbands as able (Allies and
+     Citadels +1, or 1 in Home).
+  - Choose among candidates randomly. Adjust Control.
+
+# CROSS-REFERENCE vs A6.2.1:
+# The sheet condenses "starting at Cities, then in Arverni Home
+# Regions, then elsewhere" (A6.2.1) to "first at Cities, then in
+# Arverni Region, then elsewhere." The sheet says "Arverni Region"
+# (singular) where A6.2.1 says "Arverni Home Regions" (plural).
+# This is a meaningful difference: the sheet implies the Arverni
+# Region specifically gets Ally placement priority, while the rules
+# text says all four Home Regions do. DEFER TO CHAPTER A6.2.1
+# (the full rules text) as authoritative.
+
+
+# ════════════════════════════════════════════════════════════════
+# MARCH (A6.2.2)
+# ════════════════════════════════════════════════════════════════
+
+# Header: To adjacent (A6.2.2, 3.3.2); not if Frost:
+
+MARCH:
+  1. All Arverni Warbands Hidden (or remove Scouted).
+  2. From Regions with 1+ more Arverni than Control — but never
+     from target Region.
+  3. With as many Warbands as possible without losing Arverni
+     Control, largest moving groups first.
+  4. Into target Region, then 1 other Region where able to remove
+     Aedui Control then Roman Control.
+
+# CROSS-REFERENCE vs A6.2.2:
+# Step 2: Sheet says "1+ more Arverni than Control." A6.2.2 says
+# "at least 1 Arverni Warband beyond the pieces needed for Arverni
+# Control." Consistent — same meaning.
+# Step 4: Sheet says "remove Aedui Control then Roman Control."
+# A6.2.2 says "either Aedui or Roman Control in it — Aedui first."
+# Consistent.
+
+
+# ════════════════════════════════════════════════════════════════
+# RAID (A6.2.3)
+# ════════════════════════════════════════════════════════════════
+
+# Header: Where Hidden Arverni and another Faction has pieces but
+# neither Fort nor Citadel (A6.2.3, 3.3.3):
+
+RAID:
+  1. Only with Warbands not needed to enable Ambush.
+  2. Only against Factions with Resources.
+  3. Against target Faction first, then other players, then other
+     Non-players, then at random.
+  4. With as many Arverni Warbands as possible.
+
+# CROSS-REFERENCE vs A6.2.3:
+# Step 2: Sheet says "Only against Factions with Resources." A6.2.3
+# adds "and no Fort or Citadel" and "only until that Faction reaches
+# 0 Resources." The Fort/Citadel restriction is in the header, not
+# repeated in the bullets. The "until 0" detail is omitted from the
+# sheet — it's implicit in the Raid rules (3.3.3) but worth noting.
+# Step 3: Sheet says "then at random." A6.2.3 says "Otherwise,
+# choose randomly among Target Factions within a Region." Same
+# meaning.
+
+
+# ════════════════════════════════════════════════════════════════
+# BATTLE + AMBUSH (A6.2.4)
+# ════════════════════════════════════════════════════════════════
+
+# Header: With Arverni where another Faction that has fewer Hidden
+# pieces (A6.2.4, 3.3.4):
+
+BATTLE_AMBUSH:
+  1. Only where Arverni can Ambush (no Leader needed) to cause
+     enemy Loss.
+  2. First in selected target Region, then in others.
+  3. Within each Region, against selected target Faction first, then
+     other players, then other Non-players.
+
+# CROSS-REFERENCE vs A6.2.4:
+# "(no Leader needed)": Correct — Vercingetorix is not in play in
+# Ariovistus, and the Arverni have no Leader piece. Ambush
+# eligibility (4.3.3) normally requires a Leader or Hidden Warbands,
+# but the sheet clarifies that for Arverni the Leader requirement is
+# waived (since they have none). This is implicit in the rules but
+# the sheet makes it explicit.
+# Actually, re-reading 4.3.3: Ambush requires Hidden Warbands
+# with fewer Hidden enemy pieces — the Leader enables Ambush
+# WITHOUT Hidden Warbands. Since Arverni have no Leader, they
+# must rely on Hidden Warbands, which is the normal Ambush path.
+# The "(no Leader needed)" on the sheet means "Arverni Ambush
+# works even without a Leader" — i.e., don't skip Ambush just
+# because Arverni have no Leader on the map.
+
+
+# ════════════════════════════════════════════════════════════════
+# AGREE, HARASS, LOSS (A1.5.2, A3.2.4)
+# ════════════════════════════════════════════════════════════════
+
+AGREE_HARASS_LOSS:
+  1. Arverni never agree, never Retreat, and always opt to Harass
+     (A3.2.1, A3.2.4, A3.2.2).
+  2. Arverni suffering Losses in Battle remove Scouted, then other
+     Revealed, then Hidden Warbands; then Allies, from Cities last;
+     finally Citadels (A3.2.4).
+
+# CROSS-REFERENCE vs A1.5.2 and A3.2.4:
+# Bullet 1: A1.5.2 says "The Arverni never agree, Harass at every
+# opportunity, and may not receive Resources." The sheet's
+# "(A3.2.1, A3.2.4, A3.2.2)" maps to: Supply Lines (A3.2.1),
+# Retreat (A3.2.4), and March Harassment (A3.2.2).
+#
+# Bullet 2 — ARVERNI LOSS ORDER: This is a critical rule for
+# coding. The Arverni have a UNIQUE loss absorption order that
+# differs from both standard Gallic and Roman loss orders:
+#   Standard Gallic: Hidden Warbands stay, Revealed removed first
+#   Arverni in Ariovistus: Scouted first, then Revealed, then Hidden,
+#     then Allies (Cities last), then Citadels.
+# This is the REVERSE of normal Gallic practice (where Hidden
+# Warbands are protected). The Arverni sacrifice concealment to
+# preserve their alliance network. Confirmed in A3.2.4.
+
+
+# ════════════════════════════════════════════════════════════════
+# SUMMARY OF NEW INFORMATION (not in Chapter A6 text)
+# ════════════════════════════════════════════════════════════════
+#
+# 1. DIE ROLL TABLE: The specific die-face-to-target mapping for
+#    Select Targets. This is the only source for which numbers map
+#    to which Regions and Factions. ESSENTIAL for implementation.
+#
+# 2. Everything else on the sheet is a condensed summary of rules
+#    already in Chapter A6, A1.5.2, and A3.2.4. One minor wording
+#    discrepancy noted in Rally (see cross-reference note above).

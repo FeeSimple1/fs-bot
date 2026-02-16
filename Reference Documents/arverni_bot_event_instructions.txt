@@ -1,0 +1,48 @@
+# arverni_bot_event_instructions.txt
+# Non-Player Arverni — Event Instructions
+# Base game (2nd Edition)
+# NOTE: No Ariovistus version exists — Arverni are replaced by Germanic Tribes.
+
+# Event Instructions (8.1.1, 8.2.1, 8.7.2)
+# Gray swords around the card's Arverni symbol means that the Event is
+# "No Arverni", carnyx that it is "Auto 1-4", laurels that it has specific
+# Instructions listed below.
+
+general:
+  Ineffective: "(8.1.1) If nothing would happen, continue on the flowchart with a Command & Special Ability."
+  Capabilities: "(8.1.1) If the next Winter will be the last of the game, continue on the flowchart instead."
+  No Arverni: |
+    (8.1.1) Ballistae, Catuvolcus, Chieftains' Council, Circumvallation,
+    Commius, Correus, Indutiomarus, Joined Ranks, Migration:
+    Continue on the flowchart instead.
+  Auto 1-4: |
+    (8.7.2) Alaudae, Balearic Slingers, Clodius Pulcher, Gallia Togata,
+    Germanic Horse, Legio X, Legiones XIIII et XV, Lost Eagle,
+    Lucterius, Massed Gallic Archers, Pompey, Sacking, Sappers,
+    The Province, Vercingetorix's Elite:
+    Play Event, as if a 1-4 had been rolled.
+
+per_card:
+  "Acco":
+    instruction: "Unless shaded text would place Arverni Citadel, use unshaded text (selecting Arverni, 8.2.3)."
+
+  "Ambacti, Dumnorix Loyalists, Marcus Antonius, Numidians":
+    instruction: "Select Auxilia first to leave Legions without Auxilia in as many Regions as possible."
+
+  "Arduenna":
+    instruction: "March and Battle to inflict maximum Losses on Legions; if none possible, treat as 'No Arverni'."
+
+  "Assembly of Gaul, Remi Influence":
+    instruction: "If Arverni do not qualify for the benefit, treat as 'No Arverni'."
+
+  "Cicero":
+    instruction: "Shift up (toward Uproar, or flip to Firm if already in Uproar and not yet Firm)."
+
+  "Forced Marches, Optimates":
+    instruction: "If <9 Arverni Allies+Citadels, treat as 'No Arverni'; move only per 8.7.6."
+
+  "Impetuosity, War Fleet":
+    instruction: "Move as many Warbands and Leader (if applicable) as possible to take Arverni Control of a Region with player pieces — Roman, then Aedui, then Belgae — then Battle that player there."
+
+  "Shifting Loyalties":
+    instruction: "Select an unshaded Capability affecting player Romans or Aedui, then Arverni."

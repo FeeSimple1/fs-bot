@@ -1,0 +1,371 @@
+# arverni_bot_flowchart.txt
+# Non-Player Arverni — 2nd Edition
+# Transcribed from flowchart sheet, enhanced with Chapter 8 detail where
+# the prose is more specific than the printed flowchart.
+# Chapter 8 additions are marked with [Ch8] comments.
+# NOTE: Arverni are not used in Ariovistus scenarios (Germans replace them).
+
+nodes:
+
+  V1:
+    type: decision
+    ref: "8.7.1"
+    text: "Vercingetorix or 10+ Arverni Warbands where Romans or Aedui have an Ally, Citadel, Legion, or >3 pieces?"
+    # [Ch8] 8.7.1: "If the Arverni have Vercingetorix or a group of at least
+    # ten Arverni Warbands in any Region where the Romans or Aedui have an
+    # Ally, a Citadel, a Legion, or separately at least four pieces."
+    edges:
+      Yes: V_BATTLE
+      No:  V2
+
+  V2:
+    type: decision
+    ref: "8.7.2"
+    text: "Arverni by Sequence of Play may use Event?"
+    edges:
+      No:  V3            # (8.7.3)
+      Yes: V2b
+
+  V2b:
+    type: decision
+    text: "Event Ineffective, Capability in final year, or 'No Arverni'?"
+    # [Ch8] 8.7.2: Also check Non-player Arverni Event Instructions (8.2.1) —
+    # they may render the Event Ineffective or "No Arverni"; if so, proceed
+    # to 8.7.3 Rally.
+    edges:
+      No:  V2c
+      Yes: V3            # (8.7.3)
+
+  V2c:
+    type: decision
+    text: "Roll of 1-4 or 'Auto 1-4'?"
+    # [Ch8] 8.7.2: "check whether the Event is listed as 'Auto 1-4' (the
+    # Arverni symbol on the card would have a Carnyx battle trumpet, 8.2.1).
+    # If not, roll a die. If so, or if the die roll is a 1-4, the Arverni execute
+    # the Event per 8.2. If the die roll was a 5 or 6, instead proceed to 8.7.3."
+    edges:
+      Yes: V_EVENT
+      No:  V3            # rolled 5-6 → Rally
+
+  V3:
+    type: decision
+    ref: "8.7.3"
+    text: "0-8 Arverni Warbands on map, or Rally would place 2+ Allies/Citadels or 6+ pieces?"
+    # [Ch8] 8.7.3: "they Rally if they have fewer than nine Warbands on the
+    # map, or if Rallying (alone, without any Entreat) would place at least two
+    # Citadels and/or Allies total, or at least six pieces."
+    edges:
+      Yes: V_RALLY
+      No:  V4
+
+  V4:
+    type: decision
+    ref: "8.7.4"
+    text: "0-5 Arverni Allies+Citadels on map, or 6+ Warbands Available?"
+    edges:
+      Yes: V_MARCH_SPREAD
+      No:  V5
+
+  V5:
+    type: decision
+    ref: "8.7.5"
+    text: "Arverni have 0-3 Resources and roll 1-4?"
+    edges:
+      Yes: V_RAID
+      No:  V_MARCH_MASS   # (8.7.6)
+
+  V_EVENT:
+    type: process
+    title: "Execute Event"
+    text: |
+      1. See Instructions (8.2.1) if gray laurels on card's Arverni symbol.
+      2. Use Shaded text, if any.
+    # [Ch8] 8.7.2: Unlike other factions, Arverni prefer shaded text.
+
+  V_BATTLE:
+    type: process
+    title: "Battle"
+    ref: "8.7.1"
+    text: |
+      Battle where Loss on Legion AND/OR Arverni's Losses less than enemy's
+      — AND no Loss on Vercingetorix*:
+      1. If Vercingetorix meets condition at left BUT will not Battle, March instead.
+      2. Pay Resources for all Battle Regions.
+      3. Check boxes at right for Ambush, OR Devastate OR Entreat before Battle.
+      4. Fight enemies meeting condition at left:
+        a. Vercingetorix versus Romans — BUT fight Caesar only if Arverni
+           mobile forces outnumber Roman mobile forces by >2-1.
+      5. Fight Romans, Aedui, OR player Belgae in other Regions.
+      * Presuming all Defender Loss rolls result in removals (best for Arverni Attack).
+    # [Ch8] 8.7.1: "only in Regions where they will force at least one Loss
+    # (roll or removal) on a Legion and/or will inflict more Losses on the enemy
+    # (3.3.4) than they will suffer."
+    # [Ch8] 8.7.1: Step 4a — "If Vercingetorix is with Caesar, he Battles only
+    # if the Arverni have more than twice as many mobile pieces (Warbands plus
+    # Vercingetorix) in the Region as do the Romans (Legions plus Auxilia plus
+    # Caesar) there."
+    # [Ch8] 8.7.1: Step 5 — "spaces that did not trigger the Battle Command
+    # above (and where the Arverni also meet the overall Loss restriction above).
+    # NOTE: Non-player Arverni do not Battle against Non-player Belgae or
+    # Germans."
+    # [Ch8] 8.7.1: "For all Battle Regions, pay Resources as soon as selected,
+    # so that any Devastate or Entreat will occur after Battles are paid."
+    edges:
+      with:    V_AMBUSH
+      If none: V_MARCH_THREAT
+
+  V_MARCH_THREAT:
+    type: process
+    title: "March (from threat)"
+    ref: "8.7.1"
+    text: |
+      March if no Battle. Pay as selecting.
+      1. Vercingetorix with all Warbands to Region with most Arverni.
+      2. Toward Vercingetorix with all Warbands EXCEPT 1 per origin Region.
+    # [Ch8] 8.7.1: "For all March origins, pay Resources as soon as selected."
+    # [Ch8] 8.7.1: Step 1 — "Vercingetorix and all of his Warbands March out
+    # of his current Region into another Region, to join the most Arverni pieces
+    # able (resolving movement after any Special Ability, if possible)."
+    # [Ch8] 8.7.1: Step 2 — "move all other Warbands possible to get them
+    # closer to Vercingetorix (counting by adjacent Regions), but leave one
+    # Arverni Warband behind in each origin Region."
+    edges:
+      with: V_DEVASTATE
+
+  V_RALLY:
+    type: process
+    title: "Rally"
+    ref: "8.7.3"
+    text: |
+      Rally wherever able to place a piece:
+      1. Citadels  2. Allies  3. Most Warbands
+    # [Ch8] 8.7.3: "First, replace any Allies in Cities with Citadels. Then,
+    # place all Allies possible. Finally, place the most Warbands possible."
+    # [Ch8] 8.7.3: "IF NONE: If the Arverni have fewer than nine Warbands but
+    # were unable to Rally any pieces, they instead March per 8.7.4."
+    edges:
+      then:    V_DEVASTATE
+      If none: V_MARCH_SPREAD
+
+  V_MARCH_SPREAD:
+    type: process
+    title: "March (to spread)"
+    ref: "8.7.4"
+    text: |
+      March from fewest Regions able. Leave 1 Arverni Warband each origin.
+      Lose no Arverni Control.
+      1. To add 1 Hidden Arverni to each Region possible where none.
+      2. Leader with Warbands, to replace 1 Aedui or Roman Control —
+         NOT Bibracte.
+        a. Within 1 Region of most Regions with Arverni able.
+    # [Ch8] 8.7.4: "leaving at least one Warband and any Warbands needed to
+    # keep any Arverni Control."
+    # [Ch8] 8.7.4: Step 1 — "add one Hidden Arverni to each Region possible
+    # that currently has no Hidden Arverni (without removing the last from any
+    # origin)."
+    # [Ch8] 8.7.4: Step 2 — "move the Arverni Leader with all Warbands from
+    # his Region to take Arverni Control of one Region with Roman or Aedui
+    # Control. Choose the Region that is within a distance of one Region from
+    # the most Regions possible that have Arverni pieces. This destination may
+    # not be Bibracte (the Aedui Home Region)."
+    edges:
+      then:    V_DEVASTATE
+      If none: V_RAID
+
+  V_RAID:
+    type: process
+    title: "Raid"
+    ref: "8.7.5"
+    text: |
+      Raid if would gain 2+ Resources total:
+      1. Versus Factions:
+        (1) Romans  (2) Aedui  (3) Belgae
+      2. In non-Devastated Regions, versus no Faction.
+    # [Ch8] 8.7.5: "(whether player or Non-player)" — Arverni Raid all
+    # factions in order, unlike Aedui who skip Non-player Romans.
+    edges:
+      then:    V_DEVASTATE
+      If none: PASS
+
+  V_MARCH_MASS:
+    type: process
+    title: "March (to mass)"
+    ref: "8.7.6"
+    text: |
+      March with Leader and as many Warbands as can reach destination:
+      1. To take Arverni Control of 1 Region that has a Legion — BUT to
+         Caesar only if Arverni mobile forces will outnumber Roman mobile
+         forces by more than 2-1.
+      2. If none, to mass most Arverni pieces able in 1 Region adjacent to
+         a Legion, leaving 1 Arverni Warband per origin.
+    # [Ch8] 8.7.6: Step 1 — "Add Arverni Control to one Region that does not
+    # yet have it and contains at least one Legion. Select a Region with Caesar
+    # only if only the Arverni will end the move with more than twice as many
+    # mobile pieces (Warbands plus Vercingetorix) there as the Romans (Legions
+    # plus Auxilia plus Caesar)."
+    # [Ch8] 8.7.6: Step 2 — "instead move the Arverni Leader and all Warbands
+    # possible to gather the largest number of Arverni pieces possible into one
+    # Region that is adjacent to at least one Legion. In this case, leave one
+    # Arverni Warband behind in each origin Region."
+    # [Ch8] 8.7.6: "IF NONE: If the Arverni cannot so March (for example,
+    # because of Frost, 2.3.8, or because their Leader is not on the map), they
+    # instead Raid per 8.7.5 above."
+    edges:
+      then:                       V_DEVASTATE
+      If none (or Frost or no Leader): V_RAID
+
+  PASS:
+    type: terminator
+    text: "Pass"
+
+
+# ────────────────────────────────────────────
+# Special Abilities (8.7.1)
+# ────────────────────────────────────────────
+
+  V_AMBUSH:
+    type: process
+    title: "Ambush"
+    text: |
+      1. In 1st Battle per box at left, BUT only if Retreat out could lessen
+         removals AND/OR any Counterattack Loss to Arverni is possible.
+      2. In all other Battles only if Arverni Ambushed in the 1st Battle.
+    # [Ch8] 8.7.1: "but only if the lack of Ambush would allow the enemy's
+    # Retreat out of that Region to reduce its pieces removed, or would allow a
+    # Counterattack to inflict at least one Loss on the Arverni (3.3.4). NOTE: A
+    # defending Legion or Leader would meet the 2nd requirement, because it
+    # could survive multiple die roll Losses to then inflict one Loss in
+    # Counterattack."
+    # [Ch8] 8.7.1: "If they Ambushed in the 1st Battle per above, they also do
+    # so in each other Battle possible."
+    edges:
+      If no Ambush: V_DEVASTATE_BEFORE_BATTLE
+        # Devastate OR Entreat before Battle, per boxes below
+
+  V_DEVASTATE_BEFORE_BATTLE:
+    type: process
+    title: "Devastate/Entreat per below"
+    text: |
+      1. Before moving pieces, if able.
+      2. Otherwise, after moving pieces.
+    # [Ch8] 8.7.1: Devastate "immediately before they move (after paying for
+    # the Command) during a March away from a threat per above. If able to
+    # Devastate only after they move, they do that instead. They Devastate
+    # before a Battle Command, or after other March, Rally, or Raid."
+    edges:
+      to: V_DEVASTATE
+
+  V_DEVASTATE:
+    type: process
+    title: "Devastate"
+    text: |
+      Devastate before Battle, before OR after March, after Rally or Raid:
+      1. In each Region where able to force removal of a Legion OR
+         2 Auxilia OR at least as many Roman+Aedui pieces total as Arverni.
+    # [Ch8] 8.7.1: "They Devastate wherever they can that will force removal
+    # of a Legion or two Auxilia or of at least one enemy piece and as many
+    # Roman plus Aedui pieces combined as it will Arverni pieces from the
+    # Region."
+    # [Ch8] 8.7.1: NOTE: "Executing Devastate (or Entreat, below) immediately
+    # before Vercingetorix's March away can save paying a 2nd Resource for
+    # selecting a now Devastated Region as March origin (3.3.2, 4.3.2), and
+    # ensures that Arverni with just one Resource spend it on the March rather
+    # than on any Entreat."
+    edges:
+      If none: V_ENTREAT
+
+  V_ENTREAT:
+    type: process
+    title: "Entreat"
+    text: |
+      Entreat before OR after, per Command:
+      1. Replace enemy Allies with Arverni:
+        (1) Aedui  (2) Belgic  (3) Germanic
+      2. Replace other enemies with Arverni:
+        (1) Auxilia  (2) Aedui Warbands (only)
+      3. Remove (once Arverni not Available):
+        (1) Auxilia
+        (2) Aedui Warbands
+        (3) Player Allies (only)
+      If none, OR if Arverni Marched into or out of Britannia, no Special Ability.
+    # [Ch8] 8.7.1: "They Entreat first to replace (not just remove) any Aedui,
+    # then Belgic, then Germanic Allies possible with Arverni Allies."
+    # [Ch8] 8.7.1: "Then, they replace Auxilia where possible, then Aedui
+    # Warbands with Arverni Warbands."
+    # [Ch8] 8.7.1: "Then, (once no Arverni Warbands are Available) they remove
+    # Auxilia then Aedui Warbands. Finally, they remove (Subdue) Allies of
+    # player Factions (in the unlikely case that they had no Arverni Allies
+    # Available to replace them)."
+    # [Ch8] 8.7.1: Britannia restriction per 4.1.3.
+    # [Ch8] 8.7.1: NOTE: "In the rare case that Entreat prevents Battle by
+    # removing a lone target piece, instead March and Entreat per above."
+
+
+# ────────────────────────────────────────────
+# Additional info boxes (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  V_VERCINGETORIX_MARCH:
+    type: info
+    title: "Vercingetorix March"
+    ref: "8.7.1"
+    text: |
+      - Avoid all Harassment able, never >3 or any Loss on Leader.
+    # [Ch8] 8.7.1: "Arverni with Vercingetorix March into a 2nd Region (3.3.2)
+    # as needed to fulfill March priorities, by routes that will inflict the fewest
+    # possible Harassment Losses on them (3.2.4, including because a player
+    # Faction agrees that it will not Harass that March, 1.5.2), and only to
+    # Regions that they can reach suffering no more than three Losses that March
+    # and none on Vercingetorix."
+
+  V_AGREEMENTS:
+    type: info
+    title: "Agreements"
+    ref: "8.4.2"
+    text: |
+      - Never agree to Retreat, Supply, or Quarters, or transfer Resources.
+      - Always Harass Romans.
+    # [Ch8] 8.4.2: "Non-player Belgae and Arverni never voluntarily transfer
+    # Resources (1.5.2), nor agree to have Regions they Control be part of a
+    # Supply Line (3.2.1) or used for another Faction's Retreat (3.2.4) or
+    # Quarters (6.3)."
+    # [Ch8] 8.4.2: "Non-player Belgae and Arverni Harass Roman March and
+    # Seize (3.2.2, 3.2.3) wherever they can."
+
+  V_ELITE:
+    type: info
+    title: "Vercingetorix's Elite"
+    ref: "8.7.8"
+    text: |
+      If shaded Capability in effect:
+      - Take Losses on Elites first.
+    # [Ch8] 8.7.8: "Non-player Arverni take Battle Losses first by rolling
+    # against their Warbands that take Losses as Legions, if they can."
+
+
+# ────────────────────────────────────────────
+# Winter (on flowchart sheet)
+# ────────────────────────────────────────────
+
+  V_QUARTERS:
+    type: process
+    title: "Quarters"
+    ref: "6.3.2, 8.7.7"
+    text: |
+      - Leave Devastated if no Ally/Citadel.
+      - Move Leader/Warband group to join most, end next to most
+        Regions with Arverni able; leave 1+ OR for Control.
+    # [Ch8] 8.7.7: "first leave Devastated Regions where they have no Ally or
+    # Citadel for adjacent Regions that they Control, if they can. They then (or
+    # thereby) move their Leader and/or one group of Warbands, so as to join the
+    # Leader with the largest group of Arverni Warbands able (if any) and, within
+    # that, to get or keep the Leader within one Region of the most Regions with
+    # Arverni Forces able. They leave behind at least one Warband and up to those
+    # needed to retain any Arverni Control."
+
+  V_SPRING:
+    type: process
+    title: "Spring"
+    ref: "6.6, 8.3.2"
+    text: |
+      - Place Leader at most Arverni.

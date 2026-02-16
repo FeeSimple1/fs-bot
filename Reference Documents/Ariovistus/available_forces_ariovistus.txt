@@ -1,0 +1,124 @@
+# available_forces_ariovistus.txt
+# Available Forces — Ariovistus Addendum
+# Changes to piece inventory for Ariovistus scenarios.
+# Ariovistus replaces all 5 displays with upgraded versions (A1.2.1).
+#
+# Applies to: Ariovistus, The Gallic War
+#
+# Non-Germanic faction COUNTS are unchanged. This addendum lists
+# only the differences from the base game available_forces.txt.
+
+
+# ════════════════════════════════════════════════════════════════
+# PIECES ADDED BY ARIOVISTUS (A1.4)
+# ════════════════════════════════════════════════════════════════
+#
+# Ariovistus adds 23 Forces pieces total:
+#   2 Leaders: Ariovistus/Germanic Successor + Diviciacus
+#   6 Germanic Settlements
+#   15 Germanic Warbands (additional)
+
+
+# ════════════════════════════════════════════════════════════════
+# GERMANIC TRIBES — ARIOVISTUS
+# ════════════════════════════════════════════════════════════════
+
+GERMANS_ARIOVISTUS:
+  Leader:      1   (Ariovistus / Germanic Successor)  [ADDED]
+  Warbands:    30  (15 base + 15 additional)          [+15]
+  Allies:      6   (numbered spaces 1-6)              [unchanged]
+  Settlements: 6   (A-marked holding areas)           [ADDED]
+
+# The Ariovistus display adds gray-bordered "A" holding areas for
+# the 15 additional Warbands and 6 Settlements (A1.4.1).
+# Available Settlements fill highest-numbered empty spaces of their
+# row, counted separately from Allies (A1.4.1).
+# Settlements are limited to 1 per Region (A1.4.2).
+# Germans are now a full player Faction in Ariovistus (A1.5).
+
+
+# ════════════════════════════════════════════════════════════════
+# AEDUI CONFEDERATION — ARIOVISTUS
+# ════════════════════════════════════════════════════════════════
+
+AEDUI_ARIOVISTUS:
+  Leader:    1   (Diviciacus)                         [ADDED]
+  Warbands:  20                                       [unchanged]
+  Allies:    6   (numbered spaces 1-6)                [unchanged]
+  Citadels:  2   (numbered spaces 7, 8)               [unchanged]
+
+# Diviciacus is a unique Leader with special properties (A1.4):
+# - Restricts Aedui Special Abilities to his or adjacent Regions
+#   (A4.1.2).
+# - Within 1 Region of Diviciacus, Romans and Aedui may (if they
+#   agree) treat Aedui Warbands and Auxilia each as the other
+#   for Commands, Special Abilities, and Battle defense (A3.1, A4.1).
+# - In Battle, may not absorb Losses until last possible piece.
+#   A Loss removes Diviciacus only on a roll of 1 (not 1-3).
+# - If removed, taken out of play — NOT returned to Available.
+#   No Successor. (A1.4)
+# - NEVER Available: placed only by scenario setup or Event (A38).
+#   The display has no holding space for Diviciacus.
+#
+# VICTORY TRACK: "Other Faction with most Allies has:" now counts
+# Germanic Settlements as Germanic Allies (A7.2).
+#
+# Diviciacus Leader Option: May also be used in original base game
+# scenarios with the replacement Diviciacus 2nd Ed card 38 (A2.1).
+
+
+# ════════════════════════════════════════════════════════════════
+# ARVERNI CONFEDERATION — ARIOVISTUS
+# ════════════════════════════════════════════════════════════════
+
+ARVERNI_ARIOVISTUS:
+  Leader:    0   (Vercingetorix removed from play)    [REMOVED]
+  Warbands:  35                                       [unchanged]
+  Allies:    10  (numbered spaces 1-10)               [unchanged]
+  Citadels:  3   (numbered spaces 11, 12, 13)         [unchanged]
+
+# Vercingetorix is not used in Ariovistus (A1.4). Arverni have no
+# Leader and no Successor. Arverni are game-run via the Arverni
+# Phase (A6.2), not a player or standard Non-player Faction.
+
+
+# ════════════════════════════════════════════════════════════════
+# BELGIC TRIBES — ARIOVISTUS
+# ════════════════════════════════════════════════════════════════
+
+BELGAE_ARIOVISTUS:
+  Leader:    1   (Boduognatus / Successor)            [RENAMED]
+  Warbands:  25                                       [unchanged]
+  Allies:    10  (numbered spaces 1-10)               [unchanged]
+  Citadels:  1   (numbered space 11)                  [unchanged]
+
+# Same physical piece as Ambiorix, same properties. Treat all
+# references to "Ambiorix" as "Boduognatus" (A1.4).
+
+
+# ════════════════════════════════════════════════════════════════
+# ROMAN REPUBLIC — ARIOVISTUS
+# ════════════════════════════════════════════════════════════════
+
+# No changes to Roman piece counts or types.
+# Piece counts: 1 Leader, 20 Auxilia, 6 Forts, 12 Legions, 6 Allies.
+#
+# Functional changes (not piece counts):
+# - Cisalpina is now a playable Region (A1.3.2), so the permanent
+#   Fort in Provincia no longer marks the only Roman home territory.
+# - Supply Lines must include Provincia or Cisalpina (A3.2.1).
+# - Senate Phase places max 2 Legions per phase (A6.5.2).
+
+
+# ════════════════════════════════════════════════════════════════
+# ARIOVISTUS TOTAL PIECE COUNT
+# ════════════════════════════════════════════════════════════════
+#
+# Base game forces:                         180
+# Added by Ariovistus:                      +23
+#   (2 Leaders + 15 Warbands + 6 Settlements)
+# Total forces:                             203
+#
+# Note: Vercingetorix is physically removed from play in Ariovistus
+# scenarios, so the actual pieces in use are 202. The Diviciacus
+# piece is either in play or removed from play, never Available.

@@ -204,7 +204,8 @@ Aedui where able, then from Belgae, then (in other Regions) from
 no Faction (3.3.3).
 INTIMIDATE: After Raiding, the Germans free Intimidate in Ario-
 vistus’s Region if they can, then Intimidate further per A8.7.1 above.
-IF NONE: If the Germans are to Raid bA8.7.4 Rally? If the Germans have neither Battled, Marched, Passed,
+IF NONE: If the Germans are to Raid but cannot gain enough Resources per above, they Pass.
+A8.7.4 Rally? If the Germans have neither Battled, Marched, Passed,
 executed the Event, nor Raided, they Rally and Settle if doing either
 would place a Germanic Ally, a Settlement, or at least four Germanic
 Warbands total, or if it would add to Germanic Control. Before Ral-
@@ -272,5 +273,4 @@ PLAYER VICTORY:
 • 3 or More, Player as German—Gallia Germanica! Ariovistus’s
 bid for Suebi ascendance wins the Germanic tribes enduring power
 in Gaul as the Belgae and Aedui reel from dual invasions and the
-Romans reconsider their interest in Transalpina.ut cannot gain enough Re-
-sources per above, they Pass.
+Romans reconsider their interest in Transalpina.

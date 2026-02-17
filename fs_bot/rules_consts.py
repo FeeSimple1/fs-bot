@@ -974,6 +974,10 @@ WINTER_CARD = "Winter"
 CARD_NAMES_ARIOVISTUS = {
     "A5": "Gallia Togata",
     11: "Numidians",
+    30: "Vercingetorix's Elite",
+    39: "River Commerce",
+    44: "Dumnorix Loyalists",
+    54: "Joined Ranks",
     "A17": "Publius Licinius Crassus",
     "A18": "Rhenus Bridge",
     "A19": "Gaius Valerius Procillus",

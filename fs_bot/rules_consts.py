@@ -973,7 +973,7 @@ WINTER_CARD = "Winter"
 
 CARD_NAMES_ARIOVISTUS = {
     "A5": "Gallia Togata",
-    "A11": "Numidians",
+    11: "Numidians",
     "A17": "Publius Licinius Crassus",
     "A18": "Rhenus Bridge",
     "A19": "Gaius Valerius Procillus",
@@ -1033,46 +1033,27 @@ ARIOVISTUS_EVENT_CARD_COUNT = 72
 # ============================================================================
 
 # Base game capabilities — Card Reference, §5.3
+# Only cards with the literal "CAPABILITY" marker in the Card Reference.
 CAPABILITY_CARDS = {
     8: "Baggage Trains",
     10: "Ballistae",
-    11: "Numidians",
     12: "Titus Labienus",
     13: "Balearic Slingers",
     15: "Legio X",
-    16: "Ambacti",
-    17: "Germanic Chieftains",
-    18: "Rhenus Bridge",
-    19: "Lucterius",
-    20: "Optimates",
-    21: "The Province",
-    22: "Hostages",
-    23: "Sacking",
-    24: "Sappers",
     25: "Aquitani",
-    26: "Gobannitio",
-    27: "Massed Gallic Archers",
-    28: "Oppida",
-    29: "Suebi Mobilize",
     30: "Vercingetorix's Elite",
-    32: "Forced Marches",
-    33: "Lost Eagle",
-    34: "Acco",
-    35: "Gallic Shouts",
-    36: "Morasses",
-    37: "Boii",
     38: "Diviciacus",
     39: "River Commerce",
-    42: "Roman Wine",
     43: "Convictolitavis",
-    44: "Dumnorix Loyalists",
-    45: "Litaviccus",
     55: "Commius",
     59: "Germanic Horse",
     63: "Winter Campaign",
 }
 
 # Ariovistus-exclusive capability cards — A Card Reference
+# Only new/replacement capabilities with an A## card number.
+# Base game capability cards (from CAPABILITY_CARDS) that appear in the
+# Ariovistus deck are also capabilities — code should check both dicts.
 CAPABILITY_CARDS_ARIOVISTUS = {
     "A22": "Dread",
     "A31": "German Phalanx",

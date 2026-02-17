@@ -121,3 +121,5 @@ See BUILD_PLAN.md for the phased implementation roadmap and lessons learned from
 For the Developer
 This project is being built from scratch with Claude Code, informed by the mistakes of a prior COIN-series bot project (Liberty or Death) that required 9+ audit sessions and 800+ tests to reach compliance. The primary goal from the start is correctness — making the implementation faithfully match the Reference Documents. Speed, optimization, and architectural elegance are secondary to rules accuracy.
 When in doubt, read the Reference Documents again. Then read them one more time.
+
+Card Key Suffixes: In CARD_NAMES_ARIOVISTUS, some A-prefix card keys end with "C" (e.g., "A15C"). The trailing "C" represents the carynx symbol printed on those cards in the physical game. It is part of the card's identity, not a typo or encoding artifact. Do not strip, rename, or "normalize" these suffixes.

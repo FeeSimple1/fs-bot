@@ -56,6 +56,11 @@ Do NOT do historical research
 Do NOT consult any GitHub repository other than this one
 The Reference Documents folder is the complete universe of source material
 
+### Dual-Purpose Data Structures
+Data structures that serve multiple purposes (e.g., a dict used for BOTH deck composition AND card text lookup) are a source of duplication bugs. When consuming such a structure, always filter to the subset relevant to the current purpose. Add a comment explaining the filter. When building such a structure, document in a comment which keys serve which purpose. When in doubt, prefer separate data structures over one overloaded structure.
+
+This rule exists because CARD_NAMES_ARIOVISTUS contains both A-prefix replacement cards (for deck building) and integer 2nd Edition keys (for text lookup only), and unfiltered use caused duplicate cards in the Ariovistus deck.
+
 Ariovistus From Day 1
 Every data structure must accommodate Ariovistus expansion content. If a region can be playable in one scenario but not another, that's part of the schema. If a piece type only exists in Ariovistus (Settlements, Diviciacus), it's still in rules_consts.py and the piece system. Do not build base-only structures that will need to be refactored.
 Scenario Isolation — No Bleed-Through

@@ -58,7 +58,7 @@ from fs_bot.rules_consts import (
     # Tribe status
     ALLIED, DISPERSED, DISPERSED_GATHERING,
     # Cards
-    WINTER_CARD,
+    WINTER_CARD, CARD_NAMES_ARIOVISTUS, ARIOVISTUS_EVENT_CARD_COUNT,
     # Markers
     MARKER_BRITANNIA_NOT_IN_PLAY, MARKER_ARVERNI_RALLY,
 )
@@ -524,3 +524,47 @@ class TestScenarioIsolation:
         for scen in ARIOVISTUS_SCENARIOS:
             state = setup_scenario(scen, seed=42)
             assert GERMANS in state["resources"]
+
+
+# ============================================================================
+# ARIOVISTUS DECK INTEGRITY TESTS
+# ============================================================================
+
+class TestAriovistusDeckIntegrity:
+    """Verify Ariovistus deck has no duplicate or invalid cards.
+
+    CARD_NAMES_ARIOVISTUS contains both A-prefix replacement cards
+    (for deck building) and integer 2nd Edition keys (for text lookup).
+    Only A-prefix keys should appear in the deck. Integer keys (11, 30,
+    39, 44, 54) remain in the deck under their original base card number.
+    """
+
+    @pytest.mark.parametrize("scenario", ARIOVISTUS_SCENARIOS)
+    def test_no_duplicate_card_ids(self, scenario):
+        """No duplicate card IDs in the deck (after removing Winter cards)."""
+        state = setup_scenario(scenario, seed=42)
+        event_cards = [c for c in state["deck"] if c != WINTER_CARD]
+        assert len(event_cards) == len(set(event_cards)), \
+            f"Duplicate cards found: {[c for c in event_cards if event_cards.count(c) > 1]}"
+
+    @pytest.mark.parametrize("scenario", ARIOVISTUS_SCENARIOS)
+    def test_unique_event_count(self, scenario):
+        """Total unique event cards equals the expected count."""
+        state = setup_scenario(scenario, seed=42)
+        event_cards = [c for c in state["deck"] if c != WINTER_CARD]
+        unique_events = set(event_cards)
+        assert len(unique_events) == len(event_cards), \
+            f"Expected {len(event_cards)} unique events, got {len(unique_events)}"
+
+    @pytest.mark.parametrize("scenario", ARIOVISTUS_SCENARIOS)
+    def test_no_integer_key_alongside_a_prefix(self, scenario):
+        """No integer key from CARD_NAMES_ARIOVISTUS appears alongside its
+        A-prefix replacement (e.g., 30 and 'A30' cannot both be present)."""
+        state = setup_scenario(scenario, seed=42)
+        deck_set = set(state["deck"])
+        int_keys = [k for k in CARD_NAMES_ARIOVISTUS if isinstance(k, int)]
+        for int_key in int_keys:
+            a_key = f"A{int_key}"
+            if a_key in CARD_NAMES_ARIOVISTUS:
+                assert not (int_key in deck_set and a_key in deck_set), \
+                    f"Both {int_key} and '{a_key}' found in deck for {scenario}"

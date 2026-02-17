@@ -211,8 +211,12 @@ def _build_ariovistus_deck(state, num_events, winter_positions):
     # Keep base cards not removed
     base_kept = [c for c in CARD_NAMES_BASE.keys() if c not in removed_base]
 
-    # Add Ariovistus replacement cards
-    ario_cards = list(CARD_NAMES_ARIOVISTUS.keys())
+    # Add Ariovistus replacement cards (A-prefix string keys only).
+    # CARD_NAMES_ARIOVISTUS also contains integer keys (11, 30, 39, 44, 54)
+    # which are 2nd Edition text amendments — they tell card handlers to use
+    # different text, but are NOT additional cards inserted into the deck.
+    # Those cards remain in base_kept under their original number.
+    ario_cards = [k for k in CARD_NAMES_ARIOVISTUS if isinstance(k, str)]
 
     # The full deck is base_kept + ario_cards (should be 72 total)
     all_events = base_kept + ario_cards

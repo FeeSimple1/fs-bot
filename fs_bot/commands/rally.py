@@ -25,7 +25,7 @@ from fs_bot.rules_consts import (
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Regions
-    PROVINCIA, CISALPINA,
+    PROVINCIA, CISALPINA, UBII, SEQUANI,
     BELGICA_REGIONS, GERMANIA_REGIONS,
     # Home regions
     ROMAN_HOME_REGIONS,
@@ -93,7 +93,9 @@ def _borders_cisalpina_or_provincia(region, scenario):
     else:
         # §3.2.1: chain must reach a border with Cisalpina
         # Ubii, Sequani, and Provincia border Cisalpina — §3.2.1 NOTE
-        return region in (PROVINCIA, CISALPINA)
+        # Cisalpina is unplayable in base game so BFS won't reach it,
+        # but these three regions qualify as endpoints.
+        return region in (UBII, SEQUANI, PROVINCIA, CISALPINA)
 
 
 def _region_allows_supply_line(state, region, faction, agreements=None):
@@ -129,9 +131,12 @@ def _region_allows_supply_line(state, region, faction, agreements=None):
     else:
         return False
 
-    # Germans never agree — §3.4.5
+    # Germans never agree in base game — §3.4.5
+    # In Ariovistus, Germans are a full faction and may agree — A3.2.1
     if controlling_faction == GERMANS:
-        return False
+        if state["scenario"] in BASE_SCENARIOS:
+            return False
+        # Ariovistus: fall through to agreements check below
 
     # In Ariovistus, Arverni never agree — A1.5.2
     if (state["scenario"] in ARIOVISTUS_SCENARIOS

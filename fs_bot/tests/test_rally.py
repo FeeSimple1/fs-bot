@@ -437,14 +437,17 @@ class TestSupplyLine:
         """Germans never agree to Supply Lines — §3.4.5."""
         state = make_state()
         # German-controlled regions block supply line since they never agree.
-        # From Aedui Region, paths to Cisalpina go through:
-        #   Sequani → Cisalpina
-        #   Provincia → Cisalpina
-        #   Arverni → Provincia → Cisalpina
-        # Block all with German control.
-        place_piece(state, SEQUANI, GERMANS, WARBAND, 5)
-        place_piece(state, PROVINCIA, GERMANS, WARBAND, 5)
-        place_piece(state, ARVERNI_REGION, GERMANS, WARBAND, 5)
+        # From Aedui Region, paths to Cisalpina border go through:
+        #   Sequani (borders Cisalpina)
+        #   Provincia (borders Cisalpina)
+        #   Arverni → Provincia (borders Cisalpina)
+        #   Mandubii → Treveri → Ubii (borders Cisalpina)
+        # Block all Cisalpina-bordering regions with German control.
+        # Use 3 per region (15 total = German base game pool).
+        place_piece(state, UBII, GERMANS, WARBAND, 3)
+        place_piece(state, SEQUANI, GERMANS, WARBAND, 3)
+        place_piece(state, PROVINCIA, GERMANS, WARBAND, 3)
+        place_piece(state, ARVERNI_REGION, GERMANS, WARBAND, 3)
         refresh_all_control(state)
 
         # Now check — should have no supply line from Aedui
@@ -456,6 +459,72 @@ class TestSupplyLine:
         state = make_state()
         # Bituriges → Aedui → Provincia → Cisalpina (all No Control)
         assert has_supply_line(state, BITURIGES) is True
+
+    def test_ubii_borders_cisalpina_alone(self):
+        """Ubii borders Cisalpina per §3.2.1 NOTE.
+
+        Even if Sequani and Provincia are both under hostile control,
+        Ubii alone under No Control qualifies as a Supply Line endpoint.
+        """
+        state = make_state()
+        # Block Sequani and Provincia with Arverni (who don't agree)
+        place_piece(state, SEQUANI, ARVERNI, WARBAND, 5)
+        place_piece(state, PROVINCIA, ARVERNI, WARBAND, 5)
+        refresh_all_control(state)
+
+        assert has_supply_line(
+            state, UBII, agreements={ARVERNI: False}) is True
+
+    def test_sequani_borders_cisalpina_alone(self):
+        """Sequani borders Cisalpina per §3.2.1 NOTE.
+
+        Even if Ubii and Provincia are both under hostile control,
+        Sequani alone under No Control qualifies as a Supply Line endpoint.
+        """
+        state = make_state()
+        # Block Ubii and Provincia with Arverni (who don't agree)
+        place_piece(state, UBII, ARVERNI, WARBAND, 5)
+        place_piece(state, PROVINCIA, ARVERNI, WARBAND, 5)
+        refresh_all_control(state)
+
+        assert has_supply_line(
+            state, SEQUANI, agreements={ARVERNI: False}) is True
+
+    def test_germans_may_agree_ariovistus(self):
+        """Germans may agree to Supply Lines in Ariovistus — A3.2.1.
+
+        In Ariovistus, Germans are a full player faction that can choose
+        to agree or not. Their agreement should be checked via the
+        agreements dict, same as any other faction.
+        """
+        state = make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Put Germans in Provincia so the only path goes through them
+        place_piece(state, PROVINCIA, GERMANS, WARBAND, 5)
+        refresh_all_control(state)
+
+        # Germans agree → supply line works
+        assert has_supply_line(
+            state, PROVINCIA, agreements={GERMANS: True}) is True
+        # Germans don't agree → supply line blocked
+        assert has_supply_line(
+            state, PROVINCIA, agreements={GERMANS: False}) is False
+
+    def test_germans_never_agree_base_game(self):
+        """Germans never agree to Supply Lines in base game — §3.4.5.
+
+        Regardless of the agreements dict, German-controlled regions
+        always block the Supply Line in base game.
+        """
+        state = make_state()
+        # Put Germans in Provincia so the only path goes through them
+        place_piece(state, PROVINCIA, GERMANS, WARBAND, 5)
+        refresh_all_control(state)
+
+        # Even with explicit agreement=True, Germans block in base game
+        assert has_supply_line(
+            state, PROVINCIA, agreements={GERMANS: True}) is False
+        assert has_supply_line(
+            state, PROVINCIA, agreements={GERMANS: False}) is False
 
 
 class TestRecruitCost:

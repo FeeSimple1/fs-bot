@@ -405,35 +405,53 @@ class TestCapabilityTracker:
 # ===================================================================
 
 class TestCardEffectStubs:
-    """Tests that the dispatcher raises NotImplementedError for every card."""
+    """Tests that the dispatcher raises NotImplementedError for unimplemented cards."""
+
+    # Cards that have been implemented (no longer stubs).
+    # Updated as cards are implemented in card_effects.py.
+    _IMPLEMENTED_BASE = set(range(1, 73))  # All 72 base cards implemented
+    _IMPLEMENTED_ARIOVISTUS = {  # All A-prefix card IDs (str)
+        "A5", "A17", "A18", "A19", "A20", "A21", "A22", "A23",
+        "A24", "A25", "A26", "A27", "A28", "A29", "A30", "A31",
+        "A32", "A33", "A34", "A35", "A36", "A37", "A38", "A40",
+        "A43", "A45", "A51", "A53", "A56", "A57", "A58", "A60",
+        "A63", "A64", "A65", "A66", "A67", "A69", "A70",
+    }
+    _IMPLEMENTED_2ND_ED = {11, 30, 39, 44, 54}  # All 2nd edition cards
 
     def _make_state(self, scenario=None):
         return {"scenario": scenario or SCENARIO_PAX_GALLICA}
 
-    def test_every_base_card_raises(self):
-        """Dispatcher raises NotImplementedError for all 72 base cards."""
+    def test_unimplemented_base_cards_raise(self):
+        """Dispatcher raises NotImplementedError for unimplemented base cards."""
         state = self._make_state()
         for card_id in range(1, 73):
+            if card_id in self._IMPLEMENTED_BASE:
+                continue
             with pytest.raises(NotImplementedError):
                 execute_event(state, card_id, shaded=False)
             with pytest.raises(NotImplementedError):
                 execute_event(state, card_id, shaded=True)
 
-    def test_every_ariovistus_card_raises(self):
-        """Dispatcher raises NotImplementedError for all A-prefix cards."""
+    def test_unimplemented_ariovistus_cards_raise(self):
+        """Dispatcher raises NotImplementedError for unimplemented A-prefix cards."""
         state = self._make_state(SCENARIO_ARIOVISTUS)
         a_prefix_ids = [k for k in CARD_NAMES_ARIOVISTUS
                         if isinstance(k, str) and k.startswith("A")]
         for card_id in a_prefix_ids:
+            if card_id in self._IMPLEMENTED_ARIOVISTUS:
+                continue
             with pytest.raises(NotImplementedError):
                 execute_event(state, card_id, shaded=False)
             with pytest.raises(NotImplementedError):
                 execute_event(state, card_id, shaded=True)
 
-    def test_second_edition_cards_ariovistus_raises(self):
+    def test_unimplemented_second_edition_cards_raise(self):
         """2nd Edition text-change cards raise in Ariovistus context."""
         state = self._make_state(SCENARIO_ARIOVISTUS)
         for card_id in SECOND_EDITION_CARDS:
+            if card_id in self._IMPLEMENTED_2ND_ED:
+                continue
             with pytest.raises(NotImplementedError):
                 execute_event(state, card_id, shaded=False)
 

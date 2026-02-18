@@ -43,6 +43,7 @@ from fs_bot.rules_consts import (
     MARKER_DEVASTATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     MARKER_SCOUTED, MARKER_CIRCUMVALLATION, MARKER_COLONY,
     MARKER_GALLIA_TOGATA, MARKER_RAZED,
+    MARKER_INTIMIDATED, MARKER_ABATIS,
     # Capabilities
     CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
     # Events
@@ -2835,121 +2836,1500 @@ def execute_card_72(state, shaded=False):
 # ---------------------------------------------------------------------------
 
 def execute_card_A5(state, shaded=False):
-    raise NotImplementedError("Card A5: Gallia Togata")
+    """Card A5: Gallia Togata — Cisalpina garrison / Remove Roman pieces.
+
+    Unshaded: Place Gallia Togata marker and 3 Auxilia in Cisalpina.
+    Only Romans may stack there.
+    Shaded: Unless Senate in Adulation, Romans remove 1 Legion to track
+    and 2 Auxilia to Available.
+
+    Source: A Card Reference, card A5
+    """
+    if not shaded:
+        markers = state.setdefault("markers", {})
+        region_markers = markers.setdefault(CISALPINA, {})
+        region_markers[MARKER_GALLIA_TOGATA] = True
+        avail = get_available(state, ROMANS, AUXILIA)
+        to_place = min(3, avail)
+        if to_place > 0:
+            place_piece(state, CISALPINA, ROMANS, AUXILIA, count=to_place)
+        # Non-Roman pieces must be moved/removed — deferred to caller
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A5_remove_non_romans"] = True
+    else:
+        if state["senate"]["position"] != ADULATION:
+            params = state.get("event_params", {})
+            # Remove 1 Legion to track
+            legion_region = params.get("legion_region")
+            if legion_region and count_pieces(state, legion_region, ROMANS, LEGION) > 0:
+                remove_piece(state, legion_region, ROMANS, LEGION,
+                             to_track=True, to_available=False)
+            # Remove 2 Auxilia to Available
+            auxilia_removals = params.get("auxilia_removals", [])
+            for r in auxilia_removals[:2]:
+                region = r.get("region")
+                if region:
+                    for ps in (HIDDEN, REVEALED):
+                        if count_pieces_by_state(state, region, ROMANS,
+                                                 AUXILIA, ps) > 0:
+                            remove_piece(state, region, ROMANS, AUXILIA,
+                                         piece_state=ps)
+                            break
 
 def execute_card_A17(state, shaded=False):
-    raise NotImplementedError("Card A17: Publius Licinius Crassus")
+    """Card A17: Publius Licinius Crassus — Roman March+Battle / Remove Auxilia.
+
+    Unshaded: Romans free March 1-4 Legions + 1-8 Auxilia to Region
+    without Caesar and Battle there, double Losses by Auxilia.
+    Shaded: Remove 4 Auxilia from any 1 Region. Romans Ineligible.
+
+    Source: A Card Reference, card A17
+    """
+    params = state.get("event_params", {})
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A17_roman_march_battle"] = True
+        state["event_modifiers"]["card_A17_double_auxilia_losses"] = True
+    else:
+        region = params.get("region")
+        if region:
+            for _ in range(4):
+                for ps in (HIDDEN, REVEALED):
+                    if count_pieces_by_state(state, region, ROMANS,
+                                             AUXILIA, ps) > 0:
+                        remove_piece(state, region, ROMANS, AUXILIA,
+                                     piece_state=ps)
+                        break
+        state["eligibility"][ROMANS] = INELIGIBLE
 
 def execute_card_A18(state, shaded=False):
-    raise NotImplementedError("Card A18: Rhenus Bridge")
+    """Card A18: Rhenus Bridge — Remove Germans / Roman resource drain.
+
+    Unshaded: Remove all Germans from 1 Germania Region without
+    Ariovistus and under/adjacent to Roman Control.
+    Shaded: If Legion within 1 of Germania, Romans -6 and Ineligible.
+
+    Source: A Card Reference, card A18
+    """
+    from fs_bot.rules_consts import GERMANIA_REGIONS
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        region = params.get("region")
+        if region and region in GERMANIA_REGIONS:
+            leader = get_leader_in_region(state, region, GERMANS)
+            if leader != ARIOVISTUS_LEADER:
+                for ps in (HIDDEN, REVEALED):
+                    c = count_pieces_by_state(state, region, GERMANS,
+                                              WARBAND, ps)
+                    if c > 0:
+                        remove_piece(state, region, GERMANS, WARBAND,
+                                     count=c, piece_state=ps)
+                for pt in (ALLY, SETTLEMENT):
+                    cnt = count_pieces(state, region, GERMANS, pt)
+                    if cnt > 0:
+                        remove_piece(state, region, GERMANS, pt, count=cnt)
+    else:
+        has_legion_near = False
+        for g_region in GERMANIA_REGIONS:
+            if count_pieces(state, g_region, ROMANS, LEGION) > 0:
+                has_legion_near = True
+                break
+            for adj in get_adjacent(g_region, scenario):
+                if count_pieces(state, adj, ROMANS, LEGION) > 0:
+                    has_legion_near = True
+                    break
+            if has_legion_near:
+                break
+        if has_legion_near:
+            _cap_resources(state, ROMANS, -6)
+            state["eligibility"][ROMANS] = INELIGIBLE
 
 def execute_card_A19(state, shaded=False):
-    raise NotImplementedError("Card A19: Gaius Valerius Procillus")
+    """Card A19: Gaius Valerius Procillus — Replace Allies / March Romans.
+
+    Unshaded: Within 1 of Caesar, replace up to 3 Allies with Roman.
+    Shaded: March all Romans in 1 Region to adjacent with Germans.
+    Romans Ineligible.
+
+    Source: A Card Reference, card A19
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        caesar_loc = find_leader(state, CAESAR)
+        if caesar_loc is None:
+            return
+        valid = [caesar_loc] + list(get_adjacent(caesar_loc, scenario))
+        replacements = params.get("replacements", [])
+        for r in replacements[:3]:
+            tribe = r["tribe"]
+            region = TRIBE_TO_REGION.get(tribe)
+            if region not in valid:
+                continue
+            t_info = state.get("tribes", {}).get(tribe)
+            if (t_info and t_info.get("allied_faction")
+                    and t_info["allied_faction"] != ROMANS):
+                old_fac = t_info["allied_faction"]
+                if count_pieces(state, region, old_fac, ALLY) > 0:
+                    remove_piece(state, region, old_fac, ALLY)
+                if get_available(state, ROMANS, ALLY) > 0:
+                    place_piece(state, region, ROMANS, ALLY)
+                t_info["allied_faction"] = ROMANS
+    else:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A19_march_romans"] = True
+        state["eligibility"][ROMANS] = INELIGIBLE
 
 def execute_card_A20(state, shaded=False):
-    raise NotImplementedError("Card A20: Morbihan")
+    """Card A20: Morbihan — Veneti operations.
+
+    Unshaded: If Romans within 1 of Veneti, remove all Arverni from
+    Veneti and free Seize there.
+    Shaded: If Veneti Arverni Ally, Arverni Ambush Romans near Veneti.
+
+    Source: A Card Reference, card A20
+    """
+    from fs_bot.rules_consts import VENETI, TRIBE_VENETI
+    from fs_bot.map.map_data import get_adjacent
+    scenario = state["scenario"]
+    if not shaded:
+        has_romans = False
+        regions_near = [VENETI] + list(get_adjacent(VENETI, scenario))
+        for r in regions_near:
+            if (count_pieces(state, r, ROMANS, LEGION) > 0 or
+                    count_pieces(state, r, ROMANS, AUXILIA) > 0):
+                has_romans = True
+                break
+        if has_romans:
+            # Remove all Arverni from Veneti
+            for pt in (ALLY, CITADEL):
+                while count_pieces(state, VENETI, ARVERNI, pt) > 0:
+                    remove_piece(state, VENETI, ARVERNI, pt)
+            for ps in (HIDDEN, REVEALED):
+                c = count_pieces_by_state(state, VENETI, ARVERNI, WARBAND, ps)
+                if c > 0:
+                    remove_piece(state, VENETI, ARVERNI, WARBAND,
+                                 count=c, piece_state=ps)
+            t_info = state.get("tribes", {}).get(TRIBE_VENETI)
+            if t_info and t_info.get("allied_faction") == ARVERNI:
+                t_info["allied_faction"] = None
+            state.setdefault("event_modifiers", {})
+            state["event_modifiers"]["card_A20_free_seize_veneti"] = True
+    else:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A20_arverni_ambush"] = True
 
 def execute_card_A21(state, shaded=False):
-    raise NotImplementedError("Card A21: Vosegus")
+    """Card A21: Vosegus — Decisive battle near Sequani.
+
+    Both sides: Free Battle in Region within 1 of Sequani. No Retreat.
+    Then optional second Battle there (Retreat allowed).
+
+    Source: A Card Reference, card A21
+    """
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A21_double_battle"] = True
+    state["event_modifiers"]["card_A21_first_no_retreat"] = True
 
 def execute_card_A22(state, shaded=False):
-    raise NotImplementedError("Card A22: Dread")
+    """Card A22: Dread — Cancel/enhance Intimidate.
+
+    Unshaded: Intimidate markers have no effect on Romans.
+    Shaded (CAPABILITY): Intimidate may Reveal 1 added Warband to
+    remove 1 extra piece.
+
+    Source: A Card Reference, card A22
+    """
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A22_no_intimidate_romans"] = True
+    else:
+        activate_capability(state, "A22", EVENT_SHADED)
 
 def execute_card_A23(state, shaded=False):
-    raise NotImplementedError("Card A23: Parley")
+    """Card A23: Parley — Move Caesar/Ariovistus together.
+
+    Both sides: Move Caesar group or Ariovistus group to other's
+    Region (or meet in between). Romans and Germans Ineligible.
+
+    Source: A Card Reference, card A23
+    """
+    params = state.get("event_params", {})
+    caesar_loc = find_leader(state, CAESAR)
+    ario_loc = find_leader(state, ARIOVISTUS_LEADER)
+    if caesar_loc is None or ario_loc is None:
+        state["eligibility"][ROMANS] = INELIGIBLE
+        state["eligibility"][GERMANS] = INELIGIBLE
+        return
+    target = params.get("meeting_region")
+    who_moves = params.get("who_moves")  # "caesar", "ariovistus", "both"
+    if target and who_moves:
+        if who_moves in ("caesar", "both") and caesar_loc != target:
+            move_piece(state, caesar_loc, target, ROMANS, LEADER,
+                       leader_name=CAESAR)
+            cnt = count_pieces(state, caesar_loc, ROMANS, LEGION)
+            if cnt > 0:
+                move_piece(state, caesar_loc, target, ROMANS, LEGION,
+                           count=cnt)
+            for ps in (HIDDEN, REVEALED):
+                c = count_pieces_by_state(state, caesar_loc, ROMANS,
+                                          AUXILIA, ps)
+                if c > 0:
+                    move_piece(state, caesar_loc, target, ROMANS, AUXILIA,
+                               count=c, piece_state=ps)
+        if who_moves in ("ariovistus", "both") and ario_loc != target:
+            move_piece(state, ario_loc, target, GERMANS, LEADER,
+                       leader_name=ARIOVISTUS_LEADER)
+            for ps in (HIDDEN, REVEALED):
+                c = count_pieces_by_state(state, ario_loc, GERMANS,
+                                          WARBAND, ps)
+                if c > 0:
+                    move_piece(state, ario_loc, target, GERMANS, WARBAND,
+                               count=c, piece_state=ps)
+    state["eligibility"][ROMANS] = INELIGIBLE
+    state["eligibility"][GERMANS] = INELIGIBLE
 
 def execute_card_A24(state, shaded=False):
-    raise NotImplementedError("Card A24: Seduni Uprising!")
+    """Card A24: Seduni Uprising! — Arverni Allies + Arverni Phase.
+
+    Both sides: Remove Allies at Sequani, Helvetii, Nori, Helvii.
+    Place Arverni Ally at each and 2 Arverni Warbands each in Sequani,
+    Cisalpina, Provincia. Conduct Arverni Phase as if At War.
+
+    Source: A Card Reference, card A24
+    """
+    from fs_bot.rules_consts import (
+        SEQUANI, TRIBE_SEQUANI, TRIBE_HELVETII, TRIBE_NORI,
+        TRIBE_HELVII, TRIBE_TO_REGION,
+    )
+    tribes = [TRIBE_SEQUANI, TRIBE_HELVETII, TRIBE_NORI, TRIBE_HELVII]
+    for tribe in tribes:
+        region = TRIBE_TO_REGION.get(tribe)
+        t_info = state.get("tribes", {}).get(tribe)
+        if not t_info:
+            continue
+        # Remove existing Ally
+        if t_info.get("allied_faction"):
+            old_fac = t_info["allied_faction"]
+            if region and count_pieces(state, region, old_fac, ALLY) > 0:
+                remove_piece(state, region, old_fac, ALLY)
+            t_info["allied_faction"] = None
+        # Place Arverni Ally
+        if region and get_available(state, ARVERNI, ALLY) > 0:
+            place_piece(state, region, ARVERNI, ALLY)
+            t_info["allied_faction"] = ARVERNI
+    # Place 2 Arverni Warbands in Sequani, Cisalpina, Provincia
+    for region in (SEQUANI, CISALPINA, PROVINCIA):
+        avail = get_available(state, ARVERNI, WARBAND)
+        to_place = min(2, avail)
+        if to_place > 0:
+            place_piece(state, region, ARVERNI, WARBAND, count=to_place)
+    # Conduct Arverni Phase as if At War
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A24_arverni_phase"] = True
 
 def execute_card_A25(state, shaded=False):
-    raise NotImplementedError("Card A25: Ariovistus's Wife")
+    """Card A25: Ariovistus's Wife — Remove/place German pieces.
+
+    Unshaded: Remove all non-Leader German pieces from Cisalpina.
+    German Resources -6.
+    Shaded: Germans remove Ally at Nori, place their Ally and 6
+    Warbands there, and gain +6 Resources.
+
+    Source: A Card Reference, card A25
+    """
+    from fs_bot.rules_consts import TRIBE_NORI, TRIBE_TO_REGION
+    if not shaded:
+        # Remove all non-Leader German pieces from Cisalpina
+        for ps in (HIDDEN, REVEALED):
+            c = count_pieces_by_state(state, CISALPINA, GERMANS, WARBAND, ps)
+            if c > 0:
+                remove_piece(state, CISALPINA, GERMANS, WARBAND,
+                             count=c, piece_state=ps)
+        for pt in (ALLY, SETTLEMENT):
+            cnt = count_pieces(state, CISALPINA, GERMANS, pt)
+            if cnt > 0:
+                remove_piece(state, CISALPINA, GERMANS, pt, count=cnt)
+        _cap_resources(state, GERMANS, -6)
+    else:
+        region = TRIBE_TO_REGION.get(TRIBE_NORI)
+        t_info = state.get("tribes", {}).get(TRIBE_NORI)
+        if t_info:
+            # Remove any Ally at Nori
+            if t_info.get("allied_faction"):
+                old_fac = t_info["allied_faction"]
+                if region and count_pieces(state, region, old_fac, ALLY) > 0:
+                    remove_piece(state, region, old_fac, ALLY)
+                t_info["allied_faction"] = None
+            # Place German Ally
+            if region and get_available(state, GERMANS, ALLY) > 0:
+                place_piece(state, region, GERMANS, ALLY)
+                t_info["allied_faction"] = GERMANS
+        # Place 6 German Warbands at Nori's region
+        if region:
+            avail = get_available(state, GERMANS, WARBAND)
+            to_place = min(6, avail)
+            if to_place > 0:
+                place_piece(state, region, GERMANS, WARBAND, count=to_place)
+        _cap_resources(state, GERMANS, 6)
 
 def execute_card_A26(state, shaded=False):
-    raise NotImplementedError("Card A26: Divico")
+    """Card A26: Divico — Remove/place Arverni.
+
+    Unshaded: Remove Arverni Ally at Helvetii and all Arverni Warbands
+    from Sequani and Aedui Regions.
+    Shaded: Place up to 12 Arverni Warbands among Aedui and Sequani.
+
+    Source: A Card Reference, card A26
+    """
+    from fs_bot.rules_consts import (
+        SEQUANI, AEDUI_REGION, TRIBE_HELVETII, TRIBE_TO_REGION,
+    )
+    if not shaded:
+        # Remove Arverni Ally at Helvetii
+        t_info = state.get("tribes", {}).get(TRIBE_HELVETII)
+        region = TRIBE_TO_REGION.get(TRIBE_HELVETII)
+        if t_info and t_info.get("allied_faction") == ARVERNI:
+            if region and count_pieces(state, region, ARVERNI, ALLY) > 0:
+                remove_piece(state, region, ARVERNI, ALLY)
+            t_info["allied_faction"] = None
+        # Remove all Arverni Warbands from Sequani and Aedui
+        for reg in (SEQUANI, AEDUI_REGION):
+            for ps in (HIDDEN, REVEALED):
+                c = count_pieces_by_state(state, reg, ARVERNI, WARBAND, ps)
+                if c > 0:
+                    remove_piece(state, reg, ARVERNI, WARBAND,
+                                 count=c, piece_state=ps)
+    else:
+        # Place up to 12 Arverni Warbands among Aedui and Sequani
+        params = state.get("event_params", {})
+        placements = params.get("placements", [])
+        total = 0
+        for p in placements:
+            if total >= 12:
+                break
+            region = p["region"]
+            if region not in (AEDUI_REGION, SEQUANI):
+                continue
+            cnt = min(p.get("count", 1), 12 - total)
+            avail = get_available(state, ARVERNI, WARBAND)
+            to_place = min(cnt, avail)
+            if to_place > 0:
+                place_piece(state, region, ARVERNI, WARBAND, count=to_place)
+                total += to_place
 
 def execute_card_A27(state, shaded=False):
-    raise NotImplementedError("Card A27: Sotiates Uprising!")
+    """Card A27: Sotiates Uprising! — Arverni Allies + Arverni Phase.
+
+    Both sides: Remove Allies at Pictones, Santones, Volcae, Cadurci.
+    Place Arverni Ally at each and 3 Arverni Warbands each in Pictones
+    and Arverni Regions. Conduct Arverni Phase as if At War.
+
+    Source: A Card Reference, card A27
+    """
+    from fs_bot.rules_consts import (
+        PICTONES, ARVERNI_REGION, TRIBE_PICTONES, TRIBE_SANTONES,
+        TRIBE_VOLCAE, TRIBE_CADURCI, TRIBE_TO_REGION,
+    )
+    tribes = [TRIBE_PICTONES, TRIBE_SANTONES, TRIBE_VOLCAE, TRIBE_CADURCI]
+    for tribe in tribes:
+        region = TRIBE_TO_REGION.get(tribe)
+        t_info = state.get("tribes", {}).get(tribe)
+        if not t_info:
+            continue
+        if t_info.get("allied_faction"):
+            old_fac = t_info["allied_faction"]
+            if region and count_pieces(state, region, old_fac, ALLY) > 0:
+                remove_piece(state, region, old_fac, ALLY)
+            t_info["allied_faction"] = None
+        if region and get_available(state, ARVERNI, ALLY) > 0:
+            place_piece(state, region, ARVERNI, ALLY)
+            t_info["allied_faction"] = ARVERNI
+    for region in (PICTONES, ARVERNI_REGION):
+        avail = get_available(state, ARVERNI, WARBAND)
+        to_place = min(3, avail)
+        if to_place > 0:
+            place_piece(state, region, ARVERNI, WARBAND, count=to_place)
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A27_arverni_phase"] = True
 
 def execute_card_A28(state, shaded=False):
-    raise NotImplementedError("Card A28: Admagetobriga")
+    """Card A28: Admagetobriga — Combined Battle near Sequani.
+
+    Both sides: Free Battle in and adjacent to Sequani, treating
+    Arverni and allied Warbands/Auxilia as your own. No Retreat.
+
+    Source: A Card Reference, card A28
+    """
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A28_combined_battle"] = True
+    state["event_modifiers"]["card_A28_no_retreat"] = True
+    state["event_modifiers"]["card_A28_use_arverni"] = True
 
 def execute_card_A29(state, shaded=False):
-    raise NotImplementedError("Card A29: Harudes")
+    """Card A29: Harudes — Place pieces near Settlements / German Raid.
+
+    Unshaded: A Gaul or Roman places up to 2 Allies and 5 Warbands
+    or 3 Auxilia among Regions with Settlements.
+    Shaded: Place 4 German Warbands & 1 Settlement adjacent to
+    Germania. They free Raid.
+
+    Source: A Card Reference, card A29
+    """
+    from fs_bot.rules_consts import GERMANIA_REGIONS
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        # Placements among Regions with Settlements — deferred to caller
+        faction = state.get("executing_faction")
+        placements = params.get("placements", [])
+        for p in placements:
+            region = p["region"]
+            piece_type = p["piece_type"]
+            cnt = p.get("count", 1)
+            pfac = p.get("faction", faction)
+            if piece_type == ALLY:
+                tribe = p.get("tribe")
+                t_info = state.get("tribes", {}).get(tribe)
+                if t_info and t_info.get("allied_faction") is None:
+                    if pfac and get_available(state, pfac, ALLY) > 0:
+                        place_piece(state, region, pfac, ALLY)
+                        t_info["allied_faction"] = pfac
+            else:
+                if pfac:
+                    avail = get_available(state, pfac, piece_type)
+                    to_place = min(cnt, avail)
+                    if to_place > 0:
+                        place_piece(state, region, pfac, piece_type,
+                                    count=to_place)
+    else:
+        # Place 4 German Warbands + 1 Settlement adjacent to Germania
+        adj_regions = set()
+        for g_region in GERMANIA_REGIONS:
+            adj_regions.update(get_adjacent(g_region, scenario))
+        placements = params.get("placements", [])
+        wb_placed = 0
+        for p in placements:
+            region = p["region"]
+            if region not in adj_regions:
+                continue
+            piece_type = p.get("piece_type", WARBAND)
+            if piece_type == WARBAND and wb_placed < 4:
+                cnt = min(p.get("count", 1), 4 - wb_placed)
+                avail = get_available(state, GERMANS, WARBAND)
+                to_place = min(cnt, avail)
+                if to_place > 0:
+                    place_piece(state, region, GERMANS, WARBAND,
+                                count=to_place)
+                    wb_placed += to_place
+            elif piece_type == SETTLEMENT:
+                if get_available(state, GERMANS, SETTLEMENT) > 0:
+                    place_piece(state, region, GERMANS, SETTLEMENT)
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A29_german_raid"] = True
 
 def execute_card_A30(state, shaded=False):
-    raise NotImplementedError("Card A30: Orgetorix")
+    """Card A30: Orgetorix — Remove Arverni / Place Arverni.
+
+    Unshaded: Remove all Arverni from 1 Region within 1 of Sequani.
+    Shaded: In Aedui and Sequani, remove Allies/Citadel and place
+    9 Arverni pieces total (despite Aedui-only stacking).
+
+    Source: A Card Reference, card A30
+    """
+    from fs_bot.rules_consts import SEQUANI, AEDUI_REGION, TRIBE_TO_REGION
+    from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        region = params.get("region")
+        if region:
+            # Remove all Arverni from the region
+            for ps in (HIDDEN, REVEALED):
+                c = count_pieces_by_state(state, region, ARVERNI, WARBAND, ps)
+                if c > 0:
+                    remove_piece(state, region, ARVERNI, WARBAND,
+                                 count=c, piece_state=ps)
+            for pt in (ALLY, CITADEL):
+                cnt = count_pieces(state, region, ARVERNI, pt)
+                if cnt > 0:
+                    remove_piece(state, region, ARVERNI, pt, count=cnt)
+            # Clear Arverni leader if present
+            leader = get_leader_in_region(state, region, ARVERNI)
+            if leader:
+                remove_piece(state, region, ARVERNI, LEADER)
+            # Clear Arverni tribe allies in this region
+            tribes = get_tribes_in_region(region, scenario)
+            for tribe in tribes:
+                t_info = state.get("tribes", {}).get(tribe)
+                if t_info and t_info.get("allied_faction") == ARVERNI:
+                    t_info["allied_faction"] = None
+    else:
+        # Remove Allies/Citadel, place 9 Arverni pieces in Aedui + Sequani
+        for reg in (AEDUI_REGION, SEQUANI):
+            tribes = get_tribes_in_region(reg, scenario)
+            for tribe in tribes:
+                t_info = state.get("tribes", {}).get(tribe)
+                if t_info and t_info.get("allied_faction"):
+                    old_fac = t_info["allied_faction"]
+                    if count_pieces(state, reg, old_fac, ALLY) > 0:
+                        remove_piece(state, reg, old_fac, ALLY)
+                    t_info["allied_faction"] = None
+            for fac in FACTIONS:
+                cnt = count_pieces(state, reg, fac, CITADEL)
+                if cnt > 0:
+                    remove_piece(state, reg, fac, CITADEL, count=cnt)
+        # Place 9 Arverni pieces total
+        placements = params.get("placements", [])
+        total = 0
+        for p in placements:
+            if total >= 9:
+                break
+            region = p["region"]
+            if region not in (AEDUI_REGION, SEQUANI):
+                continue
+            piece_type = p["piece_type"]
+            cnt = min(p.get("count", 1), 9 - total)
+            if piece_type == ALLY:
+                tribe = p.get("tribe")
+                t_info = state.get("tribes", {}).get(tribe)
+                if t_info and t_info.get("allied_faction") is None:
+                    if get_available(state, ARVERNI, ALLY) > 0:
+                        place_piece(state, region, ARVERNI, ALLY)
+                        t_info["allied_faction"] = ARVERNI
+                        total += 1
+            else:
+                avail = get_available(state, ARVERNI, piece_type)
+                to_place = min(cnt, avail)
+                if to_place > 0:
+                    place_piece(state, region, ARVERNI, piece_type,
+                                count=to_place)
+                    total += to_place
 
 def execute_card_A31(state, shaded=False):
-    raise NotImplementedError("Card A31: German Phalanx")
+    """Card A31: German Phalanx — Cancel/protect German Battle effects.
+
+    Unshaded: Event effects benefitting Germans in Battle cancelled,
+    Ariovistus does not double Losses.
+    Shaded (CAPABILITY - Stalwart): Event effects harming Germans
+    cancelled, named enemy Leaders don't double Losses to Germans.
+
+    Source: A Card Reference, card A31
+    """
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A31_cancel_german_benefits"] = True
+        state["event_modifiers"]["card_A31_no_ario_double"] = True
+    else:
+        activate_capability(state, "A31", EVENT_SHADED)
 
 def execute_card_A32(state, shaded=False):
-    raise NotImplementedError("Card A32: Veneti Uprising!")
+    """Card A32: Veneti Uprising! — Arverni Allies + Arverni Phase.
+
+    Both sides: Remove Allies at Veneti, Namnetes, Morini, Menapii.
+    Place Arverni Ally at each, 4 Arverni Warbands in Veneti and 2
+    in Morini. Conduct Arverni Phase as if At War.
+
+    Source: A Card Reference, card A32
+    """
+    from fs_bot.rules_consts import (
+        VENETI, MORINI, TRIBE_VENETI, TRIBE_NAMNETES, TRIBE_MORINI,
+        TRIBE_MENAPII, TRIBE_TO_REGION,
+    )
+    tribes = [TRIBE_VENETI, TRIBE_NAMNETES, TRIBE_MORINI, TRIBE_MENAPII]
+    for tribe in tribes:
+        region = TRIBE_TO_REGION.get(tribe)
+        t_info = state.get("tribes", {}).get(tribe)
+        if not t_info:
+            continue
+        if t_info.get("allied_faction"):
+            old_fac = t_info["allied_faction"]
+            if region and count_pieces(state, region, old_fac, ALLY) > 0:
+                remove_piece(state, region, old_fac, ALLY)
+            t_info["allied_faction"] = None
+        if region and get_available(state, ARVERNI, ALLY) > 0:
+            place_piece(state, region, ARVERNI, ALLY)
+            t_info["allied_faction"] = ARVERNI
+    # 4 Warbands in Veneti, 2 in Morini
+    for region, cnt in ((VENETI, 4), (MORINI, 2)):
+        avail = get_available(state, ARVERNI, WARBAND)
+        to_place = min(cnt, avail)
+        if to_place > 0:
+            place_piece(state, region, ARVERNI, WARBAND, count=to_place)
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A32_arverni_phase"] = True
 
 def execute_card_A33(state, shaded=False):
-    raise NotImplementedError("Card A33: Wailing Women")
+    """Card A33: Wailing Women — German Retreat/CAPABILITY.
+
+    Unshaded: Germans never Retreat; unless Ariovistus on map, remove
+    outnumbered Warbands after Counterattack.
+    Shaded (CAPABILITY - Motivation): Defending Germans half Losses
+    and inflict +1 Counterattack Loss.
+
+    Source: A Card Reference, card A33
+    """
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A33_no_german_retreat"] = True
+        state["event_modifiers"]["card_A33_remove_outnumbered"] = True
+    else:
+        activate_capability(state, "A33", EVENT_SHADED)
 
 def execute_card_A34(state, shaded=False):
-    raise NotImplementedError("Card A34: Divination")
+    """Card A34: Divination — Use German pieces / German free Command.
+
+    Unshaded: Non-German player may use German pieces to free March
+    or Battle in up to 3 Regions.
+    Shaded: Germans or Belgae free Command and stay Eligible.
+
+    Source: A Card Reference, card A34
+    """
+    state.setdefault("event_modifiers", {})
+    if not shaded:
+        state["event_modifiers"]["card_A34_use_german_pieces"] = True
+        state["event_modifiers"]["card_A34_regions_limit"] = 3
+    else:
+        faction = state.get("executing_faction")
+        state["event_modifiers"]["card_A34_free_command"] = True
+        if faction in (GERMANS, BELGAE):
+            state["eligibility"][faction] = ELIGIBLE
 
 def execute_card_A35(state, shaded=False):
-    raise NotImplementedError("Card A35: Nasua & Cimberius")
+    """Card A35: Nasua & Cimberius — Place at Treveri / German placement.
+
+    Unshaded: Place 1 Gallic/Roman Ally at Treveri (replacing anything)
+    and up to 8 Warbands or 4 Auxilia there.
+    Shaded: Place up to 8 Germanic Warbands and 1 Settlement among
+    Regions within 1 of Germania.
+
+    Source: A Card Reference, card A35
+    """
+    from fs_bot.rules_consts import (
+        TREVERI, TRIBE_TREVERI, GERMANIA_REGIONS, TRIBE_TO_REGION,
+    )
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        faction = state.get("executing_faction")
+        t_info = state.get("tribes", {}).get(TRIBE_TREVERI)
+        if t_info:
+            # Replace anything at Treveri with Ally
+            if t_info.get("allied_faction"):
+                old_fac = t_info["allied_faction"]
+                if count_pieces(state, TREVERI, old_fac, ALLY) > 0:
+                    remove_piece(state, TREVERI, old_fac, ALLY)
+                t_info["allied_faction"] = None
+            ally_faction = params.get("ally_faction", faction)
+            if ally_faction and get_available(state, ally_faction, ALLY) > 0:
+                place_piece(state, TREVERI, ally_faction, ALLY)
+                t_info["allied_faction"] = ally_faction
+        # Place Warbands or Auxilia
+        piece_type = params.get("piece_type", WARBAND)
+        limit = 8 if piece_type == WARBAND else 4
+        cnt = params.get("count", limit)
+        cnt = min(cnt, limit)
+        pfac = params.get("piece_faction", faction)
+        if pfac:
+            avail = get_available(state, pfac, piece_type)
+            to_place = min(cnt, avail)
+            if to_place > 0:
+                place_piece(state, TREVERI, pfac, piece_type, count=to_place)
+    else:
+        # Place German pieces near Germania
+        adj_regions = set()
+        for g_region in GERMANIA_REGIONS:
+            adj_regions.add(g_region)
+            adj_regions.update(get_adjacent(g_region, scenario))
+        placements = params.get("placements", [])
+        wb_placed = 0
+        settlement_placed = False
+        for p in placements:
+            region = p["region"]
+            if region not in adj_regions:
+                continue
+            pt = p.get("piece_type", WARBAND)
+            if pt == WARBAND and wb_placed < 8:
+                cnt = min(p.get("count", 1), 8 - wb_placed)
+                avail = get_available(state, GERMANS, WARBAND)
+                to_place = min(cnt, avail)
+                if to_place > 0:
+                    place_piece(state, region, GERMANS, WARBAND,
+                                count=to_place)
+                    wb_placed += to_place
+            elif pt == SETTLEMENT and not settlement_placed:
+                if get_available(state, GERMANS, SETTLEMENT) > 0:
+                    place_piece(state, region, GERMANS, SETTLEMENT)
+                    settlement_placed = True
 
 def execute_card_A36(state, shaded=False):
-    raise NotImplementedError("Card A36: Usipetes & Tencteri")
+    """Card A36: Usipetes & Tencteri — Remove/place German pieces.
+
+    Unshaded: Remove 2 Settlements and 8 German Warbands total from
+    Morini, Nervii, Treveri.
+    Shaded: Place 2 Settlements + 4 Warbands and remove 2 Allies
+    among Regions within 1 of Sugambri.
+
+    Source: A Card Reference, card A36
+    """
+    from fs_bot.rules_consts import (
+        MORINI, NERVII, TREVERI, SUGAMBRI, TRIBE_TO_REGION,
+    )
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        # Remove 2 Settlements from target regions
+        target_regions = [MORINI, NERVII, TREVERI]
+        settlements_removed = 0
+        for region in target_regions:
+            if settlements_removed >= 2:
+                break
+            cnt = count_pieces(state, region, GERMANS, SETTLEMENT)
+            to_remove = min(cnt, 2 - settlements_removed)
+            if to_remove > 0:
+                remove_piece(state, region, GERMANS, SETTLEMENT,
+                             count=to_remove)
+                settlements_removed += to_remove
+        # Remove 8 German Warbands
+        wb_removed = 0
+        for region in target_regions:
+            if wb_removed >= 8:
+                break
+            for ps in (HIDDEN, REVEALED):
+                c = count_pieces_by_state(state, region, GERMANS, WARBAND, ps)
+                to_remove = min(c, 8 - wb_removed)
+                if to_remove > 0:
+                    remove_piece(state, region, GERMANS, WARBAND,
+                                 count=to_remove, piece_state=ps)
+                    wb_removed += to_remove
+    else:
+        # Place near Sugambri
+        adj_regions = set([SUGAMBRI])
+        adj_regions.update(get_adjacent(SUGAMBRI, scenario))
+        placements = params.get("placements", [])
+        for p in placements:
+            region = p["region"]
+            if region not in adj_regions:
+                continue
+            pt = p.get("piece_type")
+            if pt == SETTLEMENT:
+                if get_available(state, GERMANS, SETTLEMENT) > 0:
+                    place_piece(state, region, GERMANS, SETTLEMENT)
+            elif pt == WARBAND:
+                cnt = p.get("count", 1)
+                avail = get_available(state, GERMANS, WARBAND)
+                to_place = min(cnt, avail)
+                if to_place > 0:
+                    place_piece(state, region, GERMANS, WARBAND,
+                                count=to_place)
+        # Remove 2 Allies
+        ally_removals = params.get("ally_removals", [])
+        for r in ally_removals[:2]:
+            tribe = r.get("tribe")
+            t_info = state.get("tribes", {}).get(tribe)
+            region = TRIBE_TO_REGION.get(tribe)
+            if t_info and t_info.get("allied_faction") and region in adj_regions:
+                old_fac = t_info["allied_faction"]
+                if count_pieces(state, region, old_fac, ALLY) > 0:
+                    remove_piece(state, region, old_fac, ALLY)
+                t_info["allied_faction"] = None
 
 def execute_card_A37(state, shaded=False):
-    raise NotImplementedError("Card A37: All Gaul Gathers")
+    """Card A37: All Gaul Gathers — Place Allies or remove them.
+
+    Unshaded: If Aedui or Roman, place any Allies in 1 Celtica Region
+    within 1 of German Control, then move Leader+Warbands/Auxilia there.
+    Shaded: Remove up to 3 Aedui/Roman Allies from Celtica within 1
+    of German Control.
+
+    Source: A Card Reference, card A37
+    """
+    from fs_bot.rules_consts import CELTICA_REGIONS, TRIBE_TO_REGION
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    faction = state.get("executing_faction")
+    if not shaded:
+        # Place Allies + move Leader — partially deferred
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A37_place_allies_move"] = True
+        # Handle Ally placements from params
+        ally_placements = params.get("ally_placements", [])
+        for p in ally_placements:
+            tribe = p["tribe"]
+            region = TRIBE_TO_REGION.get(tribe)
+            pfac = p.get("faction", faction)
+            t_info = state.get("tribes", {}).get(tribe)
+            if t_info and t_info.get("allied_faction") is None and pfac:
+                if region and get_available(state, pfac, ALLY) > 0:
+                    place_piece(state, region, pfac, ALLY)
+                    t_info["allied_faction"] = pfac
+    else:
+        # Remove up to 3 Aedui/Roman Allies from Celtica near German Control
+        removals = params.get("removals", [])
+        for r in removals[:3]:
+            tribe = r["tribe"]
+            fac = r.get("faction")
+            region = TRIBE_TO_REGION.get(tribe)
+            t_info = state.get("tribes", {}).get(tribe)
+            if (t_info and t_info.get("allied_faction") == fac
+                    and fac in (AEDUI, ROMANS) and region):
+                if count_pieces(state, region, fac, ALLY) > 0:
+                    remove_piece(state, region, fac, ALLY)
+                t_info["allied_faction"] = None
 
 def execute_card_A38(state, shaded=False):
-    raise NotImplementedError("Card A38: Vergobret")
+    """Card A38: Vergobret — Suborn enhancement / CAPABILITY restriction.
+
+    Unshaded: Suborn can pay to place/remove 1 more piece per Region
+    and places Auxilia at 0 cost.
+    Shaded (CAPABILITY): Suborn only at Diviciacus. If no Diviciacus,
+    Suborn and Trade only within 1 of Bibracte.
+
+    Source: A Card Reference, card A38
+    """
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A38_suborn_enhanced"] = True
+    else:
+        activate_capability(state, "A38", EVENT_SHADED)
 
 def execute_card_A40(state, shaded=False):
-    raise NotImplementedError("Card A40: Alpine Tribes")
+    """Card A40: Alpine Tribes — Place pieces near Cisalpina.
+
+    Unshaded: Place up to 3 Warbands, 2 Auxilia, or 1 Ally in each
+    of 3 Regions within 1 of Cisalpina.
+    Shaded: -5 Roman Resources per Region (up to 3) within 1 of
+    Cisalpina not under Roman Control. Stay Eligible.
+
+    Source: A Card Reference, card A40
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    scenario = state["scenario"]
+    adj_cisalpina = list(get_adjacent(CISALPINA, scenario)) + [CISALPINA]
+    if not shaded:
+        placements = params.get("placements", [])
+        for p in placements:
+            region = p["region"]
+            piece_type = p["piece_type"]
+            cnt = p.get("count", 1)
+            pfac = p.get("faction", faction)
+            if region not in adj_cisalpina:
+                continue
+            if piece_type == ALLY:
+                tribe = p.get("tribe")
+                t_info = state.get("tribes", {}).get(tribe)
+                if t_info and t_info.get("allied_faction") is None and pfac:
+                    if get_available(state, pfac, ALLY) > 0:
+                        place_piece(state, region, pfac, ALLY)
+                        t_info["allied_faction"] = pfac
+            else:
+                if pfac:
+                    avail = get_available(state, pfac, piece_type)
+                    to_place = min(cnt, avail)
+                    if to_place > 0:
+                        place_piece(state, region, pfac, piece_type,
+                                    count=to_place)
+    else:
+        non_roman = 0
+        for region in adj_cisalpina:
+            if not is_controlled_by(state, region, ROMANS):
+                non_roman += 1
+        drain = min(non_roman, 3)
+        _cap_resources(state, ROMANS, -5 * drain)
+        if faction:
+            state["eligibility"][faction] = ELIGIBLE
 
 def execute_card_A43(state, shaded=False):
-    raise NotImplementedError("Card A43: Dumnorix")
+    """Card A43: Dumnorix — Replace Arverni pieces / Remove+place Arverni.
+
+    Unshaded: Replace 2 Arverni Allies and 2 Arverni Warbands within
+    1 of Bibracte with Roman/Aedui counterparts.
+    Shaded: Remove Bituriges, Bibracte, Helvetii Citadels/Allies.
+    Arverni place Ally+2 Warbands at each (despite Aedui-only stacking).
+
+    Source: A Card Reference, card A43
+    """
+    from fs_bot.rules_consts import (
+        TRIBE_BITURIGES, TRIBE_AEDUI, TRIBE_HELVETII, TRIBE_TO_REGION,
+        CITY_BIBRACTE,
+    )
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        # Replace within 1 of Bibracte
+        replacements = params.get("replacements", [])
+        for r in replacements:
+            region = r["region"]
+            from_type = r.get("from_type")
+            to_faction = r.get("to_faction")
+            if from_type == ALLY:
+                tribe = r.get("tribe")
+                t_info = state.get("tribes", {}).get(tribe)
+                if (t_info and t_info.get("allied_faction") == ARVERNI
+                        and region):
+                    if count_pieces(state, region, ARVERNI, ALLY) > 0:
+                        remove_piece(state, region, ARVERNI, ALLY)
+                    if to_faction and get_available(state, to_faction, ALLY) > 0:
+                        place_piece(state, region, to_faction, ALLY)
+                        t_info["allied_faction"] = to_faction
+                    else:
+                        t_info["allied_faction"] = None
+            elif from_type == WARBAND:
+                ps = r.get("piece_state", HIDDEN)
+                to_type = AUXILIA if to_faction == ROMANS else WARBAND
+                if count_pieces_by_state(state, region, ARVERNI,
+                                         WARBAND, ps) > 0:
+                    remove_piece(state, region, ARVERNI, WARBAND,
+                                 piece_state=ps)
+                    if to_faction and get_available(state, to_faction,
+                                                    to_type) > 0:
+                        place_piece(state, region, to_faction, to_type)
+    else:
+        # Remove Citadels/Allies at Bituriges, Bibracte (Aedui tribe), Helvetii
+        target_tribes = [TRIBE_BITURIGES, TRIBE_AEDUI, TRIBE_HELVETII]
+        for tribe in target_tribes:
+            region = TRIBE_TO_REGION.get(tribe)
+            t_info = state.get("tribes", {}).get(tribe)
+            if not t_info or not region:
+                continue
+            # Remove Ally
+            if t_info.get("allied_faction"):
+                old_fac = t_info["allied_faction"]
+                if count_pieces(state, region, old_fac, ALLY) > 0:
+                    remove_piece(state, region, old_fac, ALLY)
+                t_info["allied_faction"] = None
+            # Remove Citadels
+            for fac in FACTIONS:
+                cnt = count_pieces(state, region, fac, CITADEL)
+                if cnt > 0:
+                    remove_piece(state, region, fac, CITADEL, count=cnt)
+            # Place Arverni Ally + 2 Warbands
+            if get_available(state, ARVERNI, ALLY) > 0:
+                place_piece(state, region, ARVERNI, ALLY)
+                t_info["allied_faction"] = ARVERNI
+            avail = get_available(state, ARVERNI, WARBAND)
+            to_place = min(2, avail)
+            if to_place > 0:
+                place_piece(state, region, ARVERNI, WARBAND, count=to_place)
 
 def execute_card_A45(state, shaded=False):
-    raise NotImplementedError("Card A45: Savage Dictates")
+    """Card A45: Savage Dictates — Place non-German Allies / Free Intimidate.
+
+    Unshaded: Place up to 3 non-German Allies in Celtica within 1
+    of Intimidated markers.
+    Shaded: Germans may free Intimidate anywhere regardless of
+    Ariovistus or Control.
+
+    Source: A Card Reference, card A45
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    if not shaded:
+        placements = params.get("placements", [])
+        for p in placements[:3]:
+            tribe = p["tribe"]
+            faction = p["faction"]
+            region = TRIBE_TO_REGION.get(tribe)
+            t_info = state.get("tribes", {}).get(tribe)
+            if (t_info and t_info.get("allied_faction") is None
+                    and faction != GERMANS and region):
+                if get_available(state, faction, ALLY) > 0:
+                    place_piece(state, region, faction, ALLY)
+                    t_info["allied_faction"] = faction
+    else:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A45_free_intimidate"] = True
 
 def execute_card_A51(state, shaded=False):
-    raise NotImplementedError("Card A51: Siege of Bibrax")
+    """Card A51: Siege of Bibrax — Aid Remi / Remove from Atrebates.
+
+    Unshaded: If Remi Roman/Aedui Ally or Subdued, place 4 Auxilia or
+    Aedui Warbands and Fort, remove up to 6 Belgic Warbands there.
+    Shaded: Remove up to 5 non-Legion non-Leader Roman/Aedui pieces
+    from Atrebates.
+
+    Source: A Card Reference, card A51
+    """
+    from fs_bot.rules_consts import ATREBATES, TRIBE_REMI, TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    if not shaded:
+        t_info = state.get("tribes", {}).get(TRIBE_REMI)
+        if not t_info:
+            return
+        region = TRIBE_TO_REGION.get(TRIBE_REMI)
+        allied = t_info.get("allied_faction")
+        markers = state.get("markers", {}).get(TRIBE_REMI, {})
+        is_valid = (allied in (ROMANS, AEDUI)
+                    or (allied is None and MARKER_DISPERSED not in markers))
+        if not is_valid:
+            return
+        # Place 4 Auxilia or Aedui Warbands
+        piece_type = params.get("piece_type", AUXILIA)
+        pfac = ROMANS if piece_type == AUXILIA else AEDUI
+        avail = get_available(state, pfac, piece_type)
+        to_place = min(4, avail)
+        if to_place > 0 and region:
+            place_piece(state, region, pfac, piece_type, count=to_place)
+        # Place Fort
+        if region and get_available(state, ROMANS, FORT) > 0:
+            try:
+                place_piece(state, region, ROMANS, FORT)
+            except PieceError:
+                pass  # Max forts reached
+        # Remove up to 6 Belgic Warbands
+        removed = 0
+        if region:
+            for ps in (HIDDEN, REVEALED):
+                c = count_pieces_by_state(state, region, BELGAE, WARBAND, ps)
+                to_remove = min(c, 6 - removed)
+                if to_remove > 0:
+                    remove_piece(state, region, BELGAE, WARBAND,
+                                 count=to_remove, piece_state=ps)
+                    removed += to_remove
+    else:
+        # Remove up to 5 non-Legion non-Leader Roman/Aedui from Atrebates
+        removals = params.get("removals", [])
+        removed = 0
+        for r in removals:
+            if removed >= 5:
+                break
+            fac = r.get("faction")
+            pt = r.get("piece_type")
+            if fac not in (ROMANS, AEDUI) or pt in (LEGION, LEADER):
+                continue
+            if pt in (AUXILIA, WARBAND):
+                ps = r.get("piece_state", HIDDEN)
+                if count_pieces_by_state(state, ATREBATES, fac, pt, ps) > 0:
+                    remove_piece(state, ATREBATES, fac, pt, piece_state=ps)
+                    removed += 1
+            elif pt in (ALLY, CITADEL, FORT):
+                if count_pieces(state, ATREBATES, fac, pt) > 0:
+                    remove_piece(state, ATREBATES, fac, pt)
+                    removed += 1
 
 def execute_card_A53(state, shaded=False):
-    raise NotImplementedError("Card A53: Frumentum")
+    """Card A53: Frumentum — Aedui corn / Resource drain.
+
+    Unshaded: Aedui specify Resources amount. Romans spend on
+    Recruit+March+1 SA.
+    Shaded: Aedui and Roman Resources -4 each. Both Ineligible.
+    Executing Faction stays Eligible.
+
+    Source: A Card Reference, card A53
+    """
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A53_aedui_corn"] = True
+        # Resource transfer handled by bot/CLI layer
+    else:
+        _cap_resources(state, AEDUI, -4)
+        _cap_resources(state, ROMANS, -4)
+        state["eligibility"][AEDUI] = INELIGIBLE
+        state["eligibility"][ROMANS] = INELIGIBLE
+        if faction:
+            state["eligibility"][faction] = ELIGIBLE
 
 def execute_card_A56(state, shaded=False):
-    raise NotImplementedError("Card A56: Galba")
+    """Card A56: Galba — Belgae surrender / King placement.
+
+    Unshaded: Remove all Belgae except Leader from Atrebates.
+    Belgae Resources -4.
+    Shaded: Place 4 Belgic Warbands and 2 Belgic Allies (may replace)
+    in Belgica. Belgae Resources +4.
+
+    Source: A Card Reference, card A56
+    """
+    from fs_bot.rules_consts import (
+        ATREBATES, BELGICA_REGIONS, TRIBE_TO_REGION,
+    )
+    from fs_bot.map.map_data import get_tribes_in_region
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        # Remove all Belgae except Leader from Atrebates
+        for ps in (HIDDEN, REVEALED):
+            c = count_pieces_by_state(state, ATREBATES, BELGAE, WARBAND, ps)
+            if c > 0:
+                remove_piece(state, ATREBATES, BELGAE, WARBAND,
+                             count=c, piece_state=ps)
+        for pt in (ALLY, CITADEL):
+            cnt = count_pieces(state, ATREBATES, BELGAE, pt)
+            if cnt > 0:
+                remove_piece(state, ATREBATES, BELGAE, pt, count=cnt)
+        # Clear Belgae tribe allies in Atrebates
+        tribes = get_tribes_in_region(ATREBATES, scenario)
+        for tribe in tribes:
+            t_info = state.get("tribes", {}).get(tribe)
+            if t_info and t_info.get("allied_faction") == BELGAE:
+                t_info["allied_faction"] = None
+        _cap_resources(state, BELGAE, -4)
+    else:
+        # Place 4 Warbands in Belgica
+        wb_placements = params.get("warband_placements", [])
+        wb_total = 0
+        for p in wb_placements:
+            if wb_total >= 4:
+                break
+            region = p["region"]
+            if region not in BELGICA_REGIONS:
+                continue
+            cnt = min(p.get("count", 1), 4 - wb_total)
+            avail = get_available(state, BELGAE, WARBAND)
+            to_place = min(cnt, avail)
+            if to_place > 0:
+                place_piece(state, region, BELGAE, WARBAND, count=to_place)
+                wb_total += to_place
+        # Place 2 Belgic Allies (may replace)
+        ally_placements = params.get("ally_placements", [])
+        for p in ally_placements[:2]:
+            tribe = p["tribe"]
+            region = TRIBE_TO_REGION.get(tribe)
+            if region not in BELGICA_REGIONS:
+                continue
+            t_info = state.get("tribes", {}).get(tribe)
+            if not t_info:
+                continue
+            # May replace existing Ally
+            if t_info.get("allied_faction") and t_info["allied_faction"] != BELGAE:
+                old_fac = t_info["allied_faction"]
+                if count_pieces(state, region, old_fac, ALLY) > 0:
+                    remove_piece(state, region, old_fac, ALLY)
+                t_info["allied_faction"] = None
+            if t_info.get("allied_faction") is None:
+                if get_available(state, BELGAE, ALLY) > 0:
+                    place_piece(state, region, BELGAE, ALLY)
+                    t_info["allied_faction"] = BELGAE
+        _cap_resources(state, BELGAE, 4)
 
 def execute_card_A57(state, shaded=False):
-    raise NotImplementedError("Card A57: Sabis")
+    """Card A57: Sabis — Decisive battle in Belgica.
+
+    Both sides: Free Battle in a Belgica Region. No Retreat. Then
+    optional second Battle there (Retreat allowed).
+
+    Source: A Card Reference, card A57
+    """
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A57_double_battle"] = True
+    state["event_modifiers"]["card_A57_first_no_retreat"] = True
 
 def execute_card_A58(state, shaded=False):
-    raise NotImplementedError("Card A58: Aduatuci")
+    """Card A58: Aduatuci — Roman Battle+Seize / Replace Roman pieces.
+
+    Unshaded: Romans free Battle anywhere in Belgica, then free Seize
+    in Belgica as if Roman Control.
+    Shaded: In 1 Belgica Region, replace 1 Roman Ally and 3 Auxilia
+    with yours, free Ambush Romans.
+
+    Source: A Card Reference, card A58
+    """
+    from fs_bot.rules_consts import BELGICA_REGIONS, TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A58_roman_battle_seize"] = True
+    else:
+        region = params.get("region")
+        if region and region in BELGICA_REGIONS:
+            # Replace 1 Roman Ally
+            ally_tribe = params.get("ally_tribe")
+            if ally_tribe:
+                t_info = state.get("tribes", {}).get(ally_tribe)
+                if t_info and t_info.get("allied_faction") == ROMANS:
+                    if count_pieces(state, region, ROMANS, ALLY) > 0:
+                        remove_piece(state, region, ROMANS, ALLY)
+                    if faction and get_available(state, faction, ALLY) > 0:
+                        place_piece(state, region, faction, ALLY)
+                        t_info["allied_faction"] = faction
+                    else:
+                        t_info["allied_faction"] = None
+            # Replace 3 Auxilia with Warbands
+            replaced = 0
+            for _ in range(3):
+                for ps in (HIDDEN, REVEALED):
+                    if count_pieces_by_state(state, region, ROMANS,
+                                             AUXILIA, ps) > 0:
+                        remove_piece(state, region, ROMANS, AUXILIA,
+                                     piece_state=ps)
+                        if faction and get_available(state, faction,
+                                                     WARBAND) > 0:
+                            place_piece(state, region, faction, WARBAND)
+                        replaced += 1
+                        break
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A58_free_ambush"] = True
 
 def execute_card_A60(state, shaded=False):
-    raise NotImplementedError("Card A60: Iccius & Andecomborius")
+    """Card A60: Iccius & Andecomborius — Roman Ally at Remi / Replace.
+
+    Unshaded: Place Roman Ally at Remi (replacing any) and up to 4
+    Auxilia there. For each piece not placed, Roman Resources +2.
+    Shaded: In Atrebates, replace up to 5 Roman pieces with Belgae.
+
+    Source: A Card Reference, card A60
+    """
+    from fs_bot.rules_consts import ATREBATES, TRIBE_REMI, TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    if not shaded:
+        region = TRIBE_TO_REGION.get(TRIBE_REMI)
+        t_info = state.get("tribes", {}).get(TRIBE_REMI)
+        if t_info and region:
+            # Replace any Ally at Remi
+            if t_info.get("allied_faction"):
+                old_fac = t_info["allied_faction"]
+                if count_pieces(state, region, old_fac, ALLY) > 0:
+                    remove_piece(state, region, old_fac, ALLY)
+                t_info["allied_faction"] = None
+            # Place Roman Ally
+            if get_available(state, ROMANS, ALLY) > 0:
+                place_piece(state, region, ROMANS, ALLY)
+                t_info["allied_faction"] = ROMANS
+            # Place up to 4 Auxilia
+            avail = get_available(state, ROMANS, AUXILIA)
+            to_place = min(4, avail)
+            if to_place > 0:
+                place_piece(state, region, ROMANS, AUXILIA, count=to_place)
+            not_placed = 4 - to_place
+            if not_placed > 0:
+                _cap_resources(state, ROMANS, 2 * not_placed)
+    else:
+        # Replace up to 5 Roman pieces in Atrebates with Belgae
+        replacements = params.get("replacements", [])
+        for r in replacements[:5]:
+            from_type = r.get("from_type")
+            if from_type == ALLY:
+                tribe = r.get("tribe")
+                t_info = state.get("tribes", {}).get(tribe)
+                if (t_info and t_info.get("allied_faction") == ROMANS):
+                    if count_pieces(state, ATREBATES, ROMANS, ALLY) > 0:
+                        remove_piece(state, ATREBATES, ROMANS, ALLY)
+                    if get_available(state, BELGAE, ALLY) > 0:
+                        place_piece(state, ATREBATES, BELGAE, ALLY)
+                        t_info["allied_faction"] = BELGAE
+                    else:
+                        t_info["allied_faction"] = None
+            elif from_type == AUXILIA:
+                ps = r.get("piece_state", HIDDEN)
+                if count_pieces_by_state(state, ATREBATES, ROMANS,
+                                         AUXILIA, ps) > 0:
+                    remove_piece(state, ATREBATES, ROMANS, AUXILIA,
+                                 piece_state=ps)
+                    if get_available(state, BELGAE, WARBAND) > 0:
+                        place_piece(state, ATREBATES, BELGAE, WARBAND)
 
 def execute_card_A63(state, shaded=False):
-    raise NotImplementedError("Card A63: Winter Campaign")
+    """Card A63: Winter Campaign — CAPABILITY.
+
+    Unshaded: Romans pay Quarters costs only in Devastated Regions.
+    Shaded (CAPABILITY - Cold war): Unless Roman, after each Harvest,
+    you may do 2 Commands/SAs (paying costs).
+
+    Source: A Card Reference, card A63
+    """
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A63_quarters_devastated_only"] = True
+    else:
+        activate_capability(state, "A63", EVENT_SHADED)
 
 def execute_card_A64(state, shaded=False):
-    raise NotImplementedError("Card A64: Abatis")
+    """Card A64: Abatis — Place Abatis marker.
+
+    Both sides: Place your Faction's Abatis marker in a Region where
+    you have a Warband. Acts as Fort for defense, negates Auxilia
+    Losses. Roman March treats as Devastation.
+
+    Source: A Card Reference, card A64
+    """
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    region = params.get("region")
+    if region and faction:
+        # Verify faction has Warband there
+        has_wb = False
+        for ps in (HIDDEN, REVEALED):
+            if count_pieces_by_state(state, region, faction, WARBAND, ps) > 0:
+                has_wb = True
+                break
+        if has_wb:
+            markers = state.setdefault("markers", {})
+            region_markers = markers.setdefault(region, {})
+            region_markers[MARKER_ABATIS] = faction
 
 def execute_card_A65(state, shaded=False):
-    raise NotImplementedError("Card A65: Kinship")
+    """Card A65: Kinship — Belgae/Germans Battle each other / Swap pieces.
+
+    Unshaded: Either Belgae without Leader Battle Germans or Germans
+    without Leader Battle Belgae.
+    Shaded: Replace 4 Warbands and 2 Allies of either Belgae or
+    Germans with the other's.
+
+    Source: A Card Reference, card A65
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A65_kinship_battle"] = True
+    else:
+        from_faction = params.get("from_faction", BELGAE)
+        to_faction = GERMANS if from_faction == BELGAE else BELGAE
+        # Replace 4 Warbands
+        wb_replacements = params.get("warband_replacements", [])
+        for r in wb_replacements[:4]:
+            region = r["region"]
+            ps = r.get("piece_state", HIDDEN)
+            if count_pieces_by_state(state, region, from_faction,
+                                     WARBAND, ps) > 0:
+                remove_piece(state, region, from_faction, WARBAND,
+                             piece_state=ps)
+                if get_available(state, to_faction, WARBAND) > 0:
+                    place_piece(state, region, to_faction, WARBAND)
+        # Replace 2 Allies
+        ally_replacements = params.get("ally_replacements", [])
+        for r in ally_replacements[:2]:
+            tribe = r["tribe"]
+            region = TRIBE_TO_REGION.get(tribe)
+            t_info = state.get("tribes", {}).get(tribe)
+            if (t_info and t_info.get("allied_faction") == from_faction
+                    and region):
+                if count_pieces(state, region, from_faction, ALLY) > 0:
+                    remove_piece(state, region, from_faction, ALLY)
+                if get_available(state, to_faction, ALLY) > 0:
+                    place_piece(state, region, to_faction, ALLY)
+                    t_info["allied_faction"] = to_faction
+                else:
+                    t_info["allied_faction"] = None
 
 def execute_card_A66(state, shaded=False):
-    raise NotImplementedError("Card A66: Winter Uprising!")
+    """Card A66: Winter Uprising! — Place Uprising marker for later.
+
+    Both sides: Take this card. Place Uprising marker in a Region.
+    After Quarters Phase, execute faction-specific placement + Command.
+
+    Source: A Card Reference, card A66
+    """
+    params = state.get("event_params", {})
+    region = params.get("region")
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A66_winter_uprising"] = True
+    if region:
+        markers = state.setdefault("markers", {})
+        region_markers = markers.setdefault(region, {})
+        region_markers["Uprising"] = True
+        state["event_modifiers"]["card_A66_uprising_region"] = region
 
 def execute_card_A67(state, shaded=False):
-    raise NotImplementedError("Card A67: Arduenna")
+    """Card A67: Arduenna — March + Command in Nervii/Treveri, Hidden.
+
+    Both sides: A Faction other than Arverni may free March into
+    Nervii or Treveri, then free Command except March, then flip
+    friendly pieces there Hidden.
+
+    Source: A Card Reference, card A67
+    """
+    from fs_bot.rules_consts import NERVII, TREVERI
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A67_arduenna"] = True
+    state["event_modifiers"]["card_A67_target_regions"] = [NERVII, TREVERI]
+    # Flip Hidden deferred, but handle if provided
+    faction = state.get("executing_faction")
+    params = state.get("event_params", {})
+    flip_regions = params.get("flip_hidden_regions", [])
+    for region in flip_regions:
+        if region in (NERVII, TREVERI) and faction:
+            for piece_type in (AUXILIA, WARBAND):
+                revealed = count_pieces_by_state(
+                    state, region, faction, piece_type, REVEALED)
+                if revealed > 0:
+                    flip_piece(state, region, faction, piece_type, revealed,
+                               from_state=REVEALED, to_state=HIDDEN)
 
 def execute_card_A69(state, shaded=False):
-    raise NotImplementedError("Card A69: Bellovaci")
+    """Card A69: Bellovaci — Remove/place at Bellovaci.
+
+    Unshaded: At Bellovaci, remove Ally if Belgic and 4 Belgic
+    Warbands. Place Roman/Aedui Ally and 4 Warbands/Auxilia there.
+    Shaded: If Bellovaci Belgic Ally, place 6 Belgic Warbands there.
+    They Ambush causing 1 Loss each.
+
+    Source: A Card Reference, card A69
+    """
+    from fs_bot.rules_consts import (
+        ATREBATES, TRIBE_BELLOVACI, TRIBE_TO_REGION,
+    )
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    region = TRIBE_TO_REGION.get(TRIBE_BELLOVACI)
+    t_info = state.get("tribes", {}).get(TRIBE_BELLOVACI)
+    if not shaded:
+        if t_info and region:
+            # Remove Belgic Ally
+            if t_info.get("allied_faction") == BELGAE:
+                if count_pieces(state, region, BELGAE, ALLY) > 0:
+                    remove_piece(state, region, BELGAE, ALLY)
+                t_info["allied_faction"] = None
+            # Remove 4 Belgic Warbands
+            removed = 0
+            for ps in (HIDDEN, REVEALED):
+                c = count_pieces_by_state(state, region, BELGAE, WARBAND, ps)
+                to_remove = min(c, 4 - removed)
+                if to_remove > 0:
+                    remove_piece(state, region, BELGAE, WARBAND,
+                                 count=to_remove, piece_state=ps)
+                    removed += to_remove
+            # Place Roman/Aedui Ally
+            ally_fac = params.get("ally_faction", ROMANS)
+            if get_available(state, ally_fac, ALLY) > 0:
+                place_piece(state, region, ally_fac, ALLY)
+                t_info["allied_faction"] = ally_fac
+            # Place 4 Warbands or Auxilia
+            piece_type = params.get("piece_type", AUXILIA)
+            pfac = params.get("piece_faction", ally_fac)
+            avail = get_available(state, pfac, piece_type)
+            to_place = min(4, avail)
+            if to_place > 0:
+                place_piece(state, region, pfac, piece_type, count=to_place)
+    else:
+        if (t_info and t_info.get("allied_faction") == BELGAE
+                and region):
+            avail = get_available(state, BELGAE, WARBAND)
+            to_place = min(6, avail)
+            if to_place > 0:
+                place_piece(state, region, BELGAE, WARBAND, count=to_place)
+            state.setdefault("event_modifiers", {})
+            state["event_modifiers"]["card_A69_ambush"] = True
+            state["event_modifiers"]["card_A69_loss_per_warband"] = to_place
 
 def execute_card_A70(state, shaded=False):
-    raise NotImplementedError("Card A70: Nervii")
+    """Card A70: Nervii — No Belgae Retreat / CAPABILITY.
+
+    Unshaded: Belgae never Retreat.
+    Shaded (CAPABILITY): If Nervii Subdued at end of any Faction's
+    action, place Belgic Ally there. Rally there places +2 Warbands.
+
+    Source: A Card Reference, card A70
+    """
+    if not shaded:
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_A70_no_belgae_retreat"] = True
+    else:
+        activate_capability(state, "A70", EVENT_SHADED)
 
 
 # ---------------------------------------------------------------------------
@@ -2960,19 +4340,138 @@ def execute_card_A70(state, shaded=False):
 # ---------------------------------------------------------------------------
 
 def execute_card_11_ariovistus(state, shaded=False):
-    raise NotImplementedError("Card 11 (Ariovistus): Numidians")
+    """Card 11 (Ariovistus): Numidians — Auxilia Battle / Remove Auxilia.
+
+    Unshaded: Romans place 3 Auxilia within 1 of Leader and free Battle
+    there with Auxilia causing double Losses.
+    Shaded: Remove any 4 Auxilia.
+
+    Source: A Card Reference, card 11 (Ariovistus text)
+    """
+    params = state.get("event_params", {})
+    if not shaded:
+        # Place 3 Auxilia in region within 1 of Roman Leader
+        region = params.get("region")
+        if region:
+            avail = get_available(state, ROMANS, AUXILIA)
+            to_place = min(3, avail)
+            if to_place > 0:
+                place_piece(state, region, ROMANS, AUXILIA, count=to_place)
+        # Free Battle with Auxilia double Losses — defer
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_11a_auxilia_battle"] = True
+        state["event_modifiers"]["card_11a_double_auxilia_losses"] = True
+    else:
+        # Remove any 4 Auxilia
+        removals = params.get("removals", [])
+        removed = 0
+        for r in removals:
+            if removed >= 4:
+                break
+            region = r.get("region")
+            fac = r.get("faction", ROMANS)
+            for ps in (HIDDEN, REVEALED):
+                if count_pieces_by_state(state, region, fac, AUXILIA, ps) > 0:
+                    remove_piece(state, region, fac, AUXILIA, piece_state=ps)
+                    removed += 1
+                    break
 
 def execute_card_30_ariovistus(state, shaded=False):
-    raise NotImplementedError("Card 30 (Ariovistus): Vercingetorix's Elite")
+    """Card 30 (Ariovistus): Vercingetorix's Elite — CAPABILITY.
+
+    Unshaded: Arverni Rally places Warbands up to Allies+Citadels.
+    Shaded (CAPABILITY): In Battles with Leader, Arverni pick 4
+    Warbands that take & inflict Losses as if Legions.
+
+    Source: A Card Reference, card 30 (Ariovistus text — 4 Warbands)
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 30, side)
+    # Note: Ariovistus version has 4 Warbands (not 2) for shaded.
+    # The capability system tracks this via scenario check.
 
 def execute_card_39_ariovistus(state, shaded=False):
-    raise NotImplementedError("Card 39 (Ariovistus): River Commerce")
+    """Card 39 (Ariovistus): River Commerce — CAPABILITY.
+
+    Unshaded: Aedui Trade yields Resources regardless of Supply Lines.
+    Shaded (CAPABILITY): Trade is maximum 1 Region.
+
+    Source: A Card Reference, card 39 (Ariovistus text)
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 39, side)
 
 def execute_card_44_ariovistus(state, shaded=False):
-    raise NotImplementedError("Card 44 (Ariovistus): Dumnorix Loyalists")
+    """Card 44 (Ariovistus): Dumnorix Loyalists — Replace pieces.
+
+    Unshaded: Replace any 4 Warbands with Auxilia or Aedui Warbands.
+    Free Scout.
+    Shaded: Replace any 3 Auxilia or Aedui Warbands with any Warbands.
+    Execute a free Command in Regions placed.
+
+    Source: A Card Reference, card 44 (Ariovistus text — free Command)
+    """
+    params = state.get("event_params", {})
+    if not shaded:
+        # Same as base unshaded
+        replacements = params.get("replacements", [])
+        for r in replacements:
+            region = r["region"]
+            from_faction = r["from_faction"]
+            to_type = r.get("to_type", AUXILIA)
+            to_faction = r.get("to_faction",
+                               ROMANS if to_type == AUXILIA else AEDUI)
+            ps = r.get("piece_state", HIDDEN)
+            if count_pieces_by_state(state, region, from_faction,
+                                     WARBAND, ps) > 0:
+                remove_piece(state, region, from_faction, WARBAND,
+                             piece_state=ps)
+                if get_available(state, to_faction, to_type) > 0:
+                    place_piece(state, region, to_faction, to_type)
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_44_free_scout"] = True
+    else:
+        # Ariovistus shaded: replace + free Command (not just Raid)
+        replacements = params.get("replacements", [])
+        placed_regions = set()
+        for r in replacements:
+            region = r["region"]
+            from_faction = r["from_faction"]
+            from_type = r.get("from_type", AUXILIA)
+            to_faction = r.get("to_faction")
+            if from_type == AUXILIA:
+                if count_pieces(state, region, from_faction, AUXILIA) > 0:
+                    remove_piece(state, region, from_faction, AUXILIA)
+            elif from_type == WARBAND:
+                ps = r.get("piece_state", HIDDEN)
+                if count_pieces_by_state(state, region, AEDUI,
+                                         WARBAND, ps) > 0:
+                    remove_piece(state, region, AEDUI, WARBAND,
+                                 piece_state=ps)
+            if to_faction and get_available(state, to_faction, WARBAND) > 0:
+                place_piece(state, region, to_faction, WARBAND)
+                placed_regions.add(region)
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_44a_free_command"] = True
+        state["event_modifiers"]["card_44a_command_regions"] = list(
+            placed_regions)
 
 def execute_card_54_ariovistus(state, shaded=False):
-    raise NotImplementedError("Card 54 (Ariovistus): Joined Ranks")
+    """Card 54 (Ariovistus): Joined Ranks — March + multi-faction Battle.
+
+    Both sides: March up to 8 pieces to Region with 2+ other Factions.
+    Executing Faction then 2nd player Faction may each Battle a 3rd.
+    First Battle: no Retreat. (Clarified: 2nd Faction gets Retreat
+    even if 1st declines.)
+
+    Source: A Card Reference, card 54 (Ariovistus text — clarified)
+    """
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_54_joined_ranks"] = True
+    state["event_modifiers"]["card_54_march_limit"] = 8
+    state["event_modifiers"]["card_54_no_retreat_first"] = True
+    # Ariovistus clarification: 2nd faction always gets Retreat
+    state["event_modifiers"]["card_54a_second_always_retreat"] = True
 
 
 # ---------------------------------------------------------------------------

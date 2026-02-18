@@ -410,8 +410,14 @@ class TestCardEffectStubs:
     # Cards that have been implemented (no longer stubs).
     # Updated as cards are implemented in card_effects.py.
     _IMPLEMENTED_BASE = set(range(1, 73))  # All 72 base cards implemented
-    _IMPLEMENTED_ARIOVISTUS = set()   # A-prefix card IDs (str)
-    _IMPLEMENTED_2ND_ED = set()       # 2nd edition card IDs (int)
+    _IMPLEMENTED_ARIOVISTUS = {  # All A-prefix card IDs (str)
+        "A5", "A17", "A18", "A19", "A20", "A21", "A22", "A23",
+        "A24", "A25", "A26", "A27", "A28", "A29", "A30", "A31",
+        "A32", "A33", "A34", "A35", "A36", "A37", "A38", "A40",
+        "A43", "A45", "A51", "A53", "A56", "A57", "A58", "A60",
+        "A63", "A64", "A65", "A66", "A67", "A69", "A70",
+    }
+    _IMPLEMENTED_2ND_ED = {11, 30, 39, 44, 54}  # All 2nd edition cards
 
     def _make_state(self, scenario=None):
         return {"scenario": scenario or SCENARIO_PAX_GALLICA}

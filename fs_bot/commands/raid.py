@@ -20,7 +20,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
-    WARBAND, FORT, CITADEL, SETTLEMENT,
+    WARBAND, FORT, CITADEL,
     # Piece states
     HIDDEN, REVEALED,
     # Scenarios
@@ -38,11 +38,7 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import ALL_REGION_DATA
-
-
-class CommandError(Exception):
-    """Raised when a Raid command violates game rules."""
-    pass
+from fs_bot.commands.common import CommandError, _is_devastated
 
 
 # Factions that can execute Raid as a player command
@@ -57,12 +53,6 @@ RAID_STEAL = "steal"
 # ============================================================================
 # VALIDATION
 # ============================================================================
-
-def _is_devastated(state, region):
-    """Check if a region has the Devastated marker."""
-    markers = state.get("markers", {}).get(region, {})
-    return MARKER_DEVASTATED in markers
-
 
 def validate_raid_region(state, region, faction):
     """Check if a faction can Raid in a region.

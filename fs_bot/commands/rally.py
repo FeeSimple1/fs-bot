@@ -66,11 +66,7 @@ from fs_bot.map.map_data import (
     get_region_data, get_region_group, is_city_tribe,
     ALL_REGION_DATA,
 )
-
-
-class CommandError(Exception):
-    """Raised when a command violates game rules."""
-    pass
+from fs_bot.commands.common import CommandError, _is_devastated, _is_intimidated
 
 
 # ============================================================================
@@ -271,18 +267,6 @@ def rally_cost(state, region, faction):
 # ============================================================================
 # VALIDATION
 # ============================================================================
-
-def _is_devastated(state, region):
-    """Check if a region has the Devastated marker."""
-    markers = state.get("markers", {}).get(region, {})
-    return MARKER_DEVASTATED in markers
-
-
-def _is_intimidated(state, region):
-    """Check if a region has the Intimidated marker (Ariovistus only)."""
-    markers = state.get("markers", {}).get(region, {})
-    return MARKER_INTIMIDATED in markers
-
 
 def _get_home_regions(faction, scenario):
     """Get the home regions (Rally/Recruit symbol) for a faction.

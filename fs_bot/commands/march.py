@@ -54,9 +54,10 @@ from fs_bot.map.map_data import (
     get_adjacent_with_type, get_adjacency_type,
     ALL_REGION_DATA,
 )
+from fs_bot.commands.common import CommandError, _is_devastated
 
 
-class MarchError(Exception):
+class MarchError(CommandError):
     """Raised when a March operation violates game rules."""
     pass
 
@@ -106,12 +107,6 @@ def march_cost(state, region, faction):
 # ============================================================================
 # VALIDATION
 # ============================================================================
-
-def _is_devastated(state, region):
-    """Check if a region has the Devastated marker."""
-    markers = state.get("markers", {}).get(region, {})
-    return MARKER_DEVASTATED in markers
-
 
 def _is_region_playable(state, region):
     """Check if a region is playable in the current scenario."""
@@ -615,6 +610,12 @@ def march_group(state, faction, origin, destinations, group, *,
     current_region = origin
 
     for step_index, dest in enumerate(destinations):
+        # If this is not the first step, the current region was entered
+        # on a prior step and is now being left — it was passed through.
+        # The origin is never passed through (the group started there).
+        if step_index > 0:
+            result["regions_passed_through"].append(current_region)
+
         # Check adjacency
         adj_type = get_adjacency_type(current_region, dest)
         if adj_type is None:

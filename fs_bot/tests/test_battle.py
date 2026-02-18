@@ -1060,6 +1060,41 @@ class TestGermanicBattle:
                 # unless all warbands gone
                 pass  # Order is correct per loss priority
 
+    def test_germanic_defender_cannot_retreat_base(self):
+        """Germans defending cannot retreat in base game — §3.2.4.
+
+        §3.2.4: "EXCEPTION: Germans (black pieces) never Retreat, either
+        voluntarily or when they are forced to by combat (see 3.4.4)."
+        """
+        state = make_state()
+        setup_battle(state, ATREBATES, ROMANS, GERMANS,
+                     attacker_pieces={LEGION: 4},
+                     defender_pieces={WARBAND: 4})
+        # Germans declare retreat — should be overridden
+        result = resolve_battle(
+            state, ATREBATES, ROMANS, GERMANS,
+            retreat_declaration=True,
+            retreat_region=MORINI,
+        )
+        assert result["defender_retreated"] is False
+
+    def test_germanic_defender_cannot_retreat_base_gallic_attack(self):
+        """Germans can't retreat from Gallic attack in base game — §3.2.4.
+
+        Even when attacked by a Gallic faction without Ambush, Germans
+        still cannot retreat in the base game.
+        """
+        state = make_state()
+        setup_battle(state, ATREBATES, ARVERNI, GERMANS,
+                     attacker_pieces={WARBAND: 6},
+                     defender_pieces={WARBAND: 4})
+        result = resolve_battle(
+            state, ATREBATES, ARVERNI, GERMANS,
+            retreat_declaration=True,
+            retreat_region=MORINI,
+        )
+        assert result["defender_retreated"] is False
+
 
 # ============================================================================
 # ARIOVISTUS-SPECIFIC TESTS

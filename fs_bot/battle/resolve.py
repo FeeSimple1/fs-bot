@@ -105,8 +105,10 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     #   and/or Citadels"
     # - Gallic Battle adds Forts to immobile list — §3.3.4: "Allied Tribe
     #   (disc), Citadel, or Fort pieces"
-    # Base game Germanic attacker: no retreat — §3.2.4: "Germans never Retreat"
-    #   and §3.4.4: "Skip Step 2; there will be no Retreat."
+    # Base game Germanic attacker: no retreat — §3.4.4: "Skip Step 2"
+    # Base game Germanic defender: no retreat — §3.2.4: "Germans (black
+    #   pieces) never Retreat, either voluntarily or when they are forced
+    #   to by combat"
     # Ariovistus: Germans CAN retreat and ARE retreated from — A3.2.4
     # Ariovistus: Arverni never Retreat — A3.2.4
 
@@ -116,6 +118,11 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     elif (attacking_faction == GERMANS
           and scenario in BASE_SCENARIOS):
         # §3.4.4: Germanic Battle skips Steps 2 and 6
+        can_retreat = False
+    elif (defending_faction == GERMANS
+          and scenario in BASE_SCENARIOS):
+        # §3.2.4: "EXCEPTION: Germans (black pieces) never Retreat,
+        # either voluntarily or when they are forced to by combat"
         can_retreat = False
     elif (defending_faction == ARVERNI
           and scenario in ARIOVISTUS_SCENARIOS):

@@ -269,7 +269,40 @@ def execute_card_3(state, shaded=False):
                         removed += to_remove
 
 def execute_card_4(state, shaded=False):
-    raise NotImplementedError("Card 4: Circumvallation")
+    """Card 4: Circumvallation — Free March to Citadel + marker.
+
+    Unshaded: Romans may free March to an adjacent Citadel and put
+    Circumvallation marker on Citadel Faction's pieces there.
+    Marked group may not move from Region; if it attacks alone,
+    Romans defend as if Fort. Remove marker if group attacks Romans
+    in Battle or is eliminated, or if no Romans there.
+
+    Source: Card Reference, card 4
+    """
+    if not shaded:
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            return
+        # Place Circumvallation marker
+        state.setdefault("markers", {})
+        state["markers"].setdefault(target, set())
+        state["markers"][target].add(MARKER_CIRCUMVALLATION)
+        # Free March is handled by the caller (bot/CLI)
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_4_free_march_to"] = target
+    else:
+        # Card 4 has only unshaded text in Card Reference
+        # Same effect for both sides
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            return
+        state.setdefault("markers", {})
+        state["markers"].setdefault(target, set())
+        state["markers"][target].add(MARKER_CIRCUMVALLATION)
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_4_free_march_to"] = target
 
 def execute_card_5(state, shaded=False):
     raise NotImplementedError("Card 5: Gallia Togata")
@@ -335,22 +368,109 @@ def execute_card_7(state, shaded=False):
                 remove_piece(state, auxilia_region, ROMANS, AUXILIA)
 
 def execute_card_8(state, shaded=False):
-    raise NotImplementedError("Card 8: Baggage Trains")
+    """Card 8: Baggage Trains — CAPABILITY.
+
+    Unshaded: Your March costs 0 Resources.
+    Shaded: Your Raids may use 3 Warbands per Region and steal
+    Resources despite Citadels or Forts.
+
+    Source: Card Reference, card 8
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 8, side)
 
 def execute_card_9(state, shaded=False):
     raise NotImplementedError("Card 9: Mons Cevenna")
 
 def execute_card_10(state, shaded=False):
-    raise NotImplementedError("Card 10: Ballistae")
+    """Card 10: Ballistae — CAPABILITY.
+
+    Unshaded: Besiege cancels Citadel's halving of Losses. Battle
+    rolls remove Forts on 1-2 not 1-3.
+    Shaded: Place near a Gallic Faction. That Faction after Ambush
+    may remove defending Fort or Citadel.
+
+    Source: Card Reference, card 10
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 10, side)
 
 def execute_card_11(state, shaded=False):
-    raise NotImplementedError("Card 11: Numidians")
+    """Card 11: Numidians — Place Auxilia + Battle / Remove Auxilia.
+
+    Unshaded: Romans place 3 Auxilia in a Region within 1 of their
+    Leader and free Battle there, with Auxilia causing double Losses
+    (before rounding).
+
+    Shaded: Remove any 4 Auxilia.
+
+    Source: Card Reference, card 11
+    """
+    if not shaded:
+        # Unshaded: Place 3 Auxilia near Roman Leader, then free Battle
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            return
+        avail = get_available(state, ROMANS, AUXILIA)
+        to_place = min(3, avail)
+        if to_place > 0:
+            place_piece(state, target, ROMANS, AUXILIA, count=to_place)
+        # Battle modifier: Auxilia double Losses
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_11_double_auxilia_losses"] = True
+        state["event_modifiers"]["card_11_battle_region"] = target
+    else:
+        # Shaded: Remove any 4 Auxilia from anywhere
+        params = state.get("event_params", {})
+        removal_regions = params.get("auxilia_removal_regions", [])
+        removed = 0
+        for region, count in removal_regions:
+            actual = min(count, 4 - removed,
+                         count_pieces(state, region, ROMANS, AUXILIA))
+            if actual > 0:
+                remove_piece(state, region, ROMANS, AUXILIA, count=actual)
+                removed += actual
+            if removed >= 4:
+                break
+        # Auto-remove if not enough specified
+        if removed < 4:
+            for region in list(state["spaces"].keys()):
+                if removed >= 4:
+                    break
+                avail_in_region = count_pieces(
+                    state, region, ROMANS, AUXILIA)
+                actual = min(avail_in_region, 4 - removed)
+                if actual > 0:
+                    remove_piece(state, region, ROMANS, AUXILIA,
+                                 count=actual)
+                    removed += actual
 
 def execute_card_12(state, shaded=False):
-    raise NotImplementedError("Card 12: Titus Labienus")
+    """Card 12: Titus Labienus — CAPABILITY.
+
+    Unshaded: Roman Special Abilities may select Regions regardless
+    of where the Roman leader is located.
+    Shaded: Build and Scout Reveal are maximum 1 Region.
+
+    Source: Card Reference, card 12
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 12, side)
 
 def execute_card_13(state, shaded=False):
-    raise NotImplementedError("Card 13: Balearic Slingers")
+    """Card 13: Balearic Slingers — CAPABILITY.
+
+    Unshaded: Romans choose 1 Region per enemy Battle Command.
+    Auxilia there first inflict 1/2 Loss each on attacker. Then resolve
+    Battle.
+    Shaded: Recruit only where Supply Line, paying 2 Resources per
+    Region.
+
+    Source: Card Reference, card 13
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 13, side)
 
 def execute_card_14(state, shaded=False):
     """Card 14: Clodius Pulcher — Senate shift / Leader to Provincia.
@@ -379,7 +499,17 @@ def execute_card_14(state, shaded=False):
             state["eligibility"][executing] = ELIGIBLE
 
 def execute_card_15(state, shaded=False):
-    raise NotImplementedError("Card 15: Legio X")
+    """Card 15: Legio X — CAPABILITY.
+
+    Unshaded: In Battles with Roman Leader and Legion, final Losses
+    against Romans -1 and final Losses Romans inflict +2.
+    Shaded: Caesar attacking in Battle doubles Loss inflicted by
+    1 Legion only (not by all Legions).
+
+    Source: Card Reference, card 15
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 15, side)
 
 def execute_card_16(state, shaded=False):
     """Card 16: Ambacti — Place Auxilia / Roll and remove Auxilia.
@@ -725,13 +855,46 @@ def execute_card_24(state, shaded=False):
                          count=auxilia_to_remove)
 
 def execute_card_25(state, shaded=False):
-    raise NotImplementedError("Card 25: Aquitani")
+    """Card 25: Aquitani — Free Battle + extra Losses / CAPABILITY Rally bonus.
+
+    Unshaded: Free Battle in either Pictones or Arverni Region,
+    inflicting 3 extra Losses, 1 Ally (not Citadel) first.
+
+    Shaded (CAPABILITY): Your Rally in Pictones and Arverni Regions
+    places 2 extra Warbands each.
+
+    Source: Card Reference, card 25
+    """
+    if shaded:
+        # CAPABILITY: Rally bonus in Pictones and Arverni
+        activate_capability(state, 25, EVENT_SHADED)
+    else:
+        # Unshaded: Free Battle with 3 extra Losses
+        # The battle itself needs to be invoked by the caller
+        # Store the modifier for the battle module
+        params = state.get("event_params", {})
+        battle_region = params.get("battle_region")
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_25_extra_losses"] = 3
+        state["event_modifiers"]["card_25_ally_first"] = True
+        if battle_region:
+            state["event_modifiers"]["card_25_battle_region"] = battle_region
 
 def execute_card_26(state, shaded=False):
     raise NotImplementedError("Card 26: Gobannitio")
 
 def execute_card_27(state, shaded=False):
-    raise NotImplementedError("Card 27: Massed Gallic Archers")
+    """Card 27: Massed Gallic Archers — CAPABILITY (both sides).
+
+    Unshaded: Arverni Battle each Region inflicts 1 fewer Defender
+    Loss (before any halving).
+    Shaded: At start of Battles with 6+ Arverni Warbands, the other
+    side first must absorb 1 extra Loss.
+
+    Source: Card Reference, card 27
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 27, side)
 
 def execute_card_28(state, shaded=False):
     raise NotImplementedError("Card 28: Oppida")
@@ -740,7 +903,17 @@ def execute_card_29(state, shaded=False):
     raise NotImplementedError("Card 29: Suebi Mobilize")
 
 def execute_card_30(state, shaded=False):
-    raise NotImplementedError("Card 30: Vercingetorix's Elite")
+    """Card 30: Vercingetorix's Elite — CAPABILITY (both sides).
+
+    Unshaded: Arverni Rally places Warbands up to Allies+Citadels
+    (not Leader+1).
+    Shaded: In any Battles with their Leader, Arverni pick 2 Arverni
+    Warbands—they take & inflict Losses as if Legions.
+
+    Source: Card Reference, card 30
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 30, side)
 
 def execute_card_31(state, shaded=False):
     """Card 31: Cotuatus & Conconnetodumnus — Place Legion / Remove Allies.
@@ -871,10 +1044,29 @@ def execute_card_37(state, shaded=False):
     raise NotImplementedError("Card 37: Boii")
 
 def execute_card_38(state, shaded=False):
-    raise NotImplementedError("Card 38: Diviciacus")
+    """Card 38: Diviciacus — CAPABILITY (both sides).
+
+    Unshaded: If Aedui and Romans agree, their Command or defense
+    in Battle may treat Aedui Warbands or Auxilia where together
+    as the other.
+    Shaded: Romans and Aedui may not transfer Resources to one another.
+
+    Source: Card Reference, card 38
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 38, side)
 
 def execute_card_39(state, shaded=False):
-    raise NotImplementedError("Card 39: River Commerce")
+    """Card 39: River Commerce — CAPABILITY (both sides).
+
+    Unshaded: Aedui Allies and Citadels in Supply Lines always yield
+    +2 Resources each in Trade.
+    Shaded: Trade is maximum 1 Region.
+
+    Source: Card Reference, card 39
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 39, side)
 
 def execute_card_40(state, shaded=False):
     raise NotImplementedError("Card 40: Alpine Tribes")
@@ -886,7 +1078,15 @@ def execute_card_42(state, shaded=False):
     raise NotImplementedError("Card 42: Roman Wine")
 
 def execute_card_43(state, shaded=False):
-    raise NotImplementedError("Card 43: Convictolitavis")
+    """Card 43: Convictolitavis — CAPABILITY (both sides).
+
+    Unshaded: Suborn is maximum 2 Regions.
+    Shaded: Resource costs of Aedui Commands are doubled.
+
+    Source: Card Reference, card 43
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 43, side)
 
 def execute_card_44(state, shaded=False):
     raise NotImplementedError("Card 44: Dumnorix Loyalists")
@@ -946,8 +1146,25 @@ def execute_card_49(state, shaded=False):
         for faction in FACTIONS:
             if count_pieces(state, region, faction) == 0:
                 continue
-            # Choose which piece to remove
-            # Romans: remove Legion to Fallen if any, else Auxilia
+            # Choose which piece to remove (per Tips: each Faction
+            # chooses; bot defaults prioritize least-valuable first)
+            # Use event_params piece_removal overrides if specified
+            removal_overrides = params.get("piece_removals", {})
+            override_key = (faction, region)
+            if override_key in removal_overrides:
+                pt = removal_overrides[override_key]
+                if pt == LEGION:
+                    remove_piece(state, region, ROMANS, LEGION,
+                                 to_fallen=True)
+                elif pt == LEADER:
+                    remove_piece(state, region, faction, LEADER)
+                elif pt in (AUXILIA, WARBAND):
+                    remove_piece(state, region, faction, pt)
+                else:
+                    remove_piece(state, region, faction, pt)
+                continue
+            # Default bot removal priority:
+            # Romans: Legion (to Fallen) > Auxilia > Fort > Ally > Leader
             if faction == ROMANS:
                 if count_pieces(state, region, ROMANS, LEGION) > 0:
                     remove_piece(state, region, ROMANS, LEGION,
@@ -961,6 +1178,8 @@ def execute_card_49(state, shaded=False):
                         pass  # Permanent Fort in Provincia
                 elif count_pieces(state, region, ROMANS, ALLY) > 0:
                     remove_piece(state, region, ROMANS, ALLY)
+                elif get_leader_in_region(state, region, ROMANS) is not None:
+                    remove_piece(state, region, ROMANS, LEADER)
             elif faction == GERMANS:
                 # Germans: Warbands before Allied Tribes per Tips
                 if count_pieces(state, region, GERMANS, WARBAND) > 0:
@@ -968,13 +1187,16 @@ def execute_card_49(state, shaded=False):
                 elif count_pieces(state, region, GERMANS, ALLY) > 0:
                     remove_piece(state, region, GERMANS, ALLY)
             else:
-                # Gallic factions: remove Warband first, then Ally
+                # Gallic factions: Warband > Ally > Citadel > Leader
                 if count_pieces(state, region, faction, WARBAND) > 0:
                     remove_piece(state, region, faction, WARBAND)
                 elif count_pieces(state, region, faction, ALLY) > 0:
                     remove_piece(state, region, faction, ALLY)
                 elif count_pieces(state, region, faction, CITADEL) > 0:
                     remove_piece(state, region, faction, CITADEL)
+                elif get_leader_in_region(
+                        state, region, faction) is not None:
+                    remove_piece(state, region, faction, LEADER)
 
 def execute_card_50(state, shaded=False):
     """Card 50: Shifting Loyalties — Remove a Capability.
@@ -1010,7 +1232,17 @@ def execute_card_54(state, shaded=False):
     raise NotImplementedError("Card 54: Joined Ranks")
 
 def execute_card_55(state, shaded=False):
-    raise NotImplementedError("Card 55: Commius")
+    """Card 55: Commius — CAPABILITY (both sides).
+
+    Unshaded: Belgica Regions for Roman Recruit count as Roman
+    Controlled and +1 Roman Ally.
+    Shaded: Belgic Rally costs 0 and treats any Region with Belgic
+    pieces as Belgic Controlled.
+
+    Source: Card Reference, card 55
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 55, side)
 
 def execute_card_56(state, shaded=False):
     raise NotImplementedError("Card 56: Flight of Ambiorix")
@@ -1022,7 +1254,17 @@ def execute_card_58(state, shaded=False):
     raise NotImplementedError("Card 58: Aduatuca")
 
 def execute_card_59(state, shaded=False):
-    raise NotImplementedError("Card 59: Germanic Horse")
+    """Card 59: Germanic Horse — CAPABILITY (both sides).
+
+    Unshaded: Romans may inflict 1 Loss per Auxilia (not 1/2) in
+    1 Region per Battle Command.
+    Shaded: If Gallic, take this card. Each Battle Command, you double
+    enemy's Losses in 1 Region unless Defender with Fort/Citadel.
+
+    Source: Card Reference, card 59
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 59, side)
 
 def execute_card_60(state, shaded=False):
     raise NotImplementedError("Card 60: Indutiomarus")
@@ -1034,7 +1276,16 @@ def execute_card_62(state, shaded=False):
     raise NotImplementedError("Card 62: War Fleet")
 
 def execute_card_63(state, shaded=False):
-    raise NotImplementedError("Card 63: Winter Campaign")
+    """Card 63: Winter Campaign — CAPABILITY (both sides).
+
+    Unshaded: Romans pay costs of Quarters only in Devastated Regions.
+    Shaded: Place this card near a Gallic Faction. After each Harvest,
+    it may do any 2 Commands and/or Special Abilities (paying costs).
+
+    Source: Card Reference, card 63
+    """
+    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
+    activate_capability(state, 63, side)
 
 def execute_card_64(state, shaded=False):
     raise NotImplementedError("Card 64: Correus")

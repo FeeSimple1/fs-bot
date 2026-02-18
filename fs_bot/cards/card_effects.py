@@ -1186,10 +1186,82 @@ def execute_card_27(state, shaded=False):
     activate_capability(state, 27, side)
 
 def execute_card_28(state, shaded=False):
-    raise NotImplementedError("Card 28: Oppida")
+    """Card 28: Oppida — Gallic Allies at Cities / Citadels.
+
+    Both sides (Hillforts): Place any Available Gallic Allied Tribes at
+    Subdued Cities not under Roman Control. Then replace any Gallic
+    Allies at any Cities with Available Citadels of same Faction.
+
+    Source: Card Reference, card 28
+    """
+    from fs_bot.rules_consts import (
+        CITY_TO_TRIBE, TRIBE_TO_REGION,
+    )
+    params = state.get("event_params", {})
+    # Place Gallic Allies at Subdued Cities without Roman Control
+    ally_placements = params.get("ally_placements", [])
+    for placement in ally_placements:
+        tribe = placement["tribe"]
+        faction = placement["faction"]
+        region = TRIBE_TO_REGION.get(tribe)
+        if region and faction in GALLIC_FACTIONS:
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if (tribe_info and tribe_info.get("allied_faction") is None
+                    and not is_controlled_by(state, region, ROMANS)):
+                if get_available(state, faction, ALLY) > 0:
+                    place_piece(state, region, faction, ALLY)
+                    tribe_info["allied_faction"] = faction
+    # Replace Gallic Allies at Cities with Citadels of same Faction
+    citadel_upgrades = params.get("citadel_upgrades", [])
+    for city in citadel_upgrades:
+        tribe = CITY_TO_TRIBE.get(city)
+        if tribe is None:
+            continue
+        region = TRIBE_TO_REGION.get(tribe)
+        tribe_info = state.get("tribes", {}).get(tribe)
+        if tribe_info and tribe_info.get("allied_faction") in GALLIC_FACTIONS:
+            fac = tribe_info["allied_faction"]
+            if (count_pieces(state, region, fac, ALLY) > 0
+                    and get_available(state, fac, CITADEL) > 0):
+                remove_piece(state, region, fac, ALLY)
+                place_piece(state, region, fac, CITADEL)
 
 def execute_card_29(state, shaded=False):
-    raise NotImplementedError("Card 29: Suebi Mobilize")
+    """Card 29: Suebi Mobilize — Remove Dispersed / Germans Phase.
+
+    Both sides (Germanic pressure): Remove any Dispersed from both
+    Suebi tribes. Place Germanic Ally at each Suebi that has none.
+    Then conduct immediate Germans Phase as if Winter, but skip Rally.
+
+    Source: Card Reference, card 29
+    """
+    from fs_bot.rules_consts import SUEBI_TRIBES, TRIBE_TO_REGION
+    from fs_bot.commands.march import germans_phase_march
+    from fs_bot.commands.raid import germans_phase_raid_region
+    from fs_bot.engine.germans_battle import germans_phase_battle
+    # Remove Dispersed from both Suebi tribes
+    for tribe in SUEBI_TRIBES:
+        region = TRIBE_TO_REGION.get(tribe)
+        tribe_info = state.get("tribes", {}).get(tribe)
+        if tribe_info:
+            markers = state.get("markers", {})
+            tribe_markers = markers.get(tribe, {})
+            if MARKER_DISPERSED in tribe_markers:
+                del tribe_markers[MARKER_DISPERSED]
+            if MARKER_DISPERSED_GATHERING in tribe_markers:
+                del tribe_markers[MARKER_DISPERSED_GATHERING]
+        # Place Germanic Ally at each Suebi that has none
+        if tribe_info and tribe_info.get("allied_faction") is None:
+            if region and get_available(state, GERMANS, ALLY) > 0:
+                place_piece(state, region, GERMANS, ALLY)
+                tribe_info["allied_faction"] = GERMANS
+    # Immediate Germans Phase without Rally: March, Raid, Battle
+    germans_phase_march(state)
+    # Raid all regions with Germanic Warbands
+    for region in state["spaces"]:
+        germans_phase_raid_region(state, region)
+    germans_phase_battle(state)
+    refresh_all_control(state)
 
 def execute_card_30(state, shaded=False):
     """Card 30: Vercingetorix's Elite — CAPABILITY (both sides).
@@ -1263,7 +1335,44 @@ def execute_card_31(state, shaded=False):
             remove_piece(state, third_region, third_faction, ALLY)
 
 def execute_card_32(state, shaded=False):
-    raise NotImplementedError("Card 32: Forced Marches")
+    """Card 32: Forced Marches — Relocate pieces freely.
+
+    Both sides (Double time): Relocate any of your Warbands or Legions
+    and Auxilia and/or Leader from any Regions other than Britannia to
+    any Regions except Britannia. Pieces moved go Hidden.
+
+    Source: Card Reference, card 32
+    """
+    from fs_bot.rules_consts import BRITANNIA
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    # moves: list of {"piece_type": ..., "from_region": ..., "to_region": ...,
+    #                  "count": ..., "leader_name": ...}
+    moves = params.get("moves", [])
+    for m in moves:
+        from_region = m["from_region"]
+        to_region = m["to_region"]
+        piece_type = m["piece_type"]
+        cnt = m.get("count", 1)
+        if from_region == BRITANNIA or to_region == BRITANNIA:
+            continue
+        if piece_type == LEADER:
+            leader_name = m.get("leader_name")
+            move_piece(state, from_region, to_region, faction, LEADER,
+                       count=1, leader_name=leader_name)
+        else:
+            piece_state = m.get("piece_state")
+            move_piece(state, from_region, to_region, faction, piece_type,
+                       count=cnt, piece_state=piece_state)
+        # Pieces moved go Hidden — flip to Hidden
+        if piece_type in (AUXILIA, WARBAND):
+            # Ensure moved pieces are Hidden in destination
+            revealed_count = count_pieces_by_state(
+                state, to_region, faction, piece_type, REVEALED)
+            if revealed_count > 0:
+                to_flip = min(cnt, revealed_count)
+                flip_piece(state, to_region, faction, piece_type, to_flip,
+                           from_state=REVEALED, to_state=HIDDEN)
 
 def execute_card_33(state, shaded=False):
     """Card 33: Lost Eagle — Place Fallen Legion / Remove Legion permanently.
@@ -1321,16 +1430,137 @@ def execute_card_33(state, shaded=False):
         state["event_modifiers"]["lost_eagle_no_shift_down"] = True
 
 def execute_card_34(state, shaded=False):
-    raise NotImplementedError("Card 34: Acco")
+    """Card 34: Acco — Free Rally / Replace Allies in Carnutes & Mandubii.
+
+    Unshaded: A Gaul or Roman free Rallies or Recruits in any 3 Regions,
+    as if with Control.
+    Shaded: In Carnutes and Mandubii Regions, replace all Allies with
+    Arverni Allies and Citadels with Arverni Citadels.
+
+    Source: Card Reference, card 34
+    """
+    from fs_bot.rules_consts import CARNUTES, MANDUBII, TRIBE_TO_REGION
+    from fs_bot.map.map_data import get_tribes_in_region
+    if not shaded:
+        # Free Rally in 3 Regions as if with Control — deferred to caller
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_34_free_rally"] = True
+        state["event_modifiers"]["card_34_rally_regions"] = 3
+    else:
+        # Replace all Allies with Arverni Allies in Carnutes & Mandubii
+        # Replace all Citadels with Arverni Citadels
+        scenario = state["scenario"]
+        for region in (CARNUTES, MANDUBII):
+            tribes = get_tribes_in_region(region, scenario)
+            for tribe in tribes:
+                tribe_info = state.get("tribes", {}).get(tribe)
+                if not tribe_info:
+                    continue
+                allied_fac = tribe_info.get("allied_faction")
+                if allied_fac and allied_fac != ARVERNI:
+                    # Replace Ally with Arverni Ally
+                    if count_pieces(state, region, allied_fac, ALLY) > 0:
+                        remove_piece(state, region, allied_fac, ALLY)
+                        if get_available(state, ARVERNI, ALLY) > 0:
+                            place_piece(state, region, ARVERNI, ALLY)
+                    tribe_info["allied_faction"] = ARVERNI
+            # Replace Citadels with Arverni Citadels
+            for fac in (ROMANS, AEDUI, BELGAE, GERMANS):
+                cit_count = count_pieces(state, region, fac, CITADEL)
+                if cit_count > 0:
+                    remove_piece(state, region, fac, CITADEL, count=cit_count)
+                    avail = get_available(state, ARVERNI, CITADEL)
+                    to_place = min(cit_count, avail)
+                    if to_place > 0:
+                        place_piece(state, region, ARVERNI, CITADEL,
+                                    count=to_place)
 
 def execute_card_35(state, shaded=False):
-    raise NotImplementedError("Card 35: Gallic Shouts")
+    """Card 35: Gallic Shouts — Romans peek / Gallic Commands.
+
+    Unshaded: Romans may look at next 2 facedown cards and either
+    execute a free Limited Command or be Eligible.
+    Shaded: A Gallic Faction executes 1 Command and 1 Limited Command,
+    in either order, free, no Battles.
+
+    Source: Card Reference, card 35
+    """
+    state.setdefault("event_modifiers", {})
+    if not shaded:
+        # Reveal next 2 cards to Romans + free Limited Command or Eligible
+        state["event_modifiers"]["card_35_roman_peek"] = True
+        state["event_modifiers"]["card_35_free_limited_command"] = True
+    else:
+        # Gallic Faction gets 1 Command + 1 Limited Command, free, no Battles
+        state["event_modifiers"]["card_35_gallic_commands"] = True
+        state["event_modifiers"]["card_35_no_battles"] = True
 
 def execute_card_36(state, shaded=False):
-    raise NotImplementedError("Card 36: Morasses")
+    """Card 36: Morasses — Free Battle special / Gallic Ambush + March.
+
+    Unshaded: Free Battle against a Gallic Faction in 1 Region.
+    No Retreat, Counterattack, or Citadel effect. Attackers Hidden.
+    Shaded: A Gallic Faction free Battles with Ambush anywhere,
+    then free Marches.
+
+    Source: Card Reference, card 36
+    """
+    state.setdefault("event_modifiers", {})
+    if not shaded:
+        state["event_modifiers"]["card_36_free_battle"] = True
+        state["event_modifiers"]["card_36_no_retreat"] = True
+        state["event_modifiers"]["card_36_no_counterattack"] = True
+        state["event_modifiers"]["card_36_no_citadel_effect"] = True
+        state["event_modifiers"]["card_36_attackers_hidden"] = True
+    else:
+        state["event_modifiers"]["card_36_gallic_ambush_battle"] = True
+        state["event_modifiers"]["card_36_free_march"] = True
 
 def execute_card_37(state, shaded=False):
-    raise NotImplementedError("Card 37: Boii")
+    """Card 37: Boii — Aedui/Roman placement / Replace Aedui Allies.
+
+    Unshaded: Aedui or Romans place 2 Allies and 2 Warbands or Auxilia
+    at or adjacent to Aedui Control.
+    Shaded: At or adjacent to Arverni Control, replace 1-2 Aedui Allies
+    (not Citadels) with Arverni Allies.
+
+    Source: Card Reference, card 37
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
+    params = state.get("event_params", {})
+    if not shaded:
+        # Place 2 Allies + 2 Warbands/Auxilia at/adjacent to Aedui Control
+        faction = params.get("place_faction", AEDUI)
+        placements = params.get("placements", [])
+        for p in placements:
+            region = p["region"]
+            piece_type = p["piece_type"]
+            cnt = p.get("count", 1)
+            if piece_type == ALLY:
+                tribe = p.get("tribe")
+                tribe_info = state.get("tribes", {}).get(tribe)
+                if tribe_info and tribe_info.get("allied_faction") is None:
+                    if get_available(state, faction, ALLY) > 0:
+                        place_piece(state, region, faction, ALLY)
+                        tribe_info["allied_faction"] = faction
+            elif piece_type in (WARBAND, AUXILIA):
+                if get_available(state, faction, piece_type) >= cnt:
+                    place_piece(state, region, faction, piece_type, count=cnt)
+    else:
+        # Replace 1-2 Aedui Allies with Arverni Allies at/adjacent Arverni Control
+        replacements = params.get("replacements", [])
+        for r in replacements:
+            tribe = r["tribe"]
+            region = TRIBE_TO_REGION.get(tribe)
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if (tribe_info and tribe_info.get("allied_faction") == AEDUI
+                    and region):
+                if count_pieces(state, region, AEDUI, ALLY) > 0:
+                    remove_piece(state, region, AEDUI, ALLY)
+                    if get_available(state, ARVERNI, ALLY) > 0:
+                        place_piece(state, region, ARVERNI, ALLY)
+                    tribe_info["allied_faction"] = ARVERNI
 
 def execute_card_38(state, shaded=False):
     """Card 38: Diviciacus — CAPABILITY (both sides).
@@ -1358,13 +1588,151 @@ def execute_card_39(state, shaded=False):
     activate_capability(state, 39, side)
 
 def execute_card_40(state, shaded=False):
-    raise NotImplementedError("Card 40: Alpine Tribes")
+    """Card 40: Alpine Tribes — Place pieces near Cisalpina / Drain Roman Resources.
+
+    Unshaded: Place up to any 3 Warbands, 2 Auxilia, or 1 Ally in each
+    Region adjacent to Cisalpina. Gain +4 Resources.
+    Shaded: For each Region adjacent to Cisalpina that is not under Roman
+    Control, -5 Roman Resources. Stay Eligible.
+
+    Source: Card Reference, card 40
+    """
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    scenario = state["scenario"]
+    adj_cisalpina = get_adjacent(CISALPINA, scenario)
+    if not shaded:
+        # Place pieces in each Region adjacent to Cisalpina
+        placements = params.get("placements", [])
+        for p in placements:
+            region = p["region"]
+            piece_type = p["piece_type"]
+            cnt = p.get("count", 1)
+            pfac = p.get("faction", faction)
+            if region not in adj_cisalpina:
+                continue
+            if piece_type == ALLY:
+                tribe = p.get("tribe")
+                tribe_info = state.get("tribes", {}).get(tribe)
+                if tribe_info and tribe_info.get("allied_faction") is None:
+                    if get_available(state, pfac, ALLY) > 0:
+                        place_piece(state, region, pfac, ALLY)
+                        tribe_info["allied_faction"] = pfac
+            else:
+                avail = get_available(state, pfac, piece_type)
+                to_place = min(cnt, avail)
+                if to_place > 0:
+                    place_piece(state, region, pfac, piece_type, count=to_place)
+        # Gain +4 Resources
+        if faction:
+            _cap_resources(state, faction, 4)
+    else:
+        # -5 Roman Resources per non-Roman-Controlled adjacent Region
+        non_roman_count = 0
+        for region in adj_cisalpina:
+            if not is_controlled_by(state, region, ROMANS):
+                non_roman_count += 1
+        _cap_resources(state, ROMANS, -5 * non_roman_count)
+        # Stay Eligible
+        if faction:
+            state["eligibility"][faction] = ELIGIBLE
 
 def execute_card_41(state, shaded=False):
-    raise NotImplementedError("Card 41: Avaricum")
+    """Card 41: Avaricum — Place pieces near Avaricum / gain Resources.
+
+    Both sides: If Avaricum is your Ally or Citadel, do any or all
+    within 1 Region: place up to 2 Allies; replace 1 Ally with Citadel;
+    place 1 Fort; then +1 Resource per Ally, Citadel, Fort there.
+
+    Source: Card Reference, card 41
+    """
+    from fs_bot.rules_consts import (
+        CITY_AVARICUM, CITY_TO_TRIBE, TRIBE_TO_REGION, BITURIGES,
+    )
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    scenario = state["scenario"]
+    tribe = CITY_TO_TRIBE.get(CITY_AVARICUM)
+    tribe_info = state.get("tribes", {}).get(tribe)
+    if not tribe_info or tribe_info.get("allied_faction") != faction:
+        return
+    # Regions within 1 of Avaricum (Bituriges + adjacent)
+    target_regions = [BITURIGES] + list(get_adjacent(BITURIGES, scenario))
+    # Ally placements
+    ally_placements = params.get("ally_placements", [])
+    for p in ally_placements:
+        t = p["tribe"]
+        r = TRIBE_TO_REGION.get(t)
+        if r in target_regions:
+            t_info = state.get("tribes", {}).get(t)
+            if t_info and t_info.get("allied_faction") is None:
+                if get_available(state, faction, ALLY) > 0:
+                    place_piece(state, r, faction, ALLY)
+                    t_info["allied_faction"] = faction
+    # Citadel upgrade
+    citadel_tribe = params.get("citadel_upgrade_tribe")
+    if citadel_tribe:
+        r = TRIBE_TO_REGION.get(citadel_tribe)
+        if r in target_regions:
+            t_info = state.get("tribes", {}).get(citadel_tribe)
+            if (t_info and t_info.get("allied_faction") == faction
+                    and count_pieces(state, r, faction, ALLY) > 0
+                    and get_available(state, faction, CITADEL) > 0):
+                remove_piece(state, r, faction, ALLY)
+                place_piece(state, r, faction, CITADEL)
+    # Fort placement (Romans only)
+    fort_region = params.get("fort_region")
+    if fort_region and fort_region in target_regions and faction == ROMANS:
+        if get_available(state, ROMANS, FORT) > 0:
+            place_piece(state, fort_region, ROMANS, FORT)
+    # +1 Resource per Ally, Citadel, Fort in those regions
+    resource_gain = 0
+    for r in target_regions:
+        resource_gain += count_pieces(state, r, faction, ALLY)
+        resource_gain += count_pieces(state, r, faction, CITADEL)
+        if faction == ROMANS:
+            resource_gain += count_pieces(state, r, ROMANS, FORT)
+    if faction:
+        _cap_resources(state, faction, resource_gain)
 
 def execute_card_42(state, shaded=False):
-    raise NotImplementedError("Card 42: Roman Wine")
+    """Card 42: Roman Wine — Remove Allies under Roman Control.
+
+    Unshaded: Remove up to 4 Allied Tribes (not Citadels) under Roman
+    Control, or up to 2 adjacent to Roman Control.
+    Shaded: Remove 1-3 Roman or Aedui Allies (not Citadels) from
+    Roman-Aedui Supply Lines.
+
+    Source: Card Reference, card 42
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    if not shaded:
+        # Remove Allies under or adjacent to Roman Control
+        removals = params.get("removals", [])
+        for r in removals:
+            tribe = r["tribe"]
+            region = TRIBE_TO_REGION.get(tribe)
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if tribe_info and tribe_info.get("allied_faction") and region:
+                fac = tribe_info["allied_faction"]
+                if count_pieces(state, region, fac, ALLY) > 0:
+                    remove_piece(state, region, fac, ALLY)
+                tribe_info["allied_faction"] = None
+    else:
+        # Remove 1-3 Roman or Aedui Allies from Supply Lines
+        removals = params.get("removals", [])
+        for r in removals:
+            tribe = r["tribe"]
+            fac = r.get("faction", ROMANS)
+            region = TRIBE_TO_REGION.get(tribe)
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if tribe_info and tribe_info.get("allied_faction") == fac and region:
+                if count_pieces(state, region, fac, ALLY) > 0:
+                    remove_piece(state, region, fac, ALLY)
+                tribe_info["allied_faction"] = None
 
 def execute_card_43(state, shaded=False):
     """Card 43: Convictolitavis — CAPABILITY (both sides).
@@ -1378,19 +1746,147 @@ def execute_card_43(state, shaded=False):
     activate_capability(state, 43, side)
 
 def execute_card_44(state, shaded=False):
-    raise NotImplementedError("Card 44: Dumnorix Loyalists")
+    """Card 44: Dumnorix Loyalists — Replace Warbands / Replace Auxilia.
+
+    Unshaded: Replace any 4 Warbands with Auxilia or Aedui Warbands.
+    They free Scout (as if Auxilia).
+    Shaded: Replace any 3 Auxilia or Aedui Warbands total with any
+    Warbands. They all free Raid.
+
+    Source: Card Reference, card 44
+    """
+    params = state.get("event_params", {})
+    if not shaded:
+        # Replace 4 Warbands with Auxilia or Aedui Warbands
+        replacements = params.get("replacements", [])
+        for r in replacements:
+            region = r["region"]
+            from_faction = r["from_faction"]
+            to_type = r.get("to_type", AUXILIA)
+            to_faction = r.get("to_faction", ROMANS if to_type == AUXILIA else AEDUI)
+            ps = r.get("piece_state", HIDDEN)
+            if count_pieces_by_state(state, region, from_faction, WARBAND, ps) > 0:
+                remove_piece(state, region, from_faction, WARBAND, piece_state=ps)
+                if get_available(state, to_faction, to_type) > 0:
+                    place_piece(state, region, to_faction, to_type)
+        # Free Scout deferred to caller
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_44_free_scout"] = True
+    else:
+        # Replace 3 Auxilia/Aedui Warbands with any Warbands
+        replacements = params.get("replacements", [])
+        for r in replacements:
+            region = r["region"]
+            from_faction = r["from_faction"]
+            from_type = r.get("from_type", AUXILIA)
+            to_faction = r.get("to_faction")
+            if from_type == AUXILIA:
+                if count_pieces(state, region, from_faction, AUXILIA) > 0:
+                    remove_piece(state, region, from_faction, AUXILIA)
+            elif from_type == WARBAND:
+                ps = r.get("piece_state", HIDDEN)
+                if count_pieces_by_state(state, region, AEDUI, WARBAND, ps) > 0:
+                    remove_piece(state, region, AEDUI, WARBAND, piece_state=ps)
+            if to_faction and get_available(state, to_faction, WARBAND) > 0:
+                place_piece(state, region, to_faction, WARBAND)
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_44_free_raid"] = True
 
 def execute_card_45(state, shaded=False):
-    raise NotImplementedError("Card 45: Litaviccus")
+    """Card 45: Litaviccus — Replace Arverni Warbands / Battle Romans.
+
+    Unshaded: In each of 2 Regions, replace up to 2 Arverni Warbands
+    with Aedui Warbands. 4 Arverni Resources to Aedui.
+    Shaded: Free Battle against Romans in 1 Region, using Aedui pieces
+    as your own, Ambushing if able.
+
+    Source: Card Reference, card 45
+    """
+    params = state.get("event_params", {})
+    if not shaded:
+        # Replace Arverni Warbands with Aedui Warbands in 2 Regions
+        regions = params.get("regions", [])
+        for r_info in regions:
+            region = r_info["region"]
+            cnt = min(r_info.get("count", 2), 2)
+            for _ in range(cnt):
+                # Try Hidden first, then Revealed
+                removed = False
+                for ps in (HIDDEN, REVEALED):
+                    if count_pieces_by_state(state, region, ARVERNI, WARBAND, ps) > 0:
+                        remove_piece(state, region, ARVERNI, WARBAND, piece_state=ps)
+                        removed = True
+                        break
+                if removed and get_available(state, AEDUI, WARBAND) > 0:
+                    place_piece(state, region, AEDUI, WARBAND)
+        # Transfer 4 Resources from Arverni to Aedui
+        transfer = min(state["resources"].get(ARVERNI, 0), 4)
+        _cap_resources(state, ARVERNI, -transfer)
+        _cap_resources(state, AEDUI, transfer)
+    else:
+        # Free Battle against Romans using Aedui pieces, Ambush if able
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_45_battle_romans"] = True
+        state["event_modifiers"]["card_45_use_aedui"] = True
+        state["event_modifiers"]["card_45_ambush_if_able"] = True
 
 def execute_card_46(state, shaded=False):
-    raise NotImplementedError("Card 46: Celtic Rites")
+    """Card 46: Celtic Rites — Gallic Factions lose Resources / Free Command.
+
+    Unshaded: Select 1+ Gallic Factions. Each loses 3 Resources and is
+    Ineligible through next card.
+    Shaded: A Gallic Faction executes a free Command (in multiple
+    Regions). Stay Eligible.
+
+    Source: Card Reference, card 46
+    """
+    params = state.get("event_params", {})
+    if not shaded:
+        target_factions = params.get("target_factions", [])
+        for fac in target_factions:
+            if fac in GALLIC_FACTIONS:
+                _cap_resources(state, fac, -3)
+                state["eligibility"][fac] = INELIGIBLE
+    else:
+        # Free Command for a Gallic Faction + Stay Eligible
+        faction = state.get("executing_faction")
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_46_free_command"] = True
+        if faction:
+            state["eligibility"][faction] = ELIGIBLE
 
 def execute_card_47(state, shaded=False):
-    raise NotImplementedError("Card 47: Chieftains' Council")
+    """Card 47: Chieftains' Council — Multi-faction peek and action.
+
+    Both sides: Select a Region with at least 2 non-German Factions'
+    pieces. Two or more player Factions there look at next 2 facedown
+    cards, then may either execute a free Limited Command or become
+    Eligible.
+
+    Source: Card Reference, card 47
+    """
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_47_council"] = True
+    # Region selection and faction actions deferred to bot/CLI layer
 
 def execute_card_48(state, shaded=False):
-    raise NotImplementedError("Card 48: Druids")
+    """Card 48: Druids — Gallic Factions execute free Commands.
+
+    Both sides: Select 1-3 Gallic Factions. In initiative order, each
+    executes a free Limited Command that may add a free Special Ability.
+    Become Eligible after this card.
+
+    Source: Card Reference, card 48
+    """
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_48_druids"] = True
+    target_factions = params.get("target_factions", [])
+    state["event_modifiers"]["card_48_target_factions"] = target_factions
+    # Executing faction stays Eligible
+    if faction:
+        state["eligibility"][faction] = ELIGIBLE
 
 def execute_card_49(state, shaded=False):
     """Card 49: Drought — Halve Resources, Devastate, remove pieces.
@@ -1509,16 +2005,123 @@ def execute_card_50(state, shaded=False):
             deactivate_capability(state, first_cap)
 
 def execute_card_51(state, shaded=False):
-    raise NotImplementedError("Card 51: Surus")
+    """Card 51: Surus — Replace Warbands in Treveri area.
+
+    Unshaded: Replace any 4 Warbands in a Region within 1 of Treveri
+    with Aedui Warbands. Then Aedui execute a free Command.
+    Shaded: In a Region within 1 of Treveri, replace up to 4 Aedui
+    Warbands with German March, Raid, or Battle with them.
+
+    Source: Card Reference, card 51
+    """
+    from fs_bot.rules_consts import TREVERI
+    params = state.get("event_params", {})
+    if not shaded:
+        # Replace 4 Warbands with Aedui Warbands in region within 1 of Treveri
+        region = params.get("region")
+        replacements = params.get("replacements", [])
+        for r in replacements:
+            reg = r.get("region", region)
+            from_fac = r["from_faction"]
+            ps = r.get("piece_state", HIDDEN)
+            if count_pieces_by_state(state, reg, from_fac, WARBAND, ps) > 0:
+                remove_piece(state, reg, from_fac, WARBAND, piece_state=ps)
+                if get_available(state, AEDUI, WARBAND) > 0:
+                    place_piece(state, reg, AEDUI, WARBAND)
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_51_aedui_free_command"] = True
+    else:
+        # Replace up to 4 Aedui Warbands with German pieces + action
+        region = params.get("region")
+        count = params.get("count", 4)
+        if region:
+            replaced = 0
+            for _ in range(count):
+                for ps in (HIDDEN, REVEALED):
+                    if count_pieces_by_state(state, region, AEDUI, WARBAND, ps) > 0:
+                        remove_piece(state, region, AEDUI, WARBAND, piece_state=ps)
+                        if get_available(state, GERMANS, WARBAND) > 0:
+                            place_piece(state, region, GERMANS, WARBAND)
+                        replaced += 1
+                        break
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_51_german_action"] = True
+        if region:
+            state["event_modifiers"]["card_51_action_region"] = region
 
 def execute_card_52(state, shaded=False):
-    raise NotImplementedError("Card 52: Assembly of Gaul")
+    """Card 52: Assembly of Gaul — Drain Resources / Free Command.
+
+    Unshaded: If Carnutes are Roman Ally, Subdued, or Dispersed, drop
+    1+ Gallic Factions' Resources each -8.
+    Shaded: Faction Controlling Carnutes Region executes a Command
+    that may add 2 Special Abilities, free.
+
+    Source: Card Reference, card 52
+    """
+    from fs_bot.rules_consts import CARNUTES, TRIBE_CARNUTES
+    params = state.get("event_params", {})
+    if not shaded:
+        # Check Carnutes tribe status
+        tribe_info = state.get("tribes", {}).get(TRIBE_CARNUTES)
+        if tribe_info:
+            allied_fac = tribe_info.get("allied_faction")
+            markers = state.get("markers", {}).get(TRIBE_CARNUTES, {})
+            is_roman_ally = (allied_fac == ROMANS)
+            is_subdued = (allied_fac is None and MARKER_DISPERSED not in markers)
+            is_dispersed = (MARKER_DISPERSED in markers)
+            if is_roman_ally or is_subdued or is_dispersed:
+                target_factions = params.get("target_factions", [])
+                for fac in target_factions:
+                    if fac in GALLIC_FACTIONS:
+                        _cap_resources(state, fac, -8)
+    else:
+        # Faction Controlling Carnutes Region gets free Command + 2 SAs
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_52_free_command_sa"] = True
+        state["event_modifiers"]["card_52_special_abilities"] = 2
 
 def execute_card_53(state, shaded=False):
-    raise NotImplementedError("Card 53: Consuetudine")
+    """Card 53: Consuetudine — Germanic Warbands Hidden + Germans Phase.
+
+    Both sides: All Germanic Warbands to Hidden. Then conduct immediate
+    Germans Phase as if Winter, but skip March, and all Germans Ambush.
+
+    Source: Card Reference, card 53
+    """
+    from fs_bot.commands.rally import germans_phase_rally
+    from fs_bot.commands.raid import germans_phase_raid_region
+    from fs_bot.engine.germans_battle import germans_phase_battle
+    # Flip all Germanic Warbands to Hidden
+    for region in state["spaces"]:
+        revealed = count_pieces_by_state(state, region, GERMANS, WARBAND, REVEALED)
+        if revealed > 0:
+            flip_piece(state, region, GERMANS, WARBAND, revealed,
+                       from_state=REVEALED, to_state=HIDDEN)
+    # Germans Phase without March: Rally, Raid, Battle with Ambush
+    germans_phase_rally(state)
+    for region in list(state["spaces"]):
+        germans_phase_raid_region(state, region)
+    # Battle with forced Ambush
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_53_german_ambush"] = True
+    germans_phase_battle(state)
+    refresh_all_control(state)
 
 def execute_card_54(state, shaded=False):
-    raise NotImplementedError("Card 54: Joined Ranks")
+    """Card 54: Joined Ranks — Free March + multi-faction Battle.
+
+    Both sides: Executing Faction may free March a group of up to 8
+    pieces to a Region with 2+ other Gallic/Roman Factions. Then
+    executing Faction and a 2nd player Faction may each free Battle
+    against a 3rd. First Battle: no Retreat.
+
+    Source: Card Reference, card 54
+    """
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_54_joined_ranks"] = True
+    state["event_modifiers"]["card_54_march_limit"] = 8
+    state["event_modifiers"]["card_54_no_retreat_first"] = True
 
 def execute_card_55(state, shaded=False):
     """Card 55: Commius — CAPABILITY (both sides).
@@ -1534,13 +2137,143 @@ def execute_card_55(state, shaded=False):
     activate_capability(state, 55, side)
 
 def execute_card_56(state, shaded=False):
-    raise NotImplementedError("Card 56: Flight of Ambiorix")
+    """Card 56: Flight of Ambiorix — Remove or Place Ambiorix.
+
+    Unshaded: If Ambiorix is in a Roman Controlled Region, or if
+    Belgic victory < 10, remove Ambiorix.
+    Shaded: If Ambiorix is not on the map, place Belgic Leader within
+    1 Region of Germania, symbol up (as Ambiorix).
+
+    Source: Card Reference, card 56
+    """
+    from fs_bot.rules_consts import GERMANIA_REGIONS
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        # Remove Ambiorix if in Roman Controlled Region or Belgic victory < 10
+        leader_loc = find_leader(state, AMBIORIX)
+        if leader_loc is None:
+            return
+        in_roman_control = is_controlled_by(state, leader_loc, ROMANS)
+        # Check Belgic victory value (Control + Allies + Citadels)
+        belgic_victory = 0
+        for region in state["spaces"]:
+            if is_controlled_by(state, region, BELGAE):
+                from fs_bot.rules_consts import CONTROL_VALUES
+                belgic_victory += CONTROL_VALUES.get(region, 0)
+        for tribe, t_info in state.get("tribes", {}).items():
+            if t_info.get("allied_faction") == BELGAE:
+                belgic_victory += 1
+        for region in state["spaces"]:
+            belgic_victory += count_pieces(state, region, BELGAE, CITADEL)
+        if in_roman_control or belgic_victory < 10:
+            remove_piece(state, leader_loc, BELGAE, LEADER)
+    else:
+        # Place Ambiorix within 1 Region of Germania
+        leader_loc = find_leader(state, AMBIORIX)
+        if leader_loc is not None:
+            return  # Already on map
+        target_region = params.get("target_region")
+        if target_region is None:
+            # Default: first Germania region
+            for g_region in GERMANIA_REGIONS:
+                target_region = g_region
+                break
+        if target_region and get_available(state, BELGAE, LEADER) > 0:
+            place_piece(state, target_region, BELGAE, LEADER,
+                        leader_name=AMBIORIX)
 
 def execute_card_57(state, shaded=False):
-    raise NotImplementedError("Card 57: Land of Mist and Mystery")
+    """Card 57: Land of Mist and Mystery — March to Britannia.
+
+    Unshaded: A non-German Faction may free March into Britannia, add
+    any free Special Ability there, then +4 Resources if in Britannia.
+    Shaded: Remove an Ally or Dispersed from Britannia. Place any 1
+    Gallic Ally and up to 4 Warbands there.
+
+    Source: Card Reference, card 57
+    """
+    from fs_bot.rules_consts import BRITANNIA, TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    if not shaded:
+        # Free March into Britannia + SA + Resources — deferred to caller
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_57_march_britannia"] = True
+        state["event_modifiers"]["card_57_free_sa"] = True
+        # +4 Resources if faction has pieces in Britannia
+        if faction:
+            _cap_resources(state, faction, 4)
+    else:
+        # Remove Ally or Dispersed from Britannia
+        removal = params.get("removal")
+        if removal:
+            if removal.get("type") == "ally":
+                tribe = removal.get("tribe")
+                tribe_info = state.get("tribes", {}).get(tribe)
+                if tribe_info and tribe_info.get("allied_faction"):
+                    fac = tribe_info["allied_faction"]
+                    if count_pieces(state, BRITANNIA, fac, ALLY) > 0:
+                        remove_piece(state, BRITANNIA, fac, ALLY)
+                    tribe_info["allied_faction"] = None
+            elif removal.get("type") == "dispersed":
+                tribe = removal.get("tribe")
+                markers = state.get("markers", {})
+                if tribe in markers and MARKER_DISPERSED in markers[tribe]:
+                    del markers[tribe][MARKER_DISPERSED]
+        # Place 1 Gallic Ally and up to 4 Warbands
+        ally_faction = params.get("ally_faction")
+        ally_tribe = params.get("ally_tribe")
+        if ally_faction and ally_tribe:
+            tribe_info = state.get("tribes", {}).get(ally_tribe)
+            if tribe_info and get_available(state, ally_faction, ALLY) > 0:
+                place_piece(state, BRITANNIA, ally_faction, ALLY)
+                tribe_info["allied_faction"] = ally_faction
+        wb_faction = params.get("warband_faction")
+        wb_count = params.get("warband_count", 0)
+        if wb_faction and wb_count > 0:
+            avail = get_available(state, wb_faction, WARBAND)
+            to_place = min(wb_count, avail, 4)
+            if to_place > 0:
+                place_piece(state, BRITANNIA, wb_faction, WARBAND,
+                            count=to_place)
 
 def execute_card_58(state, shaded=False):
-    raise NotImplementedError("Card 58: Aduatuca")
+    """Card 58: Aduatuca — Remove Warbands at Fort / German Battle.
+
+    Unshaded: Remove 9 Belgic and/or Germanic Warbands from a Region
+    with a Fort.
+    Shaded: March Germans to 1 Region with a Fort. They Ambush Romans
+    there, 1 Loss per 2 Warbands.
+
+    Source: Card Reference, card 58
+    """
+    params = state.get("event_params", {})
+    if not shaded:
+        region = params.get("region")
+        if region is None:
+            return
+        removals = params.get("removals", [])
+        total_removed = 0
+        for r in removals:
+            fac = r.get("faction")
+            cnt = r.get("count", 1)
+            if fac not in (BELGAE, GERMANS):
+                continue
+            for _ in range(cnt):
+                if total_removed >= 9:
+                    break
+                for ps in (HIDDEN, REVEALED):
+                    if count_pieces_by_state(state, region, fac, WARBAND, ps) > 0:
+                        remove_piece(state, region, fac, WARBAND, piece_state=ps)
+                        total_removed += 1
+                        break
+    else:
+        # German March to Fort region + Ambush, 1 Loss per 2 Warbands
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_58_german_march_battle"] = True
+        state["event_modifiers"]["card_58_loss_per_2_warbands"] = True
 
 def execute_card_59(state, shaded=False):
     """Card 59: Germanic Horse — CAPABILITY (both sides).
@@ -1556,13 +2289,156 @@ def execute_card_59(state, shaded=False):
     activate_capability(state, 59, side)
 
 def execute_card_60(state, shaded=False):
-    raise NotImplementedError("Card 60: Indutiomarus")
+    """Card 60: Indutiomarus — Remove Belgic pieces / Place Belgic+German.
+
+    Unshaded: Remove 6 Belgic Warbands and/or Allies (not Citadels)
+    from Treveri or 1 Region adjacent to it.
+    Shaded: Remove any Ally or marker from Treveri and Ubii. Place
+    Belgic Ally, 2 Belgic and 1 German Warband at each.
+
+    Source: Card Reference, card 60
+    """
+    from fs_bot.rules_consts import TREVERI, UBII, TRIBE_TREVERI, TRIBE_UBII
+    params = state.get("event_params", {})
+    if not shaded:
+        region = params.get("region", TREVERI)
+        removals = params.get("removals", [])
+        total = 0
+        for r in removals:
+            if total >= 6:
+                break
+            rtype = r.get("type", WARBAND)
+            if rtype == ALLY:
+                tribe = r.get("tribe")
+                tribe_info = state.get("tribes", {}).get(tribe)
+                if tribe_info and tribe_info.get("allied_faction") == BELGAE:
+                    if count_pieces(state, region, BELGAE, ALLY) > 0:
+                        remove_piece(state, region, BELGAE, ALLY)
+                        tribe_info["allied_faction"] = None
+                        total += 1
+            else:
+                for ps in (HIDDEN, REVEALED):
+                    if count_pieces_by_state(state, region, BELGAE, WARBAND, ps) > 0:
+                        remove_piece(state, region, BELGAE, WARBAND, piece_state=ps)
+                        total += 1
+                        break
+    else:
+        # Remove Ally/marker from Treveri and Ubii, place pieces
+        for region, tribe in ((TREVERI, TRIBE_TREVERI), (UBII, TRIBE_UBII)):
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if tribe_info and tribe_info.get("allied_faction"):
+                fac = tribe_info["allied_faction"]
+                if count_pieces(state, region, fac, ALLY) > 0:
+                    remove_piece(state, region, fac, ALLY)
+                tribe_info["allied_faction"] = None
+            # Remove Dispersed marker if present
+            markers = state.get("markers", {})
+            if tribe in markers:
+                markers[tribe].pop(MARKER_DISPERSED, None)
+                markers[tribe].pop(MARKER_DISPERSED_GATHERING, None)
+            # Place Belgic Ally
+            if tribe_info and get_available(state, BELGAE, ALLY) > 0:
+                place_piece(state, region, BELGAE, ALLY)
+                tribe_info["allied_faction"] = BELGAE
+            # Place 2 Belgic Warbands
+            avail_b = get_available(state, BELGAE, WARBAND)
+            to_place_b = min(2, avail_b)
+            if to_place_b > 0:
+                place_piece(state, region, BELGAE, WARBAND, count=to_place_b)
+            # Place 1 German Warband
+            if get_available(state, GERMANS, WARBAND) > 0:
+                place_piece(state, region, GERMANS, WARBAND)
 
 def execute_card_61(state, shaded=False):
-    raise NotImplementedError("Card 61: Catuvolcus")
+    """Card 61: Catuvolcus — Remove Allies + Warbands / Place Belgic Allies.
+
+    Unshaded: Remove 1+ Allied Tribes of same Faction in Nervii Region
+    and 5 Warbands there.
+    Shaded: Place Belgic Allies at Nervii and Eburones, replacing any
+    Allies or Dispersed there. Add +6 Belgic Resources.
+
+    Source: Card Reference, card 61
+    """
+    from fs_bot.rules_consts import NERVII, TRIBE_NERVII, TRIBE_EBURONES
+    params = state.get("event_params", {})
+    if not shaded:
+        # Remove Allies of same Faction + 5 Warbands in Nervii
+        ally_removals = params.get("ally_removals", [])
+        for tribe in ally_removals:
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if tribe_info and tribe_info.get("allied_faction"):
+                fac = tribe_info["allied_faction"]
+                if count_pieces(state, NERVII, fac, ALLY) > 0:
+                    remove_piece(state, NERVII, fac, ALLY)
+                tribe_info["allied_faction"] = None
+        # Remove 5 Warbands (any faction)
+        wb_removals = params.get("warband_removals", [])
+        removed = 0
+        for r in wb_removals:
+            if removed >= 5:
+                break
+            fac = r.get("faction")
+            cnt = r.get("count", 1)
+            for _ in range(min(cnt, 5 - removed)):
+                for ps in (HIDDEN, REVEALED):
+                    if count_pieces_by_state(state, NERVII, fac, WARBAND, ps) > 0:
+                        remove_piece(state, NERVII, fac, WARBAND, piece_state=ps)
+                        removed += 1
+                        break
+    else:
+        # Place Belgic Allies at Nervii and Eburones, replacing existing
+        for tribe in (TRIBE_NERVII, TRIBE_EBURONES):
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if not tribe_info:
+                continue
+            region = NERVII  # Both tribes are in Nervii region
+            # Remove existing Ally
+            if tribe_info.get("allied_faction"):
+                old_fac = tribe_info["allied_faction"]
+                if count_pieces(state, region, old_fac, ALLY) > 0:
+                    remove_piece(state, region, old_fac, ALLY)
+                tribe_info["allied_faction"] = None
+            # Remove Dispersed marker
+            markers = state.get("markers", {})
+            if tribe in markers:
+                markers[tribe].pop(MARKER_DISPERSED, None)
+                markers[tribe].pop(MARKER_DISPERSED_GATHERING, None)
+            # Place Belgic Ally
+            if get_available(state, BELGAE, ALLY) > 0:
+                place_piece(state, region, BELGAE, ALLY)
+                tribe_info["allied_faction"] = BELGAE
+        # +6 Belgic Resources
+        _cap_resources(state, BELGAE, 6)
 
 def execute_card_62(state, shaded=False):
-    raise NotImplementedError("Card 62: War Fleet")
+    """Card 62: War Fleet — Move pieces among coastal Regions.
+
+    Both sides: Move any of your Warbands, Auxilia, Legions, or Leaders
+    among Arverni Region, Pictones, and Regions within 1 of Britannia.
+    Then execute a free Command in 1 of those Regions.
+
+    Source: Card Reference, card 62
+    """
+    # Complex multi-step: movement + free Command — defer to caller
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_62_war_fleet"] = True
+    # Piece movements handled via event_params by bot/CLI layer
+    params = state.get("event_params", {})
+    moves = params.get("moves", [])
+    faction = state.get("executing_faction")
+    for m in moves:
+        from_region = m["from_region"]
+        to_region = m["to_region"]
+        piece_type = m["piece_type"]
+        cnt = m.get("count", 1)
+        if piece_type == LEADER:
+            leader_name = m.get("leader_name")
+            move_piece(state, from_region, to_region, faction, LEADER,
+                       count=1, leader_name=leader_name)
+        else:
+            ps = m.get("piece_state")
+            move_piece(state, from_region, to_region, faction, piece_type,
+                       count=cnt, piece_state=ps)
 
 def execute_card_63(state, shaded=False):
     """Card 63: Winter Campaign — CAPABILITY (both sides).
@@ -1577,31 +2453,381 @@ def execute_card_63(state, shaded=False):
     activate_capability(state, 63, side)
 
 def execute_card_64(state, shaded=False):
-    raise NotImplementedError("Card 64: Correus")
+    """Card 64: Correus — Replace Belgic pieces / Remove+Rally Belgae.
+
+    Unshaded: Replace up to 8 Belgic Allies plus Warbands in Atrebates
+    Region with yours (Auxilia for Warbands).
+    Shaded: Remove 2 Allies from Atrebates. Belgae place up to 2 Allies
+    there, then free Rally in 1 Belgica Region.
+
+    Source: Card Reference, card 64
+    """
+    from fs_bot.rules_consts import ATREBATES, TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    if not shaded:
+        # Replace up to 8 Belgic pieces in Atrebates
+        replacements = params.get("replacements", [])
+        for r in replacements:
+            orig_type = r.get("from_type")
+            if orig_type == ALLY:
+                tribe = r.get("tribe")
+                tribe_info = state.get("tribes", {}).get(tribe)
+                if tribe_info and tribe_info.get("allied_faction") == BELGAE:
+                    if count_pieces(state, ATREBATES, BELGAE, ALLY) > 0:
+                        remove_piece(state, ATREBATES, BELGAE, ALLY)
+                        if faction and get_available(state, faction, ALLY) > 0:
+                            place_piece(state, ATREBATES, faction, ALLY)
+                            tribe_info["allied_faction"] = faction
+                        else:
+                            tribe_info["allied_faction"] = None
+            elif orig_type == WARBAND:
+                ps = r.get("piece_state", HIDDEN)
+                if count_pieces_by_state(state, ATREBATES, BELGAE, WARBAND, ps) > 0:
+                    remove_piece(state, ATREBATES, BELGAE, WARBAND, piece_state=ps)
+                    # Replace with Auxilia
+                    if faction and get_available(state, faction, AUXILIA) > 0:
+                        place_piece(state, ATREBATES, faction, AUXILIA)
+    else:
+        # Remove 2 Allies from Atrebates
+        ally_removals = params.get("ally_removals", [])
+        for tribe in ally_removals[:2]:
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if tribe_info and tribe_info.get("allied_faction"):
+                fac = tribe_info["allied_faction"]
+                if count_pieces(state, ATREBATES, fac, ALLY) > 0:
+                    remove_piece(state, ATREBATES, fac, ALLY)
+                tribe_info["allied_faction"] = None
+        # Belgae place up to 2 Allies
+        belgae_placements = params.get("belgae_ally_placements", [])
+        for tribe in belgae_placements[:2]:
+            tribe_info = state.get("tribes", {}).get(tribe)
+            if tribe_info and tribe_info.get("allied_faction") is None:
+                if get_available(state, BELGAE, ALLY) > 0:
+                    place_piece(state, ATREBATES, BELGAE, ALLY)
+                    tribe_info["allied_faction"] = BELGAE
+        # Free Rally in 1 Belgica Region — defer
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_64_belgae_rally"] = True
 
 def execute_card_65(state, shaded=False):
-    raise NotImplementedError("Card 65: German Allegiances")
+    """Card 65: German Allegiances — March+Ambush Germans / Replace Germans.
+
+    Unshaded: March Germans from up to 2 Regions, then Ambush with
+    all Germans able.
+    Shaded: Where you have Control, remove or replace 5 Germanic
+    Warbands and 1 German Ally with your own.
+
+    Source: Card Reference, card 65
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    if not shaded:
+        # German March + Ambush — defer to caller
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_65_german_march_ambush"] = True
+        state["event_modifiers"]["card_65_march_regions"] = 2
+    else:
+        # Replace 5 Germanic Warbands + 1 German Ally with your pieces
+        wb_replacements = params.get("warband_replacements", [])
+        replaced = 0
+        for r in wb_replacements:
+            if replaced >= 5:
+                break
+            region = r["region"]
+            for ps in (HIDDEN, REVEALED):
+                if count_pieces_by_state(state, region, GERMANS, WARBAND, ps) > 0:
+                    remove_piece(state, region, GERMANS, WARBAND, piece_state=ps)
+                    if faction and get_available(state, faction, AUXILIA) > 0:
+                        place_piece(state, region, faction, AUXILIA)
+                    replaced += 1
+                    break
+        # Replace 1 German Ally
+        ally_tribe = params.get("ally_replacement_tribe")
+        if ally_tribe:
+            region = TRIBE_TO_REGION.get(ally_tribe)
+            tribe_info = state.get("tribes", {}).get(ally_tribe)
+            if (tribe_info and tribe_info.get("allied_faction") == GERMANS
+                    and region):
+                if count_pieces(state, region, GERMANS, ALLY) > 0:
+                    remove_piece(state, region, GERMANS, ALLY)
+                if faction and get_available(state, faction, ALLY) > 0:
+                    place_piece(state, region, faction, ALLY)
+                    tribe_info["allied_faction"] = faction
+                else:
+                    tribe_info["allied_faction"] = None
 
 def execute_card_66(state, shaded=False):
-    raise NotImplementedError("Card 66: Migration")
+    """Card 66: Migration — German Rally+March / Gallic relocation.
+
+    Unshaded: Execute Germanic Rally then March in/from up to 2
+    Regions each.
+    Shaded: A Gallic Faction moves its Warbands and Leader as desired
+    to a Region with No Control and places an Ally there.
+
+    Source: Card Reference, card 66
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    params = state.get("event_params", {})
+    if not shaded:
+        # Germanic Rally then March — defer to caller
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_66_german_rally_march"] = True
+    else:
+        # Gallic Faction moves Warbands+Leader to No Control region + Ally
+        faction = state.get("executing_faction")
+        target_region = params.get("target_region")
+        # Moves handled by caller, but place Ally
+        ally_tribe = params.get("ally_tribe")
+        if ally_tribe and faction:
+            region = TRIBE_TO_REGION.get(ally_tribe)
+            tribe_info = state.get("tribes", {}).get(ally_tribe)
+            if (tribe_info and tribe_info.get("allied_faction") is None
+                    and region and get_available(state, faction, ALLY) > 0):
+                place_piece(state, region, faction, ALLY)
+                tribe_info["allied_faction"] = faction
+        # Piece moves from event_params
+        moves = params.get("moves", [])
+        for m in moves:
+            from_region = m["from_region"]
+            to_region = m["to_region"]
+            piece_type = m["piece_type"]
+            cnt = m.get("count", 1)
+            if piece_type == LEADER:
+                leader_name = m.get("leader_name")
+                move_piece(state, from_region, to_region, faction, LEADER,
+                           count=1, leader_name=leader_name)
+            else:
+                ps = m.get("piece_state")
+                move_piece(state, from_region, to_region, faction, piece_type,
+                           count=cnt, piece_state=ps)
 
 def execute_card_67(state, shaded=False):
-    raise NotImplementedError("Card 67: Arduenna")
+    """Card 67: Arduenna — March + Command in Nervii/Treveri, Hidden.
+
+    Both sides: Romans or a Gallic Faction may free March into either
+    or both Nervii or Treveri Regions, then execute a free Command
+    except March in one or both, then flip all friendly pieces there
+    to Hidden.
+
+    Source: Card Reference, card 67
+    """
+    from fs_bot.rules_consts import NERVII, TREVERI
+    state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_67_arduenna"] = True
+    state["event_modifiers"]["card_67_target_regions"] = [NERVII, TREVERI]
+    # After Command, flip pieces Hidden — deferred to caller
+    # but if event_params has pieces already moved, flip them
+    faction = state.get("executing_faction")
+    params = state.get("event_params", {})
+    flip_regions = params.get("flip_hidden_regions", [])
+    for region in flip_regions:
+        if region in (NERVII, TREVERI) and faction:
+            for piece_type in (AUXILIA, WARBAND):
+                revealed = count_pieces_by_state(
+                    state, region, faction, piece_type, REVEALED)
+                if revealed > 0:
+                    flip_piece(state, region, faction, piece_type, revealed,
+                               from_state=REVEALED, to_state=HIDDEN)
 
 def execute_card_68(state, shaded=False):
-    raise NotImplementedError("Card 68: Remi Influence")
+    """Card 68: Remi Influence — Replace Allies / Remove+Citadel.
+
+    Unshaded: If Remi are Roman Ally or Subdued, replace 1-2 Allies
+    within 1 Region of Remi with Roman Allies.
+    Shaded: A Gallic Faction with Remi as Ally may remove anything at
+    Alesia or Cenabum and place a Citadel there with 4 Warbands.
+
+    Source: Card Reference, card 68
+    """
+    from fs_bot.rules_consts import (
+        TRIBE_REMI, TRIBE_TO_REGION, ATREBATES,
+        CITY_ALESIA, CITY_CENABUM, CITY_TO_TRIBE,
+    )
+    from fs_bot.map.map_data import get_adjacent
+    params = state.get("event_params", {})
+    scenario = state["scenario"]
+    if not shaded:
+        tribe_info = state.get("tribes", {}).get(TRIBE_REMI)
+        if not tribe_info:
+            return
+        is_roman = tribe_info.get("allied_faction") == ROMANS
+        is_subdued = (tribe_info.get("allied_faction") is None)
+        markers = state.get("markers", {}).get(TRIBE_REMI, {})
+        if MARKER_DISPERSED in markers:
+            is_subdued = False
+        if not (is_roman or is_subdued):
+            return
+        # Replace 1-2 Allies within 1 Region of Remi (Atrebates + adjacent)
+        remi_region = ATREBATES
+        valid_regions = [remi_region] + list(get_adjacent(remi_region, scenario))
+        replacements = params.get("replacements", [])
+        for r in replacements[:2]:
+            tribe = r["tribe"]
+            region = TRIBE_TO_REGION.get(tribe)
+            if region not in valid_regions:
+                continue
+            t_info = state.get("tribes", {}).get(tribe)
+            if (t_info and t_info.get("allied_faction")
+                    and t_info["allied_faction"] != ROMANS):
+                old_fac = t_info["allied_faction"]
+                if count_pieces(state, region, old_fac, ALLY) > 0:
+                    remove_piece(state, region, old_fac, ALLY)
+                if get_available(state, ROMANS, ALLY) > 0:
+                    place_piece(state, region, ROMANS, ALLY)
+                t_info["allied_faction"] = ROMANS
+    else:
+        tribe_info = state.get("tribes", {}).get(TRIBE_REMI)
+        if not tribe_info or tribe_info.get("allied_faction") not in GALLIC_FACTIONS:
+            return
+        faction = state.get("executing_faction")
+        target_city = params.get("target_city")
+        if target_city not in (CITY_ALESIA, CITY_CENABUM):
+            return
+        tribe = CITY_TO_TRIBE.get(target_city)
+        region = TRIBE_TO_REGION.get(tribe)
+        # Remove anything at the city
+        t_info = state.get("tribes", {}).get(tribe)
+        if t_info and t_info.get("allied_faction"):
+            old_fac = t_info["allied_faction"]
+            if count_pieces(state, region, old_fac, ALLY) > 0:
+                remove_piece(state, region, old_fac, ALLY)
+            t_info["allied_faction"] = None
+        for fac in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS):
+            while count_pieces(state, region, fac, CITADEL) > 0:
+                remove_piece(state, region, fac, CITADEL)
+        # Remove Dispersed/Razed markers
+        markers = state.get("markers", {})
+        if tribe in markers:
+            markers[tribe].pop(MARKER_DISPERSED, None)
+            markers[tribe].pop(MARKER_DISPERSED_GATHERING, None)
+            markers[tribe].pop(MARKER_RAZED, None)
+        # Place Citadel + 4 Warbands of executing faction
+        if faction and get_available(state, faction, CITADEL) > 0:
+            place_piece(state, region, faction, CITADEL)
+        if faction:
+            avail = get_available(state, faction, WARBAND)
+            to_place = min(4, avail)
+            if to_place > 0:
+                place_piece(state, region, faction, WARBAND, count=to_place)
 
 def execute_card_69(state, shaded=False):
-    raise NotImplementedError("Card 69: Segni & Condrusi")
+    """Card 69: Segni & Condrusi — Place Germanic Warbands + Germans Phase.
+
+    Both sides: Place 4 Germanic Warbands each in Nervii and Treveri.
+    Then conduct immediate Germans Phase as if Winter, but skip Rally.
+
+    Source: Card Reference, card 69
+    """
+    from fs_bot.rules_consts import NERVII, TREVERI
+    from fs_bot.commands.march import germans_phase_march
+    from fs_bot.commands.raid import germans_phase_raid_region
+    from fs_bot.engine.germans_battle import germans_phase_battle
+    # Place 4 Germanic Warbands in each region
+    for region in (NERVII, TREVERI):
+        avail = get_available(state, GERMANS, WARBAND)
+        to_place = min(4, avail)
+        if to_place > 0:
+            place_piece(state, region, GERMANS, WARBAND, count=to_place)
+    # Germans Phase without Rally
+    germans_phase_march(state)
+    for region in list(state["spaces"]):
+        germans_phase_raid_region(state, region)
+    germans_phase_battle(state)
+    refresh_all_control(state)
 
 def execute_card_70(state, shaded=False):
-    raise NotImplementedError("Card 70: Camulogenus")
+    """Card 70: Camulogenus — Roman March+Battle / Place Warbands+Command.
+
+    Unshaded: Romans may free March up to 4 Legions & any Auxilia to
+    Atrebates, Carnutes, or Mandubii and free Battle there.
+    Shaded: Place 0-6 Warbands among Atrebates, Carnutes, and Mandubii;
+    select 1 for a free Command + Special Ability.
+
+    Source: Card Reference, card 70
+    """
+    from fs_bot.rules_consts import ATREBATES, CARNUTES, MANDUBII
+    params = state.get("event_params", {})
+    if not shaded:
+        # Roman March + Battle — defer to caller
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_70_roman_march_battle"] = True
+        state["event_modifiers"]["card_70_legion_limit"] = 4
+        state["event_modifiers"]["card_70_target_regions"] = [
+            ATREBATES, CARNUTES, MANDUBII]
+    else:
+        # Place 0-6 Warbands among target regions
+        faction = state.get("executing_faction")
+        placements = params.get("placements", [])
+        total = 0
+        for p in placements:
+            if total >= 6:
+                break
+            region = p["region"]
+            cnt = p.get("count", 1)
+            if region not in (ATREBATES, CARNUTES, MANDUBII):
+                continue
+            cnt = min(cnt, 6 - total)
+            if faction:
+                avail = get_available(state, faction, WARBAND)
+                to_place = min(cnt, avail)
+                if to_place > 0:
+                    place_piece(state, region, faction, WARBAND,
+                                count=to_place)
+                    total += to_place
+        # Free Command + SA in 1 of those regions — defer
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_70_free_command_sa"] = True
 
 def execute_card_71(state, shaded=False):
-    raise NotImplementedError("Card 71: Colony")
+    """Card 71: Colony — Place Colony marker and Ally.
+
+    Both sides: In a Region you Control or No Control, place +1 marker,
+    Colony marker, and your Ally on it. Add +1 to that Control Value.
+    The Colony is a Tribe.
+
+    Source: Card Reference, card 71
+    """
+    params = state.get("event_params", {})
+    faction = state.get("executing_faction")
+    region = params.get("region")
+    if not region or not faction:
+        return
+    # Check Control prerequisite
+    has_control = is_controlled_by(state, region, faction)
+    no_control = (calculate_control(state, region) == NO_CONTROL)
+    if not (has_control or no_control):
+        return
+    # Place Colony marker
+    markers = state.setdefault("markers", {})
+    region_markers = markers.setdefault(region, {})
+    region_markers[MARKER_COLONY] = True
+    # Place Ally
+    if get_available(state, faction, ALLY) > 0:
+        place_piece(state, region, faction, ALLY)
+        # The Colony becomes a tribe — track in tribes dict
+        colony_name = params.get("colony_tribe_name", f"Colony_{region}")
+        state.setdefault("tribes", {})[colony_name] = {
+            "status": None,
+            "allied_faction": faction,
+        }
 
 def execute_card_72(state, shaded=False):
-    raise NotImplementedError("Card 72: Impetuosity")
+    """Card 72: Impetuosity — March into Region + enemy Battle / Hidden March.
+
+    Unshaded: Free March into 1 Region from any adjacent. Either
+    Arverni or Belgae there free Battle against you.
+    Shaded: Free March 1 group of your Hidden Warbands (no Leader).
+    That group then may free Battle (alone).
+
+    Source: Card Reference, card 72
+    """
+    state.setdefault("event_modifiers", {})
+    if not shaded:
+        state["event_modifiers"]["card_72_march_and_enemy_battle"] = True
+    else:
+        state["event_modifiers"]["card_72_hidden_march_battle"] = True
 
 
 # ---------------------------------------------------------------------------

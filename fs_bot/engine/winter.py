@@ -107,12 +107,14 @@ _ROW_SENATE_MAP = {
     LEGIONS_ROW_TOP: INTRIGUE,      # At Intrigue level
 }
 
-# Senate rows at or above each position
-# If Senate is at Uproar (index 0): rows at or above = Top only (Intrigue)
-# If Senate is at Intrigue (index 1): rows at or above = Top (Intrigue)
-# If Senate is at Adulation (index 2): rows at or above = Middle + Top
+# Senate rows at or above each position — §6.5.2
+# Bottom = below Adulation, Middle = at Adulation, Top = at Intrigue.
+# "Place into Provincia all Legions on same row as Senate or above."
+# Senate at Uproar: no track row is at Uproar level or above → place NOTHING
+# Senate at Intrigue: Top row (at Intrigue) → place from Top only
+# Senate at Adulation: Middle (at Adulation) + Top → place from both
 _ROWS_AT_OR_ABOVE_SENATE = {
-    UPROAR: (LEGIONS_ROW_TOP,),
+    UPROAR: (),                                     # No track row at/above Uproar
     INTRIGUE: (LEGIONS_ROW_TOP,),
     ADULATION: (LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP),
 }

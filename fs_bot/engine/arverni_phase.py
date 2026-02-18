@@ -523,29 +523,33 @@ def _arverni_phase_march(state, target_region, is_frost=False):
     march_groups.sort(key=lambda x: x[1], reverse=True)
 
     # First: March to target region (adjacent groups)
-    for region, wb_count in list(march_groups):
+    for region, original_wb_count in list(march_groups):
         adj = get_adjacent(region, scenario, state.get("capabilities"))
         if target_region in adj:
             # March to target
+            total_moved = 0
+            remaining = original_wb_count
             for ps in (HIDDEN, REVEALED, SCOUTED):
                 ps_count = count_pieces_by_state(
                     state, region, ARVERNI, WARBAND, ps
                 )
-                to_move = min(ps_count, wb_count)
+                to_move = min(ps_count, remaining)
                 if to_move > 0:
                     move_piece(
                         state, region, target_region, ARVERNI, WARBAND,
                         count=to_move, piece_state=ps
                     )
-                    wb_count -= to_move
-                if wb_count <= 0:
+                    total_moved += to_move
+                    remaining -= to_move
+                if remaining <= 0:
                     break
-            march_groups.remove((region, wb_count + to_move))
-            result["marches"].append({
-                "from": region,
-                "to": target_region,
-                "warbands": to_move,
-            })
+            march_groups.remove((region, original_wb_count))
+            if total_moved > 0:
+                result["marches"].append({
+                    "from": region,
+                    "to": target_region,
+                    "warbands": total_moved,
+                })
 
     # Then: 1 additional region where Aedui or Roman Control can be removed
     # Aedui first — A6.2.2
@@ -570,29 +574,33 @@ def _arverni_phase_march(state, target_region, is_frost=False):
             break
 
     if additional_dest:
-        for mg_region, mg_count in list(march_groups):
+        for mg_region, original_mg_count in list(march_groups):
             adj = get_adjacent(mg_region, scenario,
                                state.get("capabilities"))
             if additional_dest not in adj:
                 continue
+            total_moved = 0
+            remaining = original_mg_count
             for ps in (HIDDEN, REVEALED, SCOUTED):
                 ps_count = count_pieces_by_state(
                     state, mg_region, ARVERNI, WARBAND, ps
                 )
-                to_move = min(ps_count, mg_count)
+                to_move = min(ps_count, remaining)
                 if to_move > 0:
                     move_piece(
                         state, mg_region, additional_dest, ARVERNI, WARBAND,
                         count=to_move, piece_state=ps
                     )
-                    mg_count -= to_move
-                if mg_count <= 0:
+                    total_moved += to_move
+                    remaining -= to_move
+                if remaining <= 0:
                     break
-            result["marches"].append({
-                "from": mg_region,
-                "to": additional_dest,
-                "warbands": to_move,
-            })
+            if total_moved > 0:
+                result["marches"].append({
+                    "from": mg_region,
+                    "to": additional_dest,
+                    "warbands": total_moved,
+                })
 
     refresh_all_control(state)
     return result

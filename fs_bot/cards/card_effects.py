@@ -2153,16 +2153,19 @@ def execute_card_56(state, shaded=False):
     scenario = state["scenario"]
     if not shaded:
         # Remove Ambiorix if in Roman Controlled Region or Belgic victory < 10
-        leader_loc = find_leader(state, AMBIORIX)
+        leader_loc = find_leader(state, BELGAE)
         if leader_loc is None:
+            return
+        # Verify it's Ambiorix (not Successor)
+        if get_leader_in_region(state, leader_loc, BELGAE) != AMBIORIX:
             return
         in_roman_control = is_controlled_by(state, leader_loc, ROMANS)
         # Check Belgic victory value (Control + Allies + Citadels)
+        from fs_bot.rules_consts import REGION_CONTROL_VALUES
         belgic_victory = 0
         for region in state["spaces"]:
             if is_controlled_by(state, region, BELGAE):
-                from fs_bot.rules_consts import CONTROL_VALUES
-                belgic_victory += CONTROL_VALUES.get(region, 0)
+                belgic_victory += REGION_CONTROL_VALUES.get(region, 0)
         for tribe, t_info in state.get("tribes", {}).items():
             if t_info.get("allied_faction") == BELGAE:
                 belgic_victory += 1
@@ -2172,7 +2175,7 @@ def execute_card_56(state, shaded=False):
             remove_piece(state, leader_loc, BELGAE, LEADER)
     else:
         # Place Ambiorix within 1 Region of Germania
-        leader_loc = find_leader(state, AMBIORIX)
+        leader_loc = find_leader(state, BELGAE)
         if leader_loc is not None:
             return  # Already on map
         target_region = params.get("target_region")
@@ -2960,7 +2963,7 @@ def execute_card_A19(state, shaded=False):
     params = state.get("event_params", {})
     scenario = state["scenario"]
     if not shaded:
-        caesar_loc = find_leader(state, CAESAR)
+        caesar_loc = find_leader(state, ROMANS)
         if caesar_loc is None:
             return
         valid = [caesar_loc] + list(get_adjacent(caesar_loc, scenario))
@@ -3059,8 +3062,8 @@ def execute_card_A23(state, shaded=False):
     Source: A Card Reference, card A23
     """
     params = state.get("event_params", {})
-    caesar_loc = find_leader(state, CAESAR)
-    ario_loc = find_leader(state, ARIOVISTUS_LEADER)
+    caesar_loc = find_leader(state, ROMANS)
+    ario_loc = find_leader(state, GERMANS)
     if caesar_loc is None or ario_loc is None:
         state["eligibility"][ROMANS] = INELIGIBLE
         state["eligibility"][GERMANS] = INELIGIBLE

@@ -738,3 +738,214 @@ class TestCard50ShiftingLoyalties:
         activate_capability(state, 10, EVENT_SHADED)
         execute_event(state, 50, shaded=True)
         assert not is_capability_active(state, 10)
+
+
+# ===================================================================
+# Card 28: Oppida — Gallic Allies at Cities
+# ===================================================================
+
+class TestCard28Oppida:
+    """Tests for Card 28: Oppida (place Gallic Allies, upgrade to Citadels)."""
+
+    def test_card_28_place_ally_and_upgrade_citadel(self):
+        """Place Gallic Ally at Subdued City, then upgrade to Citadel."""
+        from fs_bot.rules_consts import (
+            CITY_AVARICUM, TRIBE_BITURIGES, TRIBE_TO_REGION,
+        )
+        state = _setup_base_state()
+        region = TRIBE_TO_REGION[TRIBE_BITURIGES]
+        state["event_params"] = {
+            "ally_placements": [
+                {"tribe": TRIBE_BITURIGES, "faction": ARVERNI},
+            ],
+            "citadel_upgrades": [CITY_AVARICUM],
+        }
+        execute_event(state, 28, shaded=False)
+        # Ally placed then upgraded to Citadel
+        assert count_pieces(state, region, ARVERNI, CITADEL) == 1
+        assert state["tribes"][TRIBE_BITURIGES]["allied_faction"] == ARVERNI
+
+    def test_card_28_no_ally_at_roman_control(self):
+        """Cannot place Ally at City under Roman Control."""
+        from fs_bot.rules_consts import TRIBE_BITURIGES, TRIBE_TO_REGION
+        state = _setup_base_state()
+        region = TRIBE_TO_REGION[TRIBE_BITURIGES]
+        # Make region Roman Controlled
+        place_piece(state, region, ROMANS, FORT)
+        place_piece(state, region, ROMANS, AUXILIA, count=3)
+        refresh_all_control(state)
+        state["event_params"] = {
+            "ally_placements": [
+                {"tribe": TRIBE_BITURIGES, "faction": ARVERNI},
+            ],
+            "citadel_upgrades": [],
+        }
+        execute_event(state, 28, shaded=False)
+        assert count_pieces(state, region, ARVERNI, ALLY) == 0
+
+
+# ===================================================================
+# Card 34: Acco — Replace Allies in Carnutes & Mandubii
+# ===================================================================
+
+class TestCard34Acco:
+    """Tests for Card 34: Acco shaded (replace Allies with Arverni)."""
+
+    def test_card_34_shaded_replaces_allies(self):
+        """Shaded: Replace non-Arverni Allies in Carnutes/Mandubii."""
+        from fs_bot.rules_consts import (
+            CARNUTES, TRIBE_CARNUTES, TRIBE_TO_REGION,
+        )
+        state = _setup_base_state()
+        # Place Aedui Ally at Carnutes tribe
+        place_piece(state, CARNUTES, AEDUI, ALLY)
+        state["tribes"][TRIBE_CARNUTES]["allied_faction"] = AEDUI
+        execute_event(state, 34, shaded=True)
+        # Should be replaced with Arverni
+        assert count_pieces(state, CARNUTES, AEDUI, ALLY) == 0
+        assert count_pieces(state, CARNUTES, ARVERNI, ALLY) == 1
+        assert state["tribes"][TRIBE_CARNUTES]["allied_faction"] == ARVERNI
+
+
+# ===================================================================
+# Card 46: Celtic Rites — Resource drain + Ineligible
+# ===================================================================
+
+class TestCard46CelticRites:
+    """Tests for Card 46: Celtic Rites."""
+
+    def test_card_46_unshaded_drain_resources(self):
+        """Unshaded: Selected Gallic Factions lose 3 Resources, go Ineligible."""
+        state = _setup_base_state()
+        state["event_params"] = {"target_factions": [ARVERNI, BELGAE]}
+        execute_event(state, 46, shaded=False)
+        assert state["resources"][ARVERNI] == 12  # 15 - 3
+        assert state["resources"][BELGAE] == 7   # 10 - 3
+        assert state["eligibility"][ARVERNI] == INELIGIBLE
+        assert state["eligibility"][BELGAE] == INELIGIBLE
+
+    def test_card_46_shaded_stay_eligible(self):
+        """Shaded: Executing faction stays Eligible."""
+        state = _setup_base_state()
+        state["executing_faction"] = ARVERNI
+        execute_event(state, 46, shaded=True)
+        assert state["eligibility"][ARVERNI] == ELIGIBLE
+
+
+# ===================================================================
+# Card 52: Assembly of Gaul — Resource drain
+# ===================================================================
+
+class TestCard52AssemblyOfGaul:
+    """Tests for Card 52: Assembly of Gaul."""
+
+    def test_card_52_unshaded_drain_gallic_resources(self):
+        """Unshaded: Drain Gallic factions -8 if Carnutes is Subdued."""
+        from fs_bot.rules_consts import TRIBE_CARNUTES
+        state = _setup_base_state()
+        # Carnutes tribe is Subdued by default (allied_faction=None, no Dispersed)
+        state["event_params"] = {"target_factions": [ARVERNI]}
+        execute_event(state, 52, shaded=False)
+        assert state["resources"][ARVERNI] == 7  # 15 - 8
+
+
+# ===================================================================
+# Card 56: Flight of Ambiorix
+# ===================================================================
+
+class TestCard56FlightOfAmbiorix:
+    """Tests for Card 56: Flight of Ambiorix."""
+
+    def test_card_56_shaded_place_ambiorix(self):
+        """Shaded: If Ambiorix not on map, place in Germania region."""
+        state = _setup_base_state()
+        state["event_params"] = {"target_region": SUGAMBRI}
+        execute_event(state, 56, shaded=True)
+        from fs_bot.board.pieces import find_leader
+        assert find_leader(state, BELGAE) == SUGAMBRI
+
+
+# ===================================================================
+# Card 61: Catuvolcus — Belgic placement
+# ===================================================================
+
+class TestCard61Catuvolcus:
+    """Tests for Card 61: Catuvolcus."""
+
+    def test_card_61_shaded_place_belgic_allies(self):
+        """Shaded: Place Belgic Allies at Nervii and Eburones, +6 Resources."""
+        from fs_bot.rules_consts import TRIBE_NERVII, TRIBE_EBURONES
+        state = _setup_base_state()
+        execute_event(state, 61, shaded=True)
+        assert state["tribes"][TRIBE_NERVII]["allied_faction"] == BELGAE
+        assert state["tribes"][TRIBE_EBURONES]["allied_faction"] == BELGAE
+        assert state["resources"][BELGAE] == 16  # 10 + 6
+
+
+# ===================================================================
+# Card A25: Ariovistus's Wife
+# ===================================================================
+
+class TestCardA25AriovistusWife:
+    """Tests for Card A25: Ariovistus's Wife."""
+
+    def test_card_A25_unshaded_remove_germans_cisalpina(self):
+        """Unshaded: Remove non-Leader German pieces from Cisalpina, -6 Resources."""
+        from fs_bot.rules_consts import CISALPINA
+        state = _setup_ariovistus_state()
+        place_piece(state, CISALPINA, GERMANS, WARBAND, count=3)
+        execute_event(state, "A25", shaded=False)
+        from fs_bot.board.pieces import count_pieces_by_state
+        total_wb = (count_pieces_by_state(state, CISALPINA, GERMANS, WARBAND, HIDDEN) +
+                    count_pieces_by_state(state, CISALPINA, GERMANS, WARBAND, REVEALED))
+        assert total_wb == 0
+        assert state["resources"][GERMANS] == 4  # 10 - 6
+
+    def test_card_A25_shaded_place_at_nori(self):
+        """Shaded: Place German Ally and 6 Warbands at Nori, +6 Resources."""
+        from fs_bot.rules_consts import TRIBE_NORI, TRIBE_TO_REGION, CISALPINA
+        state = _setup_ariovistus_state()
+        region = TRIBE_TO_REGION[TRIBE_NORI]
+        execute_event(state, "A25", shaded=True)
+        assert state["tribes"][TRIBE_NORI]["allied_faction"] == GERMANS
+        assert state["resources"][GERMANS] == 16  # 10 + 6
+
+
+# ===================================================================
+# Card A53: Frumentum — Resource drain
+# ===================================================================
+
+class TestCardA53Frumentum:
+    """Tests for Card A53: Frumentum."""
+
+    def test_card_A53_shaded_drain_and_ineligible(self):
+        """Shaded: Aedui and Roman -4 each, both Ineligible. Executor Eligible."""
+        state = _setup_ariovistus_state()
+        state["executing_faction"] = BELGAE
+        execute_event(state, "A53", shaded=True)
+        assert state["resources"][AEDUI] == 6   # 10 - 4
+        assert state["resources"][ROMANS] == 16  # 20 - 4
+        assert state["eligibility"][AEDUI] == INELIGIBLE
+        assert state["eligibility"][ROMANS] == INELIGIBLE
+        assert state["eligibility"][BELGAE] == ELIGIBLE
+
+
+# ===================================================================
+# Card A70: Nervii — CAPABILITY
+# ===================================================================
+
+class TestCardA70Nervii:
+    """Tests for Card A70: Nervii."""
+
+    def test_card_A70_unshaded_sets_modifier(self):
+        """Unshaded: Sets no-Belgae-Retreat modifier."""
+        state = _setup_ariovistus_state()
+        execute_event(state, "A70", shaded=False)
+        assert state["event_modifiers"]["card_A70_no_belgae_retreat"] is True
+
+    def test_card_A70_shaded_activates_capability(self):
+        """Shaded: Activates capability."""
+        from fs_bot.cards.capabilities import is_capability_active
+        state = _setup_ariovistus_state()
+        execute_event(state, "A70", shaded=True)
+        assert is_capability_active(state, "A70")

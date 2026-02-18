@@ -774,6 +774,52 @@ class TestTrade:
         assert result["resources_gained"] == 0
         assert len(result["per_item"]) == 0
 
+    def test_trade_ariovistus_diviciacus_proximity(self):
+        """A4.4: With Diviciacus on map, Trade counts only regions within 1."""
+        state = make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Place Diviciacus in AEDUI_REGION
+        place_leader(state, AEDUI_REGION, AEDUI, DIVICIACUS)
+        # Supply line: PROVINCIA has Roman control
+        setup_roman_control(state, PROVINCIA, legions=2)
+        # Aedui Ally in SEQUANI — adjacent to AEDUI_REGION (within 1)
+        # Supply line: SEQUANI → PROVINCIA (adjacent)
+        place_piece(state, SEQUANI, AEDUI, ALLY)
+        set_tribe_allied(state, TRIBE_SEQUANI, AEDUI)
+        # Aedui Ally in TREVERI — NOT adjacent to AEDUI_REGION (outside range)
+        # Supply line: TREVERI → SEQUANI → PROVINCIA
+        place_piece(state, TREVERI, AEDUI, ALLY)
+        set_tribe_allied(state, TRIBE_TREVERI, AEDUI)
+        give_resources(state, AEDUI, 0)
+
+        result = trade(state, roman_agreed=False)
+
+        # TREVERI should be excluded by Diviciacus proximity filter
+        item_regions = [item[1] for item in result["per_item"]]
+        assert TREVERI not in item_regions
+        # SEQUANI should be included (adjacent to AEDUI_REGION)
+        assert SEQUANI in item_regions
+
+    def test_trade_ariovistus_no_diviciacus(self):
+        """A4.4/A4.1.2: Diviciacus removed — all supply line regions count."""
+        state = make_state(scenario=SCENARIO_ARIOVISTUS)
+        # No Diviciacus on map — revert to base rules
+        # Supply line: PROVINCIA has Roman control
+        setup_roman_control(state, PROVINCIA, legions=2)
+        # Aedui Ally in SEQUANI
+        place_piece(state, SEQUANI, AEDUI, ALLY)
+        set_tribe_allied(state, TRIBE_SEQUANI, AEDUI)
+        # Aedui Ally in TREVERI
+        place_piece(state, TREVERI, AEDUI, ALLY)
+        set_tribe_allied(state, TRIBE_TREVERI, AEDUI)
+        give_resources(state, AEDUI, 0)
+
+        result = trade(state, roman_agreed=False)
+
+        # Both SEQUANI and TREVERI should count — no Diviciacus filter
+        item_regions = [item[1] for item in result["per_item"]]
+        assert SEQUANI in item_regions
+        assert TREVERI in item_regions
+
 
 # ============================================================================
 # SUBORN TESTS — §4.4.2

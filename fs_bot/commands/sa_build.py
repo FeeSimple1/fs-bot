@@ -40,14 +40,11 @@ from fs_bot.rules_consts import (
     ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    place_piece, remove_piece, get_available,
-    get_leader_in_region, find_leader, count_pieces,
+    place_piece, remove_piece, get_available, count_pieces,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
-from fs_bot.map.map_data import (
-    is_adjacent, get_tribes_in_region, get_tribe_data,
-)
-from fs_bot.commands.common import CommandError
+from fs_bot.map.map_data import get_tribes_in_region, get_tribe_data
+from fs_bot.commands.common import CommandError, check_leader_proximity
 from fs_bot.commands.rally import has_supply_line
 
 
@@ -67,7 +64,9 @@ def validate_build_region(state, region, agreements=None):
         (True, "") if valid, (False, reason) if not.
     """
     # Check Leader proximity
-    valid_leader, leader_reason = _check_build_leader(state, region)
+    valid_leader, leader_reason = check_leader_proximity(
+        state, region, ROMANS, CAESAR, "Build"
+    )
     if not valid_leader:
         return (False, leader_reason)
 
@@ -282,28 +281,6 @@ def build_place_ally(state, region, tribe):
 
     return {"placed_ally_at": tribe, "cost": BUILD_COST_PER_ALLY}
 
-
-def _check_build_leader(state, region):
-    """Check leader proximity for Build.
-
-    §4.2.1: "within one Region of Caesar or is the Region that the Roman
-    Successor Leader is in."
-    """
-    leader_region = find_leader(state, ROMANS)
-    if leader_region is None:
-        return (False, "Roman leader not on map — cannot Build")
-
-    actual_leader = get_leader_in_region(state, leader_region, ROMANS)
-
-    if actual_leader == CAESAR:
-        if region == leader_region or is_adjacent(region, leader_region):
-            return (True, "")
-        return (False, "Region must be within 1 of Caesar for Build")
-    else:
-        # Successor: must be same region
-        if region == leader_region:
-            return (True, "")
-        return (False, "Successor must be in the same region for Build")
 
 
 def _has_roman_ally(state, region):

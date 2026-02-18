@@ -75,6 +75,18 @@ def trade(state, agreements=None, roman_agreed=False):
         if has_supply_line(state, region, ROMANS, agreements):
             supply_line_regions.add(region)
 
+    # Ariovistus Diviciacus proximity filter — A4.4, A4.1.2
+    # "If the Diviciacus piece is on the map, Suborn, Trade, and Aedui Ambush
+    # may occur only within a distance of one Region from Diviciacus."
+    # If Diviciacus removed, no filtering (revert to base rules per A4.1.2).
+    if scenario in ARIOVISTUS_SCENARIOS:
+        leader_region = find_leader(state, AEDUI)
+        if leader_region is not None:
+            supply_line_regions = {
+                r for r in supply_line_regions
+                if r == leader_region or is_adjacent(r, leader_region)
+            }
+
     if not supply_line_regions:
         return result
 

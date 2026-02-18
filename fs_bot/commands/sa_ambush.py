@@ -51,11 +51,9 @@ from fs_bot.rules_consts import (
     # Commands
     CMD_BATTLE,
 )
-from fs_bot.board.pieces import (
-    count_pieces_by_state, get_leader_in_region, find_leader,
-)
+from fs_bot.board.pieces import count_pieces_by_state, find_leader
 from fs_bot.map.map_data import is_adjacent
-from fs_bot.commands.common import CommandError
+from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
 def validate_ambush_region(state, region, faction, defending_faction):
@@ -124,7 +122,9 @@ def _check_leader_proximity(state, region, faction):
             return (True, "")
         # Base game §4.3.3: "within one Region of Vercingetorix or in the
         # same Region as his Successor"
-        return _within_one_of_leader(state, region, faction, VERCINGETORIX)
+        return check_leader_proximity(
+            state, region, faction, VERCINGETORIX, "Ambush"
+        )
 
     elif faction == AEDUI:
         # §4.4.3: "No Leader is required"
@@ -150,7 +150,9 @@ def _check_leader_proximity(state, region, faction):
         if scenario in ARIOVISTUS_SCENARIOS:
             from fs_bot.rules_consts import BODUOGNATUS
             leader_name = BODUOGNATUS
-        return _within_one_of_leader(state, region, faction, leader_name)
+        return check_leader_proximity(
+            state, region, faction, leader_name, "Ambush"
+        )
 
     elif faction == GERMANS:
         if scenario in BASE_SCENARIOS:
@@ -158,41 +160,10 @@ def _check_leader_proximity(state, region, faction):
             return (True, "")
         # Ariovistus A4.6.3: "like Arverni Ambush (4.3.3) but uses
         # Germanic... Ariovistus instead of Vercingetorix"
-        return _within_one_of_leader(
-            state, region, faction, ARIOVISTUS_LEADER
+        return check_leader_proximity(
+            state, region, faction, ARIOVISTUS_LEADER, "Ambush"
         )
 
     return (False, f"{faction} cannot use Ambush")
 
 
-def _within_one_of_leader(state, region, faction, leader_name):
-    """Check if region is within 1 of a named leader or has Successor.
-
-    Args:
-        state: Game state dict.
-        region: Region to check.
-        faction: Faction owning the leader.
-        leader_name: Named leader constant.
-
-    Returns:
-        (True, "") if valid, (False, reason) if not.
-    """
-    leader_region = find_leader(state, faction)
-    if leader_region is None:
-        return (False,
-                f"{faction} leader not on map — cannot use Ambush")
-
-    actual_leader = get_leader_in_region(state, leader_region, faction)
-
-    if actual_leader == leader_name:
-        # Named leader: within 1 region (same or adjacent)
-        if region == leader_region or is_adjacent(region, leader_region):
-            return (True, "")
-        return (False,
-                f"Region must be within 1 of {leader_name} for Ambush")
-    else:
-        # Successor: must be same region — §4.1.2
-        if region == leader_region:
-            return (True, "")
-        return (False,
-                f"Successor must be in the same region for Ambush")

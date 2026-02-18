@@ -38,12 +38,12 @@ from fs_bot.rules_consts import (
     TRIBE_FACTION_RESTRICTION,
 )
 from fs_bot.board.pieces import (
-    count_pieces_by_state, get_leader_in_region, find_leader,
+    count_pieces, count_pieces_by_state,
     place_piece, remove_piece, get_available,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
-from fs_bot.map.map_data import is_adjacent, get_tribes_in_region, get_tribe_data
-from fs_bot.commands.common import CommandError
+from fs_bot.map.map_data import get_tribes_in_region, get_tribe_data
+from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
 def validate_entreat_region(state, region):
@@ -72,7 +72,9 @@ def validate_entreat_region(state, region):
                 "Region must have a Hidden Arverni Warband for Entreat")
 
     # Leader proximity
-    valid, reason = _check_entreat_leader(state, region)
+    valid, reason = check_leader_proximity(
+        state, region, ARVERNI, VERCINGETORIX, "Entreat"
+    )
     if not valid:
         return (False, reason)
 
@@ -131,7 +133,6 @@ def entreat_replace_piece(state, region, target_faction, target_piece_type,
             target_piece_state
         )
     else:
-        from fs_bot.board.pieces import count_pieces
         available_count = count_pieces(
             state, region, target_faction, target_piece_type
         )
@@ -251,25 +252,3 @@ def entreat_replace_ally(state, region, target_faction, tribe):
     }
 
 
-def _check_entreat_leader(state, region):
-    """Check leader proximity for Entreat.
-
-    §4.3.1: "within one Region of Vercingetorix or the same Region as
-    his Successor"
-    """
-    leader_region = find_leader(state, ARVERNI)
-    if leader_region is None:
-        return (False, "Arverni leader not on map — cannot Entreat")
-
-    actual_leader = get_leader_in_region(state, leader_region, ARVERNI)
-
-    if actual_leader == VERCINGETORIX:
-        if region == leader_region or is_adjacent(region, leader_region):
-            return (True, "")
-        return (False,
-                "Region must be within 1 of Vercingetorix for Entreat")
-    else:
-        if region == leader_region:
-            return (True, "")
-        return (False,
-                "Successor must be in the same region for Entreat")

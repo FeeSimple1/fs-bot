@@ -1,10 +1,13 @@
 """
-card_effects.py — Stub functions for every card's Event effect.
+card_effects.py — Card Event effect implementations.
 
-Each card gets a stub that raises NotImplementedError. These will be
-implemented in a later phase after Commands and Special Activities exist.
+Each card handler receives (state, shaded) and mutates state in place.
+The dispatcher execute_event() routes to the correct handler by card_id.
 
-The dispatcher execute_event() routes to the correct stub by card_id.
+Convention for player choices:
+  state["executing_faction"] — the faction playing the Event
+  state["event_params"] — dict of card-specific choices set by the
+      caller (bot logic or CLI) before invoking execute_event().
 
 Source: Card Reference, A Card Reference
 """
@@ -12,7 +15,118 @@ Source: Card Reference, A Card Reference
 from fs_bot.rules_consts import (
     CARD_NAMES_BASE, CARD_NAMES_ARIOVISTUS,
     SECOND_EDITION_CARDS,
+    # Factions
+    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    GALLIC_FACTIONS, FACTIONS,
+    # Piece types
+    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    # Piece states
+    HIDDEN, REVEALED, SCOUTED,
+    # Leaders
+    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
+    DIVICIACUS, BODUOGNATUS, SUCCESSOR,
+    # Senate
+    UPROAR, INTRIGUE, ADULATION,
+    SENATE_POSITIONS,
+    SENATE_UP, SENATE_DOWN,
+    # Regions
+    PROVINCIA, CISALPINA,
+    ALL_REGIONS,
+    # Scenarios
+    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    # Legions
+    LEGIONS_ROWS, LEGIONS_PER_ROW,
+    LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
+    # Resources
+    MAX_RESOURCES,
+    # Markers
+    MARKER_DEVASTATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
+    MARKER_SCOUTED, MARKER_CIRCUMVALLATION, MARKER_COLONY,
+    MARKER_GALLIA_TOGATA, MARKER_RAZED,
+    # Capabilities
+    CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
+    # Events
+    EVENT_SHADED, EVENT_UNSHADED,
+    # Control
+    ROMAN_CONTROL, NO_CONTROL, FACTION_CONTROL,
+    # Eligibility
+    ELIGIBLE, INELIGIBLE,
 )
+from fs_bot.board.pieces import (
+    place_piece, remove_piece, move_piece, flip_piece,
+    count_pieces, count_pieces_by_state, get_available,
+    get_leader_in_region, find_leader, PieceError,
+    _count_on_legions_track,
+)
+from fs_bot.board.control import (
+    calculate_control, refresh_all_control,
+    is_controlled_by, get_controlled_regions,
+)
+from fs_bot.cards.capabilities import (
+    activate_capability, deactivate_capability, is_capability_active,
+)
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers for card event implementations
+# ---------------------------------------------------------------------------
+
+# Senate position index mapping (same as winter.py)
+_SENATE_INDEX = {pos: i for i, pos in enumerate(SENATE_POSITIONS)}
+
+
+def _apply_senate_shift(state, direction):
+    """Apply a single Senate marker shift.
+
+    Per §6.5.1:
+    - At extreme + not Firm: flip to Firm
+    - At extreme + already Firm: no change (already at max)
+    - Anywhere + Firm: flip back to normal (without moving)
+    - Normal position: move one box in direction
+
+    Args:
+        state: game state dict
+        direction: SENATE_UP ("up") or SENATE_DOWN ("down")
+    """
+    position = state["senate"]["position"]
+    is_firm = state["senate"]["firm"]
+    pos_idx = _SENATE_INDEX[position]
+
+    if direction == SENATE_UP:
+        # Toward Uproar (index 0)
+        if pos_idx == 0:
+            if not is_firm:
+                state["senate"]["firm"] = True
+        elif is_firm:
+            state["senate"]["firm"] = False
+        else:
+            state["senate"]["position"] = SENATE_POSITIONS[pos_idx - 1]
+    elif direction == SENATE_DOWN:
+        # Toward Adulation (index 2)
+        if pos_idx == len(SENATE_POSITIONS) - 1:
+            if not is_firm:
+                state["senate"]["firm"] = True
+        elif is_firm:
+            state["senate"]["firm"] = False
+        else:
+            state["senate"]["position"] = SENATE_POSITIONS[pos_idx + 1]
+
+
+def _cap_resources(state, faction, amount):
+    """Add resources to a faction, respecting the cap of MAX_RESOURCES (45).
+
+    Args:
+        state: game state dict
+        faction: faction constant
+        amount: integer (positive to add, negative to subtract)
+
+    Returns:
+        Actual amount changed.
+    """
+    current = state["resources"].get(faction, 0)
+    new_val = max(0, min(MAX_RESOURCES, current + amount))
+    state["resources"][faction] = new_val
+    return new_val - current
 
 
 # ---------------------------------------------------------------------------
@@ -20,7 +134,29 @@ from fs_bot.rules_consts import (
 # ---------------------------------------------------------------------------
 
 def execute_card_1(state, shaded=False):
-    raise NotImplementedError("Card 1: Cicero")
+    """Card 1: Cicero — Senate shift.
+
+    Both unshaded and shaded:
+    Shift the Senate 1 box in either direction (or flip to Firm if
+    already at top or bottom).
+
+    Tips: The Senate would shift regardless of any Fallen Legions. If
+    the Senate is already Firm, the Event would flip the marker in place,
+    back to its normal side (6.5.1).
+
+    Requires state["event_params"]["senate_direction"] = SENATE_UP or
+    SENATE_DOWN to specify which direction to shift.
+
+    Source: Card Reference, card 1
+    """
+    params = state.get("event_params", {})
+    direction = params.get("senate_direction")
+    if direction is None:
+        raise ValueError(
+            "Card 1 (Cicero) requires event_params['senate_direction'] "
+            "to be set to SENATE_UP or SENATE_DOWN"
+        )
+    _apply_senate_shift(state, direction)
 
 def execute_card_2(state, shaded=False):
     raise NotImplementedError("Card 2: Legiones XIIII et XV")

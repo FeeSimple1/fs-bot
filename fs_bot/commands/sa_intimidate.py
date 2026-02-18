@@ -36,12 +36,11 @@ from fs_bot.rules_consts import (
     ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    count_pieces_by_state, get_leader_in_region, find_leader,
+    count_pieces_by_state, get_leader_in_region,
     flip_piece, remove_piece,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
-from fs_bot.map.map_data import is_adjacent
-from fs_bot.commands.common import CommandError
+from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
 def validate_intimidate_region(state, region):
@@ -72,7 +71,9 @@ def validate_intimidate_region(state, region):
                 "Region must have Ariovistus or be under Germanic Control "
                 "for Intimidate")
 
-    valid, reason = _check_intimidate_leader(state, region)
+    valid, reason = check_leader_proximity(
+        state, region, GERMANS, ARIOVISTUS_LEADER, "Intimidate"
+    )
     if not valid:
         return (False, reason)
 
@@ -161,7 +162,7 @@ def intimidate(state, region, warbands_to_flip, target_faction,
                from_state=HIDDEN, to_state=REVEALED)
 
     # Place Intimidated marker
-    markers = state.get("markers", {})
+    markers = state.setdefault("markers", {})
     region_markers = markers.setdefault(region, {})
     if MARKER_INTIMIDATED not in region_markers:
         region_markers[MARKER_INTIMIDATED] = True
@@ -180,25 +181,3 @@ def intimidate(state, region, warbands_to_flip, target_faction,
     return result
 
 
-def _check_intimidate_leader(state, region):
-    """Check leader proximity for Intimidate.
-
-    A4.6.2: "within a distance of one Region from Ariovistus or have his
-    Successor in them"
-    """
-    leader_region = find_leader(state, GERMANS)
-    if leader_region is None:
-        return (False, "Germanic leader not on map — cannot Intimidate")
-
-    actual_leader = get_leader_in_region(state, leader_region, GERMANS)
-
-    if actual_leader == ARIOVISTUS_LEADER:
-        if region == leader_region or is_adjacent(region, leader_region):
-            return (True, "")
-        return (False,
-                "Region must be within 1 of Ariovistus for Intimidate")
-    else:
-        if region == leader_region:
-            return (True, "")
-        return (False,
-                "Successor must be in the same region for Intimidate")

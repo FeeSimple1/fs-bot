@@ -32,11 +32,11 @@ from fs_bot.rules_consts import (
     MARKER_SCOUTED,
 )
 from fs_bot.board.pieces import (
-    count_pieces_by_state, get_leader_in_region, find_leader,
+    count_pieces_by_state,
     move_piece, flip_piece,
 )
 from fs_bot.map.map_data import is_adjacent, get_adjacent
-from fs_bot.commands.common import CommandError
+from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
 def scout_move(state, movements):
@@ -135,7 +135,9 @@ def scout_reveal(state, region, auxilia_count, targets):
     scenario = state["scenario"]
 
     # Check Leader proximity — within 1 of Caesar or with Successor
-    valid, reason = _check_scout_reveal_leader(state, region)
+    valid, reason = check_leader_proximity(
+        state, region, ROMANS, CAESAR, "Scout Reveal"
+    )
     if not valid:
         raise CommandError(reason)
 
@@ -227,30 +229,3 @@ def scout_reveal(state, region, auxilia_count, targets):
     return result
 
 
-def _check_scout_reveal_leader(state, region):
-    """Check if region is within 1 of Caesar or has Successor for Scout Reveal.
-
-    §4.2.2: "Regions desired that are within one Region of Caesar or with
-    his Successor in it"
-
-    Returns:
-        (True, "") if valid, (False, reason) if not.
-    """
-    leader_region = find_leader(state, ROMANS)
-    if leader_region is None:
-        return (False, "Roman leader not on map — cannot Scout Reveal")
-
-    actual_leader = get_leader_in_region(state, leader_region, ROMANS)
-
-    if actual_leader == CAESAR:
-        # Named leader: within 1 region (same or adjacent)
-        if region == leader_region or is_adjacent(region, leader_region):
-            return (True, "")
-        return (False,
-                f"Region must be within 1 of Caesar for Scout Reveal")
-    else:
-        # Successor: must be same region — §4.1.2
-        if region == leader_region:
-            return (True, "")
-        return (False,
-                f"Successor must be in the same region for Scout Reveal")

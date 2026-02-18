@@ -40,12 +40,12 @@ from fs_bot.rules_consts import (
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    count_pieces, count_pieces_by_state, get_leader_in_region, find_leader,
+    count_pieces, count_pieces_by_state, get_leader_in_region,
     flip_piece, remove_piece, move_piece,
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import is_adjacent
-from fs_bot.commands.common import CommandError
+from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
 def validate_rampage_region(state, region):
@@ -76,7 +76,9 @@ def validate_rampage_region(state, region):
     if scenario in ARIOVISTUS_SCENARIOS:
         leader_name = BODUOGNATUS
 
-    valid, reason = _check_rampage_leader(state, region, leader_name)
+    valid, reason = check_leader_proximity(
+        state, region, BELGAE, leader_name, "Rampage"
+    )
     if not valid:
         return (False, reason)
 
@@ -249,21 +251,3 @@ def rampage(state, region, target_faction, warbands_to_flip,
     return result
 
 
-def _check_rampage_leader(state, region, leader_name):
-    """Check leader proximity for Rampage."""
-    leader_region = find_leader(state, BELGAE)
-    if leader_region is None:
-        return (False, "Belgae leader not on map — cannot Rampage")
-
-    actual_leader = get_leader_in_region(state, leader_region, BELGAE)
-
-    if actual_leader == leader_name:
-        if region == leader_region or is_adjacent(region, leader_region):
-            return (True, "")
-        return (False,
-                f"Region must be within 1 of {leader_name} for Rampage")
-    else:
-        if region == leader_region:
-            return (True, "")
-        return (False,
-                "Successor must be in the same region for Rampage")

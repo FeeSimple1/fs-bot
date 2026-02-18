@@ -19,8 +19,6 @@ NOT available in Ariovistus — A4.3.
 Reference: §4.3.2, §4.3.3 (this is the Devastate SA not the Ambush §4.3.3)
 """
 
-import math
-
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -38,12 +36,10 @@ from fs_bot.rules_consts import (
     ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    count_pieces, count_pieces_by_state, get_leader_in_region, find_leader,
-    remove_piece,
+    count_pieces, count_pieces_by_state, remove_piece,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
-from fs_bot.map.map_data import is_adjacent
-from fs_bot.commands.common import CommandError
+from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
 def validate_devastate_region(state, region):
@@ -68,7 +64,9 @@ def validate_devastate_region(state, region):
         return (False, "Region must be Arverni Controlled for Devastate")
 
     # Leader proximity
-    valid, reason = _check_devastate_leader(state, region)
+    valid, reason = check_leader_proximity(
+        state, region, ARVERNI, VERCINGETORIX, "Devastate"
+    )
     if not valid:
         return (False, reason)
 
@@ -179,7 +177,7 @@ def devastate_region(state, region, removals=None):
                 result["removed"][faction] = faction_result
 
     # Place Devastated marker — §4.3.2
-    markers = state.get("markers", {})
+    markers = state.setdefault("markers", {})
     region_markers = markers.setdefault(region, {})
     if MARKER_DEVASTATED not in region_markers:
         region_markers[MARKER_DEVASTATED] = True
@@ -222,24 +220,3 @@ def _remove_auxilia(state, region, faction, remaining, result_list):
     return remaining - aux_remove
 
 
-def _check_devastate_leader(state, region):
-    """Check leader proximity for Devastate.
-
-    §4.3.2: "within one Region of Vercingetorix or have his Successor in it"
-    """
-    leader_region = find_leader(state, ARVERNI)
-    if leader_region is None:
-        return (False, "Arverni leader not on map — cannot Devastate")
-
-    actual_leader = get_leader_in_region(state, leader_region, ARVERNI)
-
-    if actual_leader == VERCINGETORIX:
-        if region == leader_region or is_adjacent(region, leader_region):
-            return (True, "")
-        return (False,
-                "Region must be within 1 of Vercingetorix for Devastate")
-    else:
-        if region == leader_region:
-            return (True, "")
-        return (False,
-                "Successor must be in the same region for Devastate")

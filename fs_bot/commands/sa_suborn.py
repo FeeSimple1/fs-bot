@@ -41,7 +41,7 @@ from fs_bot.rules_consts import (
     TRIBE_FACTION_RESTRICTION,
 )
 from fs_bot.board.pieces import (
-    count_pieces_by_state, get_leader_in_region, find_leader,
+    count_pieces, count_pieces_by_state, get_leader_in_region, find_leader,
     place_piece, remove_piece, get_available,
 )
 from fs_bot.board.control import refresh_all_control
@@ -218,7 +218,6 @@ def _validate_suborn_operation(state, region, op):
                     state, region, faction, piece_type, piece_state
                 )
             else:
-                from fs_bot.board.pieces import count_pieces
                 avail = count_pieces(state, region, faction, piece_type)
             if avail < 1:
                 raise CommandError(

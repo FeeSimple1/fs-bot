@@ -40,11 +40,12 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     place_piece, get_available, count_pieces,
-    get_leader_in_region, find_leader,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.map.map_data import is_adjacent, get_adjacent
-from fs_bot.commands.common import CommandError, _is_devastated
+from fs_bot.commands.common import (
+    CommandError, _is_devastated, check_leader_proximity,
+)
 
 
 def validate_settle_region(state, region, newly_placed_settlements=None):
@@ -89,7 +90,9 @@ def validate_settle_region(state, region, newly_placed_settlements=None):
         return (False, "Region must be under Germanic Control for Settle")
 
     # Must be within 1 of Ariovistus or Successor — A4.6.1, A4.1.2
-    valid, reason = _check_settle_leader(state, region)
+    valid, reason = check_leader_proximity(
+        state, region, GERMANS, ARIOVISTUS_LEADER, "Settle"
+    )
     if not valid:
         return (False, reason)
 
@@ -171,25 +174,3 @@ def _adjacent_to_settlement(state, region, newly_placed=None):
     return False
 
 
-def _check_settle_leader(state, region):
-    """Check leader proximity for Settle.
-
-    A4.6.1: "within a distance of one Region from Ariovistus, or the
-    Region with his Successor"
-    """
-    leader_region = find_leader(state, GERMANS)
-    if leader_region is None:
-        return (False, "Germanic leader not on map — cannot Settle")
-
-    actual_leader = get_leader_in_region(state, leader_region, GERMANS)
-
-    if actual_leader == ARIOVISTUS_LEADER:
-        if region == leader_region or is_adjacent(region, leader_region):
-            return (True, "")
-        return (False,
-                "Region must be within 1 of Ariovistus for Settle")
-    else:
-        if region == leader_region:
-            return (True, "")
-        return (False,
-                "Successor must be in the same region for Settle")

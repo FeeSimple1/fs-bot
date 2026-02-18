@@ -48,11 +48,7 @@ from fs_bot.board.control import (
 from fs_bot.map.map_data import (
     ALL_REGION_DATA, get_tribes_in_region,
 )
-
-
-class CommandError(Exception):
-    """Raised when a Seize command violates game rules."""
-    pass
+from fs_bot.commands.common import CommandError, _is_devastated
 
 
 # ============================================================================
@@ -66,12 +62,6 @@ SEIZE_RESOURCES_PER_DISPERSED = 6      # +6 per Dispersed marker just placed
 # ============================================================================
 # VALIDATION
 # ============================================================================
-
-def _is_devastated(state, region):
-    """Check if a region has the Devastated marker."""
-    markers = state.get("markers", {}).get(region, {})
-    return MARKER_DEVASTATED in markers
-
 
 def validate_seize_region(state, region):
     """Check if Romans can Seize in a region.

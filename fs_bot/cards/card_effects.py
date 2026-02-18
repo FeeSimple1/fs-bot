@@ -159,10 +159,114 @@ def execute_card_1(state, shaded=False):
     _apply_senate_shift(state, direction)
 
 def execute_card_2(state, shaded=False):
-    raise NotImplementedError("Card 2: Legiones XIIII et XV")
+    """Card 2: Legiones XIIII et XV — Senate shift + Legions / Free Battle.
+
+    Unshaded: Romans may shift Senate 1 box up (toward Uproar) to place
+    2 Legions total from Legions track and/or Fallen into Provincia.
+    Tips: Legions can come from Fallen not just track. Shift to place
+    must move marker one box up or flip it, so could not occur if
+    already at Firm Uproar.
+
+    Shaded: Free Battle against Romans in a Region. The first Loss
+    removes a Legion automatically, if any there.
+    TODO: Free Battle implementation requires battle module integration.
+
+    Source: Card Reference, card 2
+    """
+    if not shaded:
+        # Unshaded: Shift Senate up to place 2 Legions in Provincia
+        # Cannot shift if already at Firm Uproar (per Tips)
+        position = state["senate"]["position"]
+        is_firm = state["senate"]["firm"]
+        pos_idx = _SENATE_INDEX[position]
+
+        can_shift = not (pos_idx == 0 and is_firm)  # Not at Firm Uproar
+        if can_shift:
+            _apply_senate_shift(state, SENATE_UP)
+            # Place up to 2 Legions from track and/or Fallen into Provincia
+            params = state.get("event_params", {})
+            from_track = params.get("legions_from_track", 0)
+            from_fallen = params.get("legions_from_fallen", 0)
+            total = from_track + from_fallen
+            if total > 2:
+                total = 2
+                # Clamp to 2 total
+                from_track = min(from_track, 2)
+                from_fallen = 2 - from_track
+
+            if from_track > 0 and _count_on_legions_track(state) >= from_track:
+                place_piece(state, PROVINCIA, ROMANS, LEGION,
+                            count=from_track, from_legions_track=True)
+            if from_fallen > 0 and state.get("fallen_legions", 0) >= from_fallen:
+                place_piece(state, PROVINCIA, ROMANS, LEGION,
+                            count=from_fallen, from_fallen=True)
+    else:
+        # Shaded: Free Battle against Romans in a Region
+        # The first Loss removes a Legion automatically if any there
+        # TODO: Integrate with battle module — for now, mark the
+        # auto-Legion-loss flag in event_params for the battle caller
+        params = state.get("event_params", {})
+        battle_region = params.get("battle_region")
+        if battle_region:
+            # The battle itself should be called by the bot/CLI code
+            # with the auto_legion_loss modifier. Store the modifier.
+            state.setdefault("event_modifiers", {})
+            state["event_modifiers"]["card_2_auto_legion_loss"] = True
+            state["event_modifiers"]["card_2_battle_region"] = battle_region
 
 def execute_card_3(state, shaded=False):
-    raise NotImplementedError("Card 3: Pompey")
+    """Card 3: Pompey — Senate shift + Legion / remove Legions to track.
+
+    Unshaded: If Adulation, place 1 Legion in Provincia. If not,
+    shift the Senate 1 box down (toward Adulation).
+
+    Shaded: If the Legions track has 4 or fewer Legions, Romans
+    remove 2 Legions to the Legions track.
+
+    Source: Card Reference, card 3
+    """
+    if not shaded:
+        # Unshaded: If Adulation, place 1 Legion in Provincia;
+        # if not, shift Senate 1 box down
+        if state["senate"]["position"] == ADULATION:
+            # Place 1 Legion in Provincia from Legions track
+            if _count_on_legions_track(state) >= 1:
+                place_piece(state, PROVINCIA, ROMANS, LEGION,
+                            from_legions_track=True)
+        else:
+            _apply_senate_shift(state, SENATE_DOWN)
+    else:
+        # Shaded: If Legions track has 4 or fewer, Romans remove 2
+        # Legions to track
+        track_count = _count_on_legions_track(state)
+        if track_count <= 4:
+            # Remove 2 Legions from map to track
+            # Bot chooses which Legions — use event_params or find any
+            params = state.get("event_params", {})
+            regions = params.get("legion_removal_regions", [])
+            removed = 0
+            for region in regions:
+                region_legions = count_pieces(state, region, ROMANS, LEGION)
+                to_remove = min(region_legions, 2 - removed)
+                if to_remove > 0:
+                    remove_piece(state, region, ROMANS, LEGION,
+                                 count=to_remove, to_track=True)
+                    removed += to_remove
+                if removed >= 2:
+                    break
+            # If no regions specified or not enough found, try to find
+            # Legions anywhere on map
+            if removed < 2:
+                for region in list(state["spaces"].keys()):
+                    if removed >= 2:
+                        break
+                    region_legions = count_pieces(
+                        state, region, ROMANS, LEGION)
+                    to_remove = min(region_legions, 2 - removed)
+                    if to_remove > 0:
+                        remove_piece(state, region, ROMANS, LEGION,
+                                     count=to_remove, to_track=True)
+                        removed += to_remove
 
 def execute_card_4(state, shaded=False):
     raise NotImplementedError("Card 4: Circumvallation")
@@ -174,7 +278,61 @@ def execute_card_6(state, shaded=False):
     raise NotImplementedError("Card 6: Marcus Antonius")
 
 def execute_card_7(state, shaded=False):
-    raise NotImplementedError("Card 7: Alaudae")
+    """Card 7: Alaudae — Place Legion+Auxilia / remove to track.
+
+    Unshaded: Romans place 1 Legion and 1 Auxilia in a Roman
+    Controlled Region. Tips: Legion could not be placed from Fallen.
+
+    Shaded: If the Legions track has 7 or fewer Legions, remove
+    1 Legion to the track and 1 Auxilia to Available.
+    Tips: Legions track does not include Fallen Legions.
+
+    Source: Card Reference, card 7
+    """
+    if not shaded:
+        # Unshaded: Place 1 Legion (from track, NOT Fallen) and 1 Auxilia
+        # in a Roman Controlled Region
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            # Auto-select: first Roman controlled region
+            controlled = get_controlled_regions(state, ROMANS)
+            if not controlled:
+                return  # No Roman controlled region — event ineffective
+            target = controlled[0]
+        # Legion from track (not Fallen per Tips)
+        if _count_on_legions_track(state) >= 1:
+            place_piece(state, target, ROMANS, LEGION,
+                        from_legions_track=True)
+        # Auxilia from Available
+        if get_available(state, ROMANS, AUXILIA) >= 1:
+            place_piece(state, target, ROMANS, AUXILIA)
+    else:
+        # Shaded: If Legions track has 7 or fewer, remove 1 Legion to
+        # track and 1 Auxilia to Available
+        track_count = _count_on_legions_track(state)
+        if track_count <= 7:
+            params = state.get("event_params", {})
+            # Remove 1 Legion from map to track
+            legion_region = params.get("legion_removal_region")
+            if legion_region is None:
+                # Auto-find a region with a Legion
+                for region in state["spaces"]:
+                    if count_pieces(state, region, ROMANS, LEGION) > 0:
+                        legion_region = region
+                        break
+            if legion_region:
+                remove_piece(state, legion_region, ROMANS, LEGION,
+                             to_track=True)
+            # Remove 1 Auxilia from map to Available
+            auxilia_region = params.get("auxilia_removal_region")
+            if auxilia_region is None:
+                for region in state["spaces"]:
+                    if count_pieces(state, region, ROMANS, AUXILIA) > 0:
+                        auxilia_region = region
+                        break
+            if auxilia_region:
+                remove_piece(state, auxilia_region, ROMANS, AUXILIA)
 
 def execute_card_8(state, shaded=False):
     raise NotImplementedError("Card 8: Baggage Trains")
@@ -195,7 +353,30 @@ def execute_card_13(state, shaded=False):
     raise NotImplementedError("Card 13: Balearic Slingers")
 
 def execute_card_14(state, shaded=False):
-    raise NotImplementedError("Card 14: Clodius Pulcher")
+    """Card 14: Clodius Pulcher — Senate shift / Leader to Provincia.
+
+    Unshaded: Shift the Senate 1 box down (toward Adulation, or flip
+    to Firm if there).
+
+    Shaded: Roman Leader (if on map) to Provincia. Romans Ineligible
+    through next card. Executing Faction Eligible.
+
+    Source: Card Reference, card 14
+    """
+    if not shaded:
+        # Unshaded: Shift Senate 1 box down toward Adulation
+        _apply_senate_shift(state, SENATE_DOWN)
+    else:
+        # Shaded: Move Roman Leader to Provincia if on map
+        leader_region = find_leader(state, ROMANS)
+        if leader_region is not None and leader_region != PROVINCIA:
+            move_piece(state, leader_region, PROVINCIA, ROMANS, LEADER)
+        # Romans Ineligible through next card
+        state["eligibility"][ROMANS] = INELIGIBLE
+        # Executing Faction stays Eligible
+        executing = state.get("executing_faction")
+        if executing and executing != ROMANS:
+            state["eligibility"][executing] = ELIGIBLE
 
 def execute_card_15(state, shaded=False):
     raise NotImplementedError("Card 15: Legio X")

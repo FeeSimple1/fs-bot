@@ -409,7 +409,7 @@ class TestCardEffectStubs:
 
     # Cards that have been implemented (no longer stubs).
     # Updated as cards are implemented in card_effects.py.
-    _IMPLEMENTED_BASE = {1, 2, 3, 7, 14}
+    _IMPLEMENTED_BASE = {1, 2, 3, 7, 14, 16, 18, 21, 23, 24, 31, 33, 49, 50}
     _IMPLEMENTED_ARIOVISTUS = set()   # A-prefix card IDs (str)
     _IMPLEMENTED_2ND_ED = set()       # 2nd edition card IDs (int)
 

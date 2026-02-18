@@ -33,6 +33,8 @@ from fs_bot.rules_consts import (
     ROMAN_CONTROL, NO_CONTROL, FACTION_CONTROL,
     # Eligibility
     ELIGIBLE, INELIGIBLE,
+    # Markers
+    MARKER_DEVASTATED,
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.cards.card_effects import execute_event
@@ -459,3 +461,280 @@ class TestCard14ClodiusPulcher:
         state["eligibility"][ARVERNI] = INELIGIBLE
         execute_event(state, 14, shaded=True)
         assert state["eligibility"][ARVERNI] == ELIGIBLE
+
+
+# ===================================================================
+# Card 16: Ambacti
+# Unshaded: Place 4 Auxilia (6 with Caesar) in Region with Romans.
+# Shaded: Roll die, remove 3 or that many Auxilia from anywhere.
+# ===================================================================
+
+class TestCard16Ambacti:
+    """Tests for Card 16: Ambacti."""
+
+    def test_card_16_unshaded_place_4_auxilia(self):
+        """Place 4 Auxilia in region with Romans (no Caesar)."""
+        state = _setup_base_state()
+        place_piece(state, SEQUANI, ROMANS, LEGION, from_legions_track=True)
+        state["event_params"] = {"target_region": SEQUANI}
+        execute_event(state, 16, shaded=False)
+        assert count_pieces(state, SEQUANI, ROMANS, AUXILIA) == 4
+
+    def test_card_16_unshaded_place_6_with_caesar(self):
+        """Place 6 Auxilia if Caesar is in the region."""
+        state = _setup_base_state()
+        place_piece(state, SEQUANI, ROMANS, LEADER, leader_name=CAESAR)
+        state["event_params"] = {"target_region": SEQUANI}
+        execute_event(state, 16, shaded=False)
+        assert count_pieces(state, SEQUANI, ROMANS, AUXILIA) == 6
+
+    def test_card_16_unshaded_no_romans_ineffective(self):
+        """No Roman pieces in region — event ineffective."""
+        state = _setup_base_state()
+        state["event_params"] = {"target_region": SEQUANI}
+        execute_event(state, 16, shaded=False)
+        assert count_pieces(state, SEQUANI, ROMANS, AUXILIA) == 0
+
+    def test_card_16_shaded_removes_auxilia(self):
+        """Shaded: removes Auxilia based on die roll."""
+        state = _setup_base_state(seed=1)  # Deterministic
+        place_piece(state, PROVINCIA, ROMANS, AUXILIA, count=5)
+        state["event_params"] = {"removal_choice": "max"}
+        execute_event(state, 16, shaded=True)
+        # Some Auxilia should have been removed
+        remaining = count_pieces(state, PROVINCIA, ROMANS, AUXILIA)
+        assert remaining < 5
+
+
+# ===================================================================
+# Card 21: The Province
+# ===================================================================
+
+class TestCard21TheProvince:
+    """Tests for Card 21: The Province."""
+
+    def test_card_21_unshaded_place_auxilia(self):
+        """Only Romans in Provincia -> place 5 Auxilia."""
+        state = _setup_base_state()
+        # Place a Roman Fort to establish Romans in Provincia
+        place_piece(state, PROVINCIA, ROMANS, FORT)
+        state["event_params"] = {"province_choice": "auxilia"}
+        execute_event(state, 21, shaded=False)
+        assert count_pieces(state, PROVINCIA, ROMANS, AUXILIA) == 5
+
+    def test_card_21_unshaded_add_resources(self):
+        """Only Romans in Provincia -> +10 Resources."""
+        state = _setup_base_state()
+        place_piece(state, PROVINCIA, ROMANS, FORT)
+        state["event_params"] = {"province_choice": "resources"}
+        before = state["resources"][ROMANS]
+        execute_event(state, 21, shaded=False)
+        assert state["resources"][ROMANS] == before + 10
+
+    def test_card_21_unshaded_non_roman_pieces_blocks(self):
+        """Non-Roman pieces in Provincia -> event ineffective."""
+        state = _setup_base_state()
+        place_piece(state, PROVINCIA, ROMANS, FORT)
+        place_piece(state, PROVINCIA, ARVERNI, WARBAND)
+        state["event_params"] = {"province_choice": "auxilia"}
+        execute_event(state, 21, shaded=False)
+        assert count_pieces(state, PROVINCIA, ROMANS, AUXILIA) == 0
+
+    def test_card_21_shaded_arverni_control_shifts_senate(self):
+        """Arverni Control Provincia -> shift Senate 2 boxes up."""
+        state = _setup_base_state()
+        state["senate"]["position"] = ADULATION
+        # Give Arverni control of Provincia
+        place_piece(state, PROVINCIA, ARVERNI, WARBAND, count=10)
+        refresh_all_control(state)
+        execute_event(state, 21, shaded=True)
+        assert state["senate"]["position"] == UPROAR
+
+    def test_card_21_shaded_no_control_places_warbands(self):
+        """No Arverni Control -> place 4 Arverni Warbands."""
+        state = _setup_base_state()
+        execute_event(state, 21, shaded=True)
+        assert count_pieces(state, PROVINCIA, ARVERNI, WARBAND) == 4
+
+
+# ===================================================================
+# Card 24: Sappers
+# ===================================================================
+
+class TestCard24Sappers:
+    """Tests for Card 24: Sappers."""
+
+    def test_card_24_unshaded_gallic_faction_loses_resources(self):
+        """Gallic faction with Citadel loses 10 Resources."""
+        state = _setup_base_state()
+        state["resources"][ARVERNI] = 15
+        place_piece(state, ARVERNI_REGION, ARVERNI, CITADEL)
+        state["event_params"] = {"target_faction": ARVERNI}
+        execute_event(state, 24, shaded=False)
+        assert state["resources"][ARVERNI] == 5
+
+    def test_card_24_shaded_removes_legions_to_fallen(self):
+        """Remove 2 Legions/Auxilia from region with Arverni Citadel."""
+        state = _setup_base_state()
+        place_piece(state, ARVERNI_REGION, ARVERNI, CITADEL)
+        place_piece(state, ARVERNI_REGION, ROMANS, LEGION, count=2,
+                    from_legions_track=True)
+        state["event_params"] = {
+            "target_region": ARVERNI_REGION,
+            "legions_to_remove": 2,
+            "auxilia_to_remove": 0,
+        }
+        execute_event(state, 24, shaded=True)
+        assert count_pieces(state, ARVERNI_REGION, ROMANS, LEGION) == 0
+        assert state["fallen_legions"] >= 2
+
+
+# ===================================================================
+# Card 31: Cotuatus & Conconnetodumnus
+# ===================================================================
+
+class TestCard31Cotuatus:
+    """Tests for Card 31: Cotuatus & Conconnetodumnus."""
+
+    def test_card_31_unshaded_place_legion(self):
+        """Place 1 Legion in Provincia from track."""
+        state = _setup_base_state()
+        legions_before = count_pieces(state, PROVINCIA, ROMANS, LEGION)
+        execute_event(state, 31, shaded=False)
+        assert count_pieces(state, PROVINCIA, ROMANS, LEGION) == \
+            legions_before + 1
+
+    def test_card_31_shaded_removes_3_allies(self):
+        """Remove 1 Roman, 1 Aedui, 1 Roman or Aedui Ally."""
+        state = _setup_base_state()
+        place_piece(state, PROVINCIA, ROMANS, ALLY)
+        place_piece(state, SEQUANI, ROMANS, ALLY)
+        place_piece(state, AEDUI_REGION, AEDUI, ALLY)
+        state["event_params"] = {
+            "roman_ally_region": PROVINCIA,
+            "aedui_ally_region": AEDUI_REGION,
+            "third_ally_faction": ROMANS,
+            "third_ally_region": SEQUANI,
+        }
+        execute_event(state, 31, shaded=True)
+        assert count_pieces(state, PROVINCIA, ROMANS, ALLY) == 0
+        assert count_pieces(state, AEDUI_REGION, AEDUI, ALLY) == 0
+        assert count_pieces(state, SEQUANI, ROMANS, ALLY) == 0
+
+
+# ===================================================================
+# Card 33: Lost Eagle
+# ===================================================================
+
+class TestCard33LostEagle:
+    """Tests for Card 33: Lost Eagle."""
+
+    def test_card_33_unshaded_place_fallen_legion(self):
+        """Place 1 Fallen Legion into Region with non-Aedui Warband + Legion."""
+        state = _setup_base_state()
+        # Set up: region with Legion and Arverni Warband, plus Fallen Legions
+        place_piece(state, SEQUANI, ROMANS, LEGION, from_legions_track=True)
+        place_piece(state, SEQUANI, ARVERNI, WARBAND)
+        state["fallen_legions"] = 1
+        state["event_params"] = {"target_region": SEQUANI}
+        execute_event(state, 33, shaded=False)
+        assert count_pieces(state, SEQUANI, ROMANS, LEGION) == 2
+        assert state["fallen_legions"] == 0
+
+    def test_card_33_unshaded_no_fallen_no_effect(self):
+        """No Fallen Legions -> no effect."""
+        state = _setup_base_state()
+        place_piece(state, SEQUANI, ROMANS, LEGION, from_legions_track=True)
+        place_piece(state, SEQUANI, ARVERNI, WARBAND)
+        state["fallen_legions"] = 0
+        execute_event(state, 33, shaded=False)
+        assert count_pieces(state, SEQUANI, ROMANS, LEGION) == 1
+
+    def test_card_33_shaded_removes_fallen_permanently(self):
+        """Remove 1 Fallen Legion permanently."""
+        state = _setup_base_state()
+        state["fallen_legions"] = 2
+        removed_before = state.get("removed_legions", 0)
+        execute_event(state, 33, shaded=True)
+        assert state["fallen_legions"] == 1
+        assert state["removed_legions"] == removed_before + 1
+
+    def test_card_33_shaded_sets_no_shift_down_marker(self):
+        """Sets Lost Eagle marker preventing Senate shift down."""
+        state = _setup_base_state()
+        state["fallen_legions"] = 1
+        execute_event(state, 33, shaded=True)
+        assert state["event_modifiers"]["lost_eagle_no_shift_down"] is True
+
+
+# ===================================================================
+# Card 49: Drought
+# ===================================================================
+
+class TestCard49Drought:
+    """Tests for Card 49: Drought."""
+
+    def test_card_49_halves_resources(self):
+        """Each Faction drops to half Resources (rounded down)."""
+        state = _setup_base_state()
+        state["resources"][ROMANS] = 25
+        state["resources"][ARVERNI] = 15
+        state["resources"][AEDUI] = 11
+        state["resources"][BELGAE] = 7
+        state["event_params"] = {"devastate_region": SEQUANI}
+        execute_event(state, 49, shaded=False)
+        assert state["resources"][ROMANS] == 12
+        assert state["resources"][ARVERNI] == 7
+        assert state["resources"][AEDUI] == 5
+        assert state["resources"][BELGAE] == 3
+
+    def test_card_49_places_devastated_marker(self):
+        """Place 1 Devastated marker in a Region without one."""
+        state = _setup_base_state()
+        state["event_params"] = {"devastate_region": SEQUANI}
+        execute_event(state, 49, shaded=False)
+        assert MARKER_DEVASTATED in state["markers"].get(SEQUANI, set())
+
+    def test_card_49_removes_pieces_from_devastated(self):
+        """Each Faction removes 1 piece from each Devastated Region."""
+        state = _setup_base_state()
+        # Pre-place Devastated marker and pieces
+        state.setdefault("markers", {})
+        state["markers"][SEQUANI] = {MARKER_DEVASTATED}
+        place_piece(state, SEQUANI, ROMANS, LEGION, from_legions_track=True)
+        place_piece(state, SEQUANI, ARVERNI, WARBAND)
+        # Place Devastated in another region for this card
+        state["event_params"] = {"devastate_region": ATREBATES}
+        execute_event(state, 49, shaded=False)
+        # Roman Legion removed to Fallen from SEQUANI
+        assert count_pieces(state, SEQUANI, ROMANS, LEGION) == 0
+        # Arverni Warband removed from SEQUANI
+        assert count_pieces(state, SEQUANI, ARVERNI, WARBAND) == 0
+
+
+# ===================================================================
+# Card 50: Shifting Loyalties
+# ===================================================================
+
+class TestCard50ShiftingLoyalties:
+    """Tests for Card 50: Shifting Loyalties."""
+
+    def test_card_50_removes_capability(self):
+        """Remove a specified Capability from play."""
+        state = _setup_base_state()
+        from fs_bot.cards.capabilities import activate_capability, is_capability_active
+        from fs_bot.rules_consts import EVENT_UNSHADED
+        activate_capability(state, 8, EVENT_UNSHADED)
+        assert is_capability_active(state, 8)
+        state["event_params"] = {"target_capability": 8}
+        execute_event(state, 50, shaded=False)
+        assert not is_capability_active(state, 8)
+
+    def test_card_50_auto_removes_first_capability(self):
+        """Without params, removes first active capability."""
+        state = _setup_base_state()
+        from fs_bot.cards.capabilities import activate_capability, is_capability_active
+        from fs_bot.rules_consts import EVENT_SHADED
+        activate_capability(state, 10, EVENT_SHADED)
+        execute_event(state, 50, shaded=True)
+        assert not is_capability_active(state, 10)

@@ -382,13 +382,141 @@ def execute_card_15(state, shaded=False):
     raise NotImplementedError("Card 15: Legio X")
 
 def execute_card_16(state, shaded=False):
-    raise NotImplementedError("Card 16: Ambacti")
+    """Card 16: Ambacti — Place Auxilia / Roll and remove Auxilia.
+
+    Unshaded: Place 4 Auxilia in a Region with Romans or 6 with Caesar.
+    Tip: "Romans" means any Roman Forces piece.
+
+    Shaded: Roll a die and remove either 3 or that number of Auxilia
+    from anywhere.
+
+    Source: Card Reference, card 16
+    """
+    if not shaded:
+        # Unshaded: Place 4 Auxilia (or 6 if Caesar in region)
+        # Region must have at least one Roman Forces piece (Tip: "Romans"
+        # means any Roman Forces piece — Leader, Legion, Auxilia, Fort, Ally)
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            return  # No target specified
+        # Validate region has Roman pieces
+        if count_pieces(state, target, ROMANS) == 0:
+            return  # No Roman Forces in this region — event ineffective
+        # Check if Caesar is in the region — 6 Auxilia if so, else 4
+        leader = get_leader_in_region(state, target, ROMANS)
+        num_auxilia = 6 if leader == CAESAR else 4
+        avail = get_available(state, ROMANS, AUXILIA)
+        to_place = min(num_auxilia, avail)
+        if to_place > 0:
+            place_piece(state, target, ROMANS, AUXILIA, count=to_place)
+    else:
+        # Shaded: Roll a die; executing faction chooses to remove either
+        # 3 or the die roll number of Auxilia from anywhere.
+        # Per Card Reference: "remove either 3 or that number" — a choice.
+        from fs_bot.rules_consts import DIE_MIN, DIE_MAX
+        roll = state["rng"].randint(DIE_MIN, DIE_MAX)
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["card_16_die_roll"] = roll
+        params = state.get("event_params", {})
+        # Executing faction chooses: "roll" or "three" (default: max for bot)
+        choice = params.get("removal_choice", "max")
+        if choice == "roll":
+            to_remove = roll
+        elif choice == "three":
+            to_remove = 3
+        else:
+            # Default bot behavior: remove as many as possible to hurt Romans
+            to_remove = max(roll, 3)
+        removal_regions = params.get("auxilia_removal_regions", [])
+        removed = 0
+        for region, count in removal_regions:
+            actual = min(count, to_remove - removed,
+                         count_pieces(state, region, ROMANS, AUXILIA))
+            if actual > 0:
+                remove_piece(state, region, ROMANS, AUXILIA, count=actual)
+                removed += actual
+            if removed >= to_remove:
+                break
+        # Auto-remove from anywhere if not enough specified
+        if removed < to_remove:
+            for region in list(state["spaces"].keys()):
+                if removed >= to_remove:
+                    break
+                avail_in_region = count_pieces(
+                    state, region, ROMANS, AUXILIA)
+                actual = min(avail_in_region, to_remove - removed)
+                if actual > 0:
+                    remove_piece(state, region, ROMANS, AUXILIA,
+                                 count=actual)
+                    removed += actual
 
 def execute_card_17(state, shaded=False):
     raise NotImplementedError("Card 17: Germanic Chieftains")
 
 def execute_card_18(state, shaded=False):
-    raise NotImplementedError("Card 18: Rhenus Bridge")
+    """Card 18: Rhenus Bridge — Remove Germans / Roman Resources penalty.
+
+    Unshaded: Romans may remove all Germans from 1 Germania Region
+    under or adjacent to Roman Control.
+    Tips: "all Germans" means all Germanic pieces: Allies and Warbands.
+
+    Shaded: If a Legion is within 1 Region of Germania, Romans -6
+    Resources and Ineligible through next card.
+    Tips: "within 1 Region" means either in or adjacent to a Germania
+    Region.
+
+    Source: Card Reference, card 18
+    """
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.rules_consts import GERMANIA_REGIONS
+    if not shaded:
+        # Unshaded: Remove all Germans from 1 Germania Region under or
+        # adjacent to Roman Control
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            return
+        # Validate target is a Germania Region
+        if target not in GERMANIA_REGIONS:
+            return
+        # Validate target is under or adjacent to Roman Control
+        roman_ctrl = is_controlled_by(state, target, ROMANS)
+        if not roman_ctrl:
+            adj_regions = get_adjacent(target, state.get("scenario"))
+            roman_ctrl = any(
+                is_controlled_by(state, adj, ROMANS) for adj in adj_regions
+            )
+        if not roman_ctrl:
+            return  # Not under or adjacent to Roman Control
+        # Remove all Germanic Warbands (all states)
+        for ps in (HIDDEN, REVEALED, SCOUTED):
+            wbs = count_pieces_by_state(
+                state, target, GERMANS, WARBAND, ps)
+            if wbs > 0:
+                remove_piece(state, target, GERMANS, WARBAND,
+                             count=wbs, piece_state=ps)
+        # Remove all Germanic Allies
+        allies = count_pieces(state, target, GERMANS, ALLY)
+        if allies > 0:
+            remove_piece(state, target, GERMANS, ALLY, count=allies)
+    else:
+        # Shaded: If any Legion is in or adjacent to a Germania Region,
+        # Romans -6 Resources and Ineligible
+        legion_near = False
+        for g_region in GERMANIA_REGIONS:
+            if count_pieces(state, g_region, ROMANS, LEGION) > 0:
+                legion_near = True
+                break
+            for adj in get_adjacent(g_region, state.get("scenario")):
+                if count_pieces(state, adj, ROMANS, LEGION) > 0:
+                    legion_near = True
+                    break
+            if legion_near:
+                break
+        if legion_near:
+            _cap_resources(state, ROMANS, -6)
+            state["eligibility"][ROMANS] = INELIGIBLE
 
 def execute_card_19(state, shaded=False):
     raise NotImplementedError("Card 19: Lucterius")
@@ -397,16 +525,204 @@ def execute_card_20(state, shaded=False):
     raise NotImplementedError("Card 20: Optimates")
 
 def execute_card_21(state, shaded=False):
-    raise NotImplementedError("Card 21: The Province")
+    """Card 21: The Province — Auxilia/Resources / Senate shift + Warbands.
+
+    Unshaded: If only Roman pieces in Provincia, either place 5 Auxilia
+    there, or add +10 Roman Resources.
+
+    Shaded: If Arverni Control Provincia, shift Senate 2 boxes up
+    (toward Uproar). If not, Arverni place 4 Warbands there and free
+    Raid or Battle there as if no Fort.
+    Tips: Shaded Warbands must be Arverni.
+
+    Source: Card Reference, card 21
+    """
+    if not shaded:
+        # Unshaded: If only Roman pieces in Provincia
+        only_roman = True
+        for faction in FACTIONS:
+            if faction == ROMANS:
+                continue
+            if count_pieces(state, PROVINCIA, faction) > 0:
+                only_roman = False
+                break
+        if only_roman and count_pieces(state, PROVINCIA, ROMANS) > 0:
+            params = state.get("event_params", {})
+            choice = params.get("province_choice", "auxilia")
+            if choice == "resources":
+                _cap_resources(state, ROMANS, 10)
+            else:
+                avail = get_available(state, ROMANS, AUXILIA)
+                to_place = min(5, avail)
+                if to_place > 0:
+                    place_piece(state, PROVINCIA, ROMANS, AUXILIA,
+                                count=to_place)
+    else:
+        # Shaded: Check Arverni Control of Provincia
+        if is_controlled_by(state, PROVINCIA, ARVERNI):
+            # Shift Senate 2 boxes up
+            _apply_senate_shift(state, SENATE_UP)
+            _apply_senate_shift(state, SENATE_UP)
+        else:
+            # Arverni place 4 Warbands in Provincia
+            avail = get_available(state, ARVERNI, WARBAND)
+            to_place = min(4, avail)
+            if to_place > 0:
+                place_piece(state, PROVINCIA, ARVERNI, WARBAND,
+                            count=to_place)
+            # Free Raid or Battle as if no Fort — store modifier
+            # TODO: Bot/CLI decides Raid vs Battle; for now store modifier
+            state.setdefault("event_modifiers", {})
+            state["event_modifiers"]["card_21_no_fort"] = True
 
 def execute_card_22(state, shaded=False):
     raise NotImplementedError("Card 22: Hostages")
 
 def execute_card_23(state, shaded=False):
-    raise NotImplementedError("Card 23: Sacking")
+    """Card 23: Sacking — Razed marker / Remove Legion.
+
+    Unshaded: Romans may place Razed marker on a City at Roman Control
+    (replace anything) for +8 Resources. It permanently Disperses the City.
+    Tips: Razed is like Dispersed for all purposes except not removed in Spring.
+
+    Shaded: If a Legion where your Citadel, remove the Legion and Romans
+    Ineligible through next card.
+    Tips: Shaded Legion removal is to Fallen.
+
+    Source: Card Reference, card 23
+    """
+    if not shaded:
+        # Unshaded: Place Razed marker on a City at Roman Control
+        params = state.get("event_params", {})
+        target_city = params.get("target_city")
+        if target_city is None:
+            return
+        # Find the region containing this city
+        from fs_bot.rules_consts import CITY_TO_TRIBE, TRIBE_TO_REGION
+        tribe = CITY_TO_TRIBE.get(target_city)
+        if tribe is None:
+            return
+        region = TRIBE_TO_REGION.get(tribe)
+        if region is None:
+            return
+        # Validate: City must be at Roman Control
+        if not is_controlled_by(state, region, ROMANS):
+            return
+        # Place Razed marker (replaces anything at that tribe — "replace
+        # anything" means existing Ally/Citadel/Dispersed at the city)
+        state.setdefault("markers", {})
+        state["markers"].setdefault(region, set())
+        state["markers"][region].add(MARKER_RAZED)
+        # +8 Resources to Romans
+        _cap_resources(state, ROMANS, 8)
+        # Update tribe status to mark as Razed/Dispersed
+        if tribe in state.get("tribes", {}):
+            # Remove any existing Ally/Citadel at this tribe
+            tribe_info = state["tribes"][tribe]
+            if tribe_info.get("allied_faction"):
+                allied_fac = tribe_info["allied_faction"]
+                ally_count = count_pieces(state, region, allied_fac, ALLY)
+                if ally_count > 0:
+                    remove_piece(state, region, allied_fac, ALLY)
+                tribe_info["allied_faction"] = None
+            # Remove Citadel at this tribe if any
+            for fac in GALLIC_FACTIONS:
+                if count_pieces(state, region, fac, CITADEL) > 0:
+                    remove_piece(state, region, fac, CITADEL)
+            tribe_info["status"] = MARKER_RAZED
+    else:
+        # Shaded: If a Legion where executing faction's Citadel,
+        # remove the Legion to Fallen, Romans Ineligible
+        executing = state.get("executing_faction")
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            # Auto-find: region with both a Legion and executing
+            # faction's Citadel
+            if executing:
+                for region in state["spaces"]:
+                    if (count_pieces(state, region, ROMANS, LEGION) > 0
+                            and count_pieces(
+                                state, region, executing, CITADEL) > 0):
+                        target = region
+                        break
+        if target is not None:
+            if count_pieces(state, target, ROMANS, LEGION) > 0:
+                remove_piece(state, target, ROMANS, LEGION,
+                             to_fallen=True)
+                state["eligibility"][ROMANS] = INELIGIBLE
 
 def execute_card_24(state, shaded=False):
-    raise NotImplementedError("Card 24: Sappers")
+    """Card 24: Sappers — Resource loss / Remove Legions+Auxilia.
+
+    Unshaded: A Gallic Faction with a Citadel loses 10 Resources.
+
+    Shaded: In a Region with an Arverni Citadel, remove a total of
+    2 Legions and/or Auxilia.
+    Tips: Legion removal would be to Fallen.
+
+    Source: Card Reference, card 24
+    """
+    if not shaded:
+        # Unshaded: A Gallic Faction with a Citadel loses 10 Resources
+        params = state.get("event_params", {})
+        target_faction = params.get("target_faction")
+        if target_faction is None:
+            # Auto-select: first Gallic faction with a Citadel on map
+            for faction in GALLIC_FACTIONS:
+                for region in state["spaces"]:
+                    if count_pieces(state, region, faction, CITADEL) > 0:
+                        target_faction = faction
+                        break
+                if target_faction:
+                    break
+        if target_faction is None:
+            return  # No Gallic faction has a Citadel
+        # Validate the target faction actually has a Citadel on map
+        has_citadel = False
+        for region in state["spaces"]:
+            if count_pieces(state, region, target_faction, CITADEL) > 0:
+                has_citadel = True
+                break
+        if has_citadel and target_faction in state.get("resources", {}):
+            _cap_resources(state, target_faction, -10)
+    else:
+        # Shaded: In a Region with Arverni Citadel, remove 2
+        # Legions and/or Auxilia (Legions to Fallen)
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            # Auto-find region with Arverni Citadel
+            for region in state["spaces"]:
+                if count_pieces(state, region, ARVERNI, CITADEL) > 0:
+                    target = region
+                    break
+        if target is None:
+            return
+        # Validate target region has Arverni Citadel
+        if count_pieces(state, target, ARVERNI, CITADEL) == 0:
+            return
+        # Remove up to 2 total Legions and/or Auxilia
+        legions_to_remove = params.get("legions_to_remove", 0)
+        auxilia_to_remove = params.get("auxilia_to_remove", 0)
+        total = legions_to_remove + auxilia_to_remove
+        # Clamp to 2 total
+        if total > 2:
+            legions_to_remove = min(legions_to_remove, 2)
+            auxilia_to_remove = min(auxilia_to_remove, 2 - legions_to_remove)
+        if total == 0:
+            # Default: remove Legions first, then Auxilia
+            legions_avail = count_pieces(state, target, ROMANS, LEGION)
+            legions_to_remove = min(legions_avail, 2)
+            auxilia_to_remove = min(
+                count_pieces(state, target, ROMANS, AUXILIA),
+                2 - legions_to_remove)
+        if legions_to_remove > 0:
+            remove_piece(state, target, ROMANS, LEGION,
+                         count=legions_to_remove, to_fallen=True)
+        if auxilia_to_remove > 0:
+            remove_piece(state, target, ROMANS, AUXILIA,
+                         count=auxilia_to_remove)
 
 def execute_card_25(state, shaded=False):
     raise NotImplementedError("Card 25: Aquitani")
@@ -427,13 +743,120 @@ def execute_card_30(state, shaded=False):
     raise NotImplementedError("Card 30: Vercingetorix's Elite")
 
 def execute_card_31(state, shaded=False):
-    raise NotImplementedError("Card 31: Cotuatus & Conconnetodumnus")
+    """Card 31: Cotuatus & Conconnetodumnus — Place Legion / Remove Allies.
+
+    Unshaded: Place 1 Legion in Provincia.
+    Tip: Legion must be placed from Legions track, not Fallen.
+
+    Shaded: Remove 3 Allies—1 Roman, 1 Aedui, and 1 Roman or Aedui
+    (not Citadels).
+
+    Source: Card Reference, card 31
+    """
+    if not shaded:
+        # Unshaded: Place 1 Legion in Provincia from Legions track
+        if _count_on_legions_track(state) >= 1:
+            place_piece(state, PROVINCIA, ROMANS, LEGION,
+                        from_legions_track=True)
+    else:
+        # Shaded: Remove 3 Allies total: 1 Roman, 1 Aedui, 1 Roman or Aedui
+        params = state.get("event_params", {})
+        # Remove 1 Roman Ally
+        roman_ally_region = params.get("roman_ally_region")
+        if roman_ally_region is None:
+            for region in state["spaces"]:
+                if count_pieces(state, region, ROMANS, ALLY) > 0:
+                    roman_ally_region = region
+                    break
+        if roman_ally_region:
+            remove_piece(state, roman_ally_region, ROMANS, ALLY)
+        # Remove 1 Aedui Ally
+        aedui_ally_region = params.get("aedui_ally_region")
+        if aedui_ally_region is None:
+            for region in state["spaces"]:
+                if count_pieces(state, region, AEDUI, ALLY) > 0:
+                    aedui_ally_region = region
+                    break
+        if aedui_ally_region:
+            remove_piece(state, aedui_ally_region, AEDUI, ALLY)
+        # Remove 1 more Roman or Aedui Ally (third Ally)
+        third_faction = params.get("third_ally_faction")
+        third_region = params.get("third_ally_region")
+        if third_faction is None:
+            # Auto-select: try Romans first, then Aedui
+            for fac in (ROMANS, AEDUI):
+                for region in state["spaces"]:
+                    if count_pieces(state, region, fac, ALLY) > 0:
+                        third_faction = fac
+                        third_region = region
+                        break
+                if third_faction:
+                    break
+        elif third_region is None:
+            for region in state["spaces"]:
+                if count_pieces(state, region, third_faction, ALLY) > 0:
+                    third_region = region
+                    break
+        if third_region and third_faction:
+            remove_piece(state, third_region, third_faction, ALLY)
 
 def execute_card_32(state, shaded=False):
     raise NotImplementedError("Card 32: Forced Marches")
 
 def execute_card_33(state, shaded=False):
-    raise NotImplementedError("Card 33: Lost Eagle")
+    """Card 33: Lost Eagle — Place Fallen Legion / Remove Legion permanently.
+
+    Unshaded: Romans place 1 Fallen Legion into a Region that has a
+    non-Aedui Warband and a Legion already.
+    Tips: Legion must come from Fallen box, not track or map.
+
+    Shaded: Remove 1 Fallen Legion permanently from play. This upcoming
+    Senate Phase, no shift down (mark).
+    Tips: Places Lost Eagle marker to prevent shift toward Adulation
+    this Winter only.
+
+    Source: Card Reference, card 33
+    """
+    if not shaded:
+        # Unshaded: Place 1 Fallen Legion into Region with non-Aedui
+        # Warband and a Legion already
+        if state.get("fallen_legions", 0) < 1:
+            return  # No Fallen Legions
+        params = state.get("event_params", {})
+        target = params.get("target_region")
+        if target is None:
+            # Auto-find: region with Legion and non-Aedui Warband
+            for region in state["spaces"]:
+                if count_pieces(state, region, ROMANS, LEGION) == 0:
+                    continue
+                # Check for non-Aedui Warbands
+                has_non_aedui_wb = False
+                for faction in (ARVERNI, BELGAE, GERMANS):
+                    if count_pieces(state, region, faction, WARBAND) > 0:
+                        has_non_aedui_wb = True
+                        break
+                if has_non_aedui_wb:
+                    target = region
+                    break
+        if target:
+            # Validate target has a Legion and a non-Aedui Warband
+            if count_pieces(state, target, ROMANS, LEGION) == 0:
+                return
+            has_non_aedui_wb = any(
+                count_pieces(state, target, fac, WARBAND) > 0
+                for fac in (ARVERNI, BELGAE, GERMANS)
+            )
+            if not has_non_aedui_wb:
+                return
+            place_piece(state, target, ROMANS, LEGION, from_fallen=True)
+    else:
+        # Shaded: Remove 1 Fallen Legion permanently
+        if state.get("fallen_legions", 0) >= 1:
+            state["fallen_legions"] -= 1
+            state["removed_legions"] = state.get("removed_legions", 0) + 1
+        # Mark: no Senate shift down this upcoming Winter
+        state.setdefault("event_modifiers", {})
+        state["event_modifiers"]["lost_eagle_no_shift_down"] = True
 
 def execute_card_34(state, shaded=False):
     raise NotImplementedError("Card 34: Acco")
@@ -481,10 +904,98 @@ def execute_card_48(state, shaded=False):
     raise NotImplementedError("Card 48: Druids")
 
 def execute_card_49(state, shaded=False):
-    raise NotImplementedError("Card 49: Drought")
+    """Card 49: Drought — Halve Resources, Devastate, remove pieces.
+
+    Both unshaded and shaded (same effect):
+    Each Faction drops to half its current Resources (rounded down).
+    Place 1 Devastated marker. Each Faction then removes 1 of its
+    pieces from each Devastated Region (Legions to Fallen; German
+    Warbands before German Allied Tribes).
+
+    Tips: Executing Faction places Devastated marker in any one Region
+    without one. Each Faction chooses which piece to remove. Romans
+    remove Legions to Fallen. Germans avoid removing Allies if possible.
+
+    Source: Card Reference, card 49
+    """
+    # Step 1: Halve all faction Resources (rounded down)
+    for faction in FACTIONS:
+        if faction in state["resources"]:
+            state["resources"][faction] = state["resources"][faction] // 2
+
+    # Step 2: Place 1 Devastated marker in a Region without one
+    params = state.get("event_params", {})
+    devastate_region = params.get("devastate_region")
+    if devastate_region is None:
+        # Auto-select: first region without Devastated marker
+        for region in state["spaces"]:
+            markers = state.get("markers", {}).get(region, set())
+            if MARKER_DEVASTATED not in markers:
+                devastate_region = region
+                break
+    if devastate_region:
+        state.setdefault("markers", {})
+        state["markers"].setdefault(devastate_region, set())
+        state["markers"][devastate_region].add(MARKER_DEVASTATED)
+
+    # Step 3: Each Faction removes 1 piece from each Devastated Region
+    for region in state["spaces"]:
+        markers = state.get("markers", {}).get(region, set())
+        if MARKER_DEVASTATED not in markers:
+            continue
+        for faction in FACTIONS:
+            if count_pieces(state, region, faction) == 0:
+                continue
+            # Choose which piece to remove
+            # Romans: remove Legion to Fallen if any, else Auxilia
+            if faction == ROMANS:
+                if count_pieces(state, region, ROMANS, LEGION) > 0:
+                    remove_piece(state, region, ROMANS, LEGION,
+                                 to_fallen=True)
+                elif count_pieces(state, region, ROMANS, AUXILIA) > 0:
+                    remove_piece(state, region, ROMANS, AUXILIA)
+                elif count_pieces(state, region, ROMANS, FORT) > 0:
+                    try:
+                        remove_piece(state, region, ROMANS, FORT)
+                    except PieceError:
+                        pass  # Permanent Fort in Provincia
+                elif count_pieces(state, region, ROMANS, ALLY) > 0:
+                    remove_piece(state, region, ROMANS, ALLY)
+            elif faction == GERMANS:
+                # Germans: Warbands before Allied Tribes per Tips
+                if count_pieces(state, region, GERMANS, WARBAND) > 0:
+                    remove_piece(state, region, GERMANS, WARBAND)
+                elif count_pieces(state, region, GERMANS, ALLY) > 0:
+                    remove_piece(state, region, GERMANS, ALLY)
+            else:
+                # Gallic factions: remove Warband first, then Ally
+                if count_pieces(state, region, faction, WARBAND) > 0:
+                    remove_piece(state, region, faction, WARBAND)
+                elif count_pieces(state, region, faction, ALLY) > 0:
+                    remove_piece(state, region, faction, ALLY)
+                elif count_pieces(state, region, faction, CITADEL) > 0:
+                    remove_piece(state, region, faction, CITADEL)
 
 def execute_card_50(state, shaded=False):
-    raise NotImplementedError("Card 50: Shifting Loyalties")
+    """Card 50: Shifting Loyalties — Remove a Capability.
+
+    Both unshaded and shaded (same effect):
+    Choose 1 Capability of any Faction. Remove it from play.
+    Tip: Can remove disadvantageous Capability from friendly or
+    advantageous from foe.
+
+    Source: Card Reference, card 50
+    """
+    params = state.get("event_params", {})
+    target_capability = params.get("target_capability")
+    if target_capability is not None:
+        deactivate_capability(state, target_capability)
+    else:
+        # Auto-select: remove first active capability
+        active = state.get("capabilities", {})
+        if active:
+            first_cap = next(iter(active))
+            deactivate_capability(state, first_cap)
 
 def execute_card_51(state, shaded=False):
     raise NotImplementedError("Card 51: Surus")

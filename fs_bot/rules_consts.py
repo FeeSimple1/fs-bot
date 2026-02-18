@@ -630,10 +630,11 @@ BELGAE_VICTORY_THRESHOLD = 15          # CV + Allies + Citadels exceed 15 — §
 GERMAN_VICTORY_THRESHOLD = 6           # Germania + Settlements exceed 6 — A7.2
 
 # Tie-breaking priority (base) — §7.1
-TIEBREAK_ORDER_BASE = (ROMANS, ARVERNI, AEDUI)
+# §7.1: "Romans, then the Arverni, then the Aedui." Belgae is implicitly last.
+TIEBREAK_ORDER_BASE = (ROMANS, ARVERNI, AEDUI, BELGAE)
 
 # Tie-breaking priority (Ariovistus) — A7.1
-TIEBREAK_ORDER_ARIOVISTUS = (ROMANS, GERMANS, AEDUI)
+TIEBREAK_ORDER_ARIOVISTUS = (ROMANS, GERMANS, AEDUI, BELGAE)
 
 
 # ============================================================================

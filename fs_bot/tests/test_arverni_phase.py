@@ -344,6 +344,59 @@ class TestArverniMarch:
         for march in result["marches"]:
             assert march["from"] != ARVERNI_REGION
 
+    def test_arverni_march_to_target_moves_warbands(self):
+        """Warbands from adjacent region march to target correctly.
+
+        Verifies no ValueError on march_groups.remove() and that
+        result["marches"] has the correct total warbands count.
+        """
+        state = make_state()
+        # Place Arverni Warbands in Pictones (adjacent to Arverni Region)
+        # with enough to have surplus over control needs
+        place_piece(state, PICTONES, ARVERNI, WARBAND, 8)
+        # Place a single enemy to make Arverni Control possible
+        place_piece(state, PICTONES, ROMANS, AUXILIA, 1)
+        refresh_all_control(state)
+        # Target is Arverni Region (adjacent to Pictones)
+        result = _arverni_phase_march(state, ARVERNI_REGION)
+        # Check Warbands arrived in target
+        target_wb = count_pieces(state, ARVERNI_REGION, ARVERNI, WARBAND)
+        # Find marches to target
+        marched_to_target = [
+            m for m in result["marches"] if m["to"] == ARVERNI_REGION
+        ]
+        total_marched = sum(m["warbands"] for m in marched_to_target)
+        # Verify consistency: warbands in target match what marched there
+        assert target_wb == total_marched
+        # Verify result records correct count (not just last iteration's value)
+        for m in marched_to_target:
+            assert m["warbands"] > 0
+
+    def test_arverni_march_multiple_states(self):
+        """Warbands with both Hidden and Revealed states march correctly.
+
+        Verifies total moved includes all piece states, not just the last.
+        """
+        state = make_state()
+        # Place Hidden and Revealed Warbands in Pictones
+        place_piece(state, PICTONES, ARVERNI, WARBAND, 4, piece_state=HIDDEN)
+        place_piece(state, PICTONES, ARVERNI, WARBAND, 3, piece_state=REVEALED)
+        # Place a single enemy so Arverni has control
+        place_piece(state, PICTONES, ROMANS, AUXILIA, 1)
+        refresh_all_control(state)
+        # March flips all to Hidden first, then marches
+        result = _arverni_phase_march(state, ARVERNI_REGION)
+        # Check total Warbands that arrived
+        target_wb = count_pieces(state, ARVERNI_REGION, ARVERNI, WARBAND)
+        marched_to_target = [
+            m for m in result["marches"] if m["to"] == ARVERNI_REGION
+        ]
+        total_marched = sum(m["warbands"] for m in marched_to_target)
+        assert target_wb == total_marched
+        # Should have moved both Hidden and (now-flipped-to-Hidden) Revealed
+        if marched_to_target:
+            assert total_marched > 1  # more than just one piece state
+
 
 # ============================================================================
 # TEST: SCENARIO ISOLATION

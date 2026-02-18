@@ -223,10 +223,9 @@ def _calculate_belgic_control_value(state):
     - Colony marker adds +1 if in a Belgic-Controlled region (implied
       by "including +1 for a Region with the Colony Event marker")
 
-    IMPORTANT: The Colony +1 applies to the region's CV if it's under
-    Belgic Control. The Dispersed penalty is global (any non-Suebi
-    Dispersed tribe subtracts 1 from the total BCV, regardless of which
-    region it's in or who controls it).
+    Per §7.2 and §3.2.3: Dispersed reduces a Region's Control Value.
+    BCV sums CV of Belgic-Controlled regions only, so only Dispersed
+    tribes IN Belgic-Controlled regions reduce BCV.
     """
     scenario = state["scenario"]
     bcv = 0
@@ -242,12 +241,16 @@ def _calculate_belgic_control_value(state):
     if colony_reg is not None and colony_reg in belgic_regions:
         bcv += 1
 
-    # -1 for each non-Suebi Dispersed tribe (map-wide)
+    # -1 for each non-Suebi Dispersed tribe in Belgic-Controlled regions
+    # Per §7.2 and §3.2.3: Dispersed reduces a Region's CV, so only
+    # tribes in regions that contribute to BCV (Belgic-Controlled) count.
     for tribe_name, tribe_info in state["tribes"].items():
         status = tribe_info.get("status")
         if status in (MARKER_DISPERSED, MARKER_DISPERSED_GATHERING):
             if tribe_name not in SUEBI_TRIBES:
-                bcv -= 1
+                tribe_region = TRIBE_TO_REGION.get(tribe_name)
+                if tribe_region in belgic_regions:
+                    bcv -= 1
 
     return bcv
 
@@ -370,7 +373,6 @@ def check_victory(state, faction):
         # §7.2: Must exceed EACH other faction's Allies + Citadels
         # individually (not total)
         aedui_score = calculate_victory_score(state, AEDUI)
-        victory_factions = _get_victory_factions(state)
         for other in FACTIONS:
             if other == AEDUI:
                 continue
@@ -507,8 +509,8 @@ def _break_tie(state, tied_factions):
     Priority:
     1. Non-player factions (bot-controlled) — §7.1 / A7.1
     2. Then by faction order:
-       Base: Romans, Arverni, Aedui
-       Ariovistus: Romans, Germans, Aedui
+       Base: Romans, Arverni, Aedui, Belgae
+       Ariovistus: Romans, Germans, Aedui, Belgae
 
     Args:
         state: Game state dict.
@@ -539,11 +541,6 @@ def _break_tie(state, tied_factions):
     for faction in tiebreak:
         if faction in candidates:
             return faction
-
-    # Belgae is not in tiebreak order but can win
-    # (Belgae always comes after the listed factions)
-    for faction in candidates:
-        return faction
 
     return tied_factions[0]
 
@@ -587,11 +584,7 @@ def determine_final_ranking(state):
         # Secondary: non-player beats player (0 < 1)
         # Tertiary: tiebreak order position
         is_player = 0 if faction in non_players else 1
-        try:
-            tb_pos = list(tiebreak).index(faction)
-        except ValueError:
-            # Belgae not in tiebreak order — comes after listed factions
-            tb_pos = len(tiebreak)
+        tb_pos = list(tiebreak).index(faction)
         return (-margin, is_player, tb_pos)
 
     faction_margins.sort(key=_sort_key)

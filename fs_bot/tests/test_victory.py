@@ -321,6 +321,32 @@ class TestBelgaeVictoryScore:
         score = calculate_victory_score(state, BELGAE)
         assert score == 1  # BCV = 2 - 1
 
+    def test_dispersed_outside_belgic_region_no_penalty(self):
+        """Dispersed non-Suebi tribe outside Belgic Control → no BCV penalty."""
+        state = make_state()
+        setup_belgic_control(state, MORINI, warbands=10)  # CV=2
+        # Treveri tribe is in Treveri region — NOT Belgic-Controlled
+        set_tribe_dispersed(state, TRIBE_TREVERI)
+        score = calculate_victory_score(state, BELGAE)
+        # BCV = 2, no penalty because Treveri is not Belgic-Controlled
+        assert score == 2
+
+    def test_dispersed_in_belgic_region_penalizes(self):
+        """Dispersed non-Suebi in Belgic-Controlled region reduces BCV by 1.
+
+        Also places a Dispersed tribe outside Belgic Control to confirm
+        only the one in a Belgic-Controlled region counts.
+        """
+        state = make_state()
+        setup_belgic_control(state, MORINI, warbands=10)  # CV=2
+        # Menapii is in Morini (Belgic-Controlled) → penalty
+        set_tribe_dispersed(state, TRIBE_MENAPII)
+        # Treveri is in Treveri (NOT Belgic-Controlled) → no penalty
+        set_tribe_dispersed(state, TRIBE_TREVERI)
+        score = calculate_victory_score(state, BELGAE)
+        # BCV = 2 - 1 (Menapii only) = 1
+        assert score == 1
+
 
 # ============================================================================
 # TEST: GERMAN VICTORY SCORE (A7.2)

@@ -8,6 +8,7 @@ Each card has:
 - np_symbols: dict mapping faction to NP instruction symbol (L/S/C)
 - is_capability: bool
 - is_winter: bool (True only for Winter cards)
+- has_carnyx_trigger: bool (True for Ariovistus cards with carnyx symbol — A2.3.9)
 
 Source: Card Reference, A Card Reference, rules_consts.py
 """
@@ -55,17 +56,19 @@ class CardData:
 
     __slots__ = (
         "card_id", "title", "faction_order", "np_symbols",
-        "is_capability", "is_winter",
+        "is_capability", "is_winter", "has_carnyx_trigger",
     )
 
     def __init__(self, card_id, title, faction_order, np_symbols,
-                 is_capability=False, is_winter=False):
+                 is_capability=False, is_winter=False,
+                 has_carnyx_trigger=False):
         self.card_id = card_id
         self.title = title
         self.faction_order = tuple(faction_order)
         self.np_symbols = dict(np_symbols)
         self.is_capability = is_capability
         self.is_winter = is_winter
+        self.has_carnyx_trigger = has_carnyx_trigger
 
     def __repr__(self):
         return (
@@ -298,6 +301,20 @@ _ARIOVISTUS_SPECIFIC_CARDS = {}
 
 for card_id, token_str in _ARIOVISTUS_FACTION_TOKENS.items():
     tokens = token_str.split()
+
+    # Detect trailing "C" as Arverni carnyx trigger (A2.3.9), not an NP symbol.
+    # The carnyx trigger is a card-level symbol at top right of Ariovistus cards.
+    # It appears as the last token "C" when it follows the final faction's NP
+    # symbol (or directly after the final faction abbreviation).
+    carnyx = False
+    if tokens and tokens[-1] == "C":
+        # Only treat trailing "C" as carnyx trigger for A-prefix cards.
+        # For integer text-change cards, "C" in the middle of the string
+        # is an NP symbol (e.g., card 30: "Ar C Ae Be L Ro").
+        if isinstance(card_id, str) and card_id.startswith("A"):
+            carnyx = True
+            tokens = tokens[:-1]  # Strip the carnyx trigger before parsing
+
     faction_order, np_symbols = _parse_faction_line(tokens)
 
     if isinstance(card_id, str) and card_id.startswith("A"):
@@ -319,6 +336,7 @@ for card_id, token_str in _ARIOVISTUS_FACTION_TOKENS.items():
         np_symbols=np_symbols,
         is_capability=is_cap,
         is_winter=False,
+        has_carnyx_trigger=carnyx,
     )
 
 
@@ -438,3 +456,14 @@ def get_np_symbols(card_id, scenario=None):
     Returns dict mapping faction -> NP_SYMBOL_* constant.
     """
     return get_card(card_id, scenario).np_symbols
+
+
+def card_has_carnyx_trigger(card_id, scenario=None):
+    """Check if a card has the Arverni carnyx trigger symbol — A2.3.9.
+
+    The carnyx symbol appears on 24 Ariovistus Event cards and cues an
+    Arverni At War check before the normal Sequence of Play.
+
+    Returns True only for Ariovistus-specific cards with the trigger.
+    """
+    return get_card(card_id, scenario).has_carnyx_trigger

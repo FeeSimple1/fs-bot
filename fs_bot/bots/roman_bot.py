@@ -681,17 +681,28 @@ def node_r_march(state):
         Action dict for March.
     """
     scenario = state["scenario"]
-
-    # If Frost blocks March — §8.4.4
-    if is_frost_active(state):
-        # Check if any player faction is at victory
-        non_players = state.get("non_player_factions", set())
-        for f in FACTIONS:
-            if f != ROMANS and f not in non_players:
-                if check_frost_restriction(state, f):
-                    return node_r_recruit(state)
+    non_players = state.get("non_player_factions", set())
 
     destinations = _rank_march_destinations(state, scenario)
+
+    # Per §8.4.4: Frost filters destinations, not the entire March.
+    # "Non-players take no action that could directly advance any player
+    # Faction above or any further beyond its victory threshold."
+    # For Roman March: exclude destinations where the targeted enemy is a
+    # player faction already at/beyond victory — removing their pieces
+    # would not advance them, but Marching to their region might indirectly
+    # benefit another winning player (e.g., by shifting control). The safe
+    # approach is to exclude destinations targeting player factions at
+    # victory, since the flowchart says "If none (or Frost): R_RECRUIT."
+    if is_frost_active(state):
+        filtered = []
+        for region, target_faction in destinations:
+            # Only restrict if target is a player faction at/beyond victory
+            if target_faction not in non_players:
+                if check_frost_restriction(state, target_faction):
+                    continue  # Skip — would advance winning player's enemy
+            filtered.append((region, target_faction))
+        destinations = filtered
 
     if not destinations:
         return node_r_recruit(state)

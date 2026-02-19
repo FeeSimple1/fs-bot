@@ -493,6 +493,45 @@ class TestNodeRBuild:
         # Should prioritize Fort placement at non-Aedui Warbands
         assert isinstance(plan["forts"], list)
 
+    def test_build_resource_floor_stops_spending(self):
+        """Bug 4: §8.8.1 — Stop spending when Resources drop below 6."""
+        state = _make_state()
+        # Set Resources to exactly 6 — can afford one action (cost 2)
+        state["resources"] = {ROMANS: 6}
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        _place_roman_force(state, MORINI, legions=1, auxilia=2)
+        _place_enemy_threat(state, MANDUBII, ARVERNI, warbands=3)
+        _place_enemy_threat(state, MORINI, BELGAE, warbands=2)
+        plan = node_r_build(state)
+        # With 6 Resources and cost 2 per Fort, can't place any because
+        # 6 - 2 = 4 which is below 6 floor. So no spending allowed.
+        assert len(plan["forts"]) == 0
+        assert len(plan["subdue"]) == 0
+        assert len(plan["allies"]) == 0
+
+    def test_build_resource_floor_allows_above_floor(self):
+        """§8.8.1 — Build allowed when Resources stay at or above 6."""
+        state = _make_state()
+        # Set Resources high enough for multiple builds
+        state["resources"] = {ROMANS: 20}
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        _place_enemy_threat(state, MANDUBII, ARVERNI, warbands=3)
+        plan = node_r_build(state)
+        # Should be able to place Forts with 20 Resources
+        total_actions = len(plan["forts"]) + len(plan["subdue"]) + len(plan["allies"])
+        assert total_actions > 0
+
+    def test_build_below_floor_blocks_all(self):
+        """§8.8.1 — No Build actions when already below 6 Resources."""
+        state = _make_state()
+        state["resources"] = {ROMANS: 3}  # Below floor
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        _place_enemy_threat(state, MANDUBII, ARVERNI, warbands=3)
+        plan = node_r_build(state)
+        assert len(plan["forts"]) == 0
+        assert len(plan["subdue"]) == 0
+        assert len(plan["allies"]) == 0
+
 
 # ===================================================================
 # SA: R_SCOUT

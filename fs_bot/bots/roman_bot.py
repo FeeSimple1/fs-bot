@@ -38,6 +38,8 @@ from fs_bot.rules_consts import (
     EVENT_UNSHADED,
     # Victory
     ROMAN_VICTORY_THRESHOLD,
+    # Costs
+    BUILD_COST_PER_FORT, BUILD_COST_PER_ALLY,
     # Die
     DIE_MIN, DIE_MAX,
 )
@@ -920,6 +922,26 @@ def node_r_build(state, *, exclude_regions=None):
         "allies": [],
     }
 
+    # Per §8.8.1 [Ch8]: "spending no more Resources once Roman Resources
+    # drop below six." Resource floor = 6: do not spend if already below 6,
+    # or if spending would drop below 6.
+    RESOURCE_FLOOR = 6
+    resources = state.get("resources", {}).get(ROMANS, 0)
+
+    def _can_spend(cost):
+        """Check if spending cost would violate the Resource floor."""
+        nonlocal resources
+        if resources < RESOURCE_FLOOR:
+            return False
+        if resources - cost < RESOURCE_FLOOR:
+            return False
+        return True
+
+    def _spend(cost):
+        """Track spending against the Resource floor."""
+        nonlocal resources
+        resources -= cost
+
     # (1) Place Forts — first where non-Aedui Warbands
     avail_forts = get_available(state, ROMANS, FORT)
     fort_candidates = []
@@ -940,7 +962,10 @@ def node_r_build(state, *, exclude_regions=None):
 
     fort_candidates.sort(key=lambda x: -x[1])
     for region, _ in fort_candidates[:avail_forts]:
+        if not _can_spend(BUILD_COST_PER_FORT):
+            break
         build_plan["forts"].append(region)
+        _spend(BUILD_COST_PER_FORT)
 
     # (2) Subdue Allies — best victory margins, players first
     subdue_candidates = []
@@ -962,7 +987,11 @@ def node_r_build(state, *, exclude_regions=None):
 
     subdue_candidates.sort(key=lambda x: (x[3], x[4]))
     for region, tribe, _, _, _ in subdue_candidates:
+        # Subdue costs the same as placing an Ally — §4.2.1
+        if not _can_spend(BUILD_COST_PER_ALLY):
+            break
         build_plan["subdue"].append({"region": region, "tribe": tribe})
+        _spend(BUILD_COST_PER_ALLY)
 
     # (3) Place Roman Allies
     avail_allies = get_available(state, ROMANS, ALLY)
@@ -977,8 +1006,15 @@ def node_r_build(state, *, exclude_regions=None):
                     and tribe_info.get("status") is None):
                 ally_candidates.append((region, tribe))
 
-    for region, tribe in ally_candidates[:avail_allies]:
+    placed = 0
+    for region, tribe in ally_candidates:
+        if placed >= avail_allies:
+            break
+        if not _can_spend(BUILD_COST_PER_ALLY):
+            break
         build_plan["allies"].append({"region": region, "tribe": tribe})
+        _spend(BUILD_COST_PER_ALLY)
+        placed += 1
 
     return build_plan
 

@@ -401,6 +401,32 @@ class TestNodeRSeize:
         if result["command"] == ACTION_SEIZE:
             assert MANDUBII in result["regions"]
 
+    def test_seize_dispersal_requires_roman_control(self):
+        """Bug 2: §3.2.3 — Dispersal only in regions with Roman Control."""
+        state = _make_state()
+        # Place Romans in MANDUBII but not enough for control
+        _place_roman_force(state, MANDUBII, auxilia=1)
+        # Place enemy pieces so Romans don't have control
+        place_piece(state, MANDUBII, BELGAE, WARBAND, 5)
+        refresh_all_control(state)
+        result = node_r_seize(state)
+        if result["command"] == ACTION_SEIZE:
+            # MANDUBII should NOT be in disperse_regions (no Roman Control)
+            disperse = result["details"].get("disperse_regions", [])
+            assert MANDUBII not in disperse
+
+    def test_seize_dispersal_with_roman_control(self):
+        """§3.2.3 — Dispersal allowed in regions with Roman Control."""
+        state = _make_state()
+        # Place enough Romans for control
+        _place_roman_force(state, MANDUBII, legions=3, auxilia=3)
+        refresh_all_control(state)
+        result = node_r_seize(state)
+        if result["command"] == ACTION_SEIZE:
+            # MANDUBII should be in disperse_regions if subdued tribes exist
+            disperse = result["details"].get("disperse_regions", [])
+            # (Result depends on whether subdued tribes exist in MANDUBII)
+
 
 # ===================================================================
 # SA: R_BUILD

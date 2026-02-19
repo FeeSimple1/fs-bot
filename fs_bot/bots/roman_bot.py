@@ -741,6 +741,10 @@ def node_r_seize(state):
     resource_regions = []
 
     for region in seize_regions:
+        # Per §3.2.3: Dispersal requires Roman Control in the region
+        if not is_controlled_by(state, region, ROMANS):
+            resource_regions.append(region)
+            continue
         tribes = get_tribes_in_region(region, scenario)
         can_disperse = False
         for tribe in tribes:

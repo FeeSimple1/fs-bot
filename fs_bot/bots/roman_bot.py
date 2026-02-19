@@ -587,12 +587,47 @@ def node_r_battle(state):
     )
 
 
+def _estimate_roman_losses_inflicted(state, region, enemy, scenario):
+    """Estimate Losses the Romans would inflict in Battle in a region.
+
+    Approximate: count Roman Legions (×2 if Caesar present) plus Auxilia,
+    halved (rounded down) if enemy has a Fort or Citadel in the region.
+    This is a simplification — full battle simulation not yet implemented.
+
+    Args:
+        state: Game state dict.
+        region: Battle region.
+        enemy: Enemy faction being attacked.
+        scenario: Scenario constant.
+
+    Returns:
+        Estimated integer Losses.
+    """
+    legions = count_pieces(state, region, ROMANS, LEGION)
+    auxilia = count_pieces(state, region, ROMANS, AUXILIA)
+    has_caesar = get_leader_in_region(state, region, ROMANS) is not None
+
+    # Caesar doubles Legion effectiveness in Battle
+    combat_value = (legions * 2 if has_caesar else legions) + auxilia
+
+    # Enemy Fort/Citadel halves Losses
+    enemy_fort = count_pieces(state, region, enemy, FORT)
+    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+    if enemy_fort > 0 or enemy_citadel > 0:
+        combat_value //= 2
+
+    return combat_value
+
+
 def _determine_battle_sa(state, battle_plan, scenario):
     """Determine SA for Battle: Besiege, then Scout, per §8.8.1.
 
-    Besiege if needed to ensure removal of enemy Ally, or Citadel that
-    might suffer < 3 Loss rolls. If Besiege anywhere, Besiege everywhere
-    possible.
+    Per §8.8.1: Besiege only "where needed to ensure removal of a Citadel
+    that might suffer <3 Losses OR of an Ally." Estimate Roman Losses
+    inflicted. Only mark Besiege as needed if:
+    - A Citadel is present AND estimated Losses < 3, OR
+    - An Ally exists that Besiege would help remove.
+    If Besiege anywhere, Besiege everywhere possible.
 
     If no Besiege, Scout after Battle.
 
@@ -602,15 +637,30 @@ def _determine_battle_sa(state, battle_plan, scenario):
     besiege_regions = []
     for bp in battle_plan:
         region = bp["region"]
+        needs_besiege = False
         for enemy in bp["targets"]:
-            # Check for Allies that need Besiege to ensure removal
-            if count_pieces(state, region, enemy, ALLY) > 0:
-                besiege_regions.append(region)
-                break
-            # Check for Citadels that might suffer < 3 Losses
+            estimated_losses = _estimate_roman_losses_inflicted(
+                state, region, enemy, scenario)
+
+            # Citadel that might suffer < 3 Losses — Besiege needed
             if count_pieces(state, region, enemy, CITADEL) > 0:
-                besiege_regions.append(region)
-                break
+                if estimated_losses < 3:
+                    needs_besiege = True
+                    break
+
+            # Ally exists — Besiege helps ensure its removal by reducing
+            # the Fort/Citadel defense bonus first
+            if count_pieces(state, region, enemy, ALLY) > 0:
+                # Besiege is needed for Ally removal when enemy has a
+                # Fort or Citadel that would halve Losses
+                enemy_fort = count_pieces(state, region, enemy, FORT)
+                enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+                if enemy_fort > 0 or enemy_citadel > 0:
+                    needs_besiege = True
+                    break
+
+        if needs_besiege:
+            besiege_regions.append(region)
 
     if besiege_regions:
         # If Besiege anywhere, do it everywhere possible — §8.8.1
@@ -863,8 +913,9 @@ def node_r_seize(state):
 def node_r_besiege(state, battle_regions):
     """R_BESIEGE: Besiege at start of Battle.
 
-    Per §8.8.1: Besiege where needed to ensure removal of Ally, or
-    Citadel that might suffer < 3 Loss rolls. If anywhere, then everywhere.
+    Per §8.8.1: Besiege only where needed to ensure removal of a Citadel
+    that might suffer <3 Losses, OR of an Ally (when enemy Fort/Citadel
+    would halve Losses). If Besiege anywhere, then everywhere possible.
 
     Args:
         state: Game state dict.
@@ -877,20 +928,35 @@ def node_r_besiege(state, battle_regions):
     besiege_needed = []
 
     for region in battle_regions:
+        needs_besiege = False
         for enemy in FACTIONS:
             if enemy == ROMANS:
                 continue
-            # Ally that needs Besiege to ensure removal
-            if count_pieces(state, region, enemy, ALLY) > 0:
-                besiege_needed.append(region)
-                break
-            # Citadel at risk
+            if count_pieces(state, region, enemy) == 0:
+                continue
+
+            estimated_losses = _estimate_roman_losses_inflicted(
+                state, region, enemy, scenario)
+
+            # Citadel that might suffer < 3 Losses — Besiege needed
             if count_pieces(state, region, enemy, CITADEL) > 0:
-                besiege_needed.append(region)
-                break
+                if estimated_losses < 3:
+                    needs_besiege = True
+                    break
+
+            # Ally with Fort/Citadel defense — Besiege helps removal
+            if count_pieces(state, region, enemy, ALLY) > 0:
+                enemy_fort = count_pieces(state, region, enemy, FORT)
+                enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+                if enemy_fort > 0 or enemy_citadel > 0:
+                    needs_besiege = True
+                    break
+
+        if needs_besiege:
+            besiege_needed.append(region)
 
     if besiege_needed:
-        # If Besiege anywhere, do it everywhere possible
+        # If Besiege anywhere, do it everywhere possible — §8.8.1
         return battle_regions[:]
     return []
 

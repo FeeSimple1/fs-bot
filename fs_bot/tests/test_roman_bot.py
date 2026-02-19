@@ -38,6 +38,7 @@ from fs_bot.bots.roman_bot import (
     execute_roman_turn,
     # Helpers (for direct testing)
     _rank_march_destinations,
+    _estimate_roman_losses_inflicted,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RECRUIT, ACTION_SEIZE,
     ACTION_EVENT, ACTION_PASS,
@@ -303,6 +304,48 @@ class TestNodeRBattle:
         # Should redirect to March (or Recruit/Seize/Pass if March not possible)
         assert result["command"] in (ACTION_MARCH, ACTION_RECRUIT,
                                      ACTION_SEIZE, ACTION_PASS)
+
+    def test_besiege_not_needed_enough_losses(self):
+        """Bug 5: §8.8.1 — No Besiege when Romans inflict 3+ Losses against
+        Citadel without Besiege."""
+        state = _make_state()
+        # Place strong Roman force: 3 Legions + Caesar = 6 combat value
+        # Even halved by Citadel = 3, which is >= 3
+        _place_roman_force(state, MANDUBII, leader=True, legions=3,
+                           auxilia=4)
+        place_piece(state, MANDUBII, ARVERNI, CITADEL)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 5)
+        # Estimate should be >= 3
+        est = _estimate_roman_losses_inflicted(
+            state, MANDUBII, ARVERNI, SCENARIO_PAX_GALLICA)
+        assert est >= 3
+        # Besiege should NOT be needed
+        besiege_result = node_r_besiege(state, [MANDUBII])
+        assert besiege_result == []
+
+    def test_besiege_needed_citadel_low_losses(self):
+        """Bug 5: §8.8.1 — Besiege needed when Citadel and < 3 estimated
+        Losses."""
+        state = _make_state()
+        # Weak Roman force: 1 Legion, no Caesar = 1 combat value
+        # Halved by Citadel = 0 < 3
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=1)
+        place_piece(state, MANDUBII, ARVERNI, CITADEL)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        est = _estimate_roman_losses_inflicted(
+            state, MANDUBII, ARVERNI, SCENARIO_PAX_GALLICA)
+        assert est < 3
+        besiege_result = node_r_besiege(state, [MANDUBII])
+        assert MANDUBII in besiege_result
+
+    def test_besiege_no_ally_no_citadel(self):
+        """§8.8.1 — No Besiege when no enemy Ally or Citadel."""
+        state = _make_state()
+        _place_roman_force(state, MANDUBII, leader=True, legions=3,
+                           auxilia=4)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 5)
+        besiege_result = node_r_besiege(state, [MANDUBII])
+        assert besiege_result == []
 
 
 # ===================================================================

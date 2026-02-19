@@ -710,22 +710,26 @@ def node_r_seize(state):
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
     # Find regions where Romans can Seize without Harassment
-    # Harassment comes from Belgae/Arverni (base) or Belgae/Germans (Ariovistus)
-    harassers = get_harassing_factions(ROMANS, scenario)
+    # Per §3.2.3: Harassment comes from ALL factions with Warbands in the
+    # region, not just the designated March/Seize harassers from §8.4.2.
+    # Per §8.8.5: "Seize only where no Harassment Loss" — skip any region
+    # where ANY non-Roman faction has 3+ Hidden Warbands.
     seize_regions = []
 
     for region in playable:
         if count_pieces(state, region, ROMANS) == 0:
             continue
-        # Check for Harassment — any harassing faction with Hidden Warbands
+        # Check for Harassment — any non-Roman faction with 3+ Hidden Warbands
+        # Per §3.2.3: "For every three Hidden Warbands..."
         has_harassment = False
-        for h_faction in harassers:
-            if h_faction in non_players:
-                hidden_wb = count_pieces_by_state(
-                    state, region, h_faction, WARBAND, HIDDEN)
-                if hidden_wb > 0:
-                    has_harassment = True
-                    break
+        for faction in FACTIONS:
+            if faction == ROMANS:
+                continue
+            hidden_wb = count_pieces_by_state(
+                state, region, faction, WARBAND, HIDDEN)
+            if hidden_wb >= 3:
+                has_harassment = True
+                break
         if not has_harassment:
             seize_regions.append(region)
 

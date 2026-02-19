@@ -377,6 +377,30 @@ class TestNodeRSeize:
             # Helvii is in Provincia — shouldn't be dispersed
             # (This tests the exclusion logic, not the full Seize)
 
+    def test_seize_harassment_checks_all_factions(self):
+        """Bug 1: §3.2.3 — Seize Harassment comes from ALL factions with
+        3+ Hidden Warbands, not just designated harassers from §8.4.2."""
+        state = _make_state()
+        # Place Romans in a region
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        # Place 3 Hidden Aedui Warbands — Aedui are NOT in get_harassing_factions
+        # but per §3.2.3 ANY faction with 3+ Hidden Warbands can harass Seize
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 3)
+        result = node_r_seize(state)
+        # MANDUBII should be excluded due to Aedui harassment
+        if result["command"] == ACTION_SEIZE:
+            assert MANDUBII not in result["regions"]
+
+    def test_seize_no_harassment_below_three_hidden(self):
+        """§3.2.3 — Fewer than 3 Hidden Warbands do not cause Harassment."""
+        state = _make_state()
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        # Place only 2 Hidden Warbands — not enough for Harassment
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 2)
+        result = node_r_seize(state)
+        if result["command"] == ACTION_SEIZE:
+            assert MANDUBII in result["regions"]
+
 
 # ===================================================================
 # SA: R_BUILD

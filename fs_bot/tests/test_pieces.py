@@ -26,6 +26,7 @@ from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, flip_piece,
     count_pieces, count_pieces_by_state, get_available,
     get_leader_in_region, find_leader,
+    count_on_map,
     PieceError,
 )
 
@@ -392,3 +393,29 @@ class TestAvailableIntegrity:
         avail = get_available(state, BELGAE, WARBAND)
         move_piece(state, MORINI, NERVII, BELGAE, WARBAND, 2)
         assert get_available(state, BELGAE, WARBAND) == avail
+
+
+# ===================================================================
+# count_on_map — public API (Bug 6: replaces private _count_on_map)
+# ===================================================================
+
+class TestCountOnMap:
+
+    def test_count_on_map_legions(self):
+        """Bug 6: count_on_map is the public API for counting pieces on map."""
+        state = make_state()
+        place_piece(state, MORINI, ROMANS, LEGION, 2,
+                    from_legions_track=True)
+        place_piece(state, NERVII, ROMANS, LEGION, 1,
+                    from_legions_track=True)
+        assert count_on_map(state, ROMANS, LEGION) == 3
+
+    def test_count_on_map_warbands(self):
+        state = make_state()
+        place_piece(state, MORINI, BELGAE, WARBAND, 3)
+        place_piece(state, NERVII, BELGAE, WARBAND, 2)
+        assert count_on_map(state, BELGAE, WARBAND) == 5
+
+    def test_count_on_map_zero(self):
+        state = make_state()
+        assert count_on_map(state, BELGAE, CITADEL) == 0

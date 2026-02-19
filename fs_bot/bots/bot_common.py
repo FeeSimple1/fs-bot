@@ -880,12 +880,12 @@ def count_faction_allies_and_citadels(state, faction):
     Returns:
         Integer count.
     """
-    from fs_bot.board.pieces import _count_on_map
+    from fs_bot.board.pieces import count_on_map
     allies = 0
     for tribe_info in state["tribes"].values():
         if tribe_info.get("allied_faction") == faction:
             allies += 1
-    citadels = _count_on_map(state, faction, CITADEL)
+    citadels = count_on_map(state, faction, CITADEL)
     return allies + citadels
 
 

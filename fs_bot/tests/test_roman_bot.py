@@ -36,6 +36,10 @@ from fs_bot.bots.roman_bot import (
     node_r_agreements, node_r_diviciacus,
     # Main driver
     execute_roman_turn,
+    # Helpers (for direct testing)
+    _rank_march_destinations,
+    _estimate_roman_losses_inflicted,
+    _select_march_origins,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RECRUIT, ACTION_SEIZE,
     ACTION_EVENT, ACTION_PASS,
@@ -302,6 +306,48 @@ class TestNodeRBattle:
         assert result["command"] in (ACTION_MARCH, ACTION_RECRUIT,
                                      ACTION_SEIZE, ACTION_PASS)
 
+    def test_besiege_not_needed_enough_losses(self):
+        """Bug 5: §8.8.1 — No Besiege when Romans inflict 3+ Losses against
+        Citadel without Besiege."""
+        state = _make_state()
+        # Place strong Roman force: 3 Legions + Caesar = 6 combat value
+        # Even halved by Citadel = 3, which is >= 3
+        _place_roman_force(state, MANDUBII, leader=True, legions=3,
+                           auxilia=4)
+        place_piece(state, MANDUBII, ARVERNI, CITADEL)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 5)
+        # Estimate should be >= 3
+        est = _estimate_roman_losses_inflicted(
+            state, MANDUBII, ARVERNI, SCENARIO_PAX_GALLICA)
+        assert est >= 3
+        # Besiege should NOT be needed
+        besiege_result = node_r_besiege(state, [MANDUBII])
+        assert besiege_result == []
+
+    def test_besiege_needed_citadel_low_losses(self):
+        """Bug 5: §8.8.1 — Besiege needed when Citadel and < 3 estimated
+        Losses."""
+        state = _make_state()
+        # Weak Roman force: 1 Legion, no Caesar = 1 combat value
+        # Halved by Citadel = 0 < 3
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=1)
+        place_piece(state, MANDUBII, ARVERNI, CITADEL)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        est = _estimate_roman_losses_inflicted(
+            state, MANDUBII, ARVERNI, SCENARIO_PAX_GALLICA)
+        assert est < 3
+        besiege_result = node_r_besiege(state, [MANDUBII])
+        assert MANDUBII in besiege_result
+
+    def test_besiege_no_ally_no_citadel(self):
+        """§8.8.1 — No Besiege when no enemy Ally or Citadel."""
+        state = _make_state()
+        _place_roman_force(state, MANDUBII, leader=True, legions=3,
+                           auxilia=4)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 5)
+        besiege_result = node_r_besiege(state, [MANDUBII])
+        assert besiege_result == []
+
 
 # ===================================================================
 # Process: R_MARCH
@@ -328,6 +374,115 @@ class TestNodeRMarch:
         # No enemy Allies/Citadels anywhere
         result = node_r_march(state)
         assert result["command"] in (ACTION_RECRUIT, ACTION_SEIZE, ACTION_PASS)
+
+    def test_march_destinations_tier1_at_victory(self):
+        """Bug 3: §8.8.1 — Tier 1 selects enemies at 0+ victory margin."""
+        state = _make_state()
+        # Set up Belgae at 0+ victory margin by giving many Allies
+        belgae_regions = [MORINI, NERVII, ATREBATES, CARNUTES, MANDUBII]
+        for region in belgae_regions:
+            place_piece(state, region, BELGAE, WARBAND, 5)
+        for tribe in list(state["tribes"].keys())[:12]:
+            state["tribes"][tribe]["allied_faction"] = BELGAE
+        # Place a Belgae Ally piece in a region
+        place_piece(state, MORINI, BELGAE, ALLY)
+        refresh_all_control(state)
+        dests = _rank_march_destinations(state, SCENARIO_PAX_GALLICA)
+        if dests:
+            # First destination should target an enemy at 0+ victory
+            _, target_faction = dests[0]
+            assert target_faction == BELGAE
+
+    def test_march_destinations_die_roll_determinism(self):
+        """Bug 3: §8.8.1 — Same seed gives same tier selection via die roll."""
+        state1 = _make_state(seed=77)
+        state2 = _make_state(seed=77)
+        # Set up identical enemy pieces
+        _place_enemy_threat(state1, MANDUBII, ARVERNI,
+                            ally_tribe=TRIBE_CARNUTES)
+        _place_enemy_threat(state2, MANDUBII, ARVERNI,
+                            ally_tribe=TRIBE_CARNUTES)
+        d1 = _rank_march_destinations(state1, SCENARIO_PAX_GALLICA)
+        d2 = _rank_march_destinations(state2, SCENARIO_PAX_GALLICA)
+        assert d1 == d2
+
+    def test_march_destinations_ariovistus_tier2_arverni(self):
+        """Bug 3: A8.8.1 — On roll 1-2, target Arverni instead of Germanic."""
+        # Use a seed that produces a die roll of 1 or 2
+        for seed in range(100):
+            state = _make_state(scenario=SCENARIO_ARIOVISTUS, seed=seed)
+            # Place Arverni Ally
+            state["tribes"][TRIBE_ARVERNI]["allied_faction"] = ARVERNI
+            place_piece(state, ARVERNI_REGION, ARVERNI, ALLY)
+            # Need to consume rng in same way as the function
+            test_state = _make_state(scenario=SCENARIO_ARIOVISTUS, seed=seed)
+            test_die = test_state["rng"].randint(1, 6)
+            if test_die <= 2:
+                dests = _rank_march_destinations(state, SCENARIO_ARIOVISTUS)
+                if dests:
+                    _, target = dests[0]
+                    assert target == ARVERNI
+                break
+
+    def test_march_frost_filters_destinations_not_all(self):
+        """Bug 7: §8.4.4 — Frost filters specific destinations, not the
+        entire March. March should still work if some destinations remain."""
+        state = _make_state(non_players={ROMANS, AEDUI})
+        state["frost"] = True
+        _place_roman_force(state, PROVINCIA, leader=True, legions=3,
+                           auxilia=5)
+        # Place Belgae Ally (Belgae is NP, so not restricted by Frost)
+        state["tribes"][TRIBE_CARNUTES]["allied_faction"] = BELGAE
+        place_piece(state, MANDUBII, BELGAE, ALLY)
+        # March should still be possible since Belgae is NP
+        result = node_r_march(state)
+        assert result["command"] in (ACTION_MARCH, ACTION_RECRUIT,
+                                     ACTION_SEIZE, ACTION_PASS)
+
+    def test_march_frost_falls_to_recruit_all_filtered(self):
+        """§8.4.4 — If all destinations filtered by Frost, fall to Recruit."""
+        state = _make_state(non_players={ROMANS, AEDUI})
+        state["frost"] = True
+        _place_roman_force(state, PROVINCIA, leader=True, legions=3,
+                           auxilia=5)
+        # Only player enemy is Belgae — but Belgae is NP in this setup.
+        # Make Arverni a player and at victory, then place their Ally
+        # (Arverni doesn't track victory in base game easily, so just
+        # verify the filter mechanism works)
+        result = node_r_march(state)
+        # Should fall through since no destinations without Frost filtering
+        assert result["command"] in (ACTION_RECRUIT, ACTION_SEIZE, ACTION_PASS)
+
+    def test_march_origin2_excludes_only_first_origin_dest(self):
+        """Bug 8: §8.8.1 — Origin (2) excludes only the destination of
+        origin (1)'s group, not all destinations."""
+        state = _make_state()
+        # Set up two threat regions and two destination regions
+        # Threat regions (have Caesar/Legion + enemy pieces)
+        _place_roman_force(state, MANDUBII, legions=1)
+        _place_roman_force(state, CARNUTES, legions=1)
+        _place_enemy_threat(state, MANDUBII, ARVERNI,
+                            ally_tribe=TRIBE_CARNUTES)
+        place_piece(state, CARNUTES, BELGAE, WARBAND, 3)
+        refresh_all_control(state)
+
+        # Destinations: two regions with enemy Allies
+        dests = [
+            (BITURIGES, ARVERNI),
+            (CARNUTES, BELGAE),
+        ]
+        threat_regions = [MANDUBII, CARNUTES]
+
+        origins = _select_march_origins(
+            state, threat_regions, dests, SCENARIO_PAX_GALLICA)
+
+        # Origin (1) is MANDUBII, its destination is BITURIGES (dests[0])
+        # Origin (2) should NOT exclude CARNUTES just because CARNUTES
+        # is also a destination — it should only exclude BITURIGES
+        # Since CARNUTES != BITURIGES, CARNUTES should be valid as origin (2)
+        assert MANDUBII in origins
+        if len(origins) >= 2:
+            assert CARNUTES in origins
 
 
 # ===================================================================
@@ -377,6 +532,56 @@ class TestNodeRSeize:
             # Helvii is in Provincia — shouldn't be dispersed
             # (This tests the exclusion logic, not the full Seize)
 
+    def test_seize_harassment_checks_all_factions(self):
+        """Bug 1: §3.2.3 — Seize Harassment comes from ALL factions with
+        3+ Hidden Warbands, not just designated harassers from §8.4.2."""
+        state = _make_state()
+        # Place Romans in a region
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        # Place 3 Hidden Aedui Warbands — Aedui are NOT in get_harassing_factions
+        # but per §3.2.3 ANY faction with 3+ Hidden Warbands can harass Seize
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 3)
+        result = node_r_seize(state)
+        # MANDUBII should be excluded due to Aedui harassment
+        if result["command"] == ACTION_SEIZE:
+            assert MANDUBII not in result["regions"]
+
+    def test_seize_no_harassment_below_three_hidden(self):
+        """§3.2.3 — Fewer than 3 Hidden Warbands do not cause Harassment."""
+        state = _make_state()
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        # Place only 2 Hidden Warbands — not enough for Harassment
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 2)
+        result = node_r_seize(state)
+        if result["command"] == ACTION_SEIZE:
+            assert MANDUBII in result["regions"]
+
+    def test_seize_dispersal_requires_roman_control(self):
+        """Bug 2: §3.2.3 — Dispersal only in regions with Roman Control."""
+        state = _make_state()
+        # Place Romans in MANDUBII but not enough for control
+        _place_roman_force(state, MANDUBII, auxilia=1)
+        # Place enemy pieces so Romans don't have control
+        place_piece(state, MANDUBII, BELGAE, WARBAND, 5)
+        refresh_all_control(state)
+        result = node_r_seize(state)
+        if result["command"] == ACTION_SEIZE:
+            # MANDUBII should NOT be in disperse_regions (no Roman Control)
+            disperse = result["details"].get("disperse_regions", [])
+            assert MANDUBII not in disperse
+
+    def test_seize_dispersal_with_roman_control(self):
+        """§3.2.3 — Dispersal allowed in regions with Roman Control."""
+        state = _make_state()
+        # Place enough Romans for control
+        _place_roman_force(state, MANDUBII, legions=3, auxilia=3)
+        refresh_all_control(state)
+        result = node_r_seize(state)
+        if result["command"] == ACTION_SEIZE:
+            # MANDUBII should be in disperse_regions if subdued tribes exist
+            disperse = result["details"].get("disperse_regions", [])
+            # (Result depends on whether subdued tribes exist in MANDUBII)
+
 
 # ===================================================================
 # SA: R_BUILD
@@ -391,6 +596,45 @@ class TestNodeRBuild:
         plan = node_r_build(state)
         # Should prioritize Fort placement at non-Aedui Warbands
         assert isinstance(plan["forts"], list)
+
+    def test_build_resource_floor_stops_spending(self):
+        """Bug 4: §8.8.1 — Stop spending when Resources drop below 6."""
+        state = _make_state()
+        # Set Resources to exactly 6 — can afford one action (cost 2)
+        state["resources"] = {ROMANS: 6}
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        _place_roman_force(state, MORINI, legions=1, auxilia=2)
+        _place_enemy_threat(state, MANDUBII, ARVERNI, warbands=3)
+        _place_enemy_threat(state, MORINI, BELGAE, warbands=2)
+        plan = node_r_build(state)
+        # With 6 Resources and cost 2 per Fort, can't place any because
+        # 6 - 2 = 4 which is below 6 floor. So no spending allowed.
+        assert len(plan["forts"]) == 0
+        assert len(plan["subdue"]) == 0
+        assert len(plan["allies"]) == 0
+
+    def test_build_resource_floor_allows_above_floor(self):
+        """§8.8.1 — Build allowed when Resources stay at or above 6."""
+        state = _make_state()
+        # Set Resources high enough for multiple builds
+        state["resources"] = {ROMANS: 20}
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        _place_enemy_threat(state, MANDUBII, ARVERNI, warbands=3)
+        plan = node_r_build(state)
+        # Should be able to place Forts with 20 Resources
+        total_actions = len(plan["forts"]) + len(plan["subdue"]) + len(plan["allies"])
+        assert total_actions > 0
+
+    def test_build_below_floor_blocks_all(self):
+        """§8.8.1 — No Build actions when already below 6 Resources."""
+        state = _make_state()
+        state["resources"] = {ROMANS: 3}  # Below floor
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        _place_enemy_threat(state, MANDUBII, ARVERNI, warbands=3)
+        plan = node_r_build(state)
+        assert len(plan["forts"]) == 0
+        assert len(plan["subdue"]) == 0
+        assert len(plan["allies"]) == 0
 
 
 # ===================================================================

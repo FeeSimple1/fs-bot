@@ -38,12 +38,14 @@ from fs_bot.rules_consts import (
     EVENT_UNSHADED,
     # Victory
     ROMAN_VICTORY_THRESHOLD,
+    # Costs
+    BUILD_COST_PER_FORT, BUILD_COST_PER_ALLY,
     # Die
     DIE_MIN, DIE_MAX,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
-    find_leader, get_available, _count_on_map,
+    find_leader, get_available, count_on_map,
 )
 from fs_bot.board.control import (
     is_controlled_by, get_controlled_regions, calculate_control,
@@ -272,22 +274,34 @@ def _rank_battle_targets(state, region, scenario):
 def _rank_march_destinations(state, scenario):
     """Rank destination regions for Roman March per §8.8.1.
 
-    Destinations must have enemy Allies or Citadels.
-    Priority: (1) enemies at 0+ victory margin, players first;
-    (2) on roll 1-2: Germanic Allies (base) / Arverni Allies (Ariovistus);
-    (3) on roll 3-4: player Factions' Allies/Citadels;
-    (4) otherwise: enemies with most Allies/Citadels.
+    Destinations must have enemy Allies or Citadels.  Tiers evaluated in
+    order, falling through to the next if no candidates:
+      (1) enemies at 0+ victory margin, players before NPs;
+      then roll a die:
+      (2) on 1-2: Germanic Allies if 2+ on map (base) /
+          Arverni Allies+Citadels (Ariovistus, A8.8.1);
+      (3) on 3-4: player Factions' Allies/Citadels;
+      (4) on 5-6 or fallthrough: enemies with most Allies+Citadels.
 
-    Sub-priorities: (b) fewest Losses to enemy Battle,
-    (c) most Allies/Citadels, (d) Supply Line, (e) least Harassment.
+    Sub-priorities within each tier:
+      (b) fewest enemy mobile pieces (approximation for fewest Losses
+          to enemy Battle — full battle simulation not yet implemented),
+      (c) most such Allies/Citadels in the region,
+      (d) ending in Supply Line (approximated: region has Roman pieces
+          or is adjacent to Roman-controlled region — full supply-line
+          graph check deferred),
+      (e) least Harassment (fewest enemy Hidden Warbands).
 
     Returns:
         List of (region, target_faction) tuples sorted by priority.
     """
+    from fs_bot.commands.rally import has_supply_line
+
     playable = get_playable_regions(scenario, state.get("capabilities"))
     non_players = state.get("non_player_factions", set())
-    candidates = []
 
+    # Build candidate list with all relevant metadata
+    all_candidates = []
     for region in playable:
         for enemy in FACTIONS:
             if enemy == ROMANS:
@@ -305,37 +319,95 @@ def _rank_march_destinations(state, scenario):
             except Exception:
                 margin = -999
 
-            is_at_victory = margin >= 0
-            is_player = enemy not in non_players
-            total_ac = count_faction_allies_and_citadels(state, enemy)
+            # (b) Approximate fewest Losses to enemy Battle as fewest
+            # enemy mobile pieces in the region
+            enemy_mobile = count_mobile_pieces(state, region, enemy)
+            # (c) Most Allies/Citadels of this enemy in the region
+            local_ac = ally_count + citadel_count
+            # (d) Ending in Supply Line — best-effort approximation
+            in_supply = 1 if has_supply_line(state, region) else 0
+            # (e) Least Harassment — fewest enemy Hidden Warbands
+            enemy_hidden_wb = 0
+            for f in FACTIONS:
+                if f == ROMANS:
+                    continue
+                enemy_hidden_wb += count_pieces_by_state(
+                    state, region, f, WARBAND, HIDDEN)
 
-            candidates.append({
+            all_candidates.append({
                 "region": region,
                 "enemy": enemy,
                 "margin": margin,
-                "at_victory": is_at_victory,
-                "is_player": is_player,
-                "local_ac": ally_count + citadel_count,
-                "total_ac": total_ac,
+                "at_victory": margin >= 0,
+                "is_player": enemy not in non_players,
+                "local_ac": local_ac,
+                "total_ac": count_faction_allies_and_citadels(state, enemy),
+                "enemy_mobile": enemy_mobile,
+                "in_supply": in_supply,
+                "hidden_wb": enemy_hidden_wb,
             })
 
-    if not candidates:
+    if not all_candidates:
         return []
 
-    # Sort by priority tiers
-    def _sort_key(c):
-        # Tier 1: enemies at 0+ victory (highest priority)
-        tier = 0 if c["at_victory"] else 1
-        # Within tier 0: players before NPs
-        player_rank = 0 if c["is_player"] else 1
-        # Most Allies+Citadels in target region
-        local = -c["local_ac"]
-        # Highest total Allies+Citadels
-        total = -c["total_ac"]
-        return (tier, player_rank, local, total)
+    def _sub_sort_key(c):
+        """Sub-priorities (b)-(e) used within each tier."""
+        return (
+            c["enemy_mobile"],    # (b) fewest enemy mobile pieces first
+            -c["local_ac"],       # (c) most local Allies/Citadels first
+            -c["in_supply"],      # (d) in Supply Line first
+            c["hidden_wb"],       # (e) fewest Hidden Warbands first
+        )
 
-    candidates.sort(key=_sort_key)
-    return [(c["region"], c["enemy"]) for c in candidates]
+    # --- Tier 1: enemies at 0+ victory margin ---
+    tier1 = [c for c in all_candidates if c["at_victory"]]
+    if tier1:
+        # Players before NPs, then sub-priorities
+        tier1.sort(key=lambda c: (
+            0 if c["is_player"] else 1,
+            _sub_sort_key(c),
+        ))
+        return [(c["region"], c["enemy"]) for c in tier1]
+
+    # --- Die roll for tiers 2-4 ---
+    die = roll_die(state)
+
+    # --- Tier 2: on roll 1-2 ---
+    if die <= 2:
+        if scenario in ARIOVISTUS_SCENARIOS:
+            # A8.8.1: count Arverni Allies+Citadels instead of Germanic;
+            # March to Arverni targets
+            tier2 = [c for c in all_candidates if c["enemy"] == ARVERNI]
+        else:
+            # Base: Germanic Allies — only if 2+ Germanic Allies on map
+            german_ally_count = 0
+            for tribe_info in state["tribes"].values():
+                if tribe_info.get("allied_faction") == GERMANS:
+                    german_ally_count += 1
+            if german_ally_count >= 2:
+                tier2 = [c for c in all_candidates if c["enemy"] == GERMANS]
+            else:
+                tier2 = []
+        if tier2:
+            tier2.sort(key=_sub_sort_key)
+            return [(c["region"], c["enemy"]) for c in tier2]
+        # Fall through if no tier 2 candidates
+
+    # --- Tier 3: on roll 3-4 ---
+    if die <= 4:
+        tier3 = [c for c in all_candidates if c["is_player"]]
+        if tier3:
+            tier3.sort(key=_sub_sort_key)
+            return [(c["region"], c["enemy"]) for c in tier3]
+        # Fall through if no tier 3 candidates
+
+    # --- Tier 4: enemies with most Allies+Citadels (roll 5-6 or fallthrough) ---
+    tier4 = list(all_candidates)
+    tier4.sort(key=lambda c: (
+        -c["total_ac"],       # Most total Allies+Citadels first
+        _sub_sort_key(c),
+    ))
+    return [(c["region"], c["enemy"]) for c in tier4]
 
 
 # ============================================================================
@@ -515,12 +587,47 @@ def node_r_battle(state):
     )
 
 
+def _estimate_roman_losses_inflicted(state, region, enemy, scenario):
+    """Estimate Losses the Romans would inflict in Battle in a region.
+
+    Approximate: count Roman Legions (×2 if Caesar present) plus Auxilia,
+    halved (rounded down) if enemy has a Fort or Citadel in the region.
+    This is a simplification — full battle simulation not yet implemented.
+
+    Args:
+        state: Game state dict.
+        region: Battle region.
+        enemy: Enemy faction being attacked.
+        scenario: Scenario constant.
+
+    Returns:
+        Estimated integer Losses.
+    """
+    legions = count_pieces(state, region, ROMANS, LEGION)
+    auxilia = count_pieces(state, region, ROMANS, AUXILIA)
+    has_caesar = get_leader_in_region(state, region, ROMANS) is not None
+
+    # Caesar doubles Legion effectiveness in Battle
+    combat_value = (legions * 2 if has_caesar else legions) + auxilia
+
+    # Enemy Fort/Citadel halves Losses
+    enemy_fort = count_pieces(state, region, enemy, FORT)
+    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+    if enemy_fort > 0 or enemy_citadel > 0:
+        combat_value //= 2
+
+    return combat_value
+
+
 def _determine_battle_sa(state, battle_plan, scenario):
     """Determine SA for Battle: Besiege, then Scout, per §8.8.1.
 
-    Besiege if needed to ensure removal of enemy Ally, or Citadel that
-    might suffer < 3 Loss rolls. If Besiege anywhere, Besiege everywhere
-    possible.
+    Per §8.8.1: Besiege only "where needed to ensure removal of a Citadel
+    that might suffer <3 Losses OR of an Ally." Estimate Roman Losses
+    inflicted. Only mark Besiege as needed if:
+    - A Citadel is present AND estimated Losses < 3, OR
+    - An Ally exists that Besiege would help remove.
+    If Besiege anywhere, Besiege everywhere possible.
 
     If no Besiege, Scout after Battle.
 
@@ -530,15 +637,30 @@ def _determine_battle_sa(state, battle_plan, scenario):
     besiege_regions = []
     for bp in battle_plan:
         region = bp["region"]
+        needs_besiege = False
         for enemy in bp["targets"]:
-            # Check for Allies that need Besiege to ensure removal
-            if count_pieces(state, region, enemy, ALLY) > 0:
-                besiege_regions.append(region)
-                break
-            # Check for Citadels that might suffer < 3 Losses
+            estimated_losses = _estimate_roman_losses_inflicted(
+                state, region, enemy, scenario)
+
+            # Citadel that might suffer < 3 Losses — Besiege needed
             if count_pieces(state, region, enemy, CITADEL) > 0:
-                besiege_regions.append(region)
-                break
+                if estimated_losses < 3:
+                    needs_besiege = True
+                    break
+
+            # Ally exists — Besiege helps ensure its removal by reducing
+            # the Fort/Citadel defense bonus first
+            if count_pieces(state, region, enemy, ALLY) > 0:
+                # Besiege is needed for Ally removal when enemy has a
+                # Fort or Citadel that would halve Losses
+                enemy_fort = count_pieces(state, region, enemy, FORT)
+                enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+                if enemy_fort > 0 or enemy_citadel > 0:
+                    needs_besiege = True
+                    break
+
+        if needs_besiege:
+            besiege_regions.append(region)
 
     if besiege_regions:
         # If Besiege anywhere, do it everywhere possible — §8.8.1
@@ -559,17 +681,28 @@ def node_r_march(state):
         Action dict for March.
     """
     scenario = state["scenario"]
-
-    # If Frost blocks March — §8.4.4
-    if is_frost_active(state):
-        # Check if any player faction is at victory
-        non_players = state.get("non_player_factions", set())
-        for f in FACTIONS:
-            if f != ROMANS and f not in non_players:
-                if check_frost_restriction(state, f):
-                    return node_r_recruit(state)
+    non_players = state.get("non_player_factions", set())
 
     destinations = _rank_march_destinations(state, scenario)
+
+    # Per §8.4.4: Frost filters destinations, not the entire March.
+    # "Non-players take no action that could directly advance any player
+    # Faction above or any further beyond its victory threshold."
+    # For Roman March: exclude destinations where the targeted enemy is a
+    # player faction already at/beyond victory — removing their pieces
+    # would not advance them, but Marching to their region might indirectly
+    # benefit another winning player (e.g., by shifting control). The safe
+    # approach is to exclude destinations targeting player factions at
+    # victory, since the flowchart says "If none (or Frost): R_RECRUIT."
+    if is_frost_active(state):
+        filtered = []
+        for region, target_faction in destinations:
+            # Only restrict if target is a player faction at/beyond victory
+            if target_faction not in non_players:
+                if check_frost_restriction(state, target_faction):
+                    continue  # Skip — would advance winning player's enemy
+            filtered.append((region, target_faction))
+        destinations = filtered
 
     if not destinations:
         return node_r_recruit(state)
@@ -580,7 +713,7 @@ def node_r_march(state):
 
     # Determine how many destination regions — §8.8.1
     # If ≤6 Legions on map and can consolidate to one → one destination
-    legions_on_map = _count_on_map(state, ROMANS, LEGION)
+    legions_on_map = count_on_map(state, ROMANS, LEGION)
     dest_count = 1 if legions_on_map <= 6 else min(2, len(destinations))
     selected_dests = destinations[:dest_count]
 
@@ -603,22 +736,28 @@ def _select_march_origins(state, threat_regions, destinations, scenario):
     """Select up to 3 March origin regions per §8.8.1.
 
     (1) 1 meeting threat condition
-    (2) 1 also meeting threat condition BUT not destination of 1st group
+    (2) 1 also meeting threat condition BUT not destination of 1st origin
+        (only the specific destination the 1st origin's group is heading to)
     (3) 1 where no enemy Ally/Citadel (with Leader first, then most Legions)
 
     Returns:
         List of origin region constants.
     """
     origins = []
-    dest_regions = {d[0] for d in destinations}
+
+    # Determine the destination of the 1st origin's group — this is the
+    # first destination in the ranked list, which is where origin (1) will
+    # march to. Per §8.8.1: origin (2) must "not [be the] destination of
+    # 1st origin" — only exclude that one specific destination, not all.
+    first_origin_dest = destinations[0][0] if destinations else None
 
     # (1) First threat region
     if threat_regions:
         origins.append(threat_regions[0])
 
-    # (2) Second threat region, not a destination of 1st group
+    # (2) Second threat region, not the destination of 1st origin's group
     for r in threat_regions[1:]:
-        if r not in dest_regions or len(origins) == 0:
+        if r != first_origin_dest or len(origins) == 0:
             origins.append(r)
             break
 
@@ -710,22 +849,26 @@ def node_r_seize(state):
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
     # Find regions where Romans can Seize without Harassment
-    # Harassment comes from Belgae/Arverni (base) or Belgae/Germans (Ariovistus)
-    harassers = get_harassing_factions(ROMANS, scenario)
+    # Per §3.2.3: Harassment comes from ALL factions with Warbands in the
+    # region, not just the designated March/Seize harassers from §8.4.2.
+    # Per §8.8.5: "Seize only where no Harassment Loss" — skip any region
+    # where ANY non-Roman faction has 3+ Hidden Warbands.
     seize_regions = []
 
     for region in playable:
         if count_pieces(state, region, ROMANS) == 0:
             continue
-        # Check for Harassment — any harassing faction with Hidden Warbands
+        # Check for Harassment — any non-Roman faction with 3+ Hidden Warbands
+        # Per §3.2.3: "For every three Hidden Warbands..."
         has_harassment = False
-        for h_faction in harassers:
-            if h_faction in non_players:
-                hidden_wb = count_pieces_by_state(
-                    state, region, h_faction, WARBAND, HIDDEN)
-                if hidden_wb > 0:
-                    has_harassment = True
-                    break
+        for faction in FACTIONS:
+            if faction == ROMANS:
+                continue
+            hidden_wb = count_pieces_by_state(
+                state, region, faction, WARBAND, HIDDEN)
+            if hidden_wb >= 3:
+                has_harassment = True
+                break
         if not has_harassment:
             seize_regions.append(region)
 
@@ -737,6 +880,10 @@ def node_r_seize(state):
     resource_regions = []
 
     for region in seize_regions:
+        # Per §3.2.3: Dispersal requires Roman Control in the region
+        if not is_controlled_by(state, region, ROMANS):
+            resource_regions.append(region)
+            continue
         tribes = get_tribes_in_region(region, scenario)
         can_disperse = False
         for tribe in tribes:
@@ -783,8 +930,9 @@ def node_r_seize(state):
 def node_r_besiege(state, battle_regions):
     """R_BESIEGE: Besiege at start of Battle.
 
-    Per §8.8.1: Besiege where needed to ensure removal of Ally, or
-    Citadel that might suffer < 3 Loss rolls. If anywhere, then everywhere.
+    Per §8.8.1: Besiege only where needed to ensure removal of a Citadel
+    that might suffer <3 Losses, OR of an Ally (when enemy Fort/Citadel
+    would halve Losses). If Besiege anywhere, then everywhere possible.
 
     Args:
         state: Game state dict.
@@ -797,20 +945,35 @@ def node_r_besiege(state, battle_regions):
     besiege_needed = []
 
     for region in battle_regions:
+        needs_besiege = False
         for enemy in FACTIONS:
             if enemy == ROMANS:
                 continue
-            # Ally that needs Besiege to ensure removal
-            if count_pieces(state, region, enemy, ALLY) > 0:
-                besiege_needed.append(region)
-                break
-            # Citadel at risk
+            if count_pieces(state, region, enemy) == 0:
+                continue
+
+            estimated_losses = _estimate_roman_losses_inflicted(
+                state, region, enemy, scenario)
+
+            # Citadel that might suffer < 3 Losses — Besiege needed
             if count_pieces(state, region, enemy, CITADEL) > 0:
-                besiege_needed.append(region)
-                break
+                if estimated_losses < 3:
+                    needs_besiege = True
+                    break
+
+            # Ally with Fort/Citadel defense — Besiege helps removal
+            if count_pieces(state, region, enemy, ALLY) > 0:
+                enemy_fort = count_pieces(state, region, enemy, FORT)
+                enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+                if enemy_fort > 0 or enemy_citadel > 0:
+                    needs_besiege = True
+                    break
+
+        if needs_besiege:
+            besiege_needed.append(region)
 
     if besiege_needed:
-        # If Besiege anywhere, do it everywhere possible
+        # If Besiege anywhere, do it everywhere possible — §8.8.1
         return battle_regions[:]
     return []
 
@@ -842,6 +1005,26 @@ def node_r_build(state, *, exclude_regions=None):
         "allies": [],
     }
 
+    # Per §8.8.1 [Ch8]: "spending no more Resources once Roman Resources
+    # drop below six." Resource floor = 6: do not spend if already below 6,
+    # or if spending would drop below 6.
+    RESOURCE_FLOOR = 6
+    resources = state.get("resources", {}).get(ROMANS, 0)
+
+    def _can_spend(cost):
+        """Check if spending cost would violate the Resource floor."""
+        nonlocal resources
+        if resources < RESOURCE_FLOOR:
+            return False
+        if resources - cost < RESOURCE_FLOOR:
+            return False
+        return True
+
+    def _spend(cost):
+        """Track spending against the Resource floor."""
+        nonlocal resources
+        resources -= cost
+
     # (1) Place Forts — first where non-Aedui Warbands
     avail_forts = get_available(state, ROMANS, FORT)
     fort_candidates = []
@@ -862,7 +1045,10 @@ def node_r_build(state, *, exclude_regions=None):
 
     fort_candidates.sort(key=lambda x: -x[1])
     for region, _ in fort_candidates[:avail_forts]:
+        if not _can_spend(BUILD_COST_PER_FORT):
+            break
         build_plan["forts"].append(region)
+        _spend(BUILD_COST_PER_FORT)
 
     # (2) Subdue Allies — best victory margins, players first
     subdue_candidates = []
@@ -884,7 +1070,11 @@ def node_r_build(state, *, exclude_regions=None):
 
     subdue_candidates.sort(key=lambda x: (x[3], x[4]))
     for region, tribe, _, _, _ in subdue_candidates:
+        # Subdue costs the same as placing an Ally — §4.2.1
+        if not _can_spend(BUILD_COST_PER_ALLY):
+            break
         build_plan["subdue"].append({"region": region, "tribe": tribe})
+        _spend(BUILD_COST_PER_ALLY)
 
     # (3) Place Roman Allies
     avail_allies = get_available(state, ROMANS, ALLY)
@@ -899,8 +1089,15 @@ def node_r_build(state, *, exclude_regions=None):
                     and tribe_info.get("status") is None):
                 ally_candidates.append((region, tribe))
 
-    for region, tribe in ally_candidates[:avail_allies]:
+    placed = 0
+    for region, tribe in ally_candidates:
+        if placed >= avail_allies:
+            break
+        if not _can_spend(BUILD_COST_PER_ALLY):
+            break
         build_plan["allies"].append({"region": region, "tribe": tribe})
+        _spend(BUILD_COST_PER_ALLY)
+        placed += 1
 
     return build_plan
 

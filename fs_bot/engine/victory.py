@@ -51,7 +51,7 @@ from fs_bot.rules_consts import (
     TOTAL_TRIBES_BASE,
     COLONY_EXTRA_TRIBE,
 )
-from fs_bot.board.pieces import count_pieces, _count_on_map
+from fs_bot.board.pieces import count_pieces, count_on_map
 from fs_bot.board.control import get_controlled_regions, is_controlled_by
 from fs_bot.map.map_data import (
     get_tribes_in_region, get_control_value, get_playable_regions,
@@ -82,7 +82,7 @@ def _count_allies_and_citadels(state, faction):
         if tribe_info.get("allied_faction") == faction:
             allies += 1
 
-    citadels = _count_on_map(state, faction, CITADEL)
+    citadels = count_on_map(state, faction, CITADEL)
     return allies + citadels
 
 
@@ -92,7 +92,7 @@ def _count_settlements_on_map(state):
     Returns:
         Integer count of Settlement pieces on the map.
     """
-    return _count_on_map(state, GERMANS, SETTLEMENT)
+    return count_on_map(state, GERMANS, SETTLEMENT)
 
 
 def _count_off_map_legions(state):

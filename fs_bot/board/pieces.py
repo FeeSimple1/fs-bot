@@ -73,6 +73,20 @@ def _count_on_map(state, faction, piece_type):
     return total
 
 
+def count_on_map(state, faction, piece_type):
+    """Count how many of a piece type a faction has on the map (public API).
+
+    Args:
+        state: Game state dict.
+        faction: Faction constant.
+        piece_type: Piece type constant.
+
+    Returns:
+        Integer count.
+    """
+    return _count_on_map(state, faction, piece_type)
+
+
 def _count_on_legions_track(state):
     """Count total Legions on the Legions track."""
     total = 0

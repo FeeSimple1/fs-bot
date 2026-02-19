@@ -45,7 +45,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
-    find_leader, get_available, _count_on_map,
+    find_leader, get_available, count_on_map,
 )
 from fs_bot.board.control import (
     is_controlled_by, get_controlled_regions, calculate_control,
@@ -702,7 +702,7 @@ def node_r_march(state):
 
     # Determine how many destination regions — §8.8.1
     # If ≤6 Legions on map and can consolidate to one → one destination
-    legions_on_map = _count_on_map(state, ROMANS, LEGION)
+    legions_on_map = count_on_map(state, ROMANS, LEGION)
     dest_count = 1 if legions_on_map <= 6 else min(2, len(destinations))
     selected_dests = destinations[:dest_count]
 

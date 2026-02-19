@@ -42,6 +42,8 @@ from fs_bot.board.pieces import (
     place_piece, remove_piece, count_pieces, get_leader_in_region,
 )
 from fs_bot.board.control import refresh_all_control, is_controlled_by
+from fs_bot.cards.capabilities import is_capability_active, activate_capability
+from fs_bot.rules_consts import EVENT_SHADED, EVENT_UNSHADED
 
 
 def _setup_base_state(seed=42):
@@ -949,3 +951,231 @@ class TestCardA70Nervii:
         state = _setup_ariovistus_state()
         execute_event(state, "A70", shaded=True)
         assert is_capability_active(state, "A70")
+
+
+# ===================================================================
+# Card 8: Baggage Trains — CAPABILITY (both sides)
+# Card Reference: "Well-stocked: Take this card and place it at your
+#   Forces display. Your March costs 0 Resources. CAPABILITY"
+# Shaded: "Slow wagons: Take this card. Your Raids may use 3
+#   Warbands per Region and steal Resources despite Citadels or Forts."
+# ===================================================================
+
+class TestCard8BaggageTrains:
+    """Tests for Card 8: Baggage Trains (CAPABILITY)."""
+
+    def test_card_8_unshaded_activates_capability(self):
+        """Unshaded: activates unshaded capability (March costs 0)."""
+        state = _setup_base_state()
+        execute_event(state, 8, shaded=False)
+        assert is_capability_active(state, 8, EVENT_UNSHADED)
+
+    def test_card_8_shaded_activates_capability(self):
+        """Shaded: activates shaded capability (Raids with 3 Warbands)."""
+        state = _setup_base_state()
+        execute_event(state, 8, shaded=True)
+        assert is_capability_active(state, 8, EVENT_SHADED)
+
+    def test_card_8_unshaded_replaces_shaded(self):
+        """Per §5.1.2: activating unshaded replaces existing shaded capability."""
+        state = _setup_base_state()
+        execute_event(state, 8, shaded=True)
+        assert is_capability_active(state, 8, EVENT_SHADED)
+        execute_event(state, 8, shaded=False)
+        assert is_capability_active(state, 8, EVENT_UNSHADED)
+        assert not is_capability_active(state, 8, EVENT_SHADED)
+
+    def test_card_8_shaded_replaces_unshaded(self):
+        """Per §5.1.2: activating shaded replaces existing unshaded capability."""
+        state = _setup_base_state()
+        execute_event(state, 8, shaded=False)
+        assert is_capability_active(state, 8, EVENT_UNSHADED)
+        execute_event(state, 8, shaded=True)
+        assert is_capability_active(state, 8, EVENT_SHADED)
+        assert not is_capability_active(state, 8, EVENT_UNSHADED)
+
+    def test_card_8_no_other_state_mutation(self):
+        """Capability-only: no pieces, resources, or senate changes."""
+        state = _setup_base_state()
+        resources_before = dict(state["resources"])
+        senate_before = dict(state["senate"])
+        execute_event(state, 8, shaded=False)
+        assert state["resources"] == resources_before
+        assert state["senate"] == senate_before
+
+
+# ===================================================================
+# Card 10: Ballistae — CAPABILITY (both sides)
+# Card Reference:
+# Unshaded: "Siege machines: Besiege cancels Citadel's halving of
+#   Losses. Battle rolls remove Forts on 1-2 not 1-3."
+# Shaded: "Siege stratagems: Place near a Gallic Faction. That
+#   Faction after Ambush may remove defending Fort or Citadel."
+# ===================================================================
+
+class TestCard10Ballistae:
+    """Tests for Card 10: Ballistae (CAPABILITY)."""
+
+    def test_card_10_unshaded_activates_capability(self):
+        """Unshaded: activates unshaded capability (improved Besiege)."""
+        state = _setup_base_state()
+        execute_event(state, 10, shaded=False)
+        assert is_capability_active(state, 10, EVENT_UNSHADED)
+
+    def test_card_10_shaded_activates_capability(self):
+        """Shaded: activates shaded capability (Gallic Faction Ambush benefit)."""
+        state = _setup_base_state()
+        execute_event(state, 10, shaded=True)
+        assert is_capability_active(state, 10, EVENT_SHADED)
+
+    def test_card_10_unshaded_replaces_shaded(self):
+        """Per §5.1.2: dueling event replaces opposite side."""
+        state = _setup_base_state()
+        execute_event(state, 10, shaded=True)
+        assert is_capability_active(state, 10, EVENT_SHADED)
+        execute_event(state, 10, shaded=False)
+        assert is_capability_active(state, 10, EVENT_UNSHADED)
+        assert not is_capability_active(state, 10, EVENT_SHADED)
+
+    def test_card_10_no_other_state_mutation(self):
+        """Capability-only: no pieces, resources, or senate changes."""
+        state = _setup_base_state()
+        resources_before = dict(state["resources"])
+        senate_before = dict(state["senate"])
+        execute_event(state, 10, shaded=True)
+        assert state["resources"] == resources_before
+        assert state["senate"] == senate_before
+
+
+# ===================================================================
+# Card 12: Titus Labienus — CAPABILITY (both sides)
+# Card Reference:
+# Unshaded: "Able lieutenant: Roman Special Abilities may select
+#   Regions regardless of where the Roman leader is located."
+# Shaded: "Opponents suborn Caesar's 2nd: Build and Scout Reveal
+#   are maximum 1 Region."
+# ===================================================================
+
+class TestCard12TitusLabienus:
+    """Tests for Card 12: Titus Labienus (CAPABILITY)."""
+
+    def test_card_12_unshaded_activates_capability(self):
+        """Unshaded: activates unshaded capability (unrestricted SA Regions)."""
+        state = _setup_base_state()
+        execute_event(state, 12, shaded=False)
+        assert is_capability_active(state, 12, EVENT_UNSHADED)
+
+    def test_card_12_shaded_activates_capability(self):
+        """Shaded: activates shaded capability (Build/Scout max 1 Region)."""
+        state = _setup_base_state()
+        execute_event(state, 12, shaded=True)
+        assert is_capability_active(state, 12, EVENT_SHADED)
+
+    def test_card_12_shaded_replaces_unshaded(self):
+        """Per §5.1.2: dueling event replaces opposite side."""
+        state = _setup_base_state()
+        execute_event(state, 12, shaded=False)
+        assert is_capability_active(state, 12, EVENT_UNSHADED)
+        execute_event(state, 12, shaded=True)
+        assert is_capability_active(state, 12, EVENT_SHADED)
+        assert not is_capability_active(state, 12, EVENT_UNSHADED)
+
+    def test_card_12_no_other_state_mutation(self):
+        """Capability-only: no pieces, resources, or senate changes."""
+        state = _setup_base_state()
+        resources_before = dict(state["resources"])
+        senate_before = dict(state["senate"])
+        execute_event(state, 12, shaded=False)
+        assert state["resources"] == resources_before
+        assert state["senate"] == senate_before
+
+
+# ===================================================================
+# Card 13: Balearic Slingers — CAPABILITY (both sides)
+# Card Reference:
+# Unshaded: "Sharp skirmishers: Romans choose 1 Region per enemy
+#   Battle Command. Auxilia there first inflict 1/2 Loss each on
+#   attacker. Then resolve Battle."
+# Shaded: "Reliance on foreign contingents: Recruit only where
+#   Supply Line, paying 2 Resources per Region."
+# ===================================================================
+
+class TestCard13BalearicSlingers:
+    """Tests for Card 13: Balearic Slingers (CAPABILITY)."""
+
+    def test_card_13_unshaded_activates_capability(self):
+        """Unshaded: activates capability (Auxilia skirmish before Battle)."""
+        state = _setup_base_state()
+        execute_event(state, 13, shaded=False)
+        assert is_capability_active(state, 13, EVENT_UNSHADED)
+
+    def test_card_13_shaded_activates_capability(self):
+        """Shaded: activates capability (Recruit restricted to Supply Lines)."""
+        state = _setup_base_state()
+        execute_event(state, 13, shaded=True)
+        assert is_capability_active(state, 13, EVENT_SHADED)
+
+    def test_card_13_unshaded_replaces_shaded(self):
+        """Per §5.1.2: dueling event replaces opposite side."""
+        state = _setup_base_state()
+        execute_event(state, 13, shaded=True)
+        assert is_capability_active(state, 13, EVENT_SHADED)
+        execute_event(state, 13, shaded=False)
+        assert is_capability_active(state, 13, EVENT_UNSHADED)
+        assert not is_capability_active(state, 13, EVENT_SHADED)
+
+    def test_card_13_no_other_state_mutation(self):
+        """Capability-only: no pieces, resources, or senate changes."""
+        state = _setup_base_state()
+        resources_before = dict(state["resources"])
+        senate_before = dict(state["senate"])
+        execute_event(state, 13, shaded=False)
+        assert state["resources"] == resources_before
+        assert state["senate"] == senate_before
+
+
+# ===================================================================
+# Card 30: Vercingetorix's Elite — CAPABILITY (both sides)
+# Card Reference:
+# Unshaded: "Harsh punishments unpopular: Arverni Rally places
+#   Warbands up to Allies+Citadels (not Leader+1)."
+# Shaded: "Roman-style discipline: In any Battles with their Leader,
+#   Arverni pick 2 Arverni Warbands—they take & inflict Losses as
+#   if Legions."
+# Tip: If the two picked Warbands are defending, are chosen to
+#   absorb Losses, and both roll a 1-3, the Counterattack would not
+#   inflict Losses as if with any Legions.
+# ===================================================================
+
+class TestCard30VercingetorixsElite:
+    """Tests for Card 30: Vercingetorix's Elite (CAPABILITY)."""
+
+    def test_card_30_unshaded_activates_capability(self):
+        """Unshaded: activates capability (Rally limit = Allies+Citadels)."""
+        state = _setup_base_state()
+        execute_event(state, 30, shaded=False)
+        assert is_capability_active(state, 30, EVENT_UNSHADED)
+
+    def test_card_30_shaded_activates_capability(self):
+        """Shaded: activates capability (2 Warbands fight as Legions)."""
+        state = _setup_base_state()
+        execute_event(state, 30, shaded=True)
+        assert is_capability_active(state, 30, EVENT_SHADED)
+
+    def test_card_30_shaded_replaces_unshaded(self):
+        """Per §5.1.2: dueling event replaces opposite side."""
+        state = _setup_base_state()
+        execute_event(state, 30, shaded=False)
+        assert is_capability_active(state, 30, EVENT_UNSHADED)
+        execute_event(state, 30, shaded=True)
+        assert is_capability_active(state, 30, EVENT_SHADED)
+        assert not is_capability_active(state, 30, EVENT_UNSHADED)
+
+    def test_card_30_no_other_state_mutation(self):
+        """Capability-only: no pieces, resources, or senate changes."""
+        state = _setup_base_state()
+        resources_before = dict(state["resources"])
+        senate_before = dict(state["senate"])
+        execute_event(state, 30, shaded=True)
+        assert state["resources"] == resources_before
+        assert state["senate"] == senate_before

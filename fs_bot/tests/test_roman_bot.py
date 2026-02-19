@@ -36,6 +36,8 @@ from fs_bot.bots.roman_bot import (
     node_r_agreements, node_r_diviciacus,
     # Main driver
     execute_roman_turn,
+    # Helpers (for direct testing)
+    _rank_march_destinations,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RECRUIT, ACTION_SEIZE,
     ACTION_EVENT, ACTION_PASS,
@@ -328,6 +330,55 @@ class TestNodeRMarch:
         # No enemy Allies/Citadels anywhere
         result = node_r_march(state)
         assert result["command"] in (ACTION_RECRUIT, ACTION_SEIZE, ACTION_PASS)
+
+    def test_march_destinations_tier1_at_victory(self):
+        """Bug 3: §8.8.1 — Tier 1 selects enemies at 0+ victory margin."""
+        state = _make_state()
+        # Set up Belgae at 0+ victory margin by giving many Allies
+        belgae_regions = [MORINI, NERVII, ATREBATES, CARNUTES, MANDUBII]
+        for region in belgae_regions:
+            place_piece(state, region, BELGAE, WARBAND, 5)
+        for tribe in list(state["tribes"].keys())[:12]:
+            state["tribes"][tribe]["allied_faction"] = BELGAE
+        # Place a Belgae Ally piece in a region
+        place_piece(state, MORINI, BELGAE, ALLY)
+        refresh_all_control(state)
+        dests = _rank_march_destinations(state, SCENARIO_PAX_GALLICA)
+        if dests:
+            # First destination should target an enemy at 0+ victory
+            _, target_faction = dests[0]
+            assert target_faction == BELGAE
+
+    def test_march_destinations_die_roll_determinism(self):
+        """Bug 3: §8.8.1 — Same seed gives same tier selection via die roll."""
+        state1 = _make_state(seed=77)
+        state2 = _make_state(seed=77)
+        # Set up identical enemy pieces
+        _place_enemy_threat(state1, MANDUBII, ARVERNI,
+                            ally_tribe=TRIBE_CARNUTES)
+        _place_enemy_threat(state2, MANDUBII, ARVERNI,
+                            ally_tribe=TRIBE_CARNUTES)
+        d1 = _rank_march_destinations(state1, SCENARIO_PAX_GALLICA)
+        d2 = _rank_march_destinations(state2, SCENARIO_PAX_GALLICA)
+        assert d1 == d2
+
+    def test_march_destinations_ariovistus_tier2_arverni(self):
+        """Bug 3: A8.8.1 — On roll 1-2, target Arverni instead of Germanic."""
+        # Use a seed that produces a die roll of 1 or 2
+        for seed in range(100):
+            state = _make_state(scenario=SCENARIO_ARIOVISTUS, seed=seed)
+            # Place Arverni Ally
+            state["tribes"][TRIBE_ARVERNI]["allied_faction"] = ARVERNI
+            place_piece(state, ARVERNI_REGION, ARVERNI, ALLY)
+            # Need to consume rng in same way as the function
+            test_state = _make_state(scenario=SCENARIO_ARIOVISTUS, seed=seed)
+            test_die = test_state["rng"].randint(1, 6)
+            if test_die <= 2:
+                dests = _rank_march_destinations(state, SCENARIO_ARIOVISTUS)
+                if dests:
+                    _, target = dests[0]
+                    assert target == ARVERNI
+                break
 
 
 # ===================================================================

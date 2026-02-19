@@ -272,22 +272,34 @@ def _rank_battle_targets(state, region, scenario):
 def _rank_march_destinations(state, scenario):
     """Rank destination regions for Roman March per §8.8.1.
 
-    Destinations must have enemy Allies or Citadels.
-    Priority: (1) enemies at 0+ victory margin, players first;
-    (2) on roll 1-2: Germanic Allies (base) / Arverni Allies (Ariovistus);
-    (3) on roll 3-4: player Factions' Allies/Citadels;
-    (4) otherwise: enemies with most Allies/Citadels.
+    Destinations must have enemy Allies or Citadels.  Tiers evaluated in
+    order, falling through to the next if no candidates:
+      (1) enemies at 0+ victory margin, players before NPs;
+      then roll a die:
+      (2) on 1-2: Germanic Allies if 2+ on map (base) /
+          Arverni Allies+Citadels (Ariovistus, A8.8.1);
+      (3) on 3-4: player Factions' Allies/Citadels;
+      (4) on 5-6 or fallthrough: enemies with most Allies+Citadels.
 
-    Sub-priorities: (b) fewest Losses to enemy Battle,
-    (c) most Allies/Citadels, (d) Supply Line, (e) least Harassment.
+    Sub-priorities within each tier:
+      (b) fewest enemy mobile pieces (approximation for fewest Losses
+          to enemy Battle — full battle simulation not yet implemented),
+      (c) most such Allies/Citadels in the region,
+      (d) ending in Supply Line (approximated: region has Roman pieces
+          or is adjacent to Roman-controlled region — full supply-line
+          graph check deferred),
+      (e) least Harassment (fewest enemy Hidden Warbands).
 
     Returns:
         List of (region, target_faction) tuples sorted by priority.
     """
+    from fs_bot.commands.rally import has_supply_line
+
     playable = get_playable_regions(scenario, state.get("capabilities"))
     non_players = state.get("non_player_factions", set())
-    candidates = []
 
+    # Build candidate list with all relevant metadata
+    all_candidates = []
     for region in playable:
         for enemy in FACTIONS:
             if enemy == ROMANS:
@@ -305,37 +317,95 @@ def _rank_march_destinations(state, scenario):
             except Exception:
                 margin = -999
 
-            is_at_victory = margin >= 0
-            is_player = enemy not in non_players
-            total_ac = count_faction_allies_and_citadels(state, enemy)
+            # (b) Approximate fewest Losses to enemy Battle as fewest
+            # enemy mobile pieces in the region
+            enemy_mobile = count_mobile_pieces(state, region, enemy)
+            # (c) Most Allies/Citadels of this enemy in the region
+            local_ac = ally_count + citadel_count
+            # (d) Ending in Supply Line — best-effort approximation
+            in_supply = 1 if has_supply_line(state, region) else 0
+            # (e) Least Harassment — fewest enemy Hidden Warbands
+            enemy_hidden_wb = 0
+            for f in FACTIONS:
+                if f == ROMANS:
+                    continue
+                enemy_hidden_wb += count_pieces_by_state(
+                    state, region, f, WARBAND, HIDDEN)
 
-            candidates.append({
+            all_candidates.append({
                 "region": region,
                 "enemy": enemy,
                 "margin": margin,
-                "at_victory": is_at_victory,
-                "is_player": is_player,
-                "local_ac": ally_count + citadel_count,
-                "total_ac": total_ac,
+                "at_victory": margin >= 0,
+                "is_player": enemy not in non_players,
+                "local_ac": local_ac,
+                "total_ac": count_faction_allies_and_citadels(state, enemy),
+                "enemy_mobile": enemy_mobile,
+                "in_supply": in_supply,
+                "hidden_wb": enemy_hidden_wb,
             })
 
-    if not candidates:
+    if not all_candidates:
         return []
 
-    # Sort by priority tiers
-    def _sort_key(c):
-        # Tier 1: enemies at 0+ victory (highest priority)
-        tier = 0 if c["at_victory"] else 1
-        # Within tier 0: players before NPs
-        player_rank = 0 if c["is_player"] else 1
-        # Most Allies+Citadels in target region
-        local = -c["local_ac"]
-        # Highest total Allies+Citadels
-        total = -c["total_ac"]
-        return (tier, player_rank, local, total)
+    def _sub_sort_key(c):
+        """Sub-priorities (b)-(e) used within each tier."""
+        return (
+            c["enemy_mobile"],    # (b) fewest enemy mobile pieces first
+            -c["local_ac"],       # (c) most local Allies/Citadels first
+            -c["in_supply"],      # (d) in Supply Line first
+            c["hidden_wb"],       # (e) fewest Hidden Warbands first
+        )
 
-    candidates.sort(key=_sort_key)
-    return [(c["region"], c["enemy"]) for c in candidates]
+    # --- Tier 1: enemies at 0+ victory margin ---
+    tier1 = [c for c in all_candidates if c["at_victory"]]
+    if tier1:
+        # Players before NPs, then sub-priorities
+        tier1.sort(key=lambda c: (
+            0 if c["is_player"] else 1,
+            _sub_sort_key(c),
+        ))
+        return [(c["region"], c["enemy"]) for c in tier1]
+
+    # --- Die roll for tiers 2-4 ---
+    die = roll_die(state)
+
+    # --- Tier 2: on roll 1-2 ---
+    if die <= 2:
+        if scenario in ARIOVISTUS_SCENARIOS:
+            # A8.8.1: count Arverni Allies+Citadels instead of Germanic;
+            # March to Arverni targets
+            tier2 = [c for c in all_candidates if c["enemy"] == ARVERNI]
+        else:
+            # Base: Germanic Allies — only if 2+ Germanic Allies on map
+            german_ally_count = 0
+            for tribe_info in state["tribes"].values():
+                if tribe_info.get("allied_faction") == GERMANS:
+                    german_ally_count += 1
+            if german_ally_count >= 2:
+                tier2 = [c for c in all_candidates if c["enemy"] == GERMANS]
+            else:
+                tier2 = []
+        if tier2:
+            tier2.sort(key=_sub_sort_key)
+            return [(c["region"], c["enemy"]) for c in tier2]
+        # Fall through if no tier 2 candidates
+
+    # --- Tier 3: on roll 3-4 ---
+    if die <= 4:
+        tier3 = [c for c in all_candidates if c["is_player"]]
+        if tier3:
+            tier3.sort(key=_sub_sort_key)
+            return [(c["region"], c["enemy"]) for c in tier3]
+        # Fall through if no tier 3 candidates
+
+    # --- Tier 4: enemies with most Allies+Citadels (roll 5-6 or fallthrough) ---
+    tier4 = list(all_candidates)
+    tier4.sort(key=lambda c: (
+        -c["total_ac"],       # Most total Allies+Citadels first
+        _sub_sort_key(c),
+    ))
+    return [(c["region"], c["enemy"]) for c in tier4]
 
 
 # ============================================================================

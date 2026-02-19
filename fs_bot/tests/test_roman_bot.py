@@ -39,6 +39,7 @@ from fs_bot.bots.roman_bot import (
     # Helpers (for direct testing)
     _rank_march_destinations,
     _estimate_roman_losses_inflicted,
+    _select_march_origins,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RECRUIT, ACTION_SEIZE,
     ACTION_EVENT, ACTION_PASS,
@@ -451,6 +452,37 @@ class TestNodeRMarch:
         result = node_r_march(state)
         # Should fall through since no destinations without Frost filtering
         assert result["command"] in (ACTION_RECRUIT, ACTION_SEIZE, ACTION_PASS)
+
+    def test_march_origin2_excludes_only_first_origin_dest(self):
+        """Bug 8: §8.8.1 — Origin (2) excludes only the destination of
+        origin (1)'s group, not all destinations."""
+        state = _make_state()
+        # Set up two threat regions and two destination regions
+        # Threat regions (have Caesar/Legion + enemy pieces)
+        _place_roman_force(state, MANDUBII, legions=1)
+        _place_roman_force(state, CARNUTES, legions=1)
+        _place_enemy_threat(state, MANDUBII, ARVERNI,
+                            ally_tribe=TRIBE_CARNUTES)
+        place_piece(state, CARNUTES, BELGAE, WARBAND, 3)
+        refresh_all_control(state)
+
+        # Destinations: two regions with enemy Allies
+        dests = [
+            (BITURIGES, ARVERNI),
+            (CARNUTES, BELGAE),
+        ]
+        threat_regions = [MANDUBII, CARNUTES]
+
+        origins = _select_march_origins(
+            state, threat_regions, dests, SCENARIO_PAX_GALLICA)
+
+        # Origin (1) is MANDUBII, its destination is BITURIGES (dests[0])
+        # Origin (2) should NOT exclude CARNUTES just because CARNUTES
+        # is also a destination — it should only exclude BITURIGES
+        # Since CARNUTES != BITURIGES, CARNUTES should be valid as origin (2)
+        assert MANDUBII in origins
+        if len(origins) >= 2:
+            assert CARNUTES in origins
 
 
 # ===================================================================

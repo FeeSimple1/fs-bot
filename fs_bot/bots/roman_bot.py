@@ -736,22 +736,28 @@ def _select_march_origins(state, threat_regions, destinations, scenario):
     """Select up to 3 March origin regions per §8.8.1.
 
     (1) 1 meeting threat condition
-    (2) 1 also meeting threat condition BUT not destination of 1st group
+    (2) 1 also meeting threat condition BUT not destination of 1st origin
+        (only the specific destination the 1st origin's group is heading to)
     (3) 1 where no enemy Ally/Citadel (with Leader first, then most Legions)
 
     Returns:
         List of origin region constants.
     """
     origins = []
-    dest_regions = {d[0] for d in destinations}
+
+    # Determine the destination of the 1st origin's group — this is the
+    # first destination in the ranked list, which is where origin (1) will
+    # march to. Per §8.8.1: origin (2) must "not [be the] destination of
+    # 1st origin" — only exclude that one specific destination, not all.
+    first_origin_dest = destinations[0][0] if destinations else None
 
     # (1) First threat region
     if threat_regions:
         origins.append(threat_regions[0])
 
-    # (2) Second threat region, not a destination of 1st group
+    # (2) Second threat region, not the destination of 1st origin's group
     for r in threat_regions[1:]:
-        if r not in dest_regions or len(origins) == 0:
+        if r != first_origin_dest or len(origins) == 0:
             origins.append(r)
             break
 

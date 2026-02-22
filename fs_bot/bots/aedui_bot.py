@@ -234,6 +234,16 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
     def_allies = count_pieces(state, region, defender, ALLY)
     def_citadels = count_pieces(state, region, defender, CITADEL)
 
+    # Per A8.6.2: count Settlements as "Allies" in Ariovistus scenarios
+    def_settlements = 0
+    if scenario in ARIOVISTUS_SCENARIOS:
+        def_settlements = count_pieces(state, region, defender, SETTLEMENT)
+
+    high_value_count = (
+        (1 if def_leader else 0)
+        + def_legions + def_allies + def_citadels + def_settlements
+    )
+
     # Count total defender pieces to see if losses reach high-value targets
     # Losses remove pieces in defender's choice, but we check if losses
     # are enough that a high-value piece MUST be hit.
@@ -260,8 +270,7 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
         return True
 
     # If defender has ONLY high-value targets (no expendable), any loss hits them
-    if expendable == 0 and (def_leader or def_legions > 0
-                            or def_allies > 0 or def_citadels > 0):
+    if expendable == 0 and high_value_count > 0:
         return True
 
     return False

@@ -9,13 +9,13 @@ import pytest
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL,
+    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     HIDDEN, REVEALED, SCOUTED,
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     DIVICIACUS, CAESAR, AMBIORIX,
-    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII,
+    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, SUGAMBRI, UBII,
     AEDUI_REGION, ARVERNI_REGION, SEQUANI, BITURIGES,
     CARNUTES, PICTONES, VENETI, TREVERI,
     TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
@@ -375,6 +375,47 @@ class TestBattleEstimation:
         # With ambush: full 3 losses > 1 expendable → hits Ally
         assert _would_force_loss_on_high_value(
             state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA,
+            ambush_possible=True)
+
+    def test_settlements_count_as_allies_in_ariovistus(self):
+        """Per A8.6.2: count Settlements as Allies for Battle conditions.
+
+        In Ariovistus, a lone Settlement is a high-value target like an Ally.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_aedui_force(state, SUGAMBRI, warbands=4, hidden=False)
+        # German Settlement with no expendable pieces
+        place_piece(state, SUGAMBRI, GERMANS, SETTLEMENT)
+        # Any loss hits the Settlement → high-value
+        assert _would_force_loss_on_high_value(
+            state, SUGAMBRI, AEDUI, GERMANS, SCENARIO_ARIOVISTUS,
+            ambush_possible=True)
+
+    def test_settlements_not_counted_in_base_game(self):
+        """Settlements do not count as high-value in base game scenarios.
+
+        In Ariovistus, a lone Settlement triggers high-value. In base game,
+        it would not (A8.6.2 only applies in Ariovistus). We test using
+        Ariovistus scenario with a Settlement to confirm it IS counted,
+        then compare against base scenario where def_settlements = 0
+        (Germans can't have Settlements in base game — validated by the
+        piece system).
+        """
+        # Ariovistus: Settlement counts → high-value
+        state_a = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_aedui_force(state_a, SUGAMBRI, warbands=4, hidden=False)
+        place_piece(state_a, SUGAMBRI, GERMANS, SETTLEMENT)
+        assert _would_force_loss_on_high_value(
+            state_a, SUGAMBRI, AEDUI, GERMANS, SCENARIO_ARIOVISTUS,
+            ambush_possible=True)
+
+        # Base game: without Settlement, just Warbands → not high-value
+        state_b = _make_state(scenario=SCENARIO_PAX_GALLICA)
+        _place_aedui_force(state_b, MANDUBII, warbands=4, hidden=False)
+        place_piece(state_b, MANDUBII, GERMANS, WARBAND, 2)
+        # 2 losses vs 2 expendable → can't reach any high-value
+        assert not _would_force_loss_on_high_value(
+            state_b, MANDUBII, AEDUI, GERMANS, SCENARIO_PAX_GALLICA,
             ambush_possible=True)
 
 

@@ -1236,9 +1236,17 @@ def node_v_march_mass(state):
 def _check_ambush(state, battle_plan, scenario):
     """V_AMBUSH: Determine Ambush regions.
 
-    Per §8.7.1: Ambush in 1st Battle only if Retreat could lessen removals
-    AND/OR Counterattack Loss to Arverni is possible. If Ambushed in 1st
-    Battle, Ambush in all others.
+    Per §4.3.3: Ambush requires:
+      (a) more Hidden Arverni than Hidden Defenders in the region, AND
+      (b) within one Region of Vercingetorix or has his Successor.
+
+    Per §8.7.1: Ambush in 1st Battle only if:
+      - Retreat out could lessen removals (enemy has mobile pieces that CAN
+        Retreat AND Arverni would inflict >0 losses so retreating saves them),
+        AND/OR
+      - Any Counterattack Loss to Arverni is possible (enemy has a Legion or
+        Leader that could survive Attack to Counterattack).
+    If Ambushed in 1st Battle, Ambush in all others.
 
     Returns:
         List of Ambush regions, or empty.
@@ -1250,17 +1258,43 @@ def _check_ambush(state, battle_plan, scenario):
     region = first_battle["region"]
     enemy = first_battle["target"]
 
+    # §4.3.3 eligibility: more Hidden Arverni than Hidden Defenders
+    hidden_arverni = count_pieces_by_state(
+        state, region, ARVERNI, WARBAND, HIDDEN)
+    hidden_enemy = count_pieces_by_state(
+        state, region, enemy, WARBAND, HIDDEN)
+    if hidden_arverni <= hidden_enemy:
+        return []
+
+    # §4.3.3 eligibility: within one Region of Vercingetorix
+    if not _is_within_one_of_vercingetorix(state, region, scenario):
+        return []
+
     # Check if Ambush is needed in 1st Battle — §8.7.1
     should_ambush_first = False
 
-    # (a) Retreat could lessen removals
+    # Estimate Arverni Attack losses (same formula as _can_battle_in_region)
+    arverni_wb = count_pieces(state, region, ARVERNI, WARBAND)
+    has_verc = get_leader_in_region(state, region, ARVERNI) is not None
+    attack_raw = arverni_wb * 0.5 + (1 if has_verc else 0)
+    enemy_fort = count_pieces(state, region, enemy, FORT)
+    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+    if enemy_fort > 0 or enemy_citadel > 0:
+        attack_raw = attack_raw / 2
+    losses_inflicted = int(attack_raw)
+
+    # (a) "Retreat out of that Region could lower the number of pieces
+    # [the enemy] would remove" — §8.7.1
+    # Retreat saves the enemy only if Arverni would inflict >0 losses
+    # (so the enemy gains from retreating to halve losses)
     enemy_mobile = count_mobile_pieces(state, region, enemy)
-    if enemy_mobile > 0:
-        # If enemy has mobile pieces that could Retreat, Ambush prevents that
+    if enemy_mobile > 0 and losses_inflicted > 0:
         should_ambush_first = True
 
-    # (b) Counterattack could inflict Loss on Arverni
-    # "A defending Legion or Leader would meet the 2nd requirement"
+    # (b) "any Counterattack Loss to Arverni is possible" — §8.7.1
+    # "A defending Legion or Leader would meet the 2nd requirement,
+    # because it could survive multiple die roll Losses to then inflict
+    # one Loss in Counterattack."
     if count_pieces(state, region, enemy, LEGION) > 0:
         should_ambush_first = True
     if get_leader_in_region(state, region, enemy) is not None:

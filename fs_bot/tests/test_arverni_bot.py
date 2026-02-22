@@ -833,6 +833,66 @@ class TestSpecialAbilities:
         regions = _check_ambush(state, battle_plan, state["scenario"])
         assert len(regions) == 2
 
+    def test_ambush_requires_more_hidden_arverni(self):
+        """Ambush requires more Hidden Arverni than Hidden Defenders — §4.3.3.
+
+        Bug 7: Old code didn't check Hidden count comparison at all.
+        """
+        state = _make_state()
+        battle_plan = [{
+            "region": MANDUBII,
+            "target": BELGAE,
+            "is_trigger": True,
+        }]
+        # 2 Hidden Arverni vs 3 Hidden Belgae → can't Ambush
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=2)
+        place_piece(state, MANDUBII, BELGAE, WARBAND, 3)
+        regions = _check_ambush(state, battle_plan, state["scenario"])
+        assert len(regions) == 0
+
+    def test_ambush_requires_vercingetorix_proximity(self):
+        """Ambush requires within 1 Region of Vercingetorix — §4.3.3.
+
+        Bug 7: Old code didn't check Vercingetorix proximity.
+        """
+        state = _make_state()
+        # Vercingetorix far from battle region
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=2)
+        _place_arverni_force(state, MORINI, warbands=5)
+        place_piece(state, MORINI, BELGAE, WARBAND, 2)
+        battle_plan = [{
+            "region": MORINI,
+            "target": BELGAE,
+            "is_trigger": True,
+        }]
+        from fs_bot.bots.arverni_bot import _is_within_one_of_vercingetorix
+        if not _is_within_one_of_vercingetorix(state, MORINI, state["scenario"]):
+            regions = _check_ambush(state, battle_plan, state["scenario"])
+            assert len(regions) == 0
+
+    def test_ambush_retreat_needs_losses_inflicted(self):
+        """Ambush Retreat trigger requires Arverni inflict >0 losses — §8.7.1.
+
+        Bug 7: Old code triggered Ambush whenever enemy had ANY mobile piece.
+        The rule says 'Retreat out could lessen removals' — which only matters
+        if Arverni would inflict losses in the first place.
+        """
+        state = _make_state()
+        # 1 Arverni Warband + Vercingetorix vs Romans with Fort
+        # Attack: int((1 * 0.5 + 1) / 2) = int(0.75) = 0 → no losses inflicted
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=1)
+        # Romans: 1 Auxilia (mobile) + Fort → halves Attack, yielding 0 losses
+        _place_roman_force(state, MANDUBII, auxilia=1, fort=True)
+        battle_plan = [{
+            "region": MANDUBII,
+            "target": ROMANS,
+            "is_trigger": True,
+        }]
+        regions = _check_ambush(state, battle_plan, state["scenario"])
+        # With 0 losses inflicted, Retreat doesn't help enemy
+        # No Legion or Leader to Counterattack either → no Ambush
+        assert len(regions) == 0
+
     def test_devastate_with_legion(self):
         """Devastate triggers in region with Roman Legion."""
         state = _make_state()

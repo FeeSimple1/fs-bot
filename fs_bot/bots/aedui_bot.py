@@ -1588,7 +1588,8 @@ def node_a_quarters(state):
 # AGREEMENTS
 # ============================================================================
 
-def node_a_agreements(state, requesting_faction, request_type):
+def node_a_agreements(state, requesting_faction, request_type, *,
+                      context=None):
     """A_AGREEMENTS: Agreement decisions.
 
     Per §8.6.6:
@@ -1600,15 +1601,26 @@ def node_a_agreements(state, requesting_faction, request_type):
     - To Arverni, Belgae: Never.
     - To NP Roman: Always.
 
+    Per A8.6.6 (Ariovistus):
+    - Admagetobriga: NP Belgae agree to use of their Warbands only where
+      the executing Faction has pieces. (This is primarily a Belgae
+      agreement rule — see TODO below.)
+    - Frumentum: Transfer half of Aedui's total Resources to NP Romans
+      only (none to player Romans).
+
     Args:
         state: Game state dict.
         requesting_faction: Faction making the request.
         request_type: "supply_line", "retreat", "quarters", "resources",
-                      "harassment".
+                      "harassment", "admagetobriga_warbands",
+                      "frumentum_transfer".
+        context: Optional dict with extra context (e.g., "region" for
+                 Admagetobriga).
 
     Returns:
-        True if Aedui agree.
+        True if Aedui agree, or a dict with details for transfers.
     """
+    scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
 
     if request_type == "harassment":
@@ -1629,6 +1641,31 @@ def node_a_agreements(state, requesting_faction, request_type):
             if roman_res <= 1 and aedui_res >= 21:
                 return True
         # Never transfer to Arverni or Belgae — §8.6.6
+        return False
+
+    # Per A8.6.6: Admagetobriga — NP Belgae agree to use of their Warbands
+    # only where the executing Faction has pieces.
+    # TODO: A8.6.6 Admagetobriga is primarily a Belgae agreement rule.
+    # This will be fully handled when the Belgae bot implements its
+    # agreement logic. For the Aedui side, we note that NP Belgae
+    # agree only if the executing faction has pieces in the region.
+    if request_type == "admagetobriga_warbands":
+        if requesting_faction == BELGAE:
+            ctx = context or {}
+            region = ctx.get("region")
+            executing_faction = ctx.get("executing_faction")
+            if region and executing_faction:
+                return count_pieces(state, region, executing_faction) > 0
+        return False
+
+    # Per A8.6.6: Frumentum — Transfer half of Aedui's total Resources
+    # to NP Romans only (none to player Romans).
+    if request_type == "frumentum_transfer":
+        if ROMANS in non_players:
+            aedui_res = state.get("resources", {}).get(AEDUI, 0)
+            transfer_amount = aedui_res // 2
+            return {"agree": True, "amount": transfer_amount}
+        # Player Romans: no transfer — A8.6.6
         return False
 
     # Retreat, Supply Line, Quarters

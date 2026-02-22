@@ -847,6 +847,44 @@ class TestAgreements:
         state["resources"][AEDUI] = 30
         assert node_a_agreements(state, ARVERNI, "resources") is False
 
+    def test_frumentum_transfer_to_np_romans(self):
+        """Per A8.6.6: Frumentum transfers half Resources to NP Romans."""
+        state = _make_state(
+            scenario=SCENARIO_ARIOVISTUS,
+            non_players={ARVERNI, BELGAE, AEDUI, ROMANS})
+        state["resources"][AEDUI] = 20
+        result = node_a_agreements(state, ROMANS, "frumentum_transfer")
+        assert isinstance(result, dict)
+        assert result["agree"] is True
+        assert result["amount"] == 10  # half of 20
+
+    def test_frumentum_no_transfer_to_player_romans(self):
+        """Per A8.6.6: no Frumentum transfer to player Romans."""
+        state = _make_state(
+            scenario=SCENARIO_ARIOVISTUS,
+            non_players={ARVERNI, BELGAE, AEDUI})
+        state["resources"][AEDUI] = 20
+        result = node_a_agreements(state, ROMANS, "frumentum_transfer")
+        assert result is False
+
+    def test_admagetobriga_belgae_agree_with_pieces(self):
+        """Per A8.6.6: Belgae agree to Admagetobriga if executor has pieces."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_aedui_force(state, MANDUBII, warbands=2)
+        result = node_a_agreements(
+            state, BELGAE, "admagetobriga_warbands",
+            context={"region": MANDUBII, "executing_faction": AEDUI})
+        assert result is True
+
+    def test_admagetobriga_belgae_refuse_without_pieces(self):
+        """Per A8.6.6: Belgae refuse Admagetobriga if no executor pieces."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # No Aedui pieces in Mandubii
+        result = node_a_agreements(
+            state, BELGAE, "admagetobriga_warbands",
+            context={"region": MANDUBII, "executing_faction": AEDUI})
+        assert result is False
+
 
 # ===================================================================
 # Diviciacus

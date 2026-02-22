@@ -957,12 +957,9 @@ def node_v_rally(state):
     total_placed = (len(rally_plan["citadels"]) + len(rally_plan["allies"])
                     + len(rally_plan["warbands"]))
 
-    # IF NONE: If <9 Warbands but couldn't Rally → March per §8.7.4
+    # IF NONE: Couldn't Rally any pieces → March per §8.7.4
+    # Per flowchart: V_RALLY "If none" → V_MARCH_SPREAD regardless
     if total_placed == 0:
-        wb_on_map = _count_arverni_warbands_on_map(state)
-        if wb_on_map < 9:
-            return node_v_march_spread(state)
-        # Otherwise pass downstream (will reach Raid or March Mass)
         return node_v_march_spread(state)
 
     # SA: Devastate or Entreat after Rally — §8.7.3

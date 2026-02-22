@@ -578,12 +578,37 @@ class TestNodeVRally:
         assert ARVERNI_REGION in result["regions"]
 
     def test_rally_if_none_redirects_to_march_spread(self):
-        """V_RALLY: IF NONE with <9 Warbands redirects to March (spread)."""
+        """V_RALLY: IF NONE redirects to March (spread) regardless — §8.7.3.
+
+        Bug 8: Both branches of old if/else called node_v_march_spread,
+        making the condition dead code. V_RALLY's "If none" edge always
+        goes to V_MARCH_SPREAD per the flowchart.
+        """
         state = _make_state()
         # No pieces at all — Rally can't place anything
-        # But <9 Warbands on map
         result = node_v_rally(state)
-        # Should redirect to March or Raid
+        # Should redirect to March or Raid (via March Spread's IF NONE)
+        assert result["command"] in (ACTION_MARCH, ACTION_RAID, ACTION_PASS)
+
+    def test_rally_if_none_with_many_warbands_still_goes_to_march_spread(self):
+        """V_RALLY: IF NONE with 10+ Warbands still goes to V_MARCH_SPREAD.
+
+        Bug 8: Old code had if wb_on_map < 9: march_spread else: march_spread.
+        The condition was dead — both paths went to the same place.
+        """
+        state = _make_state()
+        # Exhaust all Available Warbands so Rally can't place any
+        total_avail = get_available(state, ARVERNI, WARBAND)
+        _place_arverni_force(state, MANDUBII, warbands=total_avail)
+        # Also exhaust all Allies and Citadels
+        while get_available(state, ARVERNI, ALLY) > 0:
+            place_piece(state, MANDUBII, ARVERNI, ALLY)
+        while get_available(state, ARVERNI, CITADEL) > 0:
+            place_piece(state, MANDUBII, ARVERNI, CITADEL)
+        # Now wb_on_map >= 10 but Rally can't place anything (nothing Available)
+        assert _count_arverni_warbands_on_map(state) >= 10
+        result = node_v_rally(state)
+        # Should still go to March Spread, not some different path
         assert result["command"] in (ACTION_MARCH, ACTION_RAID, ACTION_PASS)
 
 

@@ -619,8 +619,9 @@ class TestNodeVRaid:
     def test_raid_passes_if_insufficient_gain(self):
         """V_RAID passes if Raiding wouldn't gain 2+ Resources."""
         state = _make_state()
-        # Arverni with no Hidden Warbands can't Raid
-        _place_arverni_force(state, ARVERNI_REGION, warbands=3)
+        # Only 1 Hidden Warband in a single non-Devastated region
+        # → max 1 flip → only 1 Resource → not enough
+        place_piece(state, ARVERNI_REGION, ARVERNI, WARBAND, 1)
         result = node_v_raid(state)
         assert result["command"] == ACTION_PASS
 
@@ -635,6 +636,72 @@ class TestNodeVRaid:
         result = node_v_raid(state)
         if result["command"] == ACTION_RAID:
             assert len(result["regions"]) > 0
+
+    def test_raid_no_double_count_multi_faction_region(self):
+        """Raid: region with Romans+Aedui counts max 2 flips, not 1 per faction pair.
+
+        Bug 1a: Old code counted 1 per (region, target) pair, double-counting
+        regions with multiple enemy factions.  Per §3.3.3, a region can only
+        flip at most 2 Hidden Warbands total across all targets.
+        """
+        state = _make_state()
+        # 1 Hidden Warband in Mandubii with both Romans and Aedui present
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 1)
+        _place_roman_force(state, MANDUBII, auxilia=1)
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 1)
+        # Only 1 hidden WB → max 1 flip → max 1 Resource from this region
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        mandubii_entries = [r for r in raid_plan if r["region"] == MANDUBII]
+        assert len(mandubii_entries) == 1  # Only 1 flip, not 2
+
+    def test_raid_max_2_flips_per_region(self):
+        """Raid: even with 5 Hidden WBs, max 2 flips per region — §3.3.3 (d)."""
+        state = _make_state()
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 5)
+        _place_roman_force(state, MANDUBII, auxilia=1)
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        mandubii_entries = [r for r in raid_plan if r["region"] == MANDUBII]
+        assert len(mandubii_entries) <= 2
+
+    def test_raid_no_steal_from_enemy_with_fort(self):
+        """Raid: can't steal from enemy with Fort in region — §3.3.3 (b).
+
+        Per §3.3.3: stealing requires enemy 'has pieces in the Region but
+        neither Citadel nor Fort.'
+        """
+        state = _make_state()
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        # Romans have Fort — can't steal from them
+        _place_roman_force(state, MANDUBII, auxilia=2, fort=True)
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        # Should not have any entries targeting Romans
+        roman_entries = [r for r in raid_plan if r.get("target") == ROMANS]
+        assert len(roman_entries) == 0
+
+    def test_raid_no_steal_from_enemy_with_citadel(self):
+        """Raid: can't steal from enemy with Citadel — §3.3.3 (b)."""
+        state = _make_state()
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 2)
+        place_piece(state, MANDUBII, AEDUI, CITADEL)
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        aedui_entries = [r for r in raid_plan if r.get("target") == AEDUI]
+        assert len(aedui_entries) == 0
+
+    def test_raid_non_devastated_not_double_counted(self):
+        """Raid: non-Devastated region already used for steal not double-counted (c).
+
+        Bug 1c: Old code had separate loops for faction and no-faction Raids,
+        causing regions counted in the faction loop to be counted again.
+        """
+        state = _make_state()
+        # 2 Hidden WBs in Mandubii with Romans — both flips go to steal
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 2)
+        _place_roman_force(state, MANDUBII, auxilia=1)
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        mandubii_entries = [r for r in raid_plan if r["region"] == MANDUBII]
+        # Should be exactly 2 entries (both flips assigned), not 3+
+        assert len(mandubii_entries) <= 2
 
 
 # ===================================================================

@@ -360,44 +360,65 @@ def _would_raid_gain_enough(state, scenario):
     """Check if Raiding would gain at least 2 Resources total.
 
     Per §8.7.5: Raid only if would gain 2+ Resources.
+    Per §3.3.3: Each Raid region flips 1-2 Hidden Warbands; each flip either
+    steals 1 Resource from an enemy (no Citadel/Fort) or gains 1 Resource
+    (non-Devastated, no faction target).  Max 2 flips per region total.
+
+    Iterates by REGION first to avoid double-counting.  For each flip,
+    assigns to highest-priority target: Romans → Aedui → Belgae (checking
+    no Citadel/Fort for stealing), then non-Devastated +1 Resource.
 
     Returns:
-        (bool, list of raid regions) — whether 2+ Resources would be gained
-        and which regions would be raided.
+        (bool, list of raid plan dicts) — whether 2+ Resources would be
+        gained and the raid plan organized by region.
     """
     playable = get_playable_regions(scenario, state.get("capabilities"))
-    non_players = state.get("non_player_factions", set())
     total_gain = 0
-    raid_regions = []
+    raid_plan = []
 
-    # Priority: (1) Romans, (2) Aedui, (3) Belgae, then non-Devastated no-faction
-    for target in (ROMANS, AEDUI, BELGAE):
-        for region in playable:
-            if count_pieces(state, region, ARVERNI, WARBAND) == 0:
-                continue
-            hidden_wb = count_pieces_by_state(
-                state, region, ARVERNI, WARBAND, HIDDEN)
-            if hidden_wb == 0:
-                continue
-            # Check if target has pieces in this region (can Raid against)
-            if count_pieces(state, region, target) > 0:
-                total_gain += 1
-                raid_regions.append({"region": region, "target": target})
-
-    # Then non-Devastated, no faction
     for region in playable:
-        if count_pieces(state, region, ARVERNI, WARBAND) == 0:
-            continue
         hidden_wb = count_pieces_by_state(
             state, region, ARVERNI, WARBAND, HIDDEN)
         if hidden_wb == 0:
             continue
-        is_devastated = state["spaces"].get(region, {}).get("devastated", False)
-        if not is_devastated:
-            total_gain += 1
-            raid_regions.append({"region": region, "target": None})
 
-    return (total_gain >= 2, raid_regions)
+        # Max flips in this region — §3.3.3: flip 1-2 Hidden Warbands
+        flips = min(2, hidden_wb)
+
+        is_devastated = state["spaces"].get(region, {}).get("devastated", False)
+
+        # Build ordered list of available targets for this region.
+        # Priority: (1) Romans, (2) Aedui, (3) Belgae — §8.7.5
+        # Stealing requires enemy has pieces but neither Citadel nor Fort — §3.3.3
+        steal_targets = []
+        for target in (ROMANS, AEDUI, BELGAE):
+            if count_pieces(state, region, target) == 0:
+                continue
+            if (count_pieces(state, region, target, CITADEL) > 0
+                    or count_pieces(state, region, target, FORT) > 0):
+                continue
+            steal_targets.append(target)
+
+        # Assign each flip to the best available use
+        region_entries = []
+        remaining_flips = flips
+        for target in steal_targets:
+            if remaining_flips <= 0:
+                break
+            region_entries.append({"region": region, "target": target})
+            total_gain += 1
+            remaining_flips -= 1
+
+        # Remaining flips: non-Devastated +1 Resource (no faction target)
+        while remaining_flips > 0:
+            if not is_devastated:
+                region_entries.append({"region": region, "target": None})
+                total_gain += 1
+            remaining_flips -= 1
+
+        raid_plan.extend(region_entries)
+
+    return (total_gain >= 2, raid_plan)
 
 
 def _distance_to_region(region_a, region_b, scenario, max_dist=10):

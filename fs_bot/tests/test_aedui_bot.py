@@ -343,6 +343,40 @@ class TestBattleEstimation:
         assert not _would_force_loss_on_high_value(
             state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA)
 
+    def test_retreat_halves_losses_prevents_high_value(self):
+        """Enemy Retreat halves losses — may protect high-value targets.
+
+        Per §8.6.2: must account for "a possible enemy Retreat".
+        6 Aedui Warbands → 3 raw losses.  Enemy has 1 Warband + Ally.
+        Without Retreat: 3 losses > 1 expendable → hits Ally.
+        With Retreat: 3/2=1 loss ≤ 1 expendable → does NOT reach Ally.
+        """
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = ARVERNI
+        place_piece(state, MANDUBII, ARVERNI, ALLY)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 1)
+        # Enemy has mobile pieces → could Retreat
+        # Without ambush: losses halved → 1 loss ≤ 1 expendable
+        assert not _would_force_loss_on_high_value(
+            state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA,
+            ambush_possible=False)
+
+    def test_ambush_prevents_retreat_forces_high_value(self):
+        """Ambush prevents Retreat — full losses hit high-value target.
+
+        Same setup as above, but with Ambush: enemy can't Retreat.
+        """
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = ARVERNI
+        place_piece(state, MANDUBII, ARVERNI, ALLY)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 1)
+        # With ambush: full 3 losses > 1 expendable → hits Ally
+        assert _would_force_loss_on_high_value(
+            state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA,
+            ambush_possible=True)
+
 
 # ===================================================================
 # Battle enemies — victory gate

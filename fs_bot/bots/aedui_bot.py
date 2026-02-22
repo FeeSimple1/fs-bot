@@ -202,12 +202,22 @@ def _estimate_battle_losses(state, region, attacker, defender, scenario):
 
 
 def _would_force_loss_on_high_value(state, region, attacker, defender,
-                                     scenario):
+                                     scenario, *,
+                                     ambush_possible=False):
     """Check if Battle would force a Loss on enemy Leader, Ally, Citadel,
     or Legion — per §8.6.2.
 
     "accounting for which enemy the Aedui would Battle, any Aedui Ambush,
     a possible enemy Retreat, Aedui Resources, and so on"
+
+    Per §8.6.2: must account for "a possible enemy Retreat". Retreat halves
+    Attack Losses. When the enemy has mobile pieces that could Retreat, use
+    reduced losses for the check since a rational defender WILL Retreat to
+    protect high-value targets. Exception: if Ambush would apply, the enemy
+    cannot Retreat — use full losses.
+
+    Args:
+        ambush_possible: If True, enemy cannot Retreat (Ambush prevents it).
 
     Returns:
         True if Battle is sure to inflict a Loss on a high-value target.
@@ -232,8 +242,21 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
     def_auxilia = count_pieces(state, region, defender, AUXILIA)
     expendable = def_warbands + def_auxilia
 
+    # Account for enemy Retreat — §8.6.2
+    # Retreat halves Attack Losses. If enemy has mobile pieces (anything
+    # except lone Ally/Citadel/Fort), they could Retreat to protect
+    # high-value targets. Exception: Ambush prevents Retreat.
+    enemy_mobile = count_mobile_pieces(state, region, defender)
+    effective_losses = losses_inflicted
+    if enemy_mobile > 0 and not ambush_possible:
+        # Enemy could Retreat → use halved losses
+        effective_losses = int(losses_inflicted / 2)
+
+    if effective_losses <= 0:
+        return False
+
     # If losses exceed expendable pieces, high-value targets MUST take hits
-    if losses_inflicted > expendable:
+    if effective_losses > expendable:
         return True
 
     # If defender has ONLY high-value targets (no expendable), any loss hits them
@@ -355,8 +378,18 @@ def node_a4(state):
         for enemy in enemies:
             if count_pieces(state, region, enemy) == 0:
                 continue
+            # Check if Ambush is possible — more Hidden Aedui than Hidden enemy
+            hidden_aedui = count_pieces_by_state(
+                state, region, AEDUI, WARBAND, HIDDEN)
+            hidden_enemy = count_pieces_by_state(
+                state, region, enemy, WARBAND, HIDDEN)
+            if enemy == ROMANS:
+                hidden_enemy += count_pieces_by_state(
+                    state, region, enemy, AUXILIA, HIDDEN)
+            ambush = hidden_aedui > hidden_enemy
             if _would_force_loss_on_high_value(
-                    state, region, AEDUI, enemy, scenario):
+                    state, region, AEDUI, enemy, scenario,
+                    ambush_possible=ambush):
                 return "Yes"
 
     return "No"
@@ -665,8 +698,18 @@ def node_a_battle(state):
         for enemy in enemies:
             if count_pieces(state, region, enemy) == 0:
                 continue
+            # Check if Ambush is possible — more Hidden Aedui than Hidden enemy
+            hidden_aedui = count_pieces_by_state(
+                state, region, AEDUI, WARBAND, HIDDEN)
+            hidden_enemy = count_pieces_by_state(
+                state, region, enemy, WARBAND, HIDDEN)
+            if enemy == ROMANS:
+                hidden_enemy += count_pieces_by_state(
+                    state, region, enemy, AUXILIA, HIDDEN)
+            ambush = hidden_aedui > hidden_enemy
             if _would_force_loss_on_high_value(
-                    state, region, AEDUI, enemy, scenario):
+                    state, region, AEDUI, enemy, scenario,
+                    ambush_possible=ambush):
                 battle_plan.append({
                     "region": region,
                     "target": enemy,

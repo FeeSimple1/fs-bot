@@ -553,6 +553,56 @@ class TestAmbush:
 
 
 # ===================================================================
+# Diviciacus counterattack safety — A8.6.2
+# ===================================================================
+
+class TestDiviciacusCounterattackSafety:
+    """Per A8.6.2: do not Battle where Diviciacus could take counterattack Loss."""
+
+    def test_skip_battle_where_diviciacus_would_take_loss(self):
+        """Skip Battle region if counterattack would hit Diviciacus.
+
+        Diviciacus in Mandubii with 1 Warband vs Belgae with 4 Warbands.
+        Counterattack: 4×0.5 = 2 losses. Expendable = 1 Warband.
+        2 >= 1 → Diviciacus would take a hit → skip.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        state["can_play_event"] = False
+        place_piece(state, MANDUBII, AEDUI, LEADER, leader_name=DIVICIACUS)
+        _place_aedui_force(state, MANDUBII, warbands=1, hidden=False)
+        _place_enemy_force(state, MANDUBII, BELGAE, warbands=4)
+        # Also need an Ally to trigger high-value check
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = BELGAE
+        place_piece(state, MANDUBII, BELGAE, ALLY)
+        refresh_all_control(state)
+        result = node_a_battle(state)
+        # Should skip Mandubii because Diviciacus would take a counterattack hit
+        battle_regions = [bp["region"] for bp in
+                          result.get("details", {}).get("battle_plan", [])]
+        assert MANDUBII not in battle_regions
+
+    def test_allow_battle_where_diviciacus_safe(self):
+        """Allow Battle if Diviciacus wouldn't take counterattack Loss.
+
+        Diviciacus in Mandubii with 6 Warbands vs enemy with only Ally.
+        Counterattack: 0 → Diviciacus safe.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        state["can_play_event"] = False
+        place_piece(state, MANDUBII, AEDUI, LEADER, leader_name=DIVICIACUS)
+        _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = BELGAE
+        place_piece(state, MANDUBII, BELGAE, ALLY)
+        refresh_all_control(state)
+        result = node_a_battle(state)
+        # Should include Mandubii — counterattack is 0
+        if result["command"] == ACTION_BATTLE:
+            battle_regions = [bp["region"] for bp in
+                              result["details"]["battle_plan"]]
+            assert MANDUBII in battle_regions
+
+
+# ===================================================================
 # Trade SA
 # ===================================================================
 

@@ -197,41 +197,50 @@ def _can_battle_in_region(state, region, scenario, enemy):
     """
     arverni_wb = count_pieces(state, region, ARVERNI, WARBAND)
     has_verc = get_leader_in_region(state, region, ARVERNI) is not None
-    arverni_mobile = arverni_wb + (1 if has_verc else 0)
 
-    if arverni_mobile == 0:
+    if arverni_wb == 0 and not has_verc:
         return False
 
     enemy_pieces = count_pieces(state, region, enemy)
     if enemy_pieces == 0:
         return False
 
-    # Estimate Arverni Losses inflicted (Attack): mobile pieces / 2 rounded up
-    # per §3.3.4 for Gallic Battle
-    losses_inflicted = arverni_mobile // 2
-    if has_verc:
-        # Vercingetorix adds to combat value
-        losses_inflicted = arverni_mobile // 2
+    # Estimate Arverni Attack Losses inflicted per §3.3.4:
+    # Losses = ½ per Warband + 1 per Leader + ½ per Auxilia, rounded down.
+    # Arverni have no Auxilia, so: int(arverni_wb * 0.5 + (1 if leader else 0))
+    attack_raw = arverni_wb * 0.5 + (1 if has_verc else 0)
+
+    # Enemy Fort/Citadel halves Attack Losses inflicted — §3.3.4
+    enemy_fort = count_pieces(state, region, enemy, FORT)
+    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+    if enemy_fort > 0 or enemy_citadel > 0:
+        attack_raw = attack_raw / 2
+
+    losses_inflicted = int(attack_raw)
 
     # Check for Legion loss — can we force at least one Loss on a Legion?
     enemy_legions = count_pieces(state, region, enemy, LEGION)
     can_hit_legion = enemy_legions > 0 and losses_inflicted > 0
 
-    # Estimate Losses Arverni would suffer (Counterattack)
-    enemy_mobile = count_mobile_pieces(state, region, enemy)
-    # Counterattack: enemy mobile / 2 rounded up
-    losses_suffered = (enemy_mobile + 1) // 2
+    # Estimate Counterattack Losses suffered per §3.3.4:
+    # Losses = ½ per enemy Warband + ½ per enemy Auxilia + 1 per enemy Leader
+    # + 1 per enemy Legion, rounded down.
+    enemy_warbands = count_pieces(state, region, enemy, WARBAND)
+    enemy_auxilia = count_pieces(state, region, enemy, AUXILIA)
+    enemy_leader = get_leader_in_region(state, region, enemy)
 
-    # Enemy Fort/Citadel halves our Attack Losses inflicted
-    enemy_fort = count_pieces(state, region, enemy, FORT)
-    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    if enemy_fort > 0 or enemy_citadel > 0:
-        losses_inflicted = losses_inflicted // 2
+    counter_raw = (enemy_legions * 1
+                   + enemy_warbands * 0.5
+                   + (1 if enemy_leader else 0)
+                   + enemy_auxilia * 0.5)
 
-    # Our Citadel halves Counterattack Losses suffered
+    # Our Fort/Citadel halves Counterattack Losses suffered — §3.3.4
+    our_fort = count_pieces(state, region, ARVERNI, FORT)
     our_citadel = count_pieces(state, region, ARVERNI, CITADEL)
-    if our_citadel > 0:
-        losses_suffered = losses_suffered // 2
+    if our_fort > 0 or our_citadel > 0:
+        counter_raw = counter_raw / 2
+
+    losses_suffered = int(counter_raw)
 
     # Check: no Loss on Vercingetorix — §8.7.1
     # "presuming all Defender Loss rolls result in removals"
@@ -360,44 +369,65 @@ def _would_raid_gain_enough(state, scenario):
     """Check if Raiding would gain at least 2 Resources total.
 
     Per §8.7.5: Raid only if would gain 2+ Resources.
+    Per §3.3.3: Each Raid region flips 1-2 Hidden Warbands; each flip either
+    steals 1 Resource from an enemy (no Citadel/Fort) or gains 1 Resource
+    (non-Devastated, no faction target).  Max 2 flips per region total.
+
+    Iterates by REGION first to avoid double-counting.  For each flip,
+    assigns to highest-priority target: Romans → Aedui → Belgae (checking
+    no Citadel/Fort for stealing), then non-Devastated +1 Resource.
 
     Returns:
-        (bool, list of raid regions) — whether 2+ Resources would be gained
-        and which regions would be raided.
+        (bool, list of raid plan dicts) — whether 2+ Resources would be
+        gained and the raid plan organized by region.
     """
     playable = get_playable_regions(scenario, state.get("capabilities"))
-    non_players = state.get("non_player_factions", set())
     total_gain = 0
-    raid_regions = []
+    raid_plan = []
 
-    # Priority: (1) Romans, (2) Aedui, (3) Belgae, then non-Devastated no-faction
-    for target in (ROMANS, AEDUI, BELGAE):
-        for region in playable:
-            if count_pieces(state, region, ARVERNI, WARBAND) == 0:
-                continue
-            hidden_wb = count_pieces_by_state(
-                state, region, ARVERNI, WARBAND, HIDDEN)
-            if hidden_wb == 0:
-                continue
-            # Check if target has pieces in this region (can Raid against)
-            if count_pieces(state, region, target) > 0:
-                total_gain += 1
-                raid_regions.append({"region": region, "target": target})
-
-    # Then non-Devastated, no faction
     for region in playable:
-        if count_pieces(state, region, ARVERNI, WARBAND) == 0:
-            continue
         hidden_wb = count_pieces_by_state(
             state, region, ARVERNI, WARBAND, HIDDEN)
         if hidden_wb == 0:
             continue
-        is_devastated = state["spaces"].get(region, {}).get("devastated", False)
-        if not is_devastated:
-            total_gain += 1
-            raid_regions.append({"region": region, "target": None})
 
-    return (total_gain >= 2, raid_regions)
+        # Max flips in this region — §3.3.3: flip 1-2 Hidden Warbands
+        flips = min(2, hidden_wb)
+
+        is_devastated = state["spaces"].get(region, {}).get("devastated", False)
+
+        # Build ordered list of available targets for this region.
+        # Priority: (1) Romans, (2) Aedui, (3) Belgae — §8.7.5
+        # Stealing requires enemy has pieces but neither Citadel nor Fort — §3.3.3
+        steal_targets = []
+        for target in (ROMANS, AEDUI, BELGAE):
+            if count_pieces(state, region, target) == 0:
+                continue
+            if (count_pieces(state, region, target, CITADEL) > 0
+                    or count_pieces(state, region, target, FORT) > 0):
+                continue
+            steal_targets.append(target)
+
+        # Assign each flip to the best available use
+        region_entries = []
+        remaining_flips = flips
+        for target in steal_targets:
+            if remaining_flips <= 0:
+                break
+            region_entries.append({"region": region, "target": target})
+            total_gain += 1
+            remaining_flips -= 1
+
+        # Remaining flips: non-Devastated +1 Resource (no faction target)
+        while remaining_flips > 0:
+            if not is_devastated:
+                region_entries.append({"region": region, "target": None})
+                total_gain += 1
+            remaining_flips -= 1
+
+        raid_plan.extend(region_entries)
+
+    return (total_gain >= 2, raid_plan)
 
 
 def _distance_to_region(region_a, region_b, scenario, max_dist=10):
@@ -438,6 +468,27 @@ def _count_adjacent_arverni_regions(state, region, scenario):
         if count_pieces(state, adj, ARVERNI) > 0:
             count += 1
     return count
+
+
+def _is_within_one_of_vercingetorix(state, region, scenario):
+    """Check if a region is within one Region of Vercingetorix or has Successor.
+
+    Per §4.1.2 / §4.3.1 / §4.3.2 / §4.3.3: Arverni Special Abilities may
+    select only Regions within one Region of Vercingetorix (same Region or
+    adjacent), or the same Region that has his Successor Leader.
+
+    Args:
+        state: Game state dict.
+        region: Region to check.
+        scenario: Scenario constant.
+
+    Returns:
+        True if the region is eligible per Vercingetorix proximity.
+    """
+    verc_region = _vercingetorix_region(state)
+    if verc_region is None:
+        return False
+    return _distance_to_region(region, verc_region, scenario, max_dist=2) <= 1
 
 
 # ============================================================================
@@ -906,12 +957,9 @@ def node_v_rally(state):
     total_placed = (len(rally_plan["citadels"]) + len(rally_plan["allies"])
                     + len(rally_plan["warbands"]))
 
-    # IF NONE: If <9 Warbands but couldn't Rally → March per §8.7.4
+    # IF NONE: Couldn't Rally any pieces → March per §8.7.4
+    # Per flowchart: V_RALLY "If none" → V_MARCH_SPREAD regardless
     if total_placed == 0:
-        wb_on_map = _count_arverni_warbands_on_map(state)
-        if wb_on_map < 9:
-            return node_v_march_spread(state)
-        # Otherwise pass downstream (will reach Raid or March Mass)
         return node_v_march_spread(state)
 
     # SA: Devastate or Entreat after Rally — §8.7.3
@@ -946,9 +994,9 @@ def node_v_march_spread(state):
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
-    # Check Frost — §2.3.8
-    if is_frost_active(state):
-        return node_v_raid(state)
+    # NOTE: No Frost check here — §8.7.4 does not mention Frost.
+    # Frost is a fallback condition only on V_MARCH_MASS (§8.7.6:
+    # "If none or Frost or no Leader → V_RAID").
 
     march_plan = {
         "spread_destinations": [],
@@ -958,11 +1006,51 @@ def node_v_march_spread(state):
     }
 
     # Step 1: Add 1 Hidden Arverni to each Region with no Hidden Arverni
+    # — §8.7.4: "add one Hidden Arverni to each Region possible that
+    # currently has no Hidden Arverni (without removing the last from any
+    # origin)."
+    # A region is reachable if it is adjacent to an origin with 2+ Arverni
+    # Warbands (so one can March in while leaving at least 1 behind).
+    # "from fewest Regions able" — track which origins serve which
+    # destinations and prefer origins that serve multiple destinations.
+    playable_set = set(playable)
+    dest_to_origins = {}
     for region in playable:
         hidden_arverni = count_pieces_by_state(
             state, region, ARVERNI, WARBAND, HIDDEN)
-        if hidden_arverni == 0 and count_pieces(state, region, ARVERNI, WARBAND) >= 0:
-            march_plan["spread_destinations"].append(region)
+        if hidden_arverni > 0:
+            continue  # Already has Hidden Arverni
+        # Find adjacent origins with 2+ Arverni Warbands
+        possible_origins = []
+        for adj in get_adjacent(region, scenario):
+            if adj not in playable_set:
+                continue
+            adj_wb = count_pieces(state, adj, ARVERNI, WARBAND)
+            if adj_wb >= 2:
+                possible_origins.append(adj)
+        if possible_origins:
+            dest_to_origins[region] = possible_origins
+
+    # Greedy assignment: pick origins that cover the most destinations
+    # to satisfy "from fewest Regions able"
+    remaining_dests = set(dest_to_origins.keys())
+    chosen_origins = set()
+    while remaining_dests:
+        # Count how many remaining dests each origin can serve
+        origin_coverage = {}
+        for dest in remaining_dests:
+            for orig in dest_to_origins[dest]:
+                origin_coverage.setdefault(orig, set()).add(dest)
+        if not origin_coverage:
+            break
+        # Pick origin that covers the most destinations
+        best_origin = max(origin_coverage, key=lambda o: len(origin_coverage[o]))
+        chosen_origins.add(best_origin)
+        covered = origin_coverage[best_origin]
+        remaining_dests -= covered
+        march_plan["spread_destinations"].extend(sorted(covered))
+
+    march_plan["origins"].extend(sorted(chosen_origins))
 
     # Step 2: Leader with Warbands to take Arverni Control of Roman/Aedui
     # Controlled region — NOT Bibracte (AEDUI_REGION) — §8.7.4
@@ -1145,9 +1233,17 @@ def node_v_march_mass(state):
 def _check_ambush(state, battle_plan, scenario):
     """V_AMBUSH: Determine Ambush regions.
 
-    Per §8.7.1: Ambush in 1st Battle only if Retreat could lessen removals
-    AND/OR Counterattack Loss to Arverni is possible. If Ambushed in 1st
-    Battle, Ambush in all others.
+    Per §4.3.3: Ambush requires:
+      (a) more Hidden Arverni than Hidden Defenders in the region, AND
+      (b) within one Region of Vercingetorix or has his Successor.
+
+    Per §8.7.1: Ambush in 1st Battle only if:
+      - Retreat out could lessen removals (enemy has mobile pieces that CAN
+        Retreat AND Arverni would inflict >0 losses so retreating saves them),
+        AND/OR
+      - Any Counterattack Loss to Arverni is possible (enemy has a Legion or
+        Leader that could survive Attack to Counterattack).
+    If Ambushed in 1st Battle, Ambush in all others.
 
     Returns:
         List of Ambush regions, or empty.
@@ -1159,17 +1255,43 @@ def _check_ambush(state, battle_plan, scenario):
     region = first_battle["region"]
     enemy = first_battle["target"]
 
+    # §4.3.3 eligibility: more Hidden Arverni than Hidden Defenders
+    hidden_arverni = count_pieces_by_state(
+        state, region, ARVERNI, WARBAND, HIDDEN)
+    hidden_enemy = count_pieces_by_state(
+        state, region, enemy, WARBAND, HIDDEN)
+    if hidden_arverni <= hidden_enemy:
+        return []
+
+    # §4.3.3 eligibility: within one Region of Vercingetorix
+    if not _is_within_one_of_vercingetorix(state, region, scenario):
+        return []
+
     # Check if Ambush is needed in 1st Battle — §8.7.1
     should_ambush_first = False
 
-    # (a) Retreat could lessen removals
+    # Estimate Arverni Attack losses (same formula as _can_battle_in_region)
+    arverni_wb = count_pieces(state, region, ARVERNI, WARBAND)
+    has_verc = get_leader_in_region(state, region, ARVERNI) is not None
+    attack_raw = arverni_wb * 0.5 + (1 if has_verc else 0)
+    enemy_fort = count_pieces(state, region, enemy, FORT)
+    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+    if enemy_fort > 0 or enemy_citadel > 0:
+        attack_raw = attack_raw / 2
+    losses_inflicted = int(attack_raw)
+
+    # (a) "Retreat out of that Region could lower the number of pieces
+    # [the enemy] would remove" — §8.7.1
+    # Retreat saves the enemy only if Arverni would inflict >0 losses
+    # (so the enemy gains from retreating to halve losses)
     enemy_mobile = count_mobile_pieces(state, region, enemy)
-    if enemy_mobile > 0:
-        # If enemy has mobile pieces that could Retreat, Ambush prevents that
+    if enemy_mobile > 0 and losses_inflicted > 0:
         should_ambush_first = True
 
-    # (b) Counterattack could inflict Loss on Arverni
-    # "A defending Legion or Leader would meet the 2nd requirement"
+    # (b) "any Counterattack Loss to Arverni is possible" — §8.7.1
+    # "A defending Legion or Leader would meet the 2nd requirement,
+    # because it could survive multiple die roll Losses to then inflict
+    # one Loss in Counterattack."
     if count_pieces(state, region, enemy, LEGION) > 0:
         should_ambush_first = True
     if get_leader_in_region(state, region, enemy) is not None:
@@ -1184,6 +1306,10 @@ def _check_ambush(state, battle_plan, scenario):
 
 def _check_devastate(state, scenario):
     """V_DEVASTATE: Determine Devastate regions.
+
+    Per §4.3.2: Devastate requires:
+      (a) the region is Arverni-Controlled, AND
+      (b) within one Region of Vercingetorix or has his Successor.
 
     Per §8.7.1: Devastate wherever able that will force removal of a Legion
     or two Auxilia or at least as many Roman+Aedui pieces as Arverni.
@@ -1201,8 +1327,15 @@ def _check_devastate(state, scenario):
         if state["spaces"].get(region, {}).get("devastated", False):
             continue
 
-        # Must be able to Devastate (have enough pieces, per §4.3.1)
-        # Simplified: Arverni must have Warbands here
+        # §4.3.2: Must be Arverni-Controlled
+        if not is_controlled_by(state, region, ARVERNI):
+            continue
+
+        # §4.3.2: Must be within one Region of Vercingetorix or Successor
+        if not _is_within_one_of_vercingetorix(state, region, scenario):
+            continue
+
+        # Must have Arverni Warbands here (per §4.3.2 procedure)
         if count_pieces(state, region, ARVERNI, WARBAND) == 0:
             continue
 
@@ -1233,6 +1366,10 @@ def _check_devastate(state, scenario):
 def _check_entreat(state, scenario):
     """V_ENTREAT: Determine Entreat targets.
 
+    Per §4.3.1: Entreat requires:
+      (a) the region has a Hidden Arverni Warband, AND
+      (b) within one Region of Vercingetorix or has his Successor.
+
     Per §8.7.1: Replace enemy Allies with Arverni, then replace enemy
     pieces with Arverni, then remove (once no Arverni Available).
 
@@ -1248,13 +1385,21 @@ def _check_entreat(state, scenario):
     avail_warbands = get_available(state, ARVERNI, WARBAND)
     non_players = state.get("non_player_factions", set())
 
+    def _region_eligible(region):
+        """Check §4.3.1 eligibility: Hidden Arverni Warband + Verc proximity."""
+        if count_pieces_by_state(state, region, ARVERNI, WARBAND, HIDDEN) == 0:
+            return False
+        if not _is_within_one_of_vercingetorix(state, region, scenario):
+            return False
+        return True
+
     # Step 1: Replace enemy Allies with Arverni Allies — §8.7.1
     # Priority: (1) Aedui, (2) Belgic, (3) Germanic
     for target_faction in (AEDUI, BELGAE, GERMANS):
         for region in playable:
             if avail_allies <= 0:
                 break
-            if count_pieces(state, region, ARVERNI) == 0:
+            if not _region_eligible(region):
                 continue
             tribes = get_tribes_in_region(region, scenario)
             for tribe in tribes:
@@ -1276,7 +1421,7 @@ def _check_entreat(state, scenario):
         for region in playable:
             if avail_warbands <= 0:
                 break
-            if count_pieces(state, region, ARVERNI) == 0:
+            if not _region_eligible(region):
                 continue
             target_count = count_pieces(state, region, target_faction, target_type)
             if target_count > 0:
@@ -1293,7 +1438,7 @@ def _check_entreat(state, scenario):
     if avail_warbands <= 0:
         for target_faction, target_type in ((ROMANS, AUXILIA), (AEDUI, WARBAND)):
             for region in playable:
-                if count_pieces(state, region, ARVERNI) == 0:
+                if not _region_eligible(region):
                     continue
                 target_count = count_pieces(
                     state, region, target_faction, target_type)
@@ -1310,7 +1455,7 @@ def _check_entreat(state, scenario):
             if target_faction in non_players:
                 continue  # Only player Factions
             for region in playable:
-                if count_pieces(state, region, ARVERNI) == 0:
+                if not _region_eligible(region):
                     continue
                 tribes = get_tribes_in_region(region, scenario)
                 for tribe in tribes:

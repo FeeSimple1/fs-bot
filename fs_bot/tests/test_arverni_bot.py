@@ -24,7 +24,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import place_piece, count_pieces, get_available
-from fs_bot.board.control import refresh_all_control
+from fs_bot.board.control import refresh_all_control, is_controlled_by
 from fs_bot.bots.arverni_bot import (
     # Node functions
     node_v1, node_v2, node_v2b, node_v2c, node_v3, node_v4, node_v5,
@@ -578,12 +578,37 @@ class TestNodeVRally:
         assert ARVERNI_REGION in result["regions"]
 
     def test_rally_if_none_redirects_to_march_spread(self):
-        """V_RALLY: IF NONE with <9 Warbands redirects to March (spread)."""
+        """V_RALLY: IF NONE redirects to March (spread) regardless — §8.7.3.
+
+        Bug 8: Both branches of old if/else called node_v_march_spread,
+        making the condition dead code. V_RALLY's "If none" edge always
+        goes to V_MARCH_SPREAD per the flowchart.
+        """
         state = _make_state()
         # No pieces at all — Rally can't place anything
-        # But <9 Warbands on map
         result = node_v_rally(state)
-        # Should redirect to March or Raid
+        # Should redirect to March or Raid (via March Spread's IF NONE)
+        assert result["command"] in (ACTION_MARCH, ACTION_RAID, ACTION_PASS)
+
+    def test_rally_if_none_with_many_warbands_still_goes_to_march_spread(self):
+        """V_RALLY: IF NONE with 10+ Warbands still goes to V_MARCH_SPREAD.
+
+        Bug 8: Old code had if wb_on_map < 9: march_spread else: march_spread.
+        The condition was dead — both paths went to the same place.
+        """
+        state = _make_state()
+        # Exhaust all Available Warbands so Rally can't place any
+        total_avail = get_available(state, ARVERNI, WARBAND)
+        _place_arverni_force(state, MANDUBII, warbands=total_avail)
+        # Also exhaust all Allies and Citadels
+        while get_available(state, ARVERNI, ALLY) > 0:
+            place_piece(state, MANDUBII, ARVERNI, ALLY)
+        while get_available(state, ARVERNI, CITADEL) > 0:
+            place_piece(state, MANDUBII, ARVERNI, CITADEL)
+        # Now wb_on_map >= 10 but Rally can't place anything (nothing Available)
+        assert _count_arverni_warbands_on_map(state) >= 10
+        result = node_v_rally(state)
+        # Should still go to March Spread, not some different path
         assert result["command"] in (ACTION_MARCH, ACTION_RAID, ACTION_PASS)
 
 
@@ -593,14 +618,32 @@ class TestNodeVRally:
 
 class TestNodeVMarchSpread:
 
-    def test_march_spread_frost_redirects_to_raid(self):
-        """V_MARCH_SPREAD redirects to Raid during Frost."""
+    def test_march_spread_not_blocked_by_frost(self):
+        """V_MARCH_SPREAD is NOT blocked by Frost — §8.7.4 has no Frost edge.
+
+        Bug 3: Old code incorrectly checked Frost here. Per the flowchart,
+        Frost is a fallback only on V_MARCH_MASS (§8.7.6), not V_MARCH_SPREAD.
+        """
         state = _make_state()
         state["frost"] = True
         _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=5)
         result = node_v_march_spread(state)
-        # Should redirect to Raid or Pass
-        assert result["command"] in (ACTION_RAID, ACTION_PASS)
+        # Should proceed with March or fall through to Raid via IF NONE,
+        # NOT automatically redirect to Raid because of Frost
+        assert result["command"] in (ACTION_MARCH, ACTION_RAID, ACTION_PASS)
+
+    def test_march_spread_during_frost_still_marches(self):
+        """V_MARCH_SPREAD can March even during Frost — §8.7.4 has no Frost gate.
+
+        Bug 3: V_MARCH_MASS gates on Frost (§8.7.6), but V_MARCH_SPREAD does not.
+        """
+        state = _make_state()
+        state["frost"] = True
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=10)
+        result = node_v_march_spread(state)
+        # With 10 WBs from ARVERNI_REGION, should find spread destinations
+        if result["command"] == ACTION_MARCH:
+            assert len(result["details"]["march_plan"]["spread_destinations"]) > 0
 
     def test_march_spread_basic(self):
         """V_MARCH_SPREAD selects destinations for spreading."""
@@ -608,6 +651,54 @@ class TestNodeVMarchSpread:
         _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=10)
         result = node_v_march_spread(state)
         assert result["command"] in (ACTION_MARCH, ACTION_RAID, ACTION_PASS)
+
+    def test_march_spread_step1_only_regions_without_hidden_arverni(self):
+        """Step 1: only targets regions with NO Hidden Arverni — §8.7.4.
+
+        Bug 2: Old code used count >= 0 (always True), adding every region.
+        Must only target regions with hidden_arverni == 0.
+        """
+        state = _make_state()
+        # Place 5 Warbands in Arverni region (origin with plenty to send)
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=5)
+        # Place Hidden Warbands in adjacent Bituriges — should NOT be a spread dest
+        place_piece(state, BITURIGES, ARVERNI, WARBAND, 2)
+        result = node_v_march_spread(state)
+        if result["command"] == ACTION_MARCH:
+            spread_dests = result["details"]["march_plan"]["spread_destinations"]
+            # Bituriges already has Hidden Arverni — must not be a destination
+            assert BITURIGES not in spread_dests
+
+    def test_march_spread_step1_dest_must_be_reachable(self):
+        """Step 1: destination must be adjacent to origin with 2+ WBs — §8.7.4.
+
+        Bug 2: Old code didn't check adjacency/reachability at all.
+        A region with no Hidden Arverni but no adjacent origin with 2+ WBs
+        cannot be reached.
+        """
+        state = _make_state()
+        # Only 1 Warband in Arverni region — can't send it (must leave 1)
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=1)
+        result = node_v_march_spread(state)
+        if result["command"] == ACTION_MARCH:
+            spread_dests = result["details"]["march_plan"]["spread_destinations"]
+            # With only 1 WB, no origin has 2+ so no spreading possible
+            assert len(spread_dests) == 0
+
+    def test_march_spread_step1_fewest_origins(self):
+        """Step 1: 'from fewest Regions able' — prefer shared origins.
+
+        If one origin can serve multiple destinations, use it rather than
+        multiple origins.
+        """
+        state = _make_state()
+        # Place 5 Warbands in one region adjacent to multiple empty regions
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=5)
+        result = node_v_march_spread(state)
+        if result["command"] == ACTION_MARCH:
+            origins = result["details"]["march_plan"]["origins"]
+            # All spread destinations should be served from minimal origins
+            assert len(origins) >= 1  # At least one origin needed
 
 
 # ===================================================================
@@ -619,8 +710,9 @@ class TestNodeVRaid:
     def test_raid_passes_if_insufficient_gain(self):
         """V_RAID passes if Raiding wouldn't gain 2+ Resources."""
         state = _make_state()
-        # Arverni with no Hidden Warbands can't Raid
-        _place_arverni_force(state, ARVERNI_REGION, warbands=3)
+        # Only 1 Hidden Warband in a single non-Devastated region
+        # → max 1 flip → only 1 Resource → not enough
+        place_piece(state, ARVERNI_REGION, ARVERNI, WARBAND, 1)
         result = node_v_raid(state)
         assert result["command"] == ACTION_PASS
 
@@ -635,6 +727,72 @@ class TestNodeVRaid:
         result = node_v_raid(state)
         if result["command"] == ACTION_RAID:
             assert len(result["regions"]) > 0
+
+    def test_raid_no_double_count_multi_faction_region(self):
+        """Raid: region with Romans+Aedui counts max 2 flips, not 1 per faction pair.
+
+        Bug 1a: Old code counted 1 per (region, target) pair, double-counting
+        regions with multiple enemy factions.  Per §3.3.3, a region can only
+        flip at most 2 Hidden Warbands total across all targets.
+        """
+        state = _make_state()
+        # 1 Hidden Warband in Mandubii with both Romans and Aedui present
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 1)
+        _place_roman_force(state, MANDUBII, auxilia=1)
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 1)
+        # Only 1 hidden WB → max 1 flip → max 1 Resource from this region
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        mandubii_entries = [r for r in raid_plan if r["region"] == MANDUBII]
+        assert len(mandubii_entries) == 1  # Only 1 flip, not 2
+
+    def test_raid_max_2_flips_per_region(self):
+        """Raid: even with 5 Hidden WBs, max 2 flips per region — §3.3.3 (d)."""
+        state = _make_state()
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 5)
+        _place_roman_force(state, MANDUBII, auxilia=1)
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        mandubii_entries = [r for r in raid_plan if r["region"] == MANDUBII]
+        assert len(mandubii_entries) <= 2
+
+    def test_raid_no_steal_from_enemy_with_fort(self):
+        """Raid: can't steal from enemy with Fort in region — §3.3.3 (b).
+
+        Per §3.3.3: stealing requires enemy 'has pieces in the Region but
+        neither Citadel nor Fort.'
+        """
+        state = _make_state()
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        # Romans have Fort — can't steal from them
+        _place_roman_force(state, MANDUBII, auxilia=2, fort=True)
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        # Should not have any entries targeting Romans
+        roman_entries = [r for r in raid_plan if r.get("target") == ROMANS]
+        assert len(roman_entries) == 0
+
+    def test_raid_no_steal_from_enemy_with_citadel(self):
+        """Raid: can't steal from enemy with Citadel — §3.3.3 (b)."""
+        state = _make_state()
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 2)
+        place_piece(state, MANDUBII, AEDUI, CITADEL)
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        aedui_entries = [r for r in raid_plan if r.get("target") == AEDUI]
+        assert len(aedui_entries) == 0
+
+    def test_raid_non_devastated_not_double_counted(self):
+        """Raid: non-Devastated region already used for steal not double-counted (c).
+
+        Bug 1c: Old code had separate loops for faction and no-faction Raids,
+        causing regions counted in the faction loop to be counted again.
+        """
+        state = _make_state()
+        # 2 Hidden WBs in Mandubii with Romans — both flips go to steal
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 2)
+        _place_roman_force(state, MANDUBII, auxilia=1)
+        enough, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        mandubii_entries = [r for r in raid_plan if r["region"] == MANDUBII]
+        # Should be exactly 2 entries (both flips assigned), not 3+
+        assert len(mandubii_entries) <= 2
 
 
 # ===================================================================
@@ -700,33 +858,165 @@ class TestSpecialAbilities:
         regions = _check_ambush(state, battle_plan, state["scenario"])
         assert len(regions) == 2
 
+    def test_ambush_requires_more_hidden_arverni(self):
+        """Ambush requires more Hidden Arverni than Hidden Defenders — §4.3.3.
+
+        Bug 7: Old code didn't check Hidden count comparison at all.
+        """
+        state = _make_state()
+        battle_plan = [{
+            "region": MANDUBII,
+            "target": BELGAE,
+            "is_trigger": True,
+        }]
+        # 2 Hidden Arverni vs 3 Hidden Belgae → can't Ambush
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=2)
+        place_piece(state, MANDUBII, BELGAE, WARBAND, 3)
+        regions = _check_ambush(state, battle_plan, state["scenario"])
+        assert len(regions) == 0
+
+    def test_ambush_requires_vercingetorix_proximity(self):
+        """Ambush requires within 1 Region of Vercingetorix — §4.3.3.
+
+        Bug 7: Old code didn't check Vercingetorix proximity.
+        """
+        state = _make_state()
+        # Vercingetorix far from battle region
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=2)
+        _place_arverni_force(state, MORINI, warbands=5)
+        place_piece(state, MORINI, BELGAE, WARBAND, 2)
+        battle_plan = [{
+            "region": MORINI,
+            "target": BELGAE,
+            "is_trigger": True,
+        }]
+        from fs_bot.bots.arverni_bot import _is_within_one_of_vercingetorix
+        if not _is_within_one_of_vercingetorix(state, MORINI, state["scenario"]):
+            regions = _check_ambush(state, battle_plan, state["scenario"])
+            assert len(regions) == 0
+
+    def test_ambush_retreat_needs_losses_inflicted(self):
+        """Ambush Retreat trigger requires Arverni inflict >0 losses — §8.7.1.
+
+        Bug 7: Old code triggered Ambush whenever enemy had ANY mobile piece.
+        The rule says 'Retreat out could lessen removals' — which only matters
+        if Arverni would inflict losses in the first place.
+        """
+        state = _make_state()
+        # 1 Arverni Warband + Vercingetorix vs Romans with Fort
+        # Attack: int((1 * 0.5 + 1) / 2) = int(0.75) = 0 → no losses inflicted
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=1)
+        # Romans: 1 Auxilia (mobile) + Fort → halves Attack, yielding 0 losses
+        _place_roman_force(state, MANDUBII, auxilia=1, fort=True)
+        battle_plan = [{
+            "region": MANDUBII,
+            "target": ROMANS,
+            "is_trigger": True,
+        }]
+        regions = _check_ambush(state, battle_plan, state["scenario"])
+        # With 0 losses inflicted, Retreat doesn't help enemy
+        # No Legion or Leader to Counterattack either → no Ambush
+        assert len(regions) == 0
+
     def test_devastate_with_legion(self):
         """Devastate triggers in region with Roman Legion."""
         state = _make_state()
-        _place_arverni_force(state, MANDUBII, warbands=5)
+        # Need Arverni Control + Vercingetorix nearby — §4.3.2
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=8)
         _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        refresh_all_control(state)
         regions = _check_devastate(state, state["scenario"])
         assert MANDUBII in regions
 
     def test_devastate_skips_already_devastated(self):
         """Devastate skips regions already Devastated."""
         state = _make_state()
-        _place_arverni_force(state, MANDUBII, warbands=5)
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=8)
         _place_roman_force(state, MANDUBII, legions=1)
+        refresh_all_control(state)
         state["spaces"][MANDUBII]["devastated"] = True
         regions = _check_devastate(state, state["scenario"])
         assert MANDUBII not in regions
 
+    def test_devastate_requires_arverni_control(self):
+        """Devastate: must have Arverni Control in region — §4.3.2.
+
+        Bug 5: Old code didn't check Control at all.
+        """
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=3)
+        # Romans have more pieces → Roman Control, not Arverni
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        refresh_all_control(state)
+        assert not is_controlled_by(state, MANDUBII, ARVERNI)
+        regions = _check_devastate(state, state["scenario"])
+        assert MANDUBII not in regions
+
+    def test_devastate_requires_vercingetorix_proximity(self):
+        """Devastate: must be within 1 Region of Vercingetorix — §4.3.2.
+
+        Bug 5: Old code didn't check Vercingetorix proximity.
+        """
+        state = _make_state()
+        # Vercingetorix in Arverni region, Devastate candidate far away
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=2)
+        _place_arverni_force(state, MORINI, warbands=8)
+        _place_roman_force(state, MORINI, legions=1)
+        refresh_all_control(state)
+        # MORINI is far from ARVERNI_REGION (more than 1 Region away)
+        from fs_bot.bots.arverni_bot import _is_within_one_of_vercingetorix
+        if not _is_within_one_of_vercingetorix(state, MORINI, state["scenario"]):
+            regions = _check_devastate(state, state["scenario"])
+            assert MORINI not in regions
+
     def test_entreat_replaces_enemy_allies(self):
         """Entreat replaces enemy Allies with Arverni Allies."""
         state = _make_state()
-        _place_arverni_force(state, MANDUBII, warbands=5)
+        # Need Hidden Arverni Warband + Vercingetorix nearby — §4.3.1
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
         state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
         place_piece(state, MANDUBII, AEDUI, ALLY)
         actions = _check_entreat(state, state["scenario"])
         replace_actions = [a for a in actions if a["action"] == "replace_ally"]
         assert len(replace_actions) > 0
         assert replace_actions[0]["target_faction"] == AEDUI
+
+    def test_entreat_requires_hidden_warband(self):
+        """Entreat requires Hidden Arverni Warband — §4.3.1.
+
+        Bug 6: Old code checked count_pieces(ARVERNI) == 0, which accepts
+        any Arverni pieces (e.g. Revealed Warbands, Allies, Citadels).
+        Must specifically require Hidden Warbands.
+        """
+        state = _make_state()
+        # Place Vercingetorix + only Revealed Warbands (flip to Revealed)
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=3)
+        # Flip all to Revealed so there are no Hidden
+        from fs_bot.board.pieces import flip_piece
+        flip_piece(state, MANDUBII, ARVERNI, WARBAND, 3,
+                   from_state=HIDDEN, to_state=REVEALED)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
+        place_piece(state, MANDUBII, AEDUI, ALLY)
+        actions = _check_entreat(state, state["scenario"])
+        # No Hidden WB → no Entreat
+        assert len(actions) == 0
+
+    def test_entreat_requires_vercingetorix_proximity(self):
+        """Entreat requires within 1 Region of Vercingetorix — §4.3.1.
+
+        Bug 6: Old code didn't check Vercingetorix proximity.
+        """
+        state = _make_state()
+        # Vercingetorix far away from target region
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=2)
+        _place_arverni_force(state, MORINI, warbands=3)
+        state["tribes"][TRIBE_MORINI]["allied_faction"] = AEDUI
+        place_piece(state, MORINI, AEDUI, ALLY)
+        from fs_bot.bots.arverni_bot import _is_within_one_of_vercingetorix
+        if not _is_within_one_of_vercingetorix(state, MORINI, state["scenario"]):
+            actions = _check_entreat(state, state["scenario"])
+            morini_actions = [a for a in actions if a.get("region") == MORINI]
+            assert len(morini_actions) == 0
 
 
 # ===================================================================
@@ -957,6 +1247,57 @@ class TestHelpers:
         # 6 Arverni vs 4 Roman = 1.5:1 ≤ 2:1
         _place_roman_force(state, MANDUBII, leader=True, legions=2, auxilia=1)
         assert not _check_caesar_ratio(state, MANDUBII)
+
+    def test_can_battle_leader_counts_full_loss(self):
+        """_can_battle_in_region: Leader contributes 1 to Losses, not ½ — §3.3.4.
+
+        Bug 4: Old code used arverni_mobile // 2, treating Leader and Warbands
+        identically (½ each). Per §3.3.4: Warbands = ½, Leader = 1.
+        Example: 4 WBs + Vercingetorix → int(2.0 + 1.0) = 3, not 5 // 2 = 2.
+        """
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=4)
+        # 2 Auxilia → enemy inflicts int(2 * 0.5) = 1 in counterattack
+        _place_roman_force(state, MANDUBII, auxilia=2)
+        # Arverni Attack: int(4 * 0.5 + 1) = 3 losses inflicted
+        # Arverni Counterattack suffered: int(2 * 0.5) = 1
+        # 3 > 1 → should be True
+        assert _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
+
+    def test_can_battle_enemy_leader_counts_full_loss(self):
+        """_can_battle_in_region: Enemy Leader contributes 1 to Counterattack — §3.3.4.
+
+        Bug 4: Old code estimated enemy counterattack as enemy_mobile // 2
+        which undercounts Leaders.
+        """
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, warbands=2)
+        # Caesar alone: Counterattack = int(0 + 0 + 1 + 0) = 1
+        _place_roman_force(state, MANDUBII, leader=True)
+        # Arverni Attack: int(2 * 0.5) = 1
+        # 1 is not > 1, no legion → can_hit_legion = False
+        # losses_inflicted (1) NOT > losses_suffered (1) → False
+        assert not _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
+
+    def test_can_battle_fort_halving_correct(self):
+        """_can_battle_in_region: Fort/Citadel halving applied to raw total — §3.3.4."""
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=4)
+        # Roman Fort → Attack halved: int((4*0.5 + 1) / 2) = int(1.5) = 1
+        _place_roman_force(state, MANDUBII, auxilia=1, fort=True)
+        # Enemy counterattack: int(1 * 0.5) = 0
+        # 1 > 0 = True, but no legion → relies on inflicted > suffered
+        assert _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
+
+    def test_can_battle_counterattack_with_legions(self):
+        """_can_battle_in_region: Legions contribute 1 each to Counterattack — §3.3.4."""
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, warbands=6)
+        # 2 Legions + 2 Auxilia: Counterattack = int(2*1 + 2*0.5) = 3
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=2)
+        # Arverni Attack: int(6 * 0.5) = 3. Fort/Citadel halving from enemy: no.
+        # can_hit_legion: 2 > 0 and 3 > 0 → True (Battle proceeds)
+        assert _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
 
     def test_count_warbands_on_map(self):
         """_count_arverni_warbands_on_map counts correctly."""

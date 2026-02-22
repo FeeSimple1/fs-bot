@@ -34,6 +34,8 @@ from fs_bot.rules_consts import (
     EVENT_UNSHADED,
     # Die
     DIE_MIN, DIE_MAX,
+    # Suborn limits
+    SUBORN_MAX_PIECES, SUBORN_MAX_ALLIES,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
@@ -200,12 +202,22 @@ def _estimate_battle_losses(state, region, attacker, defender, scenario):
 
 
 def _would_force_loss_on_high_value(state, region, attacker, defender,
-                                     scenario):
+                                     scenario, *,
+                                     ambush_possible=False):
     """Check if Battle would force a Loss on enemy Leader, Ally, Citadel,
     or Legion — per §8.6.2.
 
     "accounting for which enemy the Aedui would Battle, any Aedui Ambush,
     a possible enemy Retreat, Aedui Resources, and so on"
+
+    Per §8.6.2: must account for "a possible enemy Retreat". Retreat halves
+    Attack Losses. When the enemy has mobile pieces that could Retreat, use
+    reduced losses for the check since a rational defender WILL Retreat to
+    protect high-value targets. Exception: if Ambush would apply, the enemy
+    cannot Retreat — use full losses.
+
+    Args:
+        ambush_possible: If True, enemy cannot Retreat (Ambush prevents it).
 
     Returns:
         True if Battle is sure to inflict a Loss on a high-value target.
@@ -222,6 +234,16 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
     def_allies = count_pieces(state, region, defender, ALLY)
     def_citadels = count_pieces(state, region, defender, CITADEL)
 
+    # Per A8.6.2: count Settlements as "Allies" in Ariovistus scenarios
+    def_settlements = 0
+    if scenario in ARIOVISTUS_SCENARIOS:
+        def_settlements = count_pieces(state, region, defender, SETTLEMENT)
+
+    high_value_count = (
+        (1 if def_leader else 0)
+        + def_legions + def_allies + def_citadels + def_settlements
+    )
+
     # Count total defender pieces to see if losses reach high-value targets
     # Losses remove pieces in defender's choice, but we check if losses
     # are enough that a high-value piece MUST be hit.
@@ -230,13 +252,25 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
     def_auxilia = count_pieces(state, region, defender, AUXILIA)
     expendable = def_warbands + def_auxilia
 
+    # Account for enemy Retreat — §8.6.2
+    # Retreat halves Attack Losses. If enemy has mobile pieces (anything
+    # except lone Ally/Citadel/Fort), they could Retreat to protect
+    # high-value targets. Exception: Ambush prevents Retreat.
+    enemy_mobile = count_mobile_pieces(state, region, defender)
+    effective_losses = losses_inflicted
+    if enemy_mobile > 0 and not ambush_possible:
+        # Enemy could Retreat → use halved losses
+        effective_losses = int(losses_inflicted / 2)
+
+    if effective_losses <= 0:
+        return False
+
     # If losses exceed expendable pieces, high-value targets MUST take hits
-    if losses_inflicted > expendable:
+    if effective_losses > expendable:
         return True
 
     # If defender has ONLY high-value targets (no expendable), any loss hits them
-    if expendable == 0 and (def_leader or def_legions > 0
-                            or def_allies > 0 or def_citadels > 0):
+    if expendable == 0 and high_value_count > 0:
         return True
 
     return False
@@ -353,8 +387,18 @@ def node_a4(state):
         for enemy in enemies:
             if count_pieces(state, region, enemy) == 0:
                 continue
+            # Check if Ambush is possible — more Hidden Aedui than Hidden enemy
+            hidden_aedui = count_pieces_by_state(
+                state, region, AEDUI, WARBAND, HIDDEN)
+            hidden_enemy = count_pieces_by_state(
+                state, region, enemy, WARBAND, HIDDEN)
+            if enemy == ROMANS:
+                hidden_enemy += count_pieces_by_state(
+                    state, region, enemy, AUXILIA, HIDDEN)
+            ambush = hidden_aedui > hidden_enemy
             if _would_force_loss_on_high_value(
-                    state, region, AEDUI, enemy, scenario):
+                    state, region, AEDUI, enemy, scenario,
+                    ambush_possible=ambush):
                 return "Yes"
 
     return "No"
@@ -656,15 +700,50 @@ def node_a_battle(state):
 
     battle_plan = []
 
+    # Per A8.6.2: "do not Battle where the Diviciacus Leader could take
+    # any Loss in a counterattack." — Ariovistus only.
+    diviciacus_region = None
+    if scenario in ARIOVISTUS_SCENARIOS:
+        diviciacus_region = _diviciacus_region(state)
+
     # Step 2: Battle where we force Loss on Leader, Ally, Citadel, Legion
     for region in playable:
         if count_pieces(state, region, AEDUI) == 0:
             continue
+
+        # A8.6.2: Skip if Diviciacus could take a counterattack Loss
+        if diviciacus_region == region:
+            skip_for_diviciacus = False
+            for enemy in enemies:
+                if count_pieces(state, region, enemy) == 0:
+                    continue
+                _, losses_suffered = _estimate_battle_losses(
+                    state, region, AEDUI, enemy, scenario)
+                # Expendable Aedui pieces that absorb losses before Diviciacus
+                aedui_wb = count_pieces(state, region, AEDUI, WARBAND)
+                aedui_aux = count_pieces(state, region, AEDUI, AUXILIA)
+                expendable_aedui = aedui_wb + aedui_aux
+                if losses_suffered >= expendable_aedui:
+                    skip_for_diviciacus = True
+                    break
+            if skip_for_diviciacus:
+                continue
+
         for enemy in enemies:
             if count_pieces(state, region, enemy) == 0:
                 continue
+            # Check if Ambush is possible — more Hidden Aedui than Hidden enemy
+            hidden_aedui = count_pieces_by_state(
+                state, region, AEDUI, WARBAND, HIDDEN)
+            hidden_enemy = count_pieces_by_state(
+                state, region, enemy, WARBAND, HIDDEN)
+            if enemy == ROMANS:
+                hidden_enemy += count_pieces_by_state(
+                    state, region, enemy, AUXILIA, HIDDEN)
+            ambush = hidden_aedui > hidden_enemy
             if _would_force_loss_on_high_value(
-                    state, region, AEDUI, enemy, scenario):
+                    state, region, AEDUI, enemy, scenario,
+                    ambush_possible=ambush):
                 battle_plan.append({
                     "region": region,
                     "target": enemy,
@@ -679,6 +758,24 @@ def node_a_battle(state):
             continue
         if count_pieces(state, region, AEDUI) == 0:
             continue
+
+        # A8.6.2: Skip if Diviciacus could take a counterattack Loss
+        if diviciacus_region == region:
+            skip_for_diviciacus = False
+            for enemy in enemies:
+                if count_pieces(state, region, enemy) == 0:
+                    continue
+                _, losses_suffered = _estimate_battle_losses(
+                    state, region, AEDUI, enemy, scenario)
+                aedui_wb = count_pieces(state, region, AEDUI, WARBAND)
+                aedui_aux = count_pieces(state, region, AEDUI, AUXILIA)
+                expendable_aedui = aedui_wb + aedui_aux
+                if losses_suffered >= expendable_aedui:
+                    skip_for_diviciacus = True
+                    break
+            if skip_for_diviciacus:
+                continue
+
         for enemy in enemies:
             if count_pieces(state, region, enemy) == 0:
                 continue
@@ -992,8 +1089,26 @@ def node_a_march(state):
     if best_ctrl_dest is not None:
         march_plan["control_destination"] = best_ctrl_dest
 
+    # Per A8.6.5: "After carrying out the specified March priorities, March
+    # the Diviciacus Leader to join the largest group of Aedui Warbands
+    # possible (if on the map and not already with the largest group)."
+    if scenario in ARIOVISTUS_SCENARIOS:
+        div_region = _diviciacus_region(state)
+        if div_region is not None:
+            # Find region with the largest group of Aedui Warbands
+            best_wb_region = None
+            best_wb_count = -1
+            for region in playable:
+                wb = count_pieces(state, region, AEDUI, WARBAND)
+                if wb > best_wb_count:
+                    best_wb_count = wb
+                    best_wb_region = region
+            if best_wb_region and best_wb_region != div_region:
+                march_plan["diviciacus_destination"] = best_wb_region
+
     has_any_march = (march_plan["spread_destinations"]
-                     or march_plan["control_destination"] is not None)
+                     or march_plan["control_destination"] is not None
+                     or march_plan.get("diviciacus_destination") is not None)
 
     if not has_any_march:
         return node_a_raid(state)
@@ -1002,6 +1117,8 @@ def node_a_march(state):
     all_dests = list(march_plan["spread_destinations"])
     if march_plan["control_destination"]:
         all_dests.append(march_plan["control_destination"])
+    if march_plan.get("diviciacus_destination"):
+        all_dests.append(march_plan["diviciacus_destination"])
     marched_britannia = (
         BRITANNIA in all_dests
         or march_plan.get("origin") == BRITANNIA
@@ -1163,37 +1280,77 @@ def _determine_trade_sa(state, scenario, *, battled=False):
 def _estimate_trade_resources(state, scenario):
     """Estimate how many Resources Trade would earn.
 
-    Per §4.4.1: Trade earns Resources based on Supply Lines through
-    Aedui-Controlled Regions. For estimation, count Aedui-Controlled
-    regions that could participate in Trade.
+    Per §4.4.1: Trade earns Resources based on pieces within Supply Lines
+    to Cisalpina:
+      - +1 per Aedui Allied Tribe within Supply Lines
+      - +1 per Aedui Citadel within Supply Lines
+      If Romans agree: double those to +2 each, plus:
+      - +1 per Subdued Tribe in Aedui-Controlled regions within Supply Lines
+      - +1 per Roman Allied Tribe in Aedui-Controlled regions within Supply
+        Lines
+
+    NOTE: This is an approximation pending full Supply Line pathfinding.
+    We count all Aedui Allies + Citadels on the map as a baseline (they
+    earn at least +1 each if any Supply Line exists), then check the
+    Roman agreement multiplier.
 
     Returns:
         Integer estimated Resources gained.
     """
-    aedui_controlled = get_controlled_regions(state, AEDUI)
     non_players = state.get("non_player_factions", set())
 
-    # Each Aedui-Controlled region on a Supply Line earns Resources
-    # §4.4.1: Trade earns 1 Resource per region with an agreeing faction
-    total = 0
-    for region in aedui_controlled:
-        # Check if any faction would agree to Trade in this region
-        for faction in FACTIONS:
-            if faction == AEDUI:
-                continue
-            if count_pieces(state, region, faction) > 0:
-                # NP Romans always agree — §8.6.3
-                if faction == ROMANS and ROMANS in non_players:
+    # Count Aedui Allies on map
+    aedui_allies = 0
+    for tribe_info in state["tribes"].values():
+        if tribe_info.get("allied_faction") == AEDUI:
+            aedui_allies += 1
+
+    # Count Aedui Citadels on map
+    aedui_citadels = count_on_map(state, AEDUI, CITADEL)
+
+    base_pieces = aedui_allies + aedui_citadels
+    if base_pieces == 0:
+        return 0
+
+    # Check if Romans would agree — §8.6.3, §8.6.6
+    # NP Romans always agree per §8.6.3
+    romans_agree = False
+    if ROMANS in non_players:
+        romans_agree = True
+    else:
+        # Player Romans: use same victory-score tiers from agreements
+        # For estimation, assume agreement if score < 10
+        try:
+            roman_score = calculate_victory_score(state, ROMANS)
+            if roman_score < 10:
+                romans_agree = True
+        except Exception:
+            pass
+
+    if romans_agree:
+        # +2 per Aedui Ally and Citadel — §4.4.1
+        total = base_pieces * 2
+
+        # +1 per Subdued Tribe in Aedui-Controlled regions
+        aedui_controlled = set(get_controlled_regions(state, AEDUI))
+        for tribe_name, tribe_info in state["tribes"].items():
+            from fs_bot.rules_consts import TRIBE_TO_REGION
+            tribe_region = TRIBE_TO_REGION.get(tribe_name)
+            if tribe_region and tribe_region in aedui_controlled:
+                # Subdued = no allied_faction and no Dispersed marker
+                if tribe_info.get("allied_faction") is None:
+                    if not tribe_info.get("status"):
+                        total += 1
+
+        # +1 per Roman Allied Tribe in Aedui-Controlled regions
+        for tribe_name, tribe_info in state["tribes"].items():
+            tribe_region = TRIBE_TO_REGION.get(tribe_name)
+            if tribe_region and tribe_region in aedui_controlled:
+                if tribe_info.get("allied_faction") == ROMANS:
                     total += 1
-                    break
-                # Player Romans agree based on victory score — §8.6.6
-                elif faction == ROMANS:
-                    total += 1
-                    break
-                # Other factions: player must decide
-                elif faction not in non_players:
-                    total += 1
-                    break
+    else:
+        # +1 per Aedui Ally and Citadel — §4.4.1
+        total = base_pieces
 
     return total
 
@@ -1216,6 +1373,14 @@ def _determine_suborn_sa(state, scenario):
     3. Place all Aedui Warbands able.
     4. Remove most enemy Warbands: (1) Arverni (2) Belgae (3) Germans.
     5. Remove Auxilia.
+
+    Per §4.4.2: "remove and/or place a total of up to three such pieces in
+    the Suborn Region (in any combination). A maximum of one of the three
+    pieces removed or placed in the Region may be an Allied Tribe."
+    Cap: 3 pieces total per region, 1 Ally max per region.
+
+    Note: Suborn costs (2 Resources per Ally, 1 per Warband/Auxilia — §4.4.2)
+    are tracked by the execution layer, not the planning layer.
 
     If none: no Special Ability.
 
@@ -1248,10 +1413,15 @@ def _determine_suborn_sa(state, scenario):
             continue
 
         region_actions = []
+        # Per §4.4.2: max 3 pieces total, max 1 Ally per region
+        pieces_affected = 0
+        allies_affected = 0
 
         # Step 1: Place Aedui Ally — §8.6.3
         ally_placed = False
-        if avail_allies > 0:
+        if (avail_allies > 0
+                and pieces_affected < SUBORN_MAX_PIECES
+                and allies_affected < SUBORN_MAX_ALLIES):
             tribes = get_tribes_in_region(region, scenario)
             for tribe in tribes:
                 tribe_info = state["tribes"].get(tribe, {})
@@ -1262,10 +1432,14 @@ def _determine_suborn_sa(state, scenario):
                     })
                     avail_allies -= 1
                     ally_placed = True
+                    pieces_affected += 1
+                    allies_affected += 1
                     break
 
         # Step 2: If no Ally placed, remove enemy Ally — §8.6.3
-        if not ally_placed:
+        if (not ally_placed
+                and pieces_affected < SUBORN_MAX_PIECES
+                and allies_affected < SUBORN_MAX_ALLIES):
             # Remove from faction with most AC, NP Romans last
             best_target = None
             best_ac = -1
@@ -1297,37 +1471,53 @@ def _determine_suborn_sa(state, scenario):
 
             if best_target:
                 region_actions.append(best_target)
+                pieces_affected += 1
+                allies_affected += 1
 
         # Step 3: Place all Aedui Warbands able — §8.6.3
-        while avail_warbands > 0:
+        # Capped by remaining piece slots — §4.4.2
+        while avail_warbands > 0 and pieces_affected < SUBORN_MAX_PIECES:
             region_actions.append({"action": "place_warband"})
             avail_warbands -= 1
+            pieces_affected += 1
 
         # Step 4: Remove most enemy Warbands — §8.6.3
         # Priority: (1) Arverni (2) Belgae (3) Germans
         # In Ariovistus: Germans swap with Arverni per A8.4
+        # Capped by remaining piece slots — §4.4.2
         if scenario in ARIOVISTUS_SCENARIOS:
             wb_remove_order = (GERMANS, BELGAE, ARVERNI)
         else:
             wb_remove_order = (ARVERNI, BELGAE, GERMANS)
 
         for target_faction in wb_remove_order:
+            if pieces_affected >= SUBORN_MAX_PIECES:
+                break
             enemy_wb = count_pieces(state, region, target_faction, WARBAND)
             for _ in range(enemy_wb):
+                if pieces_affected >= SUBORN_MAX_PIECES:
+                    break
                 region_actions.append({
                     "action": "remove_warband",
                     "target_faction": target_faction,
                 })
+                pieces_affected += 1
 
         # Step 5: Remove Auxilia — §8.6.3
+        # Capped by remaining piece slots — §4.4.2
         for target_faction in get_faction_targeting_order(AEDUI, scenario):
+            if pieces_affected >= SUBORN_MAX_PIECES:
+                break
             enemy_aux = count_pieces(
                 state, region, target_faction, AUXILIA)
             for _ in range(enemy_aux):
+                if pieces_affected >= SUBORN_MAX_PIECES:
+                    break
                 region_actions.append({
                     "action": "remove_auxilia",
                     "target_faction": target_faction,
                 })
+                pieces_affected += 1
 
         if region_actions:
             suborn_plan.append({
@@ -1398,7 +1588,8 @@ def node_a_quarters(state):
 # AGREEMENTS
 # ============================================================================
 
-def node_a_agreements(state, requesting_faction, request_type):
+def node_a_agreements(state, requesting_faction, request_type, *,
+                      context=None):
     """A_AGREEMENTS: Agreement decisions.
 
     Per §8.6.6:
@@ -1410,15 +1601,26 @@ def node_a_agreements(state, requesting_faction, request_type):
     - To Arverni, Belgae: Never.
     - To NP Roman: Always.
 
+    Per A8.6.6 (Ariovistus):
+    - Admagetobriga: NP Belgae agree to use of their Warbands only where
+      the executing Faction has pieces. (This is primarily a Belgae
+      agreement rule — see TODO below.)
+    - Frumentum: Transfer half of Aedui's total Resources to NP Romans
+      only (none to player Romans).
+
     Args:
         state: Game state dict.
         requesting_faction: Faction making the request.
         request_type: "supply_line", "retreat", "quarters", "resources",
-                      "harassment".
+                      "harassment", "admagetobriga_warbands",
+                      "frumentum_transfer".
+        context: Optional dict with extra context (e.g., "region" for
+                 Admagetobriga).
 
     Returns:
-        True if Aedui agree.
+        True if Aedui agree, or a dict with details for transfers.
     """
+    scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
 
     if request_type == "harassment":
@@ -1441,10 +1643,41 @@ def node_a_agreements(state, requesting_faction, request_type):
         # Never transfer to Arverni or Belgae — §8.6.6
         return False
 
+    # Per A8.6.6: Admagetobriga — NP Belgae agree to use of their Warbands
+    # only where the executing Faction has pieces.
+    # TODO: A8.6.6 Admagetobriga is primarily a Belgae agreement rule.
+    # This will be fully handled when the Belgae bot implements its
+    # agreement logic. For the Aedui side, we note that NP Belgae
+    # agree only if the executing faction has pieces in the region.
+    if request_type == "admagetobriga_warbands":
+        if requesting_faction == BELGAE:
+            ctx = context or {}
+            region = ctx.get("region")
+            executing_faction = ctx.get("executing_faction")
+            if region and executing_faction:
+                return count_pieces(state, region, executing_faction) > 0
+        return False
+
+    # Per A8.6.6: Frumentum — Transfer half of Aedui's total Resources
+    # to NP Romans only (none to player Romans).
+    if request_type == "frumentum_transfer":
+        if ROMANS in non_players:
+            aedui_res = state.get("resources", {}).get(AEDUI, 0)
+            transfer_amount = aedui_res // 2
+            return {"agree": True, "amount": transfer_amount}
+        # Player Romans: no transfer — A8.6.6
+        return False
+
     # Retreat, Supply Line, Quarters
     if request_type in ("retreat", "supply_line", "quarters"):
         # To Arverni, Belgae: Never — §8.6.6
-        if requesting_faction in (ARVERNI, BELGAE):
+        # Per A8.4: In Ariovistus, treat "Arverni" as "Germans" — refuse
+        # Germans and Belgae instead of Arverni and Belgae.
+        if scenario in ARIOVISTUS_SCENARIOS:
+            refuse_factions = (GERMANS, BELGAE)
+        else:
+            refuse_factions = (ARVERNI, BELGAE)
+        if requesting_faction in refuse_factions:
             return False
 
         if requesting_faction == ROMANS:

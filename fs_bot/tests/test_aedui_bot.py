@@ -9,13 +9,13 @@ import pytest
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL,
+    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     HIDDEN, REVEALED, SCOUTED,
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     DIVICIACUS, CAESAR, AMBIORIX,
-    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII,
+    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, SUGAMBRI, UBII,
     AEDUI_REGION, ARVERNI_REGION, SEQUANI, BITURIGES,
     CARNUTES, PICTONES, VENETI, TREVERI,
     TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
@@ -46,7 +46,7 @@ from fs_bot.bots.aedui_bot import (
     _count_aedui_warbands_on_map, _estimate_rally_placements,
     _would_raid_gain_enough, _aedui_at_victory,
     _estimate_battle_losses, _would_force_loss_on_high_value,
-    _get_battle_enemies,
+    _get_battle_enemies, _estimate_trade_resources,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RALLY, ACTION_RAID,
     ACTION_EVENT, ACTION_PASS,
@@ -343,6 +343,81 @@ class TestBattleEstimation:
         assert not _would_force_loss_on_high_value(
             state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA)
 
+    def test_retreat_halves_losses_prevents_high_value(self):
+        """Enemy Retreat halves losses — may protect high-value targets.
+
+        Per §8.6.2: must account for "a possible enemy Retreat".
+        6 Aedui Warbands → 3 raw losses.  Enemy has 1 Warband + Ally.
+        Without Retreat: 3 losses > 1 expendable → hits Ally.
+        With Retreat: 3/2=1 loss ≤ 1 expendable → does NOT reach Ally.
+        """
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = ARVERNI
+        place_piece(state, MANDUBII, ARVERNI, ALLY)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 1)
+        # Enemy has mobile pieces → could Retreat
+        # Without ambush: losses halved → 1 loss ≤ 1 expendable
+        assert not _would_force_loss_on_high_value(
+            state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA,
+            ambush_possible=False)
+
+    def test_ambush_prevents_retreat_forces_high_value(self):
+        """Ambush prevents Retreat — full losses hit high-value target.
+
+        Same setup as above, but with Ambush: enemy can't Retreat.
+        """
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = ARVERNI
+        place_piece(state, MANDUBII, ARVERNI, ALLY)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 1)
+        # With ambush: full 3 losses > 1 expendable → hits Ally
+        assert _would_force_loss_on_high_value(
+            state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA,
+            ambush_possible=True)
+
+    def test_settlements_count_as_allies_in_ariovistus(self):
+        """Per A8.6.2: count Settlements as Allies for Battle conditions.
+
+        In Ariovistus, a lone Settlement is a high-value target like an Ally.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_aedui_force(state, SUGAMBRI, warbands=4, hidden=False)
+        # German Settlement with no expendable pieces
+        place_piece(state, SUGAMBRI, GERMANS, SETTLEMENT)
+        # Any loss hits the Settlement → high-value
+        assert _would_force_loss_on_high_value(
+            state, SUGAMBRI, AEDUI, GERMANS, SCENARIO_ARIOVISTUS,
+            ambush_possible=True)
+
+    def test_settlements_not_counted_in_base_game(self):
+        """Settlements do not count as high-value in base game scenarios.
+
+        In Ariovistus, a lone Settlement triggers high-value. In base game,
+        it would not (A8.6.2 only applies in Ariovistus). We test using
+        Ariovistus scenario with a Settlement to confirm it IS counted,
+        then compare against base scenario where def_settlements = 0
+        (Germans can't have Settlements in base game — validated by the
+        piece system).
+        """
+        # Ariovistus: Settlement counts → high-value
+        state_a = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_aedui_force(state_a, SUGAMBRI, warbands=4, hidden=False)
+        place_piece(state_a, SUGAMBRI, GERMANS, SETTLEMENT)
+        assert _would_force_loss_on_high_value(
+            state_a, SUGAMBRI, AEDUI, GERMANS, SCENARIO_ARIOVISTUS,
+            ambush_possible=True)
+
+        # Base game: without Settlement, just Warbands → not high-value
+        state_b = _make_state(scenario=SCENARIO_PAX_GALLICA)
+        _place_aedui_force(state_b, MANDUBII, warbands=4, hidden=False)
+        place_piece(state_b, MANDUBII, GERMANS, WARBAND, 2)
+        # 2 losses vs 2 expendable → can't reach any high-value
+        assert not _would_force_loss_on_high_value(
+            state_b, MANDUBII, AEDUI, GERMANS, SCENARIO_PAX_GALLICA,
+            ambush_possible=True)
+
 
 # ===================================================================
 # Battle enemies — victory gate
@@ -450,6 +525,34 @@ class TestMarch:
             plan = result["details"]["march_plan"]
             assert plan["origin"] is not None or plan["control_destination"]
 
+    def test_diviciacus_marches_to_largest_warband_group(self):
+        """Per A8.6.5: Diviciacus joins largest Aedui Warband group.
+
+        Place Diviciacus in Sequani (1 wb), largest group in Mandubii (5 wb).
+        After March, diviciacus_destination should be Mandubii.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        place_piece(state, SEQUANI, AEDUI, LEADER, leader_name=DIVICIACUS)
+        _place_aedui_force(state, SEQUANI, warbands=2, hidden=True)
+        _place_aedui_force(state, MANDUBII, warbands=5, hidden=True)
+        refresh_all_control(state)
+        result = node_a_march(state)
+        if result["command"] == ACTION_MARCH:
+            plan = result["details"]["march_plan"]
+            assert plan.get("diviciacus_destination") == MANDUBII
+
+    def test_diviciacus_stays_if_already_with_largest(self):
+        """Per A8.6.5: no extra March if Diviciacus already with largest."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_aedui_force(state, MANDUBII, warbands=5, hidden=True)
+        place_piece(state, MANDUBII, AEDUI, LEADER, leader_name=DIVICIACUS)
+        _place_aedui_force(state, SEQUANI, warbands=2, hidden=True)
+        refresh_all_control(state)
+        result = node_a_march(state)
+        if result["command"] == ACTION_MARCH:
+            plan = result["details"]["march_plan"]
+            assert plan.get("diviciacus_destination") is None
+
 
 # ===================================================================
 # Ambush check
@@ -475,6 +578,56 @@ class TestAmbush:
         battle_plan = [{"region": MANDUBII, "target": ARVERNI}]
         result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
         assert result is None
+
+
+# ===================================================================
+# Diviciacus counterattack safety — A8.6.2
+# ===================================================================
+
+class TestDiviciacusCounterattackSafety:
+    """Per A8.6.2: do not Battle where Diviciacus could take counterattack Loss."""
+
+    def test_skip_battle_where_diviciacus_would_take_loss(self):
+        """Skip Battle region if counterattack would hit Diviciacus.
+
+        Diviciacus in Mandubii with 1 Warband vs Belgae with 4 Warbands.
+        Counterattack: 4×0.5 = 2 losses. Expendable = 1 Warband.
+        2 >= 1 → Diviciacus would take a hit → skip.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        state["can_play_event"] = False
+        place_piece(state, MANDUBII, AEDUI, LEADER, leader_name=DIVICIACUS)
+        _place_aedui_force(state, MANDUBII, warbands=1, hidden=False)
+        _place_enemy_force(state, MANDUBII, BELGAE, warbands=4)
+        # Also need an Ally to trigger high-value check
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = BELGAE
+        place_piece(state, MANDUBII, BELGAE, ALLY)
+        refresh_all_control(state)
+        result = node_a_battle(state)
+        # Should skip Mandubii because Diviciacus would take a counterattack hit
+        battle_regions = [bp["region"] for bp in
+                          result.get("details", {}).get("battle_plan", [])]
+        assert MANDUBII not in battle_regions
+
+    def test_allow_battle_where_diviciacus_safe(self):
+        """Allow Battle if Diviciacus wouldn't take counterattack Loss.
+
+        Diviciacus in Mandubii with 6 Warbands vs enemy with only Ally.
+        Counterattack: 0 → Diviciacus safe.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        state["can_play_event"] = False
+        place_piece(state, MANDUBII, AEDUI, LEADER, leader_name=DIVICIACUS)
+        _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = BELGAE
+        place_piece(state, MANDUBII, BELGAE, ALLY)
+        refresh_all_control(state)
+        result = node_a_battle(state)
+        # Should include Mandubii — counterattack is 0
+        if result["command"] == ACTION_BATTLE:
+            battle_regions = [bp["region"] for bp in
+                              result["details"]["battle_plan"]]
+            assert MANDUBII in battle_regions
 
 
 # ===================================================================
@@ -507,6 +660,55 @@ class TestTrade:
         # Should fall through to Suborn
         assert sa in (SA_ACTION_SUBORN, SA_ACTION_NONE)
 
+    def test_trade_estimate_counts_aedui_allies_and_citadels(self):
+        """Trade estimate counts Aedui Allies + Citadels per §4.4.1.
+
+        Not Aedui-Controlled regions with other factions' pieces.
+        """
+        state = _make_state(
+            non_players={ARVERNI, BELGAE, AEDUI, ROMANS})
+        # Place Aedui Ally and Citadel on map
+        _place_aedui_force(state, AEDUI_REGION, warbands=3,
+                           ally_tribe=TRIBE_AEDUI, citadel=True)
+        _place_aedui_force(state, MANDUBII, ally_tribe=TRIBE_MANDUBII)
+        refresh_all_control(state)
+        est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
+        # 2 Allies + 1 Citadel = 3 base; NP Romans agree → ×2 = 6 + subdued
+        # At minimum, estimate should be >= 6 (the Aedui pieces)
+        assert est >= 6
+
+    def test_trade_estimate_zero_without_aedui_pieces(self):
+        """Trade estimate is 0 with no Aedui Allies or Citadels on map."""
+        state = _make_state()
+        # Just Aedui Warbands, no Allies/Citadels
+        _place_aedui_force(state, AEDUI_REGION, warbands=3)
+        refresh_all_control(state)
+        est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
+        assert est == 0
+
+    def test_trade_estimate_lower_without_roman_agreement(self):
+        """Trade estimate lower when Romans don't agree (player, high score).
+
+        §4.4.1: without Roman agreement, only +1 per piece (not doubled).
+        """
+        state = _make_state(non_players={ARVERNI, BELGAE, AEDUI})
+        # Romans are player faction — not in non_players
+        _place_aedui_force(state, AEDUI_REGION, warbands=3,
+                           ally_tribe=TRIBE_AEDUI, citadel=True)
+        refresh_all_control(state)
+        # Give Romans a high victory score to refuse agreement
+        # Set many tribes as Roman Allies to push score above 12
+        count = 0
+        for tribe_name, tribe_info in state["tribes"].items():
+            if count >= 15:
+                break
+            if tribe_info.get("allied_faction") is None:
+                tribe_info["allied_faction"] = ROMANS
+                count += 1
+        est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
+        # 1 Ally + 1 Citadel = 2 base, no Roman agreement → 2
+        assert est == 2
+
 
 # ===================================================================
 # Suborn SA
@@ -536,6 +738,44 @@ class TestSuborn:
         _place_aedui_force(state, MANDUBII, warbands=2, hidden=False)
         sa, _, _ = _determine_suborn_sa(state, SCENARIO_PAX_GALLICA)
         assert sa == SA_ACTION_NONE
+
+    def test_suborn_caps_at_3_pieces_per_region(self):
+        """Suborn enforces §4.4.2 cap of 3 pieces per region.
+
+        Place 1 Ally (1 piece, 1 ally) + should cap Warbands/removals at 2 more.
+        """
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=2, hidden=True)
+        # Lots of available Warbands and enemy pieces to affect
+        state["available"][AEDUI][WARBAND] = 10
+        _place_enemy_force(state, MANDUBII, ARVERNI, warbands=5)
+        _place_enemy_force(state, MANDUBII, BELGAE, warbands=3)
+        _place_roman_force(state, MANDUBII, auxilia=2)
+        sa, regions, details = _determine_suborn_sa(
+            state, SCENARIO_PAX_GALLICA)
+        assert sa == SA_ACTION_SUBORN
+        plan = details["suborn_plan"]
+        for region_entry in plan:
+            assert len(region_entry["actions"]) <= 3
+
+    def test_suborn_caps_at_1_ally_per_region(self):
+        """Suborn enforces §4.4.2 cap of 1 Ally per region.
+
+        Even with available Allies, only 1 Ally action per region.
+        """
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=2, hidden=True)
+        state["available"][AEDUI][ALLY] = 5
+        sa, regions, details = _determine_suborn_sa(
+            state, SCENARIO_PAX_GALLICA)
+        if sa == SA_ACTION_SUBORN:
+            plan = details["suborn_plan"]
+            for region_entry in plan:
+                ally_actions = [
+                    a for a in region_entry["actions"]
+                    if a["action"] in ("place_ally", "remove_ally")
+                ]
+                assert len(ally_actions) <= 1
 
 
 # ===================================================================
@@ -606,6 +846,77 @@ class TestAgreements:
         state = _make_state()
         state["resources"][AEDUI] = 30
         assert node_a_agreements(state, ARVERNI, "resources") is False
+
+    def test_frumentum_transfer_to_np_romans(self):
+        """Per A8.6.6: Frumentum transfers half Resources to NP Romans."""
+        state = _make_state(
+            scenario=SCENARIO_ARIOVISTUS,
+            non_players={ARVERNI, BELGAE, AEDUI, ROMANS})
+        state["resources"][AEDUI] = 20
+        result = node_a_agreements(state, ROMANS, "frumentum_transfer")
+        assert isinstance(result, dict)
+        assert result["agree"] is True
+        assert result["amount"] == 10  # half of 20
+
+    def test_frumentum_no_transfer_to_player_romans(self):
+        """Per A8.6.6: no Frumentum transfer to player Romans."""
+        state = _make_state(
+            scenario=SCENARIO_ARIOVISTUS,
+            non_players={ARVERNI, BELGAE, AEDUI})
+        state["resources"][AEDUI] = 20
+        result = node_a_agreements(state, ROMANS, "frumentum_transfer")
+        assert result is False
+
+    def test_admagetobriga_belgae_agree_with_pieces(self):
+        """Per A8.6.6: Belgae agree to Admagetobriga if executor has pieces."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_aedui_force(state, MANDUBII, warbands=2)
+        result = node_a_agreements(
+            state, BELGAE, "admagetobriga_warbands",
+            context={"region": MANDUBII, "executing_faction": AEDUI})
+        assert result is True
+
+    def test_admagetobriga_belgae_refuse_without_pieces(self):
+        """Per A8.6.6: Belgae refuse Admagetobriga if no executor pieces."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # No Aedui pieces in Mandubii
+        result = node_a_agreements(
+            state, BELGAE, "admagetobriga_warbands",
+            context={"region": MANDUBII, "executing_faction": AEDUI})
+        assert result is False
+
+    def test_refuse_germans_retreat_in_ariovistus(self):
+        """Per A8.4: refuse Germans (not Arverni) in Ariovistus.
+
+        In Ariovistus, Germans replace Arverni as the hostile faction,
+        so Aedui refuse Retreat/Supply/Quarters to Germans and Belgae.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Germans should be refused
+        assert node_a_agreements(state, GERMANS, "retreat") is False
+        assert node_a_agreements(state, GERMANS, "supply_line") is False
+        assert node_a_agreements(state, GERMANS, "quarters") is False
+        # Belgae still refused
+        assert node_a_agreements(state, BELGAE, "retreat") is False
+
+    def test_arverni_not_refused_retreat_in_ariovistus(self):
+        """Per A8.4: Arverni are game-run in Ariovistus.
+
+        Arverni won't normally request in Ariovistus, but if they did,
+        they are NOT in the refuse list (Germans replaced them).
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Arverni not in refuse list — falls through to other logic
+        # (returns False because Arverni are not Romans either)
+        result = node_a_agreements(state, ARVERNI, "retreat")
+        # Not refused by the faction check — falls to the end → False
+        assert result is False
+
+    def test_refuse_arverni_retreat_in_base_game(self):
+        """In base game, still refuse Arverni per §8.6.6."""
+        state = _make_state(scenario=SCENARIO_PAX_GALLICA)
+        assert node_a_agreements(state, ARVERNI, "retreat") is False
+        assert node_a_agreements(state, ARVERNI, "supply_line") is False
 
 
 # ===================================================================

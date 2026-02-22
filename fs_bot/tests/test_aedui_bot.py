@@ -525,6 +525,34 @@ class TestMarch:
             plan = result["details"]["march_plan"]
             assert plan["origin"] is not None or plan["control_destination"]
 
+    def test_diviciacus_marches_to_largest_warband_group(self):
+        """Per A8.6.5: Diviciacus joins largest Aedui Warband group.
+
+        Place Diviciacus in Sequani (1 wb), largest group in Mandubii (5 wb).
+        After March, diviciacus_destination should be Mandubii.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        place_piece(state, SEQUANI, AEDUI, LEADER, leader_name=DIVICIACUS)
+        _place_aedui_force(state, SEQUANI, warbands=2, hidden=True)
+        _place_aedui_force(state, MANDUBII, warbands=5, hidden=True)
+        refresh_all_control(state)
+        result = node_a_march(state)
+        if result["command"] == ACTION_MARCH:
+            plan = result["details"]["march_plan"]
+            assert plan.get("diviciacus_destination") == MANDUBII
+
+    def test_diviciacus_stays_if_already_with_largest(self):
+        """Per A8.6.5: no extra March if Diviciacus already with largest."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_aedui_force(state, MANDUBII, warbands=5, hidden=True)
+        place_piece(state, MANDUBII, AEDUI, LEADER, leader_name=DIVICIACUS)
+        _place_aedui_force(state, SEQUANI, warbands=2, hidden=True)
+        refresh_all_control(state)
+        result = node_a_march(state)
+        if result["command"] == ACTION_MARCH:
+            plan = result["details"]["march_plan"]
+            assert plan.get("diviciacus_destination") is None
+
 
 # ===================================================================
 # Ambush check

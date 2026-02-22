@@ -1089,8 +1089,26 @@ def node_a_march(state):
     if best_ctrl_dest is not None:
         march_plan["control_destination"] = best_ctrl_dest
 
+    # Per A8.6.5: "After carrying out the specified March priorities, March
+    # the Diviciacus Leader to join the largest group of Aedui Warbands
+    # possible (if on the map and not already with the largest group)."
+    if scenario in ARIOVISTUS_SCENARIOS:
+        div_region = _diviciacus_region(state)
+        if div_region is not None:
+            # Find region with the largest group of Aedui Warbands
+            best_wb_region = None
+            best_wb_count = -1
+            for region in playable:
+                wb = count_pieces(state, region, AEDUI, WARBAND)
+                if wb > best_wb_count:
+                    best_wb_count = wb
+                    best_wb_region = region
+            if best_wb_region and best_wb_region != div_region:
+                march_plan["diviciacus_destination"] = best_wb_region
+
     has_any_march = (march_plan["spread_destinations"]
-                     or march_plan["control_destination"] is not None)
+                     or march_plan["control_destination"] is not None
+                     or march_plan.get("diviciacus_destination") is not None)
 
     if not has_any_march:
         return node_a_raid(state)
@@ -1099,6 +1117,8 @@ def node_a_march(state):
     all_dests = list(march_plan["spread_destinations"])
     if march_plan["control_destination"]:
         all_dests.append(march_plan["control_destination"])
+    if march_plan.get("diviciacus_destination"):
+        all_dests.append(march_plan["diviciacus_destination"])
     marched_britannia = (
         BRITANNIA in all_dests
         or march_plan.get("origin") == BRITANNIA

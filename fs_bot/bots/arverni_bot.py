@@ -197,41 +197,50 @@ def _can_battle_in_region(state, region, scenario, enemy):
     """
     arverni_wb = count_pieces(state, region, ARVERNI, WARBAND)
     has_verc = get_leader_in_region(state, region, ARVERNI) is not None
-    arverni_mobile = arverni_wb + (1 if has_verc else 0)
 
-    if arverni_mobile == 0:
+    if arverni_wb == 0 and not has_verc:
         return False
 
     enemy_pieces = count_pieces(state, region, enemy)
     if enemy_pieces == 0:
         return False
 
-    # Estimate Arverni Losses inflicted (Attack): mobile pieces / 2 rounded up
-    # per §3.3.4 for Gallic Battle
-    losses_inflicted = arverni_mobile // 2
-    if has_verc:
-        # Vercingetorix adds to combat value
-        losses_inflicted = arverni_mobile // 2
+    # Estimate Arverni Attack Losses inflicted per §3.3.4:
+    # Losses = ½ per Warband + 1 per Leader + ½ per Auxilia, rounded down.
+    # Arverni have no Auxilia, so: int(arverni_wb * 0.5 + (1 if leader else 0))
+    attack_raw = arverni_wb * 0.5 + (1 if has_verc else 0)
+
+    # Enemy Fort/Citadel halves Attack Losses inflicted — §3.3.4
+    enemy_fort = count_pieces(state, region, enemy, FORT)
+    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+    if enemy_fort > 0 or enemy_citadel > 0:
+        attack_raw = attack_raw / 2
+
+    losses_inflicted = int(attack_raw)
 
     # Check for Legion loss — can we force at least one Loss on a Legion?
     enemy_legions = count_pieces(state, region, enemy, LEGION)
     can_hit_legion = enemy_legions > 0 and losses_inflicted > 0
 
-    # Estimate Losses Arverni would suffer (Counterattack)
-    enemy_mobile = count_mobile_pieces(state, region, enemy)
-    # Counterattack: enemy mobile / 2 rounded up
-    losses_suffered = (enemy_mobile + 1) // 2
+    # Estimate Counterattack Losses suffered per §3.3.4:
+    # Losses = ½ per enemy Warband + ½ per enemy Auxilia + 1 per enemy Leader
+    # + 1 per enemy Legion, rounded down.
+    enemy_warbands = count_pieces(state, region, enemy, WARBAND)
+    enemy_auxilia = count_pieces(state, region, enemy, AUXILIA)
+    enemy_leader = get_leader_in_region(state, region, enemy)
 
-    # Enemy Fort/Citadel halves our Attack Losses inflicted
-    enemy_fort = count_pieces(state, region, enemy, FORT)
-    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    if enemy_fort > 0 or enemy_citadel > 0:
-        losses_inflicted = losses_inflicted // 2
+    counter_raw = (enemy_legions * 1
+                   + enemy_warbands * 0.5
+                   + (1 if enemy_leader else 0)
+                   + enemy_auxilia * 0.5)
 
-    # Our Citadel halves Counterattack Losses suffered
+    # Our Fort/Citadel halves Counterattack Losses suffered — §3.3.4
+    our_fort = count_pieces(state, region, ARVERNI, FORT)
     our_citadel = count_pieces(state, region, ARVERNI, CITADEL)
-    if our_citadel > 0:
-        losses_suffered = losses_suffered // 2
+    if our_fort > 0 or our_citadel > 0:
+        counter_raw = counter_raw / 2
+
+    losses_suffered = int(counter_raw)
 
     # Check: no Loss on Vercingetorix — §8.7.1
     # "presuming all Defender Loss rolls result in removals"

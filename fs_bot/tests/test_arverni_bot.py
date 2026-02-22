@@ -1091,6 +1091,57 @@ class TestHelpers:
         _place_roman_force(state, MANDUBII, leader=True, legions=2, auxilia=1)
         assert not _check_caesar_ratio(state, MANDUBII)
 
+    def test_can_battle_leader_counts_full_loss(self):
+        """_can_battle_in_region: Leader contributes 1 to Losses, not ½ — §3.3.4.
+
+        Bug 4: Old code used arverni_mobile // 2, treating Leader and Warbands
+        identically (½ each). Per §3.3.4: Warbands = ½, Leader = 1.
+        Example: 4 WBs + Vercingetorix → int(2.0 + 1.0) = 3, not 5 // 2 = 2.
+        """
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=4)
+        # 2 Auxilia → enemy inflicts int(2 * 0.5) = 1 in counterattack
+        _place_roman_force(state, MANDUBII, auxilia=2)
+        # Arverni Attack: int(4 * 0.5 + 1) = 3 losses inflicted
+        # Arverni Counterattack suffered: int(2 * 0.5) = 1
+        # 3 > 1 → should be True
+        assert _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
+
+    def test_can_battle_enemy_leader_counts_full_loss(self):
+        """_can_battle_in_region: Enemy Leader contributes 1 to Counterattack — §3.3.4.
+
+        Bug 4: Old code estimated enemy counterattack as enemy_mobile // 2
+        which undercounts Leaders.
+        """
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, warbands=2)
+        # Caesar alone: Counterattack = int(0 + 0 + 1 + 0) = 1
+        _place_roman_force(state, MANDUBII, leader=True)
+        # Arverni Attack: int(2 * 0.5) = 1
+        # 1 is not > 1, no legion → can_hit_legion = False
+        # losses_inflicted (1) NOT > losses_suffered (1) → False
+        assert not _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
+
+    def test_can_battle_fort_halving_correct(self):
+        """_can_battle_in_region: Fort/Citadel halving applied to raw total — §3.3.4."""
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=4)
+        # Roman Fort → Attack halved: int((4*0.5 + 1) / 2) = int(1.5) = 1
+        _place_roman_force(state, MANDUBII, auxilia=1, fort=True)
+        # Enemy counterattack: int(1 * 0.5) = 0
+        # 1 > 0 = True, but no legion → relies on inflicted > suffered
+        assert _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
+
+    def test_can_battle_counterattack_with_legions(self):
+        """_can_battle_in_region: Legions contribute 1 each to Counterattack — §3.3.4."""
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, warbands=6)
+        # 2 Legions + 2 Auxilia: Counterattack = int(2*1 + 2*0.5) = 3
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=2)
+        # Arverni Attack: int(6 * 0.5) = 3. Fort/Citadel halving from enemy: no.
+        # can_hit_legion: 2 > 0 and 3 > 0 → True (Battle proceeds)
+        assert _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
+
     def test_count_warbands_on_map(self):
         """_count_arverni_warbands_on_map counts correctly."""
         state = _make_state()

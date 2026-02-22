@@ -1335,6 +1335,10 @@ def _check_devastate(state, scenario):
 def _check_entreat(state, scenario):
     """V_ENTREAT: Determine Entreat targets.
 
+    Per §4.3.1: Entreat requires:
+      (a) the region has a Hidden Arverni Warband, AND
+      (b) within one Region of Vercingetorix or has his Successor.
+
     Per §8.7.1: Replace enemy Allies with Arverni, then replace enemy
     pieces with Arverni, then remove (once no Arverni Available).
 
@@ -1350,13 +1354,21 @@ def _check_entreat(state, scenario):
     avail_warbands = get_available(state, ARVERNI, WARBAND)
     non_players = state.get("non_player_factions", set())
 
+    def _region_eligible(region):
+        """Check §4.3.1 eligibility: Hidden Arverni Warband + Verc proximity."""
+        if count_pieces_by_state(state, region, ARVERNI, WARBAND, HIDDEN) == 0:
+            return False
+        if not _is_within_one_of_vercingetorix(state, region, scenario):
+            return False
+        return True
+
     # Step 1: Replace enemy Allies with Arverni Allies — §8.7.1
     # Priority: (1) Aedui, (2) Belgic, (3) Germanic
     for target_faction in (AEDUI, BELGAE, GERMANS):
         for region in playable:
             if avail_allies <= 0:
                 break
-            if count_pieces(state, region, ARVERNI) == 0:
+            if not _region_eligible(region):
                 continue
             tribes = get_tribes_in_region(region, scenario)
             for tribe in tribes:
@@ -1378,7 +1390,7 @@ def _check_entreat(state, scenario):
         for region in playable:
             if avail_warbands <= 0:
                 break
-            if count_pieces(state, region, ARVERNI) == 0:
+            if not _region_eligible(region):
                 continue
             target_count = count_pieces(state, region, target_faction, target_type)
             if target_count > 0:
@@ -1395,7 +1407,7 @@ def _check_entreat(state, scenario):
     if avail_warbands <= 0:
         for target_faction, target_type in ((ROMANS, AUXILIA), (AEDUI, WARBAND)):
             for region in playable:
-                if count_pieces(state, region, ARVERNI) == 0:
+                if not _region_eligible(region):
                     continue
                 target_count = count_pieces(
                     state, region, target_faction, target_type)
@@ -1412,7 +1424,7 @@ def _check_entreat(state, scenario):
             if target_faction in non_players:
                 continue  # Only player Factions
             for region in playable:
-                if count_pieces(state, region, ARVERNI) == 0:
+                if not _region_eligible(region):
                     continue
                 tribes = get_tribes_in_region(region, scenario)
                 for tribe in tribes:

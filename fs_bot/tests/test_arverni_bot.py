@@ -887,13 +887,51 @@ class TestSpecialAbilities:
     def test_entreat_replaces_enemy_allies(self):
         """Entreat replaces enemy Allies with Arverni Allies."""
         state = _make_state()
-        _place_arverni_force(state, MANDUBII, warbands=5)
+        # Need Hidden Arverni Warband + Vercingetorix nearby — §4.3.1
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
         state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
         place_piece(state, MANDUBII, AEDUI, ALLY)
         actions = _check_entreat(state, state["scenario"])
         replace_actions = [a for a in actions if a["action"] == "replace_ally"]
         assert len(replace_actions) > 0
         assert replace_actions[0]["target_faction"] == AEDUI
+
+    def test_entreat_requires_hidden_warband(self):
+        """Entreat requires Hidden Arverni Warband — §4.3.1.
+
+        Bug 6: Old code checked count_pieces(ARVERNI) == 0, which accepts
+        any Arverni pieces (e.g. Revealed Warbands, Allies, Citadels).
+        Must specifically require Hidden Warbands.
+        """
+        state = _make_state()
+        # Place Vercingetorix + only Revealed Warbands (flip to Revealed)
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=3)
+        # Flip all to Revealed so there are no Hidden
+        from fs_bot.board.pieces import flip_piece
+        flip_piece(state, MANDUBII, ARVERNI, WARBAND, 3,
+                   from_state=HIDDEN, to_state=REVEALED)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
+        place_piece(state, MANDUBII, AEDUI, ALLY)
+        actions = _check_entreat(state, state["scenario"])
+        # No Hidden WB → no Entreat
+        assert len(actions) == 0
+
+    def test_entreat_requires_vercingetorix_proximity(self):
+        """Entreat requires within 1 Region of Vercingetorix — §4.3.1.
+
+        Bug 6: Old code didn't check Vercingetorix proximity.
+        """
+        state = _make_state()
+        # Vercingetorix far away from target region
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=2)
+        _place_arverni_force(state, MORINI, warbands=3)
+        state["tribes"][TRIBE_MORINI]["allied_faction"] = AEDUI
+        place_piece(state, MORINI, AEDUI, ALLY)
+        from fs_bot.bots.arverni_bot import _is_within_one_of_vercingetorix
+        if not _is_within_one_of_vercingetorix(state, MORINI, state["scenario"]):
+            actions = _check_entreat(state, state["scenario"])
+            morini_actions = [a for a in actions if a.get("region") == MORINI]
+            assert len(morini_actions) == 0
 
 
 # ===================================================================

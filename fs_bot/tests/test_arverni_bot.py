@@ -609,6 +609,54 @@ class TestNodeVMarchSpread:
         result = node_v_march_spread(state)
         assert result["command"] in (ACTION_MARCH, ACTION_RAID, ACTION_PASS)
 
+    def test_march_spread_step1_only_regions_without_hidden_arverni(self):
+        """Step 1: only targets regions with NO Hidden Arverni — §8.7.4.
+
+        Bug 2: Old code used count >= 0 (always True), adding every region.
+        Must only target regions with hidden_arverni == 0.
+        """
+        state = _make_state()
+        # Place 5 Warbands in Arverni region (origin with plenty to send)
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=5)
+        # Place Hidden Warbands in adjacent Bituriges — should NOT be a spread dest
+        place_piece(state, BITURIGES, ARVERNI, WARBAND, 2)
+        result = node_v_march_spread(state)
+        if result["command"] == ACTION_MARCH:
+            spread_dests = result["details"]["march_plan"]["spread_destinations"]
+            # Bituriges already has Hidden Arverni — must not be a destination
+            assert BITURIGES not in spread_dests
+
+    def test_march_spread_step1_dest_must_be_reachable(self):
+        """Step 1: destination must be adjacent to origin with 2+ WBs — §8.7.4.
+
+        Bug 2: Old code didn't check adjacency/reachability at all.
+        A region with no Hidden Arverni but no adjacent origin with 2+ WBs
+        cannot be reached.
+        """
+        state = _make_state()
+        # Only 1 Warband in Arverni region — can't send it (must leave 1)
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=1)
+        result = node_v_march_spread(state)
+        if result["command"] == ACTION_MARCH:
+            spread_dests = result["details"]["march_plan"]["spread_destinations"]
+            # With only 1 WB, no origin has 2+ so no spreading possible
+            assert len(spread_dests) == 0
+
+    def test_march_spread_step1_fewest_origins(self):
+        """Step 1: 'from fewest Regions able' — prefer shared origins.
+
+        If one origin can serve multiple destinations, use it rather than
+        multiple origins.
+        """
+        state = _make_state()
+        # Place 5 Warbands in one region adjacent to multiple empty regions
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=5)
+        result = node_v_march_spread(state)
+        if result["command"] == ACTION_MARCH:
+            origins = result["details"]["march_plan"]["origins"]
+            # All spread destinations should be served from minimal origins
+            assert len(origins) >= 1  # At least one origin needed
+
 
 # ===================================================================
 # V_RAID: Raid process

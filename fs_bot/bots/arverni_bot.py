@@ -979,11 +979,51 @@ def node_v_march_spread(state):
     }
 
     # Step 1: Add 1 Hidden Arverni to each Region with no Hidden Arverni
+    # — §8.7.4: "add one Hidden Arverni to each Region possible that
+    # currently has no Hidden Arverni (without removing the last from any
+    # origin)."
+    # A region is reachable if it is adjacent to an origin with 2+ Arverni
+    # Warbands (so one can March in while leaving at least 1 behind).
+    # "from fewest Regions able" — track which origins serve which
+    # destinations and prefer origins that serve multiple destinations.
+    playable_set = set(playable)
+    dest_to_origins = {}
     for region in playable:
         hidden_arverni = count_pieces_by_state(
             state, region, ARVERNI, WARBAND, HIDDEN)
-        if hidden_arverni == 0 and count_pieces(state, region, ARVERNI, WARBAND) >= 0:
-            march_plan["spread_destinations"].append(region)
+        if hidden_arverni > 0:
+            continue  # Already has Hidden Arverni
+        # Find adjacent origins with 2+ Arverni Warbands
+        possible_origins = []
+        for adj in get_adjacent(region, scenario):
+            if adj not in playable_set:
+                continue
+            adj_wb = count_pieces(state, adj, ARVERNI, WARBAND)
+            if adj_wb >= 2:
+                possible_origins.append(adj)
+        if possible_origins:
+            dest_to_origins[region] = possible_origins
+
+    # Greedy assignment: pick origins that cover the most destinations
+    # to satisfy "from fewest Regions able"
+    remaining_dests = set(dest_to_origins.keys())
+    chosen_origins = set()
+    while remaining_dests:
+        # Count how many remaining dests each origin can serve
+        origin_coverage = {}
+        for dest in remaining_dests:
+            for orig in dest_to_origins[dest]:
+                origin_coverage.setdefault(orig, set()).add(dest)
+        if not origin_coverage:
+            break
+        # Pick origin that covers the most destinations
+        best_origin = max(origin_coverage, key=lambda o: len(origin_coverage[o]))
+        chosen_origins.add(best_origin)
+        covered = origin_coverage[best_origin]
+        remaining_dests -= covered
+        march_plan["spread_destinations"].extend(sorted(covered))
+
+    march_plan["origins"].extend(sorted(chosen_origins))
 
     # Step 2: Leader with Warbands to take Arverni Control of Roman/Aedui
     # Controlled region — NOT Bibracte (AEDUI_REGION) — §8.7.4

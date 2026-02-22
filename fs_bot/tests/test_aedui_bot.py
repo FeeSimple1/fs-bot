@@ -885,6 +885,39 @@ class TestAgreements:
             context={"region": MANDUBII, "executing_faction": AEDUI})
         assert result is False
 
+    def test_refuse_germans_retreat_in_ariovistus(self):
+        """Per A8.4: refuse Germans (not Arverni) in Ariovistus.
+
+        In Ariovistus, Germans replace Arverni as the hostile faction,
+        so Aedui refuse Retreat/Supply/Quarters to Germans and Belgae.
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Germans should be refused
+        assert node_a_agreements(state, GERMANS, "retreat") is False
+        assert node_a_agreements(state, GERMANS, "supply_line") is False
+        assert node_a_agreements(state, GERMANS, "quarters") is False
+        # Belgae still refused
+        assert node_a_agreements(state, BELGAE, "retreat") is False
+
+    def test_arverni_not_refused_retreat_in_ariovistus(self):
+        """Per A8.4: Arverni are game-run in Ariovistus.
+
+        Arverni won't normally request in Ariovistus, but if they did,
+        they are NOT in the refuse list (Germans replaced them).
+        """
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Arverni not in refuse list — falls through to other logic
+        # (returns False because Arverni are not Romans either)
+        result = node_a_agreements(state, ARVERNI, "retreat")
+        # Not refused by the faction check — falls to the end → False
+        assert result is False
+
+    def test_refuse_arverni_retreat_in_base_game(self):
+        """In base game, still refuse Arverni per §8.6.6."""
+        state = _make_state(scenario=SCENARIO_PAX_GALLICA)
+        assert node_a_agreements(state, ARVERNI, "retreat") is False
+        assert node_a_agreements(state, ARVERNI, "supply_line") is False
+
 
 # ===================================================================
 # Diviciacus

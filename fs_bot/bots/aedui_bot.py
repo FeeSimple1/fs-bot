@@ -1671,7 +1671,13 @@ def node_a_agreements(state, requesting_faction, request_type, *,
     # Retreat, Supply Line, Quarters
     if request_type in ("retreat", "supply_line", "quarters"):
         # To Arverni, Belgae: Never — §8.6.6
-        if requesting_faction in (ARVERNI, BELGAE):
+        # Per A8.4: In Ariovistus, treat "Arverni" as "Germans" — refuse
+        # Germans and Belgae instead of Arverni and Belgae.
+        if scenario in ARIOVISTUS_SCENARIOS:
+            refuse_factions = (GERMANS, BELGAE)
+        else:
+            refuse_factions = (ARVERNI, BELGAE)
+        if requesting_faction in refuse_factions:
             return False
 
         if requesting_faction == ROMANS:

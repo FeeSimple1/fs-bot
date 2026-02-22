@@ -46,7 +46,7 @@ from fs_bot.bots.aedui_bot import (
     _count_aedui_warbands_on_map, _estimate_rally_placements,
     _would_raid_gain_enough, _aedui_at_victory,
     _estimate_battle_losses, _would_force_loss_on_high_value,
-    _get_battle_enemies,
+    _get_battle_enemies, _estimate_trade_resources,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RALLY, ACTION_RAID,
     ACTION_EVENT, ACTION_PASS,
@@ -506,6 +506,55 @@ class TestTrade:
             state, SCENARIO_PAX_GALLICA, battled=False)
         # Should fall through to Suborn
         assert sa in (SA_ACTION_SUBORN, SA_ACTION_NONE)
+
+    def test_trade_estimate_counts_aedui_allies_and_citadels(self):
+        """Trade estimate counts Aedui Allies + Citadels per §4.4.1.
+
+        Not Aedui-Controlled regions with other factions' pieces.
+        """
+        state = _make_state(
+            non_players={ARVERNI, BELGAE, AEDUI, ROMANS})
+        # Place Aedui Ally and Citadel on map
+        _place_aedui_force(state, AEDUI_REGION, warbands=3,
+                           ally_tribe=TRIBE_AEDUI, citadel=True)
+        _place_aedui_force(state, MANDUBII, ally_tribe=TRIBE_MANDUBII)
+        refresh_all_control(state)
+        est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
+        # 2 Allies + 1 Citadel = 3 base; NP Romans agree → ×2 = 6 + subdued
+        # At minimum, estimate should be >= 6 (the Aedui pieces)
+        assert est >= 6
+
+    def test_trade_estimate_zero_without_aedui_pieces(self):
+        """Trade estimate is 0 with no Aedui Allies or Citadels on map."""
+        state = _make_state()
+        # Just Aedui Warbands, no Allies/Citadels
+        _place_aedui_force(state, AEDUI_REGION, warbands=3)
+        refresh_all_control(state)
+        est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
+        assert est == 0
+
+    def test_trade_estimate_lower_without_roman_agreement(self):
+        """Trade estimate lower when Romans don't agree (player, high score).
+
+        §4.4.1: without Roman agreement, only +1 per piece (not doubled).
+        """
+        state = _make_state(non_players={ARVERNI, BELGAE, AEDUI})
+        # Romans are player faction — not in non_players
+        _place_aedui_force(state, AEDUI_REGION, warbands=3,
+                           ally_tribe=TRIBE_AEDUI, citadel=True)
+        refresh_all_control(state)
+        # Give Romans a high victory score to refuse agreement
+        # Set many tribes as Roman Allies to push score above 12
+        count = 0
+        for tribe_name, tribe_info in state["tribes"].items():
+            if count >= 15:
+                break
+            if tribe_info.get("allied_faction") is None:
+                tribe_info["allied_faction"] = ROMANS
+                count += 1
+        est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
+        # 1 Ally + 1 Citadel = 2 base, no Roman agreement → 2
+        assert est == 2
 
 
 # ===================================================================

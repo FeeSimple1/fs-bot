@@ -1165,37 +1165,77 @@ def _determine_trade_sa(state, scenario, *, battled=False):
 def _estimate_trade_resources(state, scenario):
     """Estimate how many Resources Trade would earn.
 
-    Per §4.4.1: Trade earns Resources based on Supply Lines through
-    Aedui-Controlled Regions. For estimation, count Aedui-Controlled
-    regions that could participate in Trade.
+    Per §4.4.1: Trade earns Resources based on pieces within Supply Lines
+    to Cisalpina:
+      - +1 per Aedui Allied Tribe within Supply Lines
+      - +1 per Aedui Citadel within Supply Lines
+      If Romans agree: double those to +2 each, plus:
+      - +1 per Subdued Tribe in Aedui-Controlled regions within Supply Lines
+      - +1 per Roman Allied Tribe in Aedui-Controlled regions within Supply
+        Lines
+
+    NOTE: This is an approximation pending full Supply Line pathfinding.
+    We count all Aedui Allies + Citadels on the map as a baseline (they
+    earn at least +1 each if any Supply Line exists), then check the
+    Roman agreement multiplier.
 
     Returns:
         Integer estimated Resources gained.
     """
-    aedui_controlled = get_controlled_regions(state, AEDUI)
     non_players = state.get("non_player_factions", set())
 
-    # Each Aedui-Controlled region on a Supply Line earns Resources
-    # §4.4.1: Trade earns 1 Resource per region with an agreeing faction
-    total = 0
-    for region in aedui_controlled:
-        # Check if any faction would agree to Trade in this region
-        for faction in FACTIONS:
-            if faction == AEDUI:
-                continue
-            if count_pieces(state, region, faction) > 0:
-                # NP Romans always agree — §8.6.3
-                if faction == ROMANS and ROMANS in non_players:
+    # Count Aedui Allies on map
+    aedui_allies = 0
+    for tribe_info in state["tribes"].values():
+        if tribe_info.get("allied_faction") == AEDUI:
+            aedui_allies += 1
+
+    # Count Aedui Citadels on map
+    aedui_citadels = count_on_map(state, AEDUI, CITADEL)
+
+    base_pieces = aedui_allies + aedui_citadels
+    if base_pieces == 0:
+        return 0
+
+    # Check if Romans would agree — §8.6.3, §8.6.6
+    # NP Romans always agree per §8.6.3
+    romans_agree = False
+    if ROMANS in non_players:
+        romans_agree = True
+    else:
+        # Player Romans: use same victory-score tiers from agreements
+        # For estimation, assume agreement if score < 10
+        try:
+            roman_score = calculate_victory_score(state, ROMANS)
+            if roman_score < 10:
+                romans_agree = True
+        except Exception:
+            pass
+
+    if romans_agree:
+        # +2 per Aedui Ally and Citadel — §4.4.1
+        total = base_pieces * 2
+
+        # +1 per Subdued Tribe in Aedui-Controlled regions
+        aedui_controlled = set(get_controlled_regions(state, AEDUI))
+        for tribe_name, tribe_info in state["tribes"].items():
+            from fs_bot.rules_consts import TRIBE_TO_REGION
+            tribe_region = TRIBE_TO_REGION.get(tribe_name)
+            if tribe_region and tribe_region in aedui_controlled:
+                # Subdued = no allied_faction and no Dispersed marker
+                if tribe_info.get("allied_faction") is None:
+                    if not tribe_info.get("status"):
+                        total += 1
+
+        # +1 per Roman Allied Tribe in Aedui-Controlled regions
+        for tribe_name, tribe_info in state["tribes"].items():
+            tribe_region = TRIBE_TO_REGION.get(tribe_name)
+            if tribe_region and tribe_region in aedui_controlled:
+                if tribe_info.get("allied_faction") == ROMANS:
                     total += 1
-                    break
-                # Player Romans agree based on victory score — §8.6.6
-                elif faction == ROMANS:
-                    total += 1
-                    break
-                # Other factions: player must decide
-                elif faction not in non_players:
-                    total += 1
-                    break
+    else:
+        # +1 per Aedui Ally and Citadel — §4.4.1
+        total = base_pieces
 
     return total
 

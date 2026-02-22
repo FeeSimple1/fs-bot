@@ -470,6 +470,27 @@ def _count_adjacent_arverni_regions(state, region, scenario):
     return count
 
 
+def _is_within_one_of_vercingetorix(state, region, scenario):
+    """Check if a region is within one Region of Vercingetorix or has Successor.
+
+    Per §4.1.2 / §4.3.1 / §4.3.2 / §4.3.3: Arverni Special Abilities may
+    select only Regions within one Region of Vercingetorix (same Region or
+    adjacent), or the same Region that has his Successor Leader.
+
+    Args:
+        state: Game state dict.
+        region: Region to check.
+        scenario: Scenario constant.
+
+    Returns:
+        True if the region is eligible per Vercingetorix proximity.
+    """
+    verc_region = _vercingetorix_region(state)
+    if verc_region is None:
+        return False
+    return _distance_to_region(region, verc_region, scenario, max_dist=2) <= 1
+
+
 # ============================================================================
 # NODE FUNCTIONS — Main flowchart
 # ============================================================================
@@ -1255,6 +1276,10 @@ def _check_ambush(state, battle_plan, scenario):
 def _check_devastate(state, scenario):
     """V_DEVASTATE: Determine Devastate regions.
 
+    Per §4.3.2: Devastate requires:
+      (a) the region is Arverni-Controlled, AND
+      (b) within one Region of Vercingetorix or has his Successor.
+
     Per §8.7.1: Devastate wherever able that will force removal of a Legion
     or two Auxilia or at least as many Roman+Aedui pieces as Arverni.
 
@@ -1271,8 +1296,15 @@ def _check_devastate(state, scenario):
         if state["spaces"].get(region, {}).get("devastated", False):
             continue
 
-        # Must be able to Devastate (have enough pieces, per §4.3.1)
-        # Simplified: Arverni must have Warbands here
+        # §4.3.2: Must be Arverni-Controlled
+        if not is_controlled_by(state, region, ARVERNI):
+            continue
+
+        # §4.3.2: Must be within one Region of Vercingetorix or Successor
+        if not _is_within_one_of_vercingetorix(state, region, scenario):
+            continue
+
+        # Must have Arverni Warbands here (per §4.3.2 procedure)
         if count_pieces(state, region, ARVERNI, WARBAND) == 0:
             continue
 

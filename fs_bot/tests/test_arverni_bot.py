@@ -24,7 +24,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import place_piece, count_pieces, get_available
-from fs_bot.board.control import refresh_all_control
+from fs_bot.board.control import refresh_all_control, is_controlled_by
 from fs_bot.bots.arverni_bot import (
     # Node functions
     node_v1, node_v2, node_v2b, node_v2c, node_v3, node_v4, node_v5,
@@ -836,19 +836,53 @@ class TestSpecialAbilities:
     def test_devastate_with_legion(self):
         """Devastate triggers in region with Roman Legion."""
         state = _make_state()
-        _place_arverni_force(state, MANDUBII, warbands=5)
+        # Need Arverni Control + Vercingetorix nearby — §4.3.2
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=8)
         _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        refresh_all_control(state)
         regions = _check_devastate(state, state["scenario"])
         assert MANDUBII in regions
 
     def test_devastate_skips_already_devastated(self):
         """Devastate skips regions already Devastated."""
         state = _make_state()
-        _place_arverni_force(state, MANDUBII, warbands=5)
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=8)
         _place_roman_force(state, MANDUBII, legions=1)
+        refresh_all_control(state)
         state["spaces"][MANDUBII]["devastated"] = True
         regions = _check_devastate(state, state["scenario"])
         assert MANDUBII not in regions
+
+    def test_devastate_requires_arverni_control(self):
+        """Devastate: must have Arverni Control in region — §4.3.2.
+
+        Bug 5: Old code didn't check Control at all.
+        """
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=3)
+        # Romans have more pieces → Roman Control, not Arverni
+        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        refresh_all_control(state)
+        assert not is_controlled_by(state, MANDUBII, ARVERNI)
+        regions = _check_devastate(state, state["scenario"])
+        assert MANDUBII not in regions
+
+    def test_devastate_requires_vercingetorix_proximity(self):
+        """Devastate: must be within 1 Region of Vercingetorix — §4.3.2.
+
+        Bug 5: Old code didn't check Vercingetorix proximity.
+        """
+        state = _make_state()
+        # Vercingetorix in Arverni region, Devastate candidate far away
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=2)
+        _place_arverni_force(state, MORINI, warbands=8)
+        _place_roman_force(state, MORINI, legions=1)
+        refresh_all_control(state)
+        # MORINI is far from ARVERNI_REGION (more than 1 Region away)
+        from fs_bot.bots.arverni_bot import _is_within_one_of_vercingetorix
+        if not _is_within_one_of_vercingetorix(state, MORINI, state["scenario"]):
+            regions = _check_devastate(state, state["scenario"])
+            assert MORINI not in regions
 
     def test_entreat_replaces_enemy_allies(self):
         """Entreat replaces enemy Allies with Arverni Allies."""

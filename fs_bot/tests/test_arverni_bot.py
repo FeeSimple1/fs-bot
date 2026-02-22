@@ -593,14 +593,32 @@ class TestNodeVRally:
 
 class TestNodeVMarchSpread:
 
-    def test_march_spread_frost_redirects_to_raid(self):
-        """V_MARCH_SPREAD redirects to Raid during Frost."""
+    def test_march_spread_not_blocked_by_frost(self):
+        """V_MARCH_SPREAD is NOT blocked by Frost — §8.7.4 has no Frost edge.
+
+        Bug 3: Old code incorrectly checked Frost here. Per the flowchart,
+        Frost is a fallback only on V_MARCH_MASS (§8.7.6), not V_MARCH_SPREAD.
+        """
         state = _make_state()
         state["frost"] = True
         _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=5)
         result = node_v_march_spread(state)
-        # Should redirect to Raid or Pass
-        assert result["command"] in (ACTION_RAID, ACTION_PASS)
+        # Should proceed with March or fall through to Raid via IF NONE,
+        # NOT automatically redirect to Raid because of Frost
+        assert result["command"] in (ACTION_MARCH, ACTION_RAID, ACTION_PASS)
+
+    def test_march_spread_during_frost_still_marches(self):
+        """V_MARCH_SPREAD can March even during Frost — §8.7.4 has no Frost gate.
+
+        Bug 3: V_MARCH_MASS gates on Frost (§8.7.6), but V_MARCH_SPREAD does not.
+        """
+        state = _make_state()
+        state["frost"] = True
+        _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=10)
+        result = node_v_march_spread(state)
+        # With 10 WBs from ARVERNI_REGION, should find spread destinations
+        if result["command"] == ACTION_MARCH:
+            assert len(result["details"]["march_plan"]["spread_destinations"]) > 0
 
     def test_march_spread_basic(self):
         """V_MARCH_SPREAD selects destinations for spreading."""

@@ -967,9 +967,9 @@ def node_v_march_spread(state):
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
-    # Check Frost — §2.3.8
-    if is_frost_active(state):
-        return node_v_raid(state)
+    # NOTE: No Frost check here — §8.7.4 does not mention Frost.
+    # Frost is a fallback condition only on V_MARCH_MASS (§8.7.6:
+    # "If none or Frost or no Leader → V_RAID").
 
     march_plan = {
         "spread_destinations": [],

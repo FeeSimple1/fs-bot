@@ -90,9 +90,8 @@ def dispatch_bot_turn(state, faction):
         )
 
     if faction == AEDUI:
-        raise BotDispatchError(
-            f"Aedui bot not yet implemented. See BUILD_PLAN.md Phase C."
-        )
+        from fs_bot.bots.aedui_bot import execute_aedui_turn
+        return execute_aedui_turn(state)
 
     if faction == ARVERNI:
         from fs_bot.bots.arverni_bot import execute_arverni_turn

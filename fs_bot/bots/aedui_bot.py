@@ -34,6 +34,8 @@ from fs_bot.rules_consts import (
     EVENT_UNSHADED,
     # Die
     DIE_MIN, DIE_MAX,
+    # Suborn limits
+    SUBORN_MAX_PIECES, SUBORN_MAX_ALLIES,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
@@ -1217,6 +1219,14 @@ def _determine_suborn_sa(state, scenario):
     4. Remove most enemy Warbands: (1) Arverni (2) Belgae (3) Germans.
     5. Remove Auxilia.
 
+    Per §4.4.2: "remove and/or place a total of up to three such pieces in
+    the Suborn Region (in any combination). A maximum of one of the three
+    pieces removed or placed in the Region may be an Allied Tribe."
+    Cap: 3 pieces total per region, 1 Ally max per region.
+
+    Note: Suborn costs (2 Resources per Ally, 1 per Warband/Auxilia — §4.4.2)
+    are tracked by the execution layer, not the planning layer.
+
     If none: no Special Ability.
 
     Returns:
@@ -1248,10 +1258,15 @@ def _determine_suborn_sa(state, scenario):
             continue
 
         region_actions = []
+        # Per §4.4.2: max 3 pieces total, max 1 Ally per region
+        pieces_affected = 0
+        allies_affected = 0
 
         # Step 1: Place Aedui Ally — §8.6.3
         ally_placed = False
-        if avail_allies > 0:
+        if (avail_allies > 0
+                and pieces_affected < SUBORN_MAX_PIECES
+                and allies_affected < SUBORN_MAX_ALLIES):
             tribes = get_tribes_in_region(region, scenario)
             for tribe in tribes:
                 tribe_info = state["tribes"].get(tribe, {})
@@ -1262,10 +1277,14 @@ def _determine_suborn_sa(state, scenario):
                     })
                     avail_allies -= 1
                     ally_placed = True
+                    pieces_affected += 1
+                    allies_affected += 1
                     break
 
         # Step 2: If no Ally placed, remove enemy Ally — §8.6.3
-        if not ally_placed:
+        if (not ally_placed
+                and pieces_affected < SUBORN_MAX_PIECES
+                and allies_affected < SUBORN_MAX_ALLIES):
             # Remove from faction with most AC, NP Romans last
             best_target = None
             best_ac = -1
@@ -1297,37 +1316,53 @@ def _determine_suborn_sa(state, scenario):
 
             if best_target:
                 region_actions.append(best_target)
+                pieces_affected += 1
+                allies_affected += 1
 
         # Step 3: Place all Aedui Warbands able — §8.6.3
-        while avail_warbands > 0:
+        # Capped by remaining piece slots — §4.4.2
+        while avail_warbands > 0 and pieces_affected < SUBORN_MAX_PIECES:
             region_actions.append({"action": "place_warband"})
             avail_warbands -= 1
+            pieces_affected += 1
 
         # Step 4: Remove most enemy Warbands — §8.6.3
         # Priority: (1) Arverni (2) Belgae (3) Germans
         # In Ariovistus: Germans swap with Arverni per A8.4
+        # Capped by remaining piece slots — §4.4.2
         if scenario in ARIOVISTUS_SCENARIOS:
             wb_remove_order = (GERMANS, BELGAE, ARVERNI)
         else:
             wb_remove_order = (ARVERNI, BELGAE, GERMANS)
 
         for target_faction in wb_remove_order:
+            if pieces_affected >= SUBORN_MAX_PIECES:
+                break
             enemy_wb = count_pieces(state, region, target_faction, WARBAND)
             for _ in range(enemy_wb):
+                if pieces_affected >= SUBORN_MAX_PIECES:
+                    break
                 region_actions.append({
                     "action": "remove_warband",
                     "target_faction": target_faction,
                 })
+                pieces_affected += 1
 
         # Step 5: Remove Auxilia — §8.6.3
+        # Capped by remaining piece slots — §4.4.2
         for target_faction in get_faction_targeting_order(AEDUI, scenario):
+            if pieces_affected >= SUBORN_MAX_PIECES:
+                break
             enemy_aux = count_pieces(
                 state, region, target_faction, AUXILIA)
             for _ in range(enemy_aux):
+                if pieces_affected >= SUBORN_MAX_PIECES:
+                    break
                 region_actions.append({
                     "action": "remove_auxilia",
                     "target_faction": target_faction,
                 })
+                pieces_affected += 1
 
         if region_actions:
             suborn_plan.append({

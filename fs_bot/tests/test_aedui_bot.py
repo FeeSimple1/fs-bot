@@ -537,6 +537,44 @@ class TestSuborn:
         sa, _, _ = _determine_suborn_sa(state, SCENARIO_PAX_GALLICA)
         assert sa == SA_ACTION_NONE
 
+    def test_suborn_caps_at_3_pieces_per_region(self):
+        """Suborn enforces §4.4.2 cap of 3 pieces per region.
+
+        Place 1 Ally (1 piece, 1 ally) + should cap Warbands/removals at 2 more.
+        """
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=2, hidden=True)
+        # Lots of available Warbands and enemy pieces to affect
+        state["available"][AEDUI][WARBAND] = 10
+        _place_enemy_force(state, MANDUBII, ARVERNI, warbands=5)
+        _place_enemy_force(state, MANDUBII, BELGAE, warbands=3)
+        _place_roman_force(state, MANDUBII, auxilia=2)
+        sa, regions, details = _determine_suborn_sa(
+            state, SCENARIO_PAX_GALLICA)
+        assert sa == SA_ACTION_SUBORN
+        plan = details["suborn_plan"]
+        for region_entry in plan:
+            assert len(region_entry["actions"]) <= 3
+
+    def test_suborn_caps_at_1_ally_per_region(self):
+        """Suborn enforces §4.4.2 cap of 1 Ally per region.
+
+        Even with available Allies, only 1 Ally action per region.
+        """
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=2, hidden=True)
+        state["available"][AEDUI][ALLY] = 5
+        sa, regions, details = _determine_suborn_sa(
+            state, SCENARIO_PAX_GALLICA)
+        if sa == SA_ACTION_SUBORN:
+            plan = details["suborn_plan"]
+            for region_entry in plan:
+                ally_actions = [
+                    a for a in region_entry["actions"]
+                    if a["action"] in ("place_ally", "remove_ally")
+                ]
+                assert len(ally_actions) <= 1
+
 
 # ===================================================================
 # Quarters

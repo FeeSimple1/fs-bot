@@ -850,11 +850,12 @@ class TestBotDispatch:
         with pytest.raises(BotDispatchError, match="not marked"):
             dispatch_bot_turn(state, ROMANS)
 
-    def test_dispatch_belgae_not_implemented(self):
-        """Belgae bot not yet implemented."""
+    def test_dispatch_belgae_implemented(self):
+        """Belgae bot is implemented and dispatches successfully."""
         state = _make_state(non_players={BELGAE})
-        with pytest.raises(BotDispatchError, match="not yet implemented"):
-            dispatch_bot_turn(state, BELGAE)
+        state["can_play_event"] = False
+        result = dispatch_bot_turn(state, BELGAE)
+        assert "command" in result
 
     def test_dispatch_aedui_implemented(self):
         """Aedui bot is implemented and dispatches successfully."""

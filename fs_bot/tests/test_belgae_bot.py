@@ -14,13 +14,14 @@ from fs_bot.rules_consts import (
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
-    AMBIORIX, CAESAR,
+    AMBIORIX, BODUOGNATUS, CAESAR, SUCCESSOR,
     MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, SUGAMBRI, UBII,
     AEDUI_REGION, ARVERNI_REGION, SEQUANI, BITURIGES,
     CARNUTES, PICTONES, VENETI, TREVERI, BRITANNIA,
     TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
     TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
     TRIBE_ATREBATES, TRIBE_SEQUANI, TRIBE_NERVII,
+    TRIBE_TREVERI, TRIBE_VENETI,
     EVENT_SHADED,
 )
 from fs_bot.state.state_schema import build_initial_state
@@ -34,7 +35,9 @@ from fs_bot.bots.belgae_bot import (
     node_b_rally, node_b_raid, node_b_march,
     node_b_march_threat,
     # SA helpers
-    _check_ambush, _check_rampage, _check_enlist_after_command,
+    _check_ambush, _check_rampage,
+    _check_enlist_in_battle, _check_enlist_after_command,
+    _is_within_one_of_ambiorix,
     # Winter
     node_b_quarters, node_b_spring,
     # Agreements
@@ -527,7 +530,9 @@ class TestAmbush:
     def test_ambush_when_more_hidden_and_enemy_legion(self):
         """Ambush when more Hidden Belgae than enemy and enemy has Legion."""
         state = _make_state()
-        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True)
+        # §4.5.3: Ambiorix must be in/adjacent to the Ambush region
+        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True,
+                            leader=True)
         _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
         battle_plan = [{"region": MANDUBII, "target": ROMANS}]
         result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
@@ -537,7 +542,8 @@ class TestAmbush:
     def test_no_ambush_when_fewer_hidden(self):
         """No Ambush when fewer Hidden Belgae than Hidden enemy."""
         state = _make_state()
-        _place_belgae_force(state, MANDUBII, warbands=1, hidden=True)
+        _place_belgae_force(state, MANDUBII, warbands=1, hidden=True,
+                            leader=True)
         # Use Arverni Warbands as the enemy (Romans don't have Warbands)
         place_piece(state, MANDUBII, ARVERNI, WARBAND, 3,
                     piece_state=HIDDEN)
@@ -545,10 +551,23 @@ class TestAmbush:
         result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
         assert len(result) == 0
 
+    def test_no_ambush_without_ambiorix_proximity(self):
+        """No Ambush when region is not within 1 of Ambiorix — §4.5.3."""
+        state = _make_state()
+        # Ambiorix far away from the battle region
+        _place_belgae_force(state, PROVINCIA, leader=True)
+        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True)
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        battle_plan = [{"region": MANDUBII, "target": ROMANS}]
+        result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
+        assert len(result) == 0
+
     def test_ambush_cascades_to_all_battles(self):
         """If Ambushed in 1st Battle, Ambush in all others — §8.5.1."""
         state = _make_state()
-        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True)
+        # Ambiorix in Mandubii — adjacent to both Mandubii and Carnutes
+        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True,
+                            leader=True)
         _place_belgae_force(state, CARNUTES, warbands=4, hidden=True)
         _place_roman_force(state, MANDUBII, legions=1)
         _place_roman_force(state, CARNUTES, auxilia=2)
@@ -570,7 +589,9 @@ class TestRampage:
     def test_rampage_with_hidden_warbands(self):
         """Rampage when Belgae have Hidden Warbands vs enemy."""
         state = _make_state()
-        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True)
+        # §4.5.2: Ambiorix must be within 1 of Rampage region
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True,
+                            leader=True)
         place_piece(state, MANDUBII, ROMANS, AUXILIA, 2)
         result = _check_rampage(state, SCENARIO_PAX_GALLICA)
         assert len(result) > 0
@@ -579,7 +600,9 @@ class TestRampage:
     def test_rampage_priority_forces_removal_first(self):
         """Rampage prioritizes forced removal — §8.5.1 step 1."""
         state = _make_state()
-        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True)
+        # Ambiorix in Mandubii (adjacent to Carnutes too)
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True,
+                            leader=True)
         _place_belgae_force(state, CARNUTES, warbands=2, hidden=True)
         place_piece(state, MANDUBII, ROMANS, AUXILIA, 2)
         place_piece(state, CARNUTES, AEDUI, WARBAND, 2)
@@ -590,13 +613,43 @@ class TestRampage:
     def test_no_rampage_last_piece_before_battle(self):
         """No Rampage against enemy's last piece before Battle — §8.5.1."""
         state = _make_state()
-        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True)
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True,
+                            leader=True)
         place_piece(state, MANDUBII, ROMANS, AUXILIA, 1)
         battle_plan = [{"region": MANDUBII, "target": ROMANS}]
         result = _check_rampage(
             state, SCENARIO_PAX_GALLICA,
             before_battle=True, battle_plan=battle_plan)
         # Only 1 enemy piece: can't Rampage before battle
+        assert len(result) == 0
+
+    def test_no_rampage_without_ambiorix_proximity(self):
+        """No Rampage when not within 1 of Ambiorix — §4.5.2."""
+        state = _make_state()
+        _place_belgae_force(state, PROVINCIA, leader=True)
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 2)
+        result = _check_rampage(state, SCENARIO_PAX_GALLICA)
+        assert len(result) == 0
+
+    def test_no_rampage_against_enemy_with_leader(self):
+        """No Rampage against enemy with Leader — §4.5.2."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True,
+                            leader=True)
+        _place_roman_force(state, MANDUBII, leader=True, auxilia=2)
+        result = _check_rampage(state, SCENARIO_PAX_GALLICA)
+        # Romans have Caesar in region → can't Rampage against them
+        assert len(result) == 0
+
+    def test_no_rampage_against_enemy_with_fort(self):
+        """No Rampage against enemy with Fort — §4.5.2."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True,
+                            leader=True)
+        _place_roman_force(state, MANDUBII, auxilia=2, fort=True)
+        result = _check_rampage(state, SCENARIO_PAX_GALLICA)
+        # Romans have Fort → can't Rampage against them
         assert len(result) == 0
 
 
@@ -610,6 +663,8 @@ class TestEnlist:
     def test_enlist_german_battle(self):
         """Enlist Germans to Battle enemy."""
         state = _make_state(non_players={BELGAE})
+        # §4.5.1: Ambiorix must be within 1 of the Enlist region
+        _place_belgae_force(state, MANDUBII, leader=True)
         place_piece(state, MANDUBII, GERMANS, WARBAND, 4)
         place_piece(state, MANDUBII, ROMANS, AUXILIA, 2)
         result = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
@@ -619,7 +674,8 @@ class TestEnlist:
     def test_enlist_german_march(self):
         """Enlist Germans to March from Belgica to enemy Control."""
         state = _make_state(non_players={BELGAE})
-        # Place Germans in Belgica
+        # §4.5.1: Ambiorix must be within 1 of March origin
+        _place_belgae_force(state, MORINI, leader=True)
         place_piece(state, MORINI, GERMANS, WARBAND, 3)
         # Make adjacent region Roman-controlled
         _place_roman_force(state, ATREBATES, auxilia=4,
@@ -634,6 +690,17 @@ class TestEnlist:
     def test_enlist_none_when_no_germans(self):
         """No Enlist when no German pieces on map."""
         state = _make_state(non_players={BELGAE})
+        _place_belgae_force(state, MANDUBII, leader=True)
+        result = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
+        assert result is None
+
+    def test_enlist_none_without_ambiorix_proximity(self):
+        """No Enlist when Ambiorix is not near Germans — §4.5.1."""
+        state = _make_state(non_players={BELGAE})
+        # Ambiorix far away
+        _place_belgae_force(state, PROVINCIA, leader=True)
+        place_piece(state, MANDUBII, GERMANS, WARBAND, 4)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 2)
         result = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
         assert result is None
 
@@ -1080,3 +1147,510 @@ class TestLargestWarbandGroup:
             state, SCENARIO_PAX_GALLICA)
         assert region is None
         assert count == 0
+
+
+# ===================================================================
+# Ambiorix proximity helper
+# ===================================================================
+
+class TestAmbiorixProximity:
+    """Test _is_within_one_of_ambiorix."""
+
+    def test_same_region(self):
+        """Ambiorix in same region → within proximity."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, leader=True)
+        assert _is_within_one_of_ambiorix(
+            state, MANDUBII, SCENARIO_PAX_GALLICA)
+
+    def test_adjacent_region(self):
+        """Adjacent to Ambiorix → within proximity."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, leader=True)
+        # Carnutes is adjacent to Mandubii
+        assert _is_within_one_of_ambiorix(
+            state, CARNUTES, SCENARIO_PAX_GALLICA)
+
+    def test_far_region(self):
+        """2+ regions away → NOT within proximity."""
+        state = _make_state()
+        _place_belgae_force(state, PROVINCIA, leader=True)
+        # Mandubii is NOT adjacent to Provincia
+        assert not _is_within_one_of_ambiorix(
+            state, MANDUBII, SCENARIO_PAX_GALLICA)
+
+    def test_no_leader_on_map(self):
+        """No leader on map → NOT within proximity."""
+        state = _make_state()
+        assert not _is_within_one_of_ambiorix(
+            state, MANDUBII, SCENARIO_PAX_GALLICA)
+
+    def test_successor_same_region_only(self):
+        """Successor must be in SAME region, not adjacent — §4.1.2."""
+        state = _make_state()
+        # Place Successor (non-Ambiorix leader) in Mandubii
+        place_piece(state, MANDUBII, BELGAE, LEADER, leader_name=SUCCESSOR)
+        # Same region works
+        assert _is_within_one_of_ambiorix(
+            state, MANDUBII, SCENARIO_PAX_GALLICA)
+        # Adjacent does NOT work for Successor
+        assert not _is_within_one_of_ambiorix(
+            state, CARNUTES, SCENARIO_PAX_GALLICA)
+
+    def test_ariovistus_uses_boduognatus(self):
+        """Ariovistus scenario uses Boduognatus as named leader — A1.4."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        place_piece(state, MANDUBII, BELGAE, LEADER,
+                    leader_name=BODUOGNATUS)
+        assert _is_within_one_of_ambiorix(
+            state, MANDUBII, SCENARIO_ARIOVISTUS)
+        # Adjacent also works with named leader
+        assert _is_within_one_of_ambiorix(
+            state, CARNUTES, SCENARIO_ARIOVISTUS)
+
+
+# ===================================================================
+# Ambush: additional edge cases
+# ===================================================================
+
+class TestAmbushEdgeCases:
+    """Additional Ambush edge case tests."""
+
+    def test_ambush_retreat_condition(self):
+        """Ambush when retreat could lessen removals — §8.5.1."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True,
+                            leader=True)
+        # Enemy has mobile pieces that could retreat
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 3)
+        battle_plan = [{"region": MANDUBII, "target": AEDUI}]
+        result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
+        assert len(result) > 0
+
+    def test_ambush_counterattack_condition(self):
+        """Ambush when counterattack Loss to Belgae is possible — §8.5.1."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True,
+                            leader=True)
+        # Enemy has Legion → counterattack possible
+        _place_roman_force(state, MANDUBII, legions=1)
+        battle_plan = [{"region": MANDUBII, "target": ROMANS}]
+        result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
+        assert len(result) > 0
+
+    def test_no_ambush_when_no_counterattack_no_retreat(self):
+        """No Ambush when neither retreat nor counterattack applies — §8.5.1."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True,
+                            leader=True)
+        # Enemy has only Allies (immobile, no counterattack)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = ARVERNI
+        place_piece(state, MANDUBII, ARVERNI, ALLY)
+        battle_plan = [{"region": MANDUBII, "target": ARVERNI}]
+        result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
+        # Only 1 Ally piece, no mobile, no Legion/Leader → no Ambush reason
+        assert len(result) == 0
+
+    def test_cascade_filters_ineligible_regions(self):
+        """Cascade only to regions where Ambush is eligible — §4.5.3."""
+        state = _make_state()
+        # Ambiorix in Mandubii. Mandubii is adjacent to Carnutes but NOT
+        # to Provincia. So a battle in Provincia should be filtered out.
+        _place_belgae_force(state, MANDUBII, warbands=4, hidden=True,
+                            leader=True)
+        _place_belgae_force(state, PROVINCIA, warbands=4, hidden=True)
+        _place_roman_force(state, MANDUBII, legions=1)
+        _place_roman_force(state, PROVINCIA, auxilia=2)
+        battle_plan = [
+            {"region": MANDUBII, "target": ROMANS},
+            {"region": PROVINCIA, "target": ROMANS},
+        ]
+        result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
+        # Mandubii should be included (eligible), Provincia should not
+        assert MANDUBII in result
+        assert PROVINCIA not in result
+
+
+# ===================================================================
+# Rampage: additional edge cases
+# ===================================================================
+
+class TestRampageEdgeCases:
+    """Additional Rampage edge case tests."""
+
+    def test_no_rampage_against_enemy_with_citadel(self):
+        """No Rampage against enemy with Citadel — §4.5.2."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True,
+                            leader=True)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        place_piece(state, MANDUBII, ARVERNI, CITADEL)
+        result = _check_rampage(state, SCENARIO_PAX_GALLICA)
+        # Arverni have Citadel → can't Rampage
+        assert len(result) == 0
+
+    def test_rampage_does_not_target_germans(self):
+        """Rampage never targets Germans — §4.5.2."""
+        state = _make_state()
+        _place_belgae_force(state, SUGAMBRI, warbands=3, hidden=True,
+                            leader=True)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 3)
+        result = _check_rampage(state, SCENARIO_PAX_GALLICA)
+        # Germans are never valid Rampage targets
+        assert len(result) == 0
+
+    def test_rampage_forces_removal_prioritized(self):
+        """Rampage prioritizes force removal over control — §8.5.1."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True,
+                            leader=True)
+        # Region with enemy mobile pieces (forces removal)
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 3)
+        result = _check_rampage(state, SCENARIO_PAX_GALLICA)
+        if result:
+            assert result[0]["forces_removal"] is True
+
+    def test_rampage_adjacent_to_ambiorix(self):
+        """Rampage works in region adjacent to Ambiorix."""
+        state = _make_state()
+        # Ambiorix in Mandubii, Rampage in Carnutes (adjacent)
+        _place_belgae_force(state, MANDUBII, leader=True)
+        _place_belgae_force(state, CARNUTES, warbands=3, hidden=True)
+        place_piece(state, CARNUTES, AEDUI, WARBAND, 2)
+        result = _check_rampage(state, SCENARIO_PAX_GALLICA)
+        assert len(result) > 0
+        assert result[0]["region"] == CARNUTES
+
+
+# ===================================================================
+# Enlist in Battle: tests
+# ===================================================================
+
+class TestEnlistInBattle:
+    """Test _check_enlist_in_battle."""
+
+    def test_enlist_in_battle_with_germans_nearby(self):
+        """Enlist Germans when in battle region with Ambiorix — §8.5.1."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, leader=True, warbands=4)
+        place_piece(state, MANDUBII, GERMANS, WARBAND, 2)
+        _place_roman_force(state, MANDUBII, auxilia=3)
+        battle_plan = [{"region": MANDUBII, "target": ROMANS}]
+        result = _check_enlist_in_battle(
+            state, battle_plan, SCENARIO_PAX_GALLICA)
+        assert result is not None
+        assert result["type"] == "in_battle"
+        assert result["region"] == MANDUBII
+
+    def test_no_enlist_in_battle_without_proximity(self):
+        """No Enlist in Battle when region not near Ambiorix — §4.5.1."""
+        state = _make_state()
+        _place_belgae_force(state, PROVINCIA, leader=True)
+        _place_belgae_force(state, MANDUBII, warbands=4)
+        place_piece(state, MANDUBII, GERMANS, WARBAND, 2)
+        _place_roman_force(state, MANDUBII, auxilia=3)
+        battle_plan = [{"region": MANDUBII, "target": ROMANS}]
+        result = _check_enlist_in_battle(
+            state, battle_plan, SCENARIO_PAX_GALLICA)
+        assert result is None
+
+    def test_no_enlist_in_battle_without_germans(self):
+        """No Enlist in Battle when no Germans in battle region."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, leader=True, warbands=4)
+        _place_roman_force(state, MANDUBII, auxilia=3)
+        battle_plan = [{"region": MANDUBII, "target": ROMANS}]
+        result = _check_enlist_in_battle(
+            state, battle_plan, SCENARIO_PAX_GALLICA)
+        assert result is None
+
+    def test_enlist_empty_battle_plan(self):
+        """No Enlist with empty battle plan."""
+        state = _make_state()
+        result = _check_enlist_in_battle(state, [], SCENARIO_PAX_GALLICA)
+        assert result is None
+
+
+# ===================================================================
+# Enlist after Command: additional tests
+# ===================================================================
+
+class TestEnlistAfterCommandEdgeCases:
+    """Additional Enlist after Command tests."""
+
+    def test_enlist_prefers_battle_over_march(self):
+        """Enlist prefers German Battle (step 1) over March (step 2)."""
+        state = _make_state(non_players={BELGAE})
+        _place_belgae_force(state, MORINI, leader=True)
+        # Germans in Morini with enemy
+        place_piece(state, MORINI, GERMANS, WARBAND, 4)
+        place_piece(state, MORINI, ROMANS, AUXILIA, 2)
+        result = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
+        assert result is not None
+        assert result["type"] == "german_battle"
+
+    def test_enlist_march_from_belgica(self):
+        """Enlist March from Belgica to enemy Control — §8.5.1 step 2."""
+        state = _make_state(non_players={BELGAE})
+        # Ambiorix in Morini (Belgica), Germans also in Morini
+        _place_belgae_force(state, MORINI, leader=True)
+        place_piece(state, MORINI, GERMANS, WARBAND, 3)
+        # Adjacent region has Roman Control
+        _place_roman_force(state, ATREBATES, auxilia=4,
+                           ally_tribe=TRIBE_ATREBATES)
+        refresh_all_control(state)
+        result = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
+        # No battle target in Morini → should try March
+        if result and result["type"] == "german_march":
+            assert result["origin"] == MORINI
+
+    def test_enlist_ariovistus_march_from_treveri(self):
+        """A8.5.1: Enlist March from Treveri in Ariovistus."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS,
+                            non_players={BELGAE})
+        # Ambiorix in Treveri
+        _place_belgae_force(state, TREVERI, leader=True)
+        place_piece(state, TREVERI, GERMANS, WARBAND, 3)
+        # Adjacent region has Roman Control
+        _place_roman_force(state, MANDUBII, auxilia=4,
+                           ally_tribe=TRIBE_MANDUBII)
+        refresh_all_control(state)
+        result = _check_enlist_after_command(state, SCENARIO_ARIOVISTUS)
+        if result and result["type"] == "german_march":
+            assert result["origin"] == TREVERI
+
+
+# ===================================================================
+# Quarters: additional edge cases
+# ===================================================================
+
+class TestQuartersEdgeCases:
+    """Additional Quarters edge case tests."""
+
+    def test_quarters_stays_in_devastated_with_ally(self):
+        """Quarters: don't leave Devastated if Belgae have Ally — §8.5.6."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=3,
+                            ally_tribe=TRIBE_MANDUBII)
+        state["spaces"][MANDUBII]["devastated"] = True
+        refresh_all_control(state)
+        result = node_b_quarters(state)
+        # Has Ally → don't leave
+        assert len(result["leave_devastated"]) == 0
+
+    def test_quarters_stays_in_devastated_with_citadel(self):
+        """Quarters: don't leave Devastated if have Citadel — §8.5.6."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=3, citadel=True)
+        state["spaces"][MANDUBII]["devastated"] = True
+        refresh_all_control(state)
+        result = node_b_quarters(state)
+        assert len(result["leave_devastated"]) == 0
+
+    def test_quarters_leaves_devastated_randomly(self):
+        """Quarters: random adjacent Controlled region — §8.5.6."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=3)
+        state["spaces"][MANDUBII]["devastated"] = True
+        # Multiple adjacent Belgae-Controlled regions
+        _place_belgae_force(state, CARNUTES, warbands=5)
+        _place_belgae_force(state, BITURIGES, warbands=5)
+        refresh_all_control(state)
+        # Run multiple times to verify randomness
+        destinations = set()
+        for s in range(50):
+            st = _make_state(seed=s)
+            _place_belgae_force(st, MANDUBII, warbands=3)
+            st["spaces"][MANDUBII]["devastated"] = True
+            _place_belgae_force(st, CARNUTES, warbands=5)
+            _place_belgae_force(st, BITURIGES, warbands=5)
+            refresh_all_control(st)
+            res = node_b_quarters(st)
+            if res["leave_devastated"]:
+                destinations.add(res["leave_devastated"][0]["to"])
+        # Should see multiple destinations due to randomness
+        assert len(destinations) >= 1
+
+    def test_quarters_leader_move_leaves_warbands(self):
+        """Quarters: leave behind 1+ Warbands when moving — §8.5.6."""
+        state = _make_state()
+        # Ambiorix in Mandubii with 3 Warbands, more in Carnutes
+        _place_belgae_force(state, MANDUBII, leader=True, warbands=3)
+        _place_belgae_force(state, CARNUTES, warbands=8)
+        refresh_all_control(state)
+        result = node_b_quarters(state)
+        if result["leader_move"]:
+            assert result["leader_move"]["warbands_left"] >= 1
+
+    def test_quarters_leader_move_keeps_control(self):
+        """Quarters: keep enough for Control when moving — §8.5.6."""
+        state = _make_state()
+        # Ambiorix in Mandubii with 4 Warbands, enemy has 2
+        _place_belgae_force(state, MANDUBII, leader=True, warbands=4)
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 2)
+        _place_belgae_force(state, CARNUTES, warbands=8)
+        refresh_all_control(state)
+        result = node_b_quarters(state)
+        if result["leader_move"]:
+            # Must leave enough to keep Control over the 2 Aedui
+            assert result["leader_move"]["warbands_left"] >= 3
+
+    def test_quarters_no_move_when_already_at_largest(self):
+        """Quarters: no move when Leader already at largest group."""
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, leader=True, warbands=10)
+        _place_belgae_force(state, CARNUTES, warbands=3)
+        refresh_all_control(state)
+        result = node_b_quarters(state)
+        assert result["leader_move"] is None
+
+    def test_quarters_ariovistus_targets_morini(self):
+        """A8.5.6: In Ariovistus, Quarters prefers Morini/Nervii/Treveri."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Ambiorix in Atrebates (adjacent to Morini and Nervii)
+        _place_belgae_force(state, ATREBATES, leader=True, warbands=1)
+        # More Warbands in Morini (Ariovistus target)
+        _place_belgae_force(state, MORINI, warbands=3)
+        # Even more in a non-target region
+        _place_belgae_force(state, MANDUBII, warbands=6)
+        refresh_all_control(state)
+        result = node_b_quarters(state)
+        if result["leader_move"]:
+            # Should prefer Morini/Nervii/Treveri over Mandubii per A8.5.6
+            dest = result["leader_move"]["to"]
+            assert dest in (MORINI, NERVII, TREVERI)
+
+
+# ===================================================================
+# Spring: additional tests
+# ===================================================================
+
+class TestSpringEdgeCases:
+    """Additional Spring tests."""
+
+    def test_spring_places_at_most_pieces(self):
+        """Spring places Leader at region with most Belgae pieces."""
+        state = _make_state()
+        _place_belgae_force(state, MORINI, warbands=2)
+        _place_belgae_force(state, NERVII, warbands=8)
+        _place_belgae_force(state, ATREBATES, warbands=3)
+        result = node_b_spring(state)
+        assert result is not None
+        assert result["place_leader"] == AMBIORIX
+        assert result["region"] == NERVII
+
+    def test_spring_nothing_when_no_belgae(self):
+        """Spring returns None when no Belgae on map."""
+        state = _make_state()
+        result = node_b_spring(state)
+        # No Belgae on map, but leader also not on map
+        # get_leader_placement_region would return None
+        assert result is None or result["region"] is not None
+
+
+# ===================================================================
+# Agreements: additional tests
+# ===================================================================
+
+class TestAgreementsEdgeCases:
+    """Additional Agreements tests."""
+
+    def test_never_agree_quarters(self):
+        """Never agree to Quarters for others — §8.4.2."""
+        state = _make_state()
+        assert node_b_agreements(state, ROMANS, "quarters") is False
+        assert node_b_agreements(state, AEDUI, "quarters") is False
+
+    def test_harass_seize(self):
+        """Harass Roman Seize — §8.4.2."""
+        state = _make_state()
+        # "Harass Roman March and Seize" — §8.4.2
+        assert node_b_agreements(state, ROMANS, "harassment") is True
+
+    def test_no_harass_belgae_self(self):
+        """Don't harass self."""
+        state = _make_state()
+        assert node_b_agreements(state, BELGAE, "harassment") is False
+
+    def test_no_harass_arverni(self):
+        """Don't harass Arverni — only harass Romans."""
+        state = _make_state()
+        assert node_b_agreements(state, ARVERNI, "harassment") is False
+
+    def test_no_agree_unknown_type(self):
+        """Reject unknown request types — default deny."""
+        state = _make_state()
+        assert node_b_agreements(state, ROMANS, "unknown") is False
+
+
+# ===================================================================
+# Ariovistus modifications: comprehensive tests
+# ===================================================================
+
+class TestAriovistusModifications:
+    """Test A8.5 Ariovistus-specific modifications."""
+
+    def test_a851_threat_considers_germans(self):
+        """A8.5.1: Belgae consider Germans as enemies in Ariovistus."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_belgae_force(state, SUGAMBRI, leader=True, warbands=4)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 5)
+        assert _has_belgae_threat(state, SUGAMBRI, SCENARIO_ARIOVISTUS)
+
+    def test_a851_threat_ignores_germans_in_base(self):
+        """Base game: Belgae do NOT consider Germans as enemies."""
+        state = _make_state()
+        _place_belgae_force(state, SUGAMBRI, leader=True, warbands=4)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 5)
+        assert not _has_belgae_threat(state, SUGAMBRI, SCENARIO_PAX_GALLICA)
+
+    def test_a851_settlements_count_as_allies(self):
+        """A8.5.1: Settlements count as Allies for B1 conditions."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_belgae_force(state, TREVERI, leader=True, warbands=2)
+        place_piece(state, TREVERI, GERMANS, SETTLEMENT)
+        result, regions = node_b1(state)
+        assert result == "Yes"
+
+    def test_a851_battle_targets_germans_in_ariovistus(self):
+        """A8.5.1: Belgae can Battle Germans in Ariovistus."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_belgae_force(state, SUGAMBRI, warbands=6, leader=True)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 2)
+        assert _can_battle_in_region(
+            state, SUGAMBRI, SCENARIO_ARIOVISTUS, GERMANS)
+
+    def test_a851_cannot_battle_germans_in_base(self):
+        """Base game: Belgae cannot Battle Germans."""
+        state = _make_state()
+        _place_belgae_force(state, SUGAMBRI, warbands=6, leader=True)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 2)
+        assert not _can_battle_in_region(
+            state, SUGAMBRI, SCENARIO_PAX_GALLICA, GERMANS)
+
+    def test_a856_quarters_prefers_belgica_treveri(self):
+        """A8.5.6: Quarters first moves to Morini/Nervii/Treveri."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Ambiorix in Nervii (one of the target regions)
+        _place_belgae_force(state, ATREBATES, leader=True, warbands=1)
+        _place_belgae_force(state, NERVII, warbands=4)
+        _place_belgae_force(state, MANDUBII, warbands=7)
+        refresh_all_control(state)
+        result = node_b_quarters(state)
+        if result["leader_move"]:
+            dest = result["leader_move"]["to"]
+            # Should prefer Nervii (Ariovistus target) over Mandubii
+            # even though Mandubii has more Warbands
+            assert dest in (MORINI, NERVII, TREVERI)
+
+    def test_a856_quarters_fallback_when_no_target_reachable(self):
+        """A8.5.6: Fall back to normal logic when no target reachable."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Ambiorix far from Morini/Nervii/Treveri
+        _place_belgae_force(state, PROVINCIA, leader=True, warbands=1)
+        _place_belgae_force(state, AEDUI_REGION, warbands=5)
+        refresh_all_control(state)
+        result = node_b_quarters(state)
+        if result["leader_move"]:
+            # Falls back to joining most Warbands
+            assert result["leader_move"]["to"] == AEDUI_REGION

@@ -83,11 +83,9 @@ def dispatch_bot_turn(state, faction):
         from fs_bot.bots.roman_bot import execute_roman_turn
         return execute_roman_turn(state)
 
-    # Placeholder stubs for unimplemented bots
     if faction == BELGAE:
-        raise BotDispatchError(
-            f"Belgae bot not yet implemented. See BUILD_PLAN.md Phase C."
-        )
+        from fs_bot.bots.belgae_bot import execute_belgae_turn
+        return execute_belgae_turn(state)
 
     if faction == AEDUI:
         from fs_bot.bots.aedui_bot import execute_aedui_turn

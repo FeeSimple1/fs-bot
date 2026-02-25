@@ -993,6 +993,66 @@ class TestNodeBMarch:
         if result["command"] == ACTION_MARCH and result["sa"] == SA_ACTION_ENLIST:
             assert len(result["sa_regions"]) > 0
 
+    def test_march_outside_belgica_sorts_by_fewest_needed(self):
+        """Outside-Belgica March sorts by fewest Warbands needed — §8.5.5.
+
+        [Ch8] §8.5.5: "where the movement of the fewest Warbands is needed
+        to do so" — sort by Warbands NEEDED, not Warbands available.
+
+        Setup: Belgae Warbands in Bituriges (Celtica). Bituriges is adjacent
+        to Carnutes and Mandubii (among others). We place different numbers
+        of enemies in those two regions to create different warbands_needed
+        values. The bot should prefer the one needing fewer Warbands.
+        """
+        state = _make_state()
+        state["resources"][BELGAE] = 10
+
+        # Place Belgae Warbands in Bituriges — supply origin
+        _place_belgae_force(state, BITURIGES, warbands=10)
+
+        # CARNUTES (adjacent to Bituriges): 4 enemy pieces →
+        # needs 5 Warbands to take Control
+        place_piece(state, CARNUTES, ROMANS, AUXILIA, 4)
+
+        # MANDUBII (adjacent to Bituriges via Carnutes? No — Mandubii is
+        # adjacent to Bituriges directly): 1 enemy piece →
+        # needs 2 Warbands to take Control
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 1)
+
+        refresh_all_control(state)
+        result = node_b_march(state)
+        assert result["command"] == ACTION_MARCH
+        march_plan = result["details"]["march_plan"]
+        dests = march_plan["control_destinations"]
+        # Mandubii needs fewer Warbands (2) than Carnutes (5)
+        if MANDUBII in dests and CARNUTES in dests:
+            assert dests.index(MANDUBII) < dests.index(CARNUTES)
+        elif len(dests) == 1:
+            # If only one picked, should be the one needing fewer
+            assert dests[0] == MANDUBII
+
+    def test_march_belgica_sorts_by_fewest_needed(self):
+        """Belgica March also sorts by fewest Warbands needed — §8.5.5."""
+        state = _make_state()
+        state["resources"][BELGAE] = 10
+        # Warbands in Morini that can March to Nervii or Atrebates
+        _place_belgae_force(state, MORINI, warbands=10)
+        # Nervii: 3 enemy pieces → needs 4 Warbands
+        place_piece(state, NERVII, ROMANS, AUXILIA, 3)
+        # Atrebates: 1 enemy piece → needs 2 Warbands
+        place_piece(state, ATREBATES, ROMANS, AUXILIA, 1)
+        refresh_all_control(state)
+
+        result = node_b_march(state)
+        assert result["command"] == ACTION_MARCH
+        march_plan = result["details"]["march_plan"]
+        dests = march_plan["control_destinations"]
+        # Atrebates needs fewer (2) than Nervii (4) — should come first
+        if len(dests) >= 2:
+            atr_idx = dests.index(ATREBATES) if ATREBATES in dests else 99
+            ner_idx = dests.index(NERVII) if NERVII in dests else 99
+            assert atr_idx < ner_idx
+
 
 # ===================================================================
 # Quarters

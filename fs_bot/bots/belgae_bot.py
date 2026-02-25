@@ -1219,27 +1219,30 @@ def node_b_march(state):
     control_dests_found = 0
 
     # (1) In Belgica — §8.5.5
+    # "where the movement of the fewest Warbands is needed" — [Ch8] §8.5.5
     belgica_candidates = []
     for region in playable:
         if not _is_in_belgica(region):
             continue
         if is_controlled_by(state, region, BELGAE):
             continue  # Already have Control
-        # Calculate how many Warbands we'd need to March in
-        # to take Belgic Control
-        belgica_candidates.append(region)
 
-    # Score Belgica candidates by fewest Warbands needed
-    for dest in belgica_candidates:
-        if control_dests_found >= 2:
-            break
+        # Calculate warbands needed to take Control — §1.6
+        # Need: belgae_forces + needed > non_belgae_forces
+        belgae_forces = count_pieces(state, region, BELGAE)
+        non_belgae_forces = sum(
+            count_pieces(state, region, f)
+            for f in (ROMANS, ARVERNI, AEDUI, GERMANS)
+        )
+        warbands_needed = max(0, non_belgae_forces - belgae_forces + 1)
+
         # Find origins that can supply Warbands
         origin_supply = []
         for origin in playable:
-            if origin == dest:
+            if origin == region:
                 continue
             adj_regions = get_adjacent(origin, scenario)
-            if dest not in adj_regions:
+            if region not in adj_regions:
                 continue
             origin_wb = count_pieces(state, origin, BELGAE, WARBAND)
             # Leave 1 per origin, and don't remove Control — §8.5.5
@@ -1253,12 +1256,23 @@ def node_b_march(state):
                 origin_supply.append((origin, available_from_origin))
 
         total_available = sum(s[1] for s in origin_supply)
-        if total_available > 0:
-            march_plan["control_destinations"].append(dest)
-            march_plan["origins"].extend([s[0] for s in origin_supply])
-            control_dests_found += 1
+        # Only include if actually achievable
+        if total_available >= warbands_needed and warbands_needed > 0:
+            belgica_candidates.append(
+                (region, warbands_needed, origin_supply))
+
+    # Sort by fewest Warbands needed — §8.5.5
+    belgica_candidates.sort(key=lambda x: x[1])
+
+    for dest, _, origin_supply in belgica_candidates:
+        if control_dests_found >= 2:
+            break
+        march_plan["control_destinations"].append(dest)
+        march_plan["origins"].extend([s[0] for s in origin_supply])
+        control_dests_found += 1
 
     # (2) Outside Belgica — §8.5.5
+    # "with fewest Warbands needed to take Control" — [Ch8] §8.5.5
     if control_dests_found < 2:
         outside_candidates = []
         for region in playable:
@@ -1267,8 +1281,14 @@ def node_b_march(state):
             if is_controlled_by(state, region, BELGAE):
                 continue
 
-            # "with fewest Warbands needed to take Control" — §8.5.5
-            # Estimate pieces needed
+            # Calculate warbands needed to take Control — §1.6
+            belgae_forces = count_pieces(state, region, BELGAE)
+            non_belgae_forces = sum(
+                count_pieces(state, region, f)
+                for f in (ROMANS, ARVERNI, AEDUI, GERMANS)
+            )
+            warbands_needed = max(0, non_belgae_forces - belgae_forces + 1)
+
             origin_supply = []
             for origin in playable:
                 if origin == region:
@@ -1282,9 +1302,10 @@ def node_b_march(state):
                     origin_supply.append((origin, available_from_origin))
 
             total_available = sum(s[1] for s in origin_supply)
-            if total_available > 0:
+            # Only include if actually achievable
+            if total_available >= warbands_needed and warbands_needed > 0:
                 outside_candidates.append(
-                    (region, total_available, origin_supply))
+                    (region, warbands_needed, origin_supply))
 
         # Sort: fewest Warbands needed — §8.5.5
         outside_candidates.sort(key=lambda x: x[1])

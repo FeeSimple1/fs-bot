@@ -30,7 +30,7 @@ from fs_bot.rules_consts import (
     CMD_RALLY, CMD_MARCH, CMD_RAID, CMD_BATTLE,
     SA_ENLIST, SA_RAMPAGE, SA_AMBUSH,
     # Leaders
-    AMBIORIX, CAESAR,
+    AMBIORIX, BODUOGNATUS, CAESAR, SUCCESSOR,
     # Regions
     BRITANNIA, TREVERI, MORINI, NERVII,
     # Region groups
@@ -55,7 +55,7 @@ from fs_bot.engine.victory import (
 )
 from fs_bot.map.map_data import (
     get_adjacent, get_playable_regions, get_tribes_in_region,
-    get_region_group, is_city_tribe,
+    get_region_group, is_city_tribe, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
     # Event decisions
@@ -550,6 +550,44 @@ def _find_largest_belgae_warband_group(state, scenario):
 def _is_in_belgica(region):
     """Check if a region is in Belgica."""
     return REGION_TO_GROUP.get(region) == BELGICA
+
+
+def _is_within_one_of_ambiorix(state, region, scenario):
+    """Check if a region is within one Region of Ambiorix or has Successor.
+
+    Per §4.1.2 / §4.5.1 / §4.5.2 / §4.5.3: Belgae Special Abilities may
+    select only Regions within one Region of Ambiorix (same Region or
+    adjacent), or the same Region that has his Successor Leader.
+
+    In Ariovistus scenarios, the Belgae leader is Boduognatus (A1.4).
+
+    Args:
+        state: Game state dict.
+        region: Region to check.
+        scenario: Scenario constant.
+
+    Returns:
+        True if the region is eligible per Ambiorix/Boduognatus proximity.
+    """
+    leader_region = find_leader(state, BELGAE)
+    if leader_region is None:
+        return False
+
+    leader_name = get_leader_in_region(state, leader_region, BELGAE)
+
+    # Determine the named leader for the scenario — §4.5.3, A1.4
+    named_leader = AMBIORIX
+    if scenario in ARIOVISTUS_SCENARIOS:
+        named_leader = BODUOGNATUS
+
+    if leader_name == named_leader:
+        # Named leader: within 1 region (same or adjacent) — §4.1.2
+        if region == leader_region:
+            return True
+        return is_adjacent(region, leader_region)
+    else:
+        # Successor: must be same region — §4.1.2
+        return region == leader_region
 
 
 # ============================================================================
@@ -1315,8 +1353,9 @@ def _check_ambush(state, battle_plan, scenario):
        AND/OR any Counterattack Loss to Belgae is possible.
     2. In all other Battles only if Belgae Ambushed in the 1st Battle.
 
-    Ambush requires (§4.5.3): more Hidden Belgic Warbands than Hidden
-    enemy Warbands in the region.
+    Ambush requires (§4.5.3 / §4.3.3):
+    - More Hidden Belgic Warbands than Hidden Defenders in the region.
+    - Region must be within one Region of Ambiorix or have Successor.
 
     Returns:
         List of Ambush regions, or empty.
@@ -1327,6 +1366,10 @@ def _check_ambush(state, battle_plan, scenario):
     first_battle = battle_plan[0]
     region = first_battle["region"]
     enemy = first_battle["target"]
+
+    # §4.5.3 / §4.3.3: Region must be within 1 of Ambiorix or Successor
+    if not _is_within_one_of_ambiorix(state, region, scenario):
+        return []
 
     # §4.5.3 eligibility: more Hidden Belgae Warbands than Hidden enemy
     hidden_belgae = count_pieces_by_state(
@@ -1358,17 +1401,37 @@ def _check_ambush(state, battle_plan, scenario):
     if not should_ambush_first:
         return []
 
-    # If Ambushed in 1st Battle, Ambush in all others — §8.5.1
-    return [bp["region"] for bp in battle_plan]
+    # If Ambushed in 1st Battle, Ambush in all others where eligible — §8.5.1
+    # "each other Battle possible" — filter by §4.5.3 eligibility
+    ambush_regions = [region]
+    for bp in battle_plan[1:]:
+        bp_region = bp["region"]
+        bp_enemy = bp["target"]
+        # §4.5.3: within 1 of Ambiorix + more Hidden Belgae than Hidden enemy
+        if not _is_within_one_of_ambiorix(state, bp_region, scenario):
+            continue
+        bp_hidden_belgae = count_pieces_by_state(
+            state, bp_region, BELGAE, WARBAND, HIDDEN)
+        bp_hidden_enemy = count_pieces_by_state(
+            state, bp_region, bp_enemy, WARBAND, HIDDEN)
+        if bp_hidden_belgae > bp_hidden_enemy:
+            ambush_regions.append(bp_region)
+
+    return ambush_regions
 
 
 def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None):
     """B_RAMPAGE: Determine Rampage regions.
 
+    Per §4.5.2: Rampage requires Hidden Belgic Warbands present and the
+    region must be within one Region of Ambiorix or have Successor.
+    Target faction must be Roman or Gallic (not Germanic) and must NOT
+    have a Leader, Citadel, or Fort in the region.
+
     Per §8.5.1: Rampage with all Warbands able to remove or Retreat enemies.
     If before Battle, no Rampage against enemy's last piece.
 
-    Priority:
+    Priority per §8.5.1:
     1. To force removal of pieces, assuming no one grants Retreat.
     2. To add most Belgic Control.
     3. Elsewhere: Versus (1) Romans (2) Aedui (3) Arverni
@@ -1391,11 +1454,24 @@ def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None):
         if hidden_wb == 0:
             continue
 
+        # §4.5.2: Must be within 1 of Ambiorix or have Successor
+        if not _is_within_one_of_ambiorix(state, region, scenario):
+            continue
+
         # Check for enemies — §8.5.1
+        # §4.5.2: Target must be Roman or Gallic (not Germanic)
         enemy_order = (ROMANS, AEDUI, ARVERNI)
         for enemy in enemy_order:
             enemy_count = count_pieces(state, region, enemy)
             if enemy_count == 0:
+                continue
+
+            # §4.5.2: Target must NOT have Leader, Citadel, or Fort
+            if get_leader_in_region(state, region, enemy) is not None:
+                continue
+            if count_pieces(state, region, enemy, CITADEL) > 0:
+                continue
+            if count_pieces(state, region, enemy, FORT) > 0:
                 continue
 
             # If before Battle, don't Rampage against last piece — §8.5.1
@@ -1404,6 +1480,7 @@ def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None):
                     continue
 
             # Would this force removal? — §8.5.1 step 1
+            # "force removal of pieces, assuming no Faction grants Retreat"
             forces_removal = False
             enemy_mobile = count_mobile_pieces(state, region, enemy)
             if enemy_mobile > 0 and hidden_wb > 0:
@@ -1441,6 +1518,9 @@ def _check_enlist_in_battle(state, battle_plan, scenario):
     the Belgae could Enlist Germanic Warbands to add to enemy Losses
     and/or absorb Losses from a possible Counterattack, the Belgae do so."
 
+    Per §4.5.1: affected Regions must be within one Region of Ambiorix
+    or have the Belgic Successor.
+
     Returns:
         Dict with enlist details, or None.
     """
@@ -1449,6 +1529,11 @@ def _check_enlist_in_battle(state, battle_plan, scenario):
 
     for bp in battle_plan:
         region = bp["region"]
+
+        # §4.5.1: Must be within 1 of Ambiorix or have Successor
+        if not _is_within_one_of_ambiorix(state, region, scenario):
+            continue
+
         # Check if Germanic Warbands exist in this region
         german_wb = count_pieces(state, region, GERMANS, WARBAND)
         if german_wb == 0:
@@ -1483,6 +1568,9 @@ def _check_enlist_after_command(state, scenario):
        (1) Ally (2) most Warbands able.
     4. Raid to take 1-2 Resources from player.
 
+    Per §4.5.1: The Region must be in the usual vicinity of the Belgic
+    Leader for a Special Ability (within one of Ambiorix or Successor).
+
     A8.5.1: If Marching Germans, move them out of Belgica/Germania/Treveri.
 
     Returns:
@@ -1493,6 +1581,10 @@ def _check_enlist_after_command(state, scenario):
 
     # Step 1: Battle — §8.5.1
     for region in playable:
+        # §4.5.1: Must be within 1 of Ambiorix or have Successor
+        if not _is_within_one_of_ambiorix(state, region, scenario):
+            continue
+
         german_wb = count_pieces(state, region, GERMANS, WARBAND)
         if german_wb == 0:
             continue
@@ -1527,12 +1619,16 @@ def _check_enlist_after_command(state, scenario):
     # Step 2: March — §8.5.1
     # (1) From Belgica/Germania to enemy Control
     # A8.5.1: also from Treveri in Ariovistus
+    # §4.5.1: origin must be within 1 of Ambiorix; dest need not be
     march_origin_groups = list(BELGICA_REGIONS) + list(GERMANIA_REGIONS)
     if scenario in ARIOVISTUS_SCENARIOS:
         march_origin_groups.append(TREVERI)
 
     for origin in march_origin_groups:
         if origin not in playable:
+            continue
+        # §4.5.1: origin must be within 1 of Ambiorix
+        if not _is_within_one_of_ambiorix(state, origin, scenario):
             continue
         german_wb = count_pieces(state, origin, GERMANS, WARBAND)
         if german_wb < 2:
@@ -1558,6 +1654,9 @@ def _check_enlist_after_command(state, scenario):
 
     # (2) In place with 2+ Revealed/Scouted to Hide — §8.5.1
     for region in playable:
+        # §4.5.1: Must be within 1 of Ambiorix
+        if not _is_within_one_of_ambiorix(state, region, scenario):
+            continue
         revealed_wb = count_pieces_by_state(
             state, region, GERMANS, WARBAND, REVEALED)
         scouted_wb = count_pieces_by_state(
@@ -1578,6 +1677,9 @@ def _check_enlist_after_command(state, scenario):
     # (1) Place Ally
     if avail_german_allies > 0:
         for region in playable:
+            # §4.5.1: Must be within 1 of Ambiorix
+            if not _is_within_one_of_ambiorix(state, region, scenario):
+                continue
             if count_pieces(state, region, GERMANS) == 0:
                 continue
             tribes = get_tribes_in_region(region, scenario)
@@ -1595,6 +1697,9 @@ def _check_enlist_after_command(state, scenario):
     # (2) Place most Warbands
     if avail_german_wb > 0:
         for region in playable:
+            # §4.5.1: Must be within 1 of Ambiorix
+            if not _is_within_one_of_ambiorix(state, region, scenario):
+                continue
             has_base = False
             tribes = get_tribes_in_region(region, scenario)
             for tribe in tribes:
@@ -1615,6 +1720,9 @@ def _check_enlist_after_command(state, scenario):
     # Step 4: Raid — §8.5.1
     # "take 1-2 Resources from player"
     for region in playable:
+        # §4.5.1: Must be within 1 of Ambiorix
+        if not _is_within_one_of_ambiorix(state, region, scenario):
+            continue
         german_hidden = count_pieces_by_state(
             state, region, GERMANS, WARBAND, HIDDEN)
         if german_hidden == 0:
@@ -1645,10 +1753,12 @@ def node_b_quarters(state):
     """B_QUARTERS: Quarters Phase.
 
     Per §8.5.6:
-    - Leave Devastated if no Ally/Citadel.
-    - Move Leader/Warband group to join most, end next to most
-      Regions with Belgae able; leave 1+ Warbands AND enough to
-      keep Control.
+    - Leave Devastated if no Ally/Citadel for random adjacent Belgae-
+      Controlled region.
+    - Move Leader and/or one group of Warbands to join Leader with
+      largest group of Belgic Warbands able; within that, get/keep
+      Leader within one Region of most Regions with Belgic Forces.
+    - Leave behind at least 1 Warband AND enough to keep Control.
 
     A8.5.6: In Ariovistus, first move to Morini, Nervii, or Treveri
     (if able, instead of keeping Leader within 1 of most Regions with
@@ -1666,6 +1776,7 @@ def node_b_quarters(state):
     }
 
     # Step 1: Leave Devastated Regions with no Ally/Citadel — §8.5.6
+    # "for random adjacent Regions that they Control"
     for region in playable:
         if count_pieces(state, region, BELGAE) == 0:
             continue
@@ -1680,15 +1791,21 @@ def node_b_quarters(state):
                 break
         has_citadel = count_pieces(state, region, BELGAE, CITADEL) > 0
         if not has_ally and not has_citadel:
-            # Find adjacent Belgae-Controlled region — §8.5.6
-            for adj in get_adjacent(region, scenario):
-                if is_controlled_by(state, adj, BELGAE):
-                    quarters_plan["leave_devastated"].append({
-                        "from": region, "to": adj,
-                    })
-                    break
+            # Find random adjacent Belgae-Controlled region — §8.5.6
+            controlled_adj = [
+                adj for adj in get_adjacent(region, scenario)
+                if is_controlled_by(state, adj, BELGAE)
+            ]
+            if controlled_adj:
+                dest = random_select(state, controlled_adj)
+                quarters_plan["leave_devastated"].append({
+                    "from": region, "to": dest,
+                })
 
     # Step 2: Move Leader/group — §8.5.6
+    # "join the Leader with the largest group of Belgic Warbands able
+    # and, within that, to get or keep the Leader within one Region of
+    # the most Regions with Belgic Forces able."
     ambiorix_region = _ambiorix_region(state)
     if ambiorix_region:
         best_dest = None
@@ -1735,9 +1852,35 @@ def node_b_quarters(state):
                     best_dest = dest
 
         if best_dest and best_dest != ambiorix_region:
-            quarters_plan["leader_move"] = {
-                "from": ambiorix_region, "to": best_dest,
-            }
+            # §8.5.6: "leave behind at least one Warband and at least
+            # the number of Warbands needed to retain any Belgic Control"
+            origin_wb = count_pieces(state, ambiorix_region, BELGAE, WARBAND)
+            min_leave = 1  # At least 1 Warband — §8.5.6
+            if is_controlled_by(state, ambiorix_region, BELGAE):
+                # Need to keep enough Warbands to retain Control
+                # Calculate how many non-Belgae pieces are here
+                total_non_belgae = 0
+                for faction in (ROMANS, ARVERNI, AEDUI, GERMANS):
+                    total_non_belgae += count_pieces(
+                        state, ambiorix_region, faction)
+                # Leader is also moving out, so only count non-Leader
+                # non-Warband Belgae pieces staying behind (Allies, Citadels)
+                belgae_non_wb = count_pieces(state, ambiorix_region, BELGAE) \
+                    - origin_wb
+                # Subtract the Leader (who is moving out)
+                belgae_staying_non_wb = max(0, belgae_non_wb - 1)
+                # Belgae need more than other factions for Control
+                warbands_for_control = max(
+                    0, total_non_belgae - belgae_staying_non_wb + 1)
+                min_leave = max(min_leave, warbands_for_control)
+
+            movable_wb = max(0, origin_wb - min_leave)
+            if movable_wb > 0 or origin_wb == 0:
+                quarters_plan["leader_move"] = {
+                    "from": ambiorix_region, "to": best_dest,
+                    "warbands_moved": movable_wb,
+                    "warbands_left": min_leave,
+                }
 
     return quarters_plan
 

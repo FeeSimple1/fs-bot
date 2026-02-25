@@ -519,6 +519,47 @@ class TestRaidEstimation:
         enough, plan = _would_raid_gain_enough(state, SCENARIO_PAX_GALLICA)
         assert enough
 
+    def test_raid_excludes_germans_in_base_game(self):
+        """Raid cannot steal from Germans in base game — §3.3.3."""
+        state = _make_state(non_players={BELGAE})
+        # Germans are present with pieces but no Citadel/Fort
+        _place_belgae_force(state, SUGAMBRI, warbands=2)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 3)
+        enough, plan = _would_raid_gain_enough(state, SCENARIO_PAX_GALLICA)
+        # Should NOT steal from Germans — §3.3.3 "non-Germanic enemy"
+        for entry in plan:
+            assert entry["target"] != GERMANS
+
+    def test_raid_excludes_arverni_in_ariovistus(self):
+        """Raid cannot steal from Arverni in Ariovistus — A8.4."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS,
+                            non_players={BELGAE})
+        _place_belgae_force(state, MANDUBII, warbands=2)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        enough, plan = _would_raid_gain_enough(state, SCENARIO_ARIOVISTUS)
+        # Per A8.4: swap Germans/Arverni — Arverni excluded
+        for entry in plan:
+            assert entry["target"] != ARVERNI
+
+    def test_raid_can_steal_from_arverni_in_base_game(self):
+        """Raid CAN steal from Arverni in base game — §3.3.3."""
+        state = _make_state(non_players={BELGAE})
+        _place_belgae_force(state, MANDUBII, warbands=2)
+        place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
+        enough, plan = _would_raid_gain_enough(state, SCENARIO_PAX_GALLICA)
+        targets = [e["target"] for e in plan if e["target"] is not None]
+        assert ARVERNI in targets
+
+    def test_raid_can_steal_from_germans_in_ariovistus(self):
+        """Raid CAN steal from Germans in Ariovistus — A8.4."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS,
+                            non_players={BELGAE})
+        _place_belgae_force(state, SUGAMBRI, warbands=2)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 3)
+        enough, plan = _would_raid_gain_enough(state, SCENARIO_ARIOVISTUS)
+        targets = [e["target"] for e in plan if e["target"] is not None]
+        assert GERMANS in targets
+
 
 # ===================================================================
 # Ambush

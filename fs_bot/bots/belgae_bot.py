@@ -478,9 +478,14 @@ def _would_raid_gain_enough(state, scenario):
             steal_targets.append(target)
 
         # "Other" player factions — §8.5.4
-        for target in (ARVERNI, BELGAE, GERMANS):
-            if target == BELGAE:
-                continue  # Don't raid self
+        # Per §3.3.3: Raid steals from "a non-Germanic enemy" — exclude
+        # GERMANS in base game. Per A8.4: swap "Germans" ↔ "Arverni"
+        # throughout §8.4-§8.5, so exclude ARVERNI in Ariovistus.
+        if scenario in ARIOVISTUS_SCENARIOS:
+            other_targets = (GERMANS,)  # Arverni excluded per A8.4
+        else:
+            other_targets = (ARVERNI,)  # Germans excluded per §3.3.3
+        for target in other_targets:
             if target in non_players:
                 continue
             if count_pieces(state, region, target) == 0:

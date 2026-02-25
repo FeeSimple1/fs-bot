@@ -878,6 +878,23 @@ class TestNodeBRally:
         if result["sa"] == SA_ACTION_RAMPAGE:
             assert len(result["sa_regions"]) > 0
 
+    def test_rally_falls_through_to_enlist_when_no_rampage(self):
+        """Rally → Rampage → If none: Enlist — flowchart."""
+        state = _make_state()
+        state["resources"][BELGAE] = 10
+        # Ambiorix with REVEALED Warbands → no Rampage (needs Hidden)
+        _place_belgae_force(state, MORINI, warbands=5, hidden=False,
+                            leader=True)
+        # Germans with 2+ Warbands near Ambiorix + enemy → Enlist Battle
+        place_piece(state, MORINI, GERMANS, WARBAND, 3)
+        _place_roman_force(state, MORINI, auxilia=2)
+        refresh_all_control(state)
+        result = node_b_rally(state)
+        assert result["command"] == ACTION_RALLY
+        # No Rampage possible (Belgae have no Hidden Warbands near
+        # Ambiorix) → should fall through to Enlist
+        assert result["sa"] == SA_ACTION_ENLIST
+
 
 # ===================================================================
 # Raid process node
@@ -899,6 +916,28 @@ class TestNodeBRaid:
         state = _make_state()
         result = node_b_raid(state)
         assert result["command"] == ACTION_PASS
+
+    def test_raid_falls_through_to_enlist_when_no_rampage(self):
+        """Raid → Rampage → If none: Enlist — flowchart."""
+        state = _make_state(non_players={BELGAE})
+        # Ambiorix alone in Morini (no enemies → no Rampage target here)
+        _place_belgae_force(state, MORINI, leader=True, warbands=1,
+                            hidden=False)
+        # Hidden Warbands far from Ambiorix for Raid — Provincia is far
+        # from Morini, so not within 1 of Ambiorix → no Rampage
+        _place_belgae_force(state, PROVINCIA, warbands=2, hidden=True)
+        _place_roman_force(state, PROVINCIA, auxilia=2)
+        # Germans with Warbands near Ambiorix for Enlist Battle
+        place_piece(state, MORINI, GERMANS, WARBAND, 3)
+        _place_roman_force(state, MORINI, auxilia=1)
+        refresh_all_control(state)
+        result = node_b_raid(state)
+        assert result["command"] == ACTION_RAID
+        # No Rampage: Morini has no enemy vulnerable to Rampage (Romans
+        # have auxilia, but Belgae have no Hidden Warbands in Morini);
+        # Provincia has enemies but is not within 1 of Ambiorix.
+        # Should fall through to Enlist via Germans near Ambiorix.
+        assert result["sa"] == SA_ACTION_ENLIST
 
 
 # ===================================================================

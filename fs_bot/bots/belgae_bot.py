@@ -1107,13 +1107,22 @@ def node_b_rally(state):
         rally_plan["warbands"].append(region)
         avail_warbands -= 1
 
-    # SA: Rampage after Rally — §8.5.3
+    # SA: Rampage after Rally — §8.5.3 / flowchart B_RALLY → B_RAMPAGE
+    # If none: Enlist — flowchart B_RAMPAGE → If none: B_ENLIST
     sa = SA_ACTION_NONE
     sa_regions = []
+    sa_details = {}
     rampage_regions = _check_rampage(state, scenario, before_battle=False)
     if rampage_regions:
         sa = SA_ACTION_RAMPAGE
         sa_regions = rampage_regions
+    else:
+        # Flowchart: B_RAMPAGE → If none: B_ENLIST
+        enlist_details = _check_enlist_after_command(state, scenario)
+        if enlist_details:
+            sa = SA_ACTION_ENLIST
+            sa_regions = enlist_details.get("regions", [])
+            sa_details = {"enlist": enlist_details}
 
     all_regions = list({entry["region"] for entry in rally_plan["citadels"]}
                        | {entry["region"] for entry in rally_plan["allies"]}
@@ -1124,7 +1133,7 @@ def node_b_rally(state):
         regions=all_regions,
         sa=sa,
         sa_regions=sa_regions,
-        details={"rally_plan": rally_plan},
+        details={"rally_plan": rally_plan, **sa_details},
     )
 
 
@@ -1147,20 +1156,29 @@ def node_b_raid(state):
     if not enough:
         return _make_action(ACTION_PASS)
 
-    # SA: Rampage after Raid — §8.5.4
+    # SA: Rampage after Raid — §8.5.4 / flowchart B_RAID → B_RAMPAGE
+    # If none: Enlist — flowchart B_RAMPAGE → If none: B_ENLIST
     sa = SA_ACTION_NONE
     sa_regions = []
+    sa_details = {}
     rampage_regions = _check_rampage(state, scenario, before_battle=False)
     if rampage_regions:
         sa = SA_ACTION_RAMPAGE
         sa_regions = rampage_regions
+    else:
+        # Flowchart: B_RAMPAGE → If none: B_ENLIST
+        enlist_details = _check_enlist_after_command(state, scenario)
+        if enlist_details:
+            sa = SA_ACTION_ENLIST
+            sa_regions = enlist_details.get("regions", [])
+            sa_details = {"enlist": enlist_details}
 
     return _make_action(
         ACTION_RAID,
         regions=[r["region"] for r in raid_plan],
         sa=sa,
         sa_regions=sa_regions,
-        details={"raid_plan": raid_plan},
+        details={"raid_plan": raid_plan, **sa_details},
     )
 
 

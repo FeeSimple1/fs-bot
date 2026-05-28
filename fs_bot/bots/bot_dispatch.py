@@ -96,8 +96,7 @@ def dispatch_bot_turn(state, faction):
         return execute_arverni_turn(state)
 
     if faction == GERMANS:
-        raise BotDispatchError(
-            f"German bot not yet implemented. See BUILD_PLAN.md Phase C."
-        )
+        from fs_bot.bots.german_bot import execute_german_turn
+        return execute_german_turn(state)
 
     raise BotDispatchError(f"Unknown faction: {faction}")

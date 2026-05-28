@@ -1017,3 +1017,97 @@ class TestNodeGSpring:
         assert result is not None
         assert result["place_leader"] == ARIOVISTUS_LEADER
         assert result["region"] == UBII
+
+
+# ===================================================================
+# G_AMBUSH eligibility — A4.6.3 -> §4.3.3 (+ A4.1.2) proximity & Hidden
+# (QUESTIONS.md Q2 resolution)
+# ===================================================================
+
+class TestGermanAmbushEligibility:
+    """Germanic Ambush in Ariovistus follows §4.3.3 via A4.6.3, gated by
+    A4.1.2: it requires more Hidden Germans than Hidden Defenders AND the
+    Battle Region within 1 of Ariovistus (or the Successor's Region)."""
+
+    def test_no_ambush_when_battle_region_out_of_ariovistus_range(self):
+        # Ariovistus in SUGAMBRI; a 6-Warband group Battles in CARNUTES
+        # (not within 1 of SUGAMBRI). A defending Legion satisfies the
+        # A8.7.1 strategic gate, so the ONLY thing blocking Ambush is the
+        # A4.1.2/A4.6.3 proximity requirement.
+        state = _make_state(non_players={GERMANS})
+        place_piece(state, SUGAMBRI, GERMANS, LEADER,
+                    leader_name=ARIOVISTUS_LEADER)
+        place_piece(state, CARNUTES, GERMANS, WARBAND, 6,
+                    piece_state=HIDDEN)
+        place_piece(state, CARNUTES, ROMANS, LEGION, 1,
+                    from_legions_track=True)
+        refresh_all_control(state)
+        plan = [{"region": CARNUTES, "target": ROMANS, "is_trigger": True}]
+        assert _check_ambush(state, plan) == []
+
+    def test_ambush_when_in_ariovistus_region(self):
+        # Same strategic gate (defending Legion) but the Battle is in
+        # Ariovistus's own Region, so Ambush is eligible and chosen.
+        state = _make_state(non_players={GERMANS})
+        place_piece(state, SUGAMBRI, GERMANS, LEADER,
+                    leader_name=ARIOVISTUS_LEADER)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 3,
+                    piece_state=HIDDEN)
+        place_piece(state, SUGAMBRI, ROMANS, LEGION, 1,
+                    from_legions_track=True)
+        refresh_all_control(state)
+        plan = [{"region": SUGAMBRI, "target": ROMANS, "is_trigger": True}]
+        assert _check_ambush(state, plan) == [SUGAMBRI]
+
+    def test_ambush_when_adjacent_to_ariovistus(self):
+        # UBII is adjacent to SUGAMBRI -> within 1 of Ariovistus.
+        state = _make_state(non_players={GERMANS})
+        place_piece(state, SUGAMBRI, GERMANS, LEADER,
+                    leader_name=ARIOVISTUS_LEADER)
+        place_piece(state, UBII, GERMANS, WARBAND, 4, piece_state=HIDDEN)
+        place_piece(state, UBII, ROMANS, LEGION, 1, from_legions_track=True)
+        refresh_all_control(state)
+        plan = [{"region": UBII, "target": ROMANS, "is_trigger": True}]
+        assert _check_ambush(state, plan) == [UBII]
+
+    def test_no_ambush_when_not_more_hidden_than_defender(self):
+        # In Ariovistus's Region but 2 Hidden Germans vs 3 Hidden Roman
+        # Auxilia -> fails §4.3.3 Hidden-count requirement.
+        state = _make_state(non_players={GERMANS})
+        place_piece(state, SUGAMBRI, GERMANS, LEADER,
+                    leader_name=ARIOVISTUS_LEADER)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 2,
+                    piece_state=HIDDEN)
+        place_piece(state, SUGAMBRI, ROMANS, LEGION, 1,
+                    from_legions_track=True)
+        place_piece(state, SUGAMBRI, ROMANS, AUXILIA, 3,
+                    piece_state=HIDDEN)
+        refresh_all_control(state)
+        plan = [{"region": SUGAMBRI, "target": ROMANS, "is_trigger": True}]
+        assert _check_ambush(state, plan) == []
+
+    def test_subsequent_battles_filtered_by_eligibility(self):
+        # 1st Battle in SUGAMBRI (eligible) triggers Ambush; a 2nd Battle
+        # in out-of-range CARNUTES must be excluded, an in-range UBII kept.
+        state = _make_state(non_players={GERMANS})
+        place_piece(state, SUGAMBRI, GERMANS, LEADER,
+                    leader_name=ARIOVISTUS_LEADER)
+        place_piece(state, SUGAMBRI, GERMANS, WARBAND, 3,
+                    piece_state=HIDDEN)
+        place_piece(state, SUGAMBRI, ROMANS, LEGION, 1,
+                    from_legions_track=True)
+        place_piece(state, UBII, GERMANS, WARBAND, 3, piece_state=HIDDEN)
+        place_piece(state, UBII, ROMANS, AUXILIA, 1)
+        place_piece(state, CARNUTES, GERMANS, WARBAND, 3,
+                    piece_state=HIDDEN)
+        place_piece(state, CARNUTES, ROMANS, AUXILIA, 1)
+        refresh_all_control(state)
+        plan = [
+            {"region": SUGAMBRI, "target": ROMANS, "is_trigger": True},
+            {"region": UBII, "target": ROMANS, "is_trigger": True},
+            {"region": CARNUTES, "target": ROMANS, "is_trigger": True},
+        ]
+        result = _check_ambush(state, plan)
+        assert SUGAMBRI in result
+        assert UBII in result
+        assert CARNUTES not in result

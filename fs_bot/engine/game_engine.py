@@ -128,6 +128,9 @@ def draw_card(state):
     card_id = deck.pop(0)
     state["played_cards"].append(card_id)
     state["current_card"] = card_id
+    # Bots read state["current_card_id"]; engine writes state["current_card"].
+    # Keep both keys in sync so bots and engine agree on the active card.
+    state["current_card_id"] = card_id
     state["next_card"] = deck[0] if deck else None
     return card_id
 

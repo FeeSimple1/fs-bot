@@ -1187,6 +1187,32 @@ BRITANNIA_EXPEDITION_LEGIONS_TO_TRACK = 3
 BRITANNIA_EXPEDITION_MIN_LEGIONS_TO_BRITANNIA = 3
 BRITANNIA_EXPEDITION_MIN_AUXILIA_TO_BRITANNIA = 1
 
+# Trigger: Interlude runs after this many Winter Rounds in The Gallic War
+INTERLUDE_VICTORY_TRIGGER_WINTER = 3     # After 3rd Victory Phase — A2.1
+
+# Pax Gallica? 54 BC starting Resources — used for Interlude Edge Track
+# Step (cap = 2x start, boost +2 if below 1/2 x start). Scenario file
+# under Edge Track section — Reference Documents/Scenario:  Pax Gallica?
+PAX_GALLICA_START_ARVERNI = 5
+PAX_GALLICA_START_AEDUI = 5
+PAX_GALLICA_START_BELGAE = 5
+PAX_GALLICA_START_ROMANS = 8
+
+# Pax Gallica? deck: 70 non-Events, 5 Winter cards in piles 2,5,8,11,14
+PAX_GALLICA_DECK_EVENTS = 70
+PAX_GALLICA_WINTER_PILES = (2, 5, 8, 11, 14)
+
+# Additional Interlude markers — A2.1
+MARKER_NORI = "Nori"                            # Nori Tribe marker — A1.3.2
+MARKER_CISALPINA_CONTROL_BOX = "Cisalpina Control box"  # A2.1
+
+# Diviciacus 2nd Ed replacement card used by Interlude — A1.4 / A2.1
+# The Gallic War scenario specifies the Ariovistus expansion version of
+# Diviciacus for the Pax Gallica?-style second-half deck. The expansion
+# version is card O38 (Diviciacus 2nd Ed); card A38 (Vergobret) is the
+# different Aedui-first replacement. See QUESTIONS.md for the ambiguity.
+INTERLUDE_DIVICIACUS_CARD = "O38"
+
 
 # ============================================================================
 # ENLIST LIMITS — ARIOVISTUS (A4.5.1)

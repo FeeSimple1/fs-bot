@@ -1643,19 +1643,17 @@ def node_a_agreements(state, requesting_faction, request_type, *,
         # Never transfer to Arverni or Belgae — §8.6.6
         return False
 
-    # Per A8.6.6: Admagetobriga — NP Belgae agree to use of their Warbands
-    # only where the executing Faction has pieces.
-    # TODO: A8.6.6 Admagetobriga is primarily a Belgae agreement rule.
-    # This will be fully handled when the Belgae bot implements its
-    # agreement logic. For the Aedui side, we note that NP Belgae
-    # agree only if the executing faction has pieces in the region.
+    # Per A8.6.6: Admagetobriga — the rule governs NP Belgae agreement to
+    # use of their Warbands. The Aedui bot is not the rules-owner; defer to
+    # the Belgae bot for any request directed at Belgae, and refuse for
+    # any other faction (Aedui never agree to Admagetobriga Warband use of
+    # their own pieces per §8.4.2 default refusal).
     if request_type == "admagetobriga_warbands":
         if requesting_faction == BELGAE:
-            ctx = context or {}
-            region = ctx.get("region")
-            executing_faction = ctx.get("executing_faction")
-            if region and executing_faction:
-                return count_pieces(state, region, executing_faction) > 0
+            from fs_bot.bots.belgae_bot import node_b_agreements
+            return node_b_agreements(
+                state, requesting_faction, request_type, context=context
+            )
         return False
 
     # Per A8.6.6: Frumentum — Transfer half of Aedui's total Resources

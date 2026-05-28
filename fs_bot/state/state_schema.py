@@ -140,6 +140,12 @@ def build_initial_state(scenario, seed=None):
         "legions_track": legions_track,
         "fallen_legions": 0,
         "removed_legions": 0,
+        # Permanently removed non-Legion pieces — keyed by faction then
+        # piece type. Used by the Gallic War Interlude (A2.1) to track
+        # the Germanic Leader, 15 Germanic Warbands, Settlements, and
+        # Diviciacus that are removed-from-play (not to Available).
+        # validate_state() counts these toward each cap.
+        "removed_pieces": {},
         "eligibility": eligibility,
         "capabilities": {},
         "markers": {},  # Per-region/tribe markers (Devastated, etc.)
@@ -153,6 +159,14 @@ def build_initial_state(scenario, seed=None):
         # Ariovistus-specific
         "at_war": scenario in ARIOVISTUS_SCENARIOS,  # Arverni At War marker
         "diviciacus_in_play": False,  # Tracked separately — A1.4
+        # Gallic War Interlude / second-half flags — A2.1, A6.5.1
+        "scenario_phase": "first_half",   # "first_half" or "second_half"
+        "interlude_completed": False,
+        "first_senate_after_interlude_pending": False,
+        "first_harvest_after_interlude_pending": False,
+        # Leaders held off-map in the Winter track Spring box (A2.1)
+        # List of leader name strings (e.g. VERCINGETORIX).
+        "spring_box_leaders": [],
     }
 
     return state
@@ -204,14 +218,28 @@ def validate_state(state):
                 continue
 
             if piece_type == LEADER:
-                # Leader: on_map (0 or 1) + available = cap
+                # Leader: on_map (0 or 1) + available + removed_pieces
+                # + spring_box_leaders (for this faction) = cap
                 on_map = 0
                 for region, space in state["spaces"].items():
                     f_pieces = space.get("pieces", {}).get(faction, {})
                     if f_pieces.get(LEADER) is not None:
                         on_map += 1
                 avail = state["available"].get(faction, {}).get(LEADER, 0)
-                total = on_map + avail
+                removed = state.get("removed_pieces", {}).get(
+                    faction, {}
+                ).get(LEADER, 0)
+                # Count leaders held in the Winter track Spring box
+                # belonging to this faction. The Spring box stores
+                # leader-name strings; resolve their factions via
+                # LEADER_FACTION mapping.
+                from fs_bot.rules_consts import LEADER_FACTION
+                spring_box = state.get("spring_box_leaders", []) or []
+                in_box = sum(
+                    1 for ln in spring_box
+                    if LEADER_FACTION.get(ln) == faction
+                )
+                total = on_map + avail + removed + in_box
 
                 # Diviciacus special case: removed from play reduces total
                 if (faction == AEDUI and scenario in ARIOVISTUS_SCENARIOS
@@ -225,14 +253,25 @@ def validate_state(state):
                     )
                     continue
 
+                # Gallic War Interlude (A2.1) introduces Vercingetorix
+                # — Arverni Leader piece — to the Ariovistus scenario
+                # after Interlude. Allow extra Arverni Leader once
+                # interlude_completed is True.
+                if (faction == ARVERNI
+                        and scenario in ARIOVISTUS_SCENARIOS
+                        and state.get("interlude_completed")
+                        and total <= cap + 1):
+                    continue
+
                 if total != cap:
                     errors.append(
                         f"{faction} {LEADER}: map({on_map}) + "
-                        f"available({avail}) = {total}, cap = {cap}"
+                        f"available({avail}) + removed({removed}) + "
+                        f"spring_box({in_box}) = {total}, cap = {cap}"
                     )
                 continue
 
-            # All other piece types: on_map + available = cap
+            # All other piece types: on_map + available + removed = cap
             on_map = 0
             for region, space in state["spaces"].items():
                 f_pieces = space.get("pieces", {}).get(faction, {})
@@ -243,11 +282,15 @@ def validate_state(state):
                     on_map += f_pieces.get(piece_type, 0)
 
             avail = state["available"].get(faction, {}).get(piece_type, 0)
-            total = on_map + avail
+            removed = state.get("removed_pieces", {}).get(
+                faction, {}
+            ).get(piece_type, 0)
+            total = on_map + avail + removed
             if total != cap:
                 errors.append(
                     f"{faction} {piece_type}: map({on_map}) + "
-                    f"available({avail}) = {total}, cap = {cap}"
+                    f"available({avail}) + removed({removed}) = "
+                    f"{total}, cap = {cap}"
                 )
 
     return errors

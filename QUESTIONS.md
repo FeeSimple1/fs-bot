@@ -27,3 +27,57 @@ These items are identified during implementation when the Reference Documents ar
 
 **Files:** `fs_bot/bots/german_bot.py` — `_check_ambush`.
 
+
+## Gallic War Interlude — Card identifier for "Ariovistus expansion version of Diviciacus"
+
+**Context:** A Scenario: The Gallic War, Interlude > Deck step says:
+> "Use the Ariovistus expansion version of Diviciacus, card A38."
+
+But in the Ariovistus card list (A Card Reference and CARD_NAMES_ARIOVISTUS), card A38 is named **Vergobret**. The expansion's "Diviciacus 2nd Ed" (with the Diviciacus Leader piece and rules in A1.4) is documented in A Setup under the "Diviciacus Leader Option" and is keyed as **card O38** (CARD_O38 = "O38", CARD_O38_NAME = "Diviciacus") in `fs_bot/rules_consts.py`.
+
+**Ambiguity:** "A38" in the Interlude prose appears to be an error or a different naming convention than the A Card Reference uses. The intent is almost certainly to use the Diviciacus 2nd Ed card (with Diviciacus Leader rules), which the codebase represents as O38, not the Vergobret event (A38).
+
+**Implementation choice:** Used `INTERLUDE_DIVICIACUS_CARD = "O38"` in the Interlude deck rebuild (substitutes for base card 38). If the Interlude really wants A38 (Vergobret) — substituting the Vergobret event for the original 38 Diviciacus event — please clarify.
+
+**Files:** `fs_bot/rules_consts.py` (INTERLUDE_DIVICIACUS_CARD), `fs_bot/engine/interlude.py` (deck rebuild step).
+
+---
+
+## Gallic War Interlude — A8.8.9 reference (non-player Britannia expedition)
+
+**Context:** A Scenario: The Gallic War, Interlude > Britannia Expedition says:
+> "Non-player Romans conduct it if able, A8.8.9."
+
+**Ambiguity:** Chapter A8 in this repo ends at A8.8.8 (Admagetorbriga). There is no A8.8.9 rule for the non-player Britannia expedition decision.
+
+**Implementation choice:** Implemented a conservative "if able" check: Roman Legions on map >= (3 to Harvest Box + 3 to Britannia) and Roman Auxilia on map >= 1. If A8.8.9 specifies additional or different criteria (resource threshold, score-based decision, etc.), this fallback should be replaced.
+
+**Files:** `fs_bot/engine/interlude.py` — `_np_should_conduct_britannia`.
+
+---
+
+## Gallic War Interlude — Belgic Leader identity in second half
+
+**Context:** Interlude > Adjust Belgae says:
+> "Place Ambiorix in Region with most other Belgic pieces (even if Belgic Leader in Available)."
+
+In the Ariovistus first-half setup, the Belgic Leader piece is named **BODUOGNATUS** (same physical piece, A1.4). After the Interlude, the second half plays as base-game (Original Falling Sky rules are in effect), where the Belgic Leader is **AMBIORIX**.
+
+**Ambiguity:** Should the piece be re-tagged as AMBIORIX or remain BODUOGNATUS? The scenario name says "Ambiorix" explicitly, suggesting a re-tag. But the scenario remains SCENARIO_GALLIC_WAR (which is in ARIOVISTUS_SCENARIOS), and Boduognatus is the Ariovistus identity.
+
+**Implementation choice:** Forced AMBIORIX as the leader_name when re-placing during the Belgae adjustment step. If the codebase intends Boduognatus to persist for the second half of Gallic War, this should be reverted.
+
+**Files:** `fs_bot/engine/interlude.py` — `_adjust_belgae_forces`.
+
+---
+
+## Gallic War Interlude — Removed-from-play container for non-Legion pieces
+
+**Context:** Interlude > Adjust German Forces says:
+> "Remove Germanic Leader and any 15 Germanic Warbands (including from Available) from play."
+
+Per CLAUDE.md and prior code, "remove from play" means permanent removal (not to Available). Only Legions previously had a dedicated container (`state["removed_legions"]`); Diviciacus had a special-case path in `remove_piece` (vanish to neither Available nor a tracked field).
+
+**Implementation choice:** Added a generic `state["removed_pieces"][faction][piece_type]` container and updated `validate_state` to include it in cap totals. The Germanic Leader, 15 Germanic Warbands, and all Settlements are routed there. Diviciacus continues to use its existing special-case path. If the existing schema preferred a different convention (e.g. reuse `removed_legions` for non-Legions), this can be refactored.
+
+**Files:** `fs_bot/state/state_schema.py`, `fs_bot/engine/interlude.py`.

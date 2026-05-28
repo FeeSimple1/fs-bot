@@ -538,14 +538,22 @@ def resolve_card_turn(state, decision_func):
 # WINTER CARD HANDLING — §2.4
 # ============================================================================
 
-def resolve_winter_card(state):
+def resolve_winter_card(state, britannia_decision=None,
+                        roman_dispersed_keep=None):
     """Handle a Winter card — §2.4.
 
     Triggers a Winter Round (§6.0). The winter_count is tracked to
     determine final Winter (§2.4.1).
 
+    For SCENARIO_GALLIC_WAR, the Gallic War Interlude (A2.1) replaces
+    the rest of the 3rd Winter Round if no faction has won. Pass
+    britannia_decision and roman_dispersed_keep to control Roman
+    choices during the Interlude.
+
     Args:
         state: Game state dict. Modified in place.
+        britannia_decision: Optional Roman decision (Interlude only).
+        roman_dispersed_keep: Optional tribe constant (Interlude only).
 
     Returns:
         Dict with winter round results.
@@ -553,7 +561,11 @@ def resolve_winter_card(state):
     total_winters = _count_winter_cards_in_game(state)
     is_final = (state["winter_count"] + 1 >= total_winters)
 
-    winter_result = run_winter_round(state, is_final=is_final)
+    winter_result = run_winter_round(
+        state, is_final=is_final,
+        britannia_decision=britannia_decision,
+        roman_dispersed_keep=roman_dispersed_keep,
+    )
     return {
         "type": "winter",
         "is_final": is_final,

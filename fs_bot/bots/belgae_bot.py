@@ -1951,27 +1951,55 @@ def node_b_spring(state):
 # AGREEMENTS
 # ============================================================================
 
-def node_b_agreements(state, requesting_faction, request_type):
+def node_b_agreements(state, requesting_faction, request_type, context=None):
     """B_AGREEMENTS: Agreement decisions.
 
     Per §8.4.2:
     - Never transfer or agree to Supply Line, Retreat, Quarters.
     - Always Harass Romans.
 
+    Per A8.6.6 (Ariovistus only):
+    - For the unshaded Ariovistus Event Admagetobriga (card A28), NP Belgae
+      agree to use of their Warbands only where the executing Faction has
+      pieces (that will also be in the Battle). The Belgae do NOT agree to
+      use of their Warbands in Regions where the executing Faction has no
+      pieces of its own.
+
     Args:
         state: Game state dict.
         requesting_faction: Faction making the request.
         request_type: "supply_line", "retreat", "quarters", "resources",
-                      "harassment".
+                      "harassment", "admagetobriga_warbands".
+        context: Optional dict with extra info per request_type. For
+                 "admagetobriga_warbands": {"region": region_const,
+                 "executing_faction": faction_const}.
 
     Returns:
-        True if Belgae agree.
+        True if Belgae agree (bool), or for some request types a dict.
     """
     if request_type == "harassment":
         # Always Harass Romans — §8.4.2
         if requesting_faction == ROMANS:
             return True
         return False
+
+    # A8.6.6: Admagetobriga Warband-use agreement — only where executing
+    # faction has pieces in the Region (that will be in the Battle).
+    if request_type == "admagetobriga_warbands":
+        scenario = state.get("scenario")
+        if scenario not in ARIOVISTUS_SCENARIOS:
+            # A8.6.6 is Ariovistus-only; in base game default to refusing.
+            return False
+        ctx = context or {}
+        region = ctx.get("region")
+        executing_faction = ctx.get("executing_faction")
+        if not region or not executing_faction:
+            # Without context we cannot evaluate the rule — refuse.
+            return False
+        # NP Belgae agree iff the executing Faction has at least one piece
+        # in the named Region (will also be in the Battle per A8.6.6).
+        from fs_bot.board.pieces import count_pieces
+        return count_pieces(state, region, executing_faction) > 0
 
     # Never agree to anything else — §8.4.2
     return False

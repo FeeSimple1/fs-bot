@@ -1163,6 +1163,67 @@ class TestNodeBAgreements:
 
 
 # ===================================================================
+# A8.6.6 Admagetobriga Warband-use agreement (Ariovistus only)
+# ===================================================================
+
+class TestAdmagetobrigaAgreement:
+    """A8.6.6: NP Belgae agree to use of their Warbands only where the
+    executing Faction has pieces (that will also be in the Battle).
+    """
+
+    def test_belgae_agree_when_executing_faction_has_pieces(self):
+        """NP Belgae agree where Roman has at least 1 piece in the Region."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        _place_roman_force(state, SEQUANI, legions=1)
+        result = node_b_agreements(
+            state, BELGAE, "admagetobriga_warbands",
+            context={"region": SEQUANI, "executing_faction": ROMANS},
+        )
+        assert result is True
+
+    def test_belgae_refuse_when_executing_faction_absent(self):
+        """NP Belgae refuse where executing Faction has no pieces."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # No Roman pieces placed
+        result = node_b_agreements(
+            state, BELGAE, "admagetobriga_warbands",
+            context={"region": SEQUANI, "executing_faction": ROMANS},
+        )
+        assert result is False
+
+    def test_refuse_in_base_game(self):
+        """A8.6.6 only applies in Ariovistus — refuse in base game."""
+        state = _make_state(scenario=SCENARIO_PAX_GALLICA)
+        _place_roman_force(state, SEQUANI, legions=1)
+        result = node_b_agreements(
+            state, BELGAE, "admagetobriga_warbands",
+            context={"region": SEQUANI, "executing_faction": ROMANS},
+        )
+        assert result is False
+
+    def test_refuse_without_context(self):
+        """Without region/executing_faction in context, refuse — defensive."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        assert node_b_agreements(
+            state, BELGAE, "admagetobriga_warbands"
+        ) is False
+        assert node_b_agreements(
+            state, BELGAE, "admagetobriga_warbands", context={}
+        ) is False
+
+    def test_belgae_agree_with_aedui_executor(self):
+        """Works for any executing Faction, not just Romans."""
+        state = _make_state(scenario=SCENARIO_ARIOVISTUS)
+        # Place an Aedui Warband in SEQUANI
+        place_piece(state, SEQUANI, AEDUI, WARBAND)
+        result = node_b_agreements(
+            state, BELGAE, "admagetobriga_warbands",
+            context={"region": SEQUANI, "executing_faction": AEDUI},
+        )
+        assert result is True
+
+
+# ===================================================================
 # Main driver
 # ===================================================================
 

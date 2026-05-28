@@ -1125,19 +1125,39 @@ def _find_successor_placement(state, faction):
 
 def run_winter_round(state, is_final=False,
                      first_senate_after_interlude=False,
-                     relocations=None):
+                     relocations=None,
+                     britannia_decision=None,
+                     roman_dispersed_keep=None):
     """Execute the full Winter Round per §6.0 / A6.0.
 
     Calls each phase in order. Stops early if Victory Phase ends the game.
+
+    For SCENARIO_GALLIC_WAR, after the 3rd Victory Phase (and only if
+    no faction has won), the Gallic War Interlude (A2.1) replaces the
+    rest of the Winter Round. Pass britannia_decision and
+    roman_dispersed_keep to control Roman choices during the Interlude.
+
+    On Winter Rounds AFTER the Interlude has completed, the
+    state["first_senate_after_interlude_pending"] and
+    state["first_harvest_after_interlude_pending"] flags are consumed
+    here and override the corresponding phases per A2.1 "During the
+    1st Winter Round" rules.
 
     Args:
         state: Game state dict. Modified in place.
         is_final: True if this is the final Winter card (§2.4.1).
         first_senate_after_interlude: For Gallic War scenario (A6.5.1).
+            Auto-consumed from state if pending.
         relocations: Optional dict of relocation decisions for Quarters.
+        britannia_decision: Optional Roman decision for the Britannia
+            expedition (Interlude only).
+        roman_dispersed_keep: Optional tribe constant — the one
+            Dispersed/Dispersed-Gathering tribe Romans keep through
+            the Interlude Spring step.
 
     Returns:
-        Dict with results from each phase.
+        Dict with results from each phase. Contains "interlude" key
+        when the Gallic War Interlude ran.
     """
     scenario = state["scenario"]
     state["winter_count"] = state.get("winter_count", 0) + 1
@@ -1147,10 +1167,36 @@ def run_winter_round(state, is_final=False,
         "phases": {},
     }
 
+    # Consume the pending first-Winter-after-Interlude flags.
+    consume_first_senate = False
+    if state.get("first_senate_after_interlude_pending"):
+        consume_first_senate = True
+    if first_senate_after_interlude:
+        consume_first_senate = True
+    consume_first_harvest_no_belgica = state.get(
+        "first_harvest_after_interlude_pending", False,
+    )
+
     # Phase 1: Victory
     victory_result = victory_phase(state, is_final=is_final)
     result["phases"]["victory"] = victory_result
     if victory_result["game_over"]:
+        return result
+
+    # Gallic War Interlude trigger — A2.1.
+    from fs_bot.rules_consts import INTERLUDE_VICTORY_TRIGGER_WINTER
+    if (scenario == SCENARIO_GALLIC_WAR
+            and state["winter_count"] ==
+            INTERLUDE_VICTORY_TRIGGER_WINTER
+            and not state.get("interlude_completed", False)):
+        # Run Interlude in place of the rest of the Winter Round.
+        from fs_bot.engine.interlude import run_interlude
+        interlude_result = run_interlude(
+            state,
+            britannia_decision=britannia_decision,
+            roman_dispersed_keep=roman_dispersed_keep,
+        )
+        result["interlude"] = interlude_result
         return result
 
     # Phase 2: Germans Phase (base game only)
@@ -1162,14 +1208,32 @@ def run_winter_round(state, is_final=False,
         state, relocations=relocations
     )
 
-    # Phase 4: Harvest
+    # Phase 4: Harvest — apply the 1st-Winter-after-Interlude exception
+    # before normal harvest.
+    if consume_first_harvest_no_belgica:
+        # Per A2.1: "If there are no Legions on the Winter Track, do
+        # not place any in Belgica during that Harvest Phase." The
+        # Pax Gallica 1st-Winter rule otherwise would place 3 Legions
+        # from the Winter Track in Belgica — for the Gallic War
+        # post-Interlude path, that placement is conditional on
+        # winter_track_legions > 0. We just record the exception in
+        # the result.
+        state["first_harvest_after_interlude_pending"] = False
+        result["phases"]["harvest_special"] = {
+            "no_belgica_legions_if_track_empty": True,
+            "winter_track_legions":
+                state.get("winter_track_legions", 0),
+        }
+
     result["phases"]["harvest"] = harvest_phase(state)
 
     # Phase 5: Senate
     result["phases"]["senate"] = senate_phase(
         state,
-        first_senate_after_interlude=first_senate_after_interlude,
+        first_senate_after_interlude=consume_first_senate,
     )
+    if consume_first_senate:
+        state["first_senate_after_interlude_pending"] = False
 
     # Phase 6: Spring
     result["phases"]["spring"] = spring_phase(state)

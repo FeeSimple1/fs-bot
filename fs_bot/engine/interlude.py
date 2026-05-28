@@ -1252,10 +1252,18 @@ def _np_should_conduct_britannia(state):
     """A8.8.9 / Interlude rule: NP Romans conduct expedition if able.
 
     Per A2.1: 'Non-player Romans conduct it if able, A8.8.9.'
-    The Chapter A8 file in this repo stops at A8.8.8 — see QUESTIONS.md.
-    Fall back to a conservative reading of 'if able': sufficient
-    Legions and Auxilia on the map.
+    A8.8.9 does not exist in the reference documents (Chapter A8 stops at
+    A8.8.8, then jumps to A8.9) — the cited rule is missing, so there is no
+    additional strategic/score criterion to apply. "If able" is therefore
+    resolved against the physical requirements the scenario itself states:
+    the Romans must move 3 Legions to the Harvest-Phase box PLUS the Roman
+    Leader, 3 or more further Legions, and 1 or more Auxilia to Britannia.
+    Thus NP Romans conduct the expedition iff they have those pieces on the
+    map: >= 6 Legions, >= 1 Auxilia, and the Roman Leader. See QUESTIONS.md.
     """
+    # The scenario requires "the Roman Leader ... from the map to Britannia".
+    if find_leader(state, ROMANS) is None:
+        return False
     legions_on_map = 0
     aux_on_map = 0
     for region in state["spaces"]:

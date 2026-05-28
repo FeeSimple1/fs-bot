@@ -743,3 +743,46 @@ class TestLingeringEvents:
         rm = state["markers"].get(NERVII, {})
         if isinstance(rm, dict):
             assert rm.get(MARKER_ABATIS) is True
+
+
+# ============================================================================
+# Britannia expedition — "if able" requires the Roman Leader on the map
+# (QUESTIONS.md Q4 resolution: A8.8.9 is absent; "if able" = the scenario's
+# own stated physical requirements, which include the Roman Leader.)
+# ============================================================================
+
+
+class TestBritanniaNonPlayerAbility:
+    def test_np_declines_when_no_roman_leader_on_map(self):
+        from fs_bot.engine.interlude import _np_should_conduct_britannia
+        state = fresh_gallic_war()
+        # Plenty of Legions/Auxilia, but remove the Roman Leader from the
+        # map -> the expedition is physically impossible -> NP must decline.
+        lr = find_leader(state, ROMANS)
+        assert lr is not None
+        remove_piece(state, lr, ROMANS, LEADER)
+        assert _np_should_conduct_britannia(state) is False
+
+    def test_np_requires_six_legions_and_one_auxilia(self):
+        from fs_bot.engine.interlude import _np_should_conduct_britannia
+        state = fresh_gallic_war()
+        # Ensure a Roman Leader is on the map.
+        if find_leader(state, ROMANS) is None:
+            place_piece(state, PROVINCIA, ROMANS, LEADER, leader_name=CAESAR)
+        # Strip all Legions, then add exactly the required minimum.
+        for r in list(state["spaces"].keys()):
+            n = count_pieces(state, r, ROMANS, LEGION)
+            if n > 0:
+                remove_piece(state, r, ROMANS, LEGION, n, to_track=True)
+            a = count_pieces(state, r, ROMANS, AUXILIA)
+            if a > 0:
+                remove_piece(state, r, ROMANS, AUXILIA, a)
+        # 5 Legions is one short of the 6 needed -> decline.
+        place_piece(state, PROVINCIA, ROMANS, LEGION, 5,
+                    from_legions_track=True)
+        place_piece(state, PROVINCIA, ROMANS, AUXILIA, 1)
+        assert _np_should_conduct_britannia(state) is False
+        # Add the 6th Legion -> now able.
+        place_piece(state, PROVINCIA, ROMANS, LEGION, 1,
+                    from_legions_track=True)
+        assert _np_should_conduct_britannia(state) is True

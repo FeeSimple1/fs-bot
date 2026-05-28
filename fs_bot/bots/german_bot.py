@@ -1514,9 +1514,27 @@ def _check_ambush(state, battle_plan):
        NOTE: A defending Legion or Leader satisfies the 2nd requirement.
     2. If Ambushed in 1st Battle, also Ambush in each other Battle possible.
 
+    Ambush eligibility ("can Ambush", A8.7.1) defers to the Germanic Ambush
+    Special-Ability rules:
+    - A4.6.3 makes Germanic Ambush work "like Arverni Ambush (4.3.3) but
+      uses Germanic... Ariovistus instead of Vercingetorix" — so §4.3.3's
+      two conjunctive conditions apply with Ariovistus as the named Leader:
+        (a) the Region begins with more Hidden Germanic pieces than Hidden
+            Defenders, AND
+        (b) the Region is within 1 of Ariovistus or has his Successor.
+    - A4.1.2 (Ariovistus) independently confirms (b): German Special
+      Abilities "may select only Regions within a distance of 1 Region of
+      that Faction's named Leader... or (for Germans) the same Region that
+      has its Successor Leader".
+    Both conditions are enforced by validate_ambush_region() — the same
+    check the SA execution layer applies — so the bot never proposes an
+    Ambush it could not legally perform (matching the Belgae/Aedui bots).
+
     Returns:
         List of Ambush regions, or empty.
     """
+    from fs_bot.commands.sa_ambush import validate_ambush_region
+
     if not battle_plan:
         return []
 
@@ -1524,9 +1542,10 @@ def _check_ambush(state, battle_plan):
     region = first["region"]
     enemy = first["target"]
 
-    hidden_german = count_pieces_by_state(
-        state, region, GERMANS, WARBAND, HIDDEN)
-    if hidden_german == 0:
+    # A4.6.3 -> §4.3.3 (+ A4.1.2) eligibility for the 1st Battle:
+    # more Hidden Germans than Hidden Defenders AND within 1 of Ariovistus.
+    eligible, _ = validate_ambush_region(state, region, GERMANS, enemy)
+    if not eligible:
         return []
 
     should_ambush_first = False
@@ -1547,9 +1566,11 @@ def _check_ambush(state, battle_plan):
     ambush_regions = [region]
     for bp in battle_plan[1:]:
         bp_region = bp["region"]
-        hidden = count_pieces_by_state(
-            state, bp_region, GERMANS, WARBAND, HIDDEN)
-        if hidden > 0:
+        bp_enemy = bp["target"]
+        # "each other Battle possible" — filter to Ambush-eligible Regions.
+        bp_eligible, _ = validate_ambush_region(
+            state, bp_region, GERMANS, bp_enemy)
+        if bp_eligible:
             ambush_regions.append(bp_region)
     return ambush_regions
 

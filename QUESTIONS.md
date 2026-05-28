@@ -1,83 +1,162 @@
-QUESTIONS.md — Ambiguities requiring human decision
-These items are identified during implementation when the Reference Documents are ambiguous, contradictory, or silent. Per CLAUDE.md rules: no guessing — wait for human answer.
+QUESTIONS.md — Ambiguities and their resolutions
+
+These items were identified during implementation when the Reference Documents
+appeared ambiguous, contradictory, or silent. They have now been resolved by
+re-reading the Reference Documents closely (the only permitted source of truth
+per CLAUDE.md). Each entry records the question, the reference basis for the
+answer, and the resulting implementation. No open questions remain.
 
 ---
 
-## German bot — G_MARCH_THREAT "at victory" threshold for Aedui/Belgae
+## [RESOLVED] German bot — G_MARCH_THREAT "at victory" threshold for Aedui/Belgae
 
-**Context:** A8.7.1 G_MARCH_THREAT destination priorities reference faction victory state:
-> "if the Romans are at victory (have a margin of 1 or better, 7.3), the Germans first March to Regions that have the most Dispersed Tribes that they can reach. Within that objective (if it applies), if either Aedui or Belgae (or both) are at victory, the Germans first March to Regions with most Allied Tribes of those Gallic Factions at victory."
+**Context:** A8.7.1 G_MARCH_THREAT destination priorities reference faction
+victory state. The Roman clause says "if the Romans are at victory (have a
+margin of 1 or better, 7.3)"; the Aedui/Belgae clause says only "if either
+Aedui or Belgae (or both) are at victory" with no parenthetical number.
 
-**Ambiguity:** A8.7.1 explicitly defines "at victory" as margin ≥ 1 only for Romans. For Aedui/Belgae, the parenthetical is omitted. §7.3 defines "at victory" generally as margin ≥ 1, so the same threshold applies if "at victory" is a defined term.
+**Resolution:** Margin >= 1 for Aedui/Belgae (unchanged — the existing code is
+correct). §7.3 defines a victory margin as "the amount a Faction is beyond or
+short of its condition" and states "The margin will be positive if the Faction
+has reached its goal, negative or zero if not." So the defined term "at
+victory" = has reached its goal = positive margin = margin >= 1. The Roman
+parenthetical "(margin of 1 or better, 7.3)" merely restates that §7.3
+definition the first time the sentence uses it; the Aedui/Belgae "at victory"
+in the same sentence is the same defined term. The deliberately looser phrase
+"victory margin of 0 or better" appears only on the *march-trigger* clause,
+confirming by contrast that the destination-priority "at victory" is the
+stricter >= 1.
 
-**Implementation choice:** Used margin ≥ 1 uniformly per §7.3. Note this is a reasonable reading, but if the rules intended a different threshold for the Gallic factions (e.g., margin ≥ 0 to align with G1b's "victory margin of 0 or better"), the implementation would need adjustment.
-
-**Files:** `fs_bot/bots/german_bot.py` — `node_g_march_threat`.
-
----
-
-## German bot — G_AMBUSH eligibility (Ariovistus proximity)
-
-**Context:** A8.7.1 AMBUSH paragraph:
-> "If the Germans are Battling per above and can Ambush in any of those Battles, they do so—but only where the enemy's Retreat out of that Region could lower the number of pieces it would remove, or Battle could allow a Counterattack to inflict at least one Loss on the Germans."
-
-**Ambiguity:** "Can Ambush" defers to the Germanic Ambush rules in A4.6.3 for eligibility (Hidden Warbands etc.). The bot flowchart adds only the strategic gate (retreat-could-reduce OR counterattack-loss-possible). For the Belgae bot, §8.5.1 layers an Ambiorix-proximity requirement on top of §4.5.3; no equivalent proximity layer is stated for Germans in A8.7.1.
-
-**Implementation choice:** Used Hidden Germanic Warbands present + the A8.7.1 strategic gate, with no extra proximity-to-Ariovistus requirement. If A8.7.1's "can Ambush" was meant to imply a parallel proximity rule, the implementation would need adjustment.
-
-**Files:** `fs_bot/bots/german_bot.py` — `_check_ambush`.
-
-
-## Gallic War Interlude — Card identifier for "Ariovistus expansion version of Diviciacus"
-
-**Context:** A Scenario: The Gallic War, Interlude > Deck step says:
-> "Use the Ariovistus expansion version of Diviciacus, card A38."
-
-But in the Ariovistus card list (A Card Reference and CARD_NAMES_ARIOVISTUS), card A38 is named **Vergobret**. The expansion's "Diviciacus 2nd Ed" (with the Diviciacus Leader piece and rules in A1.4) is documented in A Setup under the "Diviciacus Leader Option" and is keyed as **card O38** (CARD_O38 = "O38", CARD_O38_NAME = "Diviciacus") in `fs_bot/rules_consts.py`.
-
-**Ambiguity:** "A38" in the Interlude prose appears to be an error or a different naming convention than the A Card Reference uses. The intent is almost certainly to use the Diviciacus 2nd Ed card (with Diviciacus Leader rules), which the codebase represents as O38, not the Vergobret event (A38).
-
-**Implementation choice:** Used `INTERLUDE_DIVICIACUS_CARD = "O38"` in the Interlude deck rebuild (substitutes for base card 38). If the Interlude really wants A38 (Vergobret) — substituting the Vergobret event for the original 38 Diviciacus event — please clarify.
-
-**Files:** `fs_bot/rules_consts.py` (INTERLUDE_DIVICIACUS_CARD), `fs_bot/engine/interlude.py` (deck rebuild step).
+**Files:** `fs_bot/bots/german_bot.py` — `node_g_march_threat` (no change).
 
 ---
 
-## Gallic War Interlude — A8.8.9 reference (non-player Britannia expedition)
+## [RESOLVED] German bot — G_AMBUSH eligibility (Ariovistus proximity)
 
-**Context:** A Scenario: The Gallic War, Interlude > Britannia Expedition says:
-> "Non-player Romans conduct it if able, A8.8.9."
+**Context:** A8.7.1 AMBUSH says the Germans Ambush "where ... can Ambush in
+any of those Battles" plus a strategic gate. The earlier note looked for a
+proximity requirement in the *bot flowchart* (A8.7.1) — as the Belgae bot's
+§8.5.1 has — found none, and so implemented Germanic Ambush with no
+proximity layer.
 
-**Ambiguity:** Chapter A8 in this repo ends at A8.8.8 (Admagetorbriga). There is no A8.8.9 rule for the non-player Britannia expedition decision.
+**Resolution:** Proximity to Ariovistus DOES apply; "can Ambush" defers to the
+Germanic Ambush Special-Ability rules, which carry the proximity requirement:
 
-**Implementation choice:** Implemented a conservative "if able" check: Roman Legions on map >= (3 to Harvest Box + 3 to Britannia) and Roman Auxilia on map >= 1. If A8.8.9 specifies additional or different criteria (resource threshold, score-based decision, etc.), this fallback should be replaced.
+- **A4.6.3:** "Germanic Ambush in Ariovistus ... [works] like Arverni Ambush
+  in Falling Sky (4.3.3) but uses Germanic instead of Arverni pieces
+  (including Ariovistus instead of Vercingetorix)."
+- **§4.3.3:** an Ambushable Region must "both begin with more Hidden Arverni
+  than Hidden Defenders **and** occur either within one Region of Vercingetorix
+  or in the same Region as his Successor." With A4.6.3's substitution, read
+  "Germanic ... Ariovistus" — so the Region must be within 1 of Ariovistus (or
+  hold his Successor).
+- **A4.1.2 (Ariovistus)** independently confirms it: "German and Aedui Special
+  Abilities may select only Regions within a distance of 1 Region of that
+  Faction's named Leader ... or (for Germans) the same Region that has its
+  Successor Leader."
 
-**Files:** `fs_bot/engine/interlude.py` — `_np_should_conduct_britannia`.
+The proximity requirement is therefore a Special-Ability rule, not a bot-layer
+rule — which is exactly why the SA execution layer (`validate_ambush_region`)
+already enforces it for `GERMANS` in Ariovistus. The bug was only that the
+German bot's `_check_ambush` heuristic did not mirror that check (unlike the
+Belgae and Aedui bots), so it could propose Ambushes the engine would reject.
+
+**Implementation:** `_check_ambush` now calls `validate_ambush_region` (the
+single authoritative eligibility check — Hidden-count + proximity) for the 1st
+Battle and for each subsequent Battle, matching the Belgae/Aedui pattern.
+Added `TestGermanAmbushEligibility` (5 tests) covering out-of-range, in-region,
+adjacent, insufficient-Hidden, and multi-Battle filtering.
+
+**Files:** `fs_bot/bots/german_bot.py` — `_check_ambush`;
+`fs_bot/tests/test_german_bot.py`.
 
 ---
 
-## Gallic War Interlude — Belgic Leader identity in second half
+## [RESOLVED] Gallic War Interlude — Diviciacus card identifier (A38 vs O38)
 
-**Context:** Interlude > Adjust Belgae says:
-> "Place Ambiorix in Region with most other Belgic pieces (even if Belgic Leader in Available)."
+**Context:** A Scenario: The Gallic War, Interlude > Deck step: "Use the
+Ariovistus expansion version of Diviciacus, card A38." But in the A Card
+Reference, A38 is **Vergobret**, while the Diviciacus-Leader card is **O38**.
 
-In the Ariovistus first-half setup, the Belgic Leader piece is named **BODUOGNATUS** (same physical piece, A1.4). After the Interlude, the second half plays as base-game (Original Falling Sky rules are in effect), where the Belgic Leader is **AMBIORIX**.
+**Resolution:** O38 is correct (unchanged — the existing code is correct);
+"A38" in the Interlude prose is an error. Three independent reference points:
 
-**Ambiguity:** Should the piece be re-tagged as AMBIORIX or remain BODUOGNATUS? The scenario name says "Ambiorix" explicitly, suggesting a re-tag. But the scenario remains SCENARIO_GALLIC_WAR (which is in ARIOVISTUS_SCENARIOS), and Boduognatus is the Ariovistus identity.
+1. The descriptive phrase matches O38 verbatim. A Setup, "Diviciacus Leader
+   Option": "Original Falling Sky can use the expansion version of card 38,
+   Diviciacus 2nd Ed, with the Diviciacus Leader piece and rules in A1.4." The
+   A Card Reference keys this card as **O38. Diviciacus** ("Place Diviciacus
+   piece in any Region. Ariovistus Diviciacus Leader rules apply").
+2. A38 (Vergobret) is a different card — a Suborn Capability — that does **not**
+   place the Diviciacus piece.
+3. Game-state necessity: the Interlude's Aedui step removes the Diviciacus
+   piece "(It may return by Event.)", and the second half plays with Diviciacus
+   Leader rules. Only O38 can return the Diviciacus piece by Event; A38 cannot.
+   So the deck must contain O38.
 
-**Implementation choice:** Forced AMBIORIX as the leader_name when re-placing during the Belgae adjustment step. If the codebase intends Boduognatus to persist for the second half of Gallic War, this should be reverted.
+The "A38" label is best explained as a draft artifact (the Diviciacus-Leader
+card was relabeled O38 once the A38 slot became Vergobret).
 
-**Files:** `fs_bot/engine/interlude.py` — `_adjust_belgae_forces`.
+**Files:** `fs_bot/rules_consts.py` (`INTERLUDE_DIVICIACUS_CARD = "O38"`),
+`fs_bot/engine/interlude.py` (no change).
 
 ---
 
-## Gallic War Interlude — Removed-from-play container for non-Legion pieces
+## [RESOLVED] Gallic War Interlude — A8.8.9 (non-player Britannia expedition)
 
-**Context:** Interlude > Adjust German Forces says:
-> "Remove Germanic Leader and any 15 Germanic Warbands (including from Available) from play."
+**Context:** Interlude > Britannia Expedition: "Non-player Romans conduct it if
+able, A8.8.9." Chapter A8 in the references ends at A8.8.8 (Admagetorbriga)
+and then jumps to A8.9 — there is no A8.8.9.
 
-Per CLAUDE.md and prior code, "remove from play" means permanent removal (not to Available). Only Legions previously had a dedicated container (`state["removed_legions"]`); Diviciacus had a special-case path in `remove_piece` (vanish to neither Available nor a tracked field).
+**Resolution:** The cited rule is genuinely absent, so there is no extra
+strategic/score criterion to apply. "If able" is therefore resolved against the
+physical requirements the scenario itself enumerates: the Romans must relocate
+3 Legions to the Harvest-Phase box **plus** the Roman Leader, 3-or-more further
+Legions, and 1-or-more Auxilia to Britannia. Non-player Romans conduct the
+expedition iff they hold those pieces on the map: >= 6 Legions, >= 1 Auxilia,
+**and** the Roman Leader.
 
-**Implementation choice:** Added a generic `state["removed_pieces"][faction][piece_type]` container and updated `validate_state` to include it in cap totals. The Germanic Leader, 15 Germanic Warbands, and all Settlements are routed there. Diviciacus continues to use its existing special-case path. If the existing schema preferred a different convention (e.g. reuse `removed_legions` for non-Legions), this can be refactored.
+**Implementation:** `_np_should_conduct_britannia` already checked the Legion
+(>= 6) and Auxilia (>= 1) minimums; added the missing Roman-Leader-on-map check
+(the scenario lists "plus the Roman Leader ... from the map to Britannia").
+Added `TestBritanniaNonPlayerAbility` (2 tests). NOTE: should A8.8.9 ever be
+supplied with additional criteria (e.g. a resource or score threshold), this
+"if able" check would be extended accordingly.
 
-**Files:** `fs_bot/state/state_schema.py`, `fs_bot/engine/interlude.py`.
+**Files:** `fs_bot/engine/interlude.py` — `_np_should_conduct_britannia`;
+`fs_bot/tests/test_interlude.py`.
+
+---
+
+## [RESOLVED] Gallic War Interlude — Belgic Leader identity (Ambiorix vs Boduognatus)
+
+**Context:** The first half (Ariovistus) names the Belgic Leader piece
+**Boduognatus** (A1.4). Interlude > Adjust Belgae: "Place Ambiorix in Region
+with most other Belgic pieces (even if Belgic Leader in Available)."
+
+**Resolution:** Re-tag the piece to **Ambiorix** (unchanged — the existing code
+is correct). The Interlude prose names the leader "Ambiorix" explicitly, and
+the Second Half section states "Original Falling Sky rules are in effect" —
+under which the Belgic Leader is Ambiorix. The physical piece is the same; only
+its rules identity changes for the second half.
+
+**Files:** `fs_bot/engine/interlude.py` — `_adjust_belgae_forces` (no change).
+
+---
+
+## [RESOLVED] Gallic War Interlude — Removed-from-play container for non-Legion pieces
+
+**Context:** Interlude > Adjust German Forces: "Remove Germanic Leader and any
+15 Germanic Warbands (including from Available) from play." Per CLAUDE.md,
+"remove from play" means permanent removal (not to Available). Only Legions had
+a dedicated off-board container (`state["removed_legions"]`).
+
+**Resolution:** This is an internal schema choice, not a rules ambiguity — the
+references are clear that the pieces leave play permanently. The chosen
+convention (generic `state["removed_pieces"][faction][piece_type]`, with Legions
+keeping their rules-mandated separate track and Diviciacus its existing
+special-case path) is sound and is fully reconciled by `validate_state`, which
+includes `removed_pieces` in the cap totals for Leaders and all non-Legion
+piece types. No change required.
+
+**Files:** `fs_bot/state/state_schema.py` (`validate_state`, schema init),
+`fs_bot/engine/interlude.py` (no change).

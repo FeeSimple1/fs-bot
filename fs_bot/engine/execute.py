@@ -28,18 +28,29 @@ Design notes:
 
 from fs_bot.rules_consts import EVENT_SHADED
 from fs_bot.commands.common import CommandError
+from fs_bot.board.pieces import PieceError
 from fs_bot.commands.seize import seize_in_region, get_dispersible_tribes
+from fs_bot.commands.raid import raid_in_region
+from fs_bot.commands.rally import rally_in_region
 from fs_bot.cards.card_effects import execute_event
+
+# Mechanic functions raise CommandError on rule violations and PieceError
+# on invalid piece operations (e.g. a plan gone stale against the board).
+# Execution captures both so a partly-infeasible plan resolves as far as it
+# legally can rather than crashing the turn.
+_EXEC_ERRORS = (CommandError, PieceError)
 
 
 # Bot command labels (mirror the per-bot ACTION_* constants, which all
 # share these string values).
 _CMD_EVENT = "Event"
 _CMD_SEIZE = "Seize"
+_CMD_RAID = "Raid"
+_CMD_RALLY = "Rally"
 
 # Commands recognized but not yet wired in this slice.
 _UNWIRED_COMMANDS = {
-    "Battle", "March", "Rally", "Raid", "Recruit",
+    "Battle", "March", "Recruit",
 }
 
 
@@ -70,6 +81,10 @@ def execute_decision(state, faction, decision):
         return _execute_event(state, faction, bot_action)
     if command == _CMD_SEIZE:
         return _execute_seize(state, faction, bot_action)
+    if command == _CMD_RAID:
+        return _execute_raid(state, faction, bot_action)
+    if command == _CMD_RALLY:
+        return _execute_rally(state, faction, bot_action)
     if command in _UNWIRED_COMMANDS:
         return {"executed": False, "command": command,
                 "reason": "command not yet wired (proof slice)"}
@@ -136,7 +151,7 @@ def _execute_seize(state, faction, bot_action):
             tribes = []
         try:
             res = seize_in_region(state, region, tribes_to_disperse=tribes)
-        except CommandError as exc:
+        except _EXEC_ERRORS as exc:
             errors.append({"region": region, "error": str(exc)})
             continue
         dispersed_total += len(res.get("tribes_dispersed", []))
@@ -149,6 +164,112 @@ def _execute_seize(state, faction, bot_action):
         "regions_resolved": [r["region"] for r in per_region],
         "tribes_dispersed_total": dispersed_total,
         "forage_resources_total": forage_total,
+        "sa_not_wired": bot_action.get("sa"),
+        "errors": errors,
+    }
+
+
+def _execute_raid(state, faction, bot_action):
+    """Execute a Raid Command — §3.3.3.
+
+    Bots emit ``details['raid_plan']`` as a flat list of per-flip entries
+    ``{"region": R, "target": faction_or_None}`` (steal from ``target`` or,
+    when None, gain 1 Resource). All four raiding bots (Arverni, Aedui,
+    Belgae, German) share this shape. We group flips by region in order,
+    cap at the rules' 2 flips per region (§3.3.3), translate each flip to a
+    raid action, and call ``raid_in_region`` once per region.
+
+    Any accompanying Special Activity (Devastate/Entreat/Intimidate) is part
+    of the SA wiring workstream and is not executed here.
+    """
+    details = bot_action.get("details", {})
+    raid_plan = details.get("raid_plan", []) or []
+
+    # Preserve region order of first appearance.
+    by_region = {}
+    order = []
+    for entry in raid_plan:
+        region = entry.get("region")
+        if region is None:
+            continue
+        if region not in by_region:
+            by_region[region] = []
+            order.append(region)
+        if entry.get("target") is None:
+            by_region[region].append({"type": "gain"})
+        else:
+            by_region[region].append(
+                {"type": "steal", "target": entry["target"]})
+
+    per_region = []
+    gained_total = 0
+    errors = []
+    for region in order:
+        actions = by_region[region][:2]  # §3.3.3: max 2 Warbands/Region
+        if not actions:
+            continue
+        try:
+            res = raid_in_region(state, region, faction, actions)
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "error": str(exc)})
+            continue
+        gained_total += res.get("resources_gained", 0)
+        per_region.append(res)
+
+    return {
+        "executed": len(per_region) > 0,
+        "command": _CMD_RAID,
+        "regions_resolved": [r["region"] for r in per_region],
+        "resources_gained_total": gained_total,
+        "sa_not_wired": bot_action.get("sa"),
+        "errors": errors,
+    }
+
+
+def _execute_rally(state, faction, bot_action):
+    """Execute a Rally Command — §3.3.1 (Gallic) / A8.7.4 (German).
+
+    The bot supplies ``details['rally_plan']`` with up to three sub-lists,
+    executed in flowchart order so freed Allies are available downstream:
+      1. ``citadels``: ``{"region", "tribe"}`` — replace an Allied City Tribe
+         with a Citadel (Gallic only; Germans have none).
+      2. ``allies``:   ``{"region", "tribe"[, "cost"]}`` — place an Ally at a
+         Subdued Tribe.
+      3. ``warbands``: either a region string (Gallic) or ``{"region", ...}``
+         (German) — place Warbands up to the region cap.
+
+    Each sub-action calls ``rally_in_region`` (which enforces caps, cost, and
+    prerequisites). Per-region CommandErrors are captured, not raised, so a
+    plan that outruns Resources resolves as far as it legally can.
+    """
+    details = bot_action.get("details", {})
+    plan = details.get("rally_plan", {}) or {}
+
+    placed = []
+    errors = []
+
+    def _do(region, action, tribe=None):
+        try:
+            res = rally_in_region(state, region, faction, action, tribe=tribe)
+            placed.append({"region": region, "action": action,
+                           "tribe": tribe})
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "action": action,
+                           "error": str(exc)})
+
+    for entry in plan.get("citadels", []) or []:
+        _do(entry["region"], "place_citadel", entry.get("tribe"))
+    for entry in plan.get("allies", []) or []:
+        _do(entry["region"], "place_ally", entry.get("tribe"))
+    for entry in plan.get("warbands", []) or []:
+        region = entry if isinstance(entry, str) else entry.get("region")
+        if region is not None:
+            _do(region, "place_warbands")
+
+    return {
+        "executed": len(placed) > 0,
+        "command": _CMD_RALLY,
+        "placements": placed,
         "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }

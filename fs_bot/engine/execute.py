@@ -32,6 +32,8 @@ from fs_bot.board.pieces import PieceError
 from fs_bot.commands.seize import seize_in_region, get_dispersible_tribes
 from fs_bot.commands.raid import raid_in_region
 from fs_bot.commands.rally import rally_in_region
+from fs_bot.battle.resolve import resolve_battle
+from fs_bot.commands.sa_besiege import get_besiege_targets
 from fs_bot.cards.card_effects import execute_event
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -47,10 +49,13 @@ _CMD_EVENT = "Event"
 _CMD_SEIZE = "Seize"
 _CMD_RAID = "Raid"
 _CMD_RALLY = "Rally"
+_CMD_BATTLE = "Battle"
+_SA_AMBUSH = "Ambush"
+_SA_BESIEGE = "Besiege"
 
 # Commands recognized but not yet wired in this slice.
 _UNWIRED_COMMANDS = {
-    "Battle", "March", "Recruit",
+    "March", "Recruit",
 }
 
 
@@ -85,6 +90,8 @@ def execute_decision(state, faction, decision):
         return _execute_raid(state, faction, bot_action)
     if command == _CMD_RALLY:
         return _execute_rally(state, faction, bot_action)
+    if command == _CMD_BATTLE:
+        return _execute_battle(state, faction, bot_action)
     if command in _UNWIRED_COMMANDS:
         return {"executed": False, "command": command,
                 "reason": "command not yet wired (proof slice)"}
@@ -271,5 +278,79 @@ def _execute_rally(state, faction, bot_action):
         "command": _CMD_RALLY,
         "placements": placed,
         "sa_not_wired": bot_action.get("sa"),
+        "errors": errors,
+    }
+
+
+def _execute_battle(state, faction, bot_action):
+    """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
+
+    The bot supplies ``details['battle_plan']`` as a list of per-region
+    entries. Two shapes exist: most bots emit ``{"region", "target"}`` (a
+    single defending faction), while the Roman bot emits
+    ``{"region", "targets": [...]}`` (defenders ranked by priority); we
+    Battle the top-ranked defender per region.
+
+    Battle-modifying Special Activities are applied as parameters to
+    ``resolve_battle``:
+      - Ambush (§4.3.3/§4.5.3/A4.6.3): ``is_ambush=True`` where the bot's
+        ``sa`` is Ambush and the region is in ``sa_regions`` (eligibility was
+        already gated by the bot's _check_ambush).
+      - Besiege (§4.2.3/A4.2.3, Roman): remove a Citadel (else Ally, else
+        Settlement) before Losses, chosen via get_besiege_targets.
+
+    Defender Retreat is left to auto-determination (no retreat); routing the
+    defender bot's Retreat decision (§8.4.3) is a separate workstream. Other
+    standalone SAs accompanying a Battle (Scout, Intimidate) are not executed
+    here.
+    """
+    details = bot_action.get("details", {})
+    battle_plan = details.get("battle_plan", []) or []
+    sa = bot_action.get("sa")
+    sa_regions = set(bot_action.get("sa_regions", []) or [])
+
+    battles = []
+    errors = []
+    for entry in battle_plan:
+        region = entry.get("region")
+        if region is None:
+            continue
+        # Single target, or Roman ranked targets list -> take the top.
+        if "target" in entry and entry["target"] is not None:
+            defender = entry["target"]
+        else:
+            targets = entry.get("targets") or []
+            defender = targets[0] if targets else None
+        if defender is None:
+            continue
+
+        is_ambush = (sa == _SA_AMBUSH and region in sa_regions)
+
+        besiege_target = None
+        if sa == _SA_BESIEGE and region in sa_regions:
+            options = get_besiege_targets(state, region, defender)
+            if options:
+                besiege_target = options[0]  # Citadel > Ally > Settlement
+
+        try:
+            res = resolve_battle(
+                state, region, faction, defender,
+                is_ambush=is_ambush, besiege_target=besiege_target,
+                retreat_declaration=None,
+            )
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "defender": defender,
+                           "error": str(exc)})
+            continue
+        battles.append({"region": region, "defender": defender,
+                        "is_ambush": is_ambush,
+                        "besiege": besiege_target,
+                        "result": res})
+
+    return {
+        "executed": len(battles) > 0,
+        "command": _CMD_BATTLE,
+        "battles_resolved": [(b["region"], b["defender"]) for b in battles],
+        "count": len(battles),
         "errors": errors,
     }

@@ -718,6 +718,22 @@ def _senate_marker_shift(state, first_senate_after_interlude=False):
         result["reason"] = "First Senate Phase after Interlude — no shift"
         return result
 
+    # Pax Gallica? 1st Winter: the Senate marker starts in the "Senate box"
+    # (position None). Per that scenario's 1st-Winter rule, that Senate Phase
+    # "instead of shifting the Senate, put its marker at Intrigue (not Firm)".
+    # Handling the None (marker-in-box) state here also guards every base
+    # scenario from indexing a marker that is not yet on the track.
+    if state["senate"]["position"] is None:
+        state["senate"]["position"] = INTRIGUE
+        state["senate"]["firm"] = False
+        result["new_position"] = INTRIGUE
+        result["new_firm"] = False
+        result["shifted"] = True
+        result["reason"] = (
+            "Senate marker placed at Intrigue (was in the Senate box)"
+        )
+        return result
+
     # Determine shift direction based on Roman victory score
     roman_score = calculate_victory_score(state, ROMANS)
     fallen = state.get("fallen_legions", 0)

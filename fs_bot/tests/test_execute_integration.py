@@ -239,3 +239,83 @@ class TestRecruitStillUnwired:
         res = execute_decision(st, ROMANS, decision)
         assert res["executed"] is False
         assert "not yet wired" in res["reason"]
+
+
+# ---------------------------------------------------------------------------
+# Battle execution (slice 3)
+# ---------------------------------------------------------------------------
+
+from fs_bot.rules_consts import LEGION, AUXILIA, REVEALED
+
+
+class TestBattleExecution:
+    def test_battle_inflicts_losses(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+        # Arverni (6 Warbands) attack Romans (3 Auxilia) in the Arverni Region.
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 6, piece_state=REVEALED)
+        place_piece(st, ARVERNI_REGION, ROMANS, AUXILIA, 3)
+        refresh_all_control(st)
+        before = count_pieces(st, ARVERNI_REGION, ROMANS, AUXILIA)
+        decision = {"action": "command", "bot_action": {
+            "command": "Battle", "regions": [ARVERNI_REGION], "sa": "No SA",
+            "sa_regions": [], "details": {"battle_plan": [
+                {"region": ARVERNI_REGION, "target": ROMANS,
+                 "is_trigger": True}]}}}
+        res = execute_decision(st, ARVERNI, decision)
+        assert res["executed"] is True
+        assert res["command"] == "Battle"
+        assert (ARVERNI_REGION, ROMANS) in res["battles_resolved"]
+        # Romans lost Auxilia.
+        assert count_pieces(st, ARVERNI_REGION, ROMANS, AUXILIA) < before
+        assert validate_state(st) == []
+
+    def test_battle_accepts_roman_targets_list_shape(self):
+        # Roman battle_plan entries use "targets" (ranked list); the executor
+        # must battle the top-ranked defender without raising.
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+        place_piece(st, ARVERNI_REGION, ROMANS, AUXILIA, 6, piece_state=REVEALED)
+        place_piece(st, ARVERNI_REGION, ROMANS, LEGION, 2, from_legions_track=True)
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 2)
+        refresh_all_control(st)
+        decision = {"action": "command", "bot_action": {
+            "command": "Battle", "regions": [ARVERNI_REGION], "sa": "No SA",
+            "sa_regions": [], "details": {"battle_plan": [
+                {"region": ARVERNI_REGION, "targets": [ARVERNI]}]}}}
+        res = execute_decision(st, ROMANS, decision)
+        assert res["executed"] is True
+        assert (ARVERNI_REGION, ARVERNI) in res["battles_resolved"]
+        assert validate_state(st) == []
+
+    def test_ambush_flag_routes_through(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 6, piece_state=HIDDEN)
+        place_piece(st, ARVERNI_REGION, ROMANS, AUXILIA, 2)
+        refresh_all_control(st)
+        decision = {"action": "command", "bot_action": {
+            "command": "Battle", "regions": [ARVERNI_REGION], "sa": "Ambush",
+            "sa_regions": [ARVERNI_REGION], "details": {"battle_plan": [
+                {"region": ARVERNI_REGION, "target": ROMANS,
+                 "is_trigger": True}]}}}
+        res = execute_decision(st, ARVERNI, decision)
+        assert res["executed"] is True
+        assert res["battles_resolved"][0] == (ARVERNI_REGION, ROMANS)
+        # Ambush forbids defender Retreat — recorded in the battle result.
+        assert res["count"] == 1
+        assert validate_state(st) == []
+
+
+class TestSenateBoxFirstWinter:
+    """Regression: Pax Gallica starts the Senate marker in the Senate box
+    (position None); the first Senate Phase places it at Intrigue (not Firm)
+    rather than indexing a marker that is not yet on the track."""
+
+    def test_marker_in_box_placed_at_intrigue(self):
+        from fs_bot.engine.winter import _senate_marker_shift
+        from fs_bot.rules_consts import INTRIGUE
+        st = setup_scenario(SCENARIO_PAX_GALLICA, seed=1)
+        # Sanity: Pax Gallica begins with the marker in the Senate box.
+        assert st["senate"]["position"] is None
+        result = _senate_marker_shift(st)
+        assert st["senate"]["position"] == INTRIGUE
+        assert st["senate"]["firm"] is False
+        assert result["new_position"] == INTRIGUE

@@ -124,9 +124,9 @@ def _make_action(command, *, regions=None, sa=SA_ACTION_NONE, sa_regions=None,
     """
     return {
         "command": command,
-        "regions": sorted(regions) if regions else [],
+        "regions": sorted(regions, key=repr) if regions else [],
         "sa": sa,
-        "sa_regions": sorted(sa_regions) if sa_regions else [],
+        "sa_regions": sorted(sa_regions, key=repr) if sa_regions else [],
         "details": details or {},
     }
 

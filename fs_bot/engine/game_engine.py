@@ -416,7 +416,22 @@ def adjust_eligibility(state, actions_taken):
 # CARD TURN RESOLUTION — §2.3
 # ============================================================================
 
-def resolve_card_turn(state, decision_func):
+def _maybe_execute(state, faction, decision, actions_taken):
+    """Apply a recorded non-Pass decision to the board (opt-in).
+
+    Delegates to engine.execute.execute_decision and stashes the result on
+    the recorded action under "execution". Imported lazily to avoid a
+    circular import (execute -> commands -> ...).
+    """
+    from fs_bot.engine.execute import execute_decision
+    exec_result = execute_decision(state, faction, decision)
+    rec = actions_taken.get(faction)
+    if isinstance(rec, dict):
+        rec["execution"] = exec_result
+    return exec_result
+
+
+def resolve_card_turn(state, decision_func, *, execute=False):
     """Orchestrate one full Event card turn — §2.3.
 
     Steps per §2.3:
@@ -496,6 +511,8 @@ def resolve_card_turn(state, decision_func):
         else:
             # 1st Eligible chose to act
             actions_taken[faction] = decision
+            if execute:
+                _maybe_execute(state, faction, decision, actions_taken)
             first_action = action
             # Remove this faction from the eligible pool for 2nd slot
             idx += 1
@@ -525,6 +542,8 @@ def resolve_card_turn(state, decision_func):
                 continue  # Next eligible becomes new 2nd — §2.3.3
             else:
                 actions_taken[faction] = decision
+                if execute:
+                    _maybe_execute(state, faction, decision, actions_taken)
                 break
 
     # Step 6: Adjust eligibility — §2.3.6
@@ -592,7 +611,7 @@ def _count_winter_cards_in_game(state):
 # GAME LOOP — §2.0
 # ============================================================================
 
-def play_card(state, decision_func):
+def play_card(state, decision_func, *, execute=False):
     """Play the current card — either an Event card or a Winter card.
 
     For Event cards: resolve the card turn via resolve_card_turn.
@@ -625,7 +644,7 @@ def play_card(state, decision_func):
             result["final_ranking"] = victory.get("final_ranking")
             return result
     else:
-        turn_result = resolve_card_turn(state, decision_func)
+        turn_result = resolve_card_turn(state, decision_func, execute=execute)
         result["type"] = "event"
         result["turn_result"] = turn_result
 
@@ -638,7 +657,7 @@ def play_card(state, decision_func):
     return result
 
 
-def run_game(state, decision_func):
+def run_game(state, decision_func, *, execute=False):
     """Run the full game from start to finish — §2.0.
 
     Calls start_game, then repeatedly plays cards until the game ends.
@@ -657,7 +676,7 @@ def run_game(state, decision_func):
     results = []
 
     while state["current_card"] is not None:
-        card_result = play_card(state, decision_func)
+        card_result = play_card(state, decision_func, execute=execute)
         results.append(card_result)
 
         if card_result["game_over"]:

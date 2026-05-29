@@ -113,12 +113,20 @@ MARCH_CONTROL = "March (control)"
 
 def _make_action(command, *, regions=None, sa=SA_ACTION_NONE, sa_regions=None,
                  details=None):
-    """Build a standardized action result dict."""
+    """Build a standardized action result dict.
+
+    Region collections are sorted into a deterministic order. Bots assemble
+    them from sets, whose iteration order varies with Python hash
+    randomization; the order is never semantically consumed (the executable
+    plan lives in ``details``), so sorting here makes action dicts and their
+    logs byte-reproducible for deterministic replay without affecting any
+    decision. See CLAUDE.md "Determinism".
+    """
     return {
         "command": command,
-        "regions": regions or [],
+        "regions": sorted(regions) if regions else [],
         "sa": sa,
-        "sa_regions": sa_regions or [],
+        "sa_regions": sorted(sa_regions) if sa_regions else [],
         "details": details or {},
     }
 

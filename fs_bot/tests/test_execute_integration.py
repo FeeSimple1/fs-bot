@@ -148,3 +148,94 @@ class TestEngineIntegration:
                     run_game(st, decision_func=dfn, execute=True)
                 errs = validate_state(st)
                 assert errs == [], f"{sc} seed={seed}: {errs[:3]}"
+
+
+# ---------------------------------------------------------------------------
+# Raid and Rally execution (second slice)
+# ---------------------------------------------------------------------------
+
+from fs_bot.board.pieces import place_piece, count_pieces, get_available
+from fs_bot.board.control import refresh_all_control
+from fs_bot.rules_consts import (
+    ARVERNI, AEDUI, BELGAE, WARBAND, ALLY, HIDDEN,
+    ARVERNI_REGION,
+)
+
+
+class TestRaidExecution:
+    def test_raid_gains_resources(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 2, piece_state=HIDDEN)
+        refresh_all_control(st)
+        before = st["resources"][ARVERNI]
+        decision = {"action": "command", "bot_action": {
+            "command": "Raid", "regions": [ARVERNI_REGION], "sa": "No SA",
+            "sa_regions": [], "details": {"raid_plan": [
+                {"region": ARVERNI_REGION, "target": None},
+                {"region": ARVERNI_REGION, "target": None}]}}}
+        res = execute_decision(st, ARVERNI, decision)
+        assert res["executed"] is True
+        assert res["command"] == "Raid"
+        assert st["resources"][ARVERNI] == before + res["resources_gained_total"]
+        assert res["resources_gained_total"] >= 1
+        assert validate_state(st) == []
+
+    def test_raid_caps_two_flips_per_region(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 4, piece_state=HIDDEN)
+        refresh_all_control(st)
+        # Plan lists 4 gain flips in one region; rules cap at 2.
+        decision = {"action": "command", "bot_action": {
+            "command": "Raid", "regions": [ARVERNI_REGION], "sa": "No SA",
+            "sa_regions": [], "details": {"raid_plan": [
+                {"region": ARVERNI_REGION, "target": None}] * 4}}}
+        res = execute_decision(st, ARVERNI, decision)
+        assert res["resources_gained_total"] <= 2
+        assert validate_state(st) == []
+
+
+class TestRallyExecution:
+    def test_rally_places_warbands(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+        # Arverni Home Region qualifies for warband placement (§3.3.1).
+        avail_before = get_available(st, ARVERNI, WARBAND)
+        on_map_before = count_pieces(st, ARVERNI_REGION, ARVERNI, WARBAND)
+        decision = {"action": "command", "bot_action": {
+            "command": "Rally", "regions": [ARVERNI_REGION], "sa": "No SA",
+            "sa_regions": [], "details": {"rally_plan": {
+                "citadels": [], "allies": [],
+                "warbands": [ARVERNI_REGION]}}}}
+        res = execute_decision(st, ARVERNI, decision)
+        assert res["executed"] is True
+        assert res["command"] == "Rally"
+        # Warbands were placed in the region.
+        assert count_pieces(st, ARVERNI_REGION, ARVERNI, WARBAND) > on_map_before
+        assert get_available(st, ARVERNI, WARBAND) < avail_before
+        assert validate_state(st) == []
+
+    def test_rally_handles_german_dict_warband_entries(self):
+        # German rally_plan uses {"region","cost"} warband entries; the
+        # executor must accept dict entries as well as plain strings.
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=2)
+        from fs_bot.rules_consts import GERMANS, SUGAMBRI
+        decision = {"action": "command", "bot_action": {
+            "command": "Rally", "regions": [SUGAMBRI], "sa": "No SA",
+            "sa_regions": [], "details": {"rally_plan": {
+                "allies": [], "warbands": [{"region": SUGAMBRI, "cost": 0}]}}}}
+        res = execute_decision(st, GERMANS, decision)
+        # Either it placed warbands or recorded a clean per-region error;
+        # crucially it must not raise and state stays consistent.
+        assert res["command"] == "Rally"
+        assert validate_state(st) == []
+
+
+class TestRecruitStillUnwired:
+    def test_recruit_is_reported_unwired(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+        decision = {"action": "command", "bot_action": {
+            "command": "Recruit", "regions": [], "sa": "Build",
+            "sa_regions": [], "details": {"potential_allies": 2,
+                                          "potential_auxilia": 4}}}
+        res = execute_decision(st, ROMANS, decision)
+        assert res["executed"] is False
+        assert "not yet wired" in res["reason"]

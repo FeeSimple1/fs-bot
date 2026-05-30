@@ -39,6 +39,10 @@ from fs_bot.commands.march import march_group, _flip_origin_pieces
 from fs_bot.board.pieces import count_pieces, get_leader_in_region
 from fs_bot.map.map_data import is_adjacent
 from fs_bot.bots.bot_common import random_select
+from fs_bot.commands.sa_trade import trade as _sa_trade
+from fs_bot.commands.sa_settle import settle as _sa_settle
+from fs_bot.commands.sa_devastate import devastate_region as _sa_devastate
+from fs_bot.commands.sa_intimidate import intimidate as _sa_intimidate
 from fs_bot.cards.card_effects import execute_event
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -59,6 +63,13 @@ _CMD_RECRUIT = "Recruit"
 _CMD_MARCH = "March"
 _SA_AMBUSH = "Ambush"
 _SA_BESIEGE = "Besiege"
+_SA_TRADE = "Trade"
+_SA_SETTLE = "Settle"
+_SA_DEVASTATE = "Devastate"
+_SA_INTIMIDATE = "Intimidate"
+SA_ACTION_NONE_LABEL = "No SA"
+# SAs handled inside Battle resolution, not as standalone post-command SAs.
+_BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
 
 # Commands recognized but not yet wired in this slice.
 _UNWIRED_COMMANDS = set()
@@ -87,20 +98,26 @@ def execute_decision(state, faction, decision):
 
     command = bot_action.get("command")
 
-    if command == _CMD_EVENT:
-        return _execute_event(state, faction, bot_action)
-    if command == _CMD_SEIZE:
-        return _execute_seize(state, faction, bot_action)
-    if command == _CMD_RAID:
-        return _execute_raid(state, faction, bot_action)
-    if command == _CMD_RALLY:
-        return _execute_rally(state, faction, bot_action)
-    if command == _CMD_BATTLE:
-        return _execute_battle(state, faction, bot_action)
-    if command == _CMD_RECRUIT:
-        return _execute_recruit(state, faction, bot_action)
-    if command == _CMD_MARCH:
-        return _execute_march(state, faction, bot_action)
+    _COMMAND_HANDLERS = {
+        _CMD_EVENT: _execute_event,
+        _CMD_SEIZE: _execute_seize,
+        _CMD_RAID: _execute_raid,
+        _CMD_RALLY: _execute_rally,
+        _CMD_BATTLE: _execute_battle,
+        _CMD_RECRUIT: _execute_recruit,
+        _CMD_MARCH: _execute_march,
+    }
+    handler = _COMMAND_HANDLERS.get(command)
+    if handler is not None:
+        result = handler(state, faction, bot_action)
+        # Run the accompanying standalone Special Activity, if any. Battle-
+        # modifying SAs (Ambush/Besiege) are applied inside _execute_battle,
+        # so they are skipped here.
+        sa_result = _execute_sa(state, faction, bot_action)
+        if sa_result is not None:
+            result = dict(result)
+            result["sa_execution"] = sa_result
+        return result
     if command in _UNWIRED_COMMANDS:
         return {"executed": False, "command": command,
                 "reason": "command not yet wired (proof slice)"}
@@ -499,3 +516,115 @@ def _execute_march(state, faction, bot_action):
         "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }
+
+
+def _execute_sa(state, faction, bot_action):
+    """Execute a standalone Special Activity accompanying a Command.
+
+    Returns a result dict, or None when there is no standalone SA to run
+    (No SA, or a battle-modifying SA already handled in _execute_battle).
+
+    Wired (execution-complete from the bot plan):
+      - Trade (Aedui): trade(state) — no targets.
+      - Settle (German): settle(state, region) for each sa_region.
+      - Devastate (Arverni/Aedui): devastate_region(state, region) per region.
+      - Intimidate (German): intimidate(...) grouped by region + target.
+
+    Deferred (need faithful plan translation / secondary choices — reported,
+    not guessed): Build, Scout, Entreat, Suborn, Rampage, Enlist.
+    """
+    sa = bot_action.get("sa")
+    if not sa or sa == SA_ACTION_NONE_LABEL or sa in _BATTLE_MODIFYING_SAS:
+        return None
+
+    if sa == _SA_TRADE:
+        return _execute_trade(state, faction)
+    if sa == _SA_SETTLE:
+        return _execute_settle(state, faction, bot_action)
+    if sa == _SA_DEVASTATE:
+        return _execute_devastate(state, faction, bot_action)
+    if sa == _SA_INTIMIDATE:
+        return _execute_intimidate(state, faction, bot_action)
+
+    return {"executed": False, "sa": sa,
+            "reason": "SA not yet wired (plan translation deferred)"}
+
+
+def _execute_trade(state, faction):
+    """Aedui Trade (§4.4.2) — yields Resources; no targets."""
+    try:
+        res = _sa_trade(state)
+    except _EXEC_ERRORS as exc:
+        return {"executed": False, "sa": _SA_TRADE, "error": str(exc)}
+    return {"executed": True, "sa": _SA_TRADE, "result": res}
+
+
+def _execute_settle(state, faction, bot_action):
+    """German Settle (A4.6.1) — place a Settlement in each sa_region."""
+    regions = [r for r in (bot_action.get("sa_regions") or [])
+               if isinstance(r, str)]
+    placed, errors = [], []
+    for region in regions:
+        try:
+            _sa_settle(state, region)
+            placed.append(region)
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "error": str(exc)})
+    return {"executed": len(placed) > 0, "sa": _SA_SETTLE,
+            "regions": placed, "errors": errors}
+
+
+def _execute_devastate(state, faction, bot_action):
+    """Arverni/Aedui Devastate (§4.3.1) — Devastate each sa_region."""
+    regions = [r for r in (bot_action.get("sa_regions") or [])
+               if isinstance(r, str)]
+    done, errors = [], []
+    for region in regions:
+        try:
+            _sa_devastate(state, region)
+            done.append(region)
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "error": str(exc)})
+    return {"executed": len(done) > 0, "sa": _SA_DEVASTATE,
+            "regions": done, "errors": errors}
+
+
+def _execute_intimidate(state, faction, bot_action):
+    """German Intimidate (A4.6.2).
+
+    The bot's ``intimidate_plan`` is a flat list of per-removal entries
+    ``{region, target_faction, target_piece, target_state, free}``. The
+    mechanic intimidate(region, warbands_to_flip, target_faction,
+    target_removals) flips 1-2 Hidden Warbands and removes that many pieces
+    of ONE target faction. We group entries by (region, target_faction), cap
+    each group at the rules' 2 flips, and translate to one call per group.
+    """
+    details = bot_action.get("details", {})
+    plan = details.get("intimidate_plan", []) or []
+
+    groups = {}
+    order = []
+    for entry in plan:
+        region = entry.get("region")
+        tgt = entry.get("target_faction")
+        if region is None or tgt is None:
+            continue
+        key = (region, tgt)
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(
+            (entry.get("target_piece"), entry.get("target_state")))
+
+    done, errors = [], []
+    for (region, tgt) in order:
+        removals = groups[(region, tgt)][:2]  # A4.6.2: flip 1-2 Warbands
+        try:
+            _sa_intimidate(state, region, len(removals), tgt, removals)
+            done.append({"region": region, "target": tgt,
+                         "count": len(removals)})
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "target": tgt,
+                           "error": str(exc)})
+    return {"executed": len(done) > 0, "sa": _SA_INTIMIDATE,
+            "intimidations": done, "errors": errors}

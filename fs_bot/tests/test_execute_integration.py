@@ -403,6 +403,7 @@ from fs_bot.engine.execute import _execute_sa
 from fs_bot.engine.game_engine import run_game, get_sop_factions
 from fs_bot.rules_consts import (
     AEDUI, GERMANS, SETTLEMENT, MARKER_DEVASTATED, ARIOVISTUS_LEADER,
+    AEDUI_REGION,
     LEADER, SCENARIO_ARIOVISTUS,
 )
 
@@ -482,3 +483,72 @@ class TestStandaloneSAs:
                                        "details": {}})
         assert res["executed"] is False
         assert "not yet wired" in res["reason"]
+
+
+# ---------------------------------------------------------------------------
+# Deferred SAs now wired (slice 6): Suborn, Build
+# ---------------------------------------------------------------------------
+
+from fs_bot.map.map_data import get_tribes_in_region
+
+
+class TestSubornAndBuild:
+    def test_suborn_removes_enemy_ally(self):
+        from fs_bot.rules_consts import MANDUBII
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        place_piece(st, MANDUBII, AEDUI, WARBAND, 1, piece_state=HIDDEN)
+        tribe = get_tribes_in_region(MANDUBII, st["scenario"])[0]
+        st["tribes"][tribe]["allied_faction"] = ARVERNI
+        place_piece(st, MANDUBII, ARVERNI, ALLY)
+        refresh_all_control(st)
+        before = count_pieces(st, MANDUBII, ARVERNI, ALLY)
+        plan = [{"region": MANDUBII, "actions": [
+            {"action": "remove_ally", "tribe": tribe,
+             "target_faction": ARVERNI}]}]
+        res = _execute_sa(st, AEDUI, {"sa": "Suborn",
+                                      "sa_regions": [MANDUBII],
+                                      "details": {"suborn_plan": plan}})
+        assert res["executed"] is True
+        assert count_pieces(st, MANDUBII, ARVERNI, ALLY) == before - 1
+        assert validate_state(st) == []
+
+    def test_suborn_places_aedui_warband(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        place_piece(st, AEDUI_REGION, AEDUI, WARBAND, 1, piece_state=HIDDEN)
+        refresh_all_control(st)
+        before = count_pieces(st, AEDUI_REGION, AEDUI, WARBAND)
+        plan = [{"region": AEDUI_REGION, "actions": [
+            {"action": "place_warband"}]}]
+        res = _execute_sa(st, AEDUI, {"sa": "Suborn",
+                                      "sa_regions": [AEDUI_REGION],
+                                      "details": {"suborn_plan": plan}})
+        assert res["executed"] is True
+        assert count_pieces(st, AEDUI_REGION, AEDUI, WARBAND) == before + 1
+        assert validate_state(st) == []
+
+    def test_build_fires_in_real_games(self):
+        # Roman Build (recomputed via node_r_build) executes in real games.
+        build_count = 0
+        for seed in range(0, 6):
+            st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=seed)
+            st["non_player_factions"] = set(get_sop_factions(st))
+            dfn = make_decision_func(
+                {f: "bot" for f in get_sop_factions(st)}, pause=False)
+            seen = {"n": 0}
+            import fs_bot.engine.execute as _ex
+            orig = _ex._execute_sa
+
+            def _tally(s, f, ba, _orig=orig, _seen=seen):
+                r = _orig(s, f, ba)
+                if r and r.get("sa") == "Build" and r.get("executed"):
+                    _seen["n"] += 1
+                return r
+            _ex._execute_sa = _tally
+            try:
+                with _ctx.redirect_stdout(_io.StringIO()):
+                    run_game(st, decision_func=dfn, execute=True)
+            finally:
+                _ex._execute_sa = orig
+            build_count += seen["n"]
+            assert validate_state(st) == []
+        assert build_count > 0

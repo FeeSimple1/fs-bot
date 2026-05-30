@@ -43,6 +43,10 @@ from fs_bot.commands.sa_trade import trade as _sa_trade
 from fs_bot.commands.sa_settle import settle as _sa_settle
 from fs_bot.commands.sa_devastate import devastate_region as _sa_devastate
 from fs_bot.commands.sa_intimidate import intimidate as _sa_intimidate
+from fs_bot.commands.sa_suborn import suborn as _sa_suborn
+from fs_bot.commands.sa_build import build_fort as _sa_build_fort
+from fs_bot.commands.sa_build import build_subdue as _sa_build_subdue
+from fs_bot.commands.sa_build import build_place_ally as _sa_build_ally
 from fs_bot.cards.card_effects import execute_event
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -67,6 +71,8 @@ _SA_TRADE = "Trade"
 _SA_SETTLE = "Settle"
 _SA_DEVASTATE = "Devastate"
 _SA_INTIMIDATE = "Intimidate"
+_SA_SUBORN = "Suborn"
+_SA_BUILD = "Build"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
 _BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
@@ -545,6 +551,10 @@ def _execute_sa(state, faction, bot_action):
         return _execute_devastate(state, faction, bot_action)
     if sa == _SA_INTIMIDATE:
         return _execute_intimidate(state, faction, bot_action)
+    if sa == _SA_SUBORN:
+        return _execute_suborn(state, faction, bot_action)
+    if sa == _SA_BUILD:
+        return _execute_build(state, faction, bot_action)
 
     return {"executed": False, "sa": sa,
             "reason": "SA not yet wired (plan translation deferred)"}
@@ -628,3 +638,100 @@ def _execute_intimidate(state, faction, bot_action):
                            "error": str(exc)})
     return {"executed": len(done) > 0, "sa": _SA_INTIMIDATE,
             "intimidations": done, "errors": errors}
+
+
+def _execute_suborn(state, faction, bot_action):
+    """Aedui Suborn (§4.4.2 / §8.6.3).
+
+    The bot's ``suborn_plan`` is a list of ``{region, actions}`` where each
+    action is one of place_ally / remove_ally / place_warband /
+    remove_warband / remove_auxilia. We translate these to the suborn()
+    operation schema ({action: place|remove, faction, piece_type, tribe,
+    piece_state}) and call suborn() once per region. Removed pieces use
+    piece_state=None (any state); placed Aedui pieces use the Aedui faction.
+    """
+    from fs_bot.rules_consts import AEDUI as _AEDUI, ALLY as _ALLY,         WARBAND as _WARBAND, AUXILIA as _AUXILIA
+    details = bot_action.get("details", {})
+    plan = details.get("suborn_plan", []) or []
+
+    done, errors = [], []
+    for sp in plan:
+        region = sp.get("region")
+        ops = []
+        for a in sp.get("actions", []) or []:
+            act = a.get("action")
+            if act == "place_ally":
+                ops.append({"action": "place", "faction": _AEDUI,
+                            "piece_type": _ALLY, "tribe": a.get("tribe")})
+            elif act == "place_warband":
+                ops.append({"action": "place", "faction": _AEDUI,
+                            "piece_type": _WARBAND})
+            elif act == "remove_ally":
+                ops.append({"action": "remove",
+                            "faction": a.get("target_faction"),
+                            "piece_type": _ALLY})
+            elif act == "remove_warband":
+                ops.append({"action": "remove",
+                            "faction": a.get("target_faction"),
+                            "piece_type": _WARBAND, "piece_state": None})
+            elif act == "remove_auxilia":
+                ops.append({"action": "remove",
+                            "faction": a.get("target_faction"),
+                            "piece_type": _AUXILIA, "piece_state": None})
+        if not ops:
+            continue
+        try:
+            _sa_suborn(state, region, ops)
+            done.append(region)
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "error": str(exc)})
+    return {"executed": len(done) > 0, "sa": _SA_SUBORN,
+            "regions": done, "errors": errors}
+
+
+def _execute_build(state, faction, bot_action):
+    """Roman Build (§4.2.1).
+
+    The Roman bot's node_r_build computes a complete build_plan
+    ({forts:[region], subdue:[{region,tribe}], allies:[{region,tribe}]}) but
+    the accompanying Build SA is emitted without it. We recompute the plan
+    against the current (post-Command) board via node_r_build and execute it:
+    Forts, then Subdue (target_faction derived from the tribe's current
+    Allied faction — a lookup, not a choice), then place Allies.
+    """
+    from fs_bot.bots.roman_bot import node_r_build
+    try:
+        plan = node_r_build(state)
+    except Exception as exc:  # bot helper failure must not crash the turn
+        return {"executed": False, "sa": _SA_BUILD,
+                "reason": f"build plan unavailable: {exc!r}"}
+
+    done, errors = [], []
+    for region in plan.get("forts", []) or []:
+        try:
+            _sa_build_fort(state, region)
+            done.append(("fort", region))
+        except _EXEC_ERRORS as exc:
+            errors.append({"action": "fort", "region": region,
+                           "error": str(exc)})
+    for entry in plan.get("subdue", []) or []:
+        region, tribe = entry.get("region"), entry.get("tribe")
+        target = state.get("tribes", {}).get(tribe, {}).get("allied_faction")
+        if target is None:
+            continue
+        try:
+            _sa_build_subdue(state, region, tribe, target)
+            done.append(("subdue", region, tribe))
+        except _EXEC_ERRORS as exc:
+            errors.append({"action": "subdue", "region": region,
+                           "tribe": tribe, "error": str(exc)})
+    for entry in plan.get("allies", []) or []:
+        region, tribe = entry.get("region"), entry.get("tribe")
+        try:
+            _sa_build_ally(state, region, tribe)
+            done.append(("ally", region, tribe))
+        except _EXEC_ERRORS as exc:
+            errors.append({"action": "ally", "region": region,
+                           "tribe": tribe, "error": str(exc)})
+    return {"executed": len(done) > 0, "sa": _SA_BUILD,
+            "actions": done, "errors": errors}

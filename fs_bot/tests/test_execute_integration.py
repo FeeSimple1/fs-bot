@@ -390,3 +390,95 @@ class TestMarchExecution:
         assert ARVERNI_REGION in res["deferred_origins"]
         assert res["executed"] is False
         assert validate_state(st) == []
+
+
+# ---------------------------------------------------------------------------
+# Standalone Special Activities (slice 5): Trade, Settle, Devastate, Intimidate
+# ---------------------------------------------------------------------------
+
+import io as _io
+import contextlib as _ctx
+from fs_bot.board.pieces import find_leader
+from fs_bot.engine.execute import _execute_sa
+from fs_bot.engine.game_engine import run_game, get_sop_factions
+from fs_bot.rules_consts import (
+    AEDUI, GERMANS, SETTLEMENT, MARKER_DEVASTATED, ARIOVISTUS_LEADER,
+    LEADER, SCENARIO_ARIOVISTUS,
+)
+
+
+class TestStandaloneSAs:
+    def test_trade_yields_resources(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        before = st["resources"][AEDUI]
+        res = _execute_sa(st, AEDUI, {"sa": "Trade", "sa_regions": [],
+                                      "details": {}})
+        assert res["executed"] is True
+        assert st["resources"][AEDUI] >= before
+        assert validate_state(st) == []
+
+    def test_devastate_places_marker(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        res = _execute_sa(st, ARVERNI, {"sa": "Devastate",
+                                        "sa_regions": [ARVERNI_REGION],
+                                        "details": {}})
+        assert res["executed"] is True
+        assert st["markers"].get(ARVERNI_REGION, {}).get(MARKER_DEVASTATED) is True
+        assert validate_state(st) == []
+
+    def test_intimidate_translates_plan_and_removes_piece(self):
+        # Operate at Ariovistus's own Region (Intimidate is valid there) to
+        # avoid placing a second Leader.
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+        region = find_leader(st, GERMANS)
+        assert region is not None
+        place_piece(st, region, GERMANS, WARBAND, 2, piece_state=HIDDEN)
+        place_piece(st, region, ROMANS, AUXILIA, 1)
+        refresh_all_control(st)
+        before = count_pieces(st, region, ROMANS, AUXILIA)
+        # The bot supplies the actual piece state; here the placed Auxilia
+        # is Hidden, and target_state=None removes regardless of state.
+        plan = [{"region": region, "target_faction": ROMANS,
+                 "target_piece": AUXILIA, "target_state": None,
+                 "free": False}]
+        res = _execute_sa(st, GERMANS, {"sa": "Intimidate",
+                                        "sa_regions": [region],
+                                        "details": {"intimidate_plan": plan}})
+        assert res["executed"] is True
+        assert count_pieces(st, region, ROMANS, AUXILIA) < before
+        assert validate_state(st) == []
+
+    def test_settle_fires_in_real_ariovistus_games(self):
+        # End-to-end: German bots Settle during real Ariovistus games; assert
+        # the wired SA actually executes and integrity holds.
+        settle_count = 0
+        for seed in range(0, 8):
+            st = setup_scenario(SCENARIO_ARIOVISTUS, seed=seed)
+            st["non_player_factions"] = set(get_sop_factions(st))
+            dfn = make_decision_func(
+                {f: "bot" for f in get_sop_factions(st)}, pause=False)
+            seen = {"n": 0}
+            import fs_bot.engine.execute as _ex
+            orig = _ex._execute_sa
+
+            def _tally(s, f, ba, _orig=orig, _seen=seen):
+                r = _orig(s, f, ba)
+                if r and r.get("sa") == "Settle" and r.get("executed"):
+                    _seen["n"] += 1
+                return r
+            _ex._execute_sa = _tally
+            try:
+                with _ctx.redirect_stdout(_io.StringIO()):
+                    run_game(st, decision_func=dfn, execute=True)
+            finally:
+                _ex._execute_sa = orig
+            settle_count += seen["n"]
+            assert validate_state(st) == []
+        assert settle_count > 0
+
+    def test_deferred_sa_is_reported_not_executed(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        res = _execute_sa(st, ROMANS, {"sa": "Scout", "sa_regions": [],
+                                       "details": {}})
+        assert res["executed"] is False
+        assert "not yet wired" in res["reason"]

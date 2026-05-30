@@ -105,18 +105,31 @@ class TestEventExecution:
 
 
 class TestUnwiredAndGuards:
-    def test_unwired_command_is_noop(self):
+    def test_unknown_command_is_noop(self):
+        # Every real Command is now wired; an unrecognized label must still be
+        # a safe no-op rather than raising.
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
         snap = copy.deepcopy(st)
         dec = {"action": "command", "bot_action": {
-            "command": "March", "regions": [], "sa": "No SA",
+            "command": "Frobnicate", "regions": [], "sa": "No SA",
             "sa_regions": [], "details": {}}}
         res = execute_decision(st, ROMANS, dec)
         assert res["executed"] is False
-        assert "not yet wired" in res["reason"]
-        # Board untouched by an unwired command.
+        # Board untouched by an unrecognized command.
         assert st["spaces"] == snap["spaces"]
         assert st["resources"] == snap["resources"]
+
+    def test_empty_march_plan_shape_is_deferred(self):
+        # A March plan that is not the execution-complete threat shape is
+        # deferred (reported, not executed), never guessed.
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        dec = {"action": "command", "bot_action": {
+            "command": "March", "regions": [], "sa": "No SA",
+            "sa_regions": [], "details": {"march_plan": {
+                "control_destinations": [], "origins": []}}}}
+        res = execute_decision(st, ROMANS, dec)
+        assert res["executed"] is False
+        assert "deferred" in res["reason"] or "not execution-complete" in res["reason"]
 
     def test_missing_bot_action_is_handled(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
@@ -229,16 +242,27 @@ class TestRallyExecution:
         assert validate_state(st) == []
 
 
-class TestRecruitStillUnwired:
-    def test_recruit_is_reported_unwired(self):
-        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
-        decision = {"action": "command", "bot_action": {
-            "command": "Recruit", "regions": [], "sa": "Build",
-            "sa_regions": [], "details": {"potential_allies": 2,
-                                          "potential_auxilia": 4}}}
-        res = execute_decision(st, ROMANS, decision)
-        assert res["executed"] is False
-        assert "not yet wired" in res["reason"]
+class TestRecruitExecution:
+    def test_recruit_executes_bot_plan(self):
+        # The Roman recruit node now emits an explicit recruit_plan; executing
+        # it places Roman pieces on the map.
+        from fs_bot.bots.roman_bot import node_r_recruit
+        from fs_bot.board.pieces import count_on_map
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+        act = node_r_recruit(st)
+        # The node may redirect to Seize if Recruit wouldn't place enough;
+        # only assert execution when it actually chose Recruit.
+        if act["command"] != "Recruit":
+            import pytest
+            pytest.skip("bot did not choose Recruit in this state")
+        aux_before = count_on_map(st, ROMANS, AUXILIA)
+        res = execute_decision(st, ROMANS, {"action": "command",
+                                            "bot_action": act})
+        assert res["command"] == "Recruit"
+        # At least some pieces placed, and integrity preserved.
+        assert count_on_map(st, ROMANS, AUXILIA) >= aux_before
+        assert res["executed"] is True
+        assert validate_state(st) == []
 
 
 # ---------------------------------------------------------------------------
@@ -319,3 +343,50 @@ class TestSenateBoxFirstWinter:
         assert st["senate"]["position"] == INTRIGUE
         assert st["senate"]["firm"] is False
         assert result["new_position"] == INTRIGUE
+
+
+# ---------------------------------------------------------------------------
+# March execution (slice 4) — threat-March shape only
+# ---------------------------------------------------------------------------
+
+from fs_bot.map.map_data import get_adjacent
+
+
+class TestMarchExecution:
+    def test_threat_march_moves_full_mobile_group_one_step(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+        dest = get_adjacent(ARVERNI_REGION)[0]
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 4, piece_state=REVEALED)
+        refresh_all_control(st)
+        origin_before = count_pieces(st, ARVERNI_REGION, ARVERNI, WARBAND)
+        dest_before = count_pieces(st, dest, ARVERNI, WARBAND)
+        decision = {"action": "command", "bot_action": {
+            "command": "March", "regions": [dest], "sa": "No SA",
+            "sa_regions": [], "details": {"march_plan": {
+                "origins": [ARVERNI_REGION], "destinations": [dest]}}}}
+        res = execute_decision(st, ARVERNI, decision)
+        assert res["executed"] is True
+        assert res["marches"][0]["origin"] == ARVERNI_REGION
+        # All mobile Warbands left the origin and arrived at the destination.
+        assert count_pieces(st, ARVERNI_REGION, ARVERNI, WARBAND) == 0
+        assert count_pieces(st, dest, ARVERNI, WARBAND) == dest_before + origin_before
+        assert validate_state(st) == []
+
+    def test_non_adjacent_destination_is_deferred_not_guessed(self):
+        # Pick a destination NOT adjacent to the origin; the executor must
+        # defer that origin (no multi-step routing guess) and stay clean.
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+        adj = set(get_adjacent(ARVERNI_REGION))
+        from fs_bot.map.map_data import get_playable_regions
+        far = [r for r in get_playable_regions(st["scenario"], st.get("capabilities"))
+               if r != ARVERNI_REGION and r not in adj]
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 3, piece_state=REVEALED)
+        refresh_all_control(st)
+        decision = {"action": "command", "bot_action": {
+            "command": "March", "regions": [far[0]], "sa": "No SA",
+            "sa_regions": [], "details": {"march_plan": {
+                "origins": [ARVERNI_REGION], "destinations": [far[0]]}}}}
+        res = execute_decision(st, ARVERNI, decision)
+        assert ARVERNI_REGION in res["deferred_origins"]
+        assert res["executed"] is False
+        assert validate_state(st) == []

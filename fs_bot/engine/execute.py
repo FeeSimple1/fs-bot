@@ -34,6 +34,11 @@ from fs_bot.commands.raid import raid_in_region
 from fs_bot.commands.rally import rally_in_region
 from fs_bot.battle.resolve import resolve_battle
 from fs_bot.commands.sa_besiege import get_besiege_targets
+from fs_bot.commands.rally import recruit_in_region
+from fs_bot.commands.march import march_group, _flip_origin_pieces
+from fs_bot.board.pieces import count_pieces, get_leader_in_region
+from fs_bot.map.map_data import is_adjacent
+from fs_bot.bots.bot_common import random_select
 from fs_bot.cards.card_effects import execute_event
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -50,13 +55,13 @@ _CMD_SEIZE = "Seize"
 _CMD_RAID = "Raid"
 _CMD_RALLY = "Rally"
 _CMD_BATTLE = "Battle"
+_CMD_RECRUIT = "Recruit"
+_CMD_MARCH = "March"
 _SA_AMBUSH = "Ambush"
 _SA_BESIEGE = "Besiege"
 
 # Commands recognized but not yet wired in this slice.
-_UNWIRED_COMMANDS = {
-    "March", "Recruit",
-}
+_UNWIRED_COMMANDS = set()
 
 
 def execute_decision(state, faction, decision):
@@ -92,6 +97,10 @@ def execute_decision(state, faction, decision):
         return _execute_rally(state, faction, bot_action)
     if command == _CMD_BATTLE:
         return _execute_battle(state, faction, bot_action)
+    if command == _CMD_RECRUIT:
+        return _execute_recruit(state, faction, bot_action)
+    if command == _CMD_MARCH:
+        return _execute_march(state, faction, bot_action)
     if command in _UNWIRED_COMMANDS:
         return {"executed": False, "command": command,
                 "reason": "command not yet wired (proof slice)"}
@@ -307,7 +316,10 @@ def _execute_battle(state, faction, bot_action):
     details = bot_action.get("details", {})
     battle_plan = details.get("battle_plan", []) or []
     sa = bot_action.get("sa")
-    sa_regions = set(bot_action.get("sa_regions", []) or [])
+    # sa_regions are string Region names for Ambush/Besiege; other SAs
+    # (e.g. Intimidate) carry dict plans we ignore here, so filter to strings.
+    sa_regions = {r for r in (bot_action.get("sa_regions") or [])
+                  if isinstance(r, str)}
 
     battles = []
     errors = []
@@ -352,5 +364,138 @@ def _execute_battle(state, faction, bot_action):
         "command": _CMD_BATTLE,
         "battles_resolved": [(b["region"], b["defender"]) for b in battles],
         "count": len(battles),
+        "errors": errors,
+    }
+
+
+def _execute_recruit(state, faction, bot_action):
+    """Execute a Roman Recruit — §3.2.1 / §8.8.4.
+
+    The Roman bot now emits ``details['recruit_plan']`` as an ordered list of
+    ``{"region", "action", ["tribe"]}`` entries (all Allies able, then all
+    Auxilia able, Supply-Line Regions first). Each entry calls
+    ``recruit_in_region`` (which enforces eligibility, caps, and cost).
+    Per-region errors are captured so the plan resolves as far as Resources
+    allow. The accompanying Build SA is part of the SA workstream.
+    """
+    details = bot_action.get("details", {})
+    plan = details.get("recruit_plan", []) or []
+
+    placed = []
+    errors = []
+    for entry in plan:
+        region = entry.get("region")
+        action = entry.get("action")
+        if region is None or action is None:
+            continue
+        try:
+            res = recruit_in_region(state, region, action,
+                                    tribe=entry.get("tribe"))
+            placed.append({"region": region, "action": action,
+                           "tribe": entry.get("tribe")})
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "action": action,
+                           "error": str(exc)})
+
+    return {
+        "executed": len(placed) > 0,
+        "command": _CMD_RECRUIT,
+        "placements": placed,
+        "sa_not_wired": bot_action.get("sa"),
+        "errors": errors,
+    }
+
+
+def _mobile_march_group(state, faction, region):
+    """Build a march group dict of ALL mobile pieces a faction has in region.
+
+    Mobile = Leader + Legions + Auxilia + Warbands (totals across Hidden /
+    Revealed / Scouted). This matches the threat-March instruction to "March
+    all mobile Forces out of" a Region.
+    """
+    from fs_bot.rules_consts import LEADER, LEGION, AUXILIA, WARBAND
+    group = {
+        LEADER: get_leader_in_region(state, region, faction),
+        LEGION: count_pieces(state, region, faction, LEGION),
+        AUXILIA: count_pieces(state, region, faction, AUXILIA),
+        WARBAND: count_pieces(state, region, faction, WARBAND),
+    }
+    return group
+
+
+def _group_has_pieces(group):
+    from fs_bot.rules_consts import LEADER
+    for k, v in group.items():
+        if k == LEADER:
+            if v is not None:
+                return True
+        elif v:
+            return True
+    return False
+
+
+def _execute_march(state, faction, bot_action):
+    """Execute a March Command — threat-March case only (§8.5.1/A8.7.1 etc.).
+
+    SCOPE: Only the execution-complete "threat" March shape is wired here —
+    a plan carrying flat ``origins`` and ``destinations`` lists, whose
+    flowchart instruction is to "March all mobile Forces out of each origin
+    Region." For each origin we move its entire mobile group one step into an
+    adjacent planned destination (chosen with the rules' §8.3.4 random tie-
+    break when several are adjacent). march_group enforces adjacency, crossing
+    stops, and cost.
+
+    DEFERRED (returns executed=False with a reason, never guesses):
+      - The "expand/mass/spread" March nodes, whose plans use different,
+        decision-level keys (control_destinations, spread_destinations,
+        leader_or_group_destination, ...) and imply leave-behind choices.
+      - Multi-step routing to non-adjacent destinations.
+      - Mid-March Harassment (§3.2.2-3) and per-group leave-behind to retain
+        Control. These need bot-side plan enrichment, a separate workstream.
+    """
+    details = bot_action.get("details", {})
+    plan = details.get("march_plan", {}) or {}
+    origins = plan.get("origins")
+    destinations = plan.get("destinations")
+
+    if not (isinstance(origins, list) and isinstance(destinations, list)
+            and origins and destinations):
+        return {"executed": False, "command": _CMD_MARCH,
+                "reason": "march plan shape not execution-complete "
+                          "(expand/mass routing deferred to bot enrichment)"}
+
+    origin_set = set(origins)
+    dest_pool = [d for d in destinations if d not in origin_set]
+
+    marched = []
+    errors = []
+    deferred_origins = []
+    for origin in origins:
+        group = _mobile_march_group(state, faction, origin)
+        if not _group_has_pieces(group):
+            continue
+        adj_dests = [d for d in dest_pool if is_adjacent(origin, d)]
+        if not adj_dests:
+            # Only single-step adjacent destinations are unambiguous here.
+            deferred_origins.append(origin)
+            continue
+        dest = (random_select(state, adj_dests)
+                if len(adj_dests) > 1 else adj_dests[0])
+        try:
+            # §3.2.2: marching pieces flip to Hidden (Underground) as they
+            # March. march_group moves them in Hidden state, so flip first.
+            _flip_origin_pieces(state, origin, faction)
+            res = march_group(state, faction, origin, [dest], group)
+            marched.append({"origin": origin,
+                            "final_region": res.get("final_region")})
+        except _EXEC_ERRORS as exc:
+            errors.append({"origin": origin, "error": str(exc)})
+
+    return {
+        "executed": len(marched) > 0,
+        "command": _CMD_MARCH,
+        "marches": marched,
+        "deferred_origins": deferred_origins,
+        "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }

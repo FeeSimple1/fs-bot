@@ -827,12 +827,43 @@ def node_r_recruit(state):
         # Build before Recruit — §8.8.4
         sa = SA_ACTION_BUILD
 
+        # Build the concrete target list per §8.8.4: place all Allies able,
+        # then all Auxilia able, Supply-Line Regions first (to save Resources).
+        from fs_bot.commands.rally import (
+            validate_recruit_region, has_supply_line,
+            _find_subdued_tribe_for_ally, _count_recruit_auxilia_cap,
+        )
+        playable = get_playable_regions(scenario, state.get("capabilities"))
+        eligible = [r for r in playable
+                    if validate_recruit_region(state, r)[0]]
+        # Supply-Line Regions first, then a stable alphabetical order.
+        eligible.sort(key=lambda r: (0 if has_supply_line(state, r) else 1, r))
+
+        recruit_plan = []
+        rem_allies = avail_allies
+        for r in eligible:
+            if rem_allies <= 0:
+                break
+            tribe = _find_subdued_tribe_for_ally(state, r, ROMANS)
+            if tribe is not None:
+                recruit_plan.append({
+                    "region": r, "action": "place_ally", "tribe": tribe})
+                rem_allies -= 1
+        rem_aux = avail_auxilia
+        for r in eligible:
+            if rem_aux <= 0:
+                break
+            if _count_recruit_auxilia_cap(state, r) > 0:
+                recruit_plan.append({"region": r, "action": "place_auxilia"})
+                rem_aux -= 1
+
         return _make_action(
             ACTION_RECRUIT,
             sa=sa,
             details={
                 "potential_allies": potential_allies,
                 "potential_auxilia": potential_auxilia,
+                "recruit_plan": recruit_plan,
             },
         )
 

@@ -129,7 +129,8 @@ class TestUnwiredAndGuards:
                 "control_destinations": [], "origins": []}}}}
         res = execute_decision(st, ROMANS, dec)
         assert res["executed"] is False
-        assert "deferred" in res["reason"] or "not execution-complete" in res["reason"]
+        # An empty expand/mass plan yields nothing marchable (reported).
+        assert "march" in res["reason"].lower()
 
     def test_missing_bot_action_is_handled(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
@@ -1056,3 +1057,39 @@ class TestExpandMarchLeader:
             {"type": "March (control)", "origins": [], "leader_destination": None,
              "control_destinations": []})
         assert res["executed"] is False
+
+
+class TestWarbandSpreadMarch:
+    def test_warband_only_origin_spreads_keeping_control(self):
+        from fs_bot.board.pieces import find_leader, count_pieces as _cp
+        from fs_bot.board.control import is_controlled_by
+        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT as _SC, ARVERNI as _AR,
+            WARBAND as _WB)
+        from fs_bot.rules_consts import FACTIONS as _F
+        from fs_bot.board.pieces import remove_piece as _rm
+        st = setup_scenario(_SC, seed=3)
+        origin = "Bituriges"
+        # Clear enemy pieces at the origin so some Warbands are spare beyond
+        # the Control-keep, then stack Arverni Warbands there.
+        for of in _F:
+            if of == _AR:
+                continue
+            n = _cp(st, origin, of, _WB)
+            if n:
+                _rm(st, origin, of, _WB, n)
+        place_piece(st, origin, _AR, _WB, 5)
+        refresh_all_control(st)
+        ctrl_before = is_controlled_by(st, origin, _AR)
+        dest = get_adjacent(origin)[0]
+        wb_dest_before = _cp(st, dest, _AR, _WB)
+        from fs_bot.engine.execute import _execute_expand_march
+        # No leader destination -> exercises the warband-only branch for origin.
+        res = _execute_expand_march(st, _AR, {"type": "March (spread)",
+            "origins": [origin], "control_destinations": [dest],
+            "leader_destination": None, "spread_destinations": []})
+        assert res["executed"] is True
+        # Spare Warbands reached the destination; origin Control retained.
+        assert _cp(st, dest, _AR, _WB) > wb_dest_before
+        if ctrl_before:
+            assert is_controlled_by(st, origin, _AR)
+        assert validate_state(st) == []

@@ -1093,3 +1093,41 @@ class TestWarbandSpreadMarch:
         if ctrl_before:
             assert is_controlled_by(st, origin, _AR)
         assert validate_state(st) == []
+
+
+class TestBeforeBattleSASequencing:
+    def test_entreat_runs_before_battle(self):
+        # An Entreat accompanying a Battle must resolve BEFORE the Battle
+        # (it replaces an enemy piece, changing the Battle). execute_decision
+        # should report sa_timing == "before".
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        place_piece(st, MANDUBII, ARVERNI, WARBAND, 4, piece_state=REVEALED)
+        place_piece(st, MANDUBII, AEDUI, WARBAND, 1, piece_state=REVEALED)
+        refresh_all_control(st)
+        entreat_plan = [{"action": "replace_piece", "region": MANDUBII,
+                         "target_faction": AEDUI, "target_type": WARBAND,
+                         "target_state": REVEALED}]
+        decision = {"action": "command", "bot_action": {
+            "command": "Battle", "regions": [MANDUBII], "sa": "Entreat",
+            "sa_regions": entreat_plan,
+            "details": {"battle_plan": [{"region": MANDUBII, "target": AEDUI,
+                                         "is_trigger": True}]}}}
+        res = execute_decision(st, ARVERNI, decision)
+        assert res["executed"] is True
+        assert res.get("sa_timing") == "before"
+        assert validate_state(st) == []
+
+    def test_march_intimidate_still_runs_after(self):
+        # A non-Battle command keeps after-sequencing.
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+        from fs_bot.board.pieces import find_leader
+        lr = find_leader(st, GERMANS)
+        decision = {"action": "command", "bot_action": {
+            "command": "March", "regions": [], "sa": "Intimidate",
+            "sa_regions": [], "details": {"march_plan": {
+                "origins": [lr], "destinations": []}, "intimidate_plan": []}}}
+        res = execute_decision(st, GERMANS, decision)
+        # March defers (no destinations) but the SA path still tags 'after'
+        # when an SA result is produced; either way must not be 'before'.
+        assert res.get("sa_timing") in (None, "after")
+        assert validate_state(st) == []

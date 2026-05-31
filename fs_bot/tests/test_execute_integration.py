@@ -372,23 +372,33 @@ class TestMarchExecution:
         assert count_pieces(st, dest, ARVERNI, WARBAND) == dest_before + origin_before
         assert validate_state(st) == []
 
-    def test_non_adjacent_destination_is_deferred_not_guessed(self):
-        # Pick a destination NOT adjacent to the origin; the executor must
-        # defer that origin (no multi-step routing guess) and stay clean.
-        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
-        adj = set(get_adjacent(ARVERNI_REGION))
+    def test_non_adjacent_destination_is_routed_multistep(self):
+        # A planned destination two steps away is now routed via BFS (the
+        # destination is the bot's choice; only the path is derived).
         from fs_bot.map.map_data import get_playable_regions
-        far = [r for r in get_playable_regions(st["scenario"], st.get("capabilities"))
-               if r != ARVERNI_REGION and r not in adj]
-        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 3, piece_state=REVEALED)
+        from fs_bot.engine.execute import _bfs_march_path
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+        playable = set(get_playable_regions(st["scenario"], st.get("capabilities")))
+        adj = set(get_adjacent(ARVERNI_REGION))
+        far = None
+        for r in playable:
+            if r != ARVERNI_REGION and r not in adj:
+                path = _bfs_march_path(ARVERNI_REGION, r, playable)
+                if path and len(path) == 2:
+                    far = r
+                    break
+        assert far is not None
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 4, piece_state=REVEALED)
         refresh_all_control(st)
         decision = {"action": "command", "bot_action": {
-            "command": "March", "regions": [far[0]], "sa": "No SA",
+            "command": "March", "regions": [far], "sa": "No SA",
             "sa_regions": [], "details": {"march_plan": {
-                "origins": [ARVERNI_REGION], "destinations": [far[0]]}}}}
+                "origins": [ARVERNI_REGION], "destinations": [far]}}}}
         res = execute_decision(st, ARVERNI, decision)
-        assert ARVERNI_REGION in res["deferred_origins"]
-        assert res["executed"] is False
+        assert res["executed"] is True
+        assert res["marches"][0]["final_region"] == far
+        assert count_pieces(st, ARVERNI_REGION, ARVERNI, WARBAND) == 0
+        assert count_pieces(st, far, ARVERNI, WARBAND) > 0
         assert validate_state(st) == []
 
 

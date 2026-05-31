@@ -37,7 +37,7 @@ from fs_bot.commands.sa_besiege import get_besiege_targets
 from fs_bot.commands.rally import recruit_in_region
 from fs_bot.commands.march import march_group, _flip_origin_pieces
 from fs_bot.board.pieces import count_pieces, get_leader_in_region
-from fs_bot.map.map_data import is_adjacent
+from fs_bot.map.map_data import is_adjacent, get_playable_regions
 from fs_bot.bots.bot_common import random_select
 from fs_bot.commands.sa_trade import trade as _sa_trade
 from fs_bot.commands.sa_settle import settle as _sa_settle
@@ -510,27 +510,33 @@ def _execute_march(state, faction, bot_action):
     origin_set = set(origins)
     dest_pool = [d for d in destinations if d not in origin_set]
 
+    scenario = state["scenario"]
+    playable = set(get_playable_regions(scenario, state.get("capabilities")))
+
     marched = []
     errors = []
     deferred_origins = []
     for origin in origins:
-        group = _mobile_march_group(state, faction, origin)
-        if not _group_has_pieces(group):
+        if not _group_has_pieces(_mobile_march_group(state, faction, origin)):
             continue
-        adj_dests = [d for d in dest_pool if is_adjacent(origin, d)]
-        if not adj_dests:
-            # Only single-step adjacent destinations are unambiguous here.
+        # Choose the nearest reachable planned destination; BFS the path.
+        best = None  # (path_len, dest, path)
+        for d in dest_pool:
+            path = _bfs_march_path(origin, d, playable)
+            if path is None:
+                continue
+            if best is None or len(path) < best[0]:
+                best = (len(path), d, path)
+            elif len(path) == best[0]:
+                # §8.3.4 random tie-break among equidistant destinations.
+                if random_select(state, [best[1], d]) == d:
+                    best = (len(path), d, path)
+        if best is None:
             deferred_origins.append(origin)
             continue
-        dest = (random_select(state, adj_dests)
-                if len(adj_dests) > 1 else adj_dests[0])
         try:
-            # §3.2.2: marching pieces flip to Hidden (Underground) as they
-            # March. march_group moves them in Hidden state, so flip first.
-            _flip_origin_pieces(state, origin, faction)
-            res = march_group(state, faction, origin, [dest], group)
-            marched.append({"origin": origin,
-                            "final_region": res.get("final_region")})
+            final = _march_with_harassment(state, faction, origin, best[2])
+            marched.append({"origin": origin, "final_region": final})
         except _EXEC_ERRORS as exc:
             errors.append({"origin": origin, "error": str(exc)})
 
@@ -542,6 +548,60 @@ def _execute_march(state, faction, bot_action):
         "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }
+
+
+def _bfs_march_path(origin, dest, playable):
+    """Shortest adjacency path origin -> dest over playable Regions.
+
+    Returns the list of Regions to move into (excluding origin), or None if
+    unreachable. Used to route a March to a planned but non-adjacent
+    destination (the destination is the bot's choice; only the path is
+    derived).
+    """
+    from collections import deque
+    from fs_bot.map.map_data import get_adjacent
+    if origin == dest:
+        return []
+    seen = {origin}
+    q = deque([(origin, [])])
+    while q:
+        cur, path = q.popleft()
+        for nb in sorted(get_adjacent(cur)):
+            if nb in seen or nb not in playable:
+                continue
+            npath = path + [nb]
+            if nb == dest:
+                return npath
+            seen.add(nb)
+            q.append((nb, npath))
+    return None
+
+
+def _march_with_harassment(state, faction, origin, path):
+    """March a faction's full mobile group origin -> ... -> path[-1], one step
+    at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
+    enters and then leaves. Returns the final Region reached.
+    """
+    # §3.2.2: marching pieces flip to Hidden as they March.
+    _flip_origin_pieces(state, origin, faction)
+    current = origin
+    for i, nxt in enumerate(path):
+        group = _mobile_march_group(state, faction, current)
+        if not _group_has_pieces(group):
+            break
+        res = march_group(state, faction, current, [nxt], group)
+        current = res.get("final_region", nxt)
+        if current != nxt:
+            break  # a crossing stop halted the group early
+        # Intermediate Region (entered then about to be left) -> Harassment.
+        if i < len(path) - 1:
+            group_now = _mobile_march_group(state, faction, current)
+            harassers = _np_harassers(state, current, faction, group_now)
+            if harassers:
+                from fs_bot.commands.march import resolve_harassment
+                resolve_harassment(state, current, faction, group_now,
+                                   harassing_factions=harassers)
+    return current
 
 
 def _execute_sa(state, faction, bot_action):

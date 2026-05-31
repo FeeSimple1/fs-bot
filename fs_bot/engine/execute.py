@@ -50,6 +50,8 @@ from fs_bot.commands.sa_build import build_place_ally as _sa_build_ally
 from fs_bot.commands.sa_rampage import rampage as _sa_rampage
 from fs_bot.board.pieces import count_pieces_by_state as _count_state
 from fs_bot.bots.bot_common import np_agrees_to_retreat
+from fs_bot.commands.seize import execute_harassment_loss as _seize_harass_loss
+from fs_bot.rules_consts import HARASSMENT_WARBANDS_PER_LOSS as _HWB_PER_LOSS
 from fs_bot.cards.card_effects import execute_event
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -199,6 +201,11 @@ def _execute_seize(state, faction, bot_action):
             continue
         dispersed_total += len(res.get("tribes_dispersed", []))
         forage_total += res.get("forage_resources", 0)
+        # Harassment against the seizing Romans — §3.2.3 / §8.4.2.
+        harass = _resolve_seize_harassment(state, region)
+        if harass:
+            res = dict(res)
+            res["harassment"] = harass
         per_region.append(res)
 
     return {
@@ -921,3 +928,77 @@ def _execute_rampage(state, faction, bot_action):
                            "error": str(exc)})
     return {"executed": len(done) > 0, "sa": _SA_RAMPAGE,
             "rampages": done, "errors": errors}
+
+
+def _np_harassers(state, region, target_faction, group):
+    """Factions that opt to Harass per §8.4.2 (+ §3.4.5 / A3.2.2).
+
+    §8.4.2: Belgae and Arverni Harass only Roman March and Seize; Aedui and
+    Romans Harass only Vercingetorix March. §3.4.5: Germans always Harass
+    (base). A3.2.2: Arverni always Harass (Ariovistus). A Faction can only
+    Harass where it has at least 3 Hidden Warbands (§3.2.2).
+
+    Args:
+        target_faction: The faction being Harassed (the marcher/seizer).
+        group: For a March, the moving group dict (to detect Vercingetorix);
+            None for Seize.
+
+    Returns:
+        List of (faction, hidden_warbands), in FACTIONS order.
+    """
+    from fs_bot.rules_consts import (
+        FACTIONS, ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS, VERCINGETORIX,
+        LEADER, WARBAND, HIDDEN, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    )
+    scenario = state["scenario"]
+    has_verc = bool(group) and group.get(LEADER) == VERCINGETORIX
+
+    harassers = []
+    for f in FACTIONS:
+        if f == target_faction:
+            continue
+        hwb = _count_state(state, region, f, WARBAND, HIDDEN)
+        if hwb < _HWB_PER_LOSS:
+            continue
+        opt = False
+        if f == GERMANS and scenario in BASE_SCENARIOS:
+            opt = True  # §3.4.5
+        elif f == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
+            opt = True  # A3.2.2
+        elif f in (BELGAE, ARVERNI) and target_faction == ROMANS:
+            opt = True  # §8.4.2: harass Roman March/Seize
+        elif f in (AEDUI, ROMANS) and has_verc:
+            opt = True  # §8.4.2: harass Vercingetorix March
+        if opt:
+            harassers.append((f, hwb))
+    return harassers
+
+
+def _resolve_seize_harassment(state, region):
+    """Harassment against the seizing Romans in a Region (§3.2.3 / §8.4.2).
+
+    Each opting Faction inflicts one Loss per 3 of its Hidden Warbands. The
+    Romans take each Loss on their least valuable piece first — Auxilia, then
+    Roman Ally — or, with only hard targets (Legion/Leader/Fort), roll a die.
+    """
+    from fs_bot.rules_consts import ROMANS, AUXILIA, ALLY, LEGION, LEADER, FORT
+    losses_applied = []
+    for faction, hwb in _np_harassers(state, region, ROMANS, None):
+        for _ in range(hwb // _HWB_PER_LOSS):
+            if count_pieces(state, region, ROMANS, AUXILIA) > 0:
+                choice = "auxilia"
+            elif count_pieces(state, region, ROMANS, ALLY) > 0:
+                choice = "ally"
+            elif (count_pieces(state, region, ROMANS, LEGION) > 0
+                  or get_leader_in_region(state, region, ROMANS) is not None
+                  or count_pieces(state, region, ROMANS, FORT) > 0):
+                choice = "roll"
+            else:
+                break  # nothing left for this harasser to remove
+            try:
+                res = _seize_harass_loss(state, region, choice)
+                losses_applied.append({"by": faction, "choice": choice,
+                                       "removed": res.get("removed")})
+            except _EXEC_ERRORS:
+                break
+    return losses_applied

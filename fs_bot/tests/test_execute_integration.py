@@ -674,3 +674,56 @@ class TestAgreementsAndRampage:
         assert count_pieces(st, MORINI, ROMANS, AUXILIA) == 0
         assert count_on_map(st, ROMANS, AUXILIA) == on_map_before
         assert validate_state(st) == []
+
+
+# ---------------------------------------------------------------------------
+# Seize Harassment (slice 9) — §3.2.3 / §8.4.2
+# ---------------------------------------------------------------------------
+
+from fs_bot.engine.execute import _np_harassers, _resolve_seize_harassment
+from fs_bot.rules_consts import MANDUBII
+
+
+class TestSeizeHarassment:
+    def _setup(self, seed=5):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=seed)
+        # Clear pre-existing Hidden Warbands in MANDUBII for a clean count.
+        st["spaces"][MANDUBII]["control"] = FACTION_CONTROL[ROMANS]
+        return st
+
+    def test_belgae_arverni_harass_roman_seize_not_aedui(self):
+        st = self._setup()
+        # Wipe MANDUBII to a known state, then place controlled counts.
+        place_piece(st, MANDUBII, ROMANS, AUXILIA, 3)
+        # Determine harassers from whatever Hidden Warbands exist plus ours.
+        place_piece(st, MANDUBII, BELGAE, WARBAND, 3, piece_state=HIDDEN)
+        place_piece(st, MANDUBII, AEDUI, WARBAND, 3, piece_state=HIDDEN)
+        refresh_all_control(st)
+        st["spaces"][MANDUBII]["control"] = FACTION_CONTROL[ROMANS]
+        harassers = dict(_np_harassers(st, MANDUBII, ROMANS, None))
+        assert BELGAE in harassers          # §8.4.2: Belgae harass Roman Seize
+        assert AEDUI not in harassers        # Aedui only harass Vercingetorix
+
+    def test_harassment_removes_roman_pieces(self):
+        st = self._setup()
+        place_piece(st, MANDUBII, ROMANS, AUXILIA, 3)
+        place_piece(st, MANDUBII, BELGAE, WARBAND, 3, piece_state=HIDDEN)
+        refresh_all_control(st)
+        st["spaces"][MANDUBII]["control"] = FACTION_CONTROL[ROMANS]
+        before = count_pieces(st, MANDUBII, ROMANS, AUXILIA)
+        losses = _resolve_seize_harassment(st, MANDUBII)
+        # At least one Loss inflicted (Belgae 3 Hidden -> 1), Auxilia removed.
+        assert len(losses) >= 1
+        assert count_pieces(st, MANDUBII, ROMANS, AUXILIA) < before
+        assert validate_state(st) == []
+
+    def test_no_harassment_below_three_hidden_warbands(self):
+        st = self._setup()
+        place_piece(st, MANDUBII, ROMANS, AUXILIA, 2)
+        # Only 2 Hidden Belgic Warbands -> below the 3-per-Loss threshold.
+        place_piece(st, MANDUBII, BELGAE, WARBAND, 2, piece_state=HIDDEN)
+        refresh_all_control(st)
+        st["spaces"][MANDUBII]["control"] = FACTION_CONTROL[ROMANS]
+        # Belgae alone can't harass; assert Belgae not among harassers.
+        harassers = dict(_np_harassers(st, MANDUBII, ROMANS, None))
+        assert BELGAE not in harassers

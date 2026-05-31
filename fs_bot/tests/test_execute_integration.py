@@ -1011,3 +1011,48 @@ class TestRomanMarchExecutes:
         assert res["executed"] is True
         assert find_leader(st, ROMANS) == dest  # Caesar actually marched
         assert validate_state(st) == []
+
+
+# ---------------------------------------------------------------------------
+# Expand/mass March — leader movement with control-preserving leave-behind
+# (slice 17) — §8.6.5 / §8.7.4-5 / A8.7.5
+# ---------------------------------------------------------------------------
+
+class TestExpandMarchLeader:
+    def test_leader_marches_toward_destination_keeping_control(self):
+        from fs_bot.board.pieces import find_leader
+        from fs_bot.board.control import is_controlled_by
+        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT as _SC, ARVERNI as _AR,
+            WARBAND as _WB, ALLY as _AL)
+        st = setup_scenario(_SC, seed=3)
+        lr = find_leader(st, _AR)  # Vercingetorix's region (Arverni home)
+        assert lr is not None
+        # Give the Arverni a strong stack so some Warbands can leave while
+        # control is retained.
+        place_piece(st, lr, _AR, _WB, 6)
+        refresh_all_control(st)
+        assert is_controlled_by(st, lr, _AR)
+        dest = get_adjacent(lr)[0]
+        from fs_bot.engine.execute import _execute_expand_march
+        res = _execute_expand_march(st, _AR,
+            {"type": "March (spread)", "origins": [lr],
+             "leader_destination": dest, "spread_destinations": [dest],
+             "control_destination": None})
+        assert res["executed"] is True
+        assert find_leader(st, _AR) == dest          # leader actually moved
+        assert is_controlled_by(st, lr, _AR)          # origin still controlled
+        assert validate_state(st) == []
+
+    def test_expand_march_defers_when_no_leader_on_map(self):
+        from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT as _SC, BELGAE as _BE
+        from fs_bot.board.pieces import find_leader, remove_piece
+        from fs_bot.rules_consts import LEADER as _LD
+        st = setup_scenario(_SC, seed=3)
+        lr = find_leader(st, _BE)
+        if lr is not None:
+            remove_piece(st, lr, _BE, _LD)
+        from fs_bot.engine.execute import _execute_expand_march
+        res = _execute_expand_march(st, _BE,
+            {"type": "March (control)", "origins": [], "leader_destination": None,
+             "control_destinations": []})
+        assert res["executed"] is False

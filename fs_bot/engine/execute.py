@@ -517,9 +517,9 @@ def _execute_march(state, faction, bot_action):
 
     if not (isinstance(origins, list) and isinstance(destinations, list)
             and origins and destinations):
-        return {"executed": False, "command": _CMD_MARCH,
-                "reason": "march plan shape not execution-complete "
-                          "(expand/mass routing deferred to bot enrichment)"}
+        # Not the flat threat shape — try the expand/mass/spread/control shape,
+        # which carries leader/spread/control destinations instead.
+        return _execute_expand_march(state, faction, plan)
 
     # Normalize destinations to Region-name strings. The Roman bot emits
     # (region, target_faction) tuples; the others emit plain strings.
@@ -1289,3 +1289,106 @@ def _derive_senate_direction(state, faction, shaded):
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
 }
+
+
+def _execute_expand_march(state, faction, plan):
+    """Execute an "expand/mass/spread/control" March (§8.6.5/§8.7.4-5/A8.7.5).
+
+    SCOPE (safe slice): move the Faction LEADER's group toward its leader
+    destination, leaving behind enough Warbands to retain Control of the
+    origin (the flowcharts' "leave one Warband and enough not to remove
+    Control"). The pure Warband control-spreading marches (no Leader) remain
+    deferred — their per-region leave-behind across multiple origins is the
+    larger workstream. Returns the standard March result dict.
+    """
+    from fs_bot.rules_consts import LEADER, WARBAND
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.board.pieces import find_leader
+
+    if not isinstance(plan, dict):
+        return {"executed": False, "command": _CMD_MARCH,
+                "reason": "no expand/mass march plan"}
+
+    # Prefer a Leader-specific destination (the flowcharts move the Leader to
+    # a designated Region); only fall back to control/spread destinations when
+    # no Leader destination is given (plans where the Leader rides with the
+    # control group).
+    leader_dests = [plan.get(k) for k in
+                    ("leader_destination", "leader_or_group_destination",
+                     "diviciacus_destination")
+                    if isinstance(plan.get(k), str)]
+    other_dests = []
+    cd = plan.get("control_destination")
+    if isinstance(cd, str):
+        other_dests.append(cd)
+    for key in ("control_destinations", "spread_destinations", "destinations"):
+        for v in (plan.get(key) or []):
+            if isinstance(v, str):
+                other_dests.append(v)
+            elif isinstance(v, (list, tuple)) and v and isinstance(v[0], str):
+                other_dests.append(v[0])
+    dests = leader_dests if leader_dests else other_dests
+
+    leader_region = find_leader(state, faction)
+    if leader_region is None or not dests:
+        return {"executed": False, "command": _CMD_MARCH,
+                "reason": "expand/mass march: no leader on map or no "
+                          "destination (warband-only spread deferred)"}
+
+    scenario = state["scenario"]
+    playable = set(get_playable_regions(scenario, state.get("capabilities")))
+
+    # How many Warbands may leave while the origin keeps Control. The Leader
+    # itself leaves, so it no longer counts toward the origin's strength.
+    total_wb = count_pieces(state, leader_region, faction, WARBAND)
+    from fs_bot.rules_consts import FACTIONS
+    others = sum(count_pieces(state, leader_region, of)
+                 for of in FACTIONS if of != faction)
+    # Own non-Warband, non-Leader strength that stays (Allies, Citadels).
+    own_static = (count_pieces(state, leader_region, faction)
+                  - total_wb - 1)  # minus Warbands and the (leaving) Leader
+    keep = max(1, others - own_static + 1) if is_controlled_by(
+        state, leader_region, faction) else 1
+    march_wb = max(0, total_wb - keep)
+
+    # Choose nearest reachable destination (excluding the origin).
+    best = None
+    for d in dests:
+        if d == leader_region:
+            continue
+        path = _bfs_march_path(leader_region, d, playable)
+        if path is None:
+            continue
+        if best is None or len(path) < best[0]:
+            best = (len(path), d, path)
+    if best is None:
+        return {"executed": False, "command": _CMD_MARCH,
+                "reason": "expand/mass march: leader destination unreachable"}
+
+    group = {LEADER: get_leader_in_region(state, leader_region, faction),
+             WARBAND: march_wb}
+    from fs_bot.rules_consts import LEGION, AUXILIA
+    group[LEGION] = 0
+    group[AUXILIA] = 0
+    try:
+        _flip_origin_pieces(state, leader_region, faction)
+        # Re-read leader name post-flip (unchanged) and march the group.
+        final = _march_group_fixed(state, faction, leader_region, best[2], group)
+    except _EXEC_ERRORS as exc:
+        return {"executed": False, "command": _CMD_MARCH,
+                "reason": f"expand/mass leader march failed: {exc}"}
+    return {"executed": True, "command": _CMD_MARCH,
+            "marches": [{"origin": leader_region, "final_region": final,
+                         "leader": True, "warbands": march_wb}],
+            "deferred_origins": [], "errors": []}
+
+
+def _march_group_fixed(state, faction, origin, path, group):
+    """March a specific group along a path (step by step), returning the final
+    Region. Unlike _march_with_harassment this marches a CAPPED group (used for
+    the Leader's expand/mass move with a Control-preserving Warband count)."""
+    current = origin
+    for nxt in path:
+        march_group(state, faction, current, [nxt], group, free=False)
+        current = nxt
+    return current

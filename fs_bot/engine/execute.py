@@ -157,19 +157,29 @@ def _execute_event(state, faction, bot_action):
     card_id = details.get("card_id", state.get("current_card"))
     shaded = details.get("text_preference") == EVENT_SHADED
 
+    # Populate any derivable event_params per the NP rules (§8.2.3/§8.3.1)
+    # before resolving; restore afterwards. Cards whose choices aren't
+    # derivable here still raise ValueError and are reported, not crashed.
+    prev_params = state.get("event_params")
+    derived = _derive_event_params(state, faction, card_id, shaded)
+    if derived:
+        state["event_params"] = {**(prev_params or {}), **derived}
     try:
         event_result = execute_event(state, card_id, shaded=shaded)
     except (NotImplementedError, KeyError) as exc:
+        state["event_params"] = prev_params
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"event not executable: {exc!r}"}
     except ValueError as exc:
-        # Cards that need explicit choices read state["event_params"], which
-        # the decision layer does not yet populate (a separate sub-workstream).
-        # Report rather than crash so a full game keeps running.
+        # Cards that need explicit choices read state["event_params"]. Where
+        # the choice isn't derivable here (most cards), report rather than
+        # crash so a full game keeps running.
+        state["event_params"] = prev_params
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"event needs parameters: {exc!r}"}
+    state["event_params"] = prev_params
     return {"executed": True, "command": _CMD_EVENT,
             "card_id": card_id, "shaded": shaded,
             "event_result": event_result}
@@ -1212,3 +1222,39 @@ def _execute_enlist(state, faction, bot_action):
                 "error": str(exc)}
     return {"executed": True, "sa": _SA_ENLIST, "type": t,
             "region": ed.get("region") or ed.get("origin")}
+
+
+def _derive_event_params(state, faction, card_id, shaded):
+    """Derive event_params for the acting NP faction where the choice is
+    unambiguous under the NP rules (§8.2.3: choose benefits for self;
+    §8.3.1: place/remove where most Legions, then Citadels, Allies).
+
+    Returns a params dict (merged over any existing event_params), or None.
+
+    SCOPE: This is the parameter-plumbing hook plus the clearly-derivable
+    cases. Most parameterized cards encode a card-specific choice (which
+    Region, which pieces, which Faction) whose faithful NP derivation is a
+    per-card workstream; those remain reported as 'needs parameters' rather
+    than guessed.
+    """
+    fn = _EVENT_PARAM_DERIVERS.get(card_id)
+    if fn is None:
+        return None
+    return fn(state, faction, shaded)
+
+
+def _derive_senate_direction(state, faction, shaded):
+    """Cicero / Senate-shift cards: each Faction shifts the Senate toward its
+    own benefit (§8.2.3). Romans favour Adulation (more Legions) -> DOWN;
+    Gallic/Germanic Factions favour Uproar (fewer Roman Legions) -> UP.
+    """
+    from fs_bot.rules_consts import ROMANS, SENATE_UP, SENATE_DOWN
+    return {"senate_direction": SENATE_DOWN if faction == ROMANS
+            else SENATE_UP}
+
+
+# Registry of per-card event_param derivers (extend as cards gain faithful
+# NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
+_EVENT_PARAM_DERIVERS = {
+    1: _derive_senate_direction,
+}

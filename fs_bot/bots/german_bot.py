@@ -43,6 +43,7 @@ from fs_bot.rules_consts import (
     EVENT_SHADED,
     # Markers
     MARKER_INTIMIDATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
+    MARKER_DEVASTATED,
     # Die
     DIE_MIN, DIE_MAX,
     # Map
@@ -1078,12 +1079,17 @@ def node_g_raid(state):
 
 
 def _is_devastated(state, region):
-    """Check if a region is Devastated (per state markers)."""
-    if state.get("markers", {}).get(region, {}).get("devastated", False):
+    """Check if a region is Devastated (per state markers or space flag).
+
+    Robust to both marker representations used in the codebase: a dict
+    ({MARKER_DEVASTATED: True}) and a set ({MARKER_DEVASTATED}). Uses the
+    correct MARKER_DEVASTATED constant (a prior version checked the wrong
+    lowercase key and crashed on set-form markers).
+    """
+    m = state.get("markers", {}).get(region) or {}
+    if MARKER_DEVASTATED in m:  # key membership (dict) or membership (set)
         return True
-    if state["spaces"].get(region, {}).get("devastated", False):
-        return True
-    return False
+    return bool(state["spaces"].get(region, {}).get("devastated", False))
 
 
 def _would_raid_gain_enough(state, scenario):

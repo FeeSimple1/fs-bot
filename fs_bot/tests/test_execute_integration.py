@@ -1131,3 +1131,57 @@ class TestBeforeBattleSASequencing:
         # when an SA result is produced; either way must not be 'before'.
         assert res.get("sa_timing") in (None, "after")
         assert validate_state(st) == []
+
+
+# ---------------------------------------------------------------------------
+# Event play + markers data-model robustness (slice 20)
+# ---------------------------------------------------------------------------
+
+class TestEventPlayAndMarkers:
+    def test_bots_actually_play_events_in_real_games(self):
+        # Regression: can_play_event was never set, so bots could NEVER play an
+        # Event. The dispatcher now relays it; events must occur in real games.
+        import fs_bot.engine.execute as _ex
+        from fs_bot.rules_consts import ALL_SCENARIOS as _ALL
+        ev = {"n": 0}
+        orig = _ex._execute_event
+        def _tally(s, f, ba, _o=orig, _e=ev):
+            r = _o(s, f, ba)
+            if r.get("executed"):
+                _e["n"] += 1
+            return r
+        _ex._execute_event = _tally
+        try:
+            for sc in _ALL:
+                for seed in range(0, 6):
+                    st = setup_scenario(sc, seed=seed)
+                    st["non_player_factions"] = set(get_sop_factions(st))
+                    dfn = make_decision_func(
+                        {f: "bot" for f in get_sop_factions(st)}, pause=False)
+                    with _ctx.redirect_stdout(_io.StringIO()):
+                        run_game(st, decision_func=dfn, execute=True)
+                    assert validate_state(st) == []
+        finally:
+            _ex._execute_event = orig
+        assert ev["n"] > 0
+
+    def test_add_region_marker_handles_set_dict_missing(self):
+        from fs_bot.cards.card_effects import _add_region_marker
+        from fs_bot.rules_consts import MARKER_DEVASTATED, MARKER_RAZED
+        st = {"markers": {"A": {MARKER_RAZED}, "B": {MARKER_RAZED: True}}}
+        _add_region_marker(st, "A", MARKER_DEVASTATED)   # existing set
+        _add_region_marker(st, "B", MARKER_DEVASTATED)   # existing dict
+        _add_region_marker(st, "C", MARKER_DEVASTATED)   # missing
+        assert MARKER_DEVASTATED in st["markers"]["A"]
+        assert MARKER_DEVASTATED in st["markers"]["B"]
+        assert MARKER_DEVASTATED in st["markers"]["C"]
+
+    def test_is_devastated_robust_to_set_and_dict(self):
+        from fs_bot.bots.german_bot import _is_devastated
+        from fs_bot.rules_consts import MARKER_DEVASTATED, SCENARIO_ARIOVISTUS
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=1)
+        st.setdefault("markers", {})["Sugambri"] = {MARKER_DEVASTATED: True}  # dict
+        st["markers"]["Ubii"] = {MARKER_DEVASTATED}                            # set
+        assert _is_devastated(st, "Sugambri") is True
+        assert _is_devastated(st, "Ubii") is True
+        assert _is_devastated(st, "Treveri") is False

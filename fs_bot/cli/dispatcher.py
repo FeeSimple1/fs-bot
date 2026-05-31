@@ -146,6 +146,10 @@ def make_decision_func(faction_modes, stdin=None, stdout=None, *, pause=True):
             state["current_card_id"] = state.get("current_card")
             # Mark which slot we're in (bots use this if available)
             state["is_second_eligible"] = (position == "2nd_eligible")
+            # Tell the bot whether playing the Event is legal this turn (the
+            # bots' event nodes gate on state["can_play_event"]). Without this
+            # the flag is never set and bots can NEVER play an Event.
+            state["can_play_event"] = (ACTION_EVENT in options)
 
             bot_action = dispatch_bot_turn(state, faction)
             stdout.write(format_action(bot_action, faction=faction) + "\n")

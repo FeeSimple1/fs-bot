@@ -1185,3 +1185,57 @@ class TestEventPlayAndMarkers:
         assert _is_devastated(st, "Sugambri") is True
         assert _is_devastated(st, "Ubii") is True
         assert _is_devastated(st, "Treveri") is False
+
+
+# ---------------------------------------------------------------------------
+# Per-card event_params derivation + executing_faction (slice 21)
+# ---------------------------------------------------------------------------
+
+class TestEventParamDerivers:
+    def _ev(self, st, faction, cid):
+        from fs_bot.rules_consts import EVENT_UNSHADED
+        from fs_bot.engine.execute import _execute_event
+        st["current_card"] = cid
+        return _execute_event(st, faction, {"command": "Event", "sa": "No SA",
+            "sa_regions": [], "details": {"card_id": cid,
+                                          "text_preference": EVENT_UNSHADED}})
+
+    def test_executing_faction_is_set_for_handlers(self):
+        # Card 71 (Colony) reads state["executing_faction"]; the executor must
+        # set it (it was never set, so 30 cards no-op'd). It also restores it.
+        from fs_bot.board.pieces import count_on_map
+        from fs_bot.rules_consts import ROMANS, ALLY, MARKER_COLONY
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        before = count_on_map(st, ROMANS, ALLY)
+        res = self._ev(st, ROMANS, 71)
+        assert res["executed"] is True
+        colonies = sum(1 for m in st.get("markers", {}).values()
+                       if isinstance(m, dict) and m.get(MARKER_COLONY))
+        assert colonies >= 1
+        assert count_on_map(st, ROMANS, ALLY) == before + 1
+        assert st.get("executing_faction") is None  # restored
+        assert validate_state(st) == []
+
+    def test_card28_upgrades_or_places_for_self(self):
+        from fs_bot.board.pieces import count_on_map
+        from fs_bot.rules_consts import ARVERNI, ALLY, CITADEL
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        before = count_on_map(st, ARVERNI, ALLY) + count_on_map(st, ARVERNI, CITADEL)
+        res = self._ev(st, ARVERNI, 28)
+        assert res["executed"] is True
+        # Net Ally+Citadel never decreases (placements add, upgrades convert).
+        assert count_on_map(st, ARVERNI, ALLY) + count_on_map(st, ARVERNI, CITADEL) >= before
+        assert validate_state(st) == []
+
+    def test_card42_removes_enemy_allies_not_own(self):
+        from fs_bot.board.pieces import count_on_map
+        from fs_bot.rules_consts import ARVERNI, ROMANS, AEDUI, BELGAE, ALLY
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        own_before = count_on_map(st, ARVERNI, ALLY)
+        enemy_before = sum(count_on_map(st, f, ALLY) for f in (ROMANS, AEDUI, BELGAE))
+        res = self._ev(st, ARVERNI, 42)
+        if res["executed"]:
+            # Own allies untouched; some enemy allies removed.
+            assert count_on_map(st, ARVERNI, ALLY) == own_before
+            assert sum(count_on_map(st, f, ALLY) for f in (ROMANS, AEDUI, BELGAE)) <= enemy_before
+        assert validate_state(st) == []

@@ -183,16 +183,23 @@ def _execute_event(state, faction, bot_action):
     # Always expose a dict (never None) so card handlers that read
     # state.get("event_params").get(...) don't crash on missing params.
     state["event_params"] = {**(prev_params or {}), **(derived or {})}
+    # Many card handlers read state["executing_faction"] to know who is
+    # playing the Event; it was never set, so those cards no-op. Set it for
+    # the acting faction (restored afterwards).
+    prev_faction = state.get("executing_faction")
+    state["executing_faction"] = faction
     try:
         event_result = execute_event(state, card_id, shaded=shaded)
     except _EVENT_SAFE_ERRORS as exc:
         # Ineffective/non-applicable Event in this state (missing pieces, a
         # stub, or a choice not derivable here). Report, do not crash.
         state["event_params"] = prev_params
+        state["executing_faction"] = prev_faction
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"event not applicable: {exc!r}"}
     state["event_params"] = prev_params
+    state["executing_faction"] = prev_faction
     return {"executed": True, "command": _CMD_EVENT,
             "card_id": card_id, "shaded": shaded,
             "event_result": event_result}
@@ -1297,10 +1304,141 @@ def _derive_senate_direction(state, faction, shaded):
             else SENATE_UP}
 
 
+def _derive_card_28(state, faction, shaded):
+    """Card 28 (Oppida): place the acting Gallic Faction's Available Allies at
+    Subdued City Tribes not under Roman Control, and upgrade its City Allies to
+    Citadels (§8.2.3 — the NP benefits itself; §8.3.1 — at Cities). Only a
+    Gallic Faction benefits."""
+    from fs_bot.rules_consts import (GALLIC_FACTIONS, CITY_TO_TRIBE,
+                                     TRIBE_TO_REGION, ROMANS, ALLY, CITADEL)
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.board.pieces import get_available, count_pieces
+    if faction not in GALLIC_FACTIONS:
+        return None
+    placements, upgrades = [], []
+    avail_ally = get_available(state, faction, ALLY)
+    for city, tribe in CITY_TO_TRIBE.items():
+        region = TRIBE_TO_REGION.get(tribe)
+        ti = state.get("tribes", {}).get(tribe)
+        if not (region and ti):
+            continue
+        if (ti.get("allied_faction") is None
+                and not is_controlled_by(state, region, ROMANS)
+                and len(placements) < avail_ally):
+            placements.append({"tribe": tribe, "faction": faction})
+    avail_cit = get_available(state, faction, CITADEL)
+    for city, tribe in CITY_TO_TRIBE.items():
+        region = TRIBE_TO_REGION.get(tribe)
+        ti = state.get("tribes", {}).get(tribe)
+        if (region and ti and ti.get("allied_faction") == faction
+                and count_pieces(state, region, faction, ALLY) > 0
+                and len(upgrades) < avail_cit):
+            upgrades.append(city)
+    if not placements and not upgrades:
+        return None
+    return {"ally_placements": placements, "citadel_upgrades": upgrades}
+
+
+def _derive_card_71(state, faction, shaded):
+    """Card 71 (Colony): place the Colony + the acting Faction's Ally in a
+    Region it Controls (or No Control), with no Colony yet. §8.3.1 — choose a
+    Region the Faction Controls (keeps the +1 Control Value)."""
+    from fs_bot.rules_consts import MARKER_COLONY, ALLY, NO_CONTROL
+    from fs_bot.board.control import is_controlled_by, calculate_control
+    from fs_bot.board.pieces import get_available
+    if get_available(state, faction, ALLY) <= 0:
+        return None
+    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
+    controlled, nocontrol = [], []
+    for r in playable:
+        m = state.get("markers", {}).get(r) or {}
+        if MARKER_COLONY in m:
+            continue
+        if is_controlled_by(state, r, faction):
+            controlled.append(r)
+        elif calculate_control(state, r) == NO_CONTROL:
+            nocontrol.append(r)
+    cands = sorted(controlled) or sorted(nocontrol)
+    if not cands:
+        return None
+    region = cands[0]
+    return {"region": region, "colony_tribe_name": f"Colony_{region}"}
+
+
+def _derive_card_41(state, faction, shaded):
+    """Card 41 (Avaricum): if the Faction holds Avaricum, place up to 2 Allies
+    at Subdued Tribes within 1 of Bituriges and upgrade one City Ally to a
+    Citadel (§8.2.3/§8.3.1 — benefit self near Avaricum)."""
+    from fs_bot.rules_consts import (CITY_AVARICUM, CITY_TO_TRIBE,
+                                     TRIBE_TO_REGION, BITURIGES, ALLY, CITADEL)
+    from fs_bot.map.map_data import (get_adjacent, get_tribes_in_region,
+                                     is_city_tribe)
+    from fs_bot.board.pieces import get_available, count_pieces
+    av_tribe = CITY_TO_TRIBE.get(CITY_AVARICUM)
+    ti = state.get("tribes", {}).get(av_tribe)
+    if not ti or ti.get("allied_faction") != faction:
+        return None
+    scenario = state["scenario"]
+    target_regions = [BITURIGES] + list(get_adjacent(BITURIGES, scenario))
+    placements = []
+    avail = get_available(state, faction, ALLY)
+    for r in target_regions:
+        for tribe in get_tribes_in_region(r, scenario):
+            t_info = state.get("tribes", {}).get(tribe)
+            if (t_info and t_info.get("allied_faction") is None
+                    and len(placements) < min(2, avail)):
+                placements.append({"tribe": tribe})
+    citadel_tribe = None
+    if get_available(state, faction, CITADEL) > 0:
+        for r in target_regions:
+            for tribe in get_tribes_in_region(r, scenario):
+                t_info = state.get("tribes", {}).get(tribe)
+                if (t_info and t_info.get("allied_faction") == faction
+                        and is_city_tribe(tribe)
+                        and count_pieces(state, r, faction, ALLY) > 0):
+                    citadel_tribe = tribe
+                    break
+            if citadel_tribe:
+                break
+    if not placements and not citadel_tribe:
+        return None
+    out = {"ally_placements": [{"tribe": t["tribe"]} for t in placements]}
+    if citadel_tribe:
+        out["citadel_upgrade_tribe"] = citadel_tribe
+    return out
+
+
+def _derive_card_42(state, faction, shaded):
+    """Card 42 (Roman Wine), unshaded: remove up to 4 non-own Allied Tribes
+    (not Citadels) in Roman-Controlled Regions (§8.2.3 — remove enemies', not
+    own). The shaded Supply-Line variant is deferred (needs Supply-Line
+    evaluation)."""
+    from fs_bot.rules_consts import TRIBE_TO_REGION, ROMANS, ALLY
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.board.pieces import count_pieces
+    if shaded:
+        return None
+    removals = []
+    for tribe, ti in state.get("tribes", {}).items():
+        af = ti.get("allied_faction")
+        region = TRIBE_TO_REGION.get(tribe)
+        if (af and af != faction and region
+                and is_controlled_by(state, region, ROMANS)
+                and count_pieces(state, region, af, ALLY) > 0):
+            removals.append({"tribe": tribe})
+            if len(removals) >= 4:
+                break
+    return {"removals": removals} if removals else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
+    28: _derive_card_28,
+    41: _derive_card_41,
+    42: _derive_card_42,
+    71: _derive_card_71,
 }
 
 

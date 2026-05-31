@@ -988,8 +988,6 @@ def execute_card_23(state, shaded=False):
             return
         # Place Razed marker (replaces anything at that tribe — "replace
         # anything" means existing Ally/Citadel/Dispersed at the city)
-        state.setdefault("markers", {})
-        state["markers"].setdefault(region, set())
         _add_region_marker(state, region, MARKER_RAZED)
         # +8 Resources to Romans
         _cap_resources(state, ROMANS, 8)

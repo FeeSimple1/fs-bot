@@ -1239,3 +1239,28 @@ class TestEventParamDerivers:
             assert count_on_map(st, ARVERNI, ALLY) == own_before
             assert sum(count_on_map(st, f, ALLY) for f in (ROMANS, AEDUI, BELGAE)) <= enemy_before
         assert validate_state(st) == []
+
+
+class TestEventParamDerivers2:
+    def test_card23_razes_roman_city_for_resources(self):
+        from fs_bot.rules_consts import ROMANS, EVENT_UNSHADED, MARKER_RAZED
+        from fs_bot.engine.execute import _execute_event
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        st["current_card"] = 23
+        rb = st["resources"][ROMANS]
+        res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+            "sa_regions": [], "details": {"card_id": 23,
+                                          "text_preference": EVENT_UNSHADED}})
+        if res["executed"]:
+            assert st["resources"][ROMANS] >= rb  # +8 (capped at 45)
+            razed = sum(1 for m in st.get("markers", {}).values()
+                        if MARKER_RAZED in (m or {}))
+            assert razed >= 1
+        assert validate_state(st) == []
+
+    def test_card23_only_romans(self):
+        from fs_bot.engine.execute import _derive_card_23
+        from fs_bot.rules_consts import ARVERNI
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        assert _derive_card_23(st, ARVERNI, False) is None  # not Romans
+        assert _derive_card_23(st, "Romans", True) is None  # shaded deferred

@@ -1538,10 +1538,111 @@ def _derive_card_22(state, faction, shaded):
     return {"replacements": replacements} if replacements else None
 
 
+def _derive_card_A18(state, faction, shaded):
+    """Card A18 (Rhenus Bridge), unshaded: remove all Germans from a Germania
+    Region without Ariovistus. Choose the such Region with the most German
+    pieces. Any non-German Faction benefits. Shaded deferred."""
+    from fs_bot.rules_consts import (GERMANIA_REGIONS, GERMANS, ARIOVISTUS_LEADER,
+                                     WARBAND, ALLY, SETTLEMENT)
+    from fs_bot.board.pieces import count_pieces, get_leader_in_region
+    if shaded or faction == GERMANS:
+        return None
+    best = None
+    for region in GERMANIA_REGIONS:
+        if get_leader_in_region(state, region, GERMANS) == ARIOVISTUS_LEADER:
+            continue
+        g = (count_pieces(state, region, GERMANS, WARBAND)
+             + count_pieces(state, region, GERMANS, ALLY)
+             + count_pieces(state, region, GERMANS, SETTLEMENT))
+        if g > 0 and (best is None or g > best[1]):
+            best = (region, g)
+    return {"region": best[0]} if best else None
+
+
+def _derive_card_A45(state, faction, shaded):
+    """Card A45 (Savage Dictates), unshaded: place up to 3 of the acting
+    non-German Faction's Allies at Subdued Celtica Tribes. Shaded deferred."""
+    from fs_bot.rules_consts import GERMANS, CELTICA_REGIONS, ALLY
+    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.board.pieces import get_available
+    if shaded or faction == GERMANS:
+        return None
+    avail = get_available(state, faction, ALLY)
+    placements = []
+    for region in CELTICA_REGIONS:
+        for tribe in get_tribes_in_region(region, state["scenario"]):
+            ti = state.get("tribes", {}).get(tribe)
+            if (ti and ti.get("allied_faction") is None
+                    and len(placements) < min(3, avail)):
+                placements.append({"tribe": tribe, "faction": faction})
+    return {"placements": placements} if placements else None
+
+
+def _derive_card_A37(state, faction, shaded):
+    """Card A37 (All Gaul Gathers), shaded: remove up to 3 Aedui/Roman Allies
+    in Celtica (§8.2.3 — enemies' Allies). Unshaded (place + Leader move) is
+    deferred. Only a Faction other than Aedui/Romans benefits from shaded."""
+    from fs_bot.rules_consts import CELTICA_REGIONS, AEDUI, ROMANS, ALLY
+    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.board.pieces import count_pieces
+    if not shaded or faction in (AEDUI, ROMANS):
+        return None
+    removals = []
+    for region in CELTICA_REGIONS:
+        for tribe in get_tribes_in_region(region, state["scenario"]):
+            ti = state.get("tribes", {}).get(tribe)
+            af = ti.get("allied_faction") if ti else None
+            if (af in (AEDUI, ROMANS)
+                    and count_pieces(state, region, af, ALLY) > 0
+                    and len(removals) < 3):
+                removals.append({"tribe": tribe, "faction": af})
+    return {"removals": removals} if removals else None
+
+
+def _derive_card_A64(state, faction, shaded):
+    """Card A64 (Abatis): place the Faction's Abatis marker in a Region where
+    it has a Warband — prefer a Region also holding an enemy (frontier
+    defense). No existing Abatis there."""
+    from fs_bot.rules_consts import WARBAND, FACTIONS, MARKER_ABATIS
+    from fs_bot.board.pieces import count_pieces
+    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
+    frontier, plain = None, None
+    for region in playable:
+        if count_pieces(state, region, faction, WARBAND) <= 0:
+            continue
+        m = state.get("markers", {}).get(region) or {}
+        if MARKER_ABATIS in m:
+            continue
+        enemy = any(count_pieces(state, region, of) > 0
+                    for of in FACTIONS if of != faction)
+        if enemy and frontier is None:
+            frontier = region
+        elif plain is None:
+            plain = region
+    region = frontier or plain
+    return {"region": region} if region else None
+
+
+def _derive_card_A66(state, faction, shaded):
+    """Card A66 (Winter Uprising!): place the Uprising marker in a Region the
+    acting Faction has pieces in (where it will benefit from the later
+    placement+Command)."""
+    from fs_bot.board.pieces import count_pieces
+    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
+    cands = [r for r in playable if count_pieces(state, r, faction) > 0
+             and "Uprising" not in (state.get("markers", {}).get(r) or {})]
+    return {"region": sorted(cands)[0]} if cands else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
+    "A18": _derive_card_A18,
+    "A37": _derive_card_A37,
+    "A45": _derive_card_A45,
+    "A64": _derive_card_A64,
+    "A66": _derive_card_A66,
     22: _derive_card_22,
     28: _derive_card_28,
     41: _derive_card_41,

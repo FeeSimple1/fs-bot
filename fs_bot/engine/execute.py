@@ -89,6 +89,8 @@ _SA_ENLIST = "Enlist"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
 _BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
+# Standalone SAs that resolve BEFORE the Battle they accompany.
+_BEFORE_BATTLE_SAS = {_SA_INTIMIDATE, _SA_DEVASTATE, _SA_ENTREAT}
 
 # Commands recognized but not yet wired in this slice.
 _UNWIRED_COMMANDS = set()
@@ -128,14 +130,23 @@ def execute_decision(state, faction, decision):
     }
     handler = _COMMAND_HANDLERS.get(command)
     if handler is not None:
+        sa = bot_action.get("sa")
+        # Some SAs resolve BEFORE the Command they accompany: Intimidate,
+        # Devastate, and Entreat before a Battle remove/replace enemy pieces
+        # and so change that Battle's outcome (§8.7.1 / A8.7.1 / §4.x). Run
+        # those first; all other standalone SAs run after the Command. Battle-
+        # modifying SAs (Ambush/Besiege) are applied inside _execute_battle.
+        before = (command == _CMD_BATTLE and sa in _BEFORE_BATTLE_SAS)
+        sa_result = None
+        if before:
+            sa_result = _execute_sa(state, faction, bot_action)
         result = handler(state, faction, bot_action)
-        # Run the accompanying standalone Special Activity, if any. Battle-
-        # modifying SAs (Ambush/Besiege) are applied inside _execute_battle,
-        # so they are skipped here.
-        sa_result = _execute_sa(state, faction, bot_action)
+        if not before:
+            sa_result = _execute_sa(state, faction, bot_action)
         if sa_result is not None:
             result = dict(result)
             result["sa_execution"] = sa_result
+            result["sa_timing"] = "before" if before else "after"
         return result
     if command in _UNWIRED_COMMANDS:
         return {"executed": False, "command": command,

@@ -48,6 +48,10 @@ from fs_bot.commands.sa_build import build_fort as _sa_build_fort
 from fs_bot.commands.sa_build import build_subdue as _sa_build_subdue
 from fs_bot.commands.sa_build import build_place_ally as _sa_build_ally
 from fs_bot.commands.sa_rampage import rampage as _sa_rampage
+from fs_bot.commands.sa_entreat import entreat_replace_piece as _sa_entreat_piece
+from fs_bot.commands.sa_entreat import entreat_replace_ally as _sa_entreat_ally
+from fs_bot.commands.sa_scout import scout_move as _sa_scout_move
+from fs_bot.commands.sa_scout import scout_reveal as _sa_scout_reveal
 from fs_bot.board.pieces import count_pieces_by_state as _count_state
 from fs_bot.bots.bot_common import np_agrees_to_retreat
 from fs_bot.commands.seize import execute_harassment_loss as _seize_harass_loss
@@ -79,6 +83,8 @@ _SA_INTIMIDATE = "Intimidate"
 _SA_SUBORN = "Suborn"
 _SA_BUILD = "Build"
 _SA_RAMPAGE = "Rampage"
+_SA_ENTREAT = "Entreat"
+_SA_SCOUT = "Scout"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
 _BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
@@ -571,6 +577,10 @@ def _execute_sa(state, faction, bot_action):
         return _execute_build(state, faction, bot_action)
     if sa == _SA_RAMPAGE:
         return _execute_rampage(state, faction, bot_action)
+    if sa == _SA_ENTREAT:
+        return _execute_entreat(state, faction, bot_action)
+    if sa == _SA_SCOUT:
+        return _execute_scout(state, faction, bot_action)
 
     return {"executed": False, "sa": sa,
             "reason": "SA not yet wired (plan translation deferred)"}
@@ -1002,3 +1012,79 @@ def _resolve_seize_harassment(state, region):
             except _EXEC_ERRORS:
                 break
     return losses_applied
+
+
+def _execute_entreat(state, faction, bot_action):
+    """Arverni Entreat (§4.3.1). The bot's entreat action plan is carried in
+    sa_regions as dicts. Each is one of replace_ally / remove_ally (an Allied
+    Tribe) or replace_piece / remove_piece (a Warband/Auxilia). The mechanic
+    replaces with an Arverni counterpart, or removes the target when the
+    Arverni piece is unavailable.
+    """
+    plan = [e for e in (bot_action.get("sa_regions") or [])
+            if isinstance(e, dict)]
+    done, errors = [], []
+    for a in plan:
+        act = a.get("action")
+        region = a.get("region")
+        tgt = a.get("target_faction")
+        try:
+            if act in ("replace_ally", "remove_ally"):
+                _sa_entreat_ally(state, region, tgt, a.get("tribe"))
+            elif act in ("replace_piece", "remove_piece"):
+                _sa_entreat_piece(state, region, tgt, a.get("target_type"),
+                                  a.get("target_state"))
+            else:
+                continue
+            done.append({"region": region, "action": act})
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "action": act,
+                           "error": str(exc)})
+    return {"executed": len(done) > 0, "sa": _SA_ENTREAT,
+            "actions": done, "errors": errors}
+
+
+def _execute_scout(state, faction, bot_action):
+    """Roman Scout (§4.2.2). The bot's node_r_scout computes a complete plan
+    (auxilia_moves + scout_targets) but the SA is emitted without it; we
+    recompute it against the current board and execute: move Auxilia, then
+    Reveal — each flipped Hidden Auxilia Reveals up to 2 enemy Warbands.
+    """
+    from fs_bot.bots.roman_bot import node_r_scout
+    from fs_bot.rules_consts import ROMANS, AUXILIA, HIDDEN
+    try:
+        plan = node_r_scout(state)
+    except Exception as exc:
+        return {"executed": False, "sa": _SA_SCOUT,
+                "reason": f"scout plan unavailable: {exc!r}"}
+
+    done, errors = [], []
+    moves = plan.get("auxilia_moves", []) or []
+    if moves:
+        try:
+            _sa_scout_move(state, moves)
+            done.append({"moves": len(moves)})
+        except _EXEC_ERRORS as exc:
+            errors.append({"action": "move", "error": str(exc)})
+
+    for tgt in plan.get("scout_targets", []) or []:
+        region = tgt.get("region")
+        enemy = tgt.get("enemy")
+        want = tgt.get("hidden", 0)  # Hidden enemy Warbands to Reveal
+        if want <= 0:
+            continue
+        hidden_aux = _count_state(state, region, ROMANS, AUXILIA, HIDDEN)
+        if hidden_aux <= 0:
+            continue
+        # Each flipped Hidden Auxilia Reveals up to 2 Warbands (§4.2.2).
+        aux_count = min(hidden_aux, (want + 1) // 2)
+        reveal = min(want, 2 * aux_count)
+        targets = [{"faction": enemy, "count": reveal}]
+        try:
+            _sa_scout_reveal(state, region, aux_count, targets)
+            done.append({"region": region, "revealed": reveal})
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "error": str(exc)})
+
+    return {"executed": len(done) > 0, "sa": _SA_SCOUT,
+            "actions": done, "errors": errors}

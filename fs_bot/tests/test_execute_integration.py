@@ -479,7 +479,7 @@ class TestStandaloneSAs:
 
     def test_deferred_sa_is_reported_not_executed(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
-        res = _execute_sa(st, ROMANS, {"sa": "Scout", "sa_regions": [],
+        res = _execute_sa(st, BELGAE, {"sa": "Enlist", "sa_regions": [],
                                        "details": {}})
         assert res["executed"] is False
         assert "not yet wired" in res["reason"]
@@ -727,3 +727,46 @@ class TestSeizeHarassment:
         # Belgae alone can't harass; assert Belgae not among harassers.
         harassers = dict(_np_harassers(st, MANDUBII, ROMANS, None))
         assert BELGAE not in harassers
+
+
+# ---------------------------------------------------------------------------
+# Entreat and Scout SAs (slice 10)
+# ---------------------------------------------------------------------------
+
+from fs_bot.engine.execute import _execute_entreat, _execute_scout
+from fs_bot.board.pieces import count_pieces_by_state, find_leader
+from fs_bot.rules_consts import SCOUTED
+
+
+class TestEntreatAndScout:
+    def test_entreat_replaces_enemy_piece_with_arverni(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        place_piece(st, MANDUBII, AEDUI, WARBAND, 1, piece_state=REVEALED)
+        refresh_all_control(st)
+        aedui_before = count_pieces(st, MANDUBII, AEDUI, WARBAND)
+        arv_before = count_pieces(st, MANDUBII, ARVERNI, WARBAND)
+        plan = [{"action": "replace_piece", "region": MANDUBII,
+                 "target_faction": AEDUI, "target_type": WARBAND,
+                 "target_state": REVEALED}]
+        res = _execute_entreat(st, ARVERNI, {"sa": "Entreat",
+                                             "sa_regions": plan, "details": {}})
+        assert res["executed"] is True
+        assert count_pieces(st, MANDUBII, AEDUI, WARBAND) == aedui_before - 1
+        assert count_pieces(st, MANDUBII, ARVERNI, WARBAND) == arv_before + 1
+        assert validate_state(st) == []
+
+    def test_scout_reveals_enemy_warbands_to_scouted(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        cr = find_leader(st, ROMANS)
+        assert cr is not None
+        place_piece(st, cr, ROMANS, AUXILIA, 2, piece_state=HIDDEN)
+        place_piece(st, cr, ARVERNI, WARBAND, 2, piece_state=HIDDEN)
+        refresh_all_control(st)
+        hidden_before = count_pieces_by_state(st, cr, ARVERNI, WARBAND, HIDDEN)
+        res = _execute_scout(st, ROMANS, {"sa": "Scout", "sa_regions": [],
+                                          "details": {}})
+        assert res["executed"] is True
+        # The Arverni Warbands at Caesar's Region were Scouted (Hidden -> Scouted).
+        assert count_pieces_by_state(st, cr, ARVERNI, WARBAND, HIDDEN) < hidden_before
+        assert count_pieces_by_state(st, cr, ARVERNI, WARBAND, SCOUTED) > 0
+        assert validate_state(st) == []

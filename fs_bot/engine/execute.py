@@ -85,6 +85,7 @@ _SA_BUILD = "Build"
 _SA_RAMPAGE = "Rampage"
 _SA_ENTREAT = "Entreat"
 _SA_SCOUT = "Scout"
+_SA_ENLIST = "Enlist"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
 _BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
@@ -641,6 +642,8 @@ def _execute_sa(state, faction, bot_action):
         return _execute_entreat(state, faction, bot_action)
     if sa == _SA_SCOUT:
         return _execute_scout(state, faction, bot_action)
+    if sa == _SA_ENLIST:
+        return _execute_enlist(state, faction, bot_action)
 
     return {"executed": False, "sa": sa,
             "reason": "SA not yet wired (plan translation deferred)"}
@@ -1148,3 +1151,64 @@ def _execute_scout(state, faction, bot_action):
 
     return {"executed": len(done) > 0, "sa": _SA_SCOUT,
             "actions": done, "errors": errors}
+
+
+def _execute_enlist(state, faction, bot_action):
+    """Belgic Enlist (§4.5.1) — execute a free Germanic sub-Command.
+
+    The bot's enlist_details (details['enlist']) names one of five sub-actions
+    in a Region within reach of the Belgic Leader. We orchestrate each via the
+    German faction's own mechanics (free where the mechanic supports it):
+      - german_battle: a free German Battle (with Ambush in base game; A4.5.1
+        adds no Ambush in Ariovistus), routing the defender's Retreat.
+      - german_march: flip and March the German mobile group origin -> dest.
+      - german_march_hide: flip the Region's Revealed German Warbands to Hidden.
+      - german_rally: place a German Ally or Warbands.
+      - german_raid: a free German Raid (steal from the named player, else gain).
+    """
+    from fs_bot.rules_consts import GERMANS, BASE_SCENARIOS
+    ed = bot_action.get("details", {}).get("enlist")
+    if not isinstance(ed, dict):
+        return {"executed": False, "sa": _SA_ENLIST,
+                "reason": "no enlist sub-command details"}
+    scenario = state["scenario"]
+    t = ed.get("type")
+    try:
+        if t == "german_battle":
+            region, target = ed.get("region"), ed.get("target")
+            decl, rr = _decide_defender_retreat(
+                state, region, GERMANS, target, scenario in BASE_SCENARIOS)
+            resolve_battle(state, region, GERMANS, target,
+                           is_ambush=(scenario in BASE_SCENARIOS),
+                           retreat_declaration=decl, retreat_region=rr)
+        elif t == "german_march":
+            origin, dest = ed.get("origin"), ed.get("destination")
+            _flip_origin_pieces(state, origin, GERMANS)
+            group = _mobile_march_group(state, GERMANS, origin)
+            if not _group_has_pieces(group):
+                return {"executed": False, "sa": _SA_ENLIST,
+                        "type": t, "reason": "no German pieces to March"}
+            march_group(state, GERMANS, origin, [dest], group, free=True)
+        elif t == "german_march_hide":
+            _flip_origin_pieces(state, ed.get("region"), GERMANS)
+        elif t == "german_rally":
+            region = ed.get("region")
+            if ed.get("place") == "ally":
+                rally_in_region(state, region, GERMANS, "place_ally",
+                                tribe=ed.get("tribe"), free=True)
+            else:
+                rally_in_region(state, region, GERMANS, "place_warbands",
+                                free=True)
+        elif t == "german_raid":
+            region, target = ed.get("region"), ed.get("target")
+            actions = ([{"type": "steal", "target": target}] if target
+                       else [{"type": "gain"}])
+            raid_in_region(state, region, GERMANS, actions, free=True)
+        else:
+            return {"executed": False, "sa": _SA_ENLIST,
+                    "type": t, "reason": "unknown enlist sub-type"}
+    except _EXEC_ERRORS as exc:
+        return {"executed": False, "sa": _SA_ENLIST, "type": t,
+                "error": str(exc)}
+    return {"executed": True, "sa": _SA_ENLIST, "type": t,
+            "region": ed.get("region") or ed.get("origin")}

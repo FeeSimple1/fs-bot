@@ -489,7 +489,8 @@ class TestStandaloneSAs:
 
     def test_deferred_sa_is_reported_not_executed(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
-        res = _execute_sa(st, BELGAE, {"sa": "Enlist", "sa_regions": [],
+        # Every real SA is now wired; an unrecognized label is a safe no-op.
+        res = _execute_sa(st, BELGAE, {"sa": "Bogus", "sa_regions": [],
                                        "details": {}})
         assert res["executed"] is False
         assert "not yet wired" in res["reason"]
@@ -780,3 +781,46 @@ class TestEntreatAndScout:
         assert count_pieces_by_state(st, cr, ARVERNI, WARBAND, HIDDEN) < hidden_before
         assert count_pieces_by_state(st, cr, ARVERNI, WARBAND, SCOUTED) > 0
         assert validate_state(st) == []
+
+
+# ---------------------------------------------------------------------------
+# Enlist SA (slice 12) — free Germanic sub-Command
+# ---------------------------------------------------------------------------
+
+from fs_bot.engine.execute import _execute_enlist
+from fs_bot.rules_consts import SUGAMBRI
+
+
+class TestEnlist:
+    def test_enlist_german_raid_gains_resources(self):
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+        place_piece(st, SUGAMBRI, GERMANS, WARBAND, 2, piece_state=HIDDEN)
+        refresh_all_control(st)
+        before = st["resources"][GERMANS]
+        ed = {"type": "german_raid", "region": SUGAMBRI, "target": None,
+              "regions": [SUGAMBRI]}
+        res = _execute_enlist(st, BELGAE, {"sa": "Enlist",
+            "sa_regions": [SUGAMBRI], "details": {"enlist": ed}})
+        assert res["executed"] is True and res["type"] == "german_raid"
+        assert st["resources"][GERMANS] >= before
+        assert validate_state(st) == []
+
+    def test_enlist_german_rally_places_warbands(self):
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+        lr = find_leader(st, GERMANS)
+        place_piece(st, lr, GERMANS, WARBAND, 1, piece_state=HIDDEN)
+        refresh_all_control(st)
+        before = count_pieces(st, lr, GERMANS, WARBAND)
+        ed = {"type": "german_rally", "region": lr, "place": "warbands",
+              "regions": [lr]}
+        res = _execute_enlist(st, BELGAE, {"sa": "Enlist",
+            "sa_regions": [lr], "details": {"enlist": ed}})
+        assert res["executed"] is True
+        assert count_pieces(st, lr, GERMANS, WARBAND) > before
+        assert validate_state(st) == []
+
+    def test_enlist_missing_details_is_safe(self):
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+        res = _execute_enlist(st, BELGAE, {"sa": "Enlist", "sa_regions": [],
+                                           "details": {}})
+        assert res["executed"] is False

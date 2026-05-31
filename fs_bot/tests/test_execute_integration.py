@@ -613,3 +613,64 @@ class TestDefenderRetreatRouting:
         decl, dest = _decide_defender_retreat(
             st, MANDUBII, GERMANS, ARVERNI, False)
         assert decl is False and dest is None
+
+
+# ---------------------------------------------------------------------------
+# Agreements (§1.5.2/§8.6.6/§8.8.6) and Rampage (slice 8)
+# ---------------------------------------------------------------------------
+
+from fs_bot.engine.execute import _retreat_destinations
+from fs_bot.bots.bot_common import np_agrees_to_retreat
+from fs_bot.board.control import FACTION_CONTROL
+from fs_bot.rules_consts import BELGAE, MORINI
+
+
+class TestAgreementsAndRampage:
+    def test_np_aedui_agrees_to_roman_retreat_not_arverni(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        st["non_player_factions"] = {AEDUI, ROMANS}
+        assert np_agrees_to_retreat(AEDUI, ROMANS, st) is True
+        assert np_agrees_to_retreat(AEDUI, ARVERNI, st) is False
+
+    def test_retreat_destination_includes_agreed_control(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        st["non_player_factions"] = {AEDUI, ROMANS}
+        nb = get_adjacent(MORINI)[0]
+        st["spaces"][nb]["control"] = FACTION_CONTROL[AEDUI]
+        # Romans may Retreat into Aedui-Controlled Nervii (agreement); Arverni
+        # may not (Aedui never agrees for Arverni).
+        assert nb in _retreat_destinations(st, MORINI, ROMANS)
+        assert nb not in _retreat_destinations(st, MORINI, ARVERNI)
+
+    def test_rampage_removes_target_pieces(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        place_piece(st, MORINI, BELGAE, WARBAND, 2, piece_state=HIDDEN)
+        place_piece(st, MORINI, ROMANS, AUXILIA, 2, piece_state=REVEALED)
+        refresh_all_control(st)
+        before = count_pieces(st, MORINI, ROMANS, AUXILIA)
+        res = _execute_sa(st, BELGAE, {"sa": "Rampage", "details": {},
+            "sa_regions": [{"region": MORINI, "target": ROMANS,
+                            "forces_removal": True, "adds_control": False}]})
+        assert res["executed"] is True
+        assert count_pieces(st, MORINI, ROMANS, AUXILIA) < before
+        assert validate_state(st) == []
+
+    def test_rampage_retreats_target_when_escape_exists(self):
+        # Target has an adjacent Controlled Region -> Rampage Retreats the
+        # piece (preserved on the board) rather than removing it.
+        from fs_bot.board.pieces import count_on_map
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        place_piece(st, MORINI, BELGAE, WARBAND, 1, piece_state=HIDDEN)
+        place_piece(st, MORINI, ROMANS, AUXILIA, 1, piece_state=REVEALED)
+        nb = get_adjacent(MORINI)[0]
+        st["spaces"][nb]["control"] = FACTION_CONTROL[ROMANS]
+        on_map_before = count_on_map(st, ROMANS, AUXILIA)
+        res = _execute_sa(st, BELGAE, {"sa": "Rampage", "details": {},
+            "sa_regions": [{"region": MORINI, "target": ROMANS,
+                            "forces_removal": False, "adds_control": True}]})
+        assert res["executed"] is True
+        # The Auxilia left MORINI but survived on the board (Retreated), so the
+        # total Roman Auxilia on the map is unchanged.
+        assert count_pieces(st, MORINI, ROMANS, AUXILIA) == 0
+        assert count_on_map(st, ROMANS, AUXILIA) == on_map_before
+        assert validate_state(st) == []

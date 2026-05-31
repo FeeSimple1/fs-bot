@@ -55,7 +55,7 @@ from fs_bot.engine.victory import (
 )
 from fs_bot.map.map_data import (
     get_adjacent, get_playable_regions, get_tribes_in_region,
-    get_region_group, ALL_REGION_DATA,
+    get_region_group, ALL_REGION_DATA, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
     # Event decisions
@@ -1038,6 +1038,14 @@ def node_r_build(state, *, exclude_regions=None):
     playable = get_playable_regions(scenario, state.get("capabilities"))
     exclude = set(exclude_regions or [])
 
+    # §4.2.1 Build region eligibility: within 1 of Caesar (or Successor's
+    # Region) AND (a Roman Ally there OR a Supply Line to Cisalpina with a
+    # Roman piece). validate_build_region encodes this exactly.
+    from fs_bot.commands.sa_build import validate_build_region
+
+    def _eligible(region):
+        return validate_build_region(state, region)[0]
+
     build_plan = {
         "forts": [],
         "subdue": [],
@@ -1074,6 +1082,8 @@ def node_r_build(state, *, exclude_regions=None):
             continue  # Already has a Fort
         if count_pieces(state, region, ROMANS) == 0:
             continue  # Must have Romans present
+        if not _eligible(region):
+            continue  # §4.2.1 Build region eligibility
         # Check for non-Aedui Warbands
         non_aedui_wb = 0
         for f in FACTIONS:
@@ -1090,9 +1100,17 @@ def node_r_build(state, *, exclude_regions=None):
         _spend(BUILD_COST_PER_FORT)
 
     # (2) Subdue Allies — best victory margins, players first
+    from fs_bot.board.control import is_controlled_by as _ctrl
+    fort_set = set(build_plan["forts"])
     subdue_candidates = []
     for region in playable:
         if region in exclude:
+            continue
+        if not _eligible(region):
+            continue  # §4.2.1 Build region eligibility
+        # §4.2.1: Subdue only where the Region is (now) under Roman Control —
+        # already controlled, or controlled via a Fort placed this Build.
+        if not (_ctrl(state, region, ROMANS) or region in fort_set):
             continue
         tribes = get_tribes_in_region(region, scenario)
         for tribe in tribes:
@@ -1120,6 +1138,10 @@ def node_r_build(state, *, exclude_regions=None):
     ally_candidates = []
     for region in playable:
         if region in exclude:
+            continue
+        if not _eligible(region):
+            continue  # §4.2.1 Build region eligibility
+        if not (_ctrl(state, region, ROMANS) or region in fort_set):
             continue
         tribes = get_tribes_in_region(region, scenario)
         for tribe in tribes:
@@ -1174,9 +1196,17 @@ def node_r_scout(state):
                 "reason": "Caesar escort",
             })
 
-    # Step 2: Scout targets — Hidden first, then Revealed
+    # Step 2: Scout targets — Hidden first, then Revealed.
+    # §4.2.2: Reveal only in Regions within 1 of Caesar (or the Successor's
+    # Region) AND only by flipping a Roman Hidden Auxilia present THERE.
     playable = get_playable_regions(scenario, state.get("capabilities"))
     for region in playable:
+        if not (caesar_region is not None
+                and (region == caesar_region
+                     or is_adjacent(region, caesar_region))):
+            continue
+        if count_pieces_by_state(state, region, ROMANS, AUXILIA, HIDDEN) == 0:
+            continue
         for enemy in FACTIONS:
             if enemy == ROMANS:
                 continue

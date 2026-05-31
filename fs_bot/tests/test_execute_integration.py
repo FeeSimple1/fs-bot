@@ -540,8 +540,10 @@ class TestSubornAndBuild:
     def test_build_fires_in_real_games(self):
         # Roman Build (recomputed via node_r_build) executes in real games.
         build_count = 0
-        for seed in range(0, 6):
-            st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=seed)
+        from fs_bot.rules_consts import ALL_SCENARIOS as _ALL
+        combos = [(sc, seed) for sc in _ALL for seed in range(0, 8)]
+        for sc, seed in combos:
+            st = setup_scenario(sc, seed=seed)
             st["non_player_factions"] = set(get_sop_factions(st))
             dfn = make_decision_func(
                 {f: "bot" for f in get_sop_factions(st)}, pause=False)
@@ -926,3 +928,47 @@ class TestSmokeRegressions:
                                    {"action": "command", "bot_action": ba})
             assert isinstance(res, dict)
         assert validate_state(st) == []
+
+
+# ---------------------------------------------------------------------------
+# Build/Scout bot-plan eligibility (slice 15) — §4.2.1 / §4.2.2
+# ---------------------------------------------------------------------------
+
+from fs_bot.bots.roman_bot import node_r_build, node_r_scout, _caesar_region
+from fs_bot.commands.sa_build import validate_build_region
+from fs_bot.board.control import is_controlled_by as _is_ctrl
+from fs_bot.map.map_data import is_adjacent as _adj, get_playable_regions
+from fs_bot.board.pieces import count_pieces_by_state as _cps
+
+
+class TestBuildScoutEligibility:
+    def test_build_plan_only_proposes_eligible_regions(self):
+        # Every Region node_r_build proposes must satisfy §4.2.1 eligibility,
+        # and every Subdue/Ally Region must (be eligible and) be a legal Build
+        # target — across many real game states.
+        for sc in ["The Great Revolt", "Pax Gallica?", "Reconquest of Gaul",
+                   "Ariovistus", "The Gallic War"]:
+            for seed in range(0, 8):
+                st = setup_scenario(sc, seed=seed)
+                st["non_player_factions"] = set(get_sop_factions(st))
+                plan = node_r_build(st)
+                for region in plan["forts"]:
+                    assert validate_build_region(st, region)[0], (sc, seed, region)
+                for e in plan["subdue"] + plan["allies"]:
+                    r = e["region"]
+                    assert validate_build_region(st, r)[0], (sc, seed, r)
+
+    def test_scout_plan_only_targets_caesar_range_with_hidden_auxilia(self):
+        # §4.2.2: Reveal targets must be within 1 of Caesar AND have a Roman
+        # Hidden Auxilia present.
+        from fs_bot.rules_consts import ROMANS, AUXILIA, HIDDEN
+        for sc in ["The Great Revolt", "Pax Gallica?", "Ariovistus"]:
+            for seed in range(0, 8):
+                st = setup_scenario(sc, seed=seed)
+                st["non_player_factions"] = set(get_sop_factions(st))
+                cr = _caesar_region(st)
+                plan = node_r_scout(st)
+                for t in plan["scout_targets"]:
+                    r = t["region"]
+                    assert cr is not None and (r == cr or _adj(r, cr)), (sc, seed, r)
+                    assert _cps(st, r, ROMANS, AUXILIA, HIDDEN) > 0, (sc, seed, r)

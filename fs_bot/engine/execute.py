@@ -1148,7 +1148,10 @@ def _execute_scout(state, faction, bot_action):
                 "reason": f"scout plan unavailable: {exc!r}"}
 
     done, errors = [], []
-    moves = plan.get("auxilia_moves", []) or []
+    # Only execute Auxilia moves that carry a concrete from/to (scout_move
+    # schema); the bot's escort "intentions" ({to,needed,reason}) are skipped.
+    moves = [m for m in (plan.get("auxilia_moves") or [])
+             if isinstance(m, dict) and m.get("from_region") and m.get("to_region")]
     if moves:
         try:
             _sa_scout_move(state, moves)

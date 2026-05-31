@@ -368,10 +368,13 @@ def _execute_battle(state, faction, bot_action):
                 besiege_target = options[0]  # Citadel > Ally > Settlement
 
         try:
+            retreat_decl, retreat_region = _decide_defender_retreat(
+                state, region, faction, defender, is_ambush)
             res = resolve_battle(
                 state, region, faction, defender,
                 is_ambush=is_ambush, besiege_target=besiege_target,
-                retreat_declaration=None,
+                retreat_declaration=retreat_decl,
+                retreat_region=retreat_region,
             )
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "defender": defender,
@@ -735,3 +738,78 @@ def _execute_build(state, faction, bot_action):
                            "tribe": tribe, "error": str(exc)})
     return {"executed": len(done) > 0, "sa": _SA_BUILD,
             "actions": done, "errors": errors}
+
+
+def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
+    """Route the defending faction's Retreat decision per §8.4.3.
+
+    Non-player Retreat rules (non_player_guidelines_summary.txt, §8.4.3):
+      Retreat to save the last piece, or — if Romans — to reduce Losses on
+      Legions, or if (1) no Citadel or Fort, (2) they would inflict < 1/2 the
+      Losses they would suffer, and (3) the Retreat itself removes no pieces.
+
+    Returns (retreat_declaration, retreat_region):
+      - (False, None) if the defender will not or cannot Retreat.
+      - (True, dest)  if it Retreats into an adjacent Region it Controls,
+        joining the most friendly pieces ("Leaders join most friendly
+        pieces", §8.4.3).
+
+    Scope note: destinations are limited to the defender's OWN Control — the
+    always-available Retreat. Retreat into another Faction's Control requires
+    that Faction's agreement (§1.5.2; only Aedui/Romans might, §8.6.6/§8.8.6);
+    that agreement routing is a separate, documented extension.
+    """
+    from fs_bot.rules_consts import (
+        ROMANS, GERMANS, ARVERNI, LEGION, AUXILIA, WARBAND, CITADEL, FORT,
+        BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    )
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.battle.losses import calculate_losses
+
+    if is_ambush:
+        return (False, None)  # §4.3.3: Defender may not Retreat from Ambush
+    scenario = state["scenario"]
+    if defender == GERMANS and scenario in BASE_SCENARIOS:
+        return (False, None)  # §3.2.4: Germans never Retreat (base)
+    if defender == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
+        return (False, None)  # A3.2.4: Arverni never Retreat
+
+    # Condition (3): a Retreat removes no pieces only if a legal destination
+    # exists — an adjacent Region under the defender's own Control.
+    dests = [r for r in get_adjacent(region)
+             if is_controlled_by(state, r, defender)]
+    if not dests:
+        return (False, None)
+    # Join the most friendly pieces; stable tie-break for determinism.
+    dest = max(sorted(dests), key=lambda r: count_pieces(state, r, defender))
+
+    suffer = calculate_losses(state, region, attacker, defender)
+    suffer_if_retreat = calculate_losses(
+        state, region, attacker, defender, is_retreat=True)
+    inflict = calculate_losses(
+        state, region, defender, attacker, is_counterattack=True)
+
+    mobile = (count_pieces(state, region, defender, LEGION)
+              + count_pieces(state, region, defender, AUXILIA)
+              + count_pieces(state, region, defender, WARBAND)
+              + (1 if get_leader_in_region(state, region, defender)
+                 is not None else 0))
+    has_hard = (count_pieces(state, region, defender, CITADEL) > 0
+                or count_pieces(state, region, defender, FORT) > 0)
+
+    # (a) Retreat to save the last piece: full Losses would wipe the mobile
+    #     group, but halved (Retreat) Losses leave a survivor.
+    if mobile > 0 and suffer >= mobile and suffer_if_retreat < mobile:
+        return (True, dest)
+    # (b) Romans Retreat to reduce Losses on Legions.
+    if (defender == ROMANS
+            and count_pieces(state, region, defender, LEGION) > 0
+            and suffer > 0):
+        return (True, dest)
+    # (c) No Citadel/Fort, would inflict < 1/2 the Losses suffered, and a
+    #     valid (piece-preserving) destination exists.
+    if (not has_hard) and (inflict * 2 < suffer):
+        return (True, dest)
+
+    return (False, None)

@@ -552,3 +552,64 @@ class TestSubornAndBuild:
             build_count += seen["n"]
             assert validate_state(st) == []
         assert build_count > 0
+
+
+# ---------------------------------------------------------------------------
+# Defender Retreat routing (slice 7) — §8.4.3
+# ---------------------------------------------------------------------------
+
+from fs_bot.engine.execute import _decide_defender_retreat
+from fs_bot.rules_consts import MANDUBII, MORINI, GERMANS, SCENARIO_ARIOVISTUS
+from fs_bot.map.map_data import get_adjacent
+from fs_bot.board.control import is_controlled_by
+
+
+class TestDefenderRetreatRouting:
+    def test_defender_retreats_into_controlled_region(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        # MANDUBII is adjacent to the Aedui home Region (Aedui-controlled).
+        place_piece(st, MANDUBII, ARVERNI, WARBAND, 6, piece_state=REVEALED)
+        refresh_all_control(st)
+        decl, dest = _decide_defender_retreat(st, MANDUBII, ARVERNI, AEDUI, False)
+        assert decl is True
+        assert dest is not None and is_controlled_by(st, dest, AEDUI)
+        mand_before = count_pieces(st, MANDUBII, AEDUI, WARBAND)
+        assert mand_before > 0
+        dest_before = count_pieces(st, dest, AEDUI, WARBAND)
+        execute_decision(st, ARVERNI, {"action": "command", "bot_action": {
+            "command": "Battle", "regions": [MANDUBII], "sa": "No SA",
+            "sa_regions": [], "details": {"battle_plan": [
+                {"region": MANDUBII, "target": AEDUI, "is_trigger": True}]}}})
+        # The defenders left the battle Region; survivors arrived at dest.
+        assert count_pieces(st, MANDUBII, AEDUI, WARBAND) == 0
+        assert count_pieces(st, dest, AEDUI, WARBAND) > dest_before
+        assert validate_state(st) == []
+
+    def test_no_controlled_neighbour_means_no_retreat(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        # Find a Region with no adjacent Aedui Control, put a lone Aedui WB.
+        cand = None
+        for reg in st["spaces"]:
+            if any(is_controlled_by(st, a, AEDUI) for a in get_adjacent(reg)):
+                continue
+            cand = reg
+            break
+        assert cand is not None
+        place_piece(st, cand, AEDUI, WARBAND, 1, piece_state=REVEALED)
+        refresh_all_control(st)
+        decl, dest = _decide_defender_retreat(st, cand, ARVERNI, AEDUI, False)
+        assert decl is False and dest is None
+
+    def test_ambush_blocks_retreat(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        place_piece(st, MANDUBII, ARVERNI, WARBAND, 6, piece_state=REVEALED)
+        refresh_all_control(st)
+        decl, dest = _decide_defender_retreat(st, MANDUBII, ARVERNI, AEDUI, True)
+        assert decl is False and dest is None
+
+    def test_arverni_never_retreats_in_ariovistus(self):
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=5)
+        # Even with a controlled neighbour, Arverni never Retreat (A3.2.4).
+        decl, dest = _decide_defender_retreat(
+            st, MANDUBII, GERMANS, ARVERNI, False)
+        assert decl is False and dest is None

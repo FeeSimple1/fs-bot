@@ -1264,3 +1264,46 @@ class TestEventParamDerivers2:
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
         assert _derive_card_23(st, ARVERNI, False) is None  # not Romans
         assert _derive_card_23(st, "Romans", True) is None  # shaded deferred
+
+
+class TestEventParamDerivers3:
+    def test_card58_removes_enemy_warbands_at_fort(self):
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.map.map_data import get_playable_regions
+        from fs_bot.engine.execute import _execute_event
+        from fs_bot.rules_consts import ROMANS, BELGAE, WARBAND, FORT, EVENT_UNSHADED
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        st["current_card"] = 58
+        fr = next(r for r in get_playable_regions(st["scenario"], st.get("capabilities"))
+                  if count_pieces(st, r, ROMANS, FORT) > 0)
+        place_piece(st, fr, BELGAE, WARBAND, 4)
+        refresh_all_control(st)
+        before = count_pieces(st, fr, BELGAE, WARBAND)
+        res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+            "sa_regions": [], "details": {"card_id": 58,
+                                          "text_preference": EVENT_UNSHADED}})
+        assert res["executed"] is True
+        assert count_pieces(st, fr, BELGAE, WARBAND) < before
+        assert validate_state(st) == []
+
+    def test_card22_replaces_enemy_with_own_in_controlled_region(self):
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import FACTION_CONTROL
+        from fs_bot.engine.execute import _execute_event
+        from fs_bot.rules_consts import ARVERNI, AEDUI, ROMANS, WARBAND, AUXILIA, EVENT_UNSHADED
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        st["current_card"] = 22
+        reg = "Mandubii"
+        st["spaces"][reg]["control"] = FACTION_CONTROL[ARVERNI]
+        place_piece(st, reg, AEDUI, WARBAND, 3)
+        enemy_before = (count_pieces(st, reg, AEDUI, WARBAND)
+                        + count_pieces(st, reg, ROMANS, AUXILIA))
+        res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+            "sa_regions": [], "details": {"card_id": 22,
+                                          "text_preference": EVENT_UNSHADED}})
+        assert res["executed"] is True
+        # Enemy mobile pieces in the Arverni-controlled Region were reduced.
+        assert (count_pieces(st, reg, AEDUI, WARBAND)
+                + count_pieces(st, reg, ROMANS, AUXILIA)) < enemy_before
+        assert validate_state(st) == []

@@ -1482,14 +1482,72 @@ def _derive_card_68(state, faction, shaded):
     return {"replacements": repl} if repl else None
 
 
+def _derive_card_58(state, faction, shaded):
+    """Card 58 (Aduatuca), unshaded: remove up to 9 Belgic/Germanic Warbands
+    from a Region with a (Roman) Fort. Choose the Fort Region with the most
+    such Warbands. Only a Faction opposed to Belgae/Germans benefits. Shaded
+    (free German March/Battle) deferred."""
+    from fs_bot.rules_consts import (BELGAE, GERMANS, ROMANS, WARBAND, FORT)
+    from fs_bot.board.pieces import count_pieces
+    if shaded or faction in (BELGAE, GERMANS):
+        return None
+    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
+    best = None
+    for region in playable:
+        if count_pieces(state, region, ROMANS, FORT) <= 0:
+            continue
+        bg = (count_pieces(state, region, BELGAE, WARBAND)
+              + count_pieces(state, region, GERMANS, WARBAND))
+        if bg > 0 and (best is None or bg > best[1]):
+            best = (region, bg)
+    if best is None:
+        return None
+    region = best[0]
+    removals = []
+    for f in (BELGAE, GERMANS):
+        n = count_pieces(state, region, f, WARBAND)
+        if n > 0:
+            removals.append({"faction": f, "count": min(n, 9)})
+    return {"region": region, "removals": removals}
+
+
+def _derive_card_22(state, faction, shaded):
+    """Card 22 (Hostages), unshaded: among Regions the acting Faction Controls,
+    replace up to 4 enemy Warbands/Auxilia with its own (§8.2.3 — convert
+    enemies' to own). Shaded (place Gallic Ally+Warband) deferred."""
+    from fs_bot.rules_consts import FACTIONS, WARBAND, AUXILIA
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.board.pieces import count_pieces
+    if shaded:
+        return None
+    replacements = []
+    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
+    for region in playable:
+        if not is_controlled_by(state, region, faction):
+            continue
+        for tf in FACTIONS:
+            if tf == faction:
+                continue
+            for pt in (WARBAND, AUXILIA):
+                for _ in range(count_pieces(state, region, tf, pt)):
+                    if len(replacements) >= 4:
+                        break
+                    replacements.append({"region": region,
+                                         "target_faction": tf,
+                                         "piece_type": pt})
+    return {"replacements": replacements} if replacements else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
+    22: _derive_card_22,
     28: _derive_card_28,
     41: _derive_card_41,
     23: _derive_card_23,
     42: _derive_card_42,
+    58: _derive_card_58,
     68: _derive_card_68,
     71: _derive_card_71,
 }

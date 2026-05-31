@@ -63,6 +63,13 @@ from fs_bot.cards.card_effects import execute_event
 # Execution captures both so a partly-infeasible plan resolves as far as it
 # legally can rather than crashing the turn.
 _EXEC_ERRORS = (CommandError, PieceError)
+# Event card handlers are complex and may raise a range of errors when the
+# board does not match a card's assumptions (missing pieces, absent params,
+# etc.). Such an Event is simply Ineffective in this state — report it rather
+# than let one card crash the game.
+_EVENT_SAFE_ERRORS = (NotImplementedError, KeyError, ValueError,
+                      AttributeError, TypeError, IndexError,
+                      CommandError, PieceError)
 
 
 # Bot command labels (mirror the per-bot ACTION_* constants, which all
@@ -173,23 +180,18 @@ def _execute_event(state, faction, bot_action):
     # derivable here still raise ValueError and are reported, not crashed.
     prev_params = state.get("event_params")
     derived = _derive_event_params(state, faction, card_id, shaded)
-    if derived:
-        state["event_params"] = {**(prev_params or {}), **derived}
+    # Always expose a dict (never None) so card handlers that read
+    # state.get("event_params").get(...) don't crash on missing params.
+    state["event_params"] = {**(prev_params or {}), **(derived or {})}
     try:
         event_result = execute_event(state, card_id, shaded=shaded)
-    except (NotImplementedError, KeyError) as exc:
+    except _EVENT_SAFE_ERRORS as exc:
+        # Ineffective/non-applicable Event in this state (missing pieces, a
+        # stub, or a choice not derivable here). Report, do not crash.
         state["event_params"] = prev_params
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
-                "reason": f"event not executable: {exc!r}"}
-    except ValueError as exc:
-        # Cards that need explicit choices read state["event_params"]. Where
-        # the choice isn't derivable here (most cards), report rather than
-        # crash so a full game keeps running.
-        state["event_params"] = prev_params
-        return {"executed": False, "command": _CMD_EVENT,
-                "card_id": card_id, "shaded": shaded,
-                "reason": f"event needs parameters: {exc!r}"}
+                "reason": f"event not applicable: {exc!r}"}
     state["event_params"] = prev_params
     return {"executed": True, "command": _CMD_EVENT,
             "card_id": card_id, "shaded": shaded,

@@ -134,6 +134,21 @@ def _cap_resources(state, faction, amount):
 # Base game card stubs (1–72)
 # ---------------------------------------------------------------------------
 
+def _add_region_marker(state, region, marker):
+    """Place a Region marker, tolerating both representations the codebase
+    uses: a dict ({marker: True}) or a set ({marker}). Creates a dict when the
+    Region has no markers yet. (Readers accept both via membership tests.)
+    """
+    markers = state.setdefault("markers", {})
+    m = markers.get(region)
+    if isinstance(m, set):
+        m.add(marker)
+    elif isinstance(m, dict):
+        m[marker] = True
+    else:
+        markers[region] = {marker: True}
+
+
 def execute_card_1(state, shaded=False):
     """Card 1: Cicero — Senate shift.
 
@@ -288,7 +303,7 @@ def execute_card_4(state, shaded=False):
         # Place Circumvallation marker
         state.setdefault("markers", {})
         state["markers"].setdefault(target, set())
-        state["markers"][target].add(MARKER_CIRCUMVALLATION)
+        _add_region_marker(state, target, MARKER_CIRCUMVALLATION)
         # Free March is handled by the caller (bot/CLI)
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_4_free_march_to"] = target
@@ -301,7 +316,7 @@ def execute_card_4(state, shaded=False):
             return
         state.setdefault("markers", {})
         state["markers"].setdefault(target, set())
-        state["markers"][target].add(MARKER_CIRCUMVALLATION)
+        _add_region_marker(state, target, MARKER_CIRCUMVALLATION)
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_4_free_march_to"] = target
 
@@ -322,7 +337,7 @@ def execute_card_5(state, shaded=False):
         # Unshaded: Place Gallia Togata marker and 3 Auxilia in Cisalpina
         state.setdefault("markers", {})
         state["markers"].setdefault(CISALPINA, set())
-        state["markers"][CISALPINA].add(MARKER_GALLIA_TOGATA)
+        _add_region_marker(state, CISALPINA, MARKER_GALLIA_TOGATA)
         avail = get_available(state, ROMANS, AUXILIA)
         to_place = min(3, avail)
         if to_place > 0:
@@ -975,7 +990,7 @@ def execute_card_23(state, shaded=False):
         # anything" means existing Ally/Citadel/Dispersed at the city)
         state.setdefault("markers", {})
         state["markers"].setdefault(region, set())
-        state["markers"][region].add(MARKER_RAZED)
+        _add_region_marker(state, region, MARKER_RAZED)
         # +8 Resources to Romans
         _cap_resources(state, ROMANS, 8)
         # Update tribe status to mark as Razed/Dispersed
@@ -1922,7 +1937,7 @@ def execute_card_49(state, shaded=False):
     if devastate_region:
         state.setdefault("markers", {})
         state["markers"].setdefault(devastate_region, set())
-        state["markers"][devastate_region].add(MARKER_DEVASTATED)
+        _add_region_marker(state, devastate_region, MARKER_DEVASTATED)
 
     # Step 3: Each Faction removes 1 piece from each Devastated Region
     for region in state["spaces"]:

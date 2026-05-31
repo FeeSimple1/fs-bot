@@ -1431,13 +1431,66 @@ def _derive_card_42(state, faction, shaded):
     return {"removals": removals} if removals else None
 
 
+def _derive_card_23(state, faction, shaded):
+    """Card 23 (Sacking), unshaded: Romans Raze a City under Roman Control
+    (+8 Resources, permanent Disperse). Choose a Roman-Controlled City. The
+    shaded Legion-removal (needs a Citadel-adjacency choice) is deferred."""
+    from fs_bot.rules_consts import (CITY_TO_TRIBE, TRIBE_TO_REGION,
+                                     MARKER_RAZED, ROMANS)
+    from fs_bot.board.control import is_controlled_by
+    if shaded or faction != ROMANS:
+        return None
+    for city, tribe in CITY_TO_TRIBE.items():
+        region = TRIBE_TO_REGION.get(tribe)
+        if region and is_controlled_by(state, region, ROMANS):
+            m = state.get("markers", {}).get(region) or {}
+            if MARKER_RAZED in m:
+                continue
+            return {"target_city": city}
+    return None
+
+
+def _derive_card_68(state, faction, shaded):
+    """Card 68 (Remi Influence), unshaded: if Remi are a Roman Ally or Subdued,
+    Romans replace up to 2 non-Roman Allies within 1 Region of Remi (Atrebates)
+    with Roman Allies (§8.2.3 — convert enemies' to own). Shaded deferred."""
+    from fs_bot.rules_consts import (TRIBE_REMI, TRIBE_TO_REGION, ATREBATES,
+                                     ROMANS, MARKER_DISPERSED)
+    from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
+    if shaded or faction != ROMANS:
+        return None
+    _R = ROMANS
+    ti = state.get("tribes", {}).get(TRIBE_REMI)
+    if not ti:
+        return None
+    remi_markers = state.get("markers", {}).get(TRIBE_REMI) or {}
+    is_roman = ti.get("allied_faction") == _R
+    is_subdued = (ti.get("allied_faction") is None
+                  and MARKER_DISPERSED not in remi_markers)
+    if not (is_roman or is_subdued):
+        return None
+    scenario = state["scenario"]
+    valid = [ATREBATES] + list(get_adjacent(ATREBATES, scenario))
+    repl = []
+    for region in valid:
+        for tribe in get_tribes_in_region(region, scenario):
+            t = state.get("tribes", {}).get(tribe)
+            if (t and t.get("allied_faction")
+                    and t.get("allied_faction") != _R
+                    and len(repl) < 2):
+                repl.append({"tribe": tribe})
+    return {"replacements": repl} if repl else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
     28: _derive_card_28,
     41: _derive_card_41,
+    23: _derive_card_23,
     42: _derive_card_42,
+    68: _derive_card_68,
     71: _derive_card_71,
 }
 

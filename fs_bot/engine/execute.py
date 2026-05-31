@@ -37,7 +37,7 @@ from fs_bot.commands.sa_besiege import get_besiege_targets
 from fs_bot.commands.rally import recruit_in_region
 from fs_bot.commands.march import march_group, _flip_origin_pieces
 from fs_bot.board.pieces import count_pieces, get_leader_in_region
-from fs_bot.map.map_data import is_adjacent
+from fs_bot.map.map_data import is_adjacent, get_playable_regions
 from fs_bot.bots.bot_common import random_select
 from fs_bot.commands.sa_trade import trade as _sa_trade
 from fs_bot.commands.sa_settle import settle as _sa_settle
@@ -48,6 +48,10 @@ from fs_bot.commands.sa_build import build_fort as _sa_build_fort
 from fs_bot.commands.sa_build import build_subdue as _sa_build_subdue
 from fs_bot.commands.sa_build import build_place_ally as _sa_build_ally
 from fs_bot.commands.sa_rampage import rampage as _sa_rampage
+from fs_bot.commands.sa_entreat import entreat_replace_piece as _sa_entreat_piece
+from fs_bot.commands.sa_entreat import entreat_replace_ally as _sa_entreat_ally
+from fs_bot.commands.sa_scout import scout_move as _sa_scout_move
+from fs_bot.commands.sa_scout import scout_reveal as _sa_scout_reveal
 from fs_bot.board.pieces import count_pieces_by_state as _count_state
 from fs_bot.bots.bot_common import np_agrees_to_retreat
 from fs_bot.commands.seize import execute_harassment_loss as _seize_harass_loss
@@ -79,6 +83,9 @@ _SA_INTIMIDATE = "Intimidate"
 _SA_SUBORN = "Suborn"
 _SA_BUILD = "Build"
 _SA_RAMPAGE = "Rampage"
+_SA_ENTREAT = "Entreat"
+_SA_SCOUT = "Scout"
+_SA_ENLIST = "Enlist"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
 _BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
@@ -150,19 +157,29 @@ def _execute_event(state, faction, bot_action):
     card_id = details.get("card_id", state.get("current_card"))
     shaded = details.get("text_preference") == EVENT_SHADED
 
+    # Populate any derivable event_params per the NP rules (§8.2.3/§8.3.1)
+    # before resolving; restore afterwards. Cards whose choices aren't
+    # derivable here still raise ValueError and are reported, not crashed.
+    prev_params = state.get("event_params")
+    derived = _derive_event_params(state, faction, card_id, shaded)
+    if derived:
+        state["event_params"] = {**(prev_params or {}), **derived}
     try:
         event_result = execute_event(state, card_id, shaded=shaded)
     except (NotImplementedError, KeyError) as exc:
+        state["event_params"] = prev_params
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"event not executable: {exc!r}"}
     except ValueError as exc:
-        # Cards that need explicit choices read state["event_params"], which
-        # the decision layer does not yet populate (a separate sub-workstream).
-        # Report rather than crash so a full game keeps running.
+        # Cards that need explicit choices read state["event_params"]. Where
+        # the choice isn't derivable here (most cards), report rather than
+        # crash so a full game keeps running.
+        state["event_params"] = prev_params
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"event needs parameters: {exc!r}"}
+    state["event_params"] = prev_params
     return {"executed": True, "command": _CMD_EVENT,
             "card_id": card_id, "shaded": shaded,
             "event_result": event_result}
@@ -504,27 +521,33 @@ def _execute_march(state, faction, bot_action):
     origin_set = set(origins)
     dest_pool = [d for d in destinations if d not in origin_set]
 
+    scenario = state["scenario"]
+    playable = set(get_playable_regions(scenario, state.get("capabilities")))
+
     marched = []
     errors = []
     deferred_origins = []
     for origin in origins:
-        group = _mobile_march_group(state, faction, origin)
-        if not _group_has_pieces(group):
+        if not _group_has_pieces(_mobile_march_group(state, faction, origin)):
             continue
-        adj_dests = [d for d in dest_pool if is_adjacent(origin, d)]
-        if not adj_dests:
-            # Only single-step adjacent destinations are unambiguous here.
+        # Choose the nearest reachable planned destination; BFS the path.
+        best = None  # (path_len, dest, path)
+        for d in dest_pool:
+            path = _bfs_march_path(origin, d, playable)
+            if path is None:
+                continue
+            if best is None or len(path) < best[0]:
+                best = (len(path), d, path)
+            elif len(path) == best[0]:
+                # §8.3.4 random tie-break among equidistant destinations.
+                if random_select(state, [best[1], d]) == d:
+                    best = (len(path), d, path)
+        if best is None:
             deferred_origins.append(origin)
             continue
-        dest = (random_select(state, adj_dests)
-                if len(adj_dests) > 1 else adj_dests[0])
         try:
-            # §3.2.2: marching pieces flip to Hidden (Underground) as they
-            # March. march_group moves them in Hidden state, so flip first.
-            _flip_origin_pieces(state, origin, faction)
-            res = march_group(state, faction, origin, [dest], group)
-            marched.append({"origin": origin,
-                            "final_region": res.get("final_region")})
+            final = _march_with_harassment(state, faction, origin, best[2])
+            marched.append({"origin": origin, "final_region": final})
         except _EXEC_ERRORS as exc:
             errors.append({"origin": origin, "error": str(exc)})
 
@@ -536,6 +559,60 @@ def _execute_march(state, faction, bot_action):
         "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }
+
+
+def _bfs_march_path(origin, dest, playable):
+    """Shortest adjacency path origin -> dest over playable Regions.
+
+    Returns the list of Regions to move into (excluding origin), or None if
+    unreachable. Used to route a March to a planned but non-adjacent
+    destination (the destination is the bot's choice; only the path is
+    derived).
+    """
+    from collections import deque
+    from fs_bot.map.map_data import get_adjacent
+    if origin == dest:
+        return []
+    seen = {origin}
+    q = deque([(origin, [])])
+    while q:
+        cur, path = q.popleft()
+        for nb in sorted(get_adjacent(cur)):
+            if nb in seen or nb not in playable:
+                continue
+            npath = path + [nb]
+            if nb == dest:
+                return npath
+            seen.add(nb)
+            q.append((nb, npath))
+    return None
+
+
+def _march_with_harassment(state, faction, origin, path):
+    """March a faction's full mobile group origin -> ... -> path[-1], one step
+    at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
+    enters and then leaves. Returns the final Region reached.
+    """
+    # §3.2.2: marching pieces flip to Hidden as they March.
+    _flip_origin_pieces(state, origin, faction)
+    current = origin
+    for i, nxt in enumerate(path):
+        group = _mobile_march_group(state, faction, current)
+        if not _group_has_pieces(group):
+            break
+        res = march_group(state, faction, current, [nxt], group)
+        current = res.get("final_region", nxt)
+        if current != nxt:
+            break  # a crossing stop halted the group early
+        # Intermediate Region (entered then about to be left) -> Harassment.
+        if i < len(path) - 1:
+            group_now = _mobile_march_group(state, faction, current)
+            harassers = _np_harassers(state, current, faction, group_now)
+            if harassers:
+                from fs_bot.commands.march import resolve_harassment
+                resolve_harassment(state, current, faction, group_now,
+                                   harassing_factions=harassers)
+    return current
 
 
 def _execute_sa(state, faction, bot_action):
@@ -571,6 +648,12 @@ def _execute_sa(state, faction, bot_action):
         return _execute_build(state, faction, bot_action)
     if sa == _SA_RAMPAGE:
         return _execute_rampage(state, faction, bot_action)
+    if sa == _SA_ENTREAT:
+        return _execute_entreat(state, faction, bot_action)
+    if sa == _SA_SCOUT:
+        return _execute_scout(state, faction, bot_action)
+    if sa == _SA_ENLIST:
+        return _execute_enlist(state, faction, bot_action)
 
     return {"executed": False, "sa": sa,
             "reason": "SA not yet wired (plan translation deferred)"}
@@ -1002,3 +1085,176 @@ def _resolve_seize_harassment(state, region):
             except _EXEC_ERRORS:
                 break
     return losses_applied
+
+
+def _execute_entreat(state, faction, bot_action):
+    """Arverni Entreat (§4.3.1). The bot's entreat action plan is carried in
+    sa_regions as dicts. Each is one of replace_ally / remove_ally (an Allied
+    Tribe) or replace_piece / remove_piece (a Warband/Auxilia). The mechanic
+    replaces with an Arverni counterpart, or removes the target when the
+    Arverni piece is unavailable.
+    """
+    plan = [e for e in (bot_action.get("sa_regions") or [])
+            if isinstance(e, dict)]
+    done, errors = [], []
+    for a in plan:
+        act = a.get("action")
+        region = a.get("region")
+        tgt = a.get("target_faction")
+        try:
+            if act in ("replace_ally", "remove_ally"):
+                _sa_entreat_ally(state, region, tgt, a.get("tribe"))
+            elif act in ("replace_piece", "remove_piece"):
+                _sa_entreat_piece(state, region, tgt, a.get("target_type"),
+                                  a.get("target_state"))
+            else:
+                continue
+            done.append({"region": region, "action": act})
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "action": act,
+                           "error": str(exc)})
+    return {"executed": len(done) > 0, "sa": _SA_ENTREAT,
+            "actions": done, "errors": errors}
+
+
+def _execute_scout(state, faction, bot_action):
+    """Roman Scout (§4.2.2). The bot's node_r_scout computes a complete plan
+    (auxilia_moves + scout_targets) but the SA is emitted without it; we
+    recompute it against the current board and execute: move Auxilia, then
+    Reveal — each flipped Hidden Auxilia Reveals up to 2 enemy Warbands.
+    """
+    from fs_bot.bots.roman_bot import node_r_scout
+    from fs_bot.rules_consts import ROMANS, AUXILIA, HIDDEN
+    try:
+        plan = node_r_scout(state)
+    except Exception as exc:
+        return {"executed": False, "sa": _SA_SCOUT,
+                "reason": f"scout plan unavailable: {exc!r}"}
+
+    done, errors = [], []
+    moves = plan.get("auxilia_moves", []) or []
+    if moves:
+        try:
+            _sa_scout_move(state, moves)
+            done.append({"moves": len(moves)})
+        except _EXEC_ERRORS as exc:
+            errors.append({"action": "move", "error": str(exc)})
+
+    for tgt in plan.get("scout_targets", []) or []:
+        region = tgt.get("region")
+        enemy = tgt.get("enemy")
+        want = tgt.get("hidden", 0)  # Hidden enemy Warbands to Reveal
+        if want <= 0:
+            continue
+        hidden_aux = _count_state(state, region, ROMANS, AUXILIA, HIDDEN)
+        if hidden_aux <= 0:
+            continue
+        # Each flipped Hidden Auxilia Reveals up to 2 Warbands (§4.2.2).
+        aux_count = min(hidden_aux, (want + 1) // 2)
+        reveal = min(want, 2 * aux_count)
+        targets = [{"faction": enemy, "count": reveal}]
+        try:
+            _sa_scout_reveal(state, region, aux_count, targets)
+            done.append({"region": region, "revealed": reveal})
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "error": str(exc)})
+
+    return {"executed": len(done) > 0, "sa": _SA_SCOUT,
+            "actions": done, "errors": errors}
+
+
+def _execute_enlist(state, faction, bot_action):
+    """Belgic Enlist (§4.5.1) — execute a free Germanic sub-Command.
+
+    The bot's enlist_details (details['enlist']) names one of five sub-actions
+    in a Region within reach of the Belgic Leader. We orchestrate each via the
+    German faction's own mechanics (free where the mechanic supports it):
+      - german_battle: a free German Battle (with Ambush in base game; A4.5.1
+        adds no Ambush in Ariovistus), routing the defender's Retreat.
+      - german_march: flip and March the German mobile group origin -> dest.
+      - german_march_hide: flip the Region's Revealed German Warbands to Hidden.
+      - german_rally: place a German Ally or Warbands.
+      - german_raid: a free German Raid (steal from the named player, else gain).
+    """
+    from fs_bot.rules_consts import GERMANS, BASE_SCENARIOS
+    ed = bot_action.get("details", {}).get("enlist")
+    if not isinstance(ed, dict):
+        return {"executed": False, "sa": _SA_ENLIST,
+                "reason": "no enlist sub-command details"}
+    scenario = state["scenario"]
+    t = ed.get("type")
+    try:
+        if t == "german_battle":
+            region, target = ed.get("region"), ed.get("target")
+            decl, rr = _decide_defender_retreat(
+                state, region, GERMANS, target, scenario in BASE_SCENARIOS)
+            resolve_battle(state, region, GERMANS, target,
+                           is_ambush=(scenario in BASE_SCENARIOS),
+                           retreat_declaration=decl, retreat_region=rr)
+        elif t == "german_march":
+            origin, dest = ed.get("origin"), ed.get("destination")
+            _flip_origin_pieces(state, origin, GERMANS)
+            group = _mobile_march_group(state, GERMANS, origin)
+            if not _group_has_pieces(group):
+                return {"executed": False, "sa": _SA_ENLIST,
+                        "type": t, "reason": "no German pieces to March"}
+            march_group(state, GERMANS, origin, [dest], group, free=True)
+        elif t == "german_march_hide":
+            _flip_origin_pieces(state, ed.get("region"), GERMANS)
+        elif t == "german_rally":
+            region = ed.get("region")
+            if ed.get("place") == "ally":
+                rally_in_region(state, region, GERMANS, "place_ally",
+                                tribe=ed.get("tribe"), free=True)
+            else:
+                rally_in_region(state, region, GERMANS, "place_warbands",
+                                free=True)
+        elif t == "german_raid":
+            region, target = ed.get("region"), ed.get("target")
+            actions = ([{"type": "steal", "target": target}] if target
+                       else [{"type": "gain"}])
+            raid_in_region(state, region, GERMANS, actions, free=True)
+        else:
+            return {"executed": False, "sa": _SA_ENLIST,
+                    "type": t, "reason": "unknown enlist sub-type"}
+    except _EXEC_ERRORS as exc:
+        return {"executed": False, "sa": _SA_ENLIST, "type": t,
+                "error": str(exc)}
+    return {"executed": True, "sa": _SA_ENLIST, "type": t,
+            "region": ed.get("region") or ed.get("origin")}
+
+
+def _derive_event_params(state, faction, card_id, shaded):
+    """Derive event_params for the acting NP faction where the choice is
+    unambiguous under the NP rules (§8.2.3: choose benefits for self;
+    §8.3.1: place/remove where most Legions, then Citadels, Allies).
+
+    Returns a params dict (merged over any existing event_params), or None.
+
+    SCOPE: This is the parameter-plumbing hook plus the clearly-derivable
+    cases. Most parameterized cards encode a card-specific choice (which
+    Region, which pieces, which Faction) whose faithful NP derivation is a
+    per-card workstream; those remain reported as 'needs parameters' rather
+    than guessed.
+    """
+    fn = _EVENT_PARAM_DERIVERS.get(card_id)
+    if fn is None:
+        return None
+    return fn(state, faction, shaded)
+
+
+def _derive_senate_direction(state, faction, shaded):
+    """Cicero / Senate-shift cards: each Faction shifts the Senate toward its
+    own benefit (§8.2.3). Romans favour Adulation (more Legions) -> DOWN;
+    Gallic/Germanic Factions favour Uproar (fewer Roman Legions) -> UP.
+    """
+    from fs_bot.rules_consts import ROMANS, SENATE_UP, SENATE_DOWN
+    return {"senate_direction": SENATE_DOWN if faction == ROMANS
+            else SENATE_UP}
+
+
+# Registry of per-card event_param derivers (extend as cards gain faithful
+# NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
+_EVENT_PARAM_DERIVERS = {
+    1: _derive_senate_direction,
+}

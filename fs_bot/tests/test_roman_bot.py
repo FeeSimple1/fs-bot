@@ -618,10 +618,18 @@ class TestNodeRBuild:
         state = _make_state()
         # Set Resources high enough for multiple builds
         state["resources"] = {ROMANS: 20}
-        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
+        # §4.2.1 Build eligibility: Caesar present + a Roman Ally so the
+        # Region is a legal Build target; then the Resource floor governs.
+        _place_roman_force(state, MANDUBII, leader=True, legions=2, auxilia=3)
+        from fs_bot.map.map_data import get_tribes_in_region
+        tribe = get_tribes_in_region(MANDUBII, state["scenario"])[0]
+        state["tribes"][tribe]["allied_faction"] = ROMANS
+        place_piece(state, MANDUBII, ROMANS, ALLY)
+        from fs_bot.board.control import refresh_all_control
+        refresh_all_control(state)
         _place_enemy_threat(state, MANDUBII, ARVERNI, warbands=3)
         plan = node_r_build(state)
-        # Should be able to place Forts with 20 Resources
+        # With an eligible Region and 20 Resources, Build produces actions.
         total_actions = len(plan["forts"]) + len(plan["subdue"]) + len(plan["allies"])
         assert total_actions > 0
 

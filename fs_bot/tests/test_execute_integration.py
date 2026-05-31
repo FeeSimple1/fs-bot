@@ -1307,3 +1307,28 @@ class TestEventParamDerivers3:
         assert (count_pieces(st, reg, AEDUI, WARBAND)
                 + count_pieces(st, reg, ROMANS, AUXILIA)) < enemy_before
         assert validate_state(st) == []
+
+
+def test_acard_event_param_derivers_registered():
+    """Slice 24: Ariovistus A-card derivers are wired and fire faithfully."""
+    from fs_bot.engine.execute import _EVENT_PARAM_DERIVERS, _execute_event
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces, find_leader
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, GERMANS, WARBAND,
+                                     EVENT_UNSHADED, GERMANIA_REGIONS)
+    for cid in ("A18", "A37", "A45", "A64", "A66"):
+        assert cid in _EVENT_PARAM_DERIVERS
+    # A18: Roman event removes all Germans from a non-Ariovistus Germania Region
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=2)
+    st["current_card"] = "A18"
+    gr = [r for r in GERMANIA_REGIONS if find_leader(st, GERMANS) != r][0]
+    place_piece(st, gr, GERMANS, WARBAND, 3)
+    refresh_all_control(st)
+    assert count_pieces(st, gr, GERMANS, WARBAND) > 0
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A18", "text_preference": EVENT_UNSHADED}})
+    assert res["executed"]
+    assert count_pieces(st, gr, GERMANS, WARBAND) == 0
+    assert validate_state(st) == []

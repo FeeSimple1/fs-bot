@@ -509,7 +509,9 @@ def _execute_march(state, faction, bot_action):
         Control. These need bot-side plan enrichment, a separate workstream.
     """
     details = bot_action.get("details") or {}
-    plan = details.get("march_plan", {}) or {}
+    # Threat-March plans live either nested under "march_plan" (Belgae/German/
+    # Arverni) or flat in details (Roman node_r_march). Accept both.
+    plan = details.get("march_plan") or details
     origins = plan.get("origins")
     destinations = plan.get("destinations")
 
@@ -518,6 +520,12 @@ def _execute_march(state, faction, bot_action):
         return {"executed": False, "command": _CMD_MARCH,
                 "reason": "march plan shape not execution-complete "
                           "(expand/mass routing deferred to bot enrichment)"}
+
+    # Normalize destinations to Region-name strings. The Roman bot emits
+    # (region, target_faction) tuples; the others emit plain strings.
+    destinations = [d[0] if isinstance(d, (list, tuple)) else d
+                    for d in destinations]
+    origins = [o[0] if isinstance(o, (list, tuple)) else o for o in origins]
 
     origin_set = set(origins)
     dest_pool = [d for d in destinations if d not in origin_set]

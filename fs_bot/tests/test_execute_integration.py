@@ -972,3 +972,42 @@ class TestBuildScoutEligibility:
                     r = t["region"]
                     assert cr is not None and (r == cr or _adj(r, cr)), (sc, seed, r)
                     assert _cps(st, r, ROMANS, AUXILIA, HIDDEN) > 0, (sc, seed, r)
+
+
+# ---------------------------------------------------------------------------
+# Roman March plan layout (slice 16) — Caesar must actually march (§8.8.1)
+# ---------------------------------------------------------------------------
+
+class TestRomanMarchExecutes:
+    def test_roman_flat_plan_and_tuple_dests_move_caesar(self):
+        # The Roman bot emits its March plan flat in details (origins/
+        # destinations) with destinations as (region, faction) tuples — unlike
+        # the other bots' nested {"march_plan": {...}} with string dests. The
+        # executor must handle both, else Roman Marches silently no-op and
+        # Caesar never moves.
+        from fs_bot.rules_consts import LEADER, LEGION, CAESAR
+        from fs_bot.board.pieces import find_leader
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+        # Use Caesar's actual starting Region as the origin (he is already on
+        # the map); place Legions with him and pick an adjacent destination.
+        origin = find_leader(st, ROMANS)
+        assert origin is not None
+        dest = get_adjacent(origin)[0]
+        place_piece(st, origin, ROMANS, LEGION, 2, from_legions_track=True)
+        # Make dest an Arverni-ally region (a legal March destination).
+        tribe = get_tribes_in_region(dest, st["scenario"])[0]
+        st["tribes"][tribe]["allied_faction"] = ARVERNI
+        place_piece(st, dest, ARVERNI, ALLY)
+        refresh_all_control(st)
+        assert find_leader(st, ROMANS) == origin
+        decision = {"action": "command", "bot_action": {
+            "command": "March", "regions": [dest], "sa": "No SA",
+            "sa_regions": [],
+            # Roman layout: flat in details, tuple destinations.
+            "details": {"origins": [origin],
+                        "destinations": [(dest, ARVERNI)],
+                        "dest_count": 1}}}
+        res = execute_decision(st, ROMANS, decision)
+        assert res["executed"] is True
+        assert find_leader(st, ROMANS) == dest  # Caesar actually marched
+        assert validate_state(st) == []

@@ -47,6 +47,9 @@ from fs_bot.commands.sa_suborn import suborn as _sa_suborn
 from fs_bot.commands.sa_build import build_fort as _sa_build_fort
 from fs_bot.commands.sa_build import build_subdue as _sa_build_subdue
 from fs_bot.commands.sa_build import build_place_ally as _sa_build_ally
+from fs_bot.commands.sa_rampage import rampage as _sa_rampage
+from fs_bot.board.pieces import count_pieces_by_state as _count_state
+from fs_bot.bots.bot_common import np_agrees_to_retreat
 from fs_bot.cards.card_effects import execute_event
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -73,6 +76,7 @@ _SA_DEVASTATE = "Devastate"
 _SA_INTIMIDATE = "Intimidate"
 _SA_SUBORN = "Suborn"
 _SA_BUILD = "Build"
+_SA_RAMPAGE = "Rampage"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
 _BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
@@ -558,6 +562,8 @@ def _execute_sa(state, faction, bot_action):
         return _execute_suborn(state, faction, bot_action)
     if sa == _SA_BUILD:
         return _execute_build(state, faction, bot_action)
+    if sa == _SA_RAMPAGE:
+        return _execute_rampage(state, faction, bot_action)
 
     return {"executed": False, "sa": sa,
             "reason": "SA not yet wired (plan translation deferred)"}
@@ -776,13 +782,12 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
         return (False, None)  # A3.2.4: Arverni never Retreat
 
     # Condition (3): a Retreat removes no pieces only if a legal destination
-    # exists — an adjacent Region under the defender's own Control.
-    dests = [r for r in get_adjacent(region)
-             if is_controlled_by(state, r, defender)]
-    if not dests:
+    # exists — an adjacent Region the defender Controls, OR one Controlled by
+    # a Faction that agrees to the Retreat (§1.5.2; Aedui/Romans per
+    # §8.6.6/§8.8.6, via np_agrees_to_retreat).
+    dest = _best_retreat_destination(state, region, defender)
+    if dest is None:
         return (False, None)
-    # Join the most friendly pieces; stable tie-break for determinism.
-    dest = max(sorted(dests), key=lambda r: count_pieces(state, r, defender))
 
     suffer = calculate_losses(state, region, attacker, defender)
     suffer_if_retreat = calculate_losses(
@@ -813,3 +818,106 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
         return (True, dest)
 
     return (False, None)
+
+
+def _retreat_destinations(state, region, faction):
+    """Adjacent Regions a faction may Retreat into (§8.4.3 + §1.5.2).
+
+    Includes Regions the faction Controls, plus Regions Controlled by another
+    Faction that agrees to the Retreat (np_agrees_to_retreat — Aedui/Romans
+    per §8.6.6/§8.8.6). Returns a list (possibly empty).
+    """
+    from fs_bot.rules_consts import FACTIONS
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.board.control import is_controlled_by
+
+    dests = []
+    for r in get_adjacent(region):
+        if is_controlled_by(state, r, faction):
+            dests.append(r)
+            continue
+        for c in FACTIONS:
+            if c == faction:
+                continue
+            if is_controlled_by(state, r, c):
+                if np_agrees_to_retreat(c, faction, state):
+                    dests.append(r)
+                break
+    return dests
+
+
+def _best_retreat_destination(state, region, faction):
+    """Pick the Retreat destination joining the most friendly pieces
+    (§8.4.3), with a deterministic tie-break. None if no legal destination.
+    """
+    dests = _retreat_destinations(state, region, faction)
+    if not dests:
+        return None
+    return max(sorted(dests), key=lambda r: count_pieces(state, r, faction))
+
+
+def _execute_rampage(state, faction, bot_action):
+    """Belgic Rampage (§4.5.2) — routes the TARGET's remove-vs-Retreat choice.
+
+    For each flipped Hidden Belgic Warband the target must remove or Retreat
+    one piece. The bot's rampage plan gives ``{region, target}``; we flip up
+    to 2 Warbands (capped by Hidden Belgic Warbands present and by how many
+    target pieces are available). The target loses its lowest-value mobile
+    pieces first (Warbands, then Auxilia, then Legions — §8.4.1), and
+    Retreats them to save them when a legal destination exists (§8.4.3),
+    otherwise removes them. In Ariovistus a Rampaged Arverni target is removed
+    rather than Retreating (A4.5).
+    """
+    from fs_bot.rules_consts import (
+        BELGAE, ARVERNI, WARBAND, AUXILIA, LEGION, HIDDEN, REVEALED,
+        ARIOVISTUS_SCENARIOS,
+    )
+    # The Belgae bot puts the Rampage plan in sa_regions as a list of dicts
+    # {region, target, forces_removal, adds_control}.
+    plan = [e for e in (bot_action.get("sa_regions") or [])
+            if isinstance(e, dict)]
+    if not plan:
+        return {"executed": False, "sa": _SA_RAMPAGE,
+                "reason": "no rampage plan with targets"}
+
+    scenario = state["scenario"]
+    done, errors = [], []
+    for entry in plan:
+        region = entry.get("region")
+        target = entry.get("target")
+        if region is None or target is None:
+            continue
+        hidden_belgic = _count_state(state, region, BELGAE, WARBAND, HIDDEN)
+        if hidden_belgic <= 0:
+            continue
+
+        # Build the ordered pool of target pieces to lose (lowest value 1st).
+        pool = []
+        for pt in (WARBAND, AUXILIA):
+            for ps in (REVEALED, HIDDEN):
+                pool += [(pt, ps)] * _count_state(state, region, target, pt, ps)
+        pool += [(LEGION, None)] * count_pieces(state, region, target, LEGION)
+        if not pool:
+            continue
+
+        n = min(2, hidden_belgic, len(pool))
+        dest = _best_retreat_destination(state, region, target)
+        force_remove = (scenario in ARIOVISTUS_SCENARIOS and target == ARVERNI)
+
+        actions = []
+        for i in range(n):
+            pt, ps = pool[i]
+            if dest is not None and not force_remove:
+                actions.append({"action": "retreat", "piece_type": pt,
+                                "piece_state": ps, "retreat_region": dest})
+            else:
+                actions.append({"action": "remove", "piece_type": pt,
+                                "piece_state": ps})
+        try:
+            _sa_rampage(state, region, target, n, actions)
+            done.append({"region": region, "target": target, "count": n})
+        except _EXEC_ERRORS as exc:
+            errors.append({"region": region, "target": target,
+                           "error": str(exc)})
+    return {"executed": len(done) > 0, "sa": _SA_RAMPAGE,
+            "rampages": done, "errors": errors}

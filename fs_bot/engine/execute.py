@@ -153,7 +153,7 @@ def _execute_event(state, faction, bot_action):
     ``shaded`` flag. Unimplemented card stubs or unknown ids are reported,
     not raised, so a full game keeps running.
     """
-    details = bot_action.get("details", {})
+    details = bot_action.get("details") or {}
     card_id = details.get("card_id", state.get("current_card"))
     shaded = details.get("text_preference") == EVENT_SHADED
 
@@ -197,9 +197,10 @@ def _execute_seize(state, faction, bot_action):
     The Build Special Activity that accompanies the bot's Seize is part of
     the SA wiring workstream and is not executed here.
     """
-    details = bot_action.get("details", {})
-    regions = bot_action.get("regions", []) or []
-    disperse_regions = set(details.get("disperse_regions", []) or [])
+    details = bot_action.get("details") or {}
+    regions = [r for r in (bot_action.get("regions") or []) if isinstance(r, str)]
+    disperse_regions = {r for r in (details.get("disperse_regions") or [])
+                        if isinstance(r, str)}
 
     per_region = []
     dispersed_total = 0
@@ -249,7 +250,7 @@ def _execute_raid(state, faction, bot_action):
     Any accompanying Special Activity (Devastate/Entreat/Intimidate) is part
     of the SA wiring workstream and is not executed here.
     """
-    details = bot_action.get("details", {})
+    details = bot_action.get("details") or {}
     raid_plan = details.get("raid_plan", []) or []
 
     # Preserve region order of first appearance.
@@ -309,7 +310,7 @@ def _execute_rally(state, faction, bot_action):
     prerequisites). Per-region CommandErrors are captured, not raised, so a
     plan that outruns Resources resolves as far as it legally can.
     """
-    details = bot_action.get("details", {})
+    details = bot_action.get("details") or {}
     plan = details.get("rally_plan", {}) or {}
 
     placed = []
@@ -364,7 +365,7 @@ def _execute_battle(state, faction, bot_action):
     standalone SAs accompanying a Battle (Scout, Intimidate) are not executed
     here.
     """
-    details = bot_action.get("details", {})
+    details = bot_action.get("details") or {}
     battle_plan = details.get("battle_plan", []) or []
     sa = bot_action.get("sa")
     # sa_regions are string Region names for Ambush/Besiege; other SAs
@@ -432,7 +433,7 @@ def _execute_recruit(state, faction, bot_action):
     Per-region errors are captured so the plan resolves as far as Resources
     allow. The accompanying Build SA is part of the SA workstream.
     """
-    details = bot_action.get("details", {})
+    details = bot_action.get("details") or {}
     plan = details.get("recruit_plan", []) or []
 
     placed = []
@@ -507,7 +508,7 @@ def _execute_march(state, faction, bot_action):
       - Mid-March Harassment (§3.2.2-3) and per-group leave-behind to retain
         Control. These need bot-side plan enrichment, a separate workstream.
     """
-    details = bot_action.get("details", {})
+    details = bot_action.get("details") or {}
     plan = details.get("march_plan", {}) or {}
     origins = plan.get("origins")
     destinations = plan.get("destinations")
@@ -615,6 +616,17 @@ def _march_with_harassment(state, faction, origin, path):
     return current
 
 
+def _sa_detail(bot_action, key):
+    """Fetch an SA plan by key from an action's details, tolerating both
+    layouts bots use: merged at the top level (Belgae) OR nested under
+    details["sa_details"] (Aedui, German battle).
+    """
+    d = bot_action.get("details") or {}
+    if d.get(key) is not None:
+        return d.get(key)
+    return (d.get("sa_details") or {}).get(key)
+
+
 def _execute_sa(state, faction, bot_action):
     """Execute a standalone Special Activity accompanying a Command.
 
@@ -708,8 +720,7 @@ def _execute_intimidate(state, faction, bot_action):
     of ONE target faction. We group entries by (region, target_faction), cap
     each group at the rules' 2 flips, and translate to one call per group.
     """
-    details = bot_action.get("details", {})
-    plan = details.get("intimidate_plan", []) or []
+    plan = _sa_detail(bot_action, "intimidate_plan") or []
 
     groups = {}
     order = []
@@ -750,8 +761,7 @@ def _execute_suborn(state, faction, bot_action):
     piece_state=None (any state); placed Aedui pieces use the Aedui faction.
     """
     from fs_bot.rules_consts import AEDUI as _AEDUI, ALLY as _ALLY,         WARBAND as _WARBAND, AUXILIA as _AUXILIA
-    details = bot_action.get("details", {})
-    plan = details.get("suborn_plan", []) or []
+    plan = _sa_detail(bot_action, "suborn_plan") or []
 
     done, errors = [], []
     for sp in plan:
@@ -1096,6 +1106,12 @@ def _execute_entreat(state, faction, bot_action):
     """
     plan = [e for e in (bot_action.get("sa_regions") or [])
             if isinstance(e, dict)]
+    if not plan:
+        # The Arverni Rally/March SA path passes only Region names and drops
+        # the Entreat action plan; recompute it against the current board
+        # (the Battle path passes the full plan and is used directly above).
+        from fs_bot.bots.arverni_bot import _check_entreat
+        plan = _check_entreat(state, state["scenario"]) or []
     done, errors = [], []
     for a in plan:
         act = a.get("action")
@@ -1177,7 +1193,7 @@ def _execute_enlist(state, faction, bot_action):
       - german_raid: a free German Raid (steal from the named player, else gain).
     """
     from fs_bot.rules_consts import GERMANS, BASE_SCENARIOS
-    ed = bot_action.get("details", {}).get("enlist")
+    ed = _sa_detail(bot_action, "enlist")
     if not isinstance(ed, dict):
         return {"executed": False, "sa": _SA_ENLIST,
                 "reason": "no enlist sub-command details"}
@@ -1193,12 +1209,16 @@ def _execute_enlist(state, faction, bot_action):
                            retreat_declaration=decl, retreat_region=rr)
         elif t == "german_march":
             origin, dest = ed.get("origin"), ed.get("destination")
-            _flip_origin_pieces(state, origin, GERMANS)
-            group = _mobile_march_group(state, GERMANS, origin)
-            if not _group_has_pieces(group):
+            if not _group_has_pieces(_mobile_march_group(state, GERMANS, origin)):
                 return {"executed": False, "sa": _SA_ENLIST,
                         "type": t, "reason": "no German pieces to March"}
-            march_group(state, GERMANS, origin, [dest], group, free=True)
+            playable = set(get_playable_regions(
+                scenario, state.get("capabilities")))
+            path = _bfs_march_path(origin, dest, playable)
+            if not path:
+                return {"executed": False, "sa": _SA_ENLIST, "type": t,
+                        "reason": "no path to enlist March destination"}
+            _march_with_harassment(state, GERMANS, origin, path)
         elif t == "german_march_hide":
             _flip_origin_pieces(state, ed.get("region"), GERMANS)
         elif t == "german_rally":

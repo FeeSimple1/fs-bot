@@ -867,3 +867,62 @@ class TestEventParamPlumbing:
         # Card with no deriver entry that needs params would be reported; here
         # we just confirm the happy path leaves state valid.
         assert validate_state(st) == []
+
+
+# ---------------------------------------------------------------------------
+# Regressions found by intensive smoke testing (slice 14)
+# ---------------------------------------------------------------------------
+
+import copy as _copy
+
+
+class TestSmokeRegressions:
+    def test_suborn_plan_read_from_nested_sa_details(self):
+        # BUG: Aedui nests SA plans under details["sa_details"]; the executor
+        # read only the top level, so Suborn never executed. _sa_detail must
+        # find the plan in either location.
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        place_piece(st, AEDUI_REGION, AEDUI, WARBAND, 1, piece_state=HIDDEN)
+        refresh_all_control(st)
+        before = count_pieces(st, AEDUI_REGION, AEDUI, WARBAND)
+        plan = [{"region": AEDUI_REGION, "actions": [{"action": "place_warband"}]}]
+        # Nested layout (Aedui style).
+        res = _execute_sa(st, AEDUI, {"sa": "Suborn", "sa_regions": [AEDUI_REGION],
+            "details": {"march_plan": {}, "sa_details": {"suborn_plan": plan}}})
+        assert res["executed"] is True
+        assert count_pieces(st, AEDUI_REGION, AEDUI, WARBAND) == before + 1
+        assert validate_state(st) == []
+
+    def test_entreat_recomputed_when_only_regions_passed(self):
+        # BUG: the Arverni Rally/March SA path passes only Region names and
+        # drops the Entreat action plan, so Entreat never executed. The
+        # executor must recompute the plan when no action dicts are present.
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        place_piece(st, MANDUBII, ARVERNI, WARBAND, 2)  # Arverni presence/control
+        place_piece(st, MANDUBII, AEDUI, WARBAND, 1, piece_state=REVEALED)
+        refresh_all_control(st)
+        # sa_regions carries only region NAME strings (the buggy path).
+        res = _execute_entreat(st, ARVERNI, {"sa": "Entreat",
+            "sa_regions": [MANDUBII], "details": {"march_plan": {}}})
+        # Either it found a faithful Entreat action to perform, or there was
+        # none available — but it must not silently no-op due to a dropped plan
+        # when a valid target exists. With an Aedui Warband present and Arverni
+        # control, a replace is available.
+        assert res["executed"] is True
+        assert validate_state(st) == []
+
+    def test_executor_robust_to_malformed_actions(self):
+        # Hardening: details=None and non-string regions must not raise.
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        for ba in [
+            {"command": "Seize", "sa": "No SA", "regions": [{"x": 1}],
+             "sa_regions": [], "details": None},
+            {"command": "Event", "sa": "No SA", "regions": [],
+             "sa_regions": [{"r": 1}], "details": None},
+            {"command": "March", "sa": "Enlist", "regions": None,
+             "sa_regions": None, "details": {"enlist": None}},
+        ]:
+            res = execute_decision(_copy.deepcopy(st), ROMANS,
+                                   {"action": "command", "bot_action": ba})
+            assert isinstance(res, dict)
+        assert validate_state(st) == []

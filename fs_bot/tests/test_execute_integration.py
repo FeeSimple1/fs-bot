@@ -2618,3 +2618,54 @@ def test_card52_free_command_includes_special_ability():
     assert fc["result"]["executed"] is True
     assert "sa_included" in fc          # SA-inclusion is now reported
     assert validate_state(st) == []
+
+
+def test_free_rally_layer_all_factions():
+    """Slice 48: _resolve_free_rally reuses each Faction's Rally node
+    (Recruit for Romans) and executes it."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _resolve_free_rally
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, BELGAE,
+        AEDUI, ROMANS)
+    for fac, cmd in ((ARVERNI, "Rally"), (BELGAE, "Rally"), (AEDUI, "Rally"),
+                     (ROMANS, "Recruit")):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=150)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        res = _resolve_free_rally(st, fac)
+        assert res["command"] == cmd and res["executed"] is True
+        assert validate_state(st) == []
+
+
+def test_cards_34_26_64_free_rally():
+    """Slice 48: cards 34 (free Rally/Recruit), 26 shaded (Arverni Rally near
+    Vercingetorix), 64 shaded (Belgae Rally in Belgica)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, BELGAE,
+        EVENT_UNSHADED, EVENT_SHADED)
+
+    def fr(card, faction, shaded, seed):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=seed)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        st["current_card"] = card
+        pref = EVENT_SHADED if shaded else EVENT_UNSHADED
+        res = _execute_event(st, faction, {"command": "Event", "sa": "No SA",
+            "sa_regions": [], "details": {"card_id": card,
+            "text_preference": pref}})
+        fa = [f for f in (res.get("free_actions") or [])
+              if f["free_action"] == "free_rally"]
+        return fa, st
+
+    fa, st = fr(34, ARVERNI, False, 151)
+    assert fa and fa[0]["result"]["executed"] is True
+    assert validate_state(st) == []
+    fa, st = fr(26, ARVERNI, True, 152)
+    assert fa and fa[0]["result"]["executed"] is True
+    assert validate_state(st) == []
+    fa, st = fr(64, BELGAE, True, 153)
+    assert fa and fa[0]["result"]["executed"] is True
+    assert validate_state(st) == []

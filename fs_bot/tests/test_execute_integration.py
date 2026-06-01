@@ -2010,3 +2010,39 @@ def test_card2_deriver_none_for_romans():
     from fs_bot.rules_consts import SCENARIO_GALLIC_WAR, ROMANS
     st = setup_scenario(SCENARIO_GALLIC_WAR, seed=31)
     assert _derive_card_2(st, ROMANS, True) is None
+
+
+def test_card70_roman_march_battle_to_named_region():
+    """Slice 36: Card 70 Camulogenus (unshaded) — Romans free March up to 4
+    Legions + any Auxilia to Atrebates/Carnutes/Mandubii and free Battle
+    there."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
+        WARBAND, AUXILIA, LEGION, EVENT_UNSHADED, ATREBATES, CARNUTES, MANDUBII)
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=40)
+    st["current_card"] = 70
+    for T in (ATREBATES, CARNUTES, MANDUBII):
+        _clear_region_mobiles(st, T)
+    place_piece(st, CARNUTES, ARVERNI, WARBAND, 5)
+    src = get_adjacent(CARNUTES, SCENARIO_GALLIC_WAR)[0]
+    _clear_region_mobiles(st, src)
+    place_piece(st, src, ROMANS, LEGION, 6, from_legions_track=True)  # > 4 cap
+    place_piece(st, src, ROMANS, AUXILIA, 6)
+    refresh_all_control(st)
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 70,
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    mb = next(f for f in fa if f["free_action"] == "march_battle")
+    assert mb["region"] == CARNUTES and mb["defender"] == ARVERNI
+    # Legion cap of 4 enforced; all Auxilia move.
+    assert mb["moved"]["legions"] == 4
+    assert mb["moved"]["auxilia"] == 6
+    assert count_pieces(st, CARNUTES, ROMANS, LEGION) == 4
+    assert count_pieces(st, CARNUTES, ARVERNI, WARBAND) == 0  # Battled away
+    assert validate_state(st) == []

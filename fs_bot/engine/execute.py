@@ -346,6 +346,46 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     return res
 
 
+def _resolve_free_rally(state, faction, allowed_regions=None):
+    """Execute a *free* Rally (Recruit for the Romans) for ``faction`` using
+    that Faction's own Rally node — node_a/v/b/g_rally, or node_r_recruit. The
+    node returns a Rally/Recruit action with its plan; we execute it through
+    the command executors, optionally restricting to ``allowed_regions``.
+    Game-run Factions and any non-Rally fallthrough yield no action."""
+    nodes = {
+        "Aedui": ("fs_bot.bots.aedui_bot", "node_a_rally"),
+        "Arverni": ("fs_bot.bots.arverni_bot", "node_v_rally"),
+        "Belgae": ("fs_bot.bots.belgae_bot", "node_b_rally"),
+        "Germans": ("fs_bot.bots.german_bot", "node_g_rally"),
+        "Romans": ("fs_bot.bots.roman_bot", "node_r_recruit"),
+    }
+    spec = nodes.get(faction)
+    if spec is None:
+        return {"executed": False, "command": None,
+                "reason": "no Rally node for Faction"}
+    import importlib
+    try:
+        node = getattr(importlib.import_module(spec[0]), spec[1])
+        bot_action = node(state)
+    except Exception as exc:
+        return {"executed": False, "command": None, "reason": repr(exc)}
+    if not bot_action:
+        return {"executed": False, "command": None,
+                "reason": "Rally node produced no action"}
+    cmd = bot_action.get("command")
+    if cmd not in (_CMD_RALLY, _CMD_RECRUIT):
+        return {"executed": False, "command": cmd,
+                "reason": "no free Rally available (node fell through)"}
+    if allowed_regions is not None:
+        bot_action = _constrain_bot_action(bot_action, set(allowed_regions))
+        if bot_action is None:
+            return {"executed": False, "command": cmd,
+                    "reason": "no Rally action in the allowed Region(s)"}
+    res = _execute_bot_command(state, faction, bot_action)
+    return res if res is not None else {"executed": False, "command": cmd,
+                                        "reason": "Rally not executable"}
+
+
 # ===========================================================================
 # Free-action execution layer (event-granted free Battles/Commands)
 # ---------------------------------------------------------------------------
@@ -664,7 +704,40 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card35_gallic(state, faction))
     if mods.get("card_35_free_limited_command"):
         results.extend(_resolve_card35_roman(state, faction))
+    if mods.get("card_34_free_rally"):
+        results.append({"free_action": "free_rally", "flag": "card_34",
+                        "result": _resolve_free_rally(state, faction)})
+    if mods.get("card_26_arverni_rally"):
+        results.extend(_resolve_card26_arverni_rally(state))
+    if mods.get("card_64_belgae_rally"):
+        results.extend(_resolve_card64_belgae_rally(state))
     return results
+
+
+def _resolve_card26_arverni_rally(state):
+    """Card 26 Gobannitio (shaded): the Arverni free Rally within 1 Region of
+    Vercingetorix."""
+    from fs_bot.rules_consts import ARVERNI
+    from fs_bot.board.pieces import find_leader
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    leader = find_leader(state, ARVERNI)
+    if leader is None:
+        return [{"free_action": "free_rally", "flag": "card_26",
+                 "executed": False, "reason": "Vercingetorix not on map"}]
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    allowed = ({leader} | set(get_adjacent(leader, state["scenario"]))) & playable
+    return [{"free_action": "free_rally", "flag": "card_26",
+             "result": _resolve_free_rally(state, ARVERNI, allowed_regions=allowed)}]
+
+
+def _resolve_card64_belgae_rally(state):
+    """Card 64 Correus (shaded): the Belgae free Rally in 1 Belgica Region."""
+    from fs_bot.rules_consts import BELGAE, BELGICA_REGIONS
+    from fs_bot.map.map_data import get_playable_regions
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    allowed = set(BELGICA_REGIONS) & playable
+    return [{"free_action": "free_rally", "flag": "card_64",
+             "result": _resolve_free_rally(state, BELGAE, allowed_regions=allowed)}]
 
 
 def _resolve_card35_roman(state, faction):

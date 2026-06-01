@@ -711,7 +711,101 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card26_arverni_rally(state))
     if mods.get("card_64_belgae_rally"):
         results.extend(_resolve_card64_belgae_rally(state))
+    if mods.get("card_25_extra_losses"):
+        results.extend(_resolve_card25_battle(
+            state, faction, mods.get("card_25_battle_region"),
+            mods.get("card_25_extra_losses", 3)))
+    if mods.get("card_36_free_battle"):
+        results.extend(_resolve_card36_battle(state, faction))
+    if mods.get("card_21_no_fort"):
+        results.extend(_resolve_card21_provincia_battle(state))
     return results
+
+
+def _resolve_card25_battle(state, faction, region, extra):
+    """Card 25 Aquitani (unshaded): free Battle in Pictones/Arverni with
+    ``extra`` extra Losses and 1 Ally (not Citadel) removed first."""
+    from fs_bot.battle.resolve import resolve_battle
+    if region is None:
+        return [{"free_action": "battle", "flag": "card_25", "executed": False,
+                 "reason": "no Pictones/Arverni Battle target"}]
+    defender = _rank_free_battle_defender(state, region, faction)
+    if defender is None:
+        return [{"free_action": "battle", "flag": "card_25", "executed": False,
+                 "reason": "no enemy in Region"}]
+    rd, rr = _decide_defender_retreat(state, region, faction, defender, False)
+    try:
+        res = resolve_battle(state, region, faction, defender,
+                             extra_losses=extra, ally_first=True,
+                             retreat_declaration=rd, retreat_region=rr)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "battle", "flag": "card_25",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "battle", "flag": "card_25", "region": region,
+             "defender": defender, "result": res}]
+
+
+def _resolve_card36_battle(state, faction):
+    """Card 36 Morasses (unshaded): free Battle against a Gallic Faction in 1
+    Region — No Retreat, No Counterattack, no Citadel effect, Attackers
+    Hidden."""
+    from fs_bot.rules_consts import (ARVERNI, AEDUI, BELGAE, WARBAND, LEGION,
+                                     AUXILIA)
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.battle.resolve import resolve_battle
+    gallic = {ARVERNI, AEDUI, BELGAE}
+    best = None  # (region, defender, enemy_mobile)
+    for R in get_playable_regions(state["scenario"], state.get("capabilities")):
+        if not _attacker_has_force(state, R, faction):
+            continue
+        for d in gallic:
+            if d == faction or count_pieces(state, R, d) <= 0:
+                continue
+            mob = (count_pieces(state, R, d, WARBAND)
+                   + count_pieces(state, R, d, AUXILIA)
+                   + count_pieces(state, R, d, LEGION))
+            if best is None or mob > best[2]:
+                best = (R, d, mob)
+    if best is None:
+        return [{"free_action": "battle", "flag": "card_36", "executed": False,
+                 "reason": "no Gallic Faction to Battle"}]
+    R, d, _m = best
+    try:
+        res = resolve_battle(state, R, faction, d,
+                             retreat_declaration=False,
+                             no_counterattack=True, ignore_citadel=True,
+                             attacker_stays_hidden=True)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "battle", "flag": "card_36",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "battle", "flag": "card_36", "region": R,
+             "defender": d, "result": res}]
+
+
+def _resolve_card21_provincia_battle(state):
+    """Card 21 The Province (shaded): after the Arverni place Warbands in
+    Provincia, they free Battle there as if no Fort (the Provincia Fort gives
+    no protection)."""
+    from fs_bot.rules_consts import ARVERNI, PROVINCIA
+    from fs_bot.battle.resolve import resolve_battle
+    if not _attacker_has_force(state, PROVINCIA, ARVERNI):
+        return [{"free_action": "battle", "flag": "card_21", "executed": False,
+                 "reason": "no Arverni force in Provincia"}]
+    defender = _rank_free_battle_defender(state, PROVINCIA, ARVERNI)
+    if defender is None:
+        return [{"free_action": "battle", "flag": "card_21", "executed": False,
+                 "reason": "no enemy in Provincia"}]
+    rd, rr = _decide_defender_retreat(state, PROVINCIA, ARVERNI, defender, False)
+    try:
+        res = resolve_battle(state, PROVINCIA, ARVERNI, defender,
+                             ignore_fort=True,
+                             retreat_declaration=rd, retreat_region=rr)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "battle", "flag": "card_21",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "battle", "flag": "card_21", "region": PROVINCIA,
+             "defender": defender, "result": res}]
 
 
 def _resolve_card26_arverni_rally(state):
@@ -3554,11 +3648,32 @@ def _derive_card_70(state, faction, shaded):
     return {"placements": [{"region": R, "count": min(6, avail)}]}
 
 
+def _derive_card_25(state, faction, shaded):
+    """Card 25 Aquitani (unshaded): free Battle in Pictones or the Arverni
+    Region. Choose the one where the acting Faction has an attacking force and
+    an enemy is present (most enemy pieces). Shaded is a Capability."""
+    if shaded:
+        return None
+    from fs_bot.rules_consts import PICTONES, ARVERNI_REGION, FACTIONS
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    best = None
+    for R in (PICTONES, ARVERNI_REGION):
+        if R not in playable or not _attacker_has_force(state, R, faction):
+            continue
+        enemy = sum(count_pieces(state, R, f) for f in FACTIONS if f != faction)
+        if enemy > 0 and (best is None or enemy > best[1]):
+            best = (R, enemy)
+    return {"battle_region": best[0]} if best else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
     2: _derive_card_2,
+    25: _derive_card_25,
     4: _derive_card_4,
     70: _derive_card_70,
     11: _derive_card_11,

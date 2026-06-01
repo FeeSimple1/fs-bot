@@ -452,7 +452,65 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_65_german_march_ambush"):
         results.extend(_resolve_card65_german_march_ambush(
             state, mods.get("card_65_march_regions", 2)))
+    if mods.get("card_17_german_ambush"):
+        results.extend(_resolve_card17_march_ambush(
+            state, mods.get("card_17_march_german_groups", 3)))
+    if mods.get("card_17_germans_phase"):
+        results.extend(_resolve_card17_germans_phase(state))
     return results
+
+
+def _resolve_card17_march_ambush(state, march_limit):
+    """Card 17 Germanic Chieftains (unshaded): "Romans March up to 3 German
+    groups, then Ambush with Germans in any 1 Region." Setup March of up to
+    march_limit German groups (shared helper), then Ambush in the single best
+    Region (Hidden-majority, Loss-causing; most enemy pieces — per Roman
+    Battle priority 8.8.1's spirit)."""
+    from fs_bot.rules_consts import GERMANS
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.battle.resolve import resolve_battle
+    marched = _german_setup_marches(state, march_limit)
+    # Single best Ambush Region.
+    best, best_tgt, best_score = None, None, None
+    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
+        tgt = _german_ambush_target(state, region)
+        if tgt is None:
+            continue
+        score = count_pieces(state, region, tgt)
+        if best_score is None or score > best_score:
+            best, best_tgt, best_score = region, tgt, score
+    if best is None:
+        return [{"free_action": "german_march_ambush",
+                 "flag": "card_17_german_ambush", "marches": marched,
+                 "executed": False, "reason": "no legal German Ambush"}]
+    try:
+        res = resolve_battle(state, best, GERMANS, best_tgt, is_ambush=True)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "german_march_ambush",
+                 "flag": "card_17_german_ambush", "marches": marched,
+                 "region": best, "executed": False, "reason": repr(exc)}]
+    refresh_all_control(state)
+    return [{"free_action": "german_march_ambush",
+             "flag": "card_17_german_ambush", "marches": marched,
+             "region": best, "defender": best_tgt, "result": res}]
+
+
+def _resolve_card17_germans_phase(state):
+    """Card 17 Germanic Chieftains (shaded): "Conduct an immediate Germans
+    Phase as if Winter." Runs the full §6.2 Germans Phase (Rally, March, Raid,
+    Battle-with-Ambush). Base game only; returns no-op in Ariovistus (where
+    the Germans are a full Faction with no Germans Phase)."""
+    from fs_bot.engine.winter import germans_phase
+    try:
+        res = germans_phase(state)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "germans_phase", "flag":
+                 "card_17_germans_phase", "executed": False,
+                 "reason": repr(exc)}]
+    return [{"free_action": "germans_phase", "flag": "card_17_germans_phase",
+             "executed": res is not None, "result": res}]
 
 
 def _german_ambush_target(state, region):
@@ -485,6 +543,56 @@ def _german_ambush_target(state, region):
     return best
 
 
+def _german_setup_marches(state, march_limit):
+    """Up to ``march_limit`` German setup Marches: gather a Region's German
+    Hidden Warbands one step into an adjacent enemy-occupied Region where the
+    move newly enables a legal, Loss-causing Ambush. Ranked by enemy force
+    exposed; never strips a Region that already has a legal Ambush of its own.
+    Returns the list of marches performed. (Shared by cards 65 and 17.)"""
+    from fs_bot.rules_consts import GERMANS, WARBAND, HIDDEN
+    from fs_bot.board.pieces import count_pieces, count_pieces_by_state, move_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    scen = state["scenario"]
+    playable = list(get_playable_regions(scen, state.get("capabilities")))
+    candidates = []
+    for S in playable:
+        hid = count_pieces_by_state(state, S, GERMANS, WARBAND, HIDDEN)
+        if hid <= 0:
+            continue
+        if _german_ambush_target(state, S) is not None:
+            continue
+        for B in get_adjacent(S, scen):
+            if B not in playable:
+                continue
+            if _german_ambush_target(state, B) is not None:
+                continue
+            move_piece(state, S, B, GERMANS, WARBAND, count=hid,
+                       piece_state=HIDDEN)
+            tgt = _german_ambush_target(state, B)
+            exposed = count_pieces(state, B, tgt) if tgt else 0
+            move_piece(state, B, S, GERMANS, WARBAND, count=hid,
+                       piece_state=HIDDEN)
+            if tgt is not None:
+                candidates.append((exposed, S, B, hid))
+    candidates.sort(key=lambda c: -c[0])
+    marched, used = [], set()
+    for exposed, S, B, hid in candidates:
+        if len(marched) >= march_limit:
+            break
+        if S in used:
+            continue
+        cur = count_pieces_by_state(state, S, GERMANS, WARBAND, HIDDEN)
+        if cur <= 0:
+            continue
+        move_piece(state, S, B, GERMANS, WARBAND, count=cur, piece_state=HIDDEN)
+        used.add(S)
+        marched.append({"source": S, "dest": B, "warbands": cur})
+    if marched:
+        refresh_all_control(state)
+    return marched
+
+
 def _resolve_card65_german_march_ambush(state, march_limit):
     """Card 65 German Allegiances (unshaded): "March Germans from up to 2
     Regions, then Ambush with all Germans able."
@@ -505,47 +613,7 @@ def _resolve_card65_german_march_ambush(state, march_limit):
     scen = state["scenario"]
     playable = list(get_playable_regions(scen, state.get("capabilities")))
 
-    # ---- Setup March: pick up to march_limit (S -> B) moves that enable a
-    # new Ambush (no legal target in B now, but one after the German group
-    # arrives). Rank by enemy pieces exposed.
-    candidates = []
-    for S in playable:
-        hid = count_pieces_by_state(state, S, GERMANS, WARBAND, HIDDEN)
-        if hid <= 0:
-            continue
-        # Do not strip a Region that already has a legal Ambush of its own.
-        if _german_ambush_target(state, S) is not None:
-            continue
-        for B in get_adjacent(S, scen):
-            if B not in playable:
-                continue
-            if _german_ambush_target(state, B) is not None:
-                continue  # already able to Ambush here without the March
-            # Simulate the gather to see if it would enable an Ambush.
-            move_piece(state, S, B, GERMANS, WARBAND, count=hid,
-                       piece_state=HIDDEN)
-            tgt = _german_ambush_target(state, B)
-            exposed = count_pieces(state, B, tgt) if tgt else 0
-            move_piece(state, B, S, GERMANS, WARBAND, count=hid,
-                       piece_state=HIDDEN)  # revert
-            if tgt is not None:
-                candidates.append((exposed, S, B, hid))
-    candidates.sort(key=lambda c: -c[0])
-    marched = []
-    used_sources = set()
-    for exposed, S, B, hid in candidates:
-        if len(marched) >= march_limit:
-            break
-        if S in used_sources:
-            continue
-        cur = count_pieces_by_state(state, S, GERMANS, WARBAND, HIDDEN)
-        if cur <= 0:
-            continue
-        move_piece(state, S, B, GERMANS, WARBAND, count=cur, piece_state=HIDDEN)
-        used_sources.add(S)
-        marched.append({"source": S, "dest": B, "warbands": cur})
-    if marched:
-        refresh_all_control(state)
+    marched = _german_setup_marches(state, march_limit)
 
     # ---- Ambush with all Germans able (every legal Region).
     ambushes = []

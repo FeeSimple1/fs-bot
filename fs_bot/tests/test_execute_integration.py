@@ -2242,3 +2242,64 @@ def test_card65_german_march_then_ambush_all_able():
     assert count_pieces(st, B, ROMANS, AUXILIA) == 1        # 5wb -> 2 Losses
     assert count_pieces(st, S, GERMANS, WARBAND) == 0       # marched out
     assert validate_state(st) == []
+
+
+def test_card17_unshaded_march_then_single_ambush():
+    """Slice 40: Card 17 Germanic Chieftains (unshaded) — setup March up to 3
+    German groups, then Ambush in the single best Region (most enemy pieces)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
+        GERMANS, WARBAND, AUXILIA, EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=80)
+    st["current_card"] = 17
+    pl = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))
+    for r in pl:
+        _full_clear_region(st, r, SCENARIO_GALLIC_WAR)
+    A = pl[3]   # bigger enemy stack
+    place_piece(st, A, GERMANS, WARBAND, 6)
+    place_piece(st, A, ARVERNI, WARBAND, 4)
+    B = pl[5]   # smaller enemy stack
+    place_piece(st, B, GERMANS, WARBAND, 6)
+    place_piece(st, B, ROMANS, AUXILIA, 1)
+    refresh_all_control(st)
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 17,
+        "text_preference": EVENT_UNSHADED}})
+    fa = (res.get("free_actions") or [])[0]
+    # Exactly one Region Ambushed, the larger target.
+    assert fa["region"] == A and fa["defender"] == ARVERNI
+    assert count_pieces(st, A, ARVERNI, WARBAND) == 1   # 6wb -> 3 Losses
+    assert count_pieces(st, B, ROMANS, AUXILIA) == 1    # other Region untouched
+    assert validate_state(st) == []
+
+
+def test_card17_shaded_germans_phase():
+    """Slice 40: Card 17 (shaded) — conduct an immediate Germans Phase as if
+    Winter (base game only)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, SCENARIO_ARIOVISTUS,
+        ROMANS, EVENT_SHADED)
+    # Base scenario: the full Germans Phase runs.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=82)
+    st["current_card"] = 17
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 17,
+        "text_preference": EVENT_SHADED}})
+    f = (res.get("free_actions") or [])[0]
+    assert f["executed"] is True
+    assert set(f["result"].keys()) == {"rally", "march", "raid", "battle"}
+    assert validate_state(st) == []
+    # Ariovistus: there is no Germans Phase -> no-op (executed False).
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=82)
+    st2["current_card"] = 17
+    res2 = _execute_event(st2, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 17,
+        "text_preference": EVENT_SHADED}})
+    assert (res2.get("free_actions") or [{}])[0].get("executed") is False

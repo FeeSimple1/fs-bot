@@ -2757,3 +2757,53 @@ def test_cards_25_36_21_battle_events():
         "sa_regions": [], "details": {"card_id": 21,
         "text_preference": EVENT_SHADED}})
     assert validate_state(st3) == []
+
+
+def test_cards_48_47_62_free_commands():
+    """Slice 50: card 48 (each Gallic Faction a free Limited Command), card 47
+    (council free Limited Commands / Eligible), card 62 (War Fleet free
+    Command in a coastal Region)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI,
+        EVENT_UNSHADED)
+    for card in (48, 47, 62):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=170 + card)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        st["current_card"] = card
+        res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+            "sa_regions": [], "details": {"card_id": card,
+            "text_preference": EVENT_UNSHADED}})
+        fa = res.get("free_actions") or []
+        assert fa, f"card {card} produced no free action"
+        assert validate_state(st) == []
+
+
+def test_card53_and_card29_germans_phase_no_crash():
+    """Slice 50: cards 53 and 29 conduct an immediate Germans Phase without
+    crashing (raid loop guarded; imports intact)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, SCENARIO_ARIOVISTUS,
+        AEDUI, EVENT_SHADED)
+    # Card 53 (base): runs the Germans Phase (skip March) cleanly.
+    for seed in range(8):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=seed)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        st["current_card"] = 53
+        res = _execute_event(st, AEDUI, {"command": "Event", "sa": "No SA",
+            "sa_regions": [], "details": {"card_id": 53,
+            "text_preference": EVENT_SHADED}})
+        assert res["executed"] is True
+        assert validate_state(st) == []
+    # Card 29 (Ariovistus shaded path uses the Germans Phase too) — no crash.
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = 29
+    _execute_event(st2, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 29, "text_preference": EVENT_SHADED}})
+    assert validate_state(st2) == []

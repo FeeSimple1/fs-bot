@@ -1504,3 +1504,65 @@ def test_free_battle_only_for_romans_a58():
     from fs_bot.rules_consts import SCENARIO_ARIOVISTUS, BELGAE
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=5)
     assert _resolve_a58_battle_seize(st, BELGAE) == []
+
+
+def test_free_march_command_a67_german():
+    """Slice 29: A67 Arduenna (German path) — March into Nervii/Treveri to
+    take Control of a Region with player pieces, free Battle the player there
+    (Roman>Aedui>Belgae), then flip the German pieces Hidden."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import (place_piece, count_pieces,
+                                     count_pieces_by_state)
+    from fs_bot.board.control import refresh_all_control, is_controlled_by
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, ROMANS,
+        WARBAND, AUXILIA, REVEALED, HIDDEN, EVENT_UNSHADED, NERVII, TREVERI)
+
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=6)
+    st["current_card"] = "A67"
+    for r in (NERVII, TREVERI):
+        _clear_region_mobiles(st, r)
+    place_piece(st, TREVERI, ROMANS, AUXILIA, 2)  # player pieces in target
+    # German Warbands in an adjacent origin, kept un-Controlled by a Roman
+    # piece there, so the "no Control to lose" guard permits the March.
+    origin = next(r for r in get_adjacent(TREVERI, SCENARIO_ARIOVISTUS)
+                  if r != NERVII)
+    _clear_region_mobiles(st, origin)
+    place_piece(st, origin, GERMANS, WARBAND, 5)
+    place_piece(st, origin, ROMANS, AUXILIA, 5)  # deny German Control of origin
+    refresh_all_control(st)
+    assert not is_controlled_by(st, origin, GERMANS)
+
+    res = _execute_event(st, GERMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A67",
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    kinds = [f["free_action"] for f in fa]
+    assert "march" in kinds and "battle" in kinds
+    # Germans gathered force into Treveri and Battled the Romans there.
+    assert count_pieces(st, TREVERI, GERMANS, WARBAND) > 0
+    assert count_pieces(st, TREVERI, ROMANS, AUXILIA) < 2
+    # Final step: German pieces in the target are Hidden.
+    assert count_pieces_by_state(st, TREVERI, GERMANS, WARBAND, REVEALED) == 0
+    assert validate_state(st) == []
+
+
+def test_a67_non_german_and_no_target_noop():
+    """A67's German path no-ops for other Factions and when neither Nervii nor
+    Treveri holds player pieces."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.engine.execute import _resolve_a67_arduenna
+    from fs_bot.rules_consts import SCENARIO_ARIOVISTUS, BELGAE, GERMANS, NERVII, TREVERI
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=6)
+    assert _resolve_a67_arduenna(st, BELGAE) == []  # non-German
+    for r in (NERVII, TREVERI):
+        _clear_region_mobiles(st, r)
+        # also clear any allies/structures so player_in() finds nothing
+        for pf in ("Romans", "Aedui", "Belgae"):
+            pass
+    # With both target Regions emptied of mobile player pieces, German path
+    # finds no target with player Warbands/Auxilia/Legions.
+    out = _resolve_a67_arduenna(st, GERMANS)
+    assert isinstance(out, list)

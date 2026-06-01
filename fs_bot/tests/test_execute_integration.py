@@ -2186,3 +2186,59 @@ def test_card58_shaded_german_ambush_at_fort():
     assert count_pieces(st, R, ROMANS, AUXILIA) == 0
     assert count_pieces(st, adj, GERMANS, WARBAND) == 0  # marched in
     assert validate_state(st) == []
+
+
+def _full_clear_region(state, region, scenario):
+    from fs_bot.board.pieces import count_pieces, remove_piece
+    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.rules_consts import (FACTIONS, WARBAND, LEGION, AUXILIA, ALLY,
+        CITADEL)
+    for f in FACTIONS:
+        for pt in (WARBAND, LEGION, AUXILIA, ALLY, CITADEL):
+            n = count_pieces(state, region, f, pt)
+            if n:
+                remove_piece(state, region, f, pt, count=n)
+    for t in get_tribes_in_region(region, scenario):
+        ti = state["tribes"].get(t)
+        if ti:
+            ti["allied_faction"] = None
+
+
+def test_card65_german_march_then_ambush_all_able():
+    """Slice 39: Card 65 German Allegiances (unshaded) — setup March (<=2
+    Regions) into an enemy Region to enable an Ambush, then Ambush with all
+    Germans able; an existing Ambush is not stripped to fund a March."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
+        GERMANS, BELGAE, WARBAND, AUXILIA, EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=72)
+    st["current_card"] = 65
+    pl = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))
+    for r in pl:
+        _full_clear_region(st, r, SCENARIO_GALLIC_WAR)
+    A = pl[3]
+    B = pl[7]
+    S = next(a for a in get_adjacent(B, SCENARIO_GALLIC_WAR)
+             if a in pl and a != A)
+    place_piece(st, A, GERMANS, WARBAND, 6)   # existing Ambush vs Arverni
+    place_piece(st, A, ARVERNI, WARBAND, 2)
+    place_piece(st, B, ROMANS, AUXILIA, 3)    # enemy, no German yet
+    place_piece(st, S, GERMANS, WARBAND, 5)   # clean March source
+    refresh_all_control(st)
+    res = _execute_event(st, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 65,
+        "text_preference": EVENT_UNSHADED}})
+    fa = (res.get("free_actions") or [])[0]
+    # The clean source marched into B (A was not stripped).
+    assert any(m["source"] == S and m["dest"] == B for m in fa["marches"])
+    amb_regions = {a["region"] for a in fa["ambushes"] if "defender" in a}
+    assert A in amb_regions and B in amb_regions
+    assert count_pieces(st, A, ARVERNI, WARBAND) == 0       # existing Ambush kept
+    assert count_pieces(st, B, ROMANS, AUXILIA) == 1        # 5wb -> 2 Losses
+    assert count_pieces(st, S, GERMANS, WARBAND) == 0       # marched out
+    assert validate_state(st) == []

@@ -331,8 +331,6 @@ def execute_card_5(state, shaded=False):
     """
     if not shaded:
         # Unshaded: Place Gallia Togata marker and 3 Auxilia in Cisalpina
-        state.setdefault("markers", {})
-        state["markers"].setdefault(CISALPINA, set())
         _add_region_marker(state, CISALPINA, MARKER_GALLIA_TOGATA)
         avail = get_available(state, ROMANS, AUXILIA)
         to_place = min(3, avail)
@@ -1931,8 +1929,6 @@ def execute_card_49(state, shaded=False):
                 devastate_region = region
                 break
     if devastate_region:
-        state.setdefault("markers", {})
-        state["markers"].setdefault(devastate_region, set())
         _add_region_marker(state, devastate_region, MARKER_DEVASTATED)
 
     # Step 3: Each Faction removes 1 piece from each Devastated Region

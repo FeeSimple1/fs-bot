@@ -163,9 +163,14 @@ def intimidate(state, region, warbands_to_flip, target_faction,
 
     # Place Intimidated marker
     markers = state.setdefault("markers", {})
-    region_markers = markers.setdefault(region, {})
-    if MARKER_INTIMIDATED not in region_markers:
-        region_markers[MARKER_INTIMIDATED] = True
+    region_markers = markers.get(region)
+    if MARKER_INTIMIDATED not in (region_markers or {}):
+        if isinstance(region_markers, set):
+            region_markers.add(MARKER_INTIMIDATED)
+        elif isinstance(region_markers, dict):
+            region_markers[MARKER_INTIMIDATED] = True
+        else:
+            markers[region] = {MARKER_INTIMIDATED: True}
         result["intimidated_placed"] = True
 
     # Remove target pieces

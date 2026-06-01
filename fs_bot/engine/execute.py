@@ -190,6 +190,41 @@ def _execute_bot_command(state, faction, bot_action):
     return result
 
 
+def _primary_command_region(bot_action):
+    """The first Region a Command's plan acts in/from (for a Limited Command's
+    single-Region restriction)."""
+    cmd = bot_action.get("command")
+    d = bot_action.get("details") or {}
+    def reg_of(e):
+        return e if isinstance(e, str) else (e.get("region") if isinstance(e, dict) else None)
+    if cmd == _CMD_BATTLE:
+        plan = d.get("battle_plan") or []
+        return reg_of(plan[0]) if plan else None
+    if cmd == _CMD_RAID:
+        plan = d.get("raid_plan") or []
+        return reg_of(plan[0]) if plan else None
+    if cmd == _CMD_RECRUIT:
+        plan = d.get("recruit_plan") or []
+        return reg_of(plan[0]) if plan else None
+    if cmd == _CMD_RALLY:
+        rp = d.get("rally_plan") or {}
+        for k in ("citadels", "allies", "warbands"):
+            if rp.get(k):
+                return reg_of(rp[k][0])
+        return None
+    if cmd == _CMD_SEIZE:
+        regs = bot_action.get("regions") or []
+        return regs[0] if regs else None
+    if cmd == _CMD_MARCH:
+        plan = d.get("march_plan") or d
+        origins = plan.get("origins") or []
+        if origins:
+            o = origins[0]
+            return o[0] if isinstance(o, (list, tuple)) else o
+        return None
+    return None
+
+
 def _constrain_bot_action(bot_action, allowed):
     """Filter a chosen Command's plan to ``allowed`` Regions (for an event's
     "in/from <Region>" restriction). Returns a constrained copy of the action,
@@ -253,7 +288,8 @@ def _constrain_bot_action(bot_action, allowed):
     return ba
 
 
-def _resolve_free_command(state, faction, allowed_regions=None):
+def _resolve_free_command(state, faction, allowed_regions=None,
+                          exclude_commands=None, limited=False):
     """Execute one *free* Command for ``faction`` using its real flowchart.
 
     Event cards that grant "a free Command" (e.g. card 9 Mons Cevenna, card 70
@@ -285,6 +321,19 @@ def _resolve_free_command(state, faction, allowed_regions=None):
     if cmd in (None, _CMD_EVENT):
         return {"executed": False, "command": cmd,
                 "reason": "flowchart chose no free Command"}
+    if exclude_commands and cmd in exclude_commands:
+        # e.g. card 35 "no Battles": the flowchart's choice is disallowed here.
+        return {"executed": False, "command": cmd,
+                "reason": f"{cmd} excluded by card (e.g. no Battles)"}
+    if limited:
+        # Limited Command (§): one Region, no Special Activity.
+        bot_action = dict(bot_action)
+        bot_action["sa"] = SA_ACTION_NONE_LABEL
+        bot_action["sa_regions"] = []
+        primary = _primary_command_region(bot_action)
+        if primary is not None:
+            allowed_regions = ({primary} if allowed_regions is None
+                               else set(allowed_regions) & {primary})
     if allowed_regions is not None:
         bot_action = _constrain_bot_action(bot_action, set(allowed_regions))
         if bot_action is None:
@@ -611,7 +660,32 @@ def _resolve_free_actions(state, faction):
                         "result": _resolve_free_command(state, _AEDUI)})
     if mods.get("card_52_free_command_sa"):
         results.extend(_resolve_card52_free_command(state))
+    if mods.get("card_35_gallic_commands"):
+        results.extend(_resolve_card35_gallic(state, faction))
+    if mods.get("card_35_free_limited_command"):
+        results.append({"free_action": "free_command", "flag": "card_35",
+                        "note": "Roman peek at next 2 cards not modelled (no NP benefit)",
+                        "result": _resolve_free_command(
+                            state, faction, limited=True)})
     return results
+
+
+def _resolve_card35_gallic(state, faction):
+    """Card 35 Gallic Shouts (shaded): "A Gallic Faction executes 1 Command and
+    1 Limited Command, in either order, free, no Battles." Run a full free
+    Command then a Limited free Command for the acting Faction, both excluding
+    Battle."""
+    out = []
+    out.append({"free_action": "free_command", "flag": "card_35",
+                "kind": "command",
+                "result": _resolve_free_command(
+                    state, faction, exclude_commands={_CMD_BATTLE})})
+    out.append({"free_action": "free_command", "flag": "card_35",
+                "kind": "limited_command",
+                "result": _resolve_free_command(
+                    state, faction, exclude_commands={_CMD_BATTLE},
+                    limited=True)})
+    return out
 
 
 def _resolve_card52_free_command(state):

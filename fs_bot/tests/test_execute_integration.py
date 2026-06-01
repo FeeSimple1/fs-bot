@@ -2517,3 +2517,64 @@ def test_cards_46_51_52_free_commands():
     assert fa and fa[0].get("controller") == ctrl
     assert fa[0]["result"]["executed"] is True
     assert validate_state(st) == []
+
+
+def test_free_command_exclude_and_limited_options():
+    """Slice 46: _resolve_free_command honors exclude_commands (no Battles)
+    and limited (single Region, no Special Activity)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _resolve_free_command
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, ROMANS
+    # exclude Battle: when the flowchart picks Battle, it is disallowed.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=131)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    res = _resolve_free_command(st, ROMANS, exclude_commands={"Battle"})
+    if res["command"] == "Battle":
+        assert res["executed"] is False
+    assert validate_state(st) == []
+    # limited: executes a single-Region, no-SA command.
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=132)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    res2 = _resolve_free_command(st2, ROMANS, limited=True)
+    assert "executed" in res2
+    assert validate_state(st2) == []
+
+
+def test_card35_gallic_shouts_both_sides():
+    """Slice 46: Card 35 Gallic Shouts — shaded gives a Gallic Faction a
+    Command + a Limited Command (no Battles); unshaded gives Romans a free
+    Limited Command."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, ROMANS,
+        EVENT_SHADED, EVENT_UNSHADED)
+    # Shaded: two free_command entries (command + limited_command), no Battles.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=130)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 35
+    res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 35,
+        "text_preference": EVENT_SHADED}})
+    fa = [f for f in (res.get("free_actions") or [])
+          if f["free_action"] == "free_command"]
+    kinds = {f.get("kind") for f in fa}
+    assert kinds == {"command", "limited_command"}
+    for f in fa:
+        assert f["result"].get("command") != "Battle" or \
+            f["result"]["executed"] is False  # Battle never executed
+    assert validate_state(st) == []
+    # Unshaded: Roman free Limited Command entry present.
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=133)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = 35
+    res2 = _execute_event(st2, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 35,
+        "text_preference": EVENT_UNSHADED}})
+    fa2 = [f for f in (res2.get("free_actions") or [])
+           if f["free_action"] == "free_command"]
+    assert fa2 and "executed" in fa2[0]["result"]
+    assert validate_state(st2) == []

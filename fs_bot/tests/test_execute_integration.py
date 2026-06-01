@@ -2865,3 +2865,58 @@ def test_card45_shaded_combined_battle_event():
     fa = [f for f in (res.get("free_actions") or []) if f.get("flag") == "card_45"]
     assert fa and fa[0]["defender"] == ROMANS and fa[0].get("result")
     assert validate_state(st) == []
+
+
+def test_card16_place_and_dieroll_remove():
+    """Slice 52: card 16 Ambacti — unshaded places Auxilia (deriver picks
+    Caesar's Region for 6); shaded rolls a die and removes Roman Auxilia."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import count_pieces, find_leader
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event, _derive_card_16
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ROMANS, ARVERNI,
+        CAESAR, AUXILIA, EVENT_UNSHADED, EVENT_SHADED)
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=190)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 16
+    der = _derive_card_16(st, ROMANS, False)
+    assert der and find_leader(st, ROMANS) == der["target_region"]  # Caesar's Region
+    before = count_pieces(st, der["target_region"], ROMANS, AUXILIA)
+    _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 16, "text_preference": EVENT_UNSHADED}})
+    assert count_pieces(st, der["target_region"], ROMANS, AUXILIA) == before + 6
+    assert validate_state(st) == []
+    # Shaded: removes Roman Auxilia (3 or the die roll).
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=191)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = 16
+    pl = get_playable_regions(SCENARIO_GREAT_REVOLT, st2.get("capabilities"))
+    b = sum(count_pieces(st2, r, ROMANS, AUXILIA) for r in pl)
+    _execute_event(st2, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 16, "text_preference": EVENT_SHADED}})
+    a = sum(count_pieces(st2, r, ROMANS, AUXILIA) for r in pl)
+    assert b - a >= 3
+    assert validate_state(st2) == []
+
+
+def test_card54_joined_ranks_march_and_battles():
+    """Slice 52: card 54 Joined Ranks — executing Faction free Battles (No
+    Retreat) in a Region with 2+ other Gallic/Roman Factions; a 2nd Faction may
+    also Battle a 3rd there."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, ARVERNI, EVENT_UNSHADED
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=192)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 54
+    res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 54, "text_preference": EVENT_UNSHADED}})
+    fa = [f for f in (res.get("free_actions") or []) if f.get("flag") == "card_54"]
+    battles = [f for f in fa if f["free_action"] == "battle"]
+    # At least the executing Faction's Battle resolved; never targets itself.
+    assert battles and all(b["defender"] != b["battler"] for b in battles)
+    assert validate_state(st) == []

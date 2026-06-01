@@ -459,7 +459,42 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card17_germans_phase(state))
     if mods.get("card_57_march_britannia"):
         results.extend(_resolve_card57_britannia_march(state, faction))
+    if mods.get("card_4_free_march_to"):
+        results.extend(_resolve_card4_circumvallation(
+            state, mods.get("card_4_free_march_to")))
     return results
+
+
+def _resolve_card4_circumvallation(state, region):
+    """Card 4 Circumvallation: the Romans free March one mobile group into the
+    marked enemy-Citadel Region (the Circumvallation marker was placed there by
+    the card handler). Marches from the adjacent Region with the largest Roman
+    mobile group."""
+    from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA, WARBAND, LEADER
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    if region is None:
+        return []
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    sources = [a for a in get_adjacent(region, state["scenario"])
+               if a in playable
+               and _group_has_pieces(_mobile_march_group(state, ROMANS, a))]
+    if not sources:
+        return [{"free_action": "march", "flag": "card_4_free_march_to",
+                 "region": region, "executed": False,
+                 "reason": "no adjacent Roman group to March in"}]
+    def gsize(r):
+        g = _mobile_march_group(state, ROMANS, r)
+        return (g.get(LEGION, 0) + g.get(AUXILIA, 0) + g.get(WARBAND, 0)
+                + (1 if g.get(LEADER) else 0))
+    S = max(sources, key=gsize)
+    try:
+        final = _march_with_harassment(state, ROMANS, S, [region])
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "march", "flag": "card_4_free_march_to",
+                 "region": region, "source": S, "executed": False,
+                 "reason": repr(exc)}]
+    return [{"free_action": "march", "flag": "card_4_free_march_to",
+             "region": region, "source": S, "final_region": final}]
 
 
 def _resolve_card57_britannia_march(state, faction):
@@ -3054,11 +3089,45 @@ def _derive_card_2(state, faction, shaded):
     return {"battle_region": best[0]} if best else None
 
 
+def _derive_card_4(state, faction, shaded):
+    """Card 4 Circumvallation: "Romans may free March to an adjacent Citadel
+    and put Circumvallation marker on Citadel Faction's pieces there."
+
+    Choose the Region holding a non-Roman Citadel that is adjacent to a Roman
+    mobile group (so the Romans can March in), preferring the Citadel Region
+    with the most enemy pieces to trap. Returns {"target_region": R} or None.
+    Roman-only.
+    """
+    from fs_bot.rules_consts import ROMANS, CITADEL, FACTIONS
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    if faction != ROMANS:
+        return None
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    best = None  # (region, enemy_pieces)
+    for R in playable:
+        has_enemy_citadel = any(
+            f != ROMANS and count_pieces(state, R, f, CITADEL) > 0
+            for f in FACTIONS)
+        if not has_enemy_citadel:
+            continue
+        adj_roman = any(
+            _group_has_pieces(_mobile_march_group(state, ROMANS, a))
+            for a in get_adjacent(R, state["scenario"]) if a in playable)
+        if not adj_roman:
+            continue
+        enemy = sum(count_pieces(state, R, f) for f in FACTIONS if f != ROMANS)
+        if best is None or enemy > best[1]:
+            best = (R, enemy)
+    return {"target_region": best[0]} if best else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
     2: _derive_card_2,
+    4: _derive_card_4,
     11: _derive_card_11,
     "A17": _derive_card_A17,
     "A18": _derive_card_A18,

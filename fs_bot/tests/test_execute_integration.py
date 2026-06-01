@@ -2340,3 +2340,55 @@ def test_card57_unshaded_free_march_into_britannia():
     # Germans may not March to Britannia (non-German only).
     out = _resolve_card57_britannia_march(st, GERMANS)
     assert out and out[0]["executed"] is False
+
+
+def test_card4_circumvallation_march_and_marker():
+    """Slice 42: Card 4 Circumvallation — Romans free March into an adjacent
+    enemy-Citadel Region; the Circumvallation marker is placed there."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, remove_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.engine.execute import _execute_event, _derive_card_4
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ROMANS, ARVERNI,
+        WARBAND, AUXILIA, LEGION, CITADEL, FACTIONS, MARKER_CIRCUMVALLATION,
+        EVENT_UNSHADED)
+
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=95)
+    st["current_card"] = 4
+    pl = get_playable_regions(SCENARIO_GREAT_REVOLT, st.get("capabilities"))
+    # Clear all Citadels/mobiles so the staged Citadel is the unique candidate.
+    for r in pl:
+        for f in FACTIONS:
+            for pt in (WARBAND, LEGION, AUXILIA, CITADEL):
+                n = count_pieces(st, r, f, pt)
+                if n:
+                    remove_piece(st, r, f, pt, count=n)
+    R = pl[4]
+    place_piece(st, R, ARVERNI, CITADEL, 1)
+    place_piece(st, R, ARVERNI, WARBAND, 3)
+    src = next(a for a in get_adjacent(R, SCENARIO_GREAT_REVOLT) if a in pl)
+    place_piece(st, src, ROMANS, AUXILIA, 4)
+    refresh_all_control(st)
+    assert _derive_card_4(st, ROMANS, False)["target_region"] == R
+
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 4,
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    march = next(f for f in fa if f["free_action"] == "march")
+    assert march["source"] == src and march["final_region"] == R
+    assert count_pieces(st, R, ROMANS, AUXILIA) == 4       # marched in
+    assert count_pieces(st, src, ROMANS, AUXILIA) == 0
+    assert MARKER_CIRCUMVALLATION in (st.get("markers", {}).get(R) or {})
+    assert validate_state(st) == []
+
+
+def test_card4_deriver_none_for_non_roman():
+    """Card 4 is Roman-only; the deriver returns None for other Factions."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.engine.execute import _derive_card_4
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, ARVERNI
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=95)
+    assert _derive_card_4(st, ARVERNI, False) is None

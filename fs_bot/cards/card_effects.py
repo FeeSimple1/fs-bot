@@ -4377,6 +4377,8 @@ def execute_card_11_ariovistus(state, shaded=False):
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_11a_auxilia_battle"] = True
         state["event_modifiers"]["card_11a_double_auxilia_losses"] = True
+        if region:
+            state["event_modifiers"]["card_11a_battle_region"] = region
     else:
         # Remove any 4 Auxilia
         removals = params.get("removals", [])

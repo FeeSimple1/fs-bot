@@ -430,7 +430,80 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_a17_march_battle(state))
     if mods.get("card_A19_march_romans"):
         results.extend(_resolve_a19_march_romans(state, faction))
+    if mods.get("card_6_double_auxilia_losses"):
+        results.extend(_resolve_card6_scout_battle(state))
+    if mods.get("card_11_double_auxilia_losses"):
+        results.extend(_resolve_double_aux_battle_card(
+            state, mods.get("card_11_battle_region"), "card_11"))
+    if mods.get("card_11a_auxilia_battle"):
+        results.extend(_resolve_double_aux_battle_card(
+            state, mods.get("card_11a_battle_region"), "card_11a"))
     return results
+
+
+def _free_double_aux_battle(state, region):
+    """Resolve a Roman free Battle in ``region`` with double Auxilia Losses,
+    targeting the top Roman Battle-priority defender (8.8.1). Returns the
+    battle result dict, or None if there is no valid target."""
+    from fs_bot.rules_consts import ROMANS
+    from fs_bot.bots.roman_bot import _rank_battle_targets
+    from fs_bot.battle.resolve import resolve_battle
+    if region is None:
+        return None
+    targets = _rank_battle_targets(state, region, state["scenario"])
+    if not targets:
+        return None
+    defender = targets[0]
+    rd, rr = _decide_defender_retreat(state, region, ROMANS, defender, False)
+    return resolve_battle(state, region, ROMANS, defender,
+                          double_auxilia=True,
+                          retreat_declaration=rd, retreat_region=rr)
+
+
+def _resolve_double_aux_battle_card(state, region, flag):
+    """Cards 11 / 11a (unshaded): free Battle in the Auxilia-placement Region
+    with double Auxilia Losses (the placement itself was done by the card
+    handler from the derived Region)."""
+    res = _free_double_aux_battle(state, region)
+    if res is None:
+        return [{"free_action": "battle", "flag": flag, "executed": False,
+                 "reason": "no Battle target in placement Region"}]
+    return [{"free_action": "battle", "flag": flag, "region": region,
+             "result": res}]
+
+
+def _resolve_card6_scout_battle(state):
+    """Card 6 Marcus Antonius (unshaded): "Romans may free Scout, then may free
+    Battle in 1 Region, Auxilia causing twice usual Losses." Roman free Scout
+    (4.2.2) via the Roman Scout node, then a free Battle in the Region chosen
+    by Roman Battle priority (8.8.1), with double Auxilia Losses."""
+    from fs_bot.rules_consts import ROMANS
+    out = []
+    # Free Scout (no Resource cost; the Scout node computes the plan).
+    try:
+        scout = _execute_scout(state, ROMANS, {"sa": _SA_SCOUT,
+                                               "sa_regions": [], "details": {}})
+        out.append({"free_action": "scout", "flag": "card_6", "result": scout})
+    except _EXEC_ERRORS as exc:
+        out.append({"free_action": "scout", "flag": "card_6",
+                    "executed": False, "reason": repr(exc)})
+    # Free Battle in 1 Region (double Auxilia), chosen across all playable
+    # Regions by Roman Battle priority.
+    from fs_bot.map.map_data import get_playable_regions
+    allowed = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    region, _defender = _choose_free_battle(state, ROMANS, allowed)
+    if region is None:
+        out.append({"free_action": "battle", "flag": "card_6",
+                    "executed": False, "reason": "no valid Battle Region"})
+        return out
+    res = _free_double_aux_battle(state, region)
+    if res is None:
+        out.append({"free_action": "battle", "flag": "card_6",
+                    "executed": False, "reason": "no Battle target"})
+    else:
+        out.append({"free_action": "battle", "flag": "card_6",
+                    "region": region, "result": res})
+    return out
 
 
 def _resolve_a20_free_seize(state):
@@ -2402,10 +2475,55 @@ def _derive_card_A17(state, faction, shaded):
     return {"region": cands[0][0]}
 
 
+def _derive_card_11(state, faction, shaded):
+    """Cards 11 (Numidians) / 11a (Ariovistus text): unshaded "Romans place 3
+    Auxilia in a Region within 1 of their Leader and free Battle there."
+
+    Roman NP instruction (Numidians): "Place the full number of Auxilia; if not
+    able, treat as 'No Romans'." So choose a Region within 1 of the Roman
+    Leader where the Romans can place all 3 Auxilia (>=3 Available) and an
+    enemy is present to Battle, ranked by Roman Battle priority (8.8.1). If
+    none qualifies, return None (no placement, no Battle).
+
+    Returns both the base ("target_region") and Ariovistus ("region") param
+    keys so whichever card text is in play reads its own key.
+    """
+    if shaded:
+        return None
+    from fs_bot.rules_consts import ROMANS, AUXILIA
+    from fs_bot.board.pieces import (find_leader, count_pieces, get_available)
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.bots.roman_bot import _rank_battle_targets
+    if get_available(state, ROMANS, AUXILIA) < 3:
+        return None  # "Place the full number ... if not able, 'No Romans'."
+    leader = find_leader(state, ROMANS)
+    if leader is None:
+        return None
+    scen = state["scenario"]
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+    within1 = ({leader} | set(get_adjacent(leader, scen))) & playable
+    best = None  # (region, enemy_mobile)
+    for r in within1:
+        targets = _rank_battle_targets(state, r, scen)
+        if not targets:
+            continue
+        enemy = targets[0]
+        from fs_bot.rules_consts import WARBAND, LEGION, AUXILIA as AUX
+        em = (count_pieces(state, r, enemy, WARBAND)
+              + count_pieces(state, r, enemy, AUX)
+              + count_pieces(state, r, enemy, LEGION))
+        if best is None or em > best[1]:
+            best = (r, em)
+    if best is None:
+        return None
+    return {"target_region": best[0], "region": best[0]}
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
+    11: _derive_card_11,
     "A17": _derive_card_A17,
     "A18": _derive_card_A18,
     "A37": _derive_card_A37,

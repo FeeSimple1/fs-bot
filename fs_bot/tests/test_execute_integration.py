@@ -1847,3 +1847,109 @@ def test_a19_shaded_noop_when_no_trap_available():
     refresh_all_control(st)
     out = _resolve_a19_march_romans(st, GERMANS)
     assert out and out[0]["executed"] is False
+
+
+def test_card11_place_auxilia_and_double_battle():
+    """Slice 34: Card 11 Numidians (unshaded) — place 3 Auxilia within 1 of
+    Caesar and free Battle there with double Auxilia Losses."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces, find_leader
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.engine.execute import _execute_event, _derive_card_11
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
+        WARBAND, AUXILIA, EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=20)
+    st["current_card"] = 11
+    cae = find_leader(st, ROMANS)
+    # Clear all Regions within 1 of Caesar, then stage one target with Arverni.
+    for r in [cae] + list(get_adjacent(cae, SCENARIO_GALLIC_WAR)):
+        _clear_region_mobiles(st, r)
+    T = get_adjacent(cae, SCENARIO_GALLIC_WAR)[0]
+    place_piece(st, T, ARVERNI, WARBAND, 5)
+    refresh_all_control(st)
+    der = _derive_card_11(st, ROMANS, False)
+    assert der and der["target_region"] == T
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 11,
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    assert any(f["free_action"] == "battle" and f.get("region") == T for f in fa)
+    # 3 placed Auxilia at double = 3 Losses (normal would be 1): 5 -> 2.
+    assert count_pieces(st, T, ARVERNI, WARBAND) == 2
+    assert validate_state(st) == []
+
+
+def test_card11_deriver_no_play_when_under_3_auxilia():
+    """Numidians: 'Place the full number; if not able, No Romans' -> deriver
+    returns None when fewer than 3 Auxilia are Available."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import get_available, place_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _derive_card_11
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, AUXILIA,
+        ALL_REGIONS)
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=20)
+    # Drain Available Auxilia below 3 by placing them on the map.
+    while get_available(st, ROMANS, AUXILIA) >= 3:
+        from fs_bot.map.map_data import get_playable_regions
+        r = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))[0]
+        place_piece(st, r, ROMANS, AUXILIA, 1)
+    refresh_all_control(st)
+    assert _derive_card_11(st, ROMANS, False) is None
+
+
+def test_card6_free_scout_and_double_battle():
+    """Slice 34: Card 6 Marcus Antonius (unshaded) — free Scout, then free
+    Battle (double Auxilia) in a Roman Battle-priority Region."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, find_leader
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
+        AUXILIA, WARBAND, EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=21)
+    st["current_card"] = 6
+    cae = find_leader(st, ROMANS)
+    B = get_adjacent(cae, SCENARIO_GALLIC_WAR)[0]
+    _clear_region_mobiles(st, B)
+    place_piece(st, B, ROMANS, AUXILIA, 6)
+    place_piece(st, B, ARVERNI, WARBAND, 2)
+    refresh_all_control(st)
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 6,
+        "text_preference": EVENT_UNSHADED}})
+    kinds = [f["free_action"] for f in (res.get("free_actions") or [])]
+    assert "scout" in kinds and "battle" in kinds
+    assert validate_state(st) == []
+
+
+def test_card11a_ariovistus_place_and_double_battle():
+    """Slice 34: Card 11a (Ariovistus text) — same place-3-Auxilia + double
+    Auxilia Battle, dispatched via the Ariovistus handler."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces, find_leader
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, ARVERNI,
+        WARBAND, EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=22)
+    st["current_card"] = 11
+    cae = find_leader(st, ROMANS)
+    for r in [cae] + list(get_adjacent(cae, SCENARIO_ARIOVISTUS)):
+        _clear_region_mobiles(st, r)
+    T = get_adjacent(cae, SCENARIO_ARIOVISTUS)[0]
+    place_piece(st, T, ARVERNI, WARBAND, 5)
+    refresh_all_control(st)
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 11,
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    assert any(f.get("flag") == "card_11a" and f.get("region") == T for f in fa)
+    assert count_pieces(st, T, ARVERNI, WARBAND) == 2  # double-Auxilia 3 Losses
+    assert validate_state(st) == []

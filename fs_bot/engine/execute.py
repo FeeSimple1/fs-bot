@@ -719,7 +719,82 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card36_battle(state, faction))
     if mods.get("card_21_no_fort"):
         results.extend(_resolve_card21_provincia_battle(state))
+    if mods.get("card_48_druids"):
+        results.extend(_resolve_card48_druids(
+            state, mods.get("card_48_target_factions")))
+    if mods.get("card_47_council"):
+        results.extend(_resolve_card47_council(state))
+    if mods.get("card_62_war_fleet"):
+        results.extend(_resolve_card62_war_fleet(state, faction))
     return results
+
+
+def _gallic_np_factions(state):
+    from fs_bot.rules_consts import ARVERNI, AEDUI, BELGAE
+    nps = state.get("non_player_factions", set())
+    return [f for f in (ARVERNI, AEDUI, BELGAE) if f in nps]
+
+
+def _resolve_card48_druids(state, target_factions):
+    """Card 48 Druids: 1-3 Gallic Factions each execute a free Limited Command
+    (which may add a free Special Ability), in initiative order. With no chosen
+    list, all Gallic Non-player Factions act."""
+    targets = [f for f in (target_factions or _gallic_np_factions(state))]
+    out = []
+    for fac in targets:
+        out.append({"free_action": "free_command", "flag": "card_48",
+                    "faction": fac,
+                    "result": _resolve_free_command(state, fac, limited=True)})
+    return out
+
+
+def _resolve_card47_council(state):
+    """Card 47 Chieftains' Council: in a Region with >=2 non-German Factions'
+    pieces, those Factions (in initiative order) each either execute a free
+    Limited Command (anywhere) or become Eligible (the peek informs the choice;
+    we take the Command if effective, else stay Eligible)."""
+    from fs_bot.rules_consts import (ROMANS, ARVERNI, AEDUI, BELGAE, ELIGIBLE)
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    order = (ROMANS, ARVERNI, AEDUI, BELGAE)
+    # Pick a Region with the most distinct non-German Factions (>=2).
+    best, best_n = None, 1
+    for R in get_playable_regions(state["scenario"], state.get("capabilities")):
+        present = [f for f in order if count_pieces(state, R, f) > 0]
+        if len(present) >= 2 and len(present) > best_n:
+            best, best_n = (R, present), len(present)
+    if best is None:
+        return [{"free_action": "council", "flag": "card_47", "executed": False,
+                 "reason": "no Region with 2+ non-German Factions"}]
+    R, present = best
+    out = []
+    nps = state.get("non_player_factions", set())
+    for fac in present:
+        if fac not in nps:
+            continue
+        res = _resolve_free_command(state, fac, limited=True)
+        if res.get("executed"):
+            out.append({"free_action": "free_command", "flag": "card_47",
+                        "region": R, "faction": fac, "result": res})
+        else:
+            state.setdefault("eligibility", {})[fac] = ELIGIBLE
+            out.append({"free_action": "stay_eligible", "flag": "card_47",
+                        "faction": fac, "executed": True})
+    return out
+
+
+def _resolve_card62_war_fleet(state, faction):
+    """Card 62 War Fleet: after the coastal repositioning, the Faction executes
+    a free Command in (or from) one of the War-Fleet Regions — the Arverni
+    Region, Pictones, or a Region within 1 of Britannia."""
+    from fs_bot.rules_consts import (ARVERNI_REGION, PICTONES, BRITANNIA)
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    near_brit = {BRITANNIA} | set(get_adjacent(BRITANNIA, state["scenario"]))
+    allowed = ({ARVERNI_REGION, PICTONES} | near_brit) & playable
+    return [{"free_action": "free_command", "flag": "card_62",
+             "result": _resolve_free_command(state, faction,
+                                             allowed_regions=allowed)}]
 
 
 def _resolve_card25_battle(state, faction, region, extra):

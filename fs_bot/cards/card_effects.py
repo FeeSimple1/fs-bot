@@ -1247,7 +1247,6 @@ def execute_card_29(state, shaded=False):
     """
     from fs_bot.rules_consts import SUEBI_TRIBES, TRIBE_TO_REGION
     from fs_bot.commands.march import germans_phase_march
-    from fs_bot.commands.raid import germans_phase_raid_region
     from fs_bot.engine.germans_battle import germans_phase_battle
     # Remove Dispersed from both Suebi tribes
     for tribe in SUEBI_TRIBES:
@@ -1266,10 +1265,13 @@ def execute_card_29(state, shaded=False):
                 place_piece(state, region, GERMANS, ALLY)
                 tribe_info["allied_faction"] = GERMANS
     # Immediate Germans Phase without Rally: March, Raid, Battle
+    from fs_bot.commands.raid import germans_phase_raid_region
     germans_phase_march(state)
-    # Raid all regions with Germanic Warbands
-    for region in state["spaces"]:
-        germans_phase_raid_region(state, region)
+    # Raid only where Germans have Hidden Warbands (germans_phase_raid_region
+    # raises otherwise) and are not reserving them for an Ambush (§6.2.3).
+    for region in list(state["spaces"]):
+        if count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN) > 0:
+            germans_phase_raid_region(state, region)
     germans_phase_battle(state)
     refresh_all_control(state)
 
@@ -2102,19 +2104,41 @@ def execute_card_53(state, shaded=False):
     from fs_bot.commands.rally import germans_phase_rally
     from fs_bot.commands.raid import germans_phase_raid_region
     from fs_bot.engine.germans_battle import germans_phase_battle
-    # Flip all Germanic Warbands to Hidden
+    from fs_bot.board.control import refresh_all_control
+    # Flip all Germanic Warbands to Hidden.
     for region in state["spaces"]:
         revealed = count_pieces_by_state(state, region, GERMANS, WARBAND, REVEALED)
         if revealed > 0:
             flip_piece(state, region, GERMANS, WARBAND, revealed,
                        from_state=REVEALED, to_state=HIDDEN)
-    # Germans Phase without March: Rally, Raid, Battle with Ambush
+    # Germans Phase as if Winter but skipping March: Rally, then Raid (only
+    # where Germans have Hidden Warbands — germans_phase_raid_region raises
+    # otherwise), then Battle with Ambush (§6.2.4 — "all Germans Ambush").
+    from fs_bot.battle.losses import calculate_losses
     germans_phase_rally(state)
+    def _reserve_for_ambush(reg):
+        # §6.2.3: do not Raid away Hidden Warbands needed for an Ambush
+        # (Hidden-majority over a defender that would take a Loss).
+        gh = count_pieces_by_state(state, reg, GERMANS, WARBAND, HIDDEN)
+        if gh <= 0:
+            return False
+        for ef in FACTIONS:
+            if ef == GERMANS or count_pieces(state, reg, ef) <= 0:
+                continue
+            eh = (count_pieces_by_state(state, reg, ef, WARBAND, HIDDEN)
+                  + count_pieces_by_state(state, reg, ef, AUXILIA, HIDDEN))
+            if gh <= eh:
+                continue
+            try:
+                if calculate_losses(state, reg, GERMANS, ef) > 0:
+                    return True
+            except Exception:
+                continue
+        return False
     for region in list(state["spaces"]):
-        germans_phase_raid_region(state, region)
-    # Battle with forced Ambush
-    state.setdefault("event_modifiers", {})
-    state["event_modifiers"]["card_53_german_ambush"] = True
+        if (count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN) > 0
+                and not _reserve_for_ambush(region)):
+            germans_phase_raid_region(state, region)
     germans_phase_battle(state)
     refresh_all_control(state)
 

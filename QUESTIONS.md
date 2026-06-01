@@ -160,3 +160,30 @@ piece types. No change required.
 
 **Files:** `fs_bot/state/state_schema.py` (`validate_state`, schema init),
 `fs_bot/engine/interlude.py` (no change).
+
+---
+
+## [RESOLVED] Card A31 (German Phalanx) unshaded — scope of "Event effects benefitting Germans in Battle are cancelled"
+
+**Context:** A31 unshaded reads: "Event effects benefitting Germans in Battle
+are cancelled, and Ariovistus does not double Losses." The first clause is
+generic and does not enumerate which effects it targets, which raised the
+question of how to implement it faithfully.
+
+**Resolution:** Grounded in the Battle engine, not a guess. `resolve_battle`
+(`fs_bot/battle/resolve.py`) and `calculate_losses`
+(`fs_bot/battle/losses.py`) read exactly one persistent German-favoring Battle
+benefit: the Ariovistus doubling of Losses. A31 cancels precisely that via the
+`card_A31_no_ario_double` flag (checked in both modules). Every other event
+Battle modifier in the executor (double_auxilia, auto_legion_loss, extra
+losses, ignore_fort/citadel, ally_first, etc.) is applied only as an explicit
+argument inside the same card's free-Battle resolution; none is read from
+`event_modifiers` during arbitrary later Battles, so none persists as a
+standing German benefit for a separately-played A31 to cancel. The generic
+clause therefore has no additional modeled referent. `card_A31_cancel_german_benefits`
+is set for completeness and documented at the flag site; A31's concrete
+mechanical effect (the no-double) is fully implemented and tested.
+
+**Files:** `fs_bot/cards/card_effects.py` (`execute_card_A31`, documenting
+comment), `fs_bot/battle/resolve.py` and `fs_bot/battle/losses.py`
+(`card_A31_no_ario_double` consumption).

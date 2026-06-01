@@ -438,7 +438,30 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_11a_auxilia_battle"):
         results.extend(_resolve_double_aux_battle_card(
             state, mods.get("card_11a_battle_region"), "card_11a"))
+    if mods.get("card_2_auto_legion_loss"):
+        results.extend(_resolve_card2_battle(
+            state, faction, mods.get("card_2_battle_region")))
     return results
+
+
+def _resolve_card2_battle(state, faction, region):
+    """Card 2 Legiones (shaded): the acting Faction free Battles the Romans in
+    ``region`` with auto_legion_loss (the first Roman Loss removes a Legion)."""
+    from fs_bot.rules_consts import ROMANS
+    from fs_bot.battle.resolve import resolve_battle
+    if region is None or faction == ROMANS:
+        return [{"free_action": "battle", "flag": "card_2", "executed": False,
+                 "reason": "no battle region or Roman actor"}]
+    rd, rr = _decide_defender_retreat(state, region, faction, ROMANS, False)
+    try:
+        res = resolve_battle(state, region, faction, ROMANS,
+                             auto_legion_loss=True,
+                             retreat_declaration=rd, retreat_region=rr)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "battle", "flag": "card_2",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "battle", "flag": "card_2", "region": region,
+             "defender": ROMANS, "result": res}]
 
 
 def _free_double_aux_battle(state, region):
@@ -2519,10 +2542,42 @@ def _derive_card_11(state, faction, shaded):
     return {"target_region": best[0], "region": best[0]}
 
 
+def _derive_card_2(state, faction, shaded):
+    """Card 2 Legiones (shaded): "Free Battle against Romans in a Region. The
+    first Loss removes a Legion automatically, if any there."
+
+    The acting (non-Roman) Faction chooses a Region where it can Battle the
+    Romans — preferring a Region holding a Roman Legion (so the auto-Legion
+    Loss bites) and where it has an attacking force, by Roman pieces present.
+    Returns {"battle_region": R}, or None if no such Region (the unshaded side
+    is the Senate/Legions placement, handled in the card).
+    """
+    from fs_bot.rules_consts import ROMANS, LEGION
+    if not shaded or faction == ROMANS:
+        return None
+    ROM = ROMANS
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
+    best = None  # (region, has_legion, roman_pieces)
+    for r in playable:
+        if not _attacker_has_force(state, r, faction):
+            continue
+        if count_pieces(state, r, ROM) <= 0:
+            continue
+        has_leg = 1 if count_pieces(state, r, ROM, LEGION) > 0 else 0
+        roman = count_pieces(state, r, ROM)
+        key = (has_leg, roman)
+        if best is None or key > best[1]:
+            best = (r, key)
+    return {"battle_region": best[0]} if best else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
+    2: _derive_card_2,
     11: _derive_card_11,
     "A17": _derive_card_A17,
     "A18": _derive_card_A18,

@@ -1953,3 +1953,60 @@ def test_card11a_ariovistus_place_and_double_battle():
     assert any(f.get("flag") == "card_11a" and f.get("region") == T for f in fa)
     assert count_pieces(st, T, ARVERNI, WARBAND) == 2  # double-Auxilia 3 Losses
     assert validate_state(st) == []
+
+
+def test_card2_shaded_auto_legion_loss_battle():
+    """Slice 35: Card 2 Legiones (shaded) — a non-Roman free Battles the
+    Romans; the first Loss removes a Roman Legion automatically (no roll)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.engine.execute import _execute_event, _derive_card_2
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
+        WARBAND, AUXILIA, LEGION, ALL_REGIONS, EVENT_SHADED)
+
+    R = [r for r in ALL_REGIONS if r != "Provincia"][3]
+
+    # Modifier is automatic regardless of dice (Legion removed every time).
+    for seed in range(15):
+        st = setup_scenario(SCENARIO_GALLIC_WAR, seed=seed)
+        _clear_region_mobiles(st, R)
+        place_piece(st, R, ROMANS, LEGION, 1, from_legions_track=True)
+        place_piece(st, R, ROMANS, AUXILIA, 4)
+        place_piece(st, R, ARVERNI, WARBAND, 4)
+        refresh_all_control(st)
+        resolve_battle(st, R, ARVERNI, ROMANS, retreat_declaration=False,
+                       auto_legion_loss=True)
+        assert count_pieces(st, R, ROMANS, LEGION) == 0
+
+    # Full Event path: deriver picks a Region with a Roman Legion; the free
+    # Battle removes it.
+    st2 = setup_scenario(SCENARIO_GALLIC_WAR, seed=31)
+    st2["current_card"] = 2
+    R2 = [r for r in ALL_REGIONS if r != "Provincia"][4]
+    _clear_region_mobiles(st2, R2)
+    place_piece(st2, R2, ROMANS, LEGION, 1, from_legions_track=True)
+    place_piece(st2, R2, ROMANS, AUXILIA, 3)
+    place_piece(st2, R2, ARVERNI, WARBAND, 6)
+    refresh_all_control(st2)
+    der = _derive_card_2(st2, ARVERNI, True)
+    assert der and der["battle_region"] == R2
+    res = _execute_event(st2, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 2,
+        "text_preference": EVENT_SHADED}})
+    fa = res.get("free_actions") or []
+    assert any(f["free_action"] == "battle" and f.get("region") == R2 for f in fa)
+    assert count_pieces(st2, R2, ROMANS, LEGION) == 0
+    assert validate_state(st2) == []
+
+
+def test_card2_deriver_none_for_romans():
+    """Card 2 shaded deriver returns None for a Roman actor (Romans do not
+    Battle themselves)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.engine.execute import _derive_card_2
+    from fs_bot.rules_consts import SCENARIO_GALLIC_WAR, ROMANS
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=31)
+    assert _derive_card_2(st, ROMANS, True) is None

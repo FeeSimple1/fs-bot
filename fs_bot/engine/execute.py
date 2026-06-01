@@ -445,7 +445,103 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card70_march_battle(
             state, mods.get("card_70_target_regions"),
             mods.get("card_70_legion_limit", 4)))
+    if mods.get("card_72_hidden_march_battle"):
+        results.extend(_resolve_card72_hidden_march_battle(state, faction))
     return results
+
+
+def _resolve_card72_hidden_march_battle(state, faction):
+    """Card 72 Impetuosity (shaded): "Free March 1 group of your Hidden
+    Warbands (no Leader). That group then may free Battle (alone)."
+
+    Faction NP instructions for Impetuosity:
+      Arverni / German: take Control of a Region with player pieces (Roman,
+        then Aedui, then Belgae), then Battle that player there.
+      Belgae: Battle the player with the highest victory margin.
+      Aedui: continue on the flowchart instead (no free March/Battle).
+      Romans: have no Warbands, so the Hidden-Warband March does not apply.
+
+    Marches one group of the Faction's Hidden Warbands from an adjacent source
+    into the chosen Region, then free Battles the target there (Retreat
+    allowed).
+    """
+    from fs_bot.rules_consts import (ARVERNI, GERMANS, BELGAE, AEDUI, ROMANS,
+                                     WARBAND, HIDDEN, FACTIONS)
+    from fs_bot.board.pieces import count_pieces, count_pieces_by_state, move_piece
+    from fs_bot.board.control import refresh_all_control, is_controlled_by
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.engine.victory import calculate_victory_margin
+    from fs_bot.battle.resolve import resolve_battle
+
+    if faction not in (ARVERNI, GERMANS, BELGAE):
+        return [{"free_action": "march_battle", "flag":
+                 "card_72_hidden_march_battle", "executed": False,
+                 "reason": "no Hidden-Warband March instruction for this Faction"}]
+    scen = state["scenario"]
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+
+    def target_in(B):
+        if faction in (ARVERNI, GERMANS):
+            for pf in (ROMANS, AEDUI, BELGAE):
+                if pf != faction and count_pieces(state, B, pf) > 0:
+                    return pf
+            return None
+        # Belgae: enemy with the highest victory margin.
+        best_f, best_m = None, None
+        for ef in FACTIONS:
+            if ef == faction or count_pieces(state, B, ef) <= 0:
+                continue
+            try:
+                m = calculate_victory_margin(state, ef)
+            except Exception:
+                m = -999
+            if best_m is None or m > best_m:
+                best_f, best_m = ef, m
+        return best_f
+
+    # Enumerate (source S with Hidden Warbands) -> adjacent destination B with
+    # a valid target. Score per Faction priority.
+    best = None  # (score_tuple, S, B, target, hidden)
+    for S in playable:
+        hid = count_pieces_by_state(state, S, faction, WARBAND, HIDDEN)
+        if hid <= 0:
+            continue
+        for B in get_adjacent(S, scen):
+            if B not in playable:
+                continue
+            tgt = target_in(B)
+            if tgt is None:
+                continue
+            if faction in (ARVERNI, GERMANS):
+                rank = (ROMANS, AEDUI, BELGAE).index(tgt)
+                score = (-rank, hid)  # Roman best (rank 0 -> -0 highest), more WB
+            else:
+                try:
+                    score = (calculate_victory_margin(state, tgt), hid)
+                except Exception:
+                    score = (-999, hid)
+            if best is None or score > best[0]:
+                best = (score, S, B, tgt, hid)
+
+    if best is None:
+        return [{"free_action": "march_battle", "flag":
+                 "card_72_hidden_march_battle", "executed": False,
+                 "reason": "no Hidden-Warband group can March to Battle a target"}]
+
+    _sc, S, B, tgt, hid = best
+    move_piece(state, S, B, faction, WARBAND, count=hid, piece_state=HIDDEN)
+    refresh_all_control(state)
+    rd, rr = _decide_defender_retreat(state, B, faction, tgt, False)
+    try:
+        res = resolve_battle(state, B, faction, tgt,
+                             retreat_declaration=rd, retreat_region=rr)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "march_battle",
+                 "flag": "card_72_hidden_march_battle", "source": S,
+                 "region": B, "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "march_battle",
+             "flag": "card_72_hidden_march_battle", "source": S, "region": B,
+             "defender": tgt, "warbands_marched": hid, "result": res}]
 
 
 def _resolve_card70_march_battle(state, target_regions, legion_limit):

@@ -2046,3 +2046,77 @@ def test_card70_roman_march_battle_to_named_region():
     assert count_pieces(st, CARNUTES, ROMANS, LEGION) == 4
     assert count_pieces(st, CARNUTES, ARVERNI, WARBAND) == 0  # Battled away
     assert validate_state(st) == []
+
+
+def _clear_all_mobiles(state, scenario):
+    from fs_bot.map.map_data import get_playable_regions
+    for r in get_playable_regions(scenario, state.get("capabilities")):
+        _clear_region_mobiles(state, r)
+
+
+def test_card72_shaded_hidden_warband_march_battle():
+    """Slice 37: Card 72 Impetuosity (shaded) — Arverni March a Hidden-Warband
+    group into a player Region and free Battle; Aedui no-play."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.engine.execute import (_execute_event,
+        _resolve_card72_hidden_march_battle)
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
+        AEDUI, WARBAND, AUXILIA, EVENT_SHADED)
+
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=50)
+    st["current_card"] = 72
+    _clear_all_mobiles(st, SCENARIO_GALLIC_WAR)
+    pl = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))
+    S = pl[5]
+    B = next(r for r in get_adjacent(S, SCENARIO_GALLIC_WAR) if r in pl)
+    place_piece(st, S, ARVERNI, WARBAND, 6)
+    place_piece(st, B, ROMANS, AUXILIA, 3)
+    refresh_all_control(st)
+    res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 72,
+        "text_preference": EVENT_SHADED}})
+    fa = res.get("free_actions") or []
+    mb = next(f for f in fa if f["free_action"] == "march_battle")
+    assert mb["source"] == S and mb["region"] == B and mb["defender"] == ROMANS
+    assert count_pieces(st, S, ARVERNI, WARBAND) == 0      # group marched out
+    assert count_pieces(st, B, ARVERNI, WARBAND) == 6      # into B
+    assert count_pieces(st, B, ROMANS) == 0               # Battled away/retreated
+    assert validate_state(st) == []
+
+    # Aedui: "continue on the flowchart instead" -> no free March/Battle.
+    st2 = setup_scenario(SCENARIO_GALLIC_WAR, seed=50)
+    out = _resolve_card72_hidden_march_battle(st2, AEDUI)
+    assert out and out[0]["executed"] is False
+
+
+def test_card72_shaded_belgae_targets_an_enemy():
+    """Belgae path executes a Hidden-Warband March+Battle against an enemy."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, BELGAE, ROMANS,
+        WARBAND, AUXILIA, EVENT_SHADED)
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=51)
+    st["current_card"] = 72
+    _clear_all_mobiles(st, SCENARIO_GALLIC_WAR)
+    pl = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))
+    S = pl[6]
+    B = next(r for r in get_adjacent(S, SCENARIO_GALLIC_WAR) if r in pl)
+    place_piece(st, S, BELGAE, WARBAND, 5)
+    place_piece(st, B, ROMANS, AUXILIA, 2)
+    refresh_all_control(st)
+    res = _execute_event(st, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 72,
+        "text_preference": EVENT_SHADED}})
+    fa = res.get("free_actions") or []
+    assert any(f["free_action"] == "march_battle" and f.get("region") == B
+               for f in fa)
+    assert count_pieces(st, S, BELGAE, WARBAND) == 0
+    assert validate_state(st) == []

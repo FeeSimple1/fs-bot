@@ -424,6 +424,8 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_a67_arduenna(state, faction))
     if mods.get("card_A20_free_seize_veneti"):
         results.extend(_resolve_a20_free_seize(state))
+    if mods.get("card_A20_arverni_ambush"):
+        results.extend(_resolve_a20_arverni_ambush(state))
     return results
 
 
@@ -435,9 +437,11 @@ def _resolve_a20_free_seize(state):
     Event. If the Romans hold no pieces in Veneti, Seize is not possible there
     and this no-ops (validate_seize_region, §3.2.3).
 
-    A20 shaded (Arverni Ambush near Veneti) is NOT executed here: in the
-    Ariovistus scenario the Arverni are the player Faction and have no
-    non-player flowchart, so there is no NP logic to drive that Ambush.
+    A20 shaded (Arverni Ambush near Veneti) is handled separately by
+    _resolve_a20_arverni_ambush. (The Arverni are NOT a player Faction in
+    Ariovistus: per available_forces_ariovistus.txt and A6.2 they are
+    game-run via the Arverni Phase, like the base game's Germans, with
+    mechanical Battle-with-Ambush per A6.2.4.)
     """
     from fs_bot.rules_consts import ROMANS, VENETI
     from fs_bot.board.pieces import count_pieces
@@ -455,6 +459,108 @@ def _resolve_a20_free_seize(state):
                  "executed": False, "reason": repr(exc)}]
     return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
              "region": VENETI, "result": res}]
+
+
+def _resolve_a20_arverni_ambush(state):
+    """A20 Morbihan (shaded): "If Veneti Arverni Ally, Arverni Warbands within
+    1 Region Ambush Romans in a Region within 1 as if there."
+
+    The Arverni are game-run in Ariovistus (A6.2), so this is a mechanical
+    Battle-with-Ambush per A6.2.4. The card's "as if there" lets Hidden
+    Arverni Warbands within one Region of the Battle Region join the Ambush as
+    if present: we gather those projecting Warbands into the Battle Region,
+    resolve the standard Ambush (no Retreat, auto-remove; Step 5 Reveal flips
+    surviving Hidden Warbands), then return the projected Warbands — now
+    Revealed — to their home Regions. Ambush has no Counterattack, so the
+    Arverni take no Losses and the projected Warbands are conserved.
+
+    A6.2.4 requires Hidden Arverni Warbands to outnumber the Defender's Hidden
+    pieces and the Ambush to cause an enemy Loss. The Battle Region is chosen
+    to remove the most Roman pieces.
+    """
+    from fs_bot.rules_consts import (VENETI, ARVERNI, ROMANS, WARBAND, AUXILIA,
+                                     LEGION, FORT, CITADEL, HIDDEN, REVEALED,
+                                     ALLY)
+    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
+                                     move_piece, get_leader_in_region)
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.battle.resolve import resolve_battle
+
+    if count_pieces(state, VENETI, ARVERNI, ALLY) <= 0:
+        return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
+                 "executed": False, "reason": "no Arverni Ally in Veneti"}]
+    scen = state["scenario"]
+    theater = [VENETI] + list(get_adjacent(VENETI, scen))
+
+    def roman_hidden(region):
+        return (count_pieces_by_state(state, region, ROMANS, AUXILIA, HIDDEN)
+                + count_pieces_by_state(state, region, ROMANS, WARBAND, HIDDEN))
+
+    best = None  # (B, sources, projected, damage)
+    for B in theater:
+        if count_pieces(state, B, ROMANS) <= 0:
+            continue
+        # Projecting Hidden Arverni Warbands: in B, plus adjacent Regions that
+        # are themselves within 1 of Veneti ("within 1 Region ... as if there").
+        proj_regions = [B] + [r for r in get_adjacent(B, scen) if r in theater]
+        sources = {r: count_pieces_by_state(state, r, ARVERNI, WARBAND, HIDDEN)
+                   for r in proj_regions}
+        sources = {r: n for r, n in sources.items() if n > 0}
+        projected = sum(sources.values())
+        if projected <= 0 or projected <= roman_hidden(B):
+            continue
+        # Arverni cause floor(Warbands * 1/2); halved again vs Fort/Citadel.
+        raw = projected * 0.5
+        if (count_pieces(state, B, ROMANS, FORT) > 0
+                or count_pieces(state, B, ROMANS, CITADEL) > 0):
+            raw *= 0.5
+        predicted = int(raw)
+        removable = (count_pieces(state, B, ROMANS, AUXILIA)
+                     + count_pieces(state, B, ROMANS, LEGION)
+                     + (1 if get_leader_in_region(state, B, ROMANS) else 0))
+        damage = min(predicted, removable)
+        if damage <= 0:
+            continue
+        if best is None or damage > best[3]:
+            best = (B, sources, projected, damage)
+
+    if best is None:
+        return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
+                 "executed": False, "reason": "no valid Ambush within 1 of Veneti"}]
+
+    B, sources, projected, _ = best
+    moved = {}
+    for r, n in sources.items():
+        if r == B:
+            continue
+        move_piece(state, r, B, ARVERNI, WARBAND, count=n, piece_state=HIDDEN)
+        moved[r] = n
+    try:
+        res = resolve_battle(state, B, attacking_faction=ARVERNI,
+                             defending_faction=ROMANS, is_ambush=True)
+    except _EXEC_ERRORS as exc:
+        # Restore on failure to keep the board consistent.
+        for r, n in moved.items():
+            avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, HIDDEN)
+            take = min(n, avail)
+            if take > 0:
+                move_piece(state, B, r, ARVERNI, WARBAND, count=take,
+                           piece_state=HIDDEN)
+        refresh_all_control(state)
+        return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
+                 "executed": False, "reason": repr(exc)}]
+    # Return projected Warbands (now Revealed by Step 5) to their Regions.
+    for r, n in moved.items():
+        avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, REVEALED)
+        take = min(n, avail)
+        if take > 0:
+            move_piece(state, B, r, ARVERNI, WARBAND, count=take,
+                       piece_state=REVEALED)
+    refresh_all_control(state)
+    return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
+             "region": B, "defender": ROMANS, "projected_warbands": projected,
+             "result": res}]
 
 
 def _resolve_a67_arduenna(state, faction):

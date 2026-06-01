@@ -218,6 +218,50 @@ def _rank_free_battle_defender(state, region, faction):
     return best
 
 
+def _predicted_legion_losses(state, region, attacker):
+    """Losses that would fall on Roman Legions if ``attacker`` Battles Romans
+    in ``region`` (no Retreat). Romans absorb with Auxilia before Legions
+    (default loss order), so Legion Losses = min(Legions, total - Auxilia).
+
+    Implements the Belgic NP instruction "Battle where most Losses forced on
+    Legions" for the A21/A28/A57/Legiones card group.
+    """
+    from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.battle.losses import calculate_losses
+    if count_pieces(state, region, ROMANS) <= 0:
+        return 0
+    legions = count_pieces(state, region, ROMANS, LEGION)
+    auxilia = count_pieces(state, region, ROMANS, AUXILIA)
+    try:
+        total = calculate_losses(state, region, attacker, ROMANS,
+                                 is_retreat=False)
+    except Exception:
+        return 0
+    return max(0, min(legions, total - auxilia))
+
+
+def _german_warband_floor_ok(state, region, faction, defender):
+    """German NP instruction: "Battle only where Counterattack would not leave
+    Ariovistus with fewer than 4 Warbands." The floor only binds in the Region
+    holding Ariovistus; elsewhere his Warbands are not in the Battle.
+    """
+    from fs_bot.rules_consts import (GERMANS, WARBAND, ARIOVISTUS_LEADER)
+    from fs_bot.board.pieces import count_pieces, get_leader_in_region
+    from fs_bot.battle.losses import calculate_losses
+    if get_leader_in_region(state, region, GERMANS) != ARIOVISTUS_LEADER:
+        return True
+    german_wb = count_pieces(state, region, GERMANS, WARBAND)
+    try:
+        # Conservative: predict counterattack Losses from the current (pre-
+        # attack) defender — an upper bound on German Warbands lost.
+        ca = calculate_losses(state, region, defender, GERMANS,
+                              is_counterattack=True)
+    except Exception:
+        ca = 0
+    return (german_wb - ca) >= 4
+
+
 def _choose_free_battle(state, faction, allowed_regions):
     """Choose (region, defender) for a free Battle over ``allowed_regions``.
 
@@ -225,14 +269,32 @@ def _choose_free_battle(state, faction, allowed_regions):
     is present, pick the Region with the most enemy mobile pieces (most damage
     potential), then the top-ranked defender there.
     """
-    from fs_bot.rules_consts import WARBAND, LEGION, AUXILIA
+    from fs_bot.rules_consts import WARBAND, LEGION, AUXILIA, BELGAE, GERMANS
     from fs_bot.board.pieces import count_pieces
+
+    # Belgic NP: "Battle where most Losses forced on Legions; if none, no
+    # play." Score each Region by predicted Roman Legion Losses.
+    if faction == BELGAE:
+        best = None  # (region, defender, legion_losses)
+        for region in allowed_regions:
+            if not _attacker_has_force(state, region, faction):
+                continue
+            ll = _predicted_legion_losses(state, region, faction)
+            if ll > 0 and (best is None or ll > best[2]):
+                from fs_bot.rules_consts import ROMANS
+                best = (region, ROMANS, ll)
+        return (best[0], best[1]) if best else (None, None)
+
     best = None  # (region, defender, enemy_mobile)
     for region in allowed_regions:
         if not _attacker_has_force(state, region, faction):
             continue
         defender = _rank_free_battle_defender(state, region, faction)
         if defender is None:
+            continue
+        # German NP: skip Regions that would drop Ariovistus below 4 Warbands.
+        if faction == GERMANS and not _german_warband_floor_ok(
+                state, region, faction, defender):
             continue
         enemy_mobile = (count_pieces(state, region, defender, WARBAND)
                         + count_pieces(state, region, defender, AUXILIA)
@@ -255,6 +317,8 @@ def _free_battle_region_set(state, flag):
         return _within1_of(state, SEQUANI)
     if flag in ("card_A57_first_no_retreat",):
         return set(BELGICA_REGIONS)
+    if flag in ("card_A28_combined_battle",):
+        return _within1_of(state, SEQUANI)  # "in and adjacent to Sequani"
     return set()
 
 
@@ -262,6 +326,14 @@ def _free_battle_region_set(state, flag):
 _FREE_FIRST_BATTLE_FLAGS = (
     "card_A21_first_no_retreat",
     "card_A57_first_no_retreat",
+    # A28 Admagetobriga: a no-Retreat free Battle in/adjacent to Sequani.
+    # The card additionally lets the actor treat Arverni and allied
+    # Warbands/Auxilia as its own for this Battle's Losses ("combined
+    # Battle"). That augmentation requires multi-Faction Loss math in the
+    # battle engine (a Faction cannot literally own another's piece type —
+    # e.g. Germans hold no Auxilia), so it is a documented follow-up; the
+    # core no-Retreat Battle with the actor's own force is executed here.
+    "card_A28_combined_battle",
 )
 
 # First-Battle flag -> the matching "optional second Battle there" flag

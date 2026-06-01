@@ -2996,3 +2996,48 @@ def test_card66_german_rally_then_march():
     fa = [f for f in (res.get("free_actions") or []) if f.get("flag") == "card_66"]
     assert fa and fa[0]["executed"] is True
     assert validate_state(st) == []
+
+
+def test_arverni_phase_triggers_and_card44a_card51():
+    """Slice 55: cards A24/A27/A32 trigger an Arverni Phase; card 44a shaded
+    free Command; card 51 shaded German Ambush."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, SCENARIO_GREAT_REVOLT,
+        AEDUI, GERMANS, ROMANS, WARBAND, AUXILIA, EVENT_UNSHADED, EVENT_SHADED)
+    # A24: Arverni Phase runs.
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=220)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = "A24"
+    r = _execute_event(st, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A24", "text_preference": EVENT_UNSHADED}})
+    assert any(f["free_action"] == "arverni_phase" for f in (r.get("free_actions") or []))
+    assert validate_state(st) == []
+    # 44a shaded: free Command.
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=223)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = 44
+    r2 = _execute_event(st2, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 44, "text_preference": EVENT_SHADED}})
+    fa2 = [f for f in (r2.get("free_actions") or []) if f.get("flag") == "card_44a"]
+    assert fa2 and fa2[0]["result"]["executed"] is True
+    assert validate_state(st2) == []
+    # 51 shaded: German Ambush sweep removes a Roman Auxilia.
+    st3 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=224)
+    st3["non_player_factions"] = set(get_sop_factions(st3))
+    st3["current_card"] = 51
+    R = "Treveri"
+    _clear_region_mobiles(st3, R)
+    place_piece(st3, R, GERMANS, WARBAND, 6)
+    place_piece(st3, R, ROMANS, AUXILIA, 2)
+    refresh_all_control(st3)
+    from fs_bot.board.pieces import count_pieces
+    rb = count_pieces(st3, R, ROMANS, AUXILIA)
+    r3 = _execute_event(st3, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 51, "text_preference": EVENT_SHADED}})
+    assert count_pieces(st3, R, ROMANS, AUXILIA) < rb
+    assert validate_state(st3) == []

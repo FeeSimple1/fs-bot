@@ -3083,3 +3083,44 @@ def test_cards_A29_A34_A65_free_actions():
     assert fa3 and fa3[0]["defender"] == GERMANS
     assert count_pieces(st3, R, GERMANS, WARBAND) == 0
     assert validate_state(st3) == []
+
+
+def test_warband_full_loss_and_A69_A58():
+    """Slice 57: warband_full_loss (1 Loss/Warband), A69 Bellovaci Ambush, A58
+    shaded Ambush."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, BELGAE, ROMANS,
+        WARBAND, AUXILIA, ALLY, TRIBE_BELLOVACI, TRIBE_TO_REGION, EVENT_SHADED)
+    # Modifier: 4 Warbands at full loss -> 4 Losses.
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=240)
+    R = "Nervii"
+    _clear_region_mobiles(st, R)
+    place_piece(st, R, BELGAE, WARBAND, 4)
+    place_piece(st, R, ROMANS, AUXILIA, 5)
+    refresh_all_control(st)
+    resolve_battle(st, R, BELGAE, ROMANS, is_ambush=True, warband_full_loss=True)
+    assert count_pieces(st, R, ROMANS, AUXILIA) <= 1   # >=4 removed (Warbands x1, +Leader)
+    # A69 shaded: Ambush at Bellovaci removes Romans.
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=241)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = "A69"
+    BR = TRIBE_TO_REGION[TRIBE_BELLOVACI]
+    _clear_region_mobiles(st2, BR)
+    ti = st2["tribes"].get(TRIBE_BELLOVACI)
+    if ti:
+        ti["allied_faction"] = BELGAE
+    place_piece(st2, BR, BELGAE, ALLY, 1)
+    place_piece(st2, BR, ROMANS, AUXILIA, 3)
+    refresh_all_control(st2)
+    r = _execute_event(st2, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A69", "text_preference": EVENT_SHADED}})
+    fa = [f for f in (r.get("free_actions") or []) if f.get("flag") == "card_A69"]
+    assert fa and fa[0]["defender"] == ROMANS
+    assert count_pieces(st2, BR, ROMANS, AUXILIA) == 0
+    assert validate_state(st2) == []

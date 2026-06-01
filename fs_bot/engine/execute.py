@@ -761,6 +761,11 @@ def _resolve_free_actions(state, faction):
                         "result": _resolve_free_command(state, faction)})
     if mods.get("card_A65_kinship_battle"):
         results.extend(_resolve_card_A65_battle(state, faction))
+    if mods.get("card_A69_ambush"):
+        results.extend(_resolve_card_A69_ambush(state))
+    if mods.get("card_A58_free_ambush"):
+        results.append({"free_action": "ambush", "flag": "card_A58",
+                        "ambushes": _faction_ambush_sweep(state, faction)})
     return results
 
 
@@ -826,6 +831,30 @@ def _resolve_card_A65_battle(state, faction):
                  "executed": False, "reason": repr(exc)}]
     return [{"free_action": "battle", "flag": "card_A65", "region": R,
              "defender": opp, "result": res}]
+
+
+def _resolve_card_A69_ambush(state):
+    """Card A69 Bellovaci (shaded): the 6 placed Belgic Warbands Ambush at
+    Bellovaci, causing 1 Loss each (warband_full_loss)."""
+    from fs_bot.rules_consts import BELGAE, TRIBE_BELLOVACI, TRIBE_TO_REGION
+    R = TRIBE_TO_REGION.get(TRIBE_BELLOVACI)
+    if R is None:
+        return [{"free_action": "ambush", "flag": "card_A69", "executed": False,
+                 "reason": "Bellovaci region unknown"}]
+    defender = _faction_ambush_target(state, R, BELGAE)
+    if defender is None:
+        return [{"free_action": "ambush", "flag": "card_A69", "executed": False,
+                 "reason": "no legal Belgic Ambush at Bellovaci"}]
+    try:
+        res = _execute_battle(state, BELGAE, {
+            "command": _CMD_BATTLE, "sa": _SA_AMBUSH, "sa_regions": [R],
+            "details": {"battle_plan": [{"region": R, "target": defender}],
+                        "warband_full_loss": True}})
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "ambush", "flag": "card_A69",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "ambush", "flag": "card_A69", "region": R,
+             "defender": defender, "result": res}]
 
 
 def _resolve_event_arverni_phase(state):
@@ -2633,6 +2662,7 @@ def _execute_battle(state, faction, bot_action):
     # Free-Battle events may forbid the defender's Retreat (§ card text).
     no_retreat = bool(details.get("no_retreat"))
     allied_factions = tuple(details.get("allied_factions") or ())
+    warband_full_loss = bool(details.get("warband_full_loss"))
     sa = bot_action.get("sa")
     # sa_regions are string Region names for Ambush/Besiege; other SAs
     # (e.g. Intimidate) carry dict plans we ignore here, so filter to strings.
@@ -2676,6 +2706,7 @@ def _execute_battle(state, faction, bot_action):
                 retreat_declaration=retreat_decl,
                 retreat_region=retreat_region,
                 allied_factions=allied_factions,
+                warband_full_loss=warband_full_loss,
             )
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "defender": defender,
@@ -4151,11 +4182,32 @@ def _derive_card_44(state, faction, shaded):
     return {"replacements": reps} if reps else None
 
 
+def _derive_card_A58(state, faction, shaded):
+    """Card A58 Aduatuca (shaded): in 1 Belgica Region, replace 1 Roman Ally
+    and 3 Auxilia with the acting Faction's, then free Ambush Romans. Choose a
+    Belgica Region with a Roman-allied Tribe and Roman Auxilia. (Unshaded is
+    the Roman Battle+Seize, executed not derived.)"""
+    if not shaded:
+        return None
+    from fs_bot.rules_consts import ROMANS, AUXILIA, ALLY, BELGICA_REGIONS
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_tribes_in_region
+    for R in BELGICA_REGIONS:
+        if count_pieces(state, R, ROMANS, AUXILIA) <= 0:
+            continue
+        for t in get_tribes_in_region(R, state["scenario"]):
+            ti = state.get("tribes", {}).get(t)
+            if ti and ti.get("allied_faction") == ROMANS:
+                return {"region": R, "ally_tribe": t}
+    return None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
     2: _derive_card_2,
+    "A58": _derive_card_A58,
     44: _derive_card_44,
     16: _derive_card_16,
     25: _derive_card_25,

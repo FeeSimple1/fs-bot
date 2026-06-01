@@ -54,7 +54,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                    auto_legion_loss=False, ignore_fort=False,
                    ignore_citadel=False, extra_losses=0,
                    no_counterattack=False, ally_first=False,
-                   attacker_stays_hidden=False, allied_factions=()):
+                   attacker_stays_hidden=False, allied_factions=(),
+                   warband_full_loss=False):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -311,6 +312,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         had_fort_at_start=had_fort_at_start,
         double_auxilia=double_auxilia,
         allied_factions=allied_factions,
+        warband_full_loss=warband_full_loss,
     )
 
     # extra_losses (e.g. card 25: "inflicting 3 extra Losses").
@@ -410,7 +412,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
 def _calculate_attack_losses(state, region, attacking_faction,
                              defending_faction, *, is_retreat,
                              had_citadel_at_start, had_fort_at_start,
-                             double_auxilia=False, allied_factions=()):
+                             double_auxilia=False, allied_factions=(),
+                             warband_full_loss=False):
     """Calculate Attack step losses, accounting for original Citadel state.
 
     The halving check uses the original Fort/Citadel state (before Besiege)
@@ -448,7 +451,8 @@ def _calculate_attack_losses(state, region, attacking_faction,
     elif ambiorix_attacking:
         component_a = enemy_warbands * 1
     else:
-        component_a = enemy_legions * 1 + enemy_warbands * 0.5
+        component_a = enemy_legions * 1 + enemy_warbands * (
+            1.0 if warband_full_loss else 0.5)
 
     # Component B
     leader_value = 1 if enemy_leader is not None else 0

@@ -2477,3 +2477,43 @@ def test_card9_free_command_restricted_to_destination():
     assert count_pieces(st, R, ROMANS, AUXILIA) == 2
     assert validate_state(st) == []
 
+
+
+def test_cards_46_51_52_free_commands():
+    """Slice 45: cards 46/51/52 grant unrestricted free Commands to the
+    right Faction (acting Gallic / Aedui / Carnutes controller)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, AEDUI, ARVERNI,
+        BELGAE, CARNUTES, FACTIONS, EVENT_SHADED, EVENT_UNSHADED)
+
+    def fc(card, faction, shaded):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=120)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        st["current_card"] = card
+        pref = EVENT_SHADED if shaded else EVENT_UNSHADED
+        res = _execute_event(st, faction, {"command": "Event", "sa": "No SA",
+            "sa_regions": [], "details": {"card_id": card,
+            "text_preference": pref}})
+        fa = [f for f in (res.get("free_actions") or [])
+              if f["free_action"] == "free_command"]
+        return fa, st
+
+    # 46 shaded: acting Gallic Faction free Command.
+    fa, st = fc(46, ARVERNI, True)
+    assert fa and fa[0]["result"]["executed"] is True
+    assert validate_state(st) == []
+    # 51 unshaded: Aedui free Command.
+    fa, st = fc(51, AEDUI, False)
+    assert fa and fa[0]["result"]["executed"] is True
+    assert validate_state(st) == []
+    # 52 shaded: the Carnutes controller free Command.
+    st0 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=120)
+    ctrl = next((f for f in FACTIONS if is_controlled_by(st0, CARNUTES, f)), None)
+    fa, st = fc(52, BELGAE, True)
+    assert fa and fa[0].get("controller") == ctrl
+    assert fa[0]["result"]["executed"] is True
+    assert validate_state(st) == []

@@ -3152,3 +3152,21 @@ def test_card_A45_shaded_german_intimidate():
     assert fa and fa[0]["result"]["executed"] is True
     assert count_pieces(st, R, ROMANS, AUXILIA) < rb
     assert validate_state(st) == []
+
+
+def test_card67_base_arduenna():
+    """Slice 59: base card 67 Arduenna — free March into Nervii/Treveri, then a
+    free Command (except March), then flip friendly Hidden."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, AEDUI, EVENT_UNSHADED
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=260)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 67
+    res = _execute_event(st, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 67, "text_preference": EVENT_UNSHADED}})
+    fa = [f for f in (res.get("free_actions") or []) if f.get("flag") == "card_67"]
+    assert any(f["free_action"] == "free_command" for f in fa)
+    assert validate_state(st) == []

@@ -3459,6 +3459,15 @@ def execute_card_A31(state, shaded=False):
     """
     if not shaded:
         state.setdefault("event_modifiers", {})
+        # "Event effects benefitting Germans in Battle are cancelled":
+        # the only persistent German Battle benefit the Battle engine
+        # models is Ariovistus doubling Losses (A6.x). card_A31_no_ario_double
+        # cancels exactly that (read in losses.py and resolve.py). Every other
+        # event Battle modifier (double_auxilia, auto_legion_loss, extra
+        # losses, etc.) is applied only inside its own card's free-Battle
+        # resolution and never persists as a standing German benefit, so it
+        # has no separate referent here. The cancel flag is therefore set for
+        # completeness; its concrete effect is the no-double below.
         state["event_modifiers"]["card_A31_cancel_german_benefits"] = True
         state["event_modifiers"]["card_A31_no_ario_double"] = True
     else:

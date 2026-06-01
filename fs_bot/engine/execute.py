@@ -727,6 +727,10 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_54_joined_ranks"):
         results.extend(_resolve_card54_joined_ranks(
             state, faction, mods.get("card_54_march_limit", 8)))
+    if mods.get("card_44_free_scout"):
+        results.extend(_resolve_card44_scout(state))
+    if mods.get("card_44_free_raid"):
+        results.extend(_resolve_card44_raid(state, faction))
     if mods.get("card_48_druids"):
         results.extend(_resolve_card48_druids(
             state, mods.get("card_48_target_factions")))
@@ -1012,6 +1016,45 @@ def _resolve_card54_joined_ranks(state, faction, march_limit):
             pass
         break
     return out
+
+
+def _resolve_card44_scout(state):
+    """Card 44 (unshaded): the Romans free Scout (as if Auxilia)."""
+    from fs_bot.rules_consts import ROMANS
+    try:
+        res = _execute_scout(state, ROMANS, {"sa": _SA_SCOUT,
+                                             "sa_regions": [], "details": {}})
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "scout", "flag": "card_44",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "scout", "flag": "card_44", "result": res}]
+
+
+def _resolve_card44_raid(state, faction):
+    """Card 44 (shaded): the acting Faction's Warbands free Raid — in each
+    Region where it has Warbands and an enemy with Resources is present."""
+    from fs_bot.rules_consts import WARBAND, FACTIONS
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    raid_plan = []
+    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
+        if count_pieces(state, region, faction, WARBAND) <= 0:
+            continue
+        target = next((f for f in FACTIONS if f != faction
+                       and count_pieces(state, region, f) > 0
+                       and state["resources"].get(f, 0) > 0), None)
+        raid_plan.append({"region": region, "target": target})
+    if not raid_plan:
+        return [{"free_action": "raid", "flag": "card_44", "executed": False,
+                 "reason": "no Warband Region to Raid"}]
+    try:
+        res = _execute_raid(state, faction, {"command": _CMD_RAID,
+              "sa": SA_ACTION_NONE_LABEL, "sa_regions": [],
+              "details": {"raid_plan": raid_plan}})
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "raid", "flag": "card_44",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "raid", "flag": "card_44", "result": res}]
 
 
 def _resolve_card26_arverni_rally(state):
@@ -3898,11 +3941,48 @@ def _derive_card_16(state, faction, shaded):
     return {"target_region": best[0]} if best else None
 
 
+def _derive_card_44(state, faction, shaded):
+    """Card 44 Dumnorix Loyalists. Unshaded: replace up to 4 enemy Warbands
+    with Auxilia (Roman actor) or the acting Faction's Warbands; they free
+    Scout. Shaded: replace up to 3 Roman Auxilia with the acting Faction's
+    Warbands (take Auxilia first, exposing Legions); they free Raid."""
+    from fs_bot.rules_consts import (ROMANS, WARBAND, AUXILIA, HIDDEN, REVEALED,
+                                     FACTIONS)
+    from fs_bot.board.pieces import count_pieces_by_state, count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
+    if not shaded:
+        to_type = AUXILIA if faction == ROMANS else WARBAND
+        reps = []
+        for region in playable:
+            for ef in FACTIONS:
+                if ef == faction:
+                    continue
+                for ps in (HIDDEN, REVEALED):
+                    for _ in range(count_pieces_by_state(state, region, ef,
+                                                          WARBAND, ps)):
+                        if len(reps) >= 4:
+                            break
+                        reps.append({"region": region, "from_faction": ef,
+                                     "to_type": to_type, "to_faction": faction,
+                                     "piece_state": ps})
+        return {"replacements": reps} if reps else None
+    reps = []
+    for region in playable:
+        for _ in range(count_pieces(state, region, ROMANS, AUXILIA)):
+            if len(reps) >= 3:
+                break
+            reps.append({"region": region, "from_faction": ROMANS,
+                         "from_type": AUXILIA, "to_faction": faction})
+    return {"replacements": reps} if reps else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
     2: _derive_card_2,
+    44: _derive_card_44,
     16: _derive_card_16,
     25: _derive_card_25,
     4: _derive_card_4,

@@ -730,7 +730,8 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card45_battle(state, faction))
     if mods.get("card_54_joined_ranks"):
         results.extend(_resolve_card54_joined_ranks(
-            state, faction, mods.get("card_54_march_limit", 8)))
+            state, faction, mods.get("card_54_march_limit", 8),
+            bool(mods.get("card_54a_second_always_retreat"))))
     if mods.get("card_44_free_scout"):
         results.extend(_resolve_card44_scout(state))
     if mods.get("card_44_free_raid"):
@@ -770,6 +771,8 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card_A45_intimidate(state))
     if mods.get("card_67_arduenna"):
         results.extend(_resolve_card67_arduenna(state, faction))
+    if mods.get("card_A5_remove_non_romans"):
+        results.extend(_resolve_card_A5_evict(state))
     return results
 
 
@@ -906,6 +909,62 @@ def _resolve_card_A45_intimidate(state):
     res = _execute_intimidate(state, GERMANS,
                               {"details": {"intimidate_plan": plan}})
     return [{"free_action": "intimidate", "flag": "card_A45", "result": res}]
+
+
+def _resolve_card_A5_evict(state):
+    """Card A5 Gallia Togata (unshaded): only Romans may stack in Cisalpina, so
+    non-Roman pieces there move to a Home Region of their Faction (or are
+    removed if none is available)."""
+    from fs_bot.rules_consts import (CISALPINA, ROMANS, ARVERNI, AEDUI, BELGAE,
+        GERMANS, LEADER, LEGION, AUXILIA, WARBAND, HIDDEN, REVEALED, SCOUTED,
+        ARIOVISTUS_SCENARIOS, ARVERNI_HOME_REGIONS_BASE,
+        ARVERNI_HOME_REGIONS_ARIOVISTUS, AEDUI_HOME_REGIONS,
+        BELGAE_HOME_REGIONS, GERMAN_HOME_REGIONS_BASE)
+    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
+        get_leader_in_region, move_piece, remove_piece)
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_playable_regions
+    scen = state["scenario"]
+    ario = scen in ARIOVISTUS_SCENARIOS
+    homes = {
+        ARVERNI: (ARVERNI_HOME_REGIONS_ARIOVISTUS if ario
+                  else ARVERNI_HOME_REGIONS_BASE),
+        AEDUI: AEDUI_HOME_REGIONS, BELGAE: BELGAE_HOME_REGIONS,
+        GERMANS: GERMAN_HOME_REGIONS_BASE,
+    }
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+    moved, removed = [], []
+    for fac in (ARVERNI, AEDUI, BELGAE, GERMANS):
+        dest = next((h for h in homes.get(fac, ()) if h in playable
+                     and h != CISALPINA), None)
+        # Leader
+        if get_leader_in_region(state, CISALPINA, fac) is not None:
+            if dest:
+                move_piece(state, CISALPINA, dest, fac, LEADER)
+                moved.append((fac, LEADER, dest))
+            else:
+                remove_piece(state, CISALPINA, fac, LEADER); removed.append((fac, LEADER))
+        leg = count_pieces(state, CISALPINA, fac, LEGION)
+        if leg:
+            (move_piece(state, CISALPINA, dest, fac, LEGION, count=leg) if dest
+             else remove_piece(state, CISALPINA, fac, LEGION, count=leg))
+        for pt in (AUXILIA, WARBAND):
+            for ps in (HIDDEN, REVEALED, SCOUTED):
+                n = count_pieces_by_state(state, CISALPINA, fac, pt, ps)
+                if n <= 0:
+                    continue
+                if dest:
+                    move_piece(state, CISALPINA, dest, fac, pt, count=n,
+                               piece_state=ps)
+                    moved.append((fac, pt, dest))
+                else:
+                    remove_piece(state, CISALPINA, fac, pt, count=n,
+                                 piece_state=ps)
+                    removed.append((fac, pt))
+    refresh_all_control(state)
+    return [{"free_action": "evict_cisalpina", "flag": "card_A5",
+             "moved": moved, "removed": removed,
+             "executed": bool(moved or removed)}]
 
 
 def _resolve_card67_arduenna(state, faction):
@@ -1188,7 +1247,8 @@ def _resolve_card45_battle(state, faction):
              "defender": ROMANS, "ambush": is_ambush, "result": res}]
 
 
-def _resolve_card54_joined_ranks(state, faction, march_limit):
+def _resolve_card54_joined_ranks(state, faction, march_limit,
+                                 second_always_retreat=False):
     """Card 54 Joined Ranks: the executing Faction may free March a group to a
     Region that already has >=2 other Gallic/Roman Factions; then it free
     Battles there (No Retreat) and a 2nd such Faction free Battles there
@@ -1261,7 +1321,8 @@ def _resolve_card54_joined_ranks(state, faction, march_limit):
             r2 = _execute_battle(state, f2, {
                 "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
                 "sa_regions": [], "details": {"battle_plan": [
-                    {"region": T, "target": d2}]}})
+                    {"region": T, "target": d2}],
+                    "force_retreat": second_always_retreat}})
             out.append({"free_action": "battle", "flag": "card_54",
                         "battler": f2, "region": T, "defender": d2,
                         "result": r2})
@@ -2763,6 +2824,7 @@ def _execute_battle(state, faction, bot_action):
     battle_plan = details.get("battle_plan", []) or []
     # Free-Battle events may forbid the defender's Retreat (§ card text).
     no_retreat = bool(details.get("no_retreat"))
+    force_retreat = bool(details.get("force_retreat"))
     allied_factions = tuple(details.get("allied_factions") or ())
     warband_full_loss = bool(details.get("warband_full_loss"))
     sa = bot_action.get("sa")
@@ -2796,9 +2858,11 @@ def _execute_battle(state, faction, bot_action):
 
         try:
             if no_retreat:
-                # Free-Battle events that forbid Retreat (e.g. A21/A57 first
-                # Battle, A28). Defender may not Retreat.
                 retreat_decl, retreat_region = (False, None)
+            elif force_retreat:
+                _d, _dest = _decide_defender_retreat(
+                    state, region, faction, defender, is_ambush)
+                retreat_decl, retreat_region = (True, _dest)
             else:
                 retreat_decl, retreat_region = _decide_defender_retreat(
                     state, region, faction, defender, is_ambush)

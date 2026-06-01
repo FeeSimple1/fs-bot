@@ -3170,3 +3170,25 @@ def test_card67_base_arduenna():
     fa = [f for f in (res.get("free_actions") or []) if f.get("flag") == "card_67"]
     assert any(f["free_action"] == "free_command" for f in fa)
     assert validate_state(st) == []
+
+
+def test_card_A5_evicts_non_romans_from_cisalpina():
+    """Slice 60: A5 Gallia Togata — non-Roman pieces leave Cisalpina (only
+    Romans may stack there)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ARVERNI, CISALPINA,
+        WARBAND, EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=270)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = "A5"
+    place_piece(st, CISALPINA, ARVERNI, WARBAND, 2)
+    refresh_all_control(st)
+    _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A5", "text_preference": EVENT_UNSHADED}})
+    assert count_pieces(st, CISALPINA, ARVERNI, WARBAND) == 0
+    assert validate_state(st) == []

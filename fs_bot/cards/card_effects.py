@@ -89,6 +89,10 @@ def _apply_senate_shift(state, direction):
         state: game state dict
         direction: SENATE_UP ("up") or SENATE_DOWN ("down")
     """
+    if (direction == SENATE_DOWN
+            and state.get("event_modifiers", {}).get("lost_eagle_no_shift_down")):
+        # Lost Eagle: the Senate may not shift down (toward Adulation).
+        return
     position = state["senate"]["position"]
     is_firm = state["senate"]["firm"]
     pos_idx = _SENATE_INDEX[position]

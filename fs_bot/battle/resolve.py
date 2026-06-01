@@ -392,6 +392,25 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
             loss_order=defend_loss_order,
         )
         result["counterattack"] = counter_result
+        # A33 Wailing Women: unless Ariovistus is on the map, remove the
+        # Germans' outnumbered Warbands after they Counterattack.
+        if (defending_faction == GERMANS
+                and state.get("event_modifiers", {}).get(
+                    "card_A33_remove_outnumbered")):
+            from fs_bot.board.pieces import find_leader, count_pieces
+            ario_on_map = find_leader(state, GERMANS) is not None
+            g_wb = count_pieces(state, region, GERMANS, WARBAND)
+            atk_mobile = (count_pieces(state, region, attacking_faction, WARBAND)
+                          + count_pieces(state, region, attacking_faction, AUXILIA)
+                          + count_pieces(state, region, attacking_faction, LEGION))
+            if (not ario_on_map) and 0 < g_wb < atk_mobile:
+                # Outnumbered (fewer Warbands than the surviving enemy) and
+                # unable to Retreat -> the German Warbands are removed.
+                removed = 0
+                while count_pieces(state, region, GERMANS, WARBAND) > 0:
+                    _remove_battle_piece(state, region, GERMANS, WARBAND, None)
+                    removed += 1
+                result["a33_outnumbered_removed"] = removed
 
     # ── Step 5: Reveal ──
     # Skip if Retreat — §3.2.4: "If a Retreat, skip this step."

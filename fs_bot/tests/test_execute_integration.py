@@ -3270,3 +3270,41 @@ def test_capability_hooks_battle_intimidate():
         assert False, "Intimidate should be blocked vs Romans"
     except CommandError:
         pass
+
+
+def test_capability_hooks_senate_and_a33_outnumbered():
+    """Slice 63: lost_eagle blocks Senate down-shift; A33 removes outnumbered
+    German Warbands after their Counterattack (no Ariovistus)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.cards.card_effects import _apply_senate_shift
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, GERMANS, ARVERNI,
+        WARBAND, SENATE_DOWN)
+    # lost_eagle: no down-shift.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+    st["senate"]["position"] = "Intrigue"
+    st["senate"]["firm"] = False
+    st["event_modifiers"] = {"lost_eagle_no_shift_down": True}
+    _apply_senate_shift(st, SENATE_DOWN)
+    assert st["senate"]["position"] == "Intrigue"
+    # A33: outnumbered Germans removed.
+    R = "Sugambri"
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+    _clear_region_mobiles(st2, R)
+    place_piece(st2, R, GERMANS, WARBAND, 2)
+    place_piece(st2, R, ARVERNI, WARBAND, 5)
+    refresh_all_control(st2)
+    st2["event_modifiers"] = {"card_A33_remove_outnumbered": True}
+    resolve_battle(st2, R, ARVERNI, GERMANS, retreat_declaration=False)
+    assert count_pieces(st2, R, GERMANS, WARBAND) == 0
+    # Not outnumbered -> kept.
+    st3 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
+    _clear_region_mobiles(st3, R)
+    place_piece(st3, R, GERMANS, WARBAND, 6)
+    place_piece(st3, R, ARVERNI, WARBAND, 1)
+    refresh_all_control(st3)
+    st3["event_modifiers"] = {"card_A33_remove_outnumbered": True}
+    resolve_battle(st3, R, ARVERNI, GERMANS, retreat_declaration=False)
+    assert count_pieces(st3, R, GERMANS, WARBAND) > 0

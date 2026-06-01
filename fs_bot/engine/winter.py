@@ -533,6 +533,11 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
         )
         if _is_devastated(state, region):
             base_cost *= QUARTERS_DEVASTATED_MULTIPLIER
+        elif state.get("event_modifiers", {}).get(
+                "card_A63_quarters_devastated_only"):
+            # A63 Winter Campaign: Romans pay Quarters only in Devastated
+            # Regions — elsewhere pieces Quarter at no cost.
+            base_cost = 0
 
         # Apply decisions or default to rolling
         decisions = quartering_decisions.get(region, {})

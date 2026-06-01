@@ -3308,3 +3308,87 @@ def test_capability_hooks_senate_and_a33_outnumbered():
     st3["event_modifiers"] = {"card_A33_remove_outnumbered": True}
     resolve_battle(st3, R, ARVERNI, GERMANS, retreat_declaration=False)
     assert count_pieces(st3, R, GERMANS, WARBAND) > 0
+
+
+def test_cap_hooks_3_A63_quarters_devastated_only():
+    """A63: Romans pay Quarters only in Devastated Regions."""
+    from fs_bot.engine.winter import _quarters_roman_pay_or_roll
+    from fs_bot.rules_consts import (
+        SCENARIO_GREAT_REVOLT, ROMANS, AUXILIA, MANDUBII,
+    )
+    from fs_bot.board.pieces import place_piece, count_pieces
+    # Non-devastated region, flag ON, pay for all -> cost 0, nothing removed.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+    _clear_region_mobiles(st, MANDUBII)
+    place_piece(st, MANDUBII, ROMANS, AUXILIA, 3)
+    st["resources"][ROMANS] = 0
+    st["event_modifiers"] = {"card_A63_quarters_devastated_only": True}
+    res = _quarters_roman_pay_or_roll(
+        st, {MANDUBII: {"pay": 3, "roll": 0}}
+    )
+    assert res["total_cost"] == 0
+    assert count_pieces(st, MANDUBII, ROMANS, AUXILIA) == 3
+    # Same setup without flag and no resources -> cannot pay, rolls happen.
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+    _clear_region_mobiles(st2, MANDUBII)
+    place_piece(st2, MANDUBII, ROMANS, AUXILIA, 3)
+    st2["resources"][ROMANS] = 0
+    st2["event_modifiers"] = {}
+    res2 = _quarters_roman_pay_or_roll(
+        st2, {MANDUBII: {"pay": 3, "roll": 0}}
+    )
+    assert res2["payments"][MANDUBII]["count"] == 0
+
+
+def test_cap_hooks_3_A38_suborn_enhanced():
+    """A38: Suborn gets +1 piece per Region; places Auxilia at 0 cost."""
+    from fs_bot.commands.sa_suborn import suborn
+    from fs_bot.commands.common import CommandError
+    from fs_bot.board.pieces import place_piece, remove_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.rules_consts import (
+        SCENARIO_GREAT_REVOLT, AEDUI, ARVERNI, ROMANS, AUXILIA, WARBAND,
+        FACTIONS,
+    )
+    R = "Bituriges"
+
+    def _clr(st):
+        for f in FACTIONS:
+            for pt in (WARBAND, AUXILIA):
+                n = count_pieces(st, R, f, pt)
+                if n:
+                    remove_piece(st, R, f, pt, count=n)
+
+    ops = [{"action": "remove", "piece_type": WARBAND, "faction": ARVERNI}
+           for _ in range(4)]
+    # Flag ON: 4 ops allowed.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+    _clr(st)
+    place_piece(st, R, ARVERNI, WARBAND, 4)
+    refresh_all_control(st)
+    st["resources"][AEDUI] = 20
+    st["event_modifiers"] = {"card_A38_suborn_enhanced": True}
+    suborn(st, R, ops)
+    # Flag OFF: 4 ops rejected.
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+    _clr(st2)
+    place_piece(st2, R, ARVERNI, WARBAND, 4)
+    refresh_all_control(st2)
+    st2["resources"][AEDUI] = 20
+    st2["event_modifiers"] = {}
+    try:
+        suborn(st2, R, ops)
+        assert False, "4 ops should be rejected without A38"
+    except CommandError:
+        pass
+    # Flag ON: Auxilia placement costs 0.
+    st3 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+    _clr(st3)
+    refresh_all_control(st3)
+    st3["resources"][AEDUI] = 20
+    st3["event_modifiers"] = {"card_A38_suborn_enhanced": True}
+    res = suborn(
+        st3, R, [{"action": "place", "piece_type": AUXILIA,
+                  "faction": ROMANS}]
+    )
+    assert res.get("cost") == 0

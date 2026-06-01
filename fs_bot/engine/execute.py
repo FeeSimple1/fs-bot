@@ -190,7 +190,70 @@ def _execute_bot_command(state, faction, bot_action):
     return result
 
 
-def _resolve_free_command(state, faction):
+def _constrain_bot_action(bot_action, allowed):
+    """Filter a chosen Command's plan to ``allowed`` Regions (for an event's
+    "in/from <Region>" restriction). Returns a constrained copy of the action,
+    or None if the Command has no action left within the allowed Regions.
+    March is constrained to groups marching FROM an allowed Region ("from the
+    destination Region")."""
+    cmd = bot_action.get("command")
+    ba = dict(bot_action)
+    d = dict(bot_action.get("details") or {})
+
+    def reg_of(e):
+        return e if isinstance(e, str) else e.get("region")
+
+    if cmd == _CMD_BATTLE:
+        plan = [e for e in (d.get("battle_plan") or []) if reg_of(e) in allowed]
+        if not plan:
+            return None
+        d["battle_plan"] = plan
+    elif cmd == _CMD_RAID:
+        plan = [e for e in (d.get("raid_plan") or []) if reg_of(e) in allowed]
+        if not plan:
+            return None
+        d["raid_plan"] = plan
+    elif cmd == _CMD_RECRUIT:
+        plan = [e for e in (d.get("recruit_plan") or []) if reg_of(e) in allowed]
+        if not plan:
+            return None
+        d["recruit_plan"] = plan
+    elif cmd == _CMD_RALLY:
+        rp = d.get("rally_plan") or {}
+        new = {k: [e for e in (rp.get(k) or []) if reg_of(e) in allowed]
+               for k in ("citadels", "allies", "warbands")}
+        if not any(new.values()):
+            return None
+        d["rally_plan"] = new
+    elif cmd == _CMD_SEIZE:
+        regs = [r for r in (bot_action.get("regions") or []) if r in allowed]
+        if not regs:
+            return None
+        ba["regions"] = regs
+        d["disperse_regions"] = [r for r in (d.get("disperse_regions") or [])
+                                 if r in allowed]
+    elif cmd == _CMD_MARCH:
+        plan = d.get("march_plan") or d
+        origins = plan.get("origins") or []
+        def onorm(o):
+            return o[0] if isinstance(o, (list, tuple)) else o
+        keep = [o for o in origins if onorm(o) in allowed]
+        if not keep:
+            return None
+        if "march_plan" in d:
+            mp = dict(d["march_plan"]); mp["origins"] = keep
+            d["march_plan"] = mp
+        else:
+            d["origins"] = keep
+    else:
+        return None
+    ba["details"] = d
+    ba["sa_regions"] = [r for r in (bot_action.get("sa_regions") or [])
+                        if (not isinstance(r, str)) or r in allowed]
+    return ba
+
+
+def _resolve_free_command(state, faction, allowed_regions=None):
     """Execute one *free* Command for ``faction`` using its real flowchart.
 
     Event cards that grant "a free Command" (e.g. card 9 Mons Cevenna, card 70
@@ -222,6 +285,11 @@ def _resolve_free_command(state, faction):
     if cmd in (None, _CMD_EVENT):
         return {"executed": False, "command": cmd,
                 "reason": "flowchart chose no free Command"}
+    if allowed_regions is not None:
+        bot_action = _constrain_bot_action(bot_action, set(allowed_regions))
+        if bot_action is None:
+            return {"executed": False, "command": cmd,
+                    "reason": "chosen Command has no action in the allowed Region(s)"}
     res = _execute_bot_command(state, faction, bot_action)
     if res is None:
         return {"executed": False, "command": cmd,
@@ -532,7 +600,28 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card9_march_command(
             state, faction, mods.get("card_9_march_from"),
             mods.get("card_9_march_to")))
+    if mods.get("card_70_free_command_sa"):
+        results.extend(_resolve_card70_free_command(state, faction))
     return results
+
+
+def _resolve_card70_free_command(state, faction):
+    """Card 70 Camulogenus (shaded): after placing Warbands among Atrebates/
+    Carnutes/Mandubii, the Faction executes a free Command + Special Ability in
+    the selected Region — the one of the three where it now has the most
+    pieces (where the deriver placed). Restricted via the free-Command layer."""
+    from fs_bot.rules_consts import ATREBATES, CARNUTES, MANDUBII
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    regs = [r for r in (ATREBATES, CARNUTES, MANDUBII) if r in playable]
+    if not regs:
+        return [{"free_action": "free_command", "flag": "card_70_free_command_sa",
+                 "executed": False, "reason": "no target Region in play"}]
+    R = max(regs, key=lambda r: count_pieces(state, r, faction))
+    cmd_res = _resolve_free_command(state, faction, allowed_regions={R})
+    return [{"free_action": "free_command", "flag": "card_70_free_command_sa",
+             "region": R, "result": cmd_res}]
 
 
 def _resolve_card9_march_command(state, faction, march_from, march_to):
@@ -561,16 +650,19 @@ def _resolve_card9_march_command(state, faction, march_from, march_to):
                 if dests:
                     S, B = cand, dests[0]
                     break
+    dest = None
     if S and B and _group_has_pieces(_mobile_march_group(state, faction, S)):
         try:
             final = _march_with_harassment(state, faction, S, [B])
+            dest = final
             out.append({"free_action": "march", "flag": "card_9",
                         "source": S, "final_region": final})
         except _EXEC_ERRORS as exc:
             out.append({"free_action": "march", "flag": "card_9",
                         "executed": False, "reason": repr(exc)})
-    # Free Command (and its Special Ability) via the flowchart-faithful chooser.
-    cmd_res = _resolve_free_command(state, faction)
+    # Free Command "in (or from) the destination Region" — restrict to dest.
+    allowed = {dest} if dest else (set(near) if near else None)
+    cmd_res = _resolve_free_command(state, faction, allowed_regions=allowed)
     out.append({"free_action": "free_command", "flag": "card_9",
                 "result": cmd_res})
     return out
@@ -3233,12 +3325,46 @@ def _derive_card_4(state, faction, shaded):
     return {"target_region": best[0]} if best else None
 
 
+def _derive_card_70(state, faction, shaded):
+    """Card 70 Camulogenus (shaded): "Place 0-6 Warbands among Atrebates,
+    Carnutes, and Mandubii; select 1 for a free Command + Special Ability."
+
+    Place all available Warbands (up to 6) of the acting Faction in the one of
+    those Regions where it will best act: the Region with the most enemy
+    pieces to Battle, else where the Faction already has the most presence,
+    else the first. The executor then runs the free Command restricted to that
+    Region. Unshaded (Roman March+Battle) needs no params.
+    """
+    if not shaded:
+        return None
+    from fs_bot.rules_consts import (ATREBATES, CARNUTES, MANDUBII, WARBAND,
+                                     FACTIONS)
+    from fs_bot.board.pieces import count_pieces, get_available
+    from fs_bot.map.map_data import get_playable_regions
+    if faction is None:
+        return None
+    avail = get_available(state, faction, WARBAND)
+    if avail <= 0:
+        return None
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    regs = [r for r in (ATREBATES, CARNUTES, MANDUBII) if r in playable]
+    if not regs:
+        return None
+    def score(r):
+        enemy = sum(count_pieces(state, r, f) for f in FACTIONS if f != faction)
+        own = count_pieces(state, r, faction)
+        return (enemy, own)
+    R = max(regs, key=score)
+    return {"placements": [{"region": R, "count": min(6, avail)}]}
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
     2: _derive_card_2,
     4: _derive_card_4,
+    70: _derive_card_70,
     11: _derive_card_11,
     "A17": _derive_card_A17,
     "A18": _derive_card_A18,

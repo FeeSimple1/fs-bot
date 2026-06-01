@@ -457,7 +457,55 @@ def _resolve_free_actions(state, faction):
             state, mods.get("card_17_march_german_groups", 3)))
     if mods.get("card_17_germans_phase"):
         results.extend(_resolve_card17_germans_phase(state))
+    if mods.get("card_57_march_britannia"):
+        results.extend(_resolve_card57_britannia_march(state, faction))
     return results
+
+
+def _resolve_card57_britannia_march(state, faction):
+    """Card 57 Land of Mist and Mystery (unshaded): "A non-German Faction may
+    free March into Britannia, add any free Special Ability there, then — if
+    in Britannia — add +4 Resources."
+
+    Executes the free March: the acting non-German Faction Marches one mobile
+    group from a coastal-adjacent Region (Morini, Atrebates, or Veneti) into
+    Britannia, resolving Harassment en route. The +4 Resources is granted by
+    the card handler. The open-ended "any free Special Ability there" depends
+    on a generic per-Faction SA-choice layer and is a documented follow-up;
+    the March (and the resulting Britannia presence that justifies the +4) is
+    executed here.
+    """
+    from fs_bot.rules_consts import GERMANS, BRITANNIA, MORINI, ATREBATES, VENETI
+    from fs_bot.map.map_data import get_playable_regions
+    if faction == GERMANS:
+        return [{"free_action": "march", "flag": "card_57_march_britannia",
+                 "executed": False, "reason": "Germans may not March to Britannia"}]
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    if BRITANNIA not in playable:
+        return [{"free_action": "march", "flag": "card_57_march_britannia",
+                 "executed": False, "reason": "Britannia not in play"}]
+    sources = [r for r in (MORINI, ATREBATES, VENETI)
+               if r in playable
+               and _group_has_pieces(_mobile_march_group(state, faction, r))]
+    if not sources:
+        return [{"free_action": "march", "flag": "card_57_march_britannia",
+                 "executed": False,
+                 "reason": "no mobile group adjacent to Britannia"}]
+    # March from the coastal source with the largest mobile group.
+    def group_size(r):
+        g = _mobile_march_group(state, faction, r)
+        from fs_bot.rules_consts import LEGION, AUXILIA, WARBAND, LEADER
+        return (g.get(LEGION, 0) + g.get(AUXILIA, 0) + g.get(WARBAND, 0)
+                + (1 if g.get(LEADER) else 0))
+    S = max(sources, key=group_size)
+    try:
+        final = _march_with_harassment(state, faction, S, [BRITANNIA])
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "march", "flag": "card_57_march_britannia",
+                 "source": S, "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "march", "flag": "card_57_march_britannia",
+             "source": S, "final_region": final,
+             "sa_deferred": "any free Special Ability (open-ended)"}]
 
 
 def _resolve_card17_march_ambush(state, march_limit):

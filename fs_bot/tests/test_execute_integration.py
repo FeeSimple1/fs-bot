@@ -2920,3 +2920,35 @@ def test_card54_joined_ranks_march_and_battles():
     # At least the executing Faction's Battle resolved; never targets itself.
     assert battles and all(b["defender"] != b["battler"] for b in battles)
     assert validate_state(st) == []
+
+
+def test_card44_replace_then_scout_or_raid():
+    """Slice 53: card 44 Dumnorix Loyalists — unshaded replaces up to 4
+    Warbands then free Scout; shaded replaces up to 3 Roman Auxilia then free
+    Raid."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event, _derive_card_44
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, AEDUI, ARVERNI,
+        EVENT_UNSHADED, EVENT_SHADED)
+    # Unshaded: replacements derived, free Scout fires.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=200)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 44
+    der = _derive_card_44(st, AEDUI, False)
+    assert der and len(der["replacements"]) >= 1
+    res = _execute_event(st, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 44, "text_preference": EVENT_UNSHADED}})
+    assert any(f["free_action"] == "scout" for f in (res.get("free_actions") or []))
+    assert validate_state(st) == []
+    # Shaded: replaces Roman Auxilia, then free Raid.
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=201)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = 44
+    der2 = _derive_card_44(st2, ARVERNI, True)
+    assert der2 and len(der2["replacements"]) >= 1
+    res2 = _execute_event(st2, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 44, "text_preference": EVENT_SHADED}})
+    assert any(f["free_action"] == "raid" for f in (res2.get("free_actions") or []))
+    assert validate_state(st2) == []

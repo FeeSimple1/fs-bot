@@ -47,7 +47,8 @@ from fs_bot.board.pieces import (
 
 def calculate_losses(state, region, attacking_faction, defending_faction,
                      *, is_retreat=False, is_counterattack=False,
-                     double_auxilia=False, allied_factions=()):
+                     double_auxilia=False, allied_factions=(),
+                     warband_full_loss=False):
     """Calculate the number of Losses inflicted.
 
     Per §3.2.4/§3.3.4/§3.4.4 LOSSES:
@@ -137,7 +138,8 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         component_a = enemy_warbands * 1
     else:
         # Normal: Legions × 1 or Warbands × ½
-        component_a = enemy_legions * 1 + enemy_warbands * 0.5
+        component_a = enemy_legions * 1 + enemy_warbands * (
+            1.0 if warband_full_loss else 0.5)
 
     # Component B: Leader × 1 and Auxilia × ½
     leader_value = 1 if enemy_leader is not None else 0

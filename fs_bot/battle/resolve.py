@@ -51,7 +51,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                    retreat_declaration=None, retreat_region=None,
                    attack_loss_order=None, defend_loss_order=None,
                    citadel_at_start=None, double_auxilia=False,
-                   auto_legion_loss=False):
+                   auto_legion_loss=False, ignore_fort=False):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -172,7 +172,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     else:
         had_citadel_at_start = citadel_at_start
 
-    had_fort_at_start = d_pieces.get(FORT, 0) > 0
+    had_fort_at_start = d_pieces.get(FORT, 0) > 0 and not ignore_fort
     # Provincia permanent Fort — §1.4.2: never absorbs Losses
     # but it DOES count for halving — it's still "in the Region"
     # The rule says "Defenders who... have a Citadel or Fort" — the Fort
@@ -206,7 +206,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     d_pieces_now = state["spaces"][region].get("pieces", {}).get(
         defending_faction, {}
     )
-    has_fort_now = d_pieces_now.get(FORT, 0) > 0
+    has_fort_now = d_pieces_now.get(FORT, 0) > 0 and not ignore_fort
     has_citadel_now = d_pieces_now.get(CITADEL, 0) > 0
 
     # Determine if the defender gets die rolls for hard targets

@@ -2120,3 +2120,69 @@ def test_card72_shaded_belgae_targets_an_enemy():
                for f in fa)
     assert count_pieces(st, S, BELGAE, WARBAND) == 0
     assert validate_state(st) == []
+
+
+def test_ignore_fort_modifier():
+    """Slice 38: ignore_fort makes a Fort give no halving and no ambush
+    roll-restoration (card 58's 'unprepared fort')."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, GERMANS,
+        WARBAND, AUXILIA, FORT)
+
+    def setup():
+        st = setup_scenario(SCENARIO_GALLIC_WAR, seed=60)
+        R = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))[4]
+        _clear_region_mobiles(st, R)
+        place_piece(st, R, ROMANS, AUXILIA, 4)
+        place_piece(st, R, ROMANS, FORT, 1)
+        place_piece(st, R, GERMANS, WARBAND, 8)
+        refresh_all_control(st)
+        return st, R
+
+    st, R = setup()
+    resolve_battle(st, R, GERMANS, ROMANS, is_ambush=True)
+    assert count_pieces(st, R, ROMANS, AUXILIA) == 2  # 8wb->4, fort halves to 2
+    st, R = setup()
+    resolve_battle(st, R, GERMANS, ROMANS, is_ambush=True, ignore_fort=True)
+    assert count_pieces(st, R, ROMANS, AUXILIA) == 0  # 8wb->4, no halving
+
+
+def test_card58_shaded_german_ambush_at_fort():
+    """Slice 38: Card 58 Aduatuca (shaded) — gather German Warbands into a
+    Roman-Fort Region and Ambush the Romans there (1 Loss per 2 Warbands, Fort
+    ineffective)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, GERMANS,
+        BELGAE, WARBAND, AUXILIA, FORT, EVENT_SHADED)
+    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=61)
+    st["current_card"] = 58
+    pl = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))
+    for r in pl:
+        _clear_region_mobiles(st, r)
+    R = pl[4]
+    place_piece(st, R, ROMANS, AUXILIA, 4)
+    place_piece(st, R, ROMANS, FORT, 1)
+    adj = next(a for a in get_adjacent(R, SCENARIO_GALLIC_WAR) if a in pl)
+    place_piece(st, R, GERMANS, WARBAND, 3)
+    place_piece(st, adj, GERMANS, WARBAND, 5)
+    refresh_all_control(st)
+    res = _execute_event(st, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 58,
+        "text_preference": EVENT_SHADED}})
+    fa = res.get("free_actions") or []
+    amb = next(f for f in fa if f["free_action"] == "ambush")
+    assert amb["region"] == R and amb["defender"] == ROMANS
+    assert amb["warbands_gathered"] == 8
+    # 8 Warbands -> 4 Losses (Fort ineffective): all 4 Auxilia removed.
+    assert count_pieces(st, R, ROMANS, AUXILIA) == 0
+    assert count_pieces(st, adj, GERMANS, WARBAND) == 0  # marched in
+    assert validate_state(st) == []

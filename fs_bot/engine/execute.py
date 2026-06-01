@@ -447,7 +447,77 @@ def _resolve_free_actions(state, faction):
             mods.get("card_70_legion_limit", 4)))
     if mods.get("card_72_hidden_march_battle"):
         results.extend(_resolve_card72_hidden_march_battle(state, faction))
+    if mods.get("card_58_german_march_battle"):
+        results.extend(_resolve_card58_german_ambush(state))
     return results
+
+
+def _resolve_card58_german_ambush(state):
+    """Card 58 Aduatuca (shaded): "March Germans to 1 Region with a Fort. They
+    Ambush Romans there, 1 Loss per 2 Warbands." ("Sugambri strike unprepared
+    fort" — the Fort gives no protection: ignore_fort.)
+
+    Gather German Hidden Warbands from a Roman-Fort Region and its neighbours
+    into that Region, then resolve a German Ambush of the Romans there with
+    ignore_fort (no halving, full auto-remove). Warband Losses are the normal
+    1/2 each = 1 Loss per 2 Warbands. Chooses the Fort Region where the most
+    German Warbands can be gathered and the Ambush is legal (German Hidden
+    Warbands outnumber Roman Hidden pieces) and causes a Loss.
+    """
+    from fs_bot.rules_consts import (GERMANS, ROMANS, WARBAND, AUXILIA, FORT,
+                                     HIDDEN)
+    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
+                                     move_piece)
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.battle.resolve import resolve_battle
+    scen = state["scenario"]
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+
+    def roman_hidden(r):
+        return (count_pieces_by_state(state, r, ROMANS, AUXILIA, HIDDEN)
+                + count_pieces_by_state(state, r, ROMANS, WARBAND, HIDDEN))
+
+    best = None  # (gatherable, R, sources)
+    for R in playable:
+        if count_pieces(state, R, ROMANS, FORT) <= 0:
+            continue
+        if count_pieces(state, R, ROMANS) <= 0:
+            continue
+        sources = {r: count_pieces_by_state(state, r, GERMANS, WARBAND, HIDDEN)
+                   for r in [R] + [a for a in get_adjacent(R, scen)
+                                   if a in playable]}
+        sources = {r: n for r, n in sources.items() if n > 0}
+        total = sum(sources.values())
+        if total <= 0 or total // 2 < 1:
+            continue
+        if total <= roman_hidden(R):      # Ambush needs Hidden majority
+            continue
+        if best is None or total > best[0]:
+            best = (total, R, sources)
+
+    if best is None:
+        return [{"free_action": "ambush", "flag": "card_58_german_march_battle",
+                 "executed": False,
+                 "reason": "no Fort Region where Germans can gather an Ambush"}]
+
+    total, R, sources = best
+    marched = 0
+    for src, n in sources.items():
+        if src == R:
+            continue
+        move_piece(state, src, R, GERMANS, WARBAND, count=n, piece_state=HIDDEN)
+        marched += n
+    refresh_all_control(state)
+    try:
+        res = resolve_battle(state, R, GERMANS, ROMANS,
+                             is_ambush=True, ignore_fort=True)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "ambush", "flag": "card_58_german_march_battle",
+                 "region": R, "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "ambush", "flag": "card_58_german_march_battle",
+             "region": R, "defender": ROMANS, "warbands_gathered": total,
+             "warbands_marched": marched, "result": res}]
 
 
 def _resolve_card72_hidden_march_battle(state, faction):

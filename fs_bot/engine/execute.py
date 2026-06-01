@@ -441,7 +441,91 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_2_auto_legion_loss"):
         results.extend(_resolve_card2_battle(
             state, faction, mods.get("card_2_battle_region")))
+    if mods.get("card_70_roman_march_battle"):
+        results.extend(_resolve_card70_march_battle(
+            state, mods.get("card_70_target_regions"),
+            mods.get("card_70_legion_limit", 4)))
     return results
+
+
+def _resolve_card70_march_battle(state, target_regions, legion_limit):
+    """Card 70 Camulogenus (unshaded): "Romans may free March up to 4 Legions
+    & any Auxilia to Atrebates, Carnutes, or Mandubii Region and free Battle
+    there." Pick the named Region with the best Roman Battle target (8.8.1)
+    that has an adjacent Roman group; March <= legion_limit Legions and all
+    Auxilia from the strongest adjacent source in; free Battle there (no
+    double Auxilia)."""
+    from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA
+    from fs_bot.board.pieces import count_pieces, move_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.bots.roman_bot import _rank_battle_targets
+    from fs_bot.battle.resolve import resolve_battle
+    scen = state["scenario"]
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+    targets = [r for r in (target_regions or []) if r in playable]
+
+    # Rank the named Regions by best available Roman Battle target there or
+    # reachable: choose the (T, source) maximizing enemy mobile force in T.
+    best = None  # (enemy_mobile, T, src, defender)
+    for T in targets:
+        defenders = _rank_battle_targets(state, T, scen)
+        # Source: an adjacent Region with Roman Legions/Auxilia.
+        src_best = None
+        for src in get_adjacent(T, scen):
+            leg = count_pieces(state, src, ROMANS, LEGION)
+            aux = count_pieces(state, src, ROMANS, AUXILIA)
+            if leg + aux <= 0:
+                continue
+            if src_best is None or (leg + aux) > src_best[1]:
+                src_best = (src, leg + aux)
+        # Enemy force already in T (for ranking) — Battle is fought after March.
+        em = 0
+        if defenders:
+            d = defenders[0]
+            em = (count_pieces(state, T, d, "Warband")
+                  + count_pieces(state, T, d, AUXILIA)
+                  + count_pieces(state, T, d, LEGION))
+        # Need either an enemy already in T or pieces to bring + an enemy.
+        if src_best is None and not defenders:
+            continue
+        if best is None or em > best[0]:
+            best = (em, T, src_best[0] if src_best else None,
+                    defenders[0] if defenders else None)
+    if best is None:
+        return [{"free_action": "march_battle", "flag":
+                 "card_70_roman_march_battle", "executed": False,
+                 "reason": "no named Region with a Roman group or target"}]
+
+    _em, T, src, _d = best
+    moved = {"legions": 0, "auxilia": 0}
+    if src is not None:
+        leg = count_pieces(state, src, ROMANS, LEGION)
+        aux = count_pieces(state, src, ROMANS, AUXILIA)
+        move_leg = min(legion_limit, leg)
+        if move_leg:
+            move_piece(state, src, T, ROMANS, LEGION, count=move_leg)
+            moved["legions"] = move_leg
+        if aux:
+            moved["auxilia"] = _move_roman_aux(state, src, T, aux)
+        refresh_all_control(state)
+    defenders = _rank_battle_targets(state, T, scen)
+    if not defenders:
+        return [{"free_action": "march", "flag": "card_70_roman_march_battle",
+                 "region": T, "moved": moved, "battle": None,
+                 "reason": "no Battle target in T after March"}]
+    defender = defenders[0]
+    rd, rr = _decide_defender_retreat(state, T, ROMANS, defender, False)
+    try:
+        res = resolve_battle(state, T, ROMANS, defender,
+                             retreat_declaration=rd, retreat_region=rr)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "march_battle",
+                 "flag": "card_70_roman_march_battle", "region": T,
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "march_battle",
+             "flag": "card_70_roman_march_battle", "region": T,
+             "defender": defender, "moved": moved, "result": res}]
 
 
 def _resolve_card2_battle(state, faction, region):

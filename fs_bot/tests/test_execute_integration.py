@@ -2303,3 +2303,40 @@ def test_card17_shaded_germans_phase():
         "sa_regions": [], "details": {"card_id": 17,
         "text_preference": EVENT_SHADED}})
     assert (res2.get("free_actions") or [{}])[0].get("executed") is False
+
+
+def test_card57_unshaded_free_march_into_britannia():
+    """Slice 41: Card 57 Land of Mist (unshaded) — a non-German Faction free
+    Marches a mobile group into Britannia (+4 Resources from the card)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.engine.execute import (_execute_event,
+        _resolve_card57_britannia_march)
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, BELGAE, GERMANS,
+        WARBAND, MORINI, BRITANNIA, EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=90)
+    st["current_card"] = 57
+    pl = get_playable_regions(SCENARIO_GREAT_REVOLT, st.get("capabilities"))
+    assert BRITANNIA in pl
+    _clear_region_mobiles(st, MORINI)
+    _clear_region_mobiles(st, BRITANNIA)
+    place_piece(st, MORINI, BELGAE, WARBAND, 4)
+    refresh_all_control(st)
+    res_before = st["resources"][BELGAE]
+    res = _execute_event(st, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 57,
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    march = next(f for f in fa if f["free_action"] == "march")
+    assert march["source"] == MORINI and march["final_region"] == BRITANNIA
+    assert count_pieces(st, MORINI, BELGAE, WARBAND) == 0
+    assert count_pieces(st, BRITANNIA, BELGAE, WARBAND) == 4
+    assert st["resources"][BELGAE] == res_before + 4
+    assert validate_state(st) == []
+
+    # Germans may not March to Britannia (non-German only).
+    out = _resolve_card57_britannia_march(st, GERMANS)
+    assert out and out[0]["executed"] is False

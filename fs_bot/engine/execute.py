@@ -768,6 +768,8 @@ def _resolve_free_actions(state, faction):
                         "ambushes": _faction_ambush_sweep(state, faction)})
     if mods.get("card_A45_free_intimidate"):
         results.extend(_resolve_card_A45_intimidate(state))
+    if mods.get("card_67_arduenna"):
+        results.extend(_resolve_card67_arduenna(state, faction))
     return results
 
 
@@ -904,6 +906,57 @@ def _resolve_card_A45_intimidate(state):
     res = _execute_intimidate(state, GERMANS,
                               {"details": {"intimidate_plan": plan}})
     return [{"free_action": "intimidate", "flag": "card_A45", "result": res}]
+
+
+def _resolve_card67_arduenna(state, faction):
+    """Card 67 Arduenna (base): Romans or a Gallic Faction may free March into
+    Nervii and/or Treveri, then a free Command except March in those Regions,
+    then flip all friendly Warbands/Auxilia there Hidden."""
+    from fs_bot.rules_consts import (NERVII, TREVERI, WARBAND, AUXILIA, LEGION,
+                                     LEADER, REVEALED, HIDDEN)
+    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
+                                     get_leader_in_region, flip_piece)
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    scen = state["scenario"]
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+    targets = [r for r in (NERVII, TREVERI) if r in playable]
+    out = []
+    # Free March a mobile group from an adjacent Region into each target.
+    for T in targets:
+        if _attacker_has_force(state, T, faction):
+            continue
+        srcs = [a for a in get_adjacent(T, scen) if a in playable
+                and _group_has_pieces(_mobile_march_group(state, faction, a))]
+        if not srcs:
+            continue
+        S = max(srcs, key=lambda a: sum(
+            count_pieces(state, a, faction, pt)
+            for pt in (LEGION, AUXILIA, WARBAND)))
+        try:
+            _march_with_harassment(state, faction, S, [T])
+            out.append({"free_action": "march", "flag": "card_67",
+                        "source": S, "dest": T})
+        except _EXEC_ERRORS:
+            pass
+    # Free Command (except March) in/from the target Regions.
+    cmd = _resolve_free_command(state, faction, allowed_regions=set(targets),
+                               exclude_commands={_CMD_MARCH})
+    out.append({"free_action": "free_command", "flag": "card_67", "result": cmd})
+    # Flip all friendly Warbands/Auxilia in the targets to Hidden.
+    flipped = 0
+    for T in targets:
+        for pt in (WARBAND, AUXILIA):
+            rev = count_pieces_by_state(state, T, faction, pt, REVEALED)
+            if rev > 0:
+                flip_piece(state, T, faction, pt, rev,
+                           from_state=REVEALED, to_state=HIDDEN)
+                flipped += rev
+    if flipped:
+        refresh_all_control(state)
+        out.append({"free_action": "flip_hidden", "flag": "card_67",
+                    "flipped": flipped})
+    return out
 
 
 def _resolve_event_arverni_phase(state):

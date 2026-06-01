@@ -397,8 +397,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         if (defending_faction == GERMANS
                 and state.get("event_modifiers", {}).get(
                     "card_A33_remove_outnumbered")):
-            from fs_bot.board.pieces import find_leader, count_pieces
-            ario_on_map = find_leader(state, GERMANS) is not None
+            from fs_bot.board.pieces import find_leader as _find_leader
+            ario_on_map = _find_leader(state, GERMANS) is not None
             g_wb = count_pieces(state, region, GERMANS, WARBAND)
             atk_mobile = (count_pieces(state, region, attacking_faction, WARBAND)
                           + count_pieces(state, region, attacking_faction, AUXILIA)

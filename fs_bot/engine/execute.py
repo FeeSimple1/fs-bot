@@ -163,6 +163,72 @@ def execute_decision(state, faction, decision):
             "reason": "no executable command"}
 
 
+def _execute_bot_command(state, faction, bot_action):
+    """Route a bot_action's Command (never an Event) to the matching command
+    executor. Returns the result dict, or None if the command is not one of
+    the wired board Commands."""
+    cmd = bot_action.get("command")
+    handlers = {
+        _CMD_SEIZE: _execute_seize, _CMD_RAID: _execute_raid,
+        _CMD_RALLY: _execute_rally, _CMD_BATTLE: _execute_battle,
+        _CMD_RECRUIT: _execute_recruit, _CMD_MARCH: _execute_march,
+    }
+    h = handlers.get(cmd)
+    if h is None:
+        return None
+    sa = bot_action.get("sa")
+    before = (cmd == _CMD_BATTLE and sa in _BEFORE_BATTLE_SAS)
+    sa_result = None
+    if before:
+        sa_result = _execute_sa(state, faction, bot_action)
+    result = h(state, faction, bot_action)
+    if not before:
+        sa_result = _execute_sa(state, faction, bot_action)
+    if sa_result is not None:
+        result = dict(result)
+        result["sa_execution"] = sa_result
+    return result
+
+
+def _resolve_free_command(state, faction):
+    """Execute one *free* Command for ``faction`` using its real flowchart.
+
+    Event cards that grant "a free Command" (e.g. card 9 Mons Cevenna, card 70
+    shaded) let the Faction take one Command of its choice. The faithful chooser
+    is the Faction's own bot flowchart: we ask it for an action with Event-play
+    disabled (so it returns a Command + Special Ability, not another Event or a
+    recursive Event play), then execute that Command through the existing
+    command executors. Game-run Factions (Germans in base, Arverni in
+    Ariovistus) have no bot flowchart and are skipped.
+
+    SCOPE NOTE: the Command is the Faction's board-wide best per flowchart; a
+    card's "in/from <Region>" restriction is not yet imposed on the chosen
+    Command (a documented refinement) — the chooser itself is fully faithful.
+    """
+    from fs_bot.bots.bot_dispatch import dispatch_bot_turn
+    nps = state.get("non_player_factions", set())
+    if faction not in nps:
+        return {"executed": False, "command": None,
+                "reason": "free Command actor is not a bot Faction"}
+    prev_event = state.get("can_play_event")
+    state["can_play_event"] = False  # force a Command, not an Event
+    try:
+        bot_action = dispatch_bot_turn(state, faction)
+    except Exception as exc:  # BotDispatchError for game-run Factions, etc.
+        state["can_play_event"] = prev_event
+        return {"executed": False, "command": None, "reason": repr(exc)}
+    state["can_play_event"] = prev_event
+    cmd = bot_action.get("command")
+    if cmd in (None, _CMD_EVENT):
+        return {"executed": False, "command": cmd,
+                "reason": "flowchart chose no free Command"}
+    res = _execute_bot_command(state, faction, bot_action)
+    if res is None:
+        return {"executed": False, "command": cmd,
+                "reason": "chosen Command not executable"}
+    return res
+
+
 # ===========================================================================
 # Free-action execution layer (event-granted free Battles/Commands)
 # ---------------------------------------------------------------------------
@@ -462,7 +528,52 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_4_free_march_to"):
         results.extend(_resolve_card4_circumvallation(
             state, mods.get("card_4_free_march_to")))
+    if mods.get("card_9_free_march_and_command"):
+        results.extend(_resolve_card9_march_command(
+            state, faction, mods.get("card_9_march_from"),
+            mods.get("card_9_march_to")))
     return results
+
+
+def _resolve_card9_march_command(state, faction, march_from, march_to):
+    """Card 9 Mons Cevenna: "Free March from a Region into an adjacent Region,
+    both within 1 Region of Provincia. Then execute a free Command and any free
+    Special Ability in (or from) the destination Region." (Within 1 of
+    Provincia = Provincia, Sequani, or Arverni.)
+
+    Performs the free March (deriving a within-1-of-Provincia source/destination
+    if the handler did not supply them), then a free Command via the flowchart-
+    faithful chooser.
+    """
+    from fs_bot.rules_consts import PROVINCIA, SEQUANI, ARVERNI_REGION
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    out = []
+    scen = state["scenario"]
+    near = [r for r in (PROVINCIA, SEQUANI, ARVERNI_REGION)
+            if r in set(get_playable_regions(scen, state.get("capabilities")))]
+    S, B = march_from, march_to
+    if not (S and B):
+        # Derive: a within-1-of-Provincia source with a mobile group, into an
+        # adjacent within-1-of-Provincia destination.
+        for cand in near:
+            if _group_has_pieces(_mobile_march_group(state, faction, cand)):
+                dests = [d for d in get_adjacent(cand, scen) if d in near]
+                if dests:
+                    S, B = cand, dests[0]
+                    break
+    if S and B and _group_has_pieces(_mobile_march_group(state, faction, S)):
+        try:
+            final = _march_with_harassment(state, faction, S, [B])
+            out.append({"free_action": "march", "flag": "card_9",
+                        "source": S, "final_region": final})
+        except _EXEC_ERRORS as exc:
+            out.append({"free_action": "march", "flag": "card_9",
+                        "executed": False, "reason": repr(exc)})
+    # Free Command (and its Special Ability) via the flowchart-faithful chooser.
+    cmd_res = _resolve_free_command(state, faction)
+    out.append({"free_action": "free_command", "flag": "card_9",
+                "result": cmd_res})
+    return out
 
 
 def _resolve_card4_circumvallation(state, region):

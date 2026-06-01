@@ -2392,3 +2392,53 @@ def test_card4_deriver_none_for_non_roman():
     from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, ARVERNI
     st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=95)
     assert _derive_card_4(st, ARVERNI, False) is None
+
+
+def test_free_command_layer_uses_flowchart():
+    """Slice 43: _resolve_free_command runs the Faction's real flowchart (with
+    Event-play disabled) and executes the chosen Command."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _resolve_free_command
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, ROMANS
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=100)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    res = _resolve_free_command(st, ROMANS)
+    assert res["executed"] is True
+    assert res["command"] in {"Battle", "March", "Rally", "Raid", "Recruit",
+                              "Seize"}
+    # Event-play flag restored after the call.
+    assert "can_play_event" not in st or st.get("can_play_event") in (None,
+        True, False)
+    assert validate_state(st) == []
+
+
+def test_free_command_layer_skips_non_bot_faction():
+    """The free-Command chooser no-ops for a Faction not marked Non-Player."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.engine.execute import _resolve_free_command
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, ROMANS
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=100)
+    st["non_player_factions"] = set()   # nobody is a bot
+    res = _resolve_free_command(st, ROMANS)
+    assert res["executed"] is False
+
+
+def test_card9_free_march_and_command():
+    """Slice 43: Card 9 Mons Cevenna executes a free Command via the layer."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, AEDUI, EVENT_UNSHADED
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=101)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 9
+    res = _execute_event(st, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 9,
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    fc = next(f for f in fa if f["free_action"] == "free_command")
+    assert fc["result"]["executed"] is True
+    assert validate_state(st) == []

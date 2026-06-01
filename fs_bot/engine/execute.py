@@ -422,7 +422,39 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_a58_battle_seize(state, faction))
     if mods.get("card_A67_arduenna"):
         results.extend(_resolve_a67_arduenna(state, faction))
+    if mods.get("card_A20_free_seize_veneti"):
+        results.extend(_resolve_a20_free_seize(state))
     return results
+
+
+def _resolve_a20_free_seize(state):
+    """A20 Morbihan (unshaded): after the Arverni are removed from Veneti, the
+    Romans free Seize there (§3.2.3 — Forage; Disperse Subdued Tribes only
+    where Roman-Controlled). The Seize belongs to the Romans by the card text,
+    so it is executed for the Romans regardless of which Faction played the
+    Event. If the Romans hold no pieces in Veneti, Seize is not possible there
+    and this no-ops (validate_seize_region, §3.2.3).
+
+    A20 shaded (Arverni Ambush near Veneti) is NOT executed here: in the
+    Ariovistus scenario the Arverni are the player Faction and have no
+    non-player flowchart, so there is no NP logic to drive that Ambush.
+    """
+    from fs_bot.rules_consts import ROMANS, VENETI
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.board.control import is_controlled_by
+    if count_pieces(state, VENETI, ROMANS) <= 0:
+        return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
+                 "executed": False, "reason": "Romans have no pieces in Veneti"}]
+    disperse = [VENETI] if is_controlled_by(state, VENETI, ROMANS) else []
+    try:
+        res = _execute_seize(state, ROMANS, {
+            "command": _CMD_SEIZE, "sa": SA_ACTION_NONE_LABEL,
+            "regions": [VENETI], "details": {"disperse_regions": disperse}})
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
+             "region": VENETI, "result": res}]
 
 
 def _resolve_a67_arduenna(state, faction):

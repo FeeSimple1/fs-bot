@@ -1566,3 +1566,48 @@ def test_a67_non_german_and_no_target_noop():
     # finds no target with player Warbands/Auxilia/Legions.
     out = _resolve_a67_arduenna(st, GERMANS)
     assert isinstance(out, list)
+
+
+def test_a20_roman_free_seize_veneti():
+    """Slice 30: A20 Morbihan (unshaded) — after Arverni are cleared from
+    Veneti, the Romans free Seize there (Forage; Disperse if Controlled). The
+    shaded Arverni Ambush is player-controlled in Ariovistus, not NP."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, remove_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _execute_event, _resolve_a20_free_seize
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, ARVERNI,
+        AUXILIA, LEGION, WARBAND, ALLY, EVENT_UNSHADED, VENETI, TRIBE_VENETI)
+
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=7)
+    st["current_card"] = "A20"
+    place_piece(st, VENETI, ARVERNI, WARBAND, 2)
+    ti = st["tribes"].get(TRIBE_VENETI)
+    if ti and ti.get("allied_faction") is None:
+        place_piece(st, VENETI, ARVERNI, ALLY)
+        ti["allied_faction"] = ARVERNI
+    place_piece(st, VENETI, ROMANS, AUXILIA, 2)  # Romans present to Seize
+    refresh_all_control(st)
+    res_before = st["resources"][ROMANS]
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A20",
+        "text_preference": EVENT_UNSHADED}})
+    # Card effect cleared the Arverni from Veneti.
+    assert count_pieces(st, VENETI, ARVERNI, WARBAND) == 0
+    assert count_pieces(st, VENETI, ARVERNI, ALLY) == 0
+    fa = res.get("free_actions") or []
+    seize = next(f for f in fa if f["free_action"] == "seize")
+    assert seize["result"]["forage_resources_total"] > 0
+    assert st["resources"][ROMANS] > res_before
+    assert validate_state(st) == []
+
+    # No Roman pieces in Veneti -> the free Seize cannot occur (§3.2.3).
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=7)
+    for pt in (AUXILIA, LEGION):
+        n = count_pieces(st2, VENETI, ROMANS, pt)
+        if n:
+            remove_piece(st2, VENETI, ROMANS, pt, count=n)
+    refresh_all_control(st2)
+    out = _resolve_a20_free_seize(st2)
+    assert out and out[0]["executed"] is False

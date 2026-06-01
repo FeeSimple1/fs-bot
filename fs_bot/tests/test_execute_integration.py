@@ -3124,3 +3124,31 @@ def test_warband_full_loss_and_A69_A58():
     assert fa and fa[0]["defender"] == ROMANS
     assert count_pieces(st2, BR, ROMANS, AUXILIA) == 0
     assert validate_state(st2) == []
+
+
+def test_card_A45_shaded_german_intimidate():
+    """Slice 58: A45 Savage Dictates (shaded) — Germans free Intimidate,
+    removing enemy pieces."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, ROMANS,
+        WARBAND, AUXILIA, EVENT_SHADED)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=250)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = "A45"
+    R = "Sugambri"
+    _clear_region_mobiles(st, R)
+    place_piece(st, R, GERMANS, WARBAND, 3)
+    place_piece(st, R, ROMANS, AUXILIA, 3)
+    refresh_all_control(st)
+    rb = count_pieces(st, R, ROMANS, AUXILIA)
+    r = _execute_event(st, GERMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A45", "text_preference": EVENT_SHADED}})
+    fa = [f for f in (r.get("free_actions") or []) if f.get("flag") == "card_A45"]
+    assert fa and fa[0]["result"]["executed"] is True
+    assert count_pieces(st, R, ROMANS, AUXILIA) < rb
+    assert validate_state(st) == []

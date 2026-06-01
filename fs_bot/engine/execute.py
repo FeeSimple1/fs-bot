@@ -766,6 +766,8 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_A58_free_ambush"):
         results.append({"free_action": "ambush", "flag": "card_A58",
                         "ambushes": _faction_ambush_sweep(state, faction)})
+    if mods.get("card_A45_free_intimidate"):
+        results.extend(_resolve_card_A45_intimidate(state))
     return results
 
 
@@ -855,6 +857,53 @@ def _resolve_card_A69_ambush(state):
                  "executed": False, "reason": repr(exc)}]
     return [{"free_action": "ambush", "flag": "card_A69", "region": R,
              "defender": defender, "result": res}]
+
+
+def _resolve_card_A45_intimidate(state):
+    """Card A45 Savage Dictates (shaded): the Germans free Intimidate anywhere.
+    Build a plan flipping Hidden German Warbands to remove enemy pieces in each
+    Region where the Germans have Hidden Warbands and an enemy has removable
+    mobile pieces (most-pieces enemy, up to 2 per Region)."""
+    from fs_bot.rules_consts import (GERMANS, FACTIONS, WARBAND, AUXILIA,
+                                     LEGION, HIDDEN, REVEALED)
+    from fs_bot.board.pieces import count_pieces, count_pieces_by_state
+    from fs_bot.map.map_data import get_playable_regions
+    plan = []
+    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
+        gh = count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN)
+        if gh <= 0:
+            continue
+        # Pick the enemy with the most removable mobile pieces here.
+        best, best_n = None, 0
+        for ef in FACTIONS:
+            if ef == GERMANS:
+                continue
+            n = (count_pieces(state, region, ef, WARBAND)
+                 + count_pieces(state, region, ef, AUXILIA)
+                 + count_pieces(state, region, ef, LEGION))
+            if n > best_n:
+                best, best_n = ef, n
+        if best is None:
+            continue
+        # Up to min(2, gh) removals of that enemy's mobile pieces.
+        removable = []
+        for pt in (WARBAND, AUXILIA, LEGION):
+            for ps in (HIDDEN, REVEALED, None):
+                if pt == LEGION and ps is not None:
+                    continue
+                cnt = (count_pieces(state, region, best, pt) if ps is None
+                       else count_pieces_by_state(state, region, best, pt, ps))
+                for _ in range(cnt):
+                    removable.append((pt, ps if pt != LEGION else None))
+        for (pt, ps) in removable[:min(2, gh)]:
+            plan.append({"region": region, "target_faction": best,
+                         "target_piece": pt, "target_state": ps})
+    if not plan:
+        return [{"free_action": "intimidate", "flag": "card_A45",
+                 "executed": False, "reason": "no German Intimidate available"}]
+    res = _execute_intimidate(state, GERMANS,
+                              {"details": {"intimidate_plan": plan}})
+    return [{"free_action": "intimidate", "flag": "card_A45", "result": res}]
 
 
 def _resolve_event_arverni_phase(state):

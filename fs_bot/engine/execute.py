@@ -742,7 +742,32 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card47_council(state))
     if mods.get("card_62_war_fleet"):
         results.extend(_resolve_card62_war_fleet(state, faction))
+    if (mods.get("card_A24_arverni_phase") or mods.get("card_A27_arverni_phase")
+            or mods.get("card_A32_arverni_phase")):
+        results.extend(_resolve_event_arverni_phase(state))
+    if mods.get("card_51_german_action"):
+        # Germans are game-run (no flowchart): act with the placed Warbands via
+        # an Ambush sweep (the aggressive "March/Raid/Battle" option).
+        from fs_bot.rules_consts import GERMANS as _G
+        results.append({"free_action": "german_ambush", "flag": "card_51",
+                        "ambushes": _faction_ambush_sweep(state, _G)})
+    if mods.get("card_44a_free_command"):
+        results.append({"free_action": "free_command", "flag": "card_44a",
+                        "result": _resolve_free_command(state, faction)})
     return results
+
+
+def _resolve_event_arverni_phase(state):
+    """Cards A24/A27/A32: after placing Arverni Warbands, conduct an immediate
+    Arverni Phase as if At War (A6.2) via run_arverni_phase."""
+    from fs_bot.engine.arverni_phase import run_arverni_phase
+    try:
+        res = run_arverni_phase(state)
+    except Exception as exc:
+        return [{"free_action": "arverni_phase", "flag": "arverni_phase",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "arverni_phase", "flag": "arverni_phase",
+             "executed": res is not None, "result": res}]
 
 
 def _gallic_np_factions(state):

@@ -663,11 +663,27 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_35_gallic_commands"):
         results.extend(_resolve_card35_gallic(state, faction))
     if mods.get("card_35_free_limited_command"):
-        results.append({"free_action": "free_command", "flag": "card_35",
-                        "note": "Roman peek at next 2 cards not modelled (no NP benefit)",
-                        "result": _resolve_free_command(
-                            state, faction, limited=True)})
+        results.extend(_resolve_card35_roman(state, faction))
     return results
+
+
+def _resolve_card35_roman(state, faction):
+    """Card 35 Gallic Shouts (unshaded): "Romans may look at the next 2
+    facedown cards and either execute a free Limited Command or be Eligible."
+
+    The peek lets the Romans pick the better option. We model the choice by
+    outcome: take the free Limited Command if it does something; otherwise take
+    the alternative and remain Eligible (the peek is the information that drives
+    this either/or — it has no board effect of its own)."""
+    from fs_bot.rules_consts import ELIGIBLE
+    res = _resolve_free_command(state, faction, limited=True)
+    if res.get("executed"):
+        return [{"free_action": "free_command", "flag": "card_35",
+                 "result": res}]
+    state.setdefault("eligibility", {})[faction] = ELIGIBLE
+    return [{"free_action": "stay_eligible", "flag": "card_35",
+             "executed": True, "faction": faction,
+             "note": "no effective Limited Command; chose to be Eligible"}]
 
 
 def _resolve_card35_gallic(state, faction):
@@ -690,10 +706,14 @@ def _resolve_card35_gallic(state, faction):
 
 def _resolve_card52_free_command(state):
     """Card 52 Assembly of Gaul (shaded): "Faction Controlling Carnutes Region
-    executes a Command that may add 2 Special Abilities, free." Find the
-    Faction controlling Carnutes and run its free Command (the bot's command
-    already carries its Special Ability; the rules' allowance of up to 2 SAs is
-    not separately modelled)."""
+    executes a Command that may add 2 Special Abilities, free."
+
+    The controller runs a free Command via the flowchart, which carries the
+    one Special Ability the bot selects (executed by _execute_bot_command). The
+    card *permits* up to two SAs, but the Non-player flowchart has no rule for
+    choosing a second SA — adding one would be invented behaviour — so the
+    Faction adds the single SA its flowchart selects (within the allowance).
+    The result reports whether a SA accompanied the Command."""
     from fs_bot.rules_consts import CARNUTES, FACTIONS
     from fs_bot.board.control import is_controlled_by
     controller = next((f for f in FACTIONS
@@ -701,9 +721,11 @@ def _resolve_card52_free_command(state):
     if controller is None:
         return [{"free_action": "free_command", "flag": "card_52",
                  "executed": False, "reason": "no Faction controls Carnutes"}]
+    res = _resolve_free_command(state, controller)
     return [{"free_action": "free_command", "flag": "card_52",
              "controller": controller,
-             "result": _resolve_free_command(state, controller)}]
+             "sa_included": bool((res or {}).get("sa_execution")),
+             "result": res}]
 
 
 def _resolve_card70_free_command(state, faction):

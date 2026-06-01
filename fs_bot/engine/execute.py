@@ -163,6 +163,142 @@ def execute_decision(state, faction, decision):
             "reason": "no executable command"}
 
 
+# ===========================================================================
+# Free-action execution layer (event-granted free Battles/Commands)
+# ---------------------------------------------------------------------------
+# Several Ariovistus A-cards grant the acting Faction a *free* Battle (or
+# Command) within a constrained Region set, sometimes forbidding the
+# defender's Retreat. The card handlers set descriptive flags in
+# ``state["event_modifiers"]``; nothing consumed them. This layer reads those
+# flags after the Event resolves and runs the granted action through the
+# existing command executors, choosing targets per the NP Battle guidance
+# (§8.8.1 spirit: hit Leaders, then the most enemy mobile force, where the
+# acting Faction has an attacking presence).
+# ===========================================================================
+
+_BATTLE_PIECE_TYPES = None  # filled lazily to avoid import-time cycles
+
+
+def _attacker_has_force(state, region, faction):
+    """True if ``faction`` has at least one Battle-capable piece in region."""
+    from fs_bot.rules_consts import LEGION, AUXILIA, WARBAND
+    from fs_bot.board.pieces import count_pieces, get_leader_in_region
+    if get_leader_in_region(state, region, faction) is not None:
+        return True
+    return any(count_pieces(state, region, faction, pt) > 0
+               for pt in (LEGION, AUXILIA, WARBAND))
+
+
+def _rank_free_battle_defender(state, region, faction):
+    """Pick the best enemy to Battle in ``region`` for ``faction``.
+
+    Generic §8.8.1-style priority: Leader present, then most Warbands+Legions,
+    then most Allies+Citadels in the Region. Returns a faction or None.
+    """
+    from fs_bot.rules_consts import (FACTIONS, WARBAND, LEGION, AUXILIA,
+                                     ALLY, CITADEL)
+    from fs_bot.board.pieces import count_pieces, get_leader_in_region
+    best, best_key = None, None
+    for enemy in FACTIONS:
+        if enemy == faction:
+            continue
+        if count_pieces(state, region, enemy) <= 0:
+            continue
+        has_leader = 1 if get_leader_in_region(state, region, enemy) else 0
+        # Mobile = all Battle-removable mobile pieces (Warbands, Auxilia,
+        # Legions) — Roman mobile force is Auxilia+Legions, not Warbands.
+        mobile = (count_pieces(state, region, enemy, WARBAND)
+                  + count_pieces(state, region, enemy, AUXILIA)
+                  + count_pieces(state, region, enemy, LEGION))
+        struct = (count_pieces(state, region, enemy, ALLY)
+                  + count_pieces(state, region, enemy, CITADEL))
+        key = (has_leader, mobile, struct)
+        if best_key is None or key > best_key:
+            best, best_key = enemy, key
+    return best
+
+
+def _choose_free_battle(state, faction, allowed_regions):
+    """Choose (region, defender) for a free Battle over ``allowed_regions``.
+
+    Among Regions where the acting Faction has an attacking force and an enemy
+    is present, pick the Region with the most enemy mobile pieces (most damage
+    potential), then the top-ranked defender there.
+    """
+    from fs_bot.rules_consts import WARBAND, LEGION, AUXILIA
+    from fs_bot.board.pieces import count_pieces
+    best = None  # (region, defender, enemy_mobile)
+    for region in allowed_regions:
+        if not _attacker_has_force(state, region, faction):
+            continue
+        defender = _rank_free_battle_defender(state, region, faction)
+        if defender is None:
+            continue
+        enemy_mobile = (count_pieces(state, region, defender, WARBAND)
+                        + count_pieces(state, region, defender, AUXILIA)
+                        + count_pieces(state, region, defender, LEGION))
+        if best is None or enemy_mobile > best[2]:
+            best = (region, defender, enemy_mobile)
+    return (best[0], best[1]) if best else (None, None)
+
+
+def _within1_of(state, region):
+    """Region set = the Region itself plus its adjacencies."""
+    from fs_bot.map.map_data import get_adjacent
+    return {region, *get_adjacent(region, state["scenario"])}
+
+
+def _free_battle_region_set(state, flag):
+    """Map a free-Battle event flag to its constrained Region set."""
+    from fs_bot.rules_consts import SEQUANI, BELGICA_REGIONS
+    if flag in ("card_A21_first_no_retreat",):
+        return _within1_of(state, SEQUANI)
+    if flag in ("card_A57_first_no_retreat",):
+        return set(BELGICA_REGIONS)
+    return set()
+
+
+# Event-modifier flags that grant a single no-Retreat free Battle.
+_FREE_FIRST_BATTLE_FLAGS = (
+    "card_A21_first_no_retreat",
+    "card_A57_first_no_retreat",
+)
+
+
+def _resolve_free_actions(state, faction):
+    """Run any free actions granted by the just-resolved Event.
+
+    Called from ``_execute_event`` for the acting Faction. Returns a list of
+    result dicts (possibly empty). Errors in an individual free action are
+    captured, not raised, to keep a full game running.
+    """
+    mods = state.get("event_modifiers") or {}
+    results = []
+    for flag in _FREE_FIRST_BATTLE_FLAGS:
+        if not mods.get(flag):
+            continue
+        allowed = _free_battle_region_set(state, flag)
+        region, defender = _choose_free_battle(state, faction, allowed)
+        if region is None:
+            results.append({"free_action": "battle", "flag": flag,
+                            "executed": False, "reason": "no valid target"})
+            continue
+        try:
+            res = _execute_battle(state, faction, {
+                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL, "sa_regions": [],
+                "details": {"battle_plan": [{"region": region,
+                                             "target": defender}],
+                            "no_retreat": True}})
+        except _EXEC_ERRORS as exc:
+            results.append({"free_action": "battle", "flag": flag,
+                            "executed": False, "reason": repr(exc)})
+            continue
+        results.append({"free_action": "battle", "flag": flag,
+                        "region": region, "defender": defender,
+                        "result": res})
+    return results
+
+
 def _execute_event(state, faction, bot_action):
     """Execute an Event via the card_effects dispatcher.
 
@@ -198,11 +334,15 @@ def _execute_event(state, faction, bot_action):
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"event not applicable: {exc!r}"}
+    free_actions = _resolve_free_actions(state, faction)
     state["event_params"] = prev_params
     state["executing_faction"] = prev_faction
-    return {"executed": True, "command": _CMD_EVENT,
-            "card_id": card_id, "shaded": shaded,
-            "event_result": event_result}
+    result = {"executed": True, "command": _CMD_EVENT,
+              "card_id": card_id, "shaded": shaded,
+              "event_result": event_result}
+    if free_actions:
+        result["free_actions"] = free_actions
+    return result
 
 
 def _execute_seize(state, faction, bot_action):
@@ -387,6 +527,8 @@ def _execute_battle(state, faction, bot_action):
     """
     details = bot_action.get("details") or {}
     battle_plan = details.get("battle_plan", []) or []
+    # Free-Battle events may forbid the defender's Retreat (§ card text).
+    no_retreat = bool(details.get("no_retreat"))
     sa = bot_action.get("sa")
     # sa_regions are string Region names for Ambush/Besiege; other SAs
     # (e.g. Intimidate) carry dict plans we ignore here, so filter to strings.
@@ -417,8 +559,13 @@ def _execute_battle(state, faction, bot_action):
                 besiege_target = options[0]  # Citadel > Ally > Settlement
 
         try:
-            retreat_decl, retreat_region = _decide_defender_retreat(
-                state, region, faction, defender, is_ambush)
+            if no_retreat:
+                # Free-Battle events that forbid Retreat (e.g. A21/A57 first
+                # Battle, A28). Defender may not Retreat.
+                retreat_decl, retreat_region = (False, None)
+            else:
+                retreat_decl, retreat_region = _decide_defender_retreat(
+                    state, region, faction, defender, is_ambush)
             res = resolve_battle(
                 state, region, faction, defender,
                 is_ambush=is_ambush, besiege_target=besiege_target,

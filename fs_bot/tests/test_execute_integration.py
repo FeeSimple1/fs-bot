@@ -1332,3 +1332,59 @@ def test_acard_event_param_derivers_registered():
     assert res["executed"]
     assert count_pieces(st, gr, GERMANS, WARBAND) == 0
     assert validate_state(st) == []
+
+
+def _clear_region_mobiles(state, region):
+    from fs_bot.board.pieces import count_pieces, remove_piece
+    from fs_bot.rules_consts import FACTIONS, WARBAND, LEGION, AUXILIA
+    for f in FACTIONS:
+        for pt in (WARBAND, LEGION, AUXILIA):
+            n = count_pieces(state, region, f, pt)
+            if n:
+                remove_piece(state, region, f, pt, count=n)
+
+
+def test_free_battle_no_retreat_a21_a57():
+    """Slice 25: A21/A57 grant a no-Retreat free Battle that the executor
+    selects (most enemy mobile force) and resolves with real Losses."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _execute_event, _within1_of
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, ARVERNI,
+        GERMANS, WARBAND, AUXILIA, EVENT_UNSHADED, SEQUANI, BELGICA_REGIONS)
+
+    # A21: Arverni free-Battle within 1 of Sequani, defender may not Retreat
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+    st["current_card"] = "A21"
+    allowed = _within1_of(st, SEQUANI)
+    for r in allowed:
+        _clear_region_mobiles(st, r)
+    place_piece(st, SEQUANI, ARVERNI, WARBAND, 8)
+    place_piece(st, SEQUANI, ROMANS, AUXILIA, 5)
+    refresh_all_control(st)
+    res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A21",
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions")
+    assert fa and fa[0]["region"] == SEQUANI and fa[0]["defender"] == ROMANS
+    assert count_pieces(st, SEQUANI, ROMANS, AUXILIA) == 1  # 4 Losses
+    assert validate_state(st) == []
+
+    # A57: German free-Battle in Belgica, no Retreat
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+    st2["current_card"] = "A57"
+    for r in BELGICA_REGIONS:
+        _clear_region_mobiles(st2, r)
+    tgt = BELGICA_REGIONS[0]
+    place_piece(st2, tgt, GERMANS, WARBAND, 8)
+    place_piece(st2, tgt, ROMANS, AUXILIA, 5)
+    refresh_all_control(st2)
+    res2 = _execute_event(st2, GERMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A57",
+        "text_preference": EVENT_UNSHADED}})
+    fa2 = res2.get("free_actions")
+    assert fa2 and fa2[0]["region"] == tgt and fa2[0]["defender"] == ROMANS
+    assert count_pieces(st2, tgt, ROMANS, AUXILIA) == 1
+    assert validate_state(st2) == []

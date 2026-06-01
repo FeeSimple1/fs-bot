@@ -264,6 +264,33 @@ _FREE_FIRST_BATTLE_FLAGS = (
     "card_A57_first_no_retreat",
 )
 
+# First-Battle flag -> the matching "optional second Battle there" flag
+# (Retreat allowed for the second Battle). §A-card text for A21/A57.
+_DOUBLE_BATTLE_FLAG = {
+    "card_A21_first_no_retreat": "card_A21_double_battle",
+    "card_A57_first_no_retreat": "card_A57_double_battle",
+}
+
+
+def _second_battle_worthwhile(state, faction, region):
+    """NP willingness for the optional second free Battle in ``region``.
+
+    The acting Faction takes the second Battle only if it still has an
+    attacking force there and a defender with mobile pieces remains (so the
+    Battle can still inflict a Loss). Returns the defender or None.
+    """
+    from fs_bot.rules_consts import WARBAND, LEGION, AUXILIA
+    from fs_bot.board.pieces import count_pieces
+    if not _attacker_has_force(state, region, faction):
+        return None
+    defender = _rank_free_battle_defender(state, region, faction)
+    if defender is None:
+        return None
+    enemy_mobile = (count_pieces(state, region, defender, WARBAND)
+                    + count_pieces(state, region, defender, AUXILIA)
+                    + count_pieces(state, region, defender, LEGION))
+    return defender if enemy_mobile > 0 else None
+
 
 def _resolve_free_actions(state, faction):
     """Run any free actions granted by the just-resolved Event.
@@ -296,6 +323,24 @@ def _resolve_free_actions(state, faction):
         results.append({"free_action": "battle", "flag": flag,
                         "region": region, "defender": defender,
                         "result": res})
+        # Optional second Battle in the same Region (Retreat allowed).
+        dbl = _DOUBLE_BATTLE_FLAG.get(flag)
+        if dbl and mods.get(dbl):
+            second = _second_battle_worthwhile(state, faction, region)
+            if second is not None:
+                try:
+                    res2 = _execute_battle(state, faction, {
+                        "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
+                        "sa_regions": [],
+                        "details": {"battle_plan": [{"region": region,
+                                                     "target": second}]}})
+                    results.append({"free_action": "battle_second",
+                                    "flag": dbl, "region": region,
+                                    "defender": second, "result": res2})
+                except _EXEC_ERRORS as exc:
+                    results.append({"free_action": "battle_second",
+                                    "flag": dbl, "region": region,
+                                    "executed": False, "reason": repr(exc)})
     return results
 
 

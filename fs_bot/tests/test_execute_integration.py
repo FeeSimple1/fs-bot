@@ -1369,7 +1369,9 @@ def test_free_battle_no_retreat_a21_a57():
         "text_preference": EVENT_UNSHADED}})
     fa = res.get("free_actions")
     assert fa and fa[0]["region"] == SEQUANI and fa[0]["defender"] == ROMANS
-    assert count_pieces(st, SEQUANI, ROMANS, AUXILIA) == 1  # 4 Losses
+    # First Battle inflicts 4 Losses; A21's optional second Battle
+    # (Retreat allowed) may remove the last piece, so <= 1 remains.
+    assert count_pieces(st, SEQUANI, ROMANS, AUXILIA) <= 1
     assert validate_state(st) == []
 
     # A57: German free-Battle in Belgica, no Retreat
@@ -1386,5 +1388,34 @@ def test_free_battle_no_retreat_a21_a57():
         "text_preference": EVENT_UNSHADED}})
     fa2 = res2.get("free_actions")
     assert fa2 and fa2[0]["region"] == tgt and fa2[0]["defender"] == ROMANS
-    assert count_pieces(st2, tgt, ROMANS, AUXILIA) == 1
+    assert count_pieces(st2, tgt, ROMANS, AUXILIA) <= 1
     assert validate_state(st2) == []
+
+
+def test_free_double_battle_a21():
+    """Slice 26: A21/A57 grant an optional second free Battle in the same
+    Region (Retreat allowed) after the no-Retreat first Battle."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _execute_event, _within1_of
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, ARVERNI,
+        WARBAND, AUXILIA, EVENT_UNSHADED, SEQUANI)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+    st["current_card"] = "A21"
+    allowed = _within1_of(st, SEQUANI)
+    for r in allowed:
+        _clear_region_mobiles(st, r)
+    place_piece(st, SEQUANI, ARVERNI, WARBAND, 12)
+    place_piece(st, SEQUANI, ROMANS, AUXILIA, 8)
+    refresh_all_control(st)
+    res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A21",
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    kinds = [f["free_action"] for f in fa]
+    assert "battle" in kinds and "battle_second" in kinds
+    # Two Battles remove more than a single no-Retreat Battle's 4 Losses.
+    assert count_pieces(st, SEQUANI, ROMANS, AUXILIA) <= 4
+    assert validate_state(st) == []

@@ -426,6 +426,8 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_a20_free_seize(state))
     if mods.get("card_A20_arverni_ambush"):
         results.extend(_resolve_a20_arverni_ambush(state))
+    if mods.get("card_A17_roman_march_battle"):
+        results.extend(_resolve_a17_march_battle(state))
     return results
 
 
@@ -561,6 +563,99 @@ def _resolve_a20_arverni_ambush(state):
     return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
              "region": B, "defender": ROMANS, "projected_warbands": projected,
              "result": res}]
+
+
+def _move_roman_aux(state, src, dst, n):
+    """Move up to n Roman Auxilia src->dst, Hidden first then Revealed."""
+    from fs_bot.rules_consts import ROMANS, AUXILIA, HIDDEN, REVEALED
+    from fs_bot.board.pieces import count_pieces_by_state, move_piece
+    moved = 0
+    for ps in (HIDDEN, REVEALED):
+        if moved >= n:
+            break
+        avail = count_pieces_by_state(state, src, ROMANS, AUXILIA, ps)
+        take = min(avail, n - moved)
+        if take > 0:
+            move_piece(state, src, dst, ROMANS, AUXILIA, count=take,
+                       piece_state=ps)
+            moved += take
+    return moved
+
+
+def _resolve_a17_march_battle(state):
+    """A17 Publius Licinius Crassus (unshaded): "Romans may free March a group
+    of 1-4 Legions and 1-8 Auxilia to a Region without Caesar and Battle
+    there, double Losses by Auxilia."
+
+    Roman NP instruction (Ariovistus): "Move Forces using Roman March
+    priorities (8.8.3), then for 'Publius' use Roman Battle priorities
+    (8.8.1)." So the destination is taken from the Roman March destination
+    ranking (8.8.1/8.8.3), restricted to Regions without Caesar that have an
+    adjacent Roman group to bring in; the Battle target is the top Roman
+    Battle-priority defender there; the Battle applies double Auxilia Losses.
+    """
+    from fs_bot.rules_consts import ROMANS, CAESAR, LEGION, AUXILIA
+    from fs_bot.board.pieces import (count_pieces, get_leader_in_region,
+                                     move_piece)
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.bots.roman_bot import (_rank_march_destinations,
+                                       _rank_battle_targets)
+    from fs_bot.battle.resolve import resolve_battle
+
+    scen = state["scenario"]
+    ranked = _rank_march_destinations(state, scen)  # [(region, enemy), ...]
+    for T, _enemy in ranked:
+        if get_leader_in_region(state, T, ROMANS) == CAESAR:
+            continue  # "to a Region without Caesar"
+        # Adjacent source with the most Roman Legions+Auxilia (Caesar stays).
+        best_src = None
+        for src in get_adjacent(T, scen):
+            leg = count_pieces(state, src, ROMANS, LEGION)
+            aux = count_pieces(state, src, ROMANS, AUXILIA)
+            if leg + aux <= 0:
+                continue
+            if best_src is None or (leg + aux) > best_src[1]:
+                best_src = (src, leg + aux, leg, aux)
+        if best_src is None:
+            continue
+        src, _tot, leg, aux = best_src
+        move_leg = min(4, leg)
+        move_aux = min(8, aux)
+        if move_leg + move_aux <= 0:
+            continue
+        if move_leg:
+            move_piece(state, src, T, ROMANS, LEGION, count=move_leg)
+        if move_aux:
+            _move_roman_aux(state, src, T, move_aux)
+        refresh_all_control(state)
+        # Battle the top Roman-priority defender in T (double Auxilia Losses).
+        targets = _rank_battle_targets(state, T, scen)
+        if not targets:
+            return [{"free_action": "march", "flag":
+                     "card_A17_roman_march_battle", "region": T,
+                     "moved": {"legions": move_leg, "auxilia": move_aux},
+                     "battle": None, "reason": "no Battle target in T"}]
+        defender = targets[0]
+        retreat_decl, retreat_region = _decide_defender_retreat(
+            state, T, ROMANS, defender, False)
+        try:
+            res = resolve_battle(state, T, ROMANS, defender,
+                                 double_auxilia=True,
+                                 retreat_declaration=retreat_decl,
+                                 retreat_region=retreat_region)
+        except _EXEC_ERRORS as exc:
+            return [{"free_action": "march_battle",
+                     "flag": "card_A17_roman_march_battle", "region": T,
+                     "executed": False, "reason": repr(exc)}]
+        return [{"free_action": "march_battle",
+                 "flag": "card_A17_roman_march_battle", "region": T,
+                 "defender": defender,
+                 "moved": {"legions": move_leg, "auxilia": move_aux},
+                 "result": res}]
+    return [{"free_action": "march_battle", "flag":
+             "card_A17_roman_march_battle", "executed": False,
+             "reason": "no Caesar-free destination with an adjacent Roman group"}]
 
 
 def _resolve_a67_arduenna(state, faction):
@@ -2177,10 +2272,57 @@ def _derive_card_A66(state, faction, shaded):
     return {"region": sorted(cands)[0]} if cands else None
 
 
+def _derive_card_A17(state, faction, shaded):
+    """A17 (shaded): "Remove 4 Auxilia from any 1 Region." Choose the Region
+    per the acting Faction's Ariovistus instruction:
+      German: most Roman Auxilia removable from Germania or where a German
+              Settlement, then adjacent to Germania/Settlement; else none.
+      Belgic: Belgica Regions first.
+      Other:  most Roman Auxilia.
+    The unshaded side is the Roman free March+Battle (executed, not derived).
+    """
+    if not shaded:
+        return None
+    from fs_bot.rules_consts import (ROMANS, GERMANS, BELGAE, AUXILIA,
+                                     SETTLEMENT, GERMANIA_REGIONS,
+                                     BELGICA_REGIONS)
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    scen = state["scenario"]
+    playable = get_playable_regions(scen, state.get("capabilities"))
+    cands = [(r, count_pieces(state, r, ROMANS, AUXILIA)) for r in playable]
+    cands = [(r, n) for r, n in cands if n > 0]
+    if not cands:
+        return None
+    if faction == GERMANS:
+        settlement_regions = {r for r in playable
+                              if count_pieces(state, r, GERMANS, SETTLEMENT) > 0}
+        core = set(GERMANIA_REGIONS) | settlement_regions
+        adj = set()
+        for r in core:
+            adj.update(get_adjacent(r, scen))
+        def gkey(item):
+            r, n = item
+            tier = 0 if r in core else (1 if r in adj else 2)
+            return (tier, -n)
+        cands.sort(key=gkey)
+        # German instruction targets Roman pieces near Germania; if the best
+        # is neither in/adjacent to Germania nor a Settlement, still allowed
+        # ("any 1 Region") — pick most Auxilia.
+        return {"region": cands[0][0]}
+    if faction == BELGAE:
+        belgica = set(BELGICA_REGIONS)
+        cands.sort(key=lambda it: (0 if it[0] in belgica else 1, -it[1]))
+        return {"region": cands[0][0]}
+    cands.sort(key=lambda it: -it[1])
+    return {"region": cands[0][0]}
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
+    "A17": _derive_card_A17,
     "A18": _derive_card_A18,
     "A37": _derive_card_A37,
     "A45": _derive_card_A45,

@@ -1678,3 +1678,106 @@ def test_a20_shaded_noops_without_ally_or_romans():
     refresh_all_control(st)
     out = _resolve_a20_arverni_ambush(st)
     assert out and out[0]["executed"] is False
+
+
+def test_double_auxilia_loss_modifier():
+    """Slice 32: double_auxilia makes Auxilia cause 1 Loss each, not 1/2."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.battle.losses import calculate_losses
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, ARVERNI,
+        AUXILIA, WARBAND, BELGICA_REGIONS)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=9)
+    R = BELGICA_REGIONS[0]
+    _clear_region_mobiles(st, R)
+    place_piece(st, R, ROMANS, AUXILIA, 4)
+    place_piece(st, R, ARVERNI, WARBAND, 6)
+    refresh_all_control(st)
+    assert calculate_losses(st, R, ROMANS, ARVERNI) == 2
+    assert calculate_losses(st, R, ROMANS, ARVERNI, double_auxilia=True) == 4
+
+
+def test_a17_unshaded_march_battle_double_auxilia():
+    """Slice 32: A17 unshaded — Romans free March a group to a Caesar-free
+    Region and Battle there with double Auxilia Losses."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import (place_piece, remove_piece, count_pieces,
+        get_leader_in_region, find_leader)
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
+    from fs_bot.engine.execute import _resolve_a17_march_battle
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, ARVERNI,
+        CAESAR, AUXILIA, ALLY, CITADEL, WARBAND, TRIBE_TO_REGION,
+        BELGICA_REGIONS)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=11)
+    # Null all Allies/Citadels so our staged Region is the unique destination.
+    for tribe, info in st["tribes"].items():
+        fac = info.get("allied_faction")
+        if fac:
+            reg = TRIBE_TO_REGION.get(tribe)
+            if reg and count_pieces(st, reg, fac, ALLY) > 0:
+                remove_piece(st, reg, fac, ALLY)
+            while reg and count_pieces(st, reg, fac, CITADEL) > 0:
+                remove_piece(st, reg, fac, CITADEL)
+            info["allied_faction"] = None
+    caesar_loc = find_leader(st, ROMANS)
+    T = next(r for r in BELGICA_REGIONS if r != caesar_loc)
+    _clear_region_mobiles(st, T)
+    place_piece(st, T, ARVERNI, WARBAND, 6)
+    for t in get_tribes_in_region(T, SCENARIO_ARIOVISTUS):
+        info = st["tribes"].get(t)
+        if info is not None:
+            place_piece(st, T, ARVERNI, ALLY)
+            info["allied_faction"] = ARVERNI
+            break
+    src = next(r for r in get_adjacent(T, SCENARIO_ARIOVISTUS)
+               if get_leader_in_region(st, r, ROMANS) != CAESAR)
+    _clear_region_mobiles(st, src)
+    place_piece(st, src, ROMANS, AUXILIA, 6)
+    refresh_all_control(st)
+    out = _resolve_a17_march_battle(st)
+    assert out[0]["region"] == T and out[0]["defender"] == ARVERNI
+    # 6 Auxilia at double = 6 Losses; Arverni never Retreat in Ariovistus.
+    assert count_pieces(st, T, ARVERNI, WARBAND) == 0
+    assert count_pieces(st, T, ROMANS, AUXILIA) == 6  # marched in
+    assert validate_state(st) == []
+
+
+def test_a17_shaded_remove_4_auxilia_and_derivers():
+    """Slice 32: A17 shaded removes 4 Roman Auxilia from a Region; derivers
+    honor German (Germania/Settlement) and Belgic (Belgica) preferences."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _execute_event, _derive_card_A17
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, GERMANS,
+        BELGAE, AUXILIA, EVENT_SHADED, GERMANIA_REGIONS, BELGICA_REGIONS)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=10)
+    g = GERMANIA_REGIONS[0]
+    nb = BELGICA_REGIONS[0]
+    _clear_region_mobiles(st, g)
+    _clear_region_mobiles(st, nb)
+    place_piece(st, g, ROMANS, AUXILIA, 2)
+    place_piece(st, nb, ROMANS, AUXILIA, 5)
+    refresh_all_control(st)
+    # German prefers Germania even with fewer Auxilia there.
+    assert _derive_card_A17(st, GERMANS, True)["region"] == g
+    # Belgic prefers a Belgica Region.
+    assert _derive_card_A17(st, BELGAE, True)["region"] == nb
+    # Unshaded returns None from the deriver (it is executed, not derived).
+    assert _derive_card_A17(st, ROMANS, False) is None
+
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=10)
+    st2["current_card"] = "A17"
+    nb2 = BELGICA_REGIONS[0]
+    _clear_region_mobiles(st2, nb2)
+    place_piece(st2, nb2, ROMANS, AUXILIA, 5)
+    refresh_all_control(st2)
+    _execute_event(st2, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A17",
+        "text_preference": EVENT_SHADED}})
+    assert count_pieces(st2, nb2, ROMANS, AUXILIA) == 1  # 4 removed
+    assert validate_state(st2) == []

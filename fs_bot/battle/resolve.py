@@ -49,7 +49,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                    *, is_ambush=False, besiege_target=None,
                    retreat_declaration=None, retreat_region=None,
                    attack_loss_order=None, defend_loss_order=None,
-                   citadel_at_start=None):
+                   citadel_at_start=None, double_auxilia=False):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -302,6 +302,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         is_retreat=defender_retreats,
         had_citadel_at_start=had_citadel_at_start,
         had_fort_at_start=had_fort_at_start,
+        double_auxilia=double_auxilia,
     )
 
     # Resolve Attack Losses on Defender
@@ -369,7 +370,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
 
 def _calculate_attack_losses(state, region, attacking_faction,
                              defending_faction, *, is_retreat,
-                             had_citadel_at_start, had_fort_at_start):
+                             had_citadel_at_start, had_fort_at_start,
+                             double_auxilia=False):
     """Calculate Attack step losses, accounting for original Citadel state.
 
     The halving check uses the original Fort/Citadel state (before Besiege)
@@ -406,7 +408,8 @@ def _calculate_attack_losses(state, region, attacking_faction,
 
     # Component B
     leader_value = 1 if enemy_leader is not None else 0
-    component_b = leader_value + enemy_auxilia * 0.5
+    aux_factor = 1.0 if double_auxilia else 0.5
+    component_b = leader_value + enemy_auxilia * aux_factor
 
     total = component_a + component_b
 

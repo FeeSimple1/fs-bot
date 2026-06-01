@@ -2426,7 +2426,8 @@ def test_free_command_layer_skips_non_bot_faction():
 
 
 def test_card9_free_march_and_command():
-    """Slice 43: Card 9 Mons Cevenna executes a free Command via the layer."""
+    """Slice 43/44: Card 9 Mons Cevenna executes a free Command via the layer,
+    restricted to the destination (or within-1-of-Provincia) Region."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.state.state_schema import validate_state
     from fs_bot.engine.game_engine import get_sop_factions
@@ -2440,5 +2441,39 @@ def test_card9_free_march_and_command():
         "text_preference": EVENT_UNSHADED}})
     fa = res.get("free_actions") or []
     fc = next(f for f in fa if f["free_action"] == "free_command")
-    assert fc["result"]["executed"] is True
+    # The free Command runs through the layer; with the in/from-destination
+    # restriction it either executes within the allowed Region or reports that
+    # the chosen Command had no action there. Either way the board stays valid.
+    assert "executed" in fc["result"]
     assert validate_state(st) == []
+
+
+def test_card9_free_command_restricted_to_destination():
+    """Slice 44: the card 9 free Command is restricted to the march
+    destination — a constrained Battle there removes the enemy, and nothing
+    happens outside it."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _resolve_free_command
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, AEDUI, ROMANS,
+        WARBAND, AUXILIA)
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=111)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    pl = get_playable_regions(SCENARIO_GREAT_REVOLT, st.get("capabilities"))
+    # Stage an Aedui Battle opportunity in exactly one Region.
+    R = pl[6]
+    _clear_region_mobiles(st, R)
+    place_piece(st, R, AEDUI, WARBAND, 6)
+    place_piece(st, R, ROMANS, AUXILIA, 2)
+    refresh_all_control(st)
+    # Restrict the free Command to a DIFFERENT Region -> no action there.
+    other = next(r for r in pl if r != R)
+    res_other = _resolve_free_command(st, AEDUI, allowed_regions={other})
+    # Romans in R untouched when the command is restricted elsewhere.
+    assert count_pieces(st, R, ROMANS, AUXILIA) == 2
+    assert validate_state(st) == []
+

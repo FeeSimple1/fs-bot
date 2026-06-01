@@ -1611,3 +1611,70 @@ def test_a20_roman_free_seize_veneti():
     refresh_all_control(st2)
     out = _resolve_a20_free_seize(st2)
     assert out and out[0]["executed"] is False
+
+
+def test_a20_shaded_arverni_projected_ambush():
+    """Slice 31: A20 shaded — Arverni Warbands within 1 of Veneti Ambush
+    Romans in a Region within 1 "as if there". Projected Hidden Warbands join
+    the Ambush, then return Revealed; Arverni take no Losses (no Counterattack).
+    """
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import (place_piece, count_pieces,
+        count_pieces_by_state, count_on_map)
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ARVERNI, ROMANS,
+        WARBAND, AUXILIA, ALLY, HIDDEN, REVEALED, EVENT_SHADED, VENETI,
+        TRIBE_VENETI)
+
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
+    st["current_card"] = "A20"
+    ti = st["tribes"].get(TRIBE_VENETI)
+    _clear_region_mobiles(st, VENETI)
+    place_piece(st, VENETI, ARVERNI, WARBAND, 6)  # Hidden
+    if ti and ti.get("allied_faction") is None:
+        place_piece(st, VENETI, ARVERNI, ALLY)
+        ti["allied_faction"] = ARVERNI
+    adj = list(get_adjacent(VENETI, SCENARIO_ARIOVISTUS))
+    B = adj[0]
+    _clear_region_mobiles(st, B)
+    place_piece(st, B, ROMANS, AUXILIA, 2)
+    for r in adj[1:]:
+        _clear_region_mobiles(st, r)
+    refresh_all_control(st)
+    arv_before = count_on_map(st, ARVERNI, WARBAND)
+
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A20",
+        "text_preference": EVENT_SHADED}})
+    fa = res.get("free_actions") or []
+    amb = next(f for f in fa if f["free_action"] == "ambush")
+    assert amb["region"] == B and amb["defender"] == ROMANS
+    assert count_pieces(st, B, ROMANS, AUXILIA) == 0          # Romans removed
+    assert count_pieces(st, B, ARVERNI, WARBAND) == 0          # projected returned
+    assert count_pieces_by_state(st, VENETI, ARVERNI, WARBAND, REVEALED) == 6
+    assert count_on_map(st, ARVERNI, WARBAND) == arv_before    # conserved
+    assert validate_state(st) == []
+
+
+def test_a20_shaded_noops_without_ally_or_romans():
+    """A20 shaded no-ops with no Arverni Ally in Veneti, or no Romans within 1."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import count_pieces, remove_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _resolve_a20_arverni_ambush
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ARVERNI, ROMANS, ALLY,
+        WARBAND, AUXILIA, LEGION, FACTIONS, VENETI, TRIBE_VENETI)
+    # No Arverni Ally in Veneti -> no-op.
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
+    ti = st["tribes"].get(TRIBE_VENETI)
+    if ti and ti.get("allied_faction") == ARVERNI:
+        if count_pieces(st, VENETI, ARVERNI, ALLY) > 0:
+            remove_piece(st, VENETI, ARVERNI, ALLY)
+        ti["allied_faction"] = None
+    refresh_all_control(st)
+    out = _resolve_a20_arverni_ambush(st)
+    assert out and out[0]["executed"] is False

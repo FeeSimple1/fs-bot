@@ -420,7 +420,96 @@ def _resolve_free_actions(state, faction):
     # refinement — Forage and controlled Dispersal execute here.)
     if mods.get("card_A58_roman_battle_seize"):
         results.extend(_resolve_a58_battle_seize(state, faction))
+    if mods.get("card_A67_arduenna"):
+        results.extend(_resolve_a67_arduenna(state, faction))
     return results
+
+
+def _resolve_a67_arduenna(state, faction):
+    """A67 Arduenna (German NP path): March Warbands+Leader into Nervii or
+    Treveri to take Germanic Control of a Region with player pieces (Roman,
+    then Aedui, then Belgae), then free Battle that player there, then flip
+    the German pieces there Hidden.
+
+    Per the German Ariovistus event instruction for "Arduenna, Impetuosity".
+    Only the German path is specified by the references; other Factions no-op
+    (documented). The "without losing Germanic Control" constraint is honored
+    by only Marching from adjacent origins the Germans do not Control (no
+    Control to lose); gathering surplus from Controlled origins is a
+    documented refinement.
+    """
+    from fs_bot.rules_consts import (GERMANS, ROMANS, AEDUI, BELGAE, WARBAND,
+                                     NERVII, TREVERI, REVEALED, HIDDEN, AUXILIA)
+    from fs_bot.board.pieces import (count_pieces, get_leader_in_region,
+                                     count_pieces_by_state, flip_piece)
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.map.map_data import get_adjacent
+    out = []
+    if faction != GERMANS:
+        return out
+    priority = (ROMANS, AEDUI, BELGAE)
+
+    def player_in(region):
+        for pf in priority:
+            if count_pieces(state, region, pf) > 0:
+                return pf
+        return None
+
+    # Choose target: Nervii/Treveri holding the highest-priority player.
+    target, defender = None, None
+    for region in (NERVII, TREVERI):
+        pf = player_in(region)
+        if pf is None:
+            continue
+        if defender is None or priority.index(pf) < priority.index(defender):
+            target, defender = region, pf
+    if target is None:
+        return out
+
+    # March German Warbands+Leader from adjacent origins the Germans do NOT
+    # Control (no Control lost) one step into the target, to build force.
+    marched = []
+    for origin in get_adjacent(target, state["scenario"]):
+        if is_controlled_by(state, origin, GERMANS):
+            continue
+        grp = _mobile_march_group(state, faction, origin)
+        if not _group_has_pieces(grp):
+            continue
+        try:
+            final = _march_with_harassment(state, faction, origin, [target])
+            marched.append({"origin": origin, "final_region": final})
+        except _EXEC_ERRORS:
+            continue
+    out.append({"free_action": "march", "flag": "card_A67_arduenna",
+                "target": target, "marches": marched})
+
+    # Free Battle the priority player there (Retreat allowed).
+    if count_pieces(state, target, faction, WARBAND) > 0 and \
+            count_pieces(state, target, defender) > 0:
+        try:
+            res = _execute_battle(state, faction, {
+                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
+                "sa_regions": [],
+                "details": {"battle_plan": [{"region": target,
+                                             "target": defender}]}})
+            out.append({"free_action": "battle", "flag": "card_A67_arduenna",
+                        "region": target, "defender": defender, "result": res})
+        except _EXEC_ERRORS as exc:
+            out.append({"free_action": "battle", "flag": "card_A67_arduenna",
+                        "executed": False, "reason": repr(exc)})
+
+    # Flip the German pieces in the target Hidden (the card's final step).
+    flipped = 0
+    for pt in (WARBAND, AUXILIA):
+        rev = count_pieces_by_state(state, target, faction, pt, REVEALED)
+        if rev > 0:
+            flip_piece(state, target, faction, pt, rev,
+                       from_state=REVEALED, to_state=HIDDEN)
+            flipped += rev
+    if flipped:
+        out.append({"free_action": "flip_hidden", "flag": "card_A67_arduenna",
+                    "region": target, "flipped": flipped})
+    return out
 
 
 def _resolve_a58_battle_seize(state, faction):

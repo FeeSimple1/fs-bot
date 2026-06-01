@@ -2578,3 +2578,43 @@ def test_card35_gallic_shouts_both_sides():
            if f["free_action"] == "free_command"]
     assert fa2 and "executed" in fa2[0]["result"]
     assert validate_state(st2) == []
+
+
+def test_card35_unshaded_or_be_eligible():
+    """Slice 47 fix: Card 35 unshaded — free Limited Command OR be Eligible.
+    When no Limited Command is possible, the Romans remain Eligible."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.execute import _resolve_card35_roman
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ROMANS, ELIGIBLE,
+        INELIGIBLE)
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=140)
+    st["non_player_factions"] = set()      # Romans can't run a free Command
+    st.setdefault("eligibility", {})[ROMANS] = INELIGIBLE
+    out = _resolve_card35_roman(st, ROMANS)
+    assert out and out[0]["free_action"] == "stay_eligible"
+    assert st["eligibility"][ROMANS] == ELIGIBLE
+    assert validate_state(st) == []
+
+
+def test_card52_free_command_includes_special_ability():
+    """Slice 47 fix: Card 52's free Command carries the bot's Special Ability
+    (the up-to-2 allowance is satisfied by the NP's single flowchart SA)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, BELGAE, CARNUTES,
+        FACTIONS, EVENT_SHADED)
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=120)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 52
+    res = _execute_event(st, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 52,
+        "text_preference": EVENT_SHADED}})
+    fc = next(f for f in (res.get("free_actions") or [])
+              if f["free_action"] == "free_command")
+    assert fc["result"]["executed"] is True
+    assert "sa_included" in fc          # SA-inclusion is now reported
+    assert validate_state(st) == []

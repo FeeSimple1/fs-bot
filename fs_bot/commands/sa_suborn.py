@@ -114,10 +114,12 @@ def suborn(state, region, operations):
     """
     result = {"removed": [], "placed": [], "cost": 0}
 
-    # Validate operation count
-    if len(operations) > SUBORN_MAX_PIECES:
+    # A38 Vergobret: Suborn may pay to place/remove 1 more piece per Region.
+    _a38 = state.get("event_modifiers", {}).get("card_A38_suborn_enhanced")
+    max_pieces = SUBORN_MAX_PIECES + (1 if _a38 else 0)
+    if len(operations) > max_pieces:
         raise CommandError(
-            f"Suborn allows at most {SUBORN_MAX_PIECES} pieces, "
+            f"Suborn allows at most {max_pieces} pieces, "
             f"got {len(operations)}"
         )
 
@@ -134,6 +136,10 @@ def suborn(state, region, operations):
     for op in operations:
         if op["piece_type"] == ALLY:
             total_cost += SUBORN_COST_PER_ALLY
+        elif (_a38 and op.get("action") == "place"
+              and op["piece_type"] == AUXILIA):
+            # A38: Suborn places Auxilia at 0 cost.
+            pass
         else:
             total_cost += SUBORN_COST_PER_PIECE
 

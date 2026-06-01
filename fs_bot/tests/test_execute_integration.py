@@ -1463,3 +1463,44 @@ def test_free_battle_faction_faithful_targeting_and_a28():
     assert fa and fa[0]["region"] == SEQUANI and fa[0]["defender"] == ROMANS
     assert count_pieces(st3, SEQUANI, ROMANS, AUXILIA) == 1
     assert validate_state(st3) == []
+
+
+def test_free_battle_and_seize_a58():
+    """Slice 28: A58 (unshaded) — Romans free Battle in Belgica, then free
+    Seize in Belgica. Both free actions fire and have real board effects."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, BELGAE,
+        AUXILIA, WARBAND, EVENT_UNSHADED, BELGICA_REGIONS)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=5)
+    st["current_card"] = "A58"
+    for r in BELGICA_REGIONS:
+        _clear_region_mobiles(st, r)
+    tgt = BELGICA_REGIONS[0]
+    place_piece(st, tgt, ROMANS, AUXILIA, 6)
+    place_piece(st, tgt, BELGAE, WARBAND, 3)
+    refresh_all_control(st)
+    res_before = st["resources"][ROMANS]
+    res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A58",
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions") or []
+    kinds = [f["free_action"] for f in fa]
+    assert "battle" in kinds and "seize" in kinds
+    seize = next(f for f in fa if f["free_action"] == "seize")
+    # Free Seize forages Resources in Belgica Regions with Roman pieces.
+    assert seize["result"]["forage_resources_total"] > 0
+    assert st["resources"][ROMANS] > res_before
+    assert validate_state(st) == []
+
+
+def test_free_battle_only_for_romans_a58():
+    """A58's free Battle+Seize is Roman-only; a non-Roman actor no-ops it."""
+    from fs_bot.engine.execute import _resolve_a58_battle_seize
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.rules_consts import SCENARIO_ARIOVISTUS, BELGAE
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=5)
+    assert _resolve_a58_battle_seize(st, BELGAE) == []

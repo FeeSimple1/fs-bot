@@ -413,7 +413,59 @@ def _resolve_free_actions(state, faction):
                     results.append({"free_action": "battle_second",
                                     "flag": dbl, "region": region,
                                     "executed": False, "reason": repr(exc)})
+
+    # A58 Aduatuci (unshaded): Romans free Battle anywhere in Belgica, then
+    # free Seize in Belgica "as if Roman Control". (Dispersal still needs
+    # Roman Control; the Control-override for Dispersal is a documented
+    # refinement — Forage and controlled Dispersal execute here.)
+    if mods.get("card_A58_roman_battle_seize"):
+        results.extend(_resolve_a58_battle_seize(state, faction))
     return results
+
+
+def _resolve_a58_battle_seize(state, faction):
+    from fs_bot.rules_consts import ROMANS, BELGICA_REGIONS
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.board.control import is_controlled_by
+    out = []
+    if faction != ROMANS:
+        return out
+    belgica = set(BELGICA_REGIONS)
+    # Free Battle in Belgica (Retreat allowed — the card sets no no-Retreat).
+    region, defender = _choose_free_battle(state, faction, belgica)
+    if region is not None:
+        try:
+            res = _execute_battle(state, faction, {
+                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
+                "sa_regions": [],
+                "details": {"battle_plan": [{"region": region,
+                                             "target": defender}]}})
+            out.append({"free_action": "battle", "flag":
+                        "card_A58_roman_battle_seize", "region": region,
+                        "defender": defender, "result": res})
+        except _EXEC_ERRORS as exc:
+            out.append({"free_action": "battle",
+                        "flag": "card_A58_roman_battle_seize",
+                        "executed": False, "reason": repr(exc)})
+    # Free Seize in Belgica Regions where Romans have pieces; Disperse where
+    # Roman-Controlled (get_dispersible_tribes enforces the cap/Control).
+    seize_regions = [r for r in BELGICA_REGIONS
+                     if count_pieces(state, r, ROMANS) > 0]
+    if seize_regions:
+        disperse = [r for r in seize_regions if is_controlled_by(state, r, ROMANS)]
+        try:
+            sres = _execute_seize(state, faction, {
+                "command": _CMD_SEIZE, "sa": SA_ACTION_NONE_LABEL,
+                "regions": seize_regions,
+                "details": {"disperse_regions": disperse}})
+            out.append({"free_action": "seize",
+                        "flag": "card_A58_roman_battle_seize",
+                        "regions": seize_regions, "result": sres})
+        except _EXEC_ERRORS as exc:
+            out.append({"free_action": "seize",
+                        "flag": "card_A58_roman_battle_seize",
+                        "executed": False, "reason": repr(exc)})
+    return out
 
 
 def _execute_event(state, faction, bot_action):

@@ -300,9 +300,7 @@ def execute_card_4(state, shaded=False):
         target = params.get("target_region")
         if target is None:
             return
-        # Place Circumvallation marker
-        state.setdefault("markers", {})
-        state["markers"].setdefault(target, set())
+        # Place Circumvallation marker (dict-consistent via _add_region_marker)
         _add_region_marker(state, target, MARKER_CIRCUMVALLATION)
         # Free March is handled by the caller (bot/CLI)
         state.setdefault("event_modifiers", {})
@@ -314,8 +312,6 @@ def execute_card_4(state, shaded=False):
         target = params.get("target_region")
         if target is None:
             return
-        state.setdefault("markers", {})
-        state["markers"].setdefault(target, set())
         _add_region_marker(state, target, MARKER_CIRCUMVALLATION)
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_4_free_march_to"] = target

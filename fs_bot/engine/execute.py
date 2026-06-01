@@ -773,6 +773,10 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card67_arduenna(state, faction))
     if mods.get("card_A5_remove_non_romans"):
         results.extend(_resolve_card_A5_evict(state))
+    if mods.get("card_A37_place_allies_move"):
+        results.extend(_resolve_card_A37_move(state, faction))
+    if mods.get("card_A53_aedui_corn"):
+        results.extend(_resolve_card_A53_frumentum(state))
     return results
 
 
@@ -965,6 +969,72 @@ def _resolve_card_A5_evict(state):
     return [{"free_action": "evict_cisalpina", "flag": "card_A5",
              "moved": moved, "removed": removed,
              "executed": bool(moved or removed)}]
+
+
+def _resolve_card_A37_move(state, faction):
+    """Card A37 (unshaded): after placing an Ally in a Celtica Region within 1
+    of German Control, the Faction moves its Leader and Warbands/Auxilia there
+    from an adjacent Region (consolidating at the new Ally)."""
+    from fs_bot.rules_consts import (AEDUI, ROMANS, ALLY, CELTICA_REGIONS,
+                                     GERMANS)
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.map.map_data import get_adjacent
+    if faction not in (AEDUI, ROMANS):
+        return [{"free_action": "march", "flag": "card_A37", "executed": False,
+                 "reason": "only Aedui/Romans"}]
+    scen = state["scenario"]
+    # Target = a Celtica Region (within 1 of German Control) where the Faction
+    # now has an Ally.
+    dest = None
+    for region in CELTICA_REGIONS:
+        if count_pieces(state, region, faction, ALLY) <= 0:
+            continue
+        if is_controlled_by(state, region, GERMANS) or any(
+                is_controlled_by(state, a, GERMANS)
+                for a in get_adjacent(region, scen)):
+            dest = region
+            break
+    if dest is None:
+        return [{"free_action": "march", "flag": "card_A37", "executed": False,
+                 "reason": "no Ally Region to move to"}]
+    srcs = [a for a in get_adjacent(dest, scen)
+            if _group_has_pieces(_mobile_march_group(state, faction, a))]
+    if not srcs:
+        return [{"free_action": "march", "flag": "card_A37", "region": dest,
+                 "executed": False, "reason": "no adjacent group to move"}]
+    from fs_bot.rules_consts import LEGION, AUXILIA, WARBAND
+    S = max(srcs, key=lambda a: sum(count_pieces(state, a, faction, pt)
+                                    for pt in (LEGION, AUXILIA, WARBAND)))
+    try:
+        _march_with_harassment(state, faction, S, [dest])
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "march", "flag": "card_A37", "region": dest,
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "march", "flag": "card_A37", "source": S,
+             "region": dest}]
+
+
+def _resolve_card_A53_frumentum(state):
+    """Card A53 Frumentum (unshaded): the Aedui lend Resources and the Romans
+    spend them on a free Recruit + March + Special Activity. We transfer a
+    modest amount of Aedui Resources to the Romans (an NP "specified amount"),
+    then run a free Roman Recruit and a free Roman March."""
+    from fs_bot.rules_consts import AEDUI, ROMANS
+    from fs_bot.cards.card_effects import _cap_resources
+    out = []
+    lend = min(state["resources"].get(AEDUI, 0), 6)
+    if lend > 0:
+        _cap_resources(state, AEDUI, -lend)
+        _cap_resources(state, ROMANS, lend)
+        out.append({"free_action": "resource_transfer", "flag": "card_A53",
+                    "from": AEDUI, "to": ROMANS, "amount": lend})
+    # Roman free Recruit (node_r_recruit via the free-Rally layer) + free March.
+    out.append({"free_action": "free_recruit", "flag": "card_A53",
+                "result": _resolve_free_rally(state, ROMANS)})
+    out.append({"free_action": "free_march", "flag": "card_A53",
+                "result": _resolve_free_march(state, ROMANS)})
+    return out
 
 
 def _resolve_card67_arduenna(state, faction):
@@ -4033,8 +4103,30 @@ def _derive_card_A37(state, faction, shaded):
     deferred. Only a Faction other than Aedui/Romans benefits from shaded."""
     from fs_bot.rules_consts import CELTICA_REGIONS, AEDUI, ROMANS, ALLY
     from fs_bot.map.map_data import get_tribes_in_region
-    from fs_bot.board.pieces import count_pieces
-    if not shaded or faction in (AEDUI, ROMANS):
+    from fs_bot.board.pieces import count_pieces, get_available
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.map.map_data import get_adjacent
+    if not shaded:
+        # Unshaded: if Aedui or Roman, place an Ally at a Subdued Celtica Tribe
+        # within 1 of German Control. (The Leader/Warband move is executed by
+        # _resolve_card_A37_move.)
+        if faction not in (AEDUI, ROMANS) or get_available(state, faction, ALLY) <= 0:
+            return None
+        from fs_bot.rules_consts import GERMANS
+        scen = state["scenario"]
+        for region in CELTICA_REGIONS:
+            near_gc = is_controlled_by(state, region, GERMANS) or any(
+                is_controlled_by(state, a, GERMANS)
+                for a in get_adjacent(region, scen))
+            if not near_gc:
+                continue
+            for tribe in get_tribes_in_region(region, scen):
+                ti = state.get("tribes", {}).get(tribe)
+                if ti and ti.get("allied_faction") is None:
+                    return {"ally_placements": [{"tribe": tribe,
+                                                 "faction": faction}]}
+        return None
+    if faction in (AEDUI, ROMANS):
         return None
     removals = []
     for region in CELTICA_REGIONS:

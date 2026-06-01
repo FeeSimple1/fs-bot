@@ -3192,3 +3192,33 @@ def test_card_A5_evicts_non_romans_from_cisalpina():
         "sa_regions": [], "details": {"card_id": "A5", "text_preference": EVENT_UNSHADED}})
     assert count_pieces(st, CISALPINA, ARVERNI, WARBAND) == 0
     assert validate_state(st) == []
+
+
+def test_cards_A37_A53_special_free_actions():
+    """Slice 61: A37 unshaded (place Ally + move Leader/Warbands there); A53
+    (Aedui lend Resources, Romans free Recruit + March)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, ROMANS,
+        EVENT_UNSHADED)
+    # A37: a free action is produced and the board stays valid.
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=280)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = "A37"
+    r = _execute_event(st, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A37", "text_preference": EVENT_UNSHADED}})
+    assert validate_state(st) == []
+    # A53: Aedui lend Resources to Romans, then Roman Recruit + March.
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=281)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = "A53"
+    ar = st2["resources"][AEDUI]
+    r2 = _execute_event(st2, ROMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A53", "text_preference": EVENT_UNSHADED}})
+    fa = [f for f in (r2.get("free_actions") or []) if f.get("flag") == "card_A53"]
+    kinds = {f["free_action"] for f in fa}
+    assert {"resource_transfer", "free_recruit", "free_march"} <= kinds
+    assert st2["resources"][AEDUI] < ar   # Aedui lent Resources
+    assert validate_state(st2) == []

@@ -754,7 +754,78 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_44a_free_command"):
         results.append({"free_action": "free_command", "flag": "card_44a",
                         "result": _resolve_free_command(state, faction)})
+    if mods.get("card_A29_german_raid"):
+        results.extend(_resolve_card_A29_raid(state))
+    if mods.get("card_A34_free_command"):
+        results.append({"free_action": "free_command", "flag": "card_A34",
+                        "result": _resolve_free_command(state, faction)})
+    if mods.get("card_A65_kinship_battle"):
+        results.extend(_resolve_card_A65_battle(state, faction))
     return results
+
+
+def _resolve_card_A29_raid(state):
+    """Card A29 (shaded): the placed German Warbands free Raid — Raid in each
+    Region where the Germans have Warbands and an enemy with Resources is
+    present."""
+    from fs_bot.rules_consts import GERMANS, WARBAND, FACTIONS
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    raid_plan = []
+    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
+        if count_pieces(state, region, GERMANS, WARBAND) <= 0:
+            continue
+        target = next((f for f in FACTIONS if f != GERMANS
+                       and count_pieces(state, region, f) > 0
+                       and state["resources"].get(f, 0) > 0), None)
+        raid_plan.append({"region": region, "target": target})
+    if not raid_plan:
+        return [{"free_action": "raid", "flag": "card_A29", "executed": False,
+                 "reason": "no German Warband Region to Raid"}]
+    try:
+        res = _execute_raid(state, GERMANS, {"command": _CMD_RAID,
+              "sa": SA_ACTION_NONE_LABEL, "sa_regions": [],
+              "details": {"raid_plan": raid_plan}})
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "raid", "flag": "card_A29",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "raid", "flag": "card_A29", "result": res}]
+
+
+def _resolve_card_A65_battle(state, faction):
+    """Card A65 Kinship (unshaded): Belgae (without Leader) Battle Germans, or
+    Germans (without Leader) Battle Belgae — in the Region where the acting
+    Faction can hit the most of the opponent's pieces."""
+    from fs_bot.rules_consts import BELGAE, GERMANS, WARBAND, AUXILIA, LEGION
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions
+    if faction not in (BELGAE, GERMANS):
+        return [{"free_action": "battle", "flag": "card_A65", "executed": False,
+                 "reason": "only Belgae or Germans Battle here"}]
+    opp = GERMANS if faction == BELGAE else BELGAE
+    best = None
+    for R in get_playable_regions(state["scenario"], state.get("capabilities")):
+        if not _attacker_has_force(state, R, faction):
+            continue
+        mob = (count_pieces(state, R, opp, WARBAND)
+               + count_pieces(state, R, opp, AUXILIA)
+               + count_pieces(state, R, opp, LEGION))
+        if count_pieces(state, R, opp) > 0 and (best is None or mob > best[1]):
+            best = (R, mob)
+    if best is None:
+        return [{"free_action": "battle", "flag": "card_A65", "executed": False,
+                 "reason": "no opponent to Battle"}]
+    R = best[0]
+    from fs_bot.battle.resolve import resolve_battle
+    rd, rr = _decide_defender_retreat(state, R, faction, opp, False)
+    try:
+        res = resolve_battle(state, R, faction, opp,
+                             retreat_declaration=rd, retreat_region=rr)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "battle", "flag": "card_A65",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "battle", "flag": "card_A65", "region": R,
+             "defender": opp, "result": res}]
 
 
 def _resolve_event_arverni_phase(state):

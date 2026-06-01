@@ -3041,3 +3041,45 @@ def test_arverni_phase_triggers_and_card44a_card51():
         "sa_regions": [], "details": {"card_id": 51, "text_preference": EVENT_SHADED}})
     assert count_pieces(st3, R, ROMANS, AUXILIA) < rb
     assert validate_state(st3) == []
+
+
+def test_cards_A29_A34_A65_free_actions():
+    """Slice 56: A29 German free Raid, A34 shaded free Command, A65 Belgae
+    Battle Germans."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, BELGAE, GERMANS,
+        WARBAND, EVENT_SHADED, EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=230)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = "A29"
+    r = _execute_event(st, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A29", "text_preference": EVENT_SHADED}})
+    assert any(f.get("flag") == "card_A29" for f in (r.get("free_actions") or []))
+    assert validate_state(st) == []
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=231)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = "A34"
+    r2 = _execute_event(st2, GERMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A34", "text_preference": EVENT_SHADED}})
+    fa2 = [f for f in (r2.get("free_actions") or []) if f.get("flag") == "card_A34"]
+    assert fa2 and fa2[0]["result"]["executed"] is True
+    assert validate_state(st2) == []
+    st3 = setup_scenario(SCENARIO_ARIOVISTUS, seed=232)
+    st3["non_player_factions"] = set(get_sop_factions(st3))
+    st3["current_card"] = "A65"
+    R = "Nervii"
+    _clear_region_mobiles(st3, R)
+    place_piece(st3, R, BELGAE, WARBAND, 6)
+    place_piece(st3, R, GERMANS, WARBAND, 2)
+    refresh_all_control(st3)
+    r3 = _execute_event(st3, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A65", "text_preference": EVENT_UNSHADED}})
+    fa3 = [f for f in (r3.get("free_actions") or []) if f.get("flag") == "card_A65"]
+    assert fa3 and fa3[0]["defender"] == GERMANS
+    assert count_pieces(st3, R, GERMANS, WARBAND) == 0
+    assert validate_state(st3) == []

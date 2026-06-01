@@ -3392,3 +3392,86 @@ def test_cap_hooks_3_A38_suborn_enhanced():
                   "faction": ROMANS}]
     )
     assert res.get("cost") == 0
+
+
+def test_cap_hooks_3_optimates_victory_phase():
+    """Card 20 Optimates: 2nd+ Victory Phase with Roman victory >12 removes
+    all Legions to track and ends the game."""
+    import fs_bot.engine.victory as _V
+    from fs_bot.engine.winter import victory_phase
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, ROMANS, LEGION
+    orig = _V.calculate_victory_score
+    try:
+        # Score 13 (>12) on 2nd Victory Phase -> end, legions removed.
+        _V.calculate_victory_score = (
+            lambda st, f: 13 if f == ROMANS else orig(st, f)
+        )
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=1)
+        st["event_modifiers"] = {"optimates_active": True}
+        st["winter_count"] = 2
+        before = sum(count_pieces(st, r, ROMANS, LEGION)
+                     for r in st["spaces"])
+        assert before > 0
+        res = victory_phase(st)
+        assert res["game_over"] is True
+        assert res.get("optimates_end") is True
+        after = sum(count_pieces(st, r, ROMANS, LEGION)
+                    for r in st["spaces"])
+        assert after == 0
+        assert res.get("winner") is not None
+        # 1st Victory Phase: no Optimates end even at score 13.
+        st1 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=1)
+        st1["event_modifiers"] = {"optimates_active": True}
+        st1["winter_count"] = 1
+        assert victory_phase(st1).get("optimates_end") is None
+        # Score exactly 12 (not >12): no end.
+        _V.calculate_victory_score = (
+            lambda st, f: 12 if f == ROMANS else orig(st, f)
+        )
+        st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=1)
+        st2["event_modifiers"] = {"optimates_active": True}
+        st2["winter_count"] = 3
+        assert victory_phase(st2).get("optimates_end") is None
+    finally:
+        _V.calculate_victory_score = orig
+
+
+def test_cap_hooks_3_A66_winter_uprising():
+    """Card A66: after Quarters Phase, Uprising resolves by marker group."""
+    from fs_bot.engine.execute import _resolve_winter_uprising
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.rules_consts import (
+        SCENARIO_ARIOVISTUS, BELGAE, GERMANS, WARBAND, MORINI, SUGAMBRI,
+        BITURIGES,
+    )
+
+    def _setup(region):
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=2)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        st["event_modifiers"] = {
+            "card_A66_winter_uprising": True,
+            "card_A66_uprising_region": region,
+        }
+        st.setdefault("markers", {}).setdefault(region, {})["Uprising"] = True
+        return st
+
+    # Belgica -> Belgae place pieces; flag + marker consumed.
+    st = _setup(MORINI)
+    res = _resolve_winter_uprising(st)
+    assert res[0]["faction"] == BELGAE
+    assert res[0]["warbands"] == 4
+    assert count_pieces(st, MORINI, BELGAE, WARBAND) >= 4
+    assert "card_A66_winter_uprising" not in st["event_modifiers"]
+    assert "Uprising" not in st.get("markers", {}).get(MORINI, {})
+
+    # Germania -> Germans.
+    st2 = _setup(SUGAMBRI)
+    res2 = _resolve_winter_uprising(st2)
+    assert res2[0]["faction"] == GERMANS
+
+    # Celtica (neither) -> Arverni Phase as if At War.
+    st3 = _setup(BITURIGES)
+    res3 = _resolve_winter_uprising(st3)
+    assert any(r.get("free_action") == "arverni_phase" for r in res3)

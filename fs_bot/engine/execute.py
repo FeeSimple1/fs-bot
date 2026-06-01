@@ -1101,6 +1101,92 @@ def _resolve_event_arverni_phase(state):
              "executed": res is not None, "result": res}]
 
 
+def _place_uprising_allies(state, faction, regions, n):
+    """Place up to ``n`` Allies for ``faction`` on Subdued tribes within the
+    given Regions (Card A66). Returns the number placed."""
+    from fs_bot.board.pieces import get_available, place_piece
+    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.rules_consts import ALLY
+    placed = 0
+    scenario = state["scenario"]
+    for region in regions:
+        if placed >= n:
+            break
+        for tribe in get_tribes_in_region(region, scenario):
+            if placed >= n:
+                break
+            t = state.get("tribes", {}).get(tribe)
+            if not t:
+                continue
+            if (t.get("allied_faction") is None and t.get("status") is None
+                    and get_available(state, faction, ALLY) > 0):
+                place_piece(state, region, faction, ALLY)
+                t["allied_faction"] = faction
+                placed += 1
+    return placed
+
+
+def _place_uprising_warbands(state, faction, region, n):
+    """Place up to ``n`` Warbands for ``faction`` in ``region`` (Card A66)."""
+    from fs_bot.board.pieces import get_available, place_piece
+    from fs_bot.rules_consts import WARBAND
+    avail = get_available(state, faction, WARBAND)
+    to_place = min(n, avail)
+    if to_place > 0:
+        place_piece(state, region, faction, WARBAND, count=to_place)
+    return to_place
+
+
+def _resolve_winter_uprising(state):
+    """Card A66 Winter Uprising: after any Quarters Phase, remove the Uprising
+    marker and resolve the placement + free Command/Arverni Phase — A66.
+
+    If the marker is in Belgica, the Belgae place 2 Allies and 4 Warbands and
+    execute a free Command + Special Activity within 1 Region of the marker; if
+    in Germania, the Germans do so; otherwise place 4 Arverni Allies and 8
+    Arverni Warbands within 1 Region of the marker and conduct an Arverni Phase
+    as if At War.
+    """
+    mods = state.get("event_modifiers", {})
+    region = mods.get("card_A66_uprising_region")
+    # Consume the trigger so it fires exactly once.
+    mods.pop("card_A66_winter_uprising", None)
+    mods.pop("card_A66_uprising_region", None)
+    if region:
+        rm = state.get("markers", {}).get(region)
+        if isinstance(rm, dict):
+            rm.pop("Uprising", None)
+    if not region:
+        return [{"free_action": "winter_uprising", "executed": False,
+                 "reason": "no Uprising marker region"}]
+    from fs_bot.rules_consts import (
+        REGION_TO_GROUP, BELGICA, GERMANIA, BELGAE, GERMANS, ARVERNI,
+    )
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    group = REGION_TO_GROUP.get(region)
+    playable = set(get_playable_regions(state["scenario"]))
+    within1 = ({region} | set(get_adjacent(region, state["scenario"]))) \
+        & playable
+    if group == BELGICA:
+        faction, n_ally, n_wb = BELGAE, 2, 4
+    elif group == GERMANIA:
+        faction, n_ally, n_wb = GERMANS, 2, 4
+    else:
+        faction, n_ally, n_wb = ARVERNI, 4, 8
+    allies = _place_uprising_allies(state, faction, [region] + sorted(
+        within1 - {region}), n_ally)
+    warbands = _place_uprising_warbands(state, faction, region, n_wb)
+    results = [{"free_action": "winter_uprising", "faction": faction,
+                "region": region, "allies": allies, "warbands": warbands}]
+    if faction == ARVERNI:
+        results.extend(_resolve_event_arverni_phase(state))
+    else:
+        results.append(
+            _resolve_free_command(state, faction, allowed_regions=within1)
+        )
+    return results
+
+
 def _gallic_np_factions(state):
     from fs_bot.rules_consts import ARVERNI, AEDUI, BELGAE
     nps = state.get("non_player_factions", set())

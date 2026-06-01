@@ -124,6 +124,16 @@ _ROWS_AT_OR_ABOVE_SENATE = {
 # PHASE 1: VICTORY PHASE (§6.1, A6.1)
 # ============================================================================
 
+def _optimates_remove_all_legions(state):
+    """Remove every Legion on the map to the Legions track (Card 20)."""
+    from fs_bot.board.pieces import count_pieces, remove_piece
+    for region in list(state["spaces"].keys()):
+        n = count_pieces(state, region, ROMANS, LEGION)
+        if n > 0:
+            remove_piece(state, region, ROMANS, LEGION, count=n,
+                         to_available=False, to_track=True)
+
+
 def victory_phase(state, is_final=False):
     """Execute the Victory Phase — §6.1 / A6.1.
 
@@ -154,6 +164,23 @@ def victory_phase(state, is_final=False):
         result["winner"] = winner
         result["rankings"] = determine_final_ranking(state)
         return result
+
+    # Card 20 Optimates: on the game's 2nd and each later Victory Phase,
+    # if Roman victory exceeds 12 (red Subdued+Dispersed+Allies marker at
+    # 13+), first remove all Legions to the Legions track, then end the
+    # game and determine victory.
+    if (state.get("event_modifiers", {}).get("optimates_active")
+            and state.get("winter_count", 0) >= 2):
+        from fs_bot.engine.victory import calculate_victory_score
+        if calculate_victory_score(state, ROMANS) > 12:
+            _optimates_remove_all_legions(state)
+            result["game_over"] = True
+            result["optimates_end"] = True
+            rankings = determine_final_ranking(state)
+            result["rankings"] = rankings
+            if rankings:
+                result["winner"] = rankings[0][0]
+            return result
 
     # Final Winter with no victor — §7.3
     if is_final:
@@ -1228,6 +1255,12 @@ def run_winter_round(state, is_final=False,
     result["phases"]["quarters"] = quarters_phase(
         state, relocations=relocations
     )
+
+    # Card A66 Winter Uprising: after any Quarters Phase, resolve the
+    # Uprising (remove marker, place pieces, free Command / Arverni Phase).
+    if state.get("event_modifiers", {}).get("card_A66_winter_uprising"):
+        from fs_bot.engine.execute import _resolve_winter_uprising
+        result["phases"]["winter_uprising"] = _resolve_winter_uprising(state)
 
     # Phase 4: Harvest — apply the 1st-Winter-after-Interlude exception
     # before normal harvest.

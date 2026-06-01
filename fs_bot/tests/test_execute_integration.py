@@ -1419,3 +1419,47 @@ def test_free_double_battle_a21():
     # Two Battles remove more than a single no-Retreat Battle's 4 Losses.
     assert count_pieces(st, SEQUANI, ROMANS, AUXILIA) <= 4
     assert validate_state(st) == []
+
+
+def test_free_battle_faction_faithful_targeting_and_a28():
+    """Slice 27: Belgic NP targets max Legion Losses; A28 runs a no-Retreat
+    free Battle in/adjacent to Sequani."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import (_execute_event, _within1_of,
+        _choose_free_battle, _predicted_legion_losses)
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, GERMANS,
+        BELGAE, WARBAND, LEGION, AUXILIA, EVENT_UNSHADED, SEQUANI,
+        BELGICA_REGIONS)
+
+    # Belgic NP picks the Region forcing the most Roman Legion Losses.
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=4)
+    for r in BELGICA_REGIONS:
+        _clear_region_mobiles(st, r)
+    rA, rB = BELGICA_REGIONS[0], BELGICA_REGIONS[1]
+    place_piece(st, rA, BELGAE, WARBAND, 8)
+    place_piece(st, rA, ROMANS, LEGION, 2, from_legions_track=True)
+    place_piece(st, rB, BELGAE, WARBAND, 8)
+    place_piece(st, rB, ROMANS, LEGION, 1, from_legions_track=True)
+    place_piece(st, rB, ROMANS, AUXILIA, 4)  # auxilia absorb -> fewer Legion Losses
+    refresh_all_control(st)
+    assert _predicted_legion_losses(st, rA, BELGAE) > _predicted_legion_losses(st, rB, BELGAE)
+    assert _choose_free_battle(st, BELGAE, set(BELGICA_REGIONS)) == (rA, ROMANS)
+
+    # A28: no-Retreat free Battle in/adjacent to Sequani with the actor's force.
+    st3 = setup_scenario(SCENARIO_ARIOVISTUS, seed=4)
+    st3["current_card"] = "A28"
+    for r in _within1_of(st3, SEQUANI):
+        _clear_region_mobiles(st3, r)
+    place_piece(st3, SEQUANI, GERMANS, WARBAND, 8)
+    place_piece(st3, SEQUANI, ROMANS, AUXILIA, 5)
+    refresh_all_control(st3)
+    res = _execute_event(st3, GERMANS, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A28",
+        "text_preference": EVENT_UNSHADED}})
+    fa = res.get("free_actions")
+    assert fa and fa[0]["region"] == SEQUANI and fa[0]["defender"] == ROMANS
+    assert count_pieces(st3, SEQUANI, ROMANS, AUXILIA) == 1
+    assert validate_state(st3) == []

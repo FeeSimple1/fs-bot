@@ -724,6 +724,9 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card21_provincia_battle(state))
     if mods.get("card_45_battle_romans"):
         results.extend(_resolve_card45_battle(state, faction))
+    if mods.get("card_54_joined_ranks"):
+        results.extend(_resolve_card54_joined_ranks(
+            state, faction, mods.get("card_54_march_limit", 8)))
     if mods.get("card_48_druids"):
         results.extend(_resolve_card48_druids(
             state, mods.get("card_48_target_factions")))
@@ -926,6 +929,89 @@ def _resolve_card45_battle(state, faction):
                  "executed": False, "reason": repr(exc)}]
     return [{"free_action": "battle", "flag": "card_45", "region": R,
              "defender": ROMANS, "ambush": is_ambush, "result": res}]
+
+
+def _resolve_card54_joined_ranks(state, faction, march_limit):
+    """Card 54 Joined Ranks: the executing Faction may free March a group to a
+    Region that already has >=2 other Gallic/Roman Factions; then it free
+    Battles there (No Retreat) and a 2nd such Faction free Battles there
+    (Retreat allowed), each against a 3rd Faction."""
+    from fs_bot.rules_consts import ROMANS, ARVERNI, AEDUI, BELGAE
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    gr = (ROMANS, ARVERNI, AEDUI, BELGAE)
+    scen = state["scenario"]
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+    # Target Region: >=2 other Gallic/Roman Factions, reachable/occupied by us.
+    T = None
+    for R in playable:
+        others = [f for f in gr if f != faction and count_pieces(state, R, f) > 0]
+        if len(others) < 2:
+            continue
+        reachable = _attacker_has_force(state, R, faction) or any(
+            _group_has_pieces(_mobile_march_group(state, faction, a))
+            for a in get_adjacent(R, scen) if a in playable)
+        if reachable:
+            T = R
+            break
+    if T is None:
+        return [{"free_action": "joined_ranks", "flag": "card_54",
+                 "executed": False, "reason": "no Region with 2+ other "
+                 "Gallic/Roman Factions reachable"}]
+    out = []
+    # Free March our group into T (if not already there).
+    if not _attacker_has_force(state, T, faction):
+        srcs = [a for a in get_adjacent(T, scen) if a in playable
+                and _group_has_pieces(_mobile_march_group(state, faction, a))]
+        if srcs:
+            S = max(srcs, key=lambda a: sum(
+                count_pieces(state, a, faction, pt)
+                for pt in ("Legion", "Auxilia", "Warband")))
+            try:
+                _march_with_harassment(state, faction, S, [T])
+                out.append({"free_action": "march", "flag": "card_54",
+                            "source": S, "dest": T})
+            except _EXEC_ERRORS as exc:
+                out.append({"free_action": "march", "flag": "card_54",
+                            "executed": False, "reason": repr(exc)})
+    # First Battle: executing Faction (No Retreat).
+    d1 = _rank_free_battle_defender(state, T, faction)
+    if d1 is not None and _attacker_has_force(state, T, faction):
+        try:
+            r1 = _execute_battle(state, faction, {
+                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
+                "sa_regions": [], "details": {"battle_plan": [
+                    {"region": T, "target": d1}], "no_retreat": True}})
+            out.append({"free_action": "battle", "flag": "card_54",
+                        "battler": faction, "region": T, "defender": d1,
+                        "result": r1})
+        except _EXEC_ERRORS as exc:
+            out.append({"free_action": "battle", "flag": "card_54",
+                        "executed": False, "reason": repr(exc)})
+    # Second Battle: another Gallic/Roman Faction there (Retreat allowed),
+    # ganging up on a 3rd Faction — prefer the one the executing Faction hit;
+    # never the executing Faction itself.
+    for f2 in gr:
+        if f2 in (faction, d1) or not _attacker_has_force(state, T, f2):
+            continue
+        if d1 is not None and d1 != f2 and count_pieces(state, T, d1) > 0:
+            d2 = d1
+        else:
+            d2 = _rank_free_battle_defender(state, T, f2)
+        if d2 is None or d2 in (f2, faction):
+            continue
+        try:
+            r2 = _execute_battle(state, f2, {
+                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
+                "sa_regions": [], "details": {"battle_plan": [
+                    {"region": T, "target": d2}]}})
+            out.append({"free_action": "battle", "flag": "card_54",
+                        "battler": f2, "region": T, "defender": d2,
+                        "result": r2})
+        except _EXEC_ERRORS:
+            pass
+        break
+    return out
 
 
 def _resolve_card26_arverni_rally(state):
@@ -3790,11 +3876,34 @@ def _derive_card_25(state, faction, shaded):
     return {"battle_region": best[0]} if best else None
 
 
+def _derive_card_16(state, faction, shaded):
+    """Card 16 Ambacti (unshaded): place 4 Auxilia in a Region with Romans, or
+    6 with Caesar. Prefer Caesar's Region (6); else the Region with the most
+    Roman pieces. Shaded (die-roll removal) is handled in the card."""
+    from fs_bot.rules_consts import ROMANS, CAESAR, AUXILIA
+    from fs_bot.board.pieces import find_leader, count_pieces, get_available
+    if shaded or faction != ROMANS:
+        return None
+    from fs_bot.map.map_data import get_playable_regions
+    if get_available(state, ROMANS, AUXILIA) <= 0:
+        return None
+    caesar = find_leader(state, ROMANS)
+    if caesar is not None and count_pieces(state, caesar, ROMANS) > 0:
+        return {"target_region": caesar}
+    best = None
+    for r in get_playable_regions(state["scenario"], state.get("capabilities")):
+        rp = count_pieces(state, r, ROMANS)
+        if rp > 0 and (best is None or rp > best[1]):
+            best = (r, rp)
+    return {"target_region": best[0]} if best else None
+
+
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
     2: _derive_card_2,
+    16: _derive_card_16,
     25: _derive_card_25,
     4: _derive_card_4,
     70: _derive_card_70,

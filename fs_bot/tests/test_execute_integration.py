@@ -2669,3 +2669,91 @@ def test_cards_34_26_64_free_rally():
     fa, st = fr(64, BELGAE, True, 153)
     assert fa and fa[0]["result"]["executed"] is True
     assert validate_state(st) == []
+
+
+def test_new_battle_modifiers():
+    """Slice 49: extra_losses, ally_first, no_counterattack, ignore_citadel,
+    attacker_stays_hidden."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import (place_piece, count_pieces,
+        count_pieces_by_state)
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, ROMANS,
+        AEDUI, WARBAND, AUXILIA, ALLY, HIDDEN, REVEALED)
+    # extra_losses (+3) and ally_first: the Ally goes first.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=160)
+    R = "Carnutes"
+    _clear_region_mobiles(st, R)
+    place_piece(st, R, ARVERNI, WARBAND, 4)
+    place_piece(st, R, ROMANS, AUXILIA, 3)
+    place_piece(st, R, ROMANS, ALLY, 1)
+    refresh_all_control(st)
+    resolve_battle(st, R, ARVERNI, ROMANS, extra_losses=3, ally_first=True,
+                   retreat_declaration=False)
+    assert count_pieces(st, R, ROMANS, ALLY) == 0          # Ally removed first
+    assert count_pieces(st, R, ROMANS, AUXILIA) == 0       # then extra Losses
+    # attacker_stays_hidden + no_counterattack.
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=161)
+    _clear_region_mobiles(st2, R)
+    place_piece(st2, R, ARVERNI, WARBAND, 4)
+    place_piece(st2, R, AEDUI, WARBAND, 3)
+    refresh_all_control(st2)
+    resolve_battle(st2, R, ARVERNI, AEDUI, retreat_declaration=False,
+                   no_counterattack=True, attacker_stays_hidden=True,
+                   ignore_citadel=True)
+    assert count_pieces_by_state(st2, R, ARVERNI, WARBAND, REVEALED) == 0
+    assert count_pieces_by_state(st2, R, ARVERNI, WARBAND, HIDDEN) == 4
+
+
+def test_cards_25_36_21_battle_events():
+    """Slice 49: cards 25 (extra Losses+ally first), 36 (vs Gallic, modifiers),
+    21 shaded (Arverni Battle in Provincia ignoring the Fort)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, AEDUI,
+        ROMANS, PICTONES, PROVINCIA, WARBAND, AUXILIA, EVENT_UNSHADED,
+        EVENT_SHADED)
+    # 25: Arverni free Battle in Pictones with extra Losses.
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=162)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 25
+    _clear_region_mobiles(st, PICTONES)
+    place_piece(st, PICTONES, ARVERNI, WARBAND, 4)
+    place_piece(st, PICTONES, ROMANS, AUXILIA, 5)
+    refresh_all_control(st)
+    r = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 25,
+        "text_preference": EVENT_UNSHADED}})
+    fa = [f for f in (r.get("free_actions") or []) if f.get("flag") == "card_25"]
+    assert fa and fa[0]["region"] == PICTONES
+    # 4 Warbands -> 2 Losses + 3 extra = 5; 5 Auxilia -> 0.
+    assert count_pieces(st, PICTONES, ROMANS, AUXILIA) == 0
+    assert validate_state(st) == []
+    # 36: Arverni free Battle vs a Gallic Faction.
+    st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=163)
+    st2["non_player_factions"] = set(get_sop_factions(st2))
+    st2["current_card"] = 36
+    Rm = "Mandubii"
+    _clear_region_mobiles(st2, Rm)
+    place_piece(st2, Rm, ARVERNI, WARBAND, 5)
+    place_piece(st2, Rm, AEDUI, WARBAND, 2)
+    refresh_all_control(st2)
+    r2 = _execute_event(st2, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 36,
+        "text_preference": EVENT_UNSHADED}})
+    fa2 = [f for f in (r2.get("free_actions") or []) if f.get("flag") == "card_36"]
+    assert fa2 and fa2[0]["defender"] == AEDUI
+    assert validate_state(st2) == []
+    # 21 shaded: Arverni Battle in Provincia.
+    st3 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=164)
+    st3["non_player_factions"] = set(get_sop_factions(st3))
+    st3["current_card"] = 21
+    r3 = _execute_event(st3, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 21,
+        "text_preference": EVENT_SHADED}})
+    assert validate_state(st3) == []

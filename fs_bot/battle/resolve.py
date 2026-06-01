@@ -51,7 +51,10 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                    retreat_declaration=None, retreat_region=None,
                    attack_loss_order=None, defend_loss_order=None,
                    citadel_at_start=None, double_auxilia=False,
-                   auto_legion_loss=False, ignore_fort=False):
+                   auto_legion_loss=False, ignore_fort=False,
+                   ignore_citadel=False, extra_losses=0,
+                   no_counterattack=False, ally_first=False,
+                   attacker_stays_hidden=False):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -171,6 +174,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         had_citadel_at_start = d_pieces.get(CITADEL, 0) > 0
     else:
         had_citadel_at_start = citadel_at_start
+    if ignore_citadel:
+        had_citadel_at_start = False
 
     had_fort_at_start = d_pieces.get(FORT, 0) > 0 and not ignore_fort
     # Provincia permanent Fort — §1.4.2: never absorbs Losses
@@ -207,7 +212,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         defending_faction, {}
     )
     has_fort_now = d_pieces_now.get(FORT, 0) > 0 and not ignore_fort
-    has_citadel_now = d_pieces_now.get(CITADEL, 0) > 0
+    has_citadel_now = d_pieces_now.get(CITADEL, 0) > 0 and not ignore_citadel
 
     # Determine if the defender gets die rolls for hard targets
     # Default: yes (use_rolls = True)
@@ -307,6 +312,17 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         double_auxilia=double_auxilia,
     )
 
+    # extra_losses (e.g. card 25: "inflicting 3 extra Losses").
+    if extra_losses:
+        attack_losses += extra_losses
+    # ally_first (card 25: "1 Ally (not Citadel) first"): remove one defending
+    # Ally before other Losses (Allies are soft — no roll).
+    ally_first_removed = 0
+    if (ally_first and attack_losses > 0
+            and count_pieces(state, region, defending_faction, ALLY) > 0):
+        _remove_battle_piece(state, region, defending_faction, ALLY, None)
+        ally_first_removed = 1
+        attack_losses -= 1
     # auto_legion_loss (card 2 shaded: "first Loss removes a Legion
     # automatically, if any there"): the FIRST Loss removes a Legion with no
     # absorption die roll; the remaining Losses resolve normally.
@@ -325,11 +341,12 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         caesar_counterattacks=caesar_counterattack_allowed,
         loss_order=attack_loss_order,
     )
-    if auto_legion_removed:
+    if auto_legion_removed or ally_first_removed:
         attack_result = dict(attack_result)
         attack_result["auto_legion_removed"] = auto_legion_removed
+        attack_result["ally_first_removed"] = ally_first_removed
         attack_result["losses_taken"] = (attack_result.get("losses_taken", 0)
-                                         + auto_legion_removed)
+                                         + auto_legion_removed + ally_first_removed)
     result["attack"] = attack_result
 
     # ── Step 4: Counterattack ──
@@ -339,7 +356,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     # EXCEPT: Caesar rolled successfully — §4.3.3: "except if Caesar
     # rolled a 4-6 above"
     counterattack = False
-    if not defender_retreats:
+    if not defender_retreats and not no_counterattack:
         if is_ambush or (attacking_faction == GERMANS
                          and scenario in BASE_SCENARIOS):
             # No counterattack during Ambush/Germanic base
@@ -368,7 +385,11 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     # ── Step 5: Reveal ──
     # Skip if Retreat — §3.2.4: "If a Retreat, skip this step."
     if not defender_retreats:
-        _reveal_survivors(state, region, attacking_faction, defending_faction)
+        if attacker_stays_hidden:
+            # card 36: "Attackers Hidden" — only the Defender's survivors flip.
+            _reveal_survivors(state, region, defending_faction, defending_faction)
+        else:
+            _reveal_survivors(state, region, attacking_faction, defending_faction)
         result["reveal"] = True
 
     # ── Step 6: Retreat ──

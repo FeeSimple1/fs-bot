@@ -126,6 +126,11 @@ def intimidate(state, region, warbands_to_flip, target_faction,
         )
 
     # Validate target: must have no Leader in region — A4.6.2
+    from fs_bot.rules_consts import ROMANS as _ROMANS
+    if (target_faction == _ROMANS
+            and state.get("event_modifiers", {}).get("card_A22_no_intimidate_romans")):
+        raise CommandError(
+            "A22: Intimidate has no effect on Romans")
     if target_faction == GERMANS:
         raise CommandError("Cannot Intimidate own faction")
 

@@ -130,6 +130,14 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         # §3.2.4: "EXCEPTION: Germans (black pieces) never Retreat,
         # either voluntarily or when they are forced to by combat"
         can_retreat = False
+    elif (defending_faction == GERMANS
+          and state.get("event_modifiers", {}).get("card_A33_no_german_retreat")):
+        # A33 Wailing Women: Germans never Retreat.
+        can_retreat = False
+    elif (defending_faction == BELGAE
+          and state.get("event_modifiers", {}).get("card_A70_no_belgae_retreat")):
+        # A70: Belgae never Retreat.
+        can_retreat = False
     elif (defending_faction == ARVERNI
           and scenario in ARIOVISTUS_SCENARIOS):
         # A3.2.4: "The Arverni never Retreat"
@@ -462,7 +470,8 @@ def _calculate_attack_losses(state, region, attacking_faction,
     total = component_a + component_b
 
     # Ariovistus doubling — A3.2.4
-    if ariovistus_in_battle:
+    if ariovistus_in_battle and not state.get("event_modifiers", {}).get(
+            "card_A31_no_ario_double"):
         if not (had_fort_at_start or had_citadel_at_start):
             total *= 2
 

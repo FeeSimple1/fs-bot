@@ -3222,3 +3222,51 @@ def test_cards_A37_A53_special_free_actions():
     assert {"resource_transfer", "free_recruit", "free_march"} <= kinds
     assert st2["resources"][AEDUI] < ar   # Aedui lent Resources
     assert validate_state(st2) == []
+
+
+def test_capability_hooks_battle_intimidate():
+    """Slice 62: A31 (no Ariovistus doubling), A33/A70 (no Retreat), A22
+    (Intimidate immune Romans) modifiers honored in the mechanics."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece, count_pieces, find_leader
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.battle.losses import calculate_losses
+    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.commands.sa_intimidate import intimidate
+    from fs_bot.commands.common import CommandError
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, ROMANS,
+        WARBAND, AUXILIA, HIDDEN)
+    # A31: Ariovistus doubling skipped when flag set.
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=303)
+    R = find_leader(st, GERMANS)
+    _clear_region_mobiles(st, R)
+    place_piece(st, R, GERMANS, WARBAND, 4)
+    place_piece(st, R, ROMANS, AUXILIA, 9)
+    refresh_all_control(st)
+    base = calculate_losses(st, R, GERMANS, ROMANS)
+    st["event_modifiers"] = {"card_A31_no_ario_double": True}
+    assert calculate_losses(st, R, GERMANS, ROMANS) < base
+    # A33: German defender cannot Retreat when flagged.
+    st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=301)
+    R2 = "Ubii"
+    _clear_region_mobiles(st2, R2)
+    place_piece(st2, R2, GERMANS, WARBAND, 2)
+    place_piece(st2, R2, ROMANS, AUXILIA, 6)
+    refresh_all_control(st2)
+    st2["event_modifiers"] = {"card_A33_no_german_retreat": True}
+    res = resolve_battle(st2, R2, ROMANS, GERMANS, retreat_declaration=True,
+                         retreat_region=None)
+    assert res["defender_retreated"] is False
+    # A22: Intimidate cannot target Romans when flagged.
+    st3 = setup_scenario(SCENARIO_ARIOVISTUS, seed=302)
+    R3 = "Sugambri"
+    _clear_region_mobiles(st3, R3)
+    place_piece(st3, R3, GERMANS, WARBAND, 3)
+    place_piece(st3, R3, ROMANS, AUXILIA, 2)
+    refresh_all_control(st3)
+    st3["event_modifiers"] = {"card_A22_no_intimidate_romans": True}
+    try:
+        intimidate(st3, R3, 1, ROMANS, [(AUXILIA, HIDDEN)])
+        assert False, "Intimidate should be blocked vs Romans"
+    except CommandError:
+        pass

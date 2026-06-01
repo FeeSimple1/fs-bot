@@ -154,7 +154,8 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # Doubles total losses unless enemy (faction taking losses) is Defending
     # with Fort or Citadel. But an Attacker always takes double in
     # counterattack even with Fort/Citadel.
-    if ariovistus_in_battle:
+    if ariovistus_in_battle and not state.get("event_modifiers", {}).get(
+            "card_A31_no_ario_double"):
         defender_pieces = space.get("pieces", {}).get(defending_faction, {})
         has_fort_or_citadel = (
             defender_pieces.get(FORT, 0) > 0

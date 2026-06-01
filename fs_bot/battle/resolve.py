@@ -54,7 +54,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                    auto_legion_loss=False, ignore_fort=False,
                    ignore_citadel=False, extra_losses=0,
                    no_counterattack=False, ally_first=False,
-                   attacker_stays_hidden=False):
+                   attacker_stays_hidden=False, allied_factions=()):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -310,6 +310,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         had_citadel_at_start=had_citadel_at_start,
         had_fort_at_start=had_fort_at_start,
         double_auxilia=double_auxilia,
+        allied_factions=allied_factions,
     )
 
     # extra_losses (e.g. card 25: "inflicting 3 extra Losses").
@@ -409,7 +410,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
 def _calculate_attack_losses(state, region, attacking_faction,
                              defending_faction, *, is_retreat,
                              had_citadel_at_start, had_fort_at_start,
-                             double_auxilia=False):
+                             double_auxilia=False, allied_factions=()):
     """Calculate Attack step losses, accounting for original Citadel state.
 
     The halving check uses the original Fort/Citadel state (before Besiege)
@@ -425,6 +426,11 @@ def _calculate_attack_losses(state, region, attacking_faction,
     enemy_legions = enemy_pieces.get(LEGION, 0)
     enemy_auxilia = _count_all_flippable(enemy_pieces, AUXILIA)
     enemy_warbands = _count_all_flippable(enemy_pieces, WARBAND)
+    for _af in allied_factions:
+        _ap = space.get("pieces", {}).get(_af, {})
+        enemy_legions += _ap.get(LEGION, 0)
+        enemy_auxilia += _count_all_flippable(_ap, AUXILIA)
+        enemy_warbands += _count_all_flippable(_ap, WARBAND)
 
     scenario = state["scenario"]
 

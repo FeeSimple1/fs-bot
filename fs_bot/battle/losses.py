@@ -47,7 +47,7 @@ from fs_bot.board.pieces import (
 
 def calculate_losses(state, region, attacking_faction, defending_faction,
                      *, is_retreat=False, is_counterattack=False,
-                     double_auxilia=False):
+                     double_auxilia=False, allied_factions=()):
     """Calculate the number of Losses inflicted.
 
     Per §3.2.4/§3.3.4/§3.4.4 LOSSES:
@@ -94,6 +94,14 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     enemy_legions = enemy_pieces.get(LEGION, 0)
     enemy_auxilia = _count_all_flippable(enemy_pieces, AUXILIA)
     enemy_warbands = _count_all_flippable(enemy_pieces, WARBAND)
+    # Combined Battle (e.g. card 45 "using Aedui pieces as your own"; A28
+    # "treating Arverni and allied Warbands/Auxilia as your own"): allied
+    # Factions' mobile pieces add to the attacker's Loss-causing force.
+    for _af in allied_factions:
+        _ap = space.get("pieces", {}).get(_af, {})
+        enemy_legions += _ap.get(LEGION, 0)
+        enemy_auxilia += _count_all_flippable(_ap, AUXILIA)
+        enemy_warbands += _count_all_flippable(_ap, WARBAND)
 
     # Determine leader-based modifiers
     # Caesar × 2 Legions only when Caesar is the ATTACKER (not counterattack)

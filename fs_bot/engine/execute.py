@@ -605,12 +605,15 @@ def _resolve_free_actions(state, faction):
             results.append({"free_action": "battle", "flag": flag,
                             "executed": False, "reason": "no valid target"})
             continue
+        from fs_bot.rules_consts import ARVERNI as _ARVERNI
+        _details = {"battle_plan": [{"region": region, "target": defender}],
+                    "no_retreat": True}
+        if flag == "card_A28_combined_battle":
+            _details["allied_factions"] = (_ARVERNI,)  # treat Arverni as own
         try:
             res = _execute_battle(state, faction, {
-                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL, "sa_regions": [],
-                "details": {"battle_plan": [{"region": region,
-                                             "target": defender}],
-                            "no_retreat": True}})
+                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
+                "sa_regions": [], "details": _details})
         except _EXEC_ERRORS as exc:
             results.append({"free_action": "battle", "flag": flag,
                             "executed": False, "reason": repr(exc)})
@@ -719,6 +722,8 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card36_battle(state, faction))
     if mods.get("card_21_no_fort"):
         results.extend(_resolve_card21_provincia_battle(state))
+    if mods.get("card_45_battle_romans"):
+        results.extend(_resolve_card45_battle(state, faction))
     if mods.get("card_48_druids"):
         results.extend(_resolve_card48_druids(
             state, mods.get("card_48_target_factions")))
@@ -881,6 +886,46 @@ def _resolve_card21_provincia_battle(state):
                  "executed": False, "reason": repr(exc)}]
     return [{"free_action": "battle", "flag": "card_21", "region": PROVINCIA,
              "defender": defender, "result": res}]
+
+
+def _resolve_card45_battle(state, faction):
+    """Card 45 Litaviccus (shaded): free Battle against the Romans in 1 Region,
+    using Aedui pieces as the attacker's own, Ambushing if able."""
+    from fs_bot.rules_consts import ROMANS, AEDUI, WARBAND, AUXILIA, HIDDEN
+    from fs_bot.board.pieces import count_pieces, count_pieces_by_state
+    from fs_bot.map.map_data import get_playable_regions
+    best = None
+    for R in get_playable_regions(state["scenario"], state.get("capabilities")):
+        if count_pieces(state, R, ROMANS) <= 0:
+            continue
+        if not (_attacker_has_force(state, R, faction)
+                or _attacker_has_force(state, R, AEDUI)):
+            continue
+        rp = count_pieces(state, R, ROMANS)
+        if best is None or rp > best[1]:
+            best = (R, rp)
+    if best is None:
+        return [{"free_action": "battle", "flag": "card_45", "executed": False,
+                 "reason": "no Roman target with a combined force"}]
+    R = best[0]
+    g_hidden = (count_pieces_by_state(state, R, faction, WARBAND, HIDDEN)
+                + count_pieces_by_state(state, R, AEDUI, WARBAND, HIDDEN)
+                + count_pieces_by_state(state, R, AEDUI, AUXILIA, HIDDEN))
+    r_hidden = (count_pieces_by_state(state, R, ROMANS, AUXILIA, HIDDEN)
+                + count_pieces_by_state(state, R, ROMANS, WARBAND, HIDDEN))
+    is_ambush = g_hidden > r_hidden and g_hidden > 0
+    details = {"battle_plan": [{"region": R, "target": ROMANS}],
+               "allied_factions": (AEDUI,)}
+    bot_action = {"command": _CMD_BATTLE,
+                  "sa": (_SA_AMBUSH if is_ambush else SA_ACTION_NONE_LABEL),
+                  "sa_regions": ([R] if is_ambush else []), "details": details}
+    try:
+        res = _execute_battle(state, faction, bot_action)
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "battle", "flag": "card_45",
+                 "executed": False, "reason": repr(exc)}]
+    return [{"free_action": "battle", "flag": "card_45", "region": R,
+             "defender": ROMANS, "ambush": is_ambush, "result": res}]
 
 
 def _resolve_card26_arverni_rally(state):
@@ -2284,6 +2329,7 @@ def _execute_battle(state, faction, bot_action):
     battle_plan = details.get("battle_plan", []) or []
     # Free-Battle events may forbid the defender's Retreat (§ card text).
     no_retreat = bool(details.get("no_retreat"))
+    allied_factions = tuple(details.get("allied_factions") or ())
     sa = bot_action.get("sa")
     # sa_regions are string Region names for Ambush/Besiege; other SAs
     # (e.g. Intimidate) carry dict plans we ignore here, so filter to strings.
@@ -2326,6 +2372,7 @@ def _execute_battle(state, faction, bot_action):
                 is_ambush=is_ambush, besiege_target=besiege_target,
                 retreat_declaration=retreat_decl,
                 retreat_region=retreat_region,
+                allied_factions=allied_factions,
             )
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "defender": defender,

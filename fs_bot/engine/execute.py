@@ -720,6 +720,10 @@ def _resolve_free_actions(state, faction):
             mods.get("card_25_extra_losses", 3)))
     if mods.get("card_36_free_battle"):
         results.extend(_resolve_card36_battle(state, faction))
+    if mods.get("card_36_gallic_ambush_battle"):
+        results.extend(_resolve_card36_shaded(state, faction))
+    if mods.get("card_66_german_rally_march"):
+        results.extend(_resolve_card66_german_rally_march(state))
     if mods.get("card_21_no_fort"):
         results.extend(_resolve_card21_provincia_battle(state))
     if mods.get("card_45_battle_romans"):
@@ -868,6 +872,28 @@ def _resolve_card36_battle(state, faction):
                  "executed": False, "reason": repr(exc)}]
     return [{"free_action": "battle", "flag": "card_36", "region": R,
              "defender": d, "result": res}]
+
+
+def _resolve_card36_shaded(state, faction):
+    """Card 36 Morasses (shaded): a Gallic Faction free Battles with Ambush
+    anywhere (Ambush in every able Region), then free Marches."""
+    ambushes = _faction_ambush_sweep(state, faction)
+    march = _resolve_free_march(state, faction)
+    return [{"free_action": "ambush_then_march", "flag": "card_36",
+             "ambushes": ambushes, "march": march,
+             "executed": bool(ambushes) or bool(march.get("executed"))}]
+
+
+def _resolve_card66_german_rally_march(state):
+    """Card 66 Migration: "Execute a Germanic Rally then March in/from up to 2
+    Regions each." The Germans free Rally, then free March (base-game Germans
+    are game-run; the rally/march nodes drive them)."""
+    from fs_bot.rules_consts import GERMANS
+    rally = _resolve_free_rally(state, GERMANS)
+    march = _resolve_free_march(state, GERMANS)
+    return [{"free_action": "german_rally_march", "flag": "card_66",
+             "rally": rally, "march": march,
+             "executed": bool(rally.get("executed") or march.get("executed"))}]
 
 
 def _resolve_card21_provincia_battle(state):
@@ -1338,26 +1364,26 @@ def _resolve_card17_germans_phase(state):
              "executed": res is not None, "result": res}]
 
 
-def _german_ambush_target(state, region):
-    """Best enemy for a German Ambush in ``region`` (Hidden-majority and would
-    cause a Loss), or None. Germans in the base game oppose all non-German
-    Factions; choose the legal target with the most pieces."""
-    from fs_bot.rules_consts import (GERMANS, FACTIONS, WARBAND, AUXILIA, HIDDEN)
+def _faction_ambush_target(state, region, attacker):
+    """Best enemy for ``attacker`` to Ambush in ``region`` — the attacker's
+    Hidden Warbands must outnumber the defender's Hidden pieces and the Ambush
+    must cause a Loss. Picks the legal target with the most pieces."""
+    from fs_bot.rules_consts import FACTIONS, WARBAND, AUXILIA, HIDDEN
     from fs_bot.board.pieces import count_pieces, count_pieces_by_state
     from fs_bot.battle.losses import calculate_losses
-    g_hidden = count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN)
-    if g_hidden <= 0:
+    a_hidden = count_pieces_by_state(state, region, attacker, WARBAND, HIDDEN)
+    if a_hidden <= 0:
         return None
     best, best_score = None, None
     for ef in FACTIONS:
-        if ef == GERMANS or count_pieces(state, region, ef) <= 0:
+        if ef == attacker or count_pieces(state, region, ef) <= 0:
             continue
         e_hidden = (count_pieces_by_state(state, region, ef, WARBAND, HIDDEN)
                     + count_pieces_by_state(state, region, ef, AUXILIA, HIDDEN))
-        if g_hidden <= e_hidden:
+        if a_hidden <= e_hidden:
             continue
         try:
-            if calculate_losses(state, region, GERMANS, ef,
+            if calculate_losses(state, region, attacker, ef,
                                 is_retreat=False) <= 0:
                 continue
         except Exception:
@@ -1366,6 +1392,58 @@ def _german_ambush_target(state, region):
         if best_score is None or score > best_score:
             best, best_score = ef, score
     return best
+
+
+def _german_ambush_target(state, region):
+    from fs_bot.rules_consts import GERMANS
+    return _faction_ambush_target(state, region, GERMANS)
+
+
+def _faction_ambush_sweep(state, attacker):
+    """Ambush in every Region where ``attacker`` is able (Hidden-majority,
+    Loss-causing). Returns the list of ambush results."""
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.battle.resolve import resolve_battle
+    out = []
+    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
+        tgt = _faction_ambush_target(state, region, attacker)
+        if tgt is None:
+            continue
+        try:
+            res = resolve_battle(state, region, attacker, tgt, is_ambush=True)
+            out.append({"region": region, "defender": tgt, "result": res})
+        except _EXEC_ERRORS as exc:
+            out.append({"region": region, "executed": False, "reason": repr(exc)})
+    refresh_all_control(state)
+    return out
+
+
+def _resolve_free_march(state, faction):
+    """Execute a *free* March for ``faction`` using its primary March node."""
+    nodes = {
+        "Aedui": ("fs_bot.bots.aedui_bot", "node_a_march"),
+        "Arverni": ("fs_bot.bots.arverni_bot", "node_v_march_threat"),
+        "Belgae": ("fs_bot.bots.belgae_bot", "node_b_march"),
+        "Germans": ("fs_bot.bots.german_bot", "node_g_march_threat"),
+        "Romans": ("fs_bot.bots.roman_bot", "node_r_march"),
+    }
+    spec = nodes.get(faction)
+    if spec is None:
+        return {"executed": False, "command": None, "reason": "no March node"}
+    import importlib
+    try:
+        node = getattr(importlib.import_module(spec[0]), spec[1])
+        bot_action = node(state)
+    except Exception as exc:
+        return {"executed": False, "command": None, "reason": repr(exc)}
+    if not bot_action or bot_action.get("command") != _CMD_MARCH:
+        return {"executed": False,
+                "command": bot_action.get("command") if bot_action else None,
+                "reason": "no free March available"}
+    res = _execute_bot_command(state, faction, bot_action)
+    return res if res is not None else {"executed": False, "command": _CMD_MARCH,
+                                        "reason": "March not executable"}
 
 
 def _german_setup_marches(state, march_limit):

@@ -2952,3 +2952,47 @@ def test_card44_replace_then_scout_or_raid():
         "sa_regions": [], "details": {"card_id": 44, "text_preference": EVENT_SHADED}})
     assert any(f["free_action"] == "raid" for f in (res2.get("free_actions") or []))
     assert validate_state(st2) == []
+
+
+def test_card36_shaded_gallic_ambush_then_march():
+    """Slice 54: card 36 Morasses (shaded) — a Gallic Faction Ambushes in
+    every able Region, then free Marches."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, ROMANS,
+        WARBAND, AUXILIA, EVENT_SHADED)
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=210)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 36
+    R = "Carnutes"
+    _clear_region_mobiles(st, R)
+    place_piece(st, R, ARVERNI, WARBAND, 6)
+    place_piece(st, R, ROMANS, AUXILIA, 2)
+    refresh_all_control(st)
+    res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 36, "text_preference": EVENT_SHADED}})
+    fa = [f for f in (res.get("free_actions") or []) if f.get("flag") == "card_36"]
+    assert fa and fa[0]["free_action"] == "ambush_then_march"
+    assert count_pieces(st, R, ROMANS, AUXILIA) == 0   # Ambushed away
+    assert validate_state(st) == []
+
+
+def test_card66_german_rally_then_march():
+    """Slice 54: card 66 Migration (unshaded) — Germanic Rally then March."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import validate_state
+    from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, BELGAE, EVENT_UNSHADED
+    st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=211)
+    st["non_player_factions"] = set(get_sop_factions(st))
+    st["current_card"] = 66
+    res = _execute_event(st, BELGAE, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": 66, "text_preference": EVENT_UNSHADED}})
+    fa = [f for f in (res.get("free_actions") or []) if f.get("flag") == "card_66"]
+    assert fa and fa[0]["executed"] is True
+    assert validate_state(st) == []

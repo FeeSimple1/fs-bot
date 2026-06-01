@@ -602,7 +602,34 @@ def _resolve_free_actions(state, faction):
             mods.get("card_9_march_to")))
     if mods.get("card_70_free_command_sa"):
         results.extend(_resolve_card70_free_command(state, faction))
+    if mods.get("card_46_free_command"):
+        results.append({"free_action": "free_command", "flag": "card_46",
+                        "result": _resolve_free_command(state, faction)})
+    if mods.get("card_51_aedui_free_command"):
+        from fs_bot.rules_consts import AEDUI as _AEDUI
+        results.append({"free_action": "free_command", "flag": "card_51",
+                        "result": _resolve_free_command(state, _AEDUI)})
+    if mods.get("card_52_free_command_sa"):
+        results.extend(_resolve_card52_free_command(state))
     return results
+
+
+def _resolve_card52_free_command(state):
+    """Card 52 Assembly of Gaul (shaded): "Faction Controlling Carnutes Region
+    executes a Command that may add 2 Special Abilities, free." Find the
+    Faction controlling Carnutes and run its free Command (the bot's command
+    already carries its Special Ability; the rules' allowance of up to 2 SAs is
+    not separately modelled)."""
+    from fs_bot.rules_consts import CARNUTES, FACTIONS
+    from fs_bot.board.control import is_controlled_by
+    controller = next((f for f in FACTIONS
+                       if is_controlled_by(state, CARNUTES, f)), None)
+    if controller is None:
+        return [{"free_action": "free_command", "flag": "card_52",
+                 "executed": False, "reason": "no Faction controls Carnutes"}]
+    return [{"free_action": "free_command", "flag": "card_52",
+             "controller": controller,
+             "result": _resolve_free_command(state, controller)}]
 
 
 def _resolve_card70_free_command(state, faction):

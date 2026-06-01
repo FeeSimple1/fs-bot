@@ -42,14 +42,16 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import get_adjacent, is_adjacent
-from fs_bot.battle.losses import calculate_losses, resolve_losses
+from fs_bot.battle.losses import (calculate_losses, resolve_losses,
+                                  _remove_battle_piece)
 
 
 def resolve_battle(state, region, attacking_faction, defending_faction,
                    *, is_ambush=False, besiege_target=None,
                    retreat_declaration=None, retreat_region=None,
                    attack_loss_order=None, defend_loss_order=None,
-                   citadel_at_start=None, double_auxilia=False):
+                   citadel_at_start=None, double_auxilia=False,
+                   auto_legion_loss=False):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -305,6 +307,16 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         double_auxilia=double_auxilia,
     )
 
+    # auto_legion_loss (card 2 shaded: "first Loss removes a Legion
+    # automatically, if any there"): the FIRST Loss removes a Legion with no
+    # absorption die roll; the remaining Losses resolve normally.
+    auto_legion_removed = 0
+    if (auto_legion_loss and attack_losses > 0
+            and count_pieces(state, region, defending_faction, LEGION) > 0):
+        _remove_battle_piece(state, region, defending_faction, LEGION, None)
+        auto_legion_removed = 1
+        attack_losses -= 1
+
     # Resolve Attack Losses on Defender
     attack_result = resolve_losses(
         state, region, defending_faction, attack_losses,
@@ -313,6 +325,11 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         caesar_counterattacks=caesar_counterattack_allowed,
         loss_order=attack_loss_order,
     )
+    if auto_legion_removed:
+        attack_result = dict(attack_result)
+        attack_result["auto_legion_removed"] = auto_legion_removed
+        attack_result["losses_taken"] = (attack_result.get("losses_taken", 0)
+                                         + auto_legion_removed)
     result["attack"] = attack_result
 
     # ── Step 4: Counterattack ──

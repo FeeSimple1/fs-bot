@@ -4016,13 +4016,36 @@ def _derive_card_41(state, faction, shaded):
 def _derive_card_42(state, faction, shaded):
     """Card 42 (Roman Wine), unshaded: remove up to 4 non-own Allied Tribes
     (not Citadels) in Roman-Controlled Regions (§8.2.3 — remove enemies', not
-    own). The shaded Supply-Line variant is deferred (needs Supply-Line
-    evaluation)."""
+    own).
+
+    Shaded (Romanizing tribes): remove 1-3 Roman or Aedui Allies (not Citadels)
+    in Roman-Aedui Supply-Line Regions (Card Reference 42 — Supply Lines per
+    §3.2.1 computed "as if Romans and Aedui both agreed", i.e. chain Regions are
+    No Control / Roman / Aedui). The NP removes enemies' Allies (§8.2.3) — never
+    its own."""
     from fs_bot.rules_consts import TRIBE_TO_REGION, ROMANS, ALLY
     from fs_bot.board.control import is_controlled_by
     from fs_bot.board.pieces import count_pieces
     if shaded:
-        return None
+        from fs_bot.rules_consts import AEDUI
+        from fs_bot.commands.rally import has_supply_line
+        agreements = {ROMANS: True, AEDUI: True}
+        removals = []
+        for tribe in sorted(state.get("tribes", {})):
+            if len(removals) >= 3:
+                break
+            ti = state["tribes"][tribe]
+            af = ti.get("allied_faction")
+            if af not in (ROMANS, AEDUI) or af == faction:
+                continue  # only enemies' Roman/Aedui Allies
+            region = TRIBE_TO_REGION.get(tribe)
+            if not region or count_pieces(state, region, af, ALLY) <= 0:
+                continue  # an Ally piece (not a Citadel city)
+            if not has_supply_line(state, region, faction=ROMANS,
+                                   agreements=agreements):
+                continue
+            removals.append({"tribe": tribe, "faction": af})
+        return {"removals": removals} if removals else None
     removals = []
     for tribe, ti in state.get("tribes", {}).items():
         af = ti.get("allied_faction")
@@ -4038,12 +4061,30 @@ def _derive_card_42(state, faction, shaded):
 
 def _derive_card_23(state, faction, shaded):
     """Card 23 (Sacking), unshaded: Romans Raze a City under Roman Control
-    (+8 Resources, permanent Disperse). Choose a Roman-Controlled City. The
-    shaded Legion-removal (needs a Citadel-adjacency choice) is deferred."""
+    (+8 Resources, permanent Disperse). Choose a Roman-Controlled City.
+
+    Shaded (Costly siege): if a Legion is where the acting Faction has a
+    Citadel, remove that Legion (Romans Ineligible through next card). Choose
+    the Region with the acting Faction's Citadel holding the most Roman Legions
+    (§8.3.1 — where most Legions). Non-Roman only ("your Citadel")."""
     from fs_bot.rules_consts import (CITY_TO_TRIBE, TRIBE_TO_REGION,
                                      MARKER_RAZED, ROMANS)
     from fs_bot.board.control import is_controlled_by
-    if shaded or faction != ROMANS:
+    if shaded:
+        from fs_bot.rules_consts import LEGION, CITADEL
+        from fs_bot.board.pieces import count_pieces
+        if faction == ROMANS:
+            return None
+        best = None
+        for region in get_playable_regions(state["scenario"],
+                                            state.get("capabilities")):
+            if count_pieces(state, region, faction, CITADEL) <= 0:
+                continue
+            legs = count_pieces(state, region, ROMANS, LEGION)
+            if legs > 0 and (best is None or legs > best[1]):
+                best = (region, legs)
+        return {"target_region": best[0]} if best else None
+    if faction != ROMANS:
         return None
     for city, tribe in CITY_TO_TRIBE.items():
         region = TRIBE_TO_REGION.get(tribe)
@@ -4058,11 +4099,42 @@ def _derive_card_23(state, faction, shaded):
 def _derive_card_68(state, faction, shaded):
     """Card 68 (Remi Influence), unshaded: if Remi are a Roman Ally or Subdued,
     Romans replace up to 2 non-Roman Allies within 1 Region of Remi (Atrebates)
-    with Roman Allies (§8.2.3 — convert enemies' to own). Shaded deferred."""
+    with Roman Allies (§8.2.3 — convert enemies' to own).
+
+    Shaded (Mediation): a Gallic Faction with Remi as its Ally may remove
+    anything at Alesia or Cenabum and place a Citadel + 4 Warbands there
+    (Card Reference 68). Acting Faction must be the Gallic Faction allied with
+    Remi; choose the City whose removal hurts an enemy most (else Alesia)."""
     from fs_bot.rules_consts import (TRIBE_REMI, TRIBE_TO_REGION, ATREBATES,
                                      ROMANS, MARKER_DISPERSED)
     from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
-    if shaded or faction != ROMANS:
+    if shaded:
+        from fs_bot.rules_consts import (GALLIC_FACTIONS, FACTIONS, CITADEL,
+                                         CITY_ALESIA, CITY_CENABUM, CITY_TO_TRIBE)
+        from fs_bot.board.pieces import count_pieces
+        if faction not in GALLIC_FACTIONS:
+            return None
+        remi = state.get("tribes", {}).get(TRIBE_REMI)
+        if not remi or remi.get("allied_faction") != faction:
+            return None
+        best = None  # (city, enemy_value)
+        for city in (CITY_ALESIA, CITY_CENABUM):
+            tribe = CITY_TO_TRIBE.get(city)
+            region = TRIBE_TO_REGION.get(tribe)
+            if not region:
+                continue
+            ti = state.get("tribes", {}).get(tribe) or {}
+            enemy = 0
+            af = ti.get("allied_faction")
+            if af and af != faction:
+                enemy += 1
+            for f2 in FACTIONS:
+                if f2 != faction:
+                    enemy += count_pieces(state, region, f2, CITADEL)
+            if best is None or enemy > best[1]:
+                best = (city, enemy)
+        return {"target_city": best[0]} if best else None
+    if faction != ROMANS:
         return None
     _R = ROMANS
     ti = state.get("tribes", {}).get(TRIBE_REMI)
@@ -4119,12 +4191,40 @@ def _derive_card_58(state, faction, shaded):
 def _derive_card_22(state, faction, shaded):
     """Card 22 (Hostages), unshaded: among Regions the acting Faction Controls,
     replace up to 4 enemy Warbands/Auxilia with its own (§8.2.3 — convert
-    enemies' to own). Shaded (place Gallic Ally+Warband) deferred."""
+    enemies' to own).
+
+    Shaded (Casus belli): place a Gallic Ally and any 1 Warband at each of 1 or
+    2 Subdued Tribes where Roman pieces (Card Reference 22). The NP benefits
+    itself (§8.2.3) — place its own Ally + own Warband. A Gallic Faction only;
+    a Roman/German acting Faction gains nothing from placing a Gallic Ally, so
+    no derivation (graceful no-op)."""
     from fs_bot.rules_consts import FACTIONS, WARBAND, AUXILIA
     from fs_bot.board.control import is_controlled_by
     from fs_bot.board.pieces import count_pieces
     if shaded:
-        return None
+        from fs_bot.rules_consts import (GALLIC_FACTIONS, ALLY, ROMANS,
+                                         TRIBE_TO_REGION, MARKER_DISPERSED)
+        from fs_bot.board.pieces import get_available
+        if (faction not in GALLIC_FACTIONS
+                or get_available(state, faction, ALLY) <= 0):
+            return None
+        target_tribes = []
+        for tribe in sorted(state.get("tribes", {})):
+            if len(target_tribes) >= 2:
+                break
+            ti = state["tribes"][tribe]
+            if ti.get("allied_faction") is not None:
+                continue  # Subdued only (not already Allied)
+            tmarkers = state.get("markers", {}).get(tribe) or {}
+            if MARKER_DISPERSED in tmarkers:
+                continue
+            region = TRIBE_TO_REGION.get(tribe)
+            if not region or count_pieces(state, region, ROMANS) <= 0:
+                continue  # "where Roman pieces"
+            target_tribes.append({"tribe": tribe, "region": region,
+                                  "faction": faction,
+                                  "warband_faction": faction})
+        return {"target_tribes": target_tribes} if target_tribes else None
     replacements = []
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
     for region in playable:

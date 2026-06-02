@@ -3475,3 +3475,155 @@ def test_cap_hooks_3_A66_winter_uprising():
     st3 = _setup(BITURIGES)
     res3 = _resolve_winter_uprising(st3)
     assert any(r.get("free_action") == "arverni_phase" for r in res3)
+
+
+# ===================================================================
+# Shaded event-param derivers — previously-deferred shaded sides now
+# derive the acting NP Faction's choice and execute (Card Reference).
+# ===================================================================
+class TestShadedDerivers:
+    """Exercise the shaded sides of cards whose deriver was deferred.
+
+    Each builds a minimal state where the shaded effect is applicable, runs
+    the real Event execution path (execute_decision) with a Shaded text
+    preference, and asserts the published effect occurred.
+    """
+
+    def _ev(self, card_id):
+        return {"action": "event", "bot_action": {
+            "command": "Event", "regions": [], "sa": "No SA", "sa_regions": [],
+            "details": {"card_id": card_id, "text_preference": EVENT_SHADED,
+                        "instruction": None}}}
+
+    def _base(self, scn=SCENARIO_PAX_GALLICA, seed=7):
+        from fs_bot.state.state_schema import build_initial_state
+        from fs_bot.rules_consts import (ROMANS as R, AEDUI as Ae, ARVERNI as Ar,
+                                          BELGAE as Be, GERMANS as Ge)
+        s = build_initial_state(scn, seed=seed)
+        for f in (R, Ae, Ar, Be):
+            s["resources"][f] = 15
+        if scn == SCENARIO_ARIOVISTUS:
+            s["resources"][Ge] = 15
+        return s
+
+    def test_card22_shaded_places_gallic_ally_and_warband(self):
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import (ROMANS, AEDUI, AUXILIA, ALLY, WARBAND,
+                                         TRIBE_TO_REGION)
+        s = self._base()
+        place_piece(s, "Mandubii", ROMANS, AUXILIA)  # "where Roman pieces"
+        refresh_all_control(s)
+        res = execute_decision(s, AEDUI, self._ev(22))
+        assert res["executed"] is True
+        # Two Subdued Tribes in Mandubii allied to Aedui + Ally/Warband placed.
+        allied = [t for t, r in TRIBE_TO_REGION.items() if r == "Mandubii"
+                  and s["tribes"][t]["allied_faction"] == AEDUI]
+        assert len(allied) >= 1
+        assert count_pieces(s, "Mandubii", AEDUI, ALLY) >= 1
+        assert count_pieces(s, "Mandubii", AEDUI, WARBAND) >= 1
+
+    def test_card22_shaded_no_derivation_for_non_gallic(self):
+        # A Roman acting Faction gains nothing from a Gallic Ally — no-op.
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import ROMANS, AUXILIA
+        s = self._base()
+        place_piece(s, "Mandubii", ROMANS, AUXILIA)
+        refresh_all_control(s)
+        res = execute_decision(s, ROMANS, self._ev(22))
+        # Executes (no crash) but derives nothing -> no Ally placed.
+        assert res["executed"] is True
+
+    def test_card23_shaded_removes_legion_where_citadel(self):
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import AEDUI, ROMANS, CITADEL, LEGION, INELIGIBLE
+        s = self._base()
+        place_piece(s, "Aedui", AEDUI, CITADEL)
+        place_piece(s, "Aedui", ROMANS, LEGION, from_legions_track=True)
+        refresh_all_control(s)
+        before = count_pieces(s, "Aedui", ROMANS, LEGION)
+        res = execute_decision(s, AEDUI, self._ev(23))
+        assert res["executed"] is True
+        assert count_pieces(s, "Aedui", ROMANS, LEGION) == before - 1
+        assert s["eligibility"][ROMANS] == INELIGIBLE
+
+    def test_card42_shaded_removes_enemy_ally_in_supply_line(self):
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import BELGAE, ROMANS, ALLY
+        s = self._base()
+        # Sequani borders Cisalpina -> in a Roman-Aedui Supply Line (§3.2.1).
+        s["tribes"]["Helvetii"]["allied_faction"] = ROMANS
+        place_piece(s, "Sequani", ROMANS, ALLY)
+        refresh_all_control(s)
+        before = count_pieces(s, "Sequani", ROMANS, ALLY)
+        res = execute_decision(s, BELGAE, self._ev(42))
+        assert res["executed"] is True
+        assert count_pieces(s, "Sequani", ROMANS, ALLY) == before - 1
+        assert s["tribes"]["Helvetii"]["allied_faction"] is None
+
+    def test_card42_shaded_skips_non_supply_line(self):
+        # A Roman Ally NOT on a Roman-Aedui Supply Line is untouched. Isolate
+        # Veneti by giving every neighbour to a non-agreeing Faction (Arverni
+        # Control breaks the §3.2.1 chain to the Cisalpina border).
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.map.map_data import get_adjacent
+        from fs_bot.rules_consts import BELGAE, ARVERNI, ROMANS, ALLY, WARBAND
+        s = self._base()
+        s["tribes"]["Veneti"]["allied_faction"] = ROMANS
+        place_piece(s, "Veneti", ROMANS, ALLY)
+        for nb in get_adjacent("Veneti", s["scenario"]):
+            place_piece(s, nb, ARVERNI, WARBAND, count=8)
+        refresh_all_control(s)
+        before = count_pieces(s, "Veneti", ROMANS, ALLY)
+        execute_decision(s, BELGAE, self._ev(42))
+        assert count_pieces(s, "Veneti", ROMANS, ALLY) == before
+
+    def test_card42_shaded_never_removes_own_ally(self):
+        # §8.2.3: the acting Faction removes enemies' Allies, never its own.
+        # Aedui acting -> a Roman Ally on a supply line is removed, an Aedui
+        # Ally on the same supply line is kept.
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import AEDUI, ROMANS, ALLY
+        s = self._base()
+        s["tribes"]["Helvetii"]["allied_faction"] = ROMANS   # enemy of Aedui
+        place_piece(s, "Sequani", ROMANS, ALLY)
+        s["tribes"]["Sequani"]["allied_faction"] = AEDUI     # acting's own
+        place_piece(s, "Sequani", AEDUI, ALLY)
+        refresh_all_control(s)
+        execute_decision(s, AEDUI, self._ev(42))
+        assert count_pieces(s, "Sequani", ROMANS, ALLY) == 0          # removed
+        assert s["tribes"]["Helvetii"]["allied_faction"] is None
+        assert count_pieces(s, "Sequani", AEDUI, ALLY) == 1           # kept
+        assert s["tribes"]["Sequani"]["allied_faction"] == AEDUI
+
+    def test_card68_shaded_places_citadel_and_warbands(self):
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import AEDUI, ALLY, CITADEL, WARBAND
+        s = self._base()
+        s["tribes"]["Remi"]["allied_faction"] = AEDUI
+        place_piece(s, "Atrebates", AEDUI, ALLY)
+        refresh_all_control(s)
+        res = execute_decision(s, AEDUI, self._ev(68))
+        assert res["executed"] is True
+        cit = (count_pieces(s, "Mandubii", AEDUI, CITADEL)
+               + count_pieces(s, "Carnutes", AEDUI, CITADEL))
+        wb = (count_pieces(s, "Mandubii", AEDUI, WARBAND)
+              + count_pieces(s, "Carnutes", AEDUI, WARBAND))
+        assert cit >= 1 and wb >= 1
+
+    def test_card68_shaded_requires_remi_as_own_ally(self):
+        # Without Remi allied to the acting Faction, nothing is placed.
+        from fs_bot.board.pieces import count_pieces
+        from fs_bot.rules_consts import AEDUI, CITADEL
+        s = self._base()
+        s["tribes"]["Remi"]["allied_faction"] = None
+        res = execute_decision(s, AEDUI, self._ev(68))
+        placed = (count_pieces(s, "Mandubii", AEDUI, CITADEL)
+                  + count_pieces(s, "Carnutes", AEDUI, CITADEL))
+        assert placed == 0

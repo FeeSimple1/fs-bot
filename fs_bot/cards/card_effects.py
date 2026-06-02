@@ -938,7 +938,8 @@ def execute_card_22(state, shaded=False):
                 count_done += 1
     else:
         # Shaded: Place Gallic Ally + Warband at 1-2 Subdued Tribes
-        # with Roman pieces
+        # with Roman pieces. Placing an Ally allies that Subdued Tribe to the
+        # placing Faction (place_piece does not track allied_faction).
         params = state.get("event_params", {})
         tribes = params.get("target_tribes", [])
         executing = state.get("executing_faction")
@@ -946,13 +947,21 @@ def execute_card_22(state, shaded=False):
             return
         for tribe_info in tribes[:2]:
             region = tribe_info.get("region")
+            tribe = tribe_info.get("tribe")
             faction = tribe_info.get("faction", executing)
-            if region:
-                if get_available(state, faction, ALLY) > 0:
-                    place_piece(state, region, faction, ALLY)
-                wb_faction = tribe_info.get("warband_faction", faction)
-                if get_available(state, wb_faction, WARBAND) > 0:
-                    place_piece(state, region, wb_faction, WARBAND)
+            if not region:
+                continue
+            t_info = state.get("tribes", {}).get(tribe) if tribe else None
+            # Subdued Tribes only (not already Allied).
+            if t_info is not None and t_info.get("allied_faction") is not None:
+                continue
+            if get_available(state, faction, ALLY) > 0:
+                place_piece(state, region, faction, ALLY)
+                if t_info is not None:
+                    t_info["allied_faction"] = faction
+            wb_faction = tribe_info.get("warband_faction", faction)
+            if get_available(state, wb_faction, WARBAND) > 0:
+                place_piece(state, region, wb_faction, WARBAND)
 
 def execute_card_23(state, shaded=False):
     """Card 23: Sacking — Razed marker / Remove Legion.

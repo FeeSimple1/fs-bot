@@ -69,10 +69,14 @@ def trade(state, agreements=None, roman_agreed=False):
 
     from fs_bot.cards.capabilities import is_capability_active
     from fs_bot.rules_consts import EVENT_UNSHADED as _EU, EVENT_SHADED as _ESh
-    # Card 39 (River Commerce) unshaded: Aedui Allies/Citadels in Supply Lines
-    # "always yield +2 Resources each in Trade".
-    per_item_value = 2 if (roman_agreed
-                           or is_capability_active(state, 39, _EU)) else 1
+    # Subdued & Roman-Allied Tribes under Aedui Control: +1, or +2 only if
+    # Romans agreed (§4.4.1).
+    base_value = 2 if roman_agreed else 1
+    # Card 39 (River Commerce) unshaded: Aedui Allies & Citadels in Supply Lines
+    # "always yield +2 Resources each" — that boost applies to those two item
+    # types only, not to Subdued/Roman-Allied Tribes.
+    aedui_value = 2 if (roman_agreed
+                        or is_capability_active(state, 39, _EU)) else 1
 
     # Find all regions on Supply Lines
     supply_line_regions = set()
@@ -112,14 +116,14 @@ def trade(state, agreements=None, roman_agreed=False):
         # Aedui Allies
         aedui_allies = aedui_pieces.get(ALLY, 0)
         if aedui_allies > 0:
-            gain = aedui_allies * per_item_value
+            gain = aedui_allies * aedui_value
             total += gain
             result["per_item"].append(("aedui_ally", region, gain))
 
         # Aedui Citadels
         aedui_citadels = aedui_pieces.get(CITADEL, 0)
         if aedui_citadels > 0:
-            gain = aedui_citadels * per_item_value
+            gain = aedui_citadels * aedui_value
             total += gain
             result["per_item"].append(("aedui_citadel", region, gain))
 
@@ -132,14 +136,14 @@ def trade(state, agreements=None, roman_agreed=False):
 
                 if allied_faction is None:
                     # Subdued Tribe
-                    gain = per_item_value
+                    gain = base_value
                     total += gain
                     result["per_item"].append(
                         ("subdued_tribe", tribe, gain)
                     )
                 elif allied_faction == ROMANS and roman_agreed:
                     # Roman Allied Tribe — only if Romans agreed
-                    gain = per_item_value
+                    gain = base_value
                     total += gain
                     result["per_item"].append(
                         ("roman_ally", tribe, gain)

@@ -1449,9 +1449,12 @@ class TestAuditConditionFixes:
         refresh_all_control(st)
         base = trade(st)["resources_gained"]
         activate_capability(st, 39, EVENT_UNSHADED)
-        boosted = trade(st)["resources_gained"]
-        # Unshaded yields +2 each instead of +1.
-        assert boosted >= base * 2 and boosted > base
+        res = trade(st)
+        boosted = res["resources_gained"]
+        # Unshaded boosts the Aedui Ally to +2 (other item types unchanged).
+        assert boosted > base
+        items = {t[0]: t[2] for t in res["per_item"]}
+        assert items.get("aedui_ally") == 2
 
     def test_card19_shaded_relocates_successor_on_map(self):
         from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, LEADER,
@@ -1511,3 +1514,30 @@ class TestAuditConditionFixes:
         _resolve_a20_free_seize(st)
         # "as if Roman Control" -> the Subdued Veneti Tribe is Dispersed.
         assert st["tribes"]["Veneti"]["status"] == DISPERSED
+
+    def test_card39_unshaded_does_not_boost_subdued_tribes(self):
+        # Card 39 unshaded boosts only Aedui Allies/Citadels to +2; a Subdued
+        # Tribe in an Aedui-Controlled Supply-Line Region still yields +1 when
+        # Romans have not agreed (§4.4.1).
+        from fs_bot.commands.sa_trade import trade
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, AEDUI, ALLY,
+                                         WARBAND, EVENT_UNSHADED)
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        # Aedui Control of Sequani (a Supply-Line Region) with a Subdued Tribe.
+        st["tribes"]["Sequani"]["allied_faction"] = AEDUI
+        place_piece(st, "Sequani", AEDUI, ALLY)
+        place_piece(st, "Sequani", AEDUI, WARBAND, count=3)  # ensure Control
+        st["tribes"]["Helvetii"]["allied_faction"] = None     # Subdued
+        st["tribes"]["Helvetii"]["status"] = None
+        refresh_all_control(st)
+        activate_capability(st, 39, EVENT_UNSHADED)
+        res = trade(st)
+        items = {t[0]: t[2] for t in res["per_item"]}
+        # Aedui Ally boosted to 2; the Subdued Tribe stays at 1.
+        assert ("aedui_ally" in items) and items["aedui_ally"] == 2
+        subdued = [t for t in res["per_item"] if t[0] == "subdued_tribe"]
+        assert subdued and all(v == 1 for _, _, v in subdued)

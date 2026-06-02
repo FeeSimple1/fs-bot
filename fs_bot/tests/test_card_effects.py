@@ -1228,3 +1228,36 @@ class TestDispersedStatusHandling:
         assert _run(None) > 0
         # Dispersed Remi does NOT qualify -> nothing placed.
         assert _run(DISPERSED) == 0
+
+    def test_card37_unshaded_no_ally_on_dispersed_tribe(self):
+        from fs_bot.rules_consts import (AEDUI, ALLY, DISPERSED, TRIBE_TO_REGION,
+                                         SCENARIO_GREAT_REVOLT)
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        st["tribes"]["Senones"]["allied_faction"] = None
+        st["tribes"]["Senones"]["status"] = DISPERSED
+        st["event_params"] = {"place_faction": AEDUI, "placements": [
+            {"region": TRIBE_TO_REGION["Senones"], "piece_type": ALLY,
+             "tribe": "Senones"}]}
+        execute_event(st, 37, shaded=False)
+        # "Place Allies at Subdued Tribes only" — a Dispersed Tribe is excluded.
+        assert st["tribes"]["Senones"]["allied_faction"] is None
+
+    def test_card60_shaded_clears_dispersed_status(self):
+        from fs_bot.rules_consts import DISPERSED, SCENARIO_GREAT_REVOLT
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        st["tribes"]["Treveri"]["allied_faction"] = None
+        st["tribes"]["Treveri"]["status"] = DISPERSED
+        execute_event(st, 60, shaded=True)
+        # No Tribe left both Dispersed and Allied.
+        assert st["tribes"]["Treveri"]["status"] != DISPERSED
+
+    def test_card61_shaded_clears_dispersed_status(self):
+        from fs_bot.rules_consts import DISPERSED, SCENARIO_GREAT_REVOLT
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        st["tribes"]["Eburones"]["allied_faction"] = None
+        st["tribes"]["Eburones"]["status"] = DISPERSED
+        execute_event(st, 61, shaded=True)
+        assert st["tribes"]["Eburones"]["status"] != DISPERSED

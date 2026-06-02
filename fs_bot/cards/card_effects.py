@@ -924,8 +924,12 @@ def execute_card_22(state, shaded=False):
             if not region:
                 continue
             t_info = state.get("tribes", {}).get(tribe) if tribe else None
-            # Subdued Tribes only (not already Allied).
-            if t_info is not None and t_info.get("allied_faction") is not None:
+            # Subdued Tribes only — not already Allied and not Dispersed/Razed
+            # (status). Card requires "where Roman pieces".
+            if t_info is not None and (t_info.get("allied_faction") is not None
+                                       or t_info.get("status") is not None):
+                continue
+            if count_pieces(state, region, ROMANS) <= 0:
                 continue
             if get_available(state, faction, ALLY) > 0:
                 place_piece(state, region, faction, ALLY)
@@ -1200,6 +1204,7 @@ def execute_card_28(state, shaded=False):
         if region and faction in GALLIC_FACTIONS:
             tribe_info = state.get("tribes", {}).get(tribe)
             if (tribe_info and tribe_info.get("allied_faction") is None
+                    and tribe_info.get("status") is None
                     and not is_controlled_by(state, region, ROMANS)):
                 if get_available(state, faction, ALLY) > 0:
                     place_piece(state, region, faction, ALLY)
@@ -1534,7 +1539,8 @@ def execute_card_37(state, shaded=False):
             if piece_type == ALLY:
                 tribe = p.get("tribe")
                 tribe_info = state.get("tribes", {}).get(tribe)
-                if tribe_info and tribe_info.get("allied_faction") is None:
+                if (tribe_info and tribe_info.get("allied_faction") is None
+                        and tribe_info.get("status") is None):
                     if get_available(state, faction, ALLY) > 0:
                         place_piece(state, region, faction, ALLY)
                         tribe_info["allied_faction"] = faction
@@ -1609,7 +1615,8 @@ def execute_card_40(state, shaded=False):
             if piece_type == ALLY:
                 tribe = p.get("tribe")
                 tribe_info = state.get("tribes", {}).get(tribe)
-                if tribe_info and tribe_info.get("allied_faction") is None:
+                if (tribe_info and tribe_info.get("allied_faction") is None
+                        and tribe_info.get("status") is None):
                     if get_available(state, pfac, ALLY) > 0:
                         place_piece(state, region, pfac, ALLY)
                         tribe_info["allied_faction"] = pfac
@@ -1661,7 +1668,8 @@ def execute_card_41(state, shaded=False):
         r = TRIBE_TO_REGION.get(t)
         if r in target_regions:
             t_info = state.get("tribes", {}).get(t)
-            if t_info and t_info.get("allied_faction") is None:
+            if (t_info and t_info.get("allied_faction") is None
+                    and t_info.get("status") is None):
                 if get_available(state, faction, ALLY) > 0:
                     place_piece(state, r, faction, ALLY)
                     t_info["allied_faction"] = faction
@@ -2348,7 +2356,11 @@ def execute_card_60(state, shaded=False):
                 if count_pieces(state, region, fac, ALLY) > 0:
                     remove_piece(state, region, fac, ALLY)
                 tribe_info["allied_faction"] = None
-            # Remove Dispersed marker if present
+            # Remove Dispersed — Disperse is stored in tribe["status"], not
+            # the markers dict; the pops below are harmless legacy cleanup.
+            if tribe_info and tribe_info.get("status") in (
+                    MARKER_DISPERSED, MARKER_DISPERSED_GATHERING):
+                tribe_info["status"] = None
             markers = state.get("markers", {})
             if tribe in markers:
                 markers[tribe].pop(MARKER_DISPERSED, None)
@@ -2415,7 +2427,10 @@ def execute_card_61(state, shaded=False):
                 if count_pieces(state, region, old_fac, ALLY) > 0:
                     remove_piece(state, region, old_fac, ALLY)
                 tribe_info["allied_faction"] = None
-            # Remove Dispersed marker
+            # Remove Dispersed — Disperse is stored in tribe["status"].
+            if tribe_info.get("status") in (
+                    MARKER_DISPERSED, MARKER_DISPERSED_GATHERING):
+                tribe_info["status"] = None
             markers = state.get("markers", {})
             if tribe in markers:
                 markers[tribe].pop(MARKER_DISPERSED, None)
@@ -2601,6 +2616,7 @@ def execute_card_66(state, shaded=False):
             region = TRIBE_TO_REGION.get(ally_tribe)
             tribe_info = state.get("tribes", {}).get(ally_tribe)
             if (tribe_info and tribe_info.get("allied_faction") is None
+                    and tribe_info.get("status") is None
                     and region and get_available(state, faction, ALLY) > 0):
                 place_piece(state, region, faction, ALLY)
                 tribe_info["allied_faction"] = faction
@@ -3316,7 +3332,8 @@ def execute_card_A29(state, shaded=False):
             if piece_type == ALLY:
                 tribe = p.get("tribe")
                 t_info = state.get("tribes", {}).get(tribe)
-                if t_info and t_info.get("allied_faction") is None:
+                if (t_info and t_info.get("allied_faction") is None
+                        and t_info.get("status") is None):
                     if pfac and get_available(state, pfac, ALLY) > 0:
                         place_piece(state, region, pfac, ALLY)
                         t_info["allied_faction"] = pfac
@@ -3418,7 +3435,8 @@ def execute_card_A30(state, shaded=False):
             if piece_type == ALLY:
                 tribe = p.get("tribe")
                 t_info = state.get("tribes", {}).get(tribe)
-                if t_info and t_info.get("allied_faction") is None:
+                if (t_info and t_info.get("allied_faction") is None
+                        and t_info.get("status") is None):
                     if get_available(state, ARVERNI, ALLY) > 0:
                         place_piece(state, region, ARVERNI, ALLY)
                         t_info["allied_faction"] = ARVERNI
@@ -3756,7 +3774,8 @@ def execute_card_A40(state, shaded=False):
             if piece_type == ALLY:
                 tribe = p.get("tribe")
                 t_info = state.get("tribes", {}).get(tribe)
-                if t_info and t_info.get("allied_faction") is None and pfac:
+                if (t_info and t_info.get("allied_faction") is None
+                        and t_info.get("status") is None and pfac):
                     if get_available(state, pfac, ALLY) > 0:
                         place_piece(state, region, pfac, ALLY)
                         t_info["allied_faction"] = pfac
@@ -3869,6 +3888,7 @@ def execute_card_A45(state, shaded=False):
             region = TRIBE_TO_REGION.get(tribe)
             t_info = state.get("tribes", {}).get(tribe)
             if (t_info and t_info.get("allied_faction") is None
+                    and t_info.get("status") is None
                     and faction != GERMANS and region):
                 if get_available(state, faction, ALLY) > 0:
                     place_piece(state, region, faction, ALLY)
@@ -4036,7 +4056,8 @@ def execute_card_A56(state, shaded=False):
                 if count_pieces(state, region, old_fac, ALLY) > 0:
                     remove_piece(state, region, old_fac, ALLY)
                 t_info["allied_faction"] = None
-            if t_info.get("allied_faction") is None:
+            if (t_info.get("allied_faction") is None
+                    and t_info.get("status") is None):
                 if get_available(state, BELGAE, ALLY) > 0:
                     place_piece(state, region, BELGAE, ALLY)
                     t_info["allied_faction"] = BELGAE

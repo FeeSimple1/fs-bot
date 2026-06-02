@@ -187,3 +187,74 @@ mechanical effect (the no-double) is fully implemented and tested.
 **Files:** `fs_bot/cards/card_effects.py` (`execute_card_A31`, documenting
 comment), `fs_bot/battle/resolve.py` and `fs_bot/battle/losses.py`
 (`card_A31_no_ario_double` consumption).
+
+---
+
+## [RESOLVED] Card 42 (Roman Wine) shaded — what is a "Roman-Aedui Supply Line"
+
+**Context:** Card 42 shaded removes 1-3 Roman or Aedui Allies "from Roman-Aedui
+Supply Lines." The Tips clarify: "Shaded Roman-Aedui Supply Lines are any
+Regions that would at that moment be in Supply Lines (3.2.1) if Romans and Aedui
+both agreed." The question is which Regions qualify when computing §3.2.1 supply
+for this removal.
+
+**Resolution:** A §3.2.1 Supply Line is a chain of adjacent Regions reaching the
+Cisalpina border (base) / including Provincia or Cisalpina (Ariovistus), each
+chain Region having No Control or Control of a Faction that agrees. The card
+fixes the agreement question by hypothesis: "if Romans and Aedui both agreed."
+So the qualifying chains are those where every Region is No Control, Roman
+Control, or Aedui Control — Romans and Aedui agree; any other controlling
+Faction does not (a chain through an enemy-controlled Region is not a Roman-Aedui
+Supply Line). This maps exactly to `has_supply_line(state, region,
+faction=ROMANS, agreements={ROMANS: True, AEDUI: True})` (the existing
+`agreements` dict defaults non-listed Factions to False). The deriver removes
+only *enemies'* Roman/Aedui Allies (§8.2.3 — never the acting Faction's own).
+
+**Files:** `fs_bot/engine/execute.py` — `_derive_card_42` (shaded branch).
+
+---
+
+## [RESOLVED] Free Command "in/from <named Region>" — which Command when the flowchart's board-wide best cannot act there
+
+**Context:** Several Events grant a free Command restricted to a named Region or
+set of Regions (e.g. card 70 "select 1 [of Atrebates/Carnutes/Mandubii] for a
+free Command + Special Ability"; card 9 "in (or from) the destination Region").
+The faithful free-Command chooser is the Faction's own flowchart (NP guideline:
+"For free Commands and Special Abilities, follow their flowcharts"). The
+flowchart returns the Faction's board-wide best Command; when that Command's
+plan lies entirely outside the named Region(s), constraining it yields nothing —
+so previously the free Command silently did not occur (~64% of restricted calls
+in all-bot games).
+
+**Resolution:** Still "follow the flowchart," now region-aware. When the
+board-wide best Command cannot act in the allowed Region(s), evaluate the
+Faction's Command nodes in *flowchart-decision order* (the order its own tree
+considers Commands — e.g. Roman Battle → March → Recruit → Seize; Aedui Battle →
+Rally → Raid → March; the analogous orders for Arverni/Belgae/German), constrain
+each to the allowed Region(s), and take the first whose plan is legal there.
+This is the Faction's own command priority applied to the named Region — not an
+invented heuristic. Command nodes are read-only planners; they are evaluated on
+a deep copy because they consume `state["rng"]` for §8.3.4 tie-breaks, keeping
+the real RNG stream deterministic. If no Command is legal in the Region(s), the
+free Command faithfully does not occur.
+
+**Files:** `fs_bot/engine/execute.py` — `_region_restricted_free_command`,
+`_FACTION_COMMAND_NODE_ORDER`, `_resolve_free_command`.
+
+---
+
+## [NOTE] Human execution path — plan-collection UI is the remaining piece
+
+**Context:** `execute_decision` now applies a plan from either `bot_action`
+(bot) or `player_action` (human/UI), so a mixed human/bot game resolves human
+turns through the same Command/SA/Event machinery (human Events use the player's
+own `event_params` rather than NP auto-derivation). This is the execution layer.
+
+**Remaining:** The CLI human menu (`fs_bot/cli/menus.py::prompt_action`) returns
+only the chosen engine action *type*; it does not yet collect the full plan
+(Regions, SA, targets, Event params). Until an interactive plan-collection menu
+is added, a human non-Pass turn driven by the bundled CLI carries no
+`player_action` and is reported (not crashed) as "decision carries no executable
+plan." A front-end that supplies a `player_action` plan executes fully today.
+
+**Files:** `fs_bot/engine/execute.py` — `execute_decision`, `_execute_event`.

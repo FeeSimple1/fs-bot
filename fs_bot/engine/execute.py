@@ -816,9 +816,8 @@ def _resolve_free_actions(state, faction):
                                     "executed": False, "reason": repr(exc)})
 
     # A58 Aduatuci (unshaded): Romans free Battle anywhere in Belgica, then
-    # free Seize in Belgica "as if Roman Control". (Dispersal still needs
-    # Roman Control; the Control-override for Dispersal is a documented
-    # refinement — Forage and controlled Dispersal execute here.)
+    # free Seize in Belgica "as if Roman Control, with no Harassment" — the
+    # Seize Disperses regardless of actual Control and skips Harassment.
     if mods.get("card_A58_roman_battle_seize"):
         results.extend(_resolve_a58_battle_seize(state, faction))
     if mods.get("card_A67_arduenna"):

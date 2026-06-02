@@ -525,9 +525,8 @@ def _break_tie(state, tied_factions):
     else:
         tiebreak = TIEBREAK_ORDER_BASE
 
-    # Check non-player factions first
-    # Non-player status is tracked in state; for now, check if
-    # a faction is bot-controlled
+    # Among tied Factions, Non-players win the tie before players (§7.x);
+    # Non-player status is tracked in state["non_player_factions"].
     non_players = state.get("non_player_factions", set())
 
     # Among tied factions, non-players win first

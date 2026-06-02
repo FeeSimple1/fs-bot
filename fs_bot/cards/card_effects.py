@@ -4658,8 +4658,7 @@ def execute_event(state, card_id, shaded=False):
         shaded: True for shaded Event, False for unshaded
 
     Raises:
-        NotImplementedError: always (stubs not yet implemented)
-        KeyError: if card_id not found
+        KeyError: if card_id has no handler.
     """
     from fs_bot.rules_consts import ARIOVISTUS_SCENARIOS
 

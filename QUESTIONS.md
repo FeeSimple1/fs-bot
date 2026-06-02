@@ -243,21 +243,30 @@ free Command faithfully does not occur.
 
 ---
 
-## [NOTE] Human execution path — plan-collection UI is the remaining piece
+## [RESOLVED] Human execution path — execution layer + CLI plan-collection menu
 
-**Context:** `execute_decision` now applies a plan from either `bot_action`
-(bot) or `player_action` (human/UI), so a mixed human/bot game resolves human
-turns through the same Command/SA/Event machinery (human Events use the player's
-own `event_params` rather than NP auto-derivation). This is the execution layer.
+**Context:** `execute_decision` applies a plan from either `bot_action` (bot) or
+`player_action` (human/UI); a mixed human/bot game resolves human turns through
+the same Command/SA/Event machinery (human Events use the player's own
+`event_params` rather than NP auto-derivation).
 
-**Remaining:** The CLI human menu (`fs_bot/cli/menus.py::prompt_action`) returns
-only the chosen engine action *type*; it does not yet collect the full plan
-(Regions, SA, targets, Event params). Until an interactive plan-collection menu
-is added, a human non-Pass turn driven by the bundled CLI carries no
-`player_action` and is reported (not crashed) as "decision carries no executable
-plan." A front-end that supplies a `player_action` plan executes fully today.
+**CLI menu:** `fs_bot/cli/human_plan.py::collect_player_action` collects a full
+human plan (Command + Regions + targets, optional Special Activity, or Event
+side), presenting only legal choices; `menus.prompt_action` attaches it as
+`player_action`. All six Commands and Event side selection are playable end to
+end. If scripted input ends mid-plan, prompt_action falls back to the action
+type (graceful — execute_decision then reports "no executable plan").
 
-**Files:** `fs_bot/engine/execute.py` — `execute_decision`, `_execute_event`.
+**Documented scope limits (faithful, not bugs):** the Event menu collects the
+side but not per-card Event params — cards that need a player choice of
+parameters rely on `details['event_params']` being supplied by a richer
+front-end (self-resolving cards work as-is). Plan-based Special Activities
+(Intimidate/Suborn/Rampage/Entreat) are taken as `sa` + `sa_regions`; their
+detailed target plans use the executor's recompute fallback rather than a
+per-target human menu. Both are natural extension points, not correctness gaps.
+
+**Files:** `fs_bot/engine/execute.py` (`execute_decision`, `_execute_event`),
+`fs_bot/cli/human_plan.py`, `fs_bot/cli/menus.py`.
 
 ---
 

@@ -958,3 +958,70 @@ def count_mobile_pieces(state, region, faction):
     total += count_pieces(state, region, faction, AUXILIA)
     total += count_pieces(state, region, faction, WARBAND)
     return total
+
+
+class _AllRemovalsRng:
+    """A deterministic RNG stand-in whose rolls always force a removal — used
+    only for NP Battle PREDICTION (never the real game). The bot flowcharts
+    evaluate Battle outcomes "presuming all Defender Loss rolls result in
+    removals (best for the attacker)"; rolling the die minimum (1 ≤ the 1-3
+    removal threshold) realizes that on a throwaway state copy."""
+
+    def randint(self, a, b):
+        return a
+
+    # Some code paths use random_select / choice on the rng; provide them.
+    def choice(self, seq):
+        return seq[0]
+
+    def random(self):
+        return 0.0
+
+    def shuffle(self, seq):
+        return None
+
+
+def predict_battle(state, region, attacking_faction, defending_faction):
+    """Deterministically predict a Battle's Losses for NP decision-making.
+
+    Resolves the Battle on a DEEP COPY of ``state`` with every hard-piece save
+    roll forced to a removal and no Defender Retreat — the flowcharts' "presuming
+    all Defender Loss rolls result in removals (best for the attacker)" basis.
+
+    Returns a dict:
+      - ``inflicted``: Losses the attacker inflicts on the defender
+      - ``taken``: Losses the attacker takes in the Counterattack
+      - ``attacker_leader_lost``: True if the attacker's Leader would be removed
+    or None if the Battle cannot be evaluated (e.g. no legal Battle).
+    """
+    import copy
+    from fs_bot.battle.resolve import resolve_battle
+    sim = copy.deepcopy(state)
+    sim["rng"] = _AllRemovalsRng()
+    leader_before = get_leader_in_region(sim, region, attacking_faction)
+    try:
+        res = resolve_battle(sim, region, attacking_faction, defending_faction,
+                             retreat_declaration=False)
+    except Exception:
+        return None
+    inflicted = (res.get("attack") or {}).get("losses_taken", 0)
+    taken = (res.get("counterattack") or {}).get("losses_taken", 0)
+    leader_after = get_leader_in_region(sim, region, attacking_faction)
+    return {
+        "inflicted": inflicted,
+        "taken": taken,
+        "attacker_leader_lost": (leader_before is not None
+                                 and leader_after is None),
+    }
+
+
+def roman_battle_is_favorable(state, region, defending_faction):
+    """R_BATTLE condition (§8.8.1): "Roman Losses will be < 1/2 enemy's AND no
+    Loss on Caesar." Evaluated via predict_battle. Returns bool."""
+    pred = predict_battle(state, region, ROMANS, defending_faction)
+    if pred is None:
+        return False
+    inflicted, taken = pred["inflicted"], pred["taken"]
+    # Roman Losses (taken) strictly less than half the enemy's (inflicted).
+    favorable = (taken * 2 < inflicted)
+    return favorable and not pred["attacker_leader_lost"]

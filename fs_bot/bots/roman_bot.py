@@ -566,19 +566,24 @@ def node_r_battle(state):
     if not threat_regions:
         return node_r_march(state)
 
-    # Check if Caesar is in a threat region but won't Battle — §8.8.1
-    caesar_region = _caesar_region(state)
-    if caesar_region and caesar_region in threat_regions:
-        # Simplified: if Caesar can't guarantee favorable Battle, March
-        # Full battle simulation will be implemented later
-        pass
-
-    # Rank targets in each region
+    # §8.8.1 R_BATTLE: "Battle where Roman Losses will be < 1/2 enemy's AND no
+    # Loss on Caesar." For each threat Region, keep only the enemies that meet
+    # that condition (highest priority first), evaluated by predict_battle.
+    from fs_bot.bots.bot_common import roman_battle_is_favorable
     battle_plan = []
     for region in threat_regions:
         targets = _rank_battle_targets(state, region, scenario)
-        if targets:
-            battle_plan.append({"region": region, "targets": targets})
+        fav = [t for t in targets
+               if roman_battle_is_favorable(state, region, t)]
+        if fav:
+            battle_plan.append({"region": region, "targets": fav})
+
+    # "If Caesar meets condition at left but will not Battle, March instead":
+    # Caesar is in a threat Region but no favorable Battle there -> March.
+    caesar_region = _caesar_region(state)
+    if (caesar_region and caesar_region in threat_regions
+            and not any(bp["region"] == caesar_region for bp in battle_plan)):
+        return node_r_march(state)
 
     if not battle_plan:
         return node_r_march(state)

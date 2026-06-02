@@ -128,17 +128,31 @@ def execute_decision(state, faction, decision):
         decision: The dict returned by the engine decision_func. For bot
             turns this contains ``bot_action`` (the full action dict).
 
+    A decision carries its executable plan under ``bot_action`` (produced by a
+    bot flowchart) or ``player_action`` (produced by a human player / UI). Both
+    use the same action shape ({command, regions, sa, sa_regions, details}) and
+    execute through the same machinery, so a mixed human/bot game resolves human
+    turns identically to bot turns. The only difference: a human Event uses the
+    params the player supplied (``details['event_params']``) rather than the NP
+    auto-derivation (§8.2.3), since a human chooses for themselves.
+
     Returns:
         Result dict: always has ``executed`` (bool) and ``command`` (str);
         plus ``reason`` when not executed, or command-specific details when
         executed.
     """
     bot_action = decision.get("bot_action")
+    is_human = False
     if not bot_action:
-        # Human decisions (or malformed) carry no bot_action plan; the
-        # human execution path is a separate workstream.
+        bot_action = decision.get("player_action")
+        is_human = bot_action is not None
+    if not bot_action:
+        # No executable plan. A human menu that selected only an action TYPE
+        # (Command/Event without regions/SA/params) cannot be auto-executed
+        # until the plan is collected; report rather than crash.
         return {"executed": False, "command": None,
-                "reason": "no bot_action plan in decision"}
+                "reason": "decision carries no executable plan "
+                          "(no bot_action or player_action)"}
 
     command = bot_action.get("command")
 
@@ -163,7 +177,11 @@ def execute_decision(state, faction, decision):
         sa_result = None
         if before:
             sa_result = _execute_sa(state, faction, bot_action)
-        result = handler(state, faction, bot_action)
+        if command == _CMD_EVENT:
+            result = _execute_event(state, faction, bot_action,
+                                    human=is_human)
+        else:
+            result = handler(state, faction, bot_action)
         if not before:
             sa_result = _execute_sa(state, faction, bot_action)
         if sa_result is not None:
@@ -2844,23 +2862,32 @@ def _resolve_a58_battle_seize(state, faction):
     return out
 
 
-def _execute_event(state, faction, bot_action):
+def _execute_event(state, faction, bot_action, *, human=False):
     """Execute an Event via the card_effects dispatcher.
 
-    The bot's Event decision carries the card id and the Dual-Use text
-    preference (§8.2.2 / A8.2.2). We map that preference to the dispatcher's
-    ``shaded`` flag. Unimplemented card stubs or unknown ids are reported,
-    not raised, so a full game keeps running.
+    The decision carries the card id and the Dual-Use text preference
+    (§8.2.2 / A8.2.2). We map that preference to the dispatcher's ``shaded``
+    flag. Unimplemented card stubs or unknown ids are reported, not raised, so
+    a full game keeps running.
+
+    NP (bot) Events auto-derive their parameter choices per §8.2.3/§8.3.1. A
+    human Event (``human=True``) instead uses the params the player supplied in
+    ``details['event_params']`` — a human chooses for themselves, so the NP
+    auto-derivation is skipped.
     """
     details = bot_action.get("details") or {}
     card_id = details.get("card_id", state.get("current_card"))
     shaded = details.get("text_preference") == EVENT_SHADED
 
-    # Populate any derivable event_params per the NP rules (§8.2.3/§8.3.1)
-    # before resolving; restore afterwards. Cards whose choices aren't
-    # derivable here still raise ValueError and are reported, not crashed.
+    # Populate event_params before resolving; restore afterwards. For a bot,
+    # derive the NP choice (§8.2.3/§8.3.1). For a human, take the player's own
+    # params from the plan (no NP derivation). Cards whose choices aren't
+    # available still raise ValueError and are reported, not crashed.
     prev_params = state.get("event_params")
-    derived = _derive_event_params(state, faction, card_id, shaded)
+    if human:
+        derived = details.get("event_params")
+    else:
+        derived = _derive_event_params(state, faction, card_id, shaded)
     # Always expose a dict (never None) so card handlers that read
     # state.get("event_params").get(...) don't crash on missing params.
     state["event_params"] = {**(prev_params or {}), **(derived or {})}

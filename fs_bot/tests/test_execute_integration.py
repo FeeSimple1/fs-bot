@@ -1152,8 +1152,8 @@ class TestEventPlayAndMarkers:
         from fs_bot.rules_consts import ALL_SCENARIOS as _ALL
         ev = {"n": 0}
         orig = _ex._execute_event
-        def _tally(s, f, ba, _o=orig, _e=ev):
-            r = _o(s, f, ba)
+        def _tally(s, f, ba, _o=orig, _e=ev, **kwargs):
+            r = _o(s, f, ba, **kwargs)
             if r.get("executed"):
                 _e["n"] += 1
             return r
@@ -3727,3 +3727,69 @@ class TestRegionRestrictedFreeCommand:
         # Britannia is remote; pick a Region where Belgae have no presence.
         res = _region_restricted_free_command(st, BELGAE, {"Provincia"})
         assert res is None or isinstance(res, dict)
+
+
+class TestHumanExecutionPath:
+    """execute_decision applies a plan from either ``bot_action`` (bot) or
+    ``player_action`` (human), so a mixed human/bot game resolves human turns
+    through the same machinery — Item 4."""
+
+    def _player_seize(self, region):
+        return {"action": "command", "player_action": {
+            "command": "Seize", "regions": [region], "sa": "No SA",
+            "sa_regions": [], "details": {"disperse_regions": [region]}}}
+
+    def test_human_seize_plan_executes(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        region = _first_dispersible_region(st)
+        assert region is not None
+        before = count_dispersed_on_map(st)
+        res = execute_decision(st, ROMANS, self._player_seize(region))
+        assert res["executed"] is True
+        assert res["command"] == "Seize"
+        assert count_dispersed_on_map(st) == before + res["tribes_dispersed_total"]
+        assert validate_state(st) == []
+
+    def test_decision_without_plan_is_reported_not_crashed(self):
+        # A human menu that selected only an action TYPE (no plan) is reported.
+        res = execute_decision(
+            setup_scenario(SCENARIO_GREAT_REVOLT, seed=3), ROMANS,
+            {"action": "command"})
+        assert res["executed"] is False
+        assert "no executable plan" in res["reason"]
+
+    def test_human_event_uses_player_params_not_np_derivation(self):
+        from fs_bot.rules_consts import SENATE_UP, SENATE_DOWN, INTRIGUE
+        from fs_bot.cards.card_effects import _apply_senate_shift
+
+        def _fresh():
+            s = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+            s["senate"]["position"] = INTRIGUE
+            s["senate"]["firm"] = False
+            return s
+
+        # Reference: which box each direction lands on from Intrigue.
+        up_ref = _fresh(); _apply_senate_shift(up_ref, SENATE_UP)
+        down_ref = _fresh(); _apply_senate_shift(down_ref, SENATE_DOWN)
+        up_pos = up_ref["senate"]["position"]
+        down_pos = down_ref["senate"]["position"]
+        assert up_pos != down_pos
+
+        # Bot (NP) Aedui playing Cicero favours Uproar -> SENATE_UP (§8.2.3).
+        bot_st = _fresh()
+        execute_decision(bot_st, AEDUI, {"action": "event", "bot_action": {
+            "command": "Event", "regions": [], "sa": "No SA", "sa_regions": [],
+            "details": {"card_id": 1, "text_preference": EVENT_UNSHADED}}})
+        assert bot_st["senate"]["position"] == up_pos
+
+        # Human Aedui supplies the opposite direction; their choice is applied
+        # (NP auto-derivation is skipped for a human Event).
+        human_st = _fresh()
+        res = execute_decision(human_st, AEDUI, {"action": "event",
+            "player_action": {
+                "command": "Event", "regions": [], "sa": "No SA",
+                "sa_regions": [], "details": {
+                    "card_id": 1, "text_preference": EVENT_UNSHADED,
+                    "event_params": {"senate_direction": SENATE_DOWN}}}})
+        assert res["executed"] is True
+        assert human_st["senate"]["position"] == down_pos

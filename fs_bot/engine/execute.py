@@ -103,6 +103,22 @@ _BEFORE_BATTLE_SAS = {_SA_INTIMIDATE, _SA_DEVASTATE, _SA_ENTREAT}
 _UNWIRED_COMMANDS = set()
 
 
+def _sa_runs_before_command(command, sa):
+    """Whether a Command's accompanying Special Activity resolves BEFORE the
+    Command rather than after.
+
+    - Intimidate / Devastate / Entreat before a Battle remove or replace enemy
+      pieces and so change that Battle's outcome (§8.7.1 / A8.7.1).
+    - Roman Build resolves before a Recruit (§8.8.4: "Build before Recruit");
+      after a March or Seize it resolves after (the default).
+    """
+    if command == _CMD_BATTLE and sa in _BEFORE_BATTLE_SAS:
+        return True
+    if command == _CMD_RECRUIT and sa == _SA_BUILD:
+        return True
+    return False
+
+
 def execute_decision(state, faction, decision):
     """Apply a recorded SoP decision to the board, if supported.
 
@@ -143,7 +159,7 @@ def execute_decision(state, faction, decision):
         # and so change that Battle's outcome (§8.7.1 / A8.7.1 / §4.x). Run
         # those first; all other standalone SAs run after the Command. Battle-
         # modifying SAs (Ambush/Besiege) are applied inside _execute_battle.
-        before = (command == _CMD_BATTLE and sa in _BEFORE_BATTLE_SAS)
+        before = _sa_runs_before_command(command, sa)
         sa_result = None
         if before:
             sa_result = _execute_sa(state, faction, bot_action)
@@ -177,7 +193,7 @@ def _execute_bot_command(state, faction, bot_action):
     if h is None:
         return None
     sa = bot_action.get("sa")
-    before = (cmd == _CMD_BATTLE and sa in _BEFORE_BATTLE_SAS)
+    before = _sa_runs_before_command(cmd, sa)
     sa_result = None
     if before:
         sa_result = _execute_sa(state, faction, bot_action)
@@ -2805,8 +2821,8 @@ def _execute_seize(state, faction, bot_action):
     the rules allow (`get_dispersible_tribes`, which already enforces Roman
     Control and the 4-marker cap); remaining regions still Forage.
 
-    The Build Special Activity that accompanies the bot's Seize is part of
-    the SA wiring workstream and is not executed here.
+    The accompanying Build Special Activity is executed by the orchestration
+    layer (_execute_sa, reported under ``sa_execution``), not here.
     """
     details = bot_action.get("details") or {}
     regions = [r for r in (bot_action.get("regions") or []) if isinstance(r, str)]
@@ -2843,7 +2859,6 @@ def _execute_seize(state, faction, bot_action):
         "regions_resolved": [r["region"] for r in per_region],
         "tribes_dispersed_total": dispersed_total,
         "forage_resources_total": forage_total,
-        "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }
 
@@ -2858,8 +2873,8 @@ def _execute_raid(state, faction, bot_action):
     cap at the rules' 2 flips per region (§3.3.3), translate each flip to a
     raid action, and call ``raid_in_region`` once per region.
 
-    Any accompanying Special Activity (Devastate/Entreat/Intimidate) is part
-    of the SA wiring workstream and is not executed here.
+    Any accompanying Special Activity (Devastate/Entreat/Intimidate) is
+    executed by the orchestration layer (_execute_sa), not here.
     """
     details = bot_action.get("details") or {}
     raid_plan = details.get("raid_plan", []) or []
@@ -2900,7 +2915,6 @@ def _execute_raid(state, faction, bot_action):
         "command": _CMD_RAID,
         "regions_resolved": [r["region"] for r in per_region],
         "resources_gained_total": gained_total,
-        "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }
 
@@ -2949,7 +2963,6 @@ def _execute_rally(state, faction, bot_action):
         "executed": len(placed) > 0,
         "command": _CMD_RALLY,
         "placements": placed,
-        "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }
 
@@ -3056,7 +3069,8 @@ def _execute_recruit(state, faction, bot_action):
     Auxilia able, Supply-Line Regions first). Each entry calls
     ``recruit_in_region`` (which enforces eligibility, caps, and cost).
     Per-region errors are captured so the plan resolves as far as Resources
-    allow. The accompanying Build SA is part of the SA workstream.
+    allow. The accompanying Build SA is executed by the orchestration layer
+    (_execute_sa) before this Recruit (§8.8.4).
     """
     details = bot_action.get("details") or {}
     plan = details.get("recruit_plan", []) or []
@@ -3081,7 +3095,6 @@ def _execute_recruit(state, faction, bot_action):
         "executed": len(placed) > 0,
         "command": _CMD_RECRUIT,
         "placements": placed,
-        "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }
 
@@ -3190,7 +3203,6 @@ def _execute_march(state, faction, bot_action):
         "command": _CMD_MARCH,
         "marches": marched,
         "deferred_origins": deferred_origins,
-        "sa_not_wired": bot_action.get("sa"),
         "errors": errors,
     }
 

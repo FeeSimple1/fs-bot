@@ -62,12 +62,19 @@ class TestSeizeExecution:
         # State stays internally consistent.
         assert validate_state(st) == []
 
-    def test_seize_reports_build_sa_as_unwired(self):
+    def test_seize_runs_accompanying_build_sa(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
         region = _first_dispersible_region(st)
         res = execute_decision(st, ROMANS, _seize_decision(region))
-        # The accompanying Build SA is not part of this slice.
-        assert res["sa_not_wired"] == "Build"
+        # The stale "sa_not_wired" field is gone; the accompanying Build SA is
+        # executed by the orchestration layer and reported under sa_execution.
+        assert "sa_not_wired" not in res
+        sae = res.get("sa_execution")
+        assert sae is not None and sae["sa"] == "Build"
+        # Build either executes or faithfully no-ops (e.g. Resource floor /
+        # no eligible Region) — never crashes, never reported as unwired.
+        assert isinstance(sae["executed"], bool)
+        assert "not yet wired" not in (sae.get("reason") or "")
 
 
 class TestEventExecution:
@@ -3627,3 +3634,32 @@ class TestShadedDerivers:
         placed = (count_pieces(s, "Mandubii", AEDUI, CITADEL)
                   + count_pieces(s, "Carnutes", AEDUI, CITADEL))
         assert placed == 0
+
+
+class TestSATimingAndReporting:
+    """SA orchestration: §8.8.4 Build-before-Recruit timing and honest
+    reporting (no stale 'sa_not_wired' field)."""
+
+    def test_build_runs_before_recruit(self):
+        from fs_bot.engine.execute import _sa_runs_before_command
+        # Build before Recruit (§8.8.4); Build after March/Seize (default).
+        assert _sa_runs_before_command("Recruit", "Build") is True
+        assert _sa_runs_before_command("March", "Build") is False
+        assert _sa_runs_before_command("Seize", "Build") is False
+        # Before-Battle SAs unchanged; non-battle SAs run after.
+        assert _sa_runs_before_command("Battle", "Intimidate") is True
+        assert _sa_runs_before_command("Battle", "Devastate") is True
+        assert _sa_runs_before_command("Raid", "Devastate") is False
+        assert _sa_runs_before_command("Recruit", "No SA") is False
+
+    def test_recruit_build_decision_reports_before_timing(self):
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        region = get_playable_regions(st["scenario"], st.get("capabilities"))[0]
+        decision = {"action": "command", "bot_action": {
+            "command": "Recruit", "regions": [], "sa": "Build",
+            "sa_regions": [], "details": {"recruit_plan": []}}}
+        res = execute_decision(st, ROMANS, decision)
+        assert "sa_not_wired" not in res
+        if res.get("sa_execution") is not None:
+            assert res["sa_timing"] == "before"

@@ -173,10 +173,27 @@ def _has_roman_threat(state, region, scenario):
         if is_controlled_by(state, region, enemy):
             return True
 
-    # TODO: Check if immediate enemy Battle/Rampage would force Loss on
-    # Legion or Caesar. This requires full battle simulation which will be
-    # implemented when battle logic is complete. For now, the above checks
-    # cover the primary conditions from the flowchart.
+    # OR: an immediate enemy Battle or Rampage now would force a Loss on a
+    # Legion or Caesar (§8.8.1). Romans absorb mobile Losses with Auxilia
+    # before any Legion/Caesar (no-Retreat order, §3.2.4), and static
+    # Allies/Forts absorb LAST — so a Legion/Caesar is reached once the Loss
+    # count exceeds the Roman Auxilia present.
+    if has_legion or has_caesar:
+        from fs_bot.battle.losses import calculate_losses
+        roman_aux = count_pieces(state, region, ROMANS, AUXILIA)
+        for enemy in FACTIONS:
+            if enemy == ROMANS:
+                continue
+            # Battle: Losses the enemy would inflict here.
+            if calculate_losses(state, region, attacking_faction=enemy,
+                                defending_faction=ROMANS) > roman_aux:
+                return True
+            # Rampage (Belgic SA, §4.5.2): up to 2 forced removals/retreats.
+            if enemy == BELGAE:
+                belgic_hidden = count_pieces_by_state(
+                    state, region, BELGAE, WARBAND, HIDDEN)
+                if belgic_hidden > 0 and roman_aux < min(2, belgic_hidden):
+                    return True
 
     return False
 
@@ -291,13 +308,11 @@ def _rank_march_destinations(state, scenario):
       (3) on 3-4: player Factions' Allies/Citadels;
       (4) on 5-6 or fallthrough: enemies with most Allies+Citadels.
 
-    Sub-priorities within each tier:
-      (b) fewest enemy mobile pieces (approximation for fewest Losses
-          to enemy Battle — full battle simulation not yet implemented),
+    Sub-priorities within each tier (§8.8.1):
+      (b) fewest Losses to enemy Battle (the Losses the enemy would inflict on
+          the Romans there, via the Battle loss formula),
       (c) most such Allies/Citadels in the region,
-      (d) ending in Supply Line (approximated: region has Roman pieces
-          or is adjacent to Roman-controlled region — full supply-line
-          graph check deferred),
+      (d) ending in a Supply Line (real §3.2.1 check, has_supply_line),
       (e) least Harassment (fewest enemy Hidden Warbands).
 
     Returns:
@@ -327,9 +342,12 @@ def _rank_march_destinations(state, scenario):
             except Exception:
                 margin = -999
 
-            # (b) Approximate fewest Losses to enemy Battle as fewest
-            # enemy mobile pieces in the region
-            enemy_mobile = count_mobile_pieces(state, region, enemy)
+            # (b) Fewest Losses to enemy Battle: the Losses the enemy would
+            # inflict on the Romans there (Battle loss formula, §3.2.4).
+            from fs_bot.battle.losses import calculate_losses
+            enemy_battle_losses = calculate_losses(
+                state, region, attacking_faction=enemy,
+                defending_faction=ROMANS)
             # (c) Most Allies/Citadels of this enemy in the region
             local_ac = ally_count + citadel_count
             # (d) Ending in Supply Line — best-effort approximation
@@ -350,7 +368,7 @@ def _rank_march_destinations(state, scenario):
                 "is_player": enemy not in non_players,
                 "local_ac": local_ac,
                 "total_ac": count_faction_allies_and_citadels(state, enemy),
-                "enemy_mobile": enemy_mobile,
+                "enemy_battle_losses": enemy_battle_losses,
                 "in_supply": in_supply,
                 "hidden_wb": enemy_hidden_wb,
             })
@@ -361,10 +379,10 @@ def _rank_march_destinations(state, scenario):
     def _sub_sort_key(c):
         """Sub-priorities (b)-(e) used within each tier."""
         return (
-            c["enemy_mobile"],    # (b) fewest enemy mobile pieces first
-            -c["local_ac"],       # (c) most local Allies/Citadels first
-            -c["in_supply"],      # (d) in Supply Line first
-            c["hidden_wb"],       # (e) fewest Hidden Warbands first
+            c["enemy_battle_losses"],  # (b) fewest Losses to enemy Battle first
+            -c["local_ac"],            # (c) most local Allies/Citadels first
+            -c["in_supply"],           # (d) in Supply Line first
+            c["hidden_wb"],            # (e) fewest Hidden Warbands first
         )
 
     # --- Tier 1: enemies at 0+ victory margin ---
@@ -601,35 +619,13 @@ def node_r_battle(state):
 
 
 def _estimate_roman_losses_inflicted(state, region, enemy, scenario):
-    """Estimate Losses the Romans would inflict in Battle in a region.
-
-    Approximate: count Roman Legions (×2 if Caesar present) plus Auxilia,
-    halved (rounded down) if enemy has a Fort or Citadel in the region.
-    This is a simplification — full battle simulation not yet implemented.
-
-    Args:
-        state: Game state dict.
-        region: Battle region.
-        enemy: Enemy faction being attacked.
-        scenario: Scenario constant.
-
-    Returns:
-        Estimated integer Losses.
-    """
-    legions = count_pieces(state, region, ROMANS, LEGION)
-    auxilia = count_pieces(state, region, ROMANS, AUXILIA)
-    has_caesar = get_leader_in_region(state, region, ROMANS) is not None
-
-    # Caesar doubles Legion effectiveness in Battle
-    combat_value = (legions * 2 if has_caesar else legions) + auxilia
-
-    # Enemy Fort/Citadel halves Losses
-    enemy_fort = count_pieces(state, region, enemy, FORT)
-    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    if enemy_fort > 0 or enemy_citadel > 0:
-        combat_value //= 2
-
-    return combat_value
+    """Losses the Romans would inflict in a Battle in ``region`` against
+    ``enemy`` — the value the §8.8.1 Besiege check ("a Citadel that might
+    suffer < 3 Losses") uses. Computed exactly via the deterministic Battle
+    predictor (Battle loss formula, enemy Fort/Citadel halving included)."""
+    from fs_bot.bots.bot_common import predict_battle
+    pred = predict_battle(state, region, ROMANS, enemy)
+    return pred["inflicted"] if pred else 0
 
 
 def _determine_battle_sa(state, battle_plan, scenario):

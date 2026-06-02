@@ -4411,17 +4411,34 @@ def _derive_card_A18(state, faction, shaded):
 def _derive_card_A45(state, faction, shaded):
     """Card A45 (Savage Dictates), unshaded: place up to 3 of the acting
     non-German Faction's Allies at Subdued Celtica Tribes. Shaded deferred."""
-    from fs_bot.rules_consts import GERMANS, CELTICA_REGIONS, ALLY
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.rules_consts import (GERMANS, CELTICA_REGIONS, ALLY,
+                                     MARKER_INTIMIDATED)
+    from fs_bot.map.map_data import get_tribes_in_region, get_adjacent
     from fs_bot.board.pieces import get_available
     if shaded or faction == GERMANS:
         return None
     avail = get_available(state, faction, ALLY)
+    if avail <= 0:
+        return None
+    scen = state["scenario"]
+    markers = state.get("markers", {})
+    intimidated = {r for r, m in markers.items()
+                   if isinstance(m, dict) and MARKER_INTIMIDATED in m}
+    if not intimidated:
+        return None  # "within 1 Region of Intimidated markers" — none exist
+
+    def _within1(region):
+        return region in intimidated or any(
+            a in intimidated for a in get_adjacent(region, scen))
+
     placements = []
     for region in CELTICA_REGIONS:
-        for tribe in get_tribes_in_region(region, state["scenario"]):
+        if not _within1(region):
+            continue
+        for tribe in get_tribes_in_region(region, scen):
             ti = state.get("tribes", {}).get(tribe)
             if (ti and ti.get("allied_faction") is None
+                    and ti.get("status") is None
                     and len(placements) < min(3, avail)):
                 placements.append({"tribe": tribe, "faction": faction})
     return {"placements": placements} if placements else None

@@ -3891,9 +3891,10 @@ def execute_card_A45(state, shaded=False):
             faction = p["faction"]
             region = TRIBE_TO_REGION.get(tribe)
             t_info = state.get("tribes", {}).get(tribe)
+            from fs_bot.rules_consts import CELTICA_REGIONS as _CELTICA
             if (t_info and t_info.get("allied_faction") is None
                     and t_info.get("status") is None
-                    and faction != GERMANS and region):
+                    and faction != GERMANS and region in _CELTICA):
                 if get_available(state, faction, ALLY) > 0:
                     place_piece(state, region, faction, ALLY)
                     t_info["allied_faction"] = faction

@@ -1595,3 +1595,51 @@ class TestCard30ShadedLegionWarbands:
         res = resolve_losses(st, region, ARVERNI, 5)
         assert res["losses_taken"] == 0        # the 2 Legions absorbed all 5
         assert res["losses_absorbed"] == 5
+
+
+class TestPredictBattle:
+    """predict_battle: the §8.8.1 'all Defender Loss rolls remove' presumption is
+    scoped to the Defender; the attacker's Counterattack Losses are a COUNT and
+    its Leader is exposed only when that count exceeds its non-Leader absorbers."""
+
+    def _mk(self, rom_leg, rom_aux, enemy_wb, caesar):
+        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ROMANS, ARVERNI,
+                                         LEGION, AUXILIA, WARBAND, LEADER, CAESAR)
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=3)
+        region = "Bituriges"
+        for f in (ROMANS, ARVERNI):
+            for pt in (LEGION, AUXILIA, WARBAND):
+                c = count_pieces(st, region, f, pt)
+                if c:
+                    remove_piece(st, region, f, pt, count=c)
+        if count_pieces(st, region, ROMANS, LEADER):
+            remove_piece(st, region, ROMANS, LEADER)
+        if rom_leg:
+            place_piece(st, region, ROMANS, LEGION, count=rom_leg,
+                        from_legions_track=True)
+        if rom_aux:
+            place_piece(st, region, ROMANS, AUXILIA, count=rom_aux)
+        if caesar:
+            place_piece(st, region, ROMANS, LEADER, leader_name=CAESAR)
+        place_piece(st, region, ARVERNI, WARBAND, count=enemy_wb)
+        return st, region
+
+    def test_counterattack_is_a_count_not_capped_at_pieces(self):
+        from fs_bot.bots.bot_common import predict_battle
+        from fs_bot.rules_consts import ROMANS, ARVERNI
+        # Caesar + 1 Legion vs 20 Warbands: inflict 3 -> 17 survive -> 8 counter
+        # Losses (a true count, not capped at the 2 Roman pieces).
+        st, region = self._mk(1, 0, 20, caesar=True)
+        pred = predict_battle(st, region, ROMANS, ARVERNI)
+        assert pred["taken"] == 8
+        assert pred["attacker_leader_lost"] is True  # 8 > 1 absorber
+
+    def test_caesar_safe_when_absorbers_cover_counterattack(self):
+        from fs_bot.bots.bot_common import predict_battle, roman_battle_is_favorable
+        from fs_bot.rules_consts import ROMANS, ARVERNI
+        # Caesar + 6 Legions + 6 Auxilia vs 6 Warbands: enemy wiped, 0 counter
+        # Losses -> Caesar not exposed -> favorable.
+        st, region = self._mk(6, 6, 6, caesar=True)
+        pred = predict_battle(st, region, ROMANS, ARVERNI)
+        assert pred["attacker_leader_lost"] is False
+        assert roman_battle_is_favorable(st, region, ARVERNI) is True

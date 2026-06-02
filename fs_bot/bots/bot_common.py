@@ -989,34 +989,57 @@ class _AllRemovalsRng:
 def predict_battle(state, region, attacking_faction, defending_faction):
     """Deterministically predict a Battle's Losses for NP decision-making.
 
-    Resolves the Battle on a DEEP COPY of ``state`` with every hard-piece save
-    roll forced to a removal and no Defender Retreat — the flowcharts' "presuming
-    all Defender Loss rolls result in removals (best for the attacker)" basis.
-
-    Returns a dict:
-      - ``inflicted``: Losses the attacker inflicts on the defender
-      - ``taken``: Losses the attacker takes in the Counterattack
-      - ``attacker_leader_lost``: True if the attacker's Leader would be removed
-    or None if the Battle cannot be evaluated (e.g. no legal Battle).
+    Per the flowcharts' "presuming all Defender Loss rolls result in removals
+    (the best possible case for the attacker)" — the presumption is scoped to
+    the DEFENDER. So, on a deep copy with no Defender Retreat:
+      - ``inflicted`` = Losses the attacker inflicts (Attack loss formula);
+      - the Defender absorbs those Losses with all rolls forced to removals
+        (fewest survivors -> least Counterattack);
+      - ``taken`` = the Counterattack Loss COUNT from the survivors (a count of
+        "die rolls or removals" on the attacker — NOT forced removals of the
+        attacker's own pieces);
+      - ``attacker_leader_lost`` = whether a Loss would be directed at the
+        attacker's Leader: the Leader absorbs LAST among mobile pieces
+        (Warbands/Auxilia/Legions, no-Retreat order, §3.2.4), so it is reached
+        only when ``taken`` exceeds those non-Leader mobile pieces.
+    Returns that dict, or None if the Battle cannot be evaluated.
     """
     import copy
-    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.battle.resolve import _calculate_attack_losses
+    from fs_bot.battle.losses import resolve_losses, calculate_losses
+    from fs_bot.rules_consts import CITADEL, FORT, WARBAND, AUXILIA, LEGION
     sim = copy.deepcopy(state)
     sim["rng"] = _AllRemovalsRng()
-    leader_before = get_leader_in_region(sim, region, attacking_faction)
     try:
-        res = resolve_battle(sim, region, attacking_faction, defending_faction,
-                             retreat_declaration=False)
+        d_pieces = sim["spaces"][region].get("pieces", {}).get(
+            defending_faction, {})
+        had_citadel = d_pieces.get(CITADEL, 0) > 0
+        had_fort = d_pieces.get(FORT, 0) > 0
+        # Attacker inflicts (no Defender Retreat — best for the attacker).
+        inflicted = _calculate_attack_losses(
+            sim, region, attacking_faction, defending_faction,
+            is_retreat=False, had_citadel_at_start=had_citadel,
+            had_fort_at_start=had_fort)
+        # Defender absorbs them, all rolls forced to removals (fewest survivors).
+        if inflicted > 0:
+            resolve_losses(sim, region, defending_faction, inflicted)
+        # Counterattack Loss COUNT from the surviving Defender.
+        taken = calculate_losses(
+            sim, region, attacking_faction=defending_faction,
+            defending_faction=attacking_faction, is_counterattack=True)
+        # The attacker's Leader is reached only after its non-Leader mobile
+        # pieces absorb.
+        absorbers = (count_pieces(sim, region, attacking_faction, WARBAND)
+                     + count_pieces(sim, region, attacking_faction, AUXILIA)
+                     + count_pieces(sim, region, attacking_faction, LEGION))
+        has_leader = (get_leader_in_region(sim, region, attacking_faction)
+                      is not None)
     except Exception:
         return None
-    inflicted = (res.get("attack") or {}).get("losses_taken", 0)
-    taken = (res.get("counterattack") or {}).get("losses_taken", 0)
-    leader_after = get_leader_in_region(sim, region, attacking_faction)
     return {
         "inflicted": inflicted,
         "taken": taken,
-        "attacker_leader_lost": (leader_before is not None
-                                 and leader_after is None),
+        "attacker_leader_lost": has_leader and taken > absorbers,
     }
 
 

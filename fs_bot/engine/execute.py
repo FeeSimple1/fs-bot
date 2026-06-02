@@ -4816,6 +4816,84 @@ def _derive_card_A58(state, faction, shaded):
 
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
+def _derive_card_A29(state, faction, shaded):
+    """A29 unshaded: a Gaul or Roman places up to 2 own Allies at Subdued Tribes
+    in Regions with (German) Settlements, plus 5 own Warbands (Gallic) / 3
+    Auxilia (Roman) among those Regions (§8.2.3 — benefit self)."""
+    if shaded:
+        return None
+    from fs_bot.rules_consts import (GERMANS, ROMANS, GALLIC_FACTIONS,
+                                     SETTLEMENT, WARBAND, AUXILIA, ALLY)
+    from fs_bot.board.pieces import count_pieces, get_available
+    from fs_bot.map.map_data import get_playable_regions, get_tribes_in_region
+    if faction == GERMANS:
+        return None
+    scen = state["scenario"]
+    settlement_regions = [
+        r for r in get_playable_regions(scen, state.get("capabilities"))
+        if count_pieces(state, r, GERMANS, SETTLEMENT) > 0]
+    if not settlement_regions:
+        return None
+    placements = []
+    avail_ally = get_available(state, faction, ALLY)
+    n_ally = 0
+    for region in settlement_regions:
+        if n_ally >= min(2, avail_ally):
+            break
+        for tribe in get_tribes_in_region(region, scen):
+            ti = state.get("tribes", {}).get(tribe)
+            if (ti and ti.get("allied_faction") is None
+                    and ti.get("status") is None):
+                placements.append({"region": region, "piece_type": ALLY,
+                                   "faction": faction, "tribe": tribe})
+                n_ally += 1
+                break
+    if faction in GALLIC_FACTIONS:
+        n = min(5, get_available(state, faction, WARBAND))
+        if n > 0:
+            placements.append({"region": settlement_regions[0],
+                               "piece_type": WARBAND, "faction": faction,
+                               "count": n})
+    elif faction == ROMANS:
+        n = min(3, get_available(state, faction, AUXILIA))
+        if n > 0:
+            placements.append({"region": settlement_regions[0],
+                               "piece_type": AUXILIA, "faction": faction,
+                               "count": n})
+    return {"placements": placements} if placements else None
+
+
+def _derive_card_A40(state, faction, shaded):
+    """A40 unshaded: place up to (3 Warbands / 2 Auxilia) of the acting Faction
+    in each of up to 3 Regions within 1 of Cisalpina (§8.2.3 — own pieces;
+    Romans place Auxilia, others place Warbands)."""
+    if shaded:
+        return None
+    from fs_bot.rules_consts import ROMANS, WARBAND, AUXILIA, CISALPINA
+    from fs_bot.board.pieces import get_available
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    scen = state["scenario"]
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+    near = [r for r in ([CISALPINA] + list(get_adjacent(CISALPINA, scen)))
+            if r in playable]
+    if not near:
+        return None
+    pt, cap = (AUXILIA, 2) if faction == ROMANS else (WARBAND, 3)
+    avail = get_available(state, faction, pt)
+    placements = []
+    used = 0
+    for region in near:
+        if used >= 3 or avail <= 0:
+            break
+        n = min(cap, avail)
+        if n > 0:
+            placements.append({"region": region, "piece_type": pt,
+                               "faction": faction, "count": n})
+            avail -= n
+            used += 1
+    return {"placements": placements} if placements else None
+
+
 _EVENT_PARAM_DERIVERS = {
     1: _derive_senate_direction,
     2: _derive_card_2,
@@ -4829,6 +4907,8 @@ _EVENT_PARAM_DERIVERS = {
     "A17": _derive_card_A17,
     "A18": _derive_card_A18,
     "A37": _derive_card_A37,
+    "A29": _derive_card_A29,
+    "A40": _derive_card_A40,
     "A45": _derive_card_A45,
     "A64": _derive_card_A64,
     "A66": _derive_card_A66,

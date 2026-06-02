@@ -1323,3 +1323,60 @@ class TestAuditConditionFixes:
         execute_event(st, "A60", shaded=False)
         # 4 Auxilia placed, Ally not placed -> +2 Resources for the 1 unplaced.
         assert st["resources"][ROMANS] == before + 2
+
+    def test_cardA29_deriver_places_capped_pieces_in_settlement_regions(self):
+        from fs_bot.engine.execute import _derive_card_A29
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, AEDUI,
+                                         SETTLEMENT, WARBAND, ALLY)
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        place_piece(st, "Sequani", GERMANS, SETTLEMENT)
+        st["tribes"]["Helvetii"]["allied_faction"] = None
+        st["tribes"]["Helvetii"]["status"] = None
+        refresh_all_control(st)
+        d = _derive_card_A29(st, AEDUI, False)
+        assert d is not None
+        pts = [(p["piece_type"], p.get("count")) for p in d["placements"]]
+        assert any(pt == ALLY for pt, _ in pts)
+        assert any(pt == WARBAND and c == 5 for pt, c in pts)
+        # Execute and confirm the 5-Warband cap holds.
+        st["event_params"] = d
+        st["executing_faction"] = AEDUI
+        before = count_pieces(st, "Sequani", AEDUI, WARBAND)
+        execute_event(st, "A29", shaded=False)
+        assert count_pieces(st, "Sequani", AEDUI, WARBAND) - before == 5
+
+    def test_cardA29_handler_skips_non_settlement_region(self):
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, WARBAND)
+        from fs_bot.board.pieces import count_pieces
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        # No Settlement in Aedui region -> placement rejected.
+        st["executing_faction"] = AEDUI
+        st["event_params"] = {"placements": [
+            {"region": "Aedui", "piece_type": WARBAND, "faction": AEDUI, "count": 5}]}
+        before = count_pieces(st, "Aedui", AEDUI, WARBAND)
+        execute_event(st, "A29", shaded=False)
+        assert count_pieces(st, "Aedui", AEDUI, WARBAND) == before
+
+    def test_cardA40_deriver_and_three_region_cap(self):
+        from fs_bot.engine.execute import _derive_card_A40
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, WARBAND)
+        from fs_bot.board.pieces import count_pieces
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        d = _derive_card_A40(st, AEDUI, False)
+        assert d is not None
+        # At most 3 Regions, each <= 3 Warbands.
+        assert len({p["region"] for p in d["placements"]}) <= 3
+        assert all(p["count"] <= 3 for p in d["placements"])
+        st["event_params"] = d
+        st["executing_faction"] = AEDUI
+        execute_event(st, "A40", shaded=False)
+        # No more than 3 Regions received Aedui Warbands from the event.
+        from fs_bot.map.map_data import get_playable_regions
+        got = [r for r in get_playable_regions(st["scenario"], st.get("capabilities"))
+               if count_pieces(st, r, AEDUI, WARBAND) > 0]
+        assert len(got) >= 1

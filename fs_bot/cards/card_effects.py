@@ -3325,29 +3325,50 @@ def execute_card_A29(state, shaded=False):
     params = state.get("event_params", {})
     scenario = state["scenario"]
     if not shaded:
-        # Placements among Regions with Settlements — deferred to caller
+        # "...up to 2 Allies and either 5 Warbands or 3 Auxilia among any
+        # Regions with Settlements" (A Card Reference A29).
+        from fs_bot.map.map_data import get_playable_regions
         faction = state.get("executing_faction")
         placements = params.get("placements", [])
+        settlement_regions = {
+            r for r in get_playable_regions(scenario, state.get("capabilities"))
+            if count_pieces(state, r, GERMANS, SETTLEMENT) > 0}
+        allies_placed = wb_placed = aux_placed = 0
         for p in placements:
             region = p["region"]
+            if region not in settlement_regions:
+                continue
             piece_type = p["piece_type"]
             cnt = p.get("count", 1)
             pfac = p.get("faction", faction)
             if piece_type == ALLY:
+                if allies_placed >= 2:
+                    continue
                 tribe = p.get("tribe")
                 t_info = state.get("tribes", {}).get(tribe)
                 if (t_info and t_info.get("allied_faction") is None
-                        and t_info.get("status") is None):
-                    if pfac and get_available(state, pfac, ALLY) > 0:
-                        place_piece(state, region, pfac, ALLY)
-                        t_info["allied_faction"] = pfac
-            else:
-                if pfac:
-                    avail = get_available(state, pfac, piece_type)
-                    to_place = min(cnt, avail)
-                    if to_place > 0:
-                        place_piece(state, region, pfac, piece_type,
-                                    count=to_place)
+                        and t_info.get("status") is None
+                        and pfac and get_available(state, pfac, ALLY) > 0):
+                    place_piece(state, region, pfac, ALLY)
+                    t_info["allied_faction"] = pfac
+                    allies_placed += 1
+            elif piece_type == WARBAND:
+                # 5 Warbands OR 3 Auxilia — not both.
+                if aux_placed > 0 or wb_placed >= 5 or not pfac:
+                    continue
+                room = min(cnt, 5 - wb_placed,
+                           get_available(state, pfac, WARBAND))
+                if room > 0:
+                    place_piece(state, region, pfac, WARBAND, count=room)
+                    wb_placed += room
+            elif piece_type == AUXILIA:
+                if wb_placed > 0 or aux_placed >= 3 or not pfac:
+                    continue
+                room = min(cnt, 3 - aux_placed,
+                           get_available(state, pfac, AUXILIA))
+                if room > 0:
+                    place_piece(state, region, pfac, AUXILIA, count=room)
+                    aux_placed += room
     else:
         # Place 4 German Warbands + 1 Settlement adjacent to Germania
         adj_regions = set()
@@ -3767,29 +3788,46 @@ def execute_card_A40(state, shaded=False):
     scenario = state["scenario"]
     adj_cisalpina = list(get_adjacent(CISALPINA, scenario)) + [CISALPINA]
     if not shaded:
+        # "...up to any 3 Warbands, 2 Auxilia, or 1 Ally in each of 3 Regions
+        # within 1 of Cisalpina" (A Card Reference A40): per Region one category
+        # only, capped 3 / 2 / 1; at most 3 Regions.
+        from fs_bot.rules_consts import AUXILIA as _AUX, WARBAND as _WB
+        _CAP = {ALLY: 1, _AUX: 2, _WB: 3}
         placements = params.get("placements", [])
+        region_cat = {}   # region -> the single piece category used there
+        region_count = {}
         for p in placements:
             region = p["region"]
+            if region not in adj_cisalpina:
+                continue
             piece_type = p["piece_type"]
             cnt = p.get("count", 1)
             pfac = p.get("faction", faction)
-            if region not in adj_cisalpina:
+            if region not in region_cat:
+                if len(region_cat) >= 3:
+                    continue  # at most 3 Regions
+                region_cat[region] = piece_type
+                region_count[region] = 0
+            elif region_cat[region] != piece_type:
+                continue  # one category per Region ("3 WB, 2 Aux, or 1 Ally")
+            cap = _CAP.get(piece_type, 0)
+            room = cap - region_count[region]
+            if room <= 0 or not pfac:
                 continue
             if piece_type == ALLY:
                 tribe = p.get("tribe")
                 t_info = state.get("tribes", {}).get(tribe)
                 if (t_info and t_info.get("allied_faction") is None
-                        and t_info.get("status") is None and pfac):
-                    if get_available(state, pfac, ALLY) > 0:
-                        place_piece(state, region, pfac, ALLY)
-                        t_info["allied_faction"] = pfac
+                        and t_info.get("status") is None
+                        and get_available(state, pfac, ALLY) > 0):
+                    place_piece(state, region, pfac, ALLY)
+                    t_info["allied_faction"] = pfac
+                    region_count[region] += 1
             else:
-                if pfac:
-                    avail = get_available(state, pfac, piece_type)
-                    to_place = min(cnt, avail)
-                    if to_place > 0:
-                        place_piece(state, region, pfac, piece_type,
-                                    count=to_place)
+                to_place = min(cnt, room, get_available(state, pfac, piece_type))
+                if to_place > 0:
+                    place_piece(state, region, pfac, piece_type, count=to_place)
+                    region_count[region] += to_place
     else:
         non_roman = 0
         for region in adj_cisalpina:

@@ -677,14 +677,30 @@ class TestTrade:
         # At minimum, estimate should be >= 6 (the Aedui pieces)
         assert est >= 6
 
-    def test_trade_estimate_zero_without_aedui_pieces(self):
-        """Trade estimate is 0 with no Aedui Allies or Citadels on map."""
+    def test_trade_estimate_matches_real_trade_mechanic(self):
+        """The Trade estimate equals the actual Trade gain (real §3.2.1 Supply
+        Lines, §4.4.1 yields) — no approximation. With no Aedui Allies/Citadels
+        but a Subdued Tribe in the Aedui-Controlled Aedui Region, §4.4.1 yields
+        +1 for that Subdued Tribe (even without Roman agreement), so the
+        estimate reflects it (not 0, as the old approximation assumed)."""
+        import copy
+        from fs_bot.commands.sa_trade import trade
+        from fs_bot.engine.victory import calculate_victory_score
         state = _make_state()
-        # Just Aedui Warbands, no Allies/Citadels
         _place_aedui_force(state, AEDUI_REGION, warbands=3)
         refresh_all_control(state)
+        # Mirror the function's Roman-agreement determination.
+        nps = state.get("non_player_factions", set())
+        romans_agree = ROMANS in nps
+        if not romans_agree:
+            try:
+                romans_agree = calculate_victory_score(state, ROMANS) < 10
+            except Exception:
+                romans_agree = False
+        expected = trade(copy.deepcopy(state),
+                         roman_agreed=romans_agree)["resources_gained"]
         est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
-        assert est == 0
+        assert est == expected
 
     def test_trade_estimate_lower_without_roman_agreement(self):
         """Trade estimate lower when Romans don't agree (player, high score).

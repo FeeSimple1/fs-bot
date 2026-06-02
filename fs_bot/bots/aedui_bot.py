@@ -1297,70 +1297,28 @@ def _estimate_trade_resources(state, scenario):
       - +1 per Roman Allied Tribe in Aedui-Controlled regions within Supply
         Lines
 
-    NOTE: This is an approximation pending full Supply Line pathfinding.
-    We count all Aedui Allies + Citadels on the map as a baseline (they
-    earn at least +1 each if any Supply Line exists), then check the
-    Roman agreement multiplier.
+    Computed exactly via the Trade mechanic (real §3.2.1 Supply Lines and
+    §4.4.1 yields) on a throwaway copy — no approximation.
 
     Returns:
-        Integer estimated Resources gained.
+        Integer Resources the Aedui would gain by Trading now.
     """
+    import copy
+    from fs_bot.commands.sa_trade import trade
     non_players = state.get("non_player_factions", set())
-
-    # Count Aedui Allies on map
-    aedui_allies = 0
-    for tribe_info in state["tribes"].values():
-        if tribe_info.get("allied_faction") == AEDUI:
-            aedui_allies += 1
-
-    # Count Aedui Citadels on map
-    aedui_citadels = count_on_map(state, AEDUI, CITADEL)
-
-    base_pieces = aedui_allies + aedui_citadels
-    if base_pieces == 0:
-        return 0
-
-    # Check if Romans would agree — §8.6.3, §8.6.6
-    # NP Romans always agree per §8.6.3
-    romans_agree = False
-    if ROMANS in non_players:
-        romans_agree = True
-    else:
-        # Player Romans: use same victory-score tiers from agreements
-        # For estimation, assume agreement if score < 10
+    # Roman agreement (the +2 multiplier and the Subdued/Roman-Ally yields):
+    # NP Romans always agree (§8.6.3); player Romans by their victory tier.
+    romans_agree = ROMANS in non_players
+    if not romans_agree:
         try:
-            roman_score = calculate_victory_score(state, ROMANS)
-            if roman_score < 10:
-                romans_agree = True
+            romans_agree = calculate_victory_score(state, ROMANS) < 10
         except Exception:
-            pass
-
-    if romans_agree:
-        # +2 per Aedui Ally and Citadel — §4.4.1
-        total = base_pieces * 2
-
-        # +1 per Subdued Tribe in Aedui-Controlled regions
-        aedui_controlled = set(get_controlled_regions(state, AEDUI))
-        for tribe_name, tribe_info in state["tribes"].items():
-            from fs_bot.rules_consts import TRIBE_TO_REGION
-            tribe_region = TRIBE_TO_REGION.get(tribe_name)
-            if tribe_region and tribe_region in aedui_controlled:
-                # Subdued = no allied_faction and no Dispersed marker
-                if tribe_info.get("allied_faction") is None:
-                    if not tribe_info.get("status"):
-                        total += 1
-
-        # +1 per Roman Allied Tribe in Aedui-Controlled regions
-        for tribe_name, tribe_info in state["tribes"].items():
-            tribe_region = TRIBE_TO_REGION.get(tribe_name)
-            if tribe_region and tribe_region in aedui_controlled:
-                if tribe_info.get("allied_faction") == ROMANS:
-                    total += 1
-    else:
-        # +1 per Aedui Ally and Citadel — §4.4.1
-        total = base_pieces
-
-    return total
+            romans_agree = False
+    sim = copy.deepcopy(state)
+    try:
+        return trade(sim, roman_agreed=romans_agree).get("resources_gained", 0)
+    except Exception:
+        return 0
 
 
 def _get_trade_regions(state, scenario):

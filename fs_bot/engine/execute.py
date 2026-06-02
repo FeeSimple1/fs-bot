@@ -4223,7 +4223,7 @@ def _derive_card_68(state, faction, shaded):
     (Card Reference 68). Acting Faction must be the Gallic Faction allied with
     Remi; choose the City whose removal hurts an enemy most (else Alesia)."""
     from fs_bot.rules_consts import (TRIBE_REMI, TRIBE_TO_REGION, ATREBATES,
-                                     ROMANS, MARKER_DISPERSED)
+                                     ROMANS)
     from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
     if shaded:
         from fs_bot.rules_consts import (GALLIC_FACTIONS, FACTIONS, CITADEL,

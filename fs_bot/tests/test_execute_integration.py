@@ -3793,3 +3793,65 @@ class TestHumanExecutionPath:
                     "event_params": {"senate_direction": SENATE_DOWN}}}})
         assert res["executed"] is True
         assert human_st["senate"]["position"] == down_pos
+
+
+class TestSubduedDispersedHandling:
+    """Dispersed tribes are not Subdued (Key Terms Index). Disperse is stored
+    in tribe['status']; the markers dict is not the source of truth."""
+
+    def test_card22_shaded_excludes_dispersed_tribe(self):
+        from fs_bot.engine.execute import _derive_event_params
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import (SCENARIO_PAX_GALLICA, ROMANS, AEDUI,
+                                         AUXILIA, DISPERSED, TRIBE_TO_REGION)
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_PAX_GALLICA, seed=1)
+        st["resources"][AEDUI] = 10
+        place_piece(st, "Mandubii", ROMANS, AUXILIA)
+        # Make every Mandubii tribe non-Subdued except a Dispersed one.
+        for t in [t for t, r in TRIBE_TO_REGION.items() if r == "Mandubii"]:
+            st["tribes"][t]["allied_faction"] = ROMANS
+            st["tribes"][t]["status"] = None
+        st["tribes"]["Senones"]["allied_faction"] = None
+        st["tribes"]["Senones"]["status"] = DISPERSED   # Dispersed, not Subdued
+        refresh_all_control(st)
+        # Control: a genuinely Subdued Senones WOULD be derived.
+        st2 = build_initial_state(SCENARIO_PAX_GALLICA, seed=1)
+        st2["resources"][AEDUI] = 10
+        place_piece(st2, "Mandubii", ROMANS, AUXILIA)
+        for t in [t for t, r in TRIBE_TO_REGION.items() if r == "Mandubii"]:
+            st2["tribes"][t]["allied_faction"] = ROMANS
+            st2["tribes"][t]["status"] = None
+        st2["tribes"]["Senones"]["allied_faction"] = None
+        st2["tribes"]["Senones"]["status"] = None
+        refresh_all_control(st2)
+        derived_dispersed = _derive_event_params(st, AEDUI, 22, True)
+        derived_subdued = _derive_event_params(st2, AEDUI, 22, True)
+        # Dispersed Senones is excluded; Subdued Senones is a valid target.
+        assert derived_dispersed is None
+        assert derived_subdued is not None
+        tribes = [e["tribe"] for e in derived_subdued["target_tribes"]]
+        assert "Senones" in tribes
+
+    def test_card68_unshaded_rejects_dispersed_remi(self):
+        from fs_bot.engine.execute import _derive_event_params
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import (SCENARIO_PAX_GALLICA, ROMANS, ARVERNI,
+                                         ALLY, DISPERSED, ATREBATES)
+        from fs_bot.state.state_schema import build_initial_state
+        def _setup(remi_status):
+            st = build_initial_state(SCENARIO_PAX_GALLICA, seed=1)
+            st["tribes"]["Remi"]["allied_faction"] = None
+            st["tribes"]["Remi"]["status"] = remi_status
+            # An enemy Ally within 1 of Remi to convert (so a Subdued Remi
+            # would yield a non-empty plan).
+            st["tribes"]["Bellovaci"]["allied_faction"] = ARVERNI
+            place_piece(st, ATREBATES, ARVERNI, ALLY)
+            refresh_all_control(st)
+            return st
+        # Dispersed Remi: does not qualify (Card 68 Tips) -> no derivation.
+        assert _derive_event_params(_setup(DISPERSED), ROMANS, 68, False) is None
+        # Subdued Remi: qualifies -> a replacement plan is derived.
+        assert _derive_event_params(_setup(None), ROMANS, 68, False) is not None

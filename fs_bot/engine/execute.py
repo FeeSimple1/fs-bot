@@ -4257,10 +4257,11 @@ def _derive_card_68(state, faction, shaded):
     ti = state.get("tribes", {}).get(TRIBE_REMI)
     if not ti:
         return None
-    remi_markers = state.get("markers", {}).get(TRIBE_REMI) or {}
+    # "Dispersed Remi would not qualify for unshaded" (Card 68 Tips). Disperse
+    # is stored in tribe["status"] (= Dispersed / Dispersed-Gathering).
     is_roman = ti.get("allied_faction") == _R
     is_subdued = (ti.get("allied_faction") is None
-                  and MARKER_DISPERSED not in remi_markers)
+                  and ti.get("status") is None)
     if not (is_roman or is_subdued):
         return None
     scenario = state["scenario"]
@@ -4320,7 +4321,7 @@ def _derive_card_22(state, faction, shaded):
     from fs_bot.board.pieces import count_pieces
     if shaded:
         from fs_bot.rules_consts import (GALLIC_FACTIONS, ALLY, ROMANS,
-                                         TRIBE_TO_REGION, MARKER_DISPERSED)
+                                         TRIBE_TO_REGION)
         from fs_bot.board.pieces import get_available
         if (faction not in GALLIC_FACTIONS
                 or get_available(state, faction, ALLY) <= 0):
@@ -4330,10 +4331,9 @@ def _derive_card_22(state, faction, shaded):
             if len(target_tribes) >= 2:
                 break
             ti = state["tribes"][tribe]
-            if ti.get("allied_faction") is not None:
-                continue  # Subdued only (not already Allied)
-            tmarkers = state.get("markers", {}).get(tribe) or {}
-            if MARKER_DISPERSED in tmarkers:
+            # Subdued Tribe = neither Allied nor Dispersed (Key Terms Index).
+            # Dispersed / Dispersed-Gathering / Razed live in tribe["status"].
+            if ti.get("allied_faction") is not None or ti.get("status") is not None:
                 continue
             region = TRIBE_TO_REGION.get(tribe)
             if not region or count_pieces(state, region, ROMANS) <= 0:

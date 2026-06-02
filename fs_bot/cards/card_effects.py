@@ -2699,10 +2699,10 @@ def execute_card_68(state, shaded=False):
         if not tribe_info:
             return
         is_roman = tribe_info.get("allied_faction") == ROMANS
-        is_subdued = (tribe_info.get("allied_faction") is None)
-        markers = state.get("markers", {}).get(TRIBE_REMI, {})
-        if MARKER_DISPERSED in markers:
-            is_subdued = False
+        # "Dispersed Remi would not qualify for unshaded" (Card 68 Tips).
+        # Disperse is stored in tribe["status"] (Dispersed/Dispersed-Gathering).
+        is_subdued = (tribe_info.get("allied_faction") is None
+                      and tribe_info.get("status") is None)
         if not (is_roman or is_subdued):
             return
         # Replace 1-2 Allies within 1 Region of Remi (Atrebates + adjacent)

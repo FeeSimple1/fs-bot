@@ -362,3 +362,43 @@ within-1-of-Intimidated).
   in normal NP flow.
 - **Card 52 unshaded** — Carnutes Subdued/Dispersed misclassification is benign
   (Roman-Ally / Subdued / Dispersed all trigger the same −8 branch).
+
+---
+
+## [AUDIT FOLLOW-UP] QUESTIONS.md remaining-gaps — resolutions
+
+The "larger engine features" and minor items recorded above were taken up and
+grounded in the rules. Resolved with tests:
+
+- **A53 unshaded** — Romans now take the granted free Special Activity (a Roman
+  Build, the NP default per node_r_recruit/node_r_march, §8.8.1/§8.8.4).
+- **Card 11a unshaded** — free Battle attack restricted to Auxilia
+  (auxilia_only_attack threaded through resolve_battle; card_11a only).
+- **A29 / A40 unshaded** — handler caps + Settlement/Cisalpina gating, and NP
+  derivers added (cards now play for bots).
+- **A34 unshaded** — non-German player uses German pieces to free Battle the
+  acting Faction's rivals in up to 3 Regions (was a dead flag).
+- **A70 shaded** — ongoing effects wired: end-of-action Belgic Ally at a Subdued
+  Nervii; Belgic Rally at Nervii +2 Warbands.
+- **A65 unshaded** — free Battle now "without Leader" (no_attacker_leader).
+- **Card 57 unshaded** — +4 Resources applied after the March, only "if in
+  Britannia".
+- **Card 19 shaded** — Arverni Successor "on map" relocation handled.
+- **Card 30 unshaded** — Arverni Rally cap drops the Leader+1 when active.
+- **Card 39** — Trade capability wired: unshaded +2 per Aedui Ally/Citadel in
+  Supply Lines; shaded limits Trade to 1 Region.
+- **A20 unshaded** — free Seize "as if Roman Control" Disperses Veneti
+  regardless of actual Control (as_if_control override).
+
+### Still open — one item (intricate battle-engine modifier)
+- **Card 30 shaded (capability)** — "In any Battles with their Leader, Arverni
+  pick 2 Arverni Warbands — they take & inflict Losses as if Legions." The rule
+  is clear (§3.2.4: hard pieces get a 1-3 save roll; Legions inflict 1 not ½),
+  but faithful implementation requires tracking *2 specific* Arverni Warbands as
+  hard pieces through `resolve_losses` / `_build_loss_priority` (a per-piece
+  distinction the type-based loss engine does not currently express), including
+  the counterattack interaction noted in the card Tip. Deferred deliberately:
+  a subtly-wrong loss modifier would silently corrupt many Battles, so per
+  CLAUDE.md ("rules-accurate over simple; never guess") this needs its own
+  isolated change with a focused test suite rather than a hasty edit.
+  Card 30 *unshaded* (the Rally cap) is implemented.

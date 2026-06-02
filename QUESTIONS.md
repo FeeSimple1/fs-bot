@@ -307,3 +307,58 @@ None`; the constant is `SUBDUED = "Subdued"`). Both helpers are currently
 
 **Files:** `fs_bot/cards/card_effects.py` (cards 29, 57, 68, A51),
 `fs_bot/engine/execute.py` (`_derive_card_22`, `_derive_card_68`).
+
+---
+
+## [AUDIT] Card-by-card faithfulness audit — results and remaining gaps
+
+A full audit of all ~116 card handlers (72 base + 39 Ariovistus + 5 2nd-ed
+text-change) against the Card Reference was performed. Real bugs found were
+fixed with regression tests (see commits). This entry records the gaps NOT yet
+fixed, by severity, so they are tracked rather than lost.
+
+### Fixed in this pass (for reference)
+Subdued/Dispersed storage class on Ally placement / Dispersed clearing: cards
+22, 28, 37, 40, 41, 60, 61, 66, A29, A30, A40, A45, A56 (+ earlier 29/57/68).
+Bounded conditions: card 33 (Lost Eagle Senate no-shift-down wired), A18
+(Roman-Control requirement), A60 (refund counts the Ally), A24/A27/A32 (Arverni
+Phase "as if At War" forced), A58 shaded (Ambush Romans only), A67 (non-German
+routing), card 54 (Ariovistus player set: Germans not Arverni), A45 (Celtica +
+within-1-of-Intimidated).
+
+### Remaining — larger engine features (real, unimplemented; need new logic)
+- **A34 unshaded** — "A non-German player may use German pieces to free March or
+  Battle in/from up to 3 Regions." Flag set, no consumer → no-op. Needs a
+  borrow-German-pieces March/Battle resolver.
+- **A70 shaded (capability)** — ongoing effects "If Nervii Subdued at end of any
+  action, place a Belgic Ally" and "Belgic Rally at Nervii places +2 Warbands"
+  have no engine hook. The capability is recorded but its effects are inert.
+- **A53 unshaded** — Romans get free Recruit + March but not the granted "+1
+  Special Activity" (one fewer free action than the card allows).
+- **Card 11a unshaded (Ariovistus)** — 2nd-ed restricts the free Battle to
+  Auxilia ("attack restricted to Auxilia"); the shared resolver attacks with all
+  Roman pieces (resolve_battle has no attacker-type restriction).
+- **A29 / A40 unshaded** — no NP deriver, so the placement no-ops for bots; when
+  params are supplied, the handler does not enforce A29's Settlement-region
+  gating + caps (≤2 Allies, 5 Warbands OR 3 Auxilia) nor A40's 3-Region limit +
+  per-Region 3/2/1 caps.
+
+### Remaining — minor / benign (documented, low impact)
+- **A65 unshaded** — "without Leader" Battle condition not enforced (a Leader
+  present could contribute to the free Battle).
+- **Card 57 unshaded** — "+4 Resources if in Britannia" is granted
+  unconditionally (the March is deferred to the caller, so post-March position
+  is not checked).
+- **A20 unshaded** — "free Seize as if Roman Control": the Disperse step still
+  needs real Roman Control (Seize/Forage execute); a documented refinement.
+- **Cards 30 & 39 capability magnitudes** — 2nd-ed Ariovistus changes (card 30
+  pick-4 Warbands; card 39 Trade regardless of Supply Lines) are not modeled —
+  but there is no consumer of capability 30/39 at all (pre-existing, also affects
+  base), so the _ariovistus handlers are not independently unfaithful.
+- **Card 19 shaded** — Successor recovery handles "Available" but not the
+  "on map" relocation branch.
+- **Cards 35/A34-shaded/A35 faction-gating, cards 16/25/26/61/64/65 caps &
+  region constraints** — handlers trust caller/event-eval-supplied params; benign
+  in normal NP flow.
+- **Card 52 unshaded** — Carnutes Subdued/Dispersed misclassification is benign
+  (Roman-Ally / Subdued / Dispersed all trigger the same −8 branch).

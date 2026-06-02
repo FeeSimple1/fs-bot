@@ -151,10 +151,9 @@ def should_decline_event(state, card_id, faction):
     """Combined check: should a NP decline the current Event?
 
     Per §8.1.1: Decline if Ineffective, final-year Capability, or
-    "No [Faction]". The ineffective check is a stub here — concrete
-    Event evaluation requires the full Event handler which examines
-    the current board state. Callers should check ineffectiveness
-    separately when they have enough context.
+    "No [Faction]". Ineffectiveness is evaluated against the current board
+    via event_eval.is_event_effective (for the side the Faction would use:
+    Romans/Aedui unshaded, Arverni/Belgae/Germans shaded — §8.2.2).
 
     Args:
         state: Game state dict.
@@ -172,6 +171,12 @@ def should_decline_event(state, card_id, faction):
 
     # Capability in final year — §8.1.1
     if is_final_year_capability(state, card_id):
+        return True
+
+    # Ineffective Event — §8.1.1 (no effect, or merely Revealing own pieces).
+    from fs_bot.cards.event_eval import is_event_effective
+    shaded = faction in (ARVERNI, BELGAE, GERMANS)
+    if not is_event_effective(state, card_id, shaded):
         return True
 
     return False

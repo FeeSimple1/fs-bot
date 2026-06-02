@@ -504,15 +504,19 @@ class TestHarassment:
         place_piece(state, MORINI, ROMANS, LEGION, 1,
                     from_legions_track=True)
 
+        legions_before = count_pieces(state, MORINI, ROMANS, LEGION)
         result = execute_harassment_loss(state, MORINI, "roll")
 
         assert result["roll"] is not None
         assert 1 <= result["roll"] <= 6
-        # Result depends on roll value
+        # On 1-3 the Loss removes a hard target (here the Legion, to Fallen);
+        # on 4-6 it is absorbed with no removal — §3.2.3.
         if result["roll"] <= LOSS_ROLL_THRESHOLD:
-            assert result["removed"] == "hard_target_hit"
+            assert result["removed"] == LEGION
+            assert count_pieces(state, MORINI, ROMANS, LEGION) == legions_before - 1
         else:
             assert result["removed"] is None
+            assert count_pieces(state, MORINI, ROMANS, LEGION) == legions_before
 
     def test_execute_harassment_roll_no_hard_target(self):
         """Cannot roll without hard target present — §3.2.3."""

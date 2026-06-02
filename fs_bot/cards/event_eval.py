@@ -985,13 +985,10 @@ def _has_subdued_city_tribes(state):
 
 
 def _any_active_capabilities(state):
-    """Check if any Capabilities are currently active."""
-    caps = state.get("capabilities", {})
-    for card_id, sides in caps.items():
-        for side, active in sides.items():
-            if active:
-                return True
-    return False
+    """Check if any Capabilities are currently active. state["capabilities"]
+    maps each active Capability's card_id to the side in play (a string), so a
+    non-empty dict means at least one Capability is active."""
+    return bool(state.get("capabilities", {}))
 
 
 def is_event_effective(state, card_id, shaded=False):

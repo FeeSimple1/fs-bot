@@ -997,16 +997,16 @@ def germans_phase_march(state):
                 if would_control:
                     add_control.append(dest)
                 else:
-                    # Check if destination is player-controlled
-                    # Non-player factions check would be in Phase 8;
-                    # for now, treat all factions as potential player factions
-                    is_any_controlled = False
+                    # §6.2.2 priority: Controlled by player Factions (NOT
+                    # Non-players) ranks above other destinations.
+                    non_players = state.get("non_player_factions", set())
+                    is_player_controlled = False
                     for fac in FACTIONS:
-                        if fac != GERMANS and is_controlled_by(
-                                state, dest, fac):
-                            is_any_controlled = True
+                        if (fac != GERMANS and fac not in non_players
+                                and is_controlled_by(state, dest, fac)):
+                            is_player_controlled = True
                             break
-                    if is_any_controlled:
+                    if is_player_controlled:
                         player_controlled.append(dest)
                     else:
                         others.append(dest)

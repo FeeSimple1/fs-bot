@@ -1206,6 +1206,14 @@ class TestExecuteArverniTurn:
                 state["current_card_id"] = cid
                 break
         _place_arverni_force(state, ARVERNI_REGION, warbands=15)
+        # Alaudae shaded removes a Roman Legion + Auxilia — give the Romans
+        # those pieces so the Event is effective (else the NP rightly declines
+        # an Ineffective Event, §8.1.1).
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.rules_consts import PROVINCIA, LEGION, AUXILIA
+        place_piece(state, PROVINCIA, ROMANS, LEGION, count=2,
+                    from_legions_track=True)
+        place_piece(state, PROVINCIA, ROMANS, AUXILIA, count=2)
         result = execute_arverni_turn(state)
         assert result["command"] == ACTION_EVENT
         assert result["details"]["text_preference"] == EVENT_SHADED

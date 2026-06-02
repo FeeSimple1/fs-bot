@@ -19,6 +19,7 @@ from fs_bot.rules_consts import (
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL,
+    PROVINCIA,
     # Piece states
     HIDDEN,
     # Costs
@@ -326,15 +327,22 @@ def execute_harassment_loss(state, region, loss_choice):
         result["roll"] = roll
 
         if roll <= LOSS_ROLL_THRESHOLD:
-            # Must remove a Legion, Leader, or Fort
-            # The Romans choose which hard target to remove
-            # For mechanical execution, we remove in priority order:
-            # Fort first (least impactful to Roman combat), then
-            # Legion (goes to Fallen), then Leader
-            # NOTE: The caller/bot should make this decision.
-            # For now we store the roll result; actual removal
-            # requires a follow-up call.
-            result["removed"] = "hard_target_hit"
+            # Must remove a Legion, Leader, or Fort — §3.2.3. The Romans keep
+            # Caesar and combat power if able: remove a (non-Provincia) Fort
+            # first, then a Legion (to Fallen, §1.4.1), then the Leader last.
+            # The Provincia Fort is permanent and cannot be removed (§1.4.2).
+            if has_fort and region != PROVINCIA:
+                remove_hard_target(state, region, FORT)
+                result["removed"] = FORT
+            elif has_legion:
+                remove_hard_target(state, region, LEGION)
+                result["removed"] = LEGION
+            elif has_leader:
+                remove_hard_target(state, region, LEADER)
+                result["removed"] = LEADER
+            else:
+                # Only the permanent Provincia Fort remains — nothing to remove.
+                result["removed"] = None
         else:
             # Roll survived — no piece removed
             result["removed"] = None

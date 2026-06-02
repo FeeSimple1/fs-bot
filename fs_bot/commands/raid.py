@@ -409,9 +409,12 @@ def germans_phase_raid_region(state, region):
         if not targets:
             break
 
-        # Choose target: player before NP, then random — §6.2.3
-        # For now we use rng to select among equal-priority targets
-        target = rng.choice(targets)
+        # Choose target: player Factions before Non-player, then random among
+        # equal-priority — §6.2.3.
+        non_players = state.get("non_player_factions", set())
+        players = [t for t in targets if t not in non_players]
+        pool = players if players else targets
+        target = rng.choice(pool)
 
         # Flip one Warband
         flip_piece(

@@ -2949,12 +2949,14 @@ def _resolve_a58_battle_seize(state, faction):
     seize_regions = [r for r in BELGICA_REGIONS
                      if count_pieces(state, r, ROMANS) > 0]
     if seize_regions:
-        disperse = [r for r in seize_regions if is_controlled_by(state, r, ROMANS)]
+        # "as if Roman Control, with no Harassment": Disperse every Seize
+        # Region's Subdued Tribes regardless of actual Control, no Harassment.
         try:
             sres = _execute_seize(state, faction, {
                 "command": _CMD_SEIZE, "sa": SA_ACTION_NONE_LABEL,
                 "regions": seize_regions,
-                "details": {"disperse_regions": disperse}})
+                "details": {"disperse_regions": seize_regions,
+                            "as_if_control": True, "no_harassment": True}})
             out.append({"free_action": "seize",
                         "flag": "card_A58_roman_battle_seize",
                         "regions": seize_regions, "result": sres})
@@ -3043,6 +3045,7 @@ def _execute_seize(state, faction, bot_action):
     errors = []
 
     as_if_control = bool(details.get("as_if_control"))
+    no_harassment = bool(details.get("no_harassment"))
     for region in regions:
         if region in disperse_regions:
             tribes = get_dispersible_tribes(state, region,
@@ -3057,8 +3060,9 @@ def _execute_seize(state, faction, bot_action):
             continue
         dispersed_total += len(res.get("tribes_dispersed", []))
         forage_total += res.get("forage_resources", 0)
-        # Harassment against the seizing Romans — §3.2.3 / §8.4.2.
-        harass = _resolve_seize_harassment(state, region)
+        # Harassment against the seizing Romans — §3.2.3 / §8.4.2 (suppressed
+        # when the card grants Seize "with no Harassment", e.g. A58).
+        harass = None if no_harassment else _resolve_seize_harassment(state, region)
         if harass:
             res = dict(res)
             res["harassment"] = harass

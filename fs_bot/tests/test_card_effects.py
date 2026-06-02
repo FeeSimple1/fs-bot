@@ -1541,3 +1541,34 @@ class TestAuditConditionFixes:
         assert ("aedui_ally" in items) and items["aedui_ally"] == 2
         subdued = [t for t in res["per_item"] if t[0] == "subdued_tribe"]
         assert subdued and all(v == 1 for _, _, v in subdued)
+
+    def test_cardA58_free_seize_as_if_roman_control_no_harassment(self):
+        # A58 unshaded: "free Seize in Belgica as if Roman Control, with no
+        # Harassment" — Disperse a Subdued Tribe even where Romans don't Control.
+        from fs_bot.engine.execute import _resolve_a58_battle_seize
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, BELGAE,
+                                         AUXILIA, WARBAND, DISPERSED,
+                                         BELGICA_REGIONS)
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control, is_controlled_by
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        region = BELGICA_REGIONS[0]
+        # Romans present (a Fort, so no Battle wipes them) but NOT controlling
+        # (Belgae outnumber them).
+        from fs_bot.rules_consts import FORT
+        place_piece(st, region, ROMANS, FORT)
+        place_piece(st, region, BELGAE, WARBAND, count=4)
+        # A Subdued Tribe in the Region.
+        from fs_bot.map.map_data import get_tribes_in_region
+        tribe = None
+        for t in get_tribes_in_region(region, SCENARIO_ARIOVISTUS):
+            ti = st["tribes"].get(t, {})
+            if ti.get("allied_faction") is None:
+                ti["status"] = None
+                tribe = t
+                break
+        refresh_all_control(st)
+        assert tribe is not None and not is_controlled_by(st, region, ROMANS)
+        _resolve_a58_battle_seize(st, ROMANS)
+        assert st["tribes"][tribe]["status"] == DISPERSED

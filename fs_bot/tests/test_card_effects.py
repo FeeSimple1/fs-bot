@@ -1491,3 +1491,23 @@ class TestAuditConditionFixes:
         no_leader = _calculate_attack_losses(st, region, BELGAE, GERMANS,
                                              no_attacker_leader=True, **kw)
         assert no_leader < with_leader
+
+    def test_cardA20_free_seize_disperses_as_if_roman_control(self):
+        from fs_bot.engine.execute import _resolve_a20_free_seize
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, BELGAE,
+                                         VENETI, AUXILIA, WARBAND, DISPERSED)
+        from fs_bot.board.pieces import place_piece, remove_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control, is_controlled_by
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        # Romans present but NOT controlling Veneti (Belgae outnumber them).
+        place_piece(st, VENETI, ROMANS, AUXILIA, count=1)
+        place_piece(st, VENETI, BELGAE, WARBAND, count=4)
+        # A Subdued Tribe in Veneti.
+        st["tribes"]["Veneti"]["allied_faction"] = None
+        st["tribes"]["Veneti"]["status"] = None
+        refresh_all_control(st)
+        assert not is_controlled_by(st, VENETI, ROMANS)
+        _resolve_a20_free_seize(st)
+        # "as if Roman Control" -> the Subdued Veneti Tribe is Dispersed.
+        assert st["tribes"]["Veneti"]["status"] == DISPERSED

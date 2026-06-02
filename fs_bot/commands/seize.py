@@ -118,17 +118,19 @@ def count_dispersed_on_map(state):
     return count
 
 
-def get_dispersible_tribes(state, region):
+def get_dispersible_tribes(state, region, as_if_control=False):
     """Get Subdued tribes in a region that can receive Dispersed markers.
 
     Requirements (§3.2.3):
-    - Region must have Roman Control
+    - Region must have Roman Control (unless ``as_if_control``, e.g. card A20
+      "free Seize there as if Roman Control")
     - Tribe must be Subdued (no Ally, no Dispersed marker)
     - Total Dispersed markers on map must be < MAX_DISPERSED_MARKERS (4)
 
     Args:
         state: Game state dict.
         region: Region name constant.
+        as_if_control: Treat the Region as Roman-Controlled for Dispersal.
 
     Returns:
         List of tribe name constants that can be Dispersed.
@@ -136,7 +138,7 @@ def get_dispersible_tribes(state, region):
     scenario = state["scenario"]
 
     # Must have Roman Control for Dispersal — §3.2.3
-    if not is_controlled_by(state, region, ROMANS):
+    if not as_if_control and not is_controlled_by(state, region, ROMANS):
         return []
 
     # Check marker limit
@@ -420,7 +422,8 @@ def seize_rally_roll(state, faction):
 # SEIZE EXECUTION — §3.2.3
 # ============================================================================
 
-def seize_in_region(state, region, tribes_to_disperse=None):
+def seize_in_region(state, region, tribes_to_disperse=None,
+                    as_if_control=False):
     """Execute Seize in a single region.
 
     Handles the Dispersal and Forage substeps. Rally checks and
@@ -468,8 +471,8 @@ def seize_in_region(state, region, tribes_to_disperse=None):
 
     # ----- Step 1: Dispersal — §3.2.3 -----
     if tribes_to_disperse:
-        # Validate Roman Control
-        if not is_controlled_by(state, region, ROMANS):
+        # Validate Roman Control (card A20 overrides: "as if Roman Control")
+        if not as_if_control and not is_controlled_by(state, region, ROMANS):
             raise CommandError(
                 f"Dispersal requires Roman Control in {region} (§3.2.3)"
             )

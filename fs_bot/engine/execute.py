@@ -2542,11 +2542,13 @@ def _resolve_a20_free_seize(state):
     if count_pieces(state, VENETI, ROMANS) <= 0:
         return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
                  "executed": False, "reason": "Romans have no pieces in Veneti"}]
-    disperse = [VENETI] if is_controlled_by(state, VENETI, ROMANS) else []
+    # Card A20: "free Seize there as if Roman Control" — Disperse Veneti's
+    # Subdued Tribes regardless of actual Control.
     try:
         res = _execute_seize(state, ROMANS, {
             "command": _CMD_SEIZE, "sa": SA_ACTION_NONE_LABEL,
-            "regions": [VENETI], "details": {"disperse_regions": disperse}})
+            "regions": [VENETI], "details": {"disperse_regions": [VENETI],
+                                             "as_if_control": True}})
     except _EXEC_ERRORS as exc:
         return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
                  "executed": False, "reason": repr(exc)}]
@@ -3040,13 +3042,16 @@ def _execute_seize(state, faction, bot_action):
     forage_total = 0
     errors = []
 
+    as_if_control = bool(details.get("as_if_control"))
     for region in regions:
         if region in disperse_regions:
-            tribes = get_dispersible_tribes(state, region)
+            tribes = get_dispersible_tribes(state, region,
+                                            as_if_control=as_if_control)
         else:
             tribes = []
         try:
-            res = seize_in_region(state, region, tribes_to_disperse=tribes)
+            res = seize_in_region(state, region, tribes_to_disperse=tribes,
+                                  as_if_control=as_if_control)
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "error": str(exc)})
             continue

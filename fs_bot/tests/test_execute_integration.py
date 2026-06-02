@@ -3885,3 +3885,35 @@ class TestSubduedDispersedHandling:
         assert _derive_event_params(_setup(DISPERSED), ROMANS, 68, False) is None
         # Subdued Remi: qualifies -> a replacement plan is derived.
         assert _derive_event_params(_setup(None), ROMANS, 68, False) is not None
+
+
+def test_cardA34_unshaded_germans_battle_acting_factions_rivals():
+    """A34 unshaded: a non-German player uses German pieces to free Battle the
+    acting Faction's rivals (not the acting Faction)."""
+    from fs_bot.state.state_schema import build_initial_state
+    from fs_bot.board.pieces import place_piece, count_pieces, remove_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, ROMANS, AEDUI,
+                                     WARBAND, AUXILIA, EVENT_UNSHADED)
+    st = build_initial_state(SCENARIO_ARIOVISTUS, seed=4)
+    st["current_card"] = "A34"
+    region = "Sequani"
+    for f in (GERMANS, ROMANS, AEDUI):
+        for pt in (WARBAND, AUXILIA):
+            c = count_pieces(st, region, f, pt)
+            if c:
+                remove_piece(st, region, f, pt, count=c)
+    place_piece(st, region, GERMANS, WARBAND, count=6)   # German force
+    place_piece(st, region, ROMANS, AUXILIA, count=2)    # rival to hit
+    refresh_all_control(st)
+    before = count_pieces(st, region, ROMANS, AUXILIA)
+    res = _execute_event(st, AEDUI, {"command": "Event", "sa": "No SA",
+        "sa_regions": [], "details": {"card_id": "A34",
+                                      "text_preference": EVENT_UNSHADED}})
+    fa = [f for f in (res.get("free_actions") or [])
+          if f.get("flag") == "card_A34"]
+    assert fa and any(f.get("defender") == ROMANS for f in fa)
+    # Germans hit the Roman rival; the acting Aedui were not the target.
+    assert count_pieces(st, region, ROMANS, AUXILIA) < before
+    assert all(f.get("defender") != AEDUI for f in fa)

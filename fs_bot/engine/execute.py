@@ -553,6 +553,48 @@ def _rank_free_battle_defender(state, region, faction):
     return best
 
 
+def _resolve_card_A34_german_pieces(state, faction, limit=3):
+    """A34 unshaded: a non-German player uses German pieces to free Battle in up
+    to ``limit`` Regions — the Germans Battle the acting Faction's rivals (never
+    the acting Faction itself) where the Germans have a Loss-causing force. The
+    card also permits free March; the NP takes the Battles, which benefit the
+    acting Faction."""
+    from fs_bot.rules_consts import (GERMANS, FACTIONS, WARBAND, AUXILIA, LEGION)
+    from fs_bot.board.pieces import count_pieces, get_leader_in_region
+    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.map.map_data import get_playable_regions
+    if faction == GERMANS:
+        return []
+    out = []
+    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
+        if len(out) >= limit:
+            break
+        if not _attacker_has_force(state, region, GERMANS):
+            continue
+        best, best_key = None, None
+        for ef in FACTIONS:
+            if ef in (GERMANS, faction) or count_pieces(state, region, ef) <= 0:
+                continue
+            mobile = (count_pieces(state, region, ef, WARBAND)
+                      + count_pieces(state, region, ef, AUXILIA)
+                      + count_pieces(state, region, ef, LEGION))
+            key = (1 if get_leader_in_region(state, region, ef) else 0, mobile)
+            if best_key is None or key > best_key:
+                best, best_key = ef, key
+        if best is None:
+            continue
+        rd, rr = _decide_defender_retreat(state, region, GERMANS, best, False)
+        try:
+            res = resolve_battle(state, region, GERMANS, best,
+                                 retreat_declaration=rd, retreat_region=rr)
+            out.append({"free_action": "german_battle", "flag": "card_A34",
+                        "region": region, "defender": best, "result": res})
+        except _EXEC_ERRORS as exc:
+            out.append({"free_action": "german_battle", "flag": "card_A34",
+                        "region": region, "executed": False, "reason": repr(exc)})
+    return out
+
+
 def _predicted_legion_losses(state, region, attacker):
     """Losses that would fall on Roman Legions if ``attacker`` Battles Romans
     in ``region`` (no Retreat). Romans absorb with Auxilia before Legions
@@ -879,6 +921,9 @@ def _resolve_free_actions(state, faction):
                         "result": _resolve_free_command(state, faction)})
     if mods.get("card_A29_german_raid"):
         results.extend(_resolve_card_A29_raid(state))
+    if mods.get("card_A34_use_german_pieces"):
+        results.extend(_resolve_card_A34_german_pieces(
+            state, faction, mods.get("card_A34_regions_limit", 3)))
     if mods.get("card_A34_free_command"):
         results.append({"free_action": "free_command", "flag": "card_A34",
                         "result": _resolve_free_command(state, faction)})

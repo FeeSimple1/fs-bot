@@ -409,3 +409,52 @@ grounded in the rules. Resolved with tests:
   implemented.
 
 ### Open items: none from the audit remain.
+
+---
+
+## [SIMPLIFICATION AUDIT] Rules-accuracy sweep
+
+A full sweep for shortcuts/simplifications (grep of every "simplif / approximat /
+for now / TODO / deferred / refinement" marker, plus review of the introduced
+diff) was performed. Findings by category:
+
+### Mandatory card-effect simplifications — FIXED
+- **A20 / A58 free Seize "as if Roman Control"** — both previously Dispersed only
+  where Romans actually Controlled. Now Disperse every Seize Region's Subdued
+  Tribes regardless of Control (`as_if_control`), and A58 also suppresses
+  Harassment ("with no Harassment", `no_harassment`). These were the only
+  mandatory-effect shortcuts found.
+
+### Stale comments — effects were already complete (no code change needed beyond
+the comments)
+- Cards 2 and 21 carried "TODO: battle module integration" comments, but their
+  free Battles are fully resolved by the orchestration layer
+  (`_resolve_card2_battle`, `_resolve_card21_provincia_battle`) via event
+  modifiers. Comments corrected.
+
+### Optional effects / NP choices — NOT rules violations (and deliberately not
+"invented", per CLAUDE.md "never guess NP behavior")
+The mandatory parts of each are implemented; the untaken part is an *optional*
+"may" or a choice the references' bot instructions would dictate:
+- **Card 57** "may add any free Special Ability there" (the March and the
+  conditional +4 are done).
+- **A34** "may use German pieces to free March OR Battle" — Battle (the
+  substantive use) is implemented; March is the alternative.
+- **A53** "+1 Special Ability" — the Roman NP's default SA (Build) is taken;
+  Build/Scout/Besiege is an NP choice.
+- **A28** "and—with their agreement—any other Factions' Warbands/Auxilia as own"
+  — Arverni (combined-Battle Loss math) implemented; other-Faction agreement is
+  a separate inter-Faction agreement-protocol extension.
+- **A67** "without losing Germanic Control" surplus-gathering, and defender
+  **Retreat into another Faction's Control** (§1.5.2 agreement) — both are
+  NP-decision refinements; the core effects (March/Battle/flip; Retreat into own
+  Control) are done.
+
+### Pre-existing bot-decision approximations (NP strategy, not card effects)
+The bot flowchart nodes (roman_bot, aedui_bot, raid/march tie-breaks) approximate
+some §8.x decision criteria — e.g. "fewest Losses" ≈ fewest enemy mobile pieces;
+"ending in a Supply Line" ≈ region has Roman pieces — because exact evaluation
+needs full battle simulation at decision time. These are deliberate choices by
+the original authors, predate this work, and affect *how the bot chooses*, not
+the *rules-correct execution* of the chosen action. Flagged for awareness; not
+changed.

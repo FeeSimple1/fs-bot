@@ -1264,12 +1264,12 @@ def execute_card_29(state, shaded=False):
         region = TRIBE_TO_REGION.get(tribe)
         tribe_info = state.get("tribes", {}).get(tribe)
         if tribe_info:
-            markers = state.get("markers", {})
-            tribe_markers = markers.get(tribe, {})
-            if MARKER_DISPERSED in tribe_markers:
-                del tribe_markers[MARKER_DISPERSED]
-            if MARKER_DISPERSED_GATHERING in tribe_markers:
-                del tribe_markers[MARKER_DISPERSED_GATHERING]
+            # "Remove any Dispersed" — Disperse is stored in tribe["status"]
+            # (= Dispersed / Dispersed-Gathering); clear it so the Tribe is
+            # Subdued and can receive the Germanic Ally below.
+            if tribe_info.get("status") in (MARKER_DISPERSED,
+                                            MARKER_DISPERSED_GATHERING):
+                tribe_info["status"] = None
         # Place Germanic Ally at each Suebi that has none
         if tribe_info and tribe_info.get("allied_faction") is None:
             if region and get_available(state, GERMANS, ALLY) > 0:
@@ -2265,9 +2265,11 @@ def execute_card_57(state, shaded=False):
                     tribe_info["allied_faction"] = None
             elif removal.get("type") == "dispersed":
                 tribe = removal.get("tribe")
-                markers = state.get("markers", {})
-                if tribe in markers and MARKER_DISPERSED in markers[tribe]:
-                    del markers[tribe][MARKER_DISPERSED]
+                t_info = state.get("tribes", {}).get(tribe)
+                # Disperse is stored in tribe["status"], not the markers dict.
+                if t_info and t_info.get("status") in (
+                        MARKER_DISPERSED, MARKER_DISPERSED_GATHERING):
+                    t_info["status"] = None
         # Place 1 Gallic Ally and up to 4 Warbands
         ally_faction = params.get("ally_faction")
         ally_tribe = params.get("ally_tribe")
@@ -2743,7 +2745,11 @@ def execute_card_68(state, shaded=False):
         for fac in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS):
             while count_pieces(state, region, fac, CITADEL) > 0:
                 remove_piece(state, region, fac, CITADEL)
-        # Remove Dispersed/Razed markers
+        # Remove "anything" at the City — Dispersed/Razed live in
+        # tribe["status"]; clear so the placed Citadel is consistent.
+        if t_info and t_info.get("status") in (
+                MARKER_DISPERSED, MARKER_DISPERSED_GATHERING, MARKER_RAZED):
+            t_info["status"] = None
         markers = state.get("markers", {})
         if tribe in markers:
             markers[tribe].pop(MARKER_DISPERSED, None)
@@ -3924,9 +3930,11 @@ def execute_card_A51(state, shaded=False):
             return
         region = TRIBE_TO_REGION.get(TRIBE_REMI)
         allied = t_info.get("allied_faction")
-        markers = state.get("markers", {}).get(TRIBE_REMI, {})
+        # "If Remi Roman or Aedui Ally or Subdued" — a Subdued Tribe is neither
+        # Allied nor Dispersed (Key Terms Index); Disperse lives in
+        # tribe["status"]. A Dispersed Remi does not qualify.
         is_valid = (allied in (ROMANS, AEDUI)
-                    or (allied is None and MARKER_DISPERSED not in markers))
+                    or (allied is None and t_info.get("status") is None))
         if not is_valid:
             return
         # Place 4 Auxilia or Aedui Warbands

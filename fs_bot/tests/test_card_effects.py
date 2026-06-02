@@ -1179,3 +1179,52 @@ class TestCard30VercingetorixsElite:
         execute_event(state, 30, shaded=True)
         assert state["resources"] == resources_before
         assert state["senate"] == senate_before
+
+
+class TestDispersedStatusHandling:
+    """Disperse is stored in tribe['status'] (Dispersed / Dispersed-Gathering),
+    not the markers dict. Card effects that remove or gate on Dispersed must
+    read/clear status. Regression for the markers-vs-status bug class."""
+
+    def test_card29_removes_dispersed_from_suebi(self):
+        from fs_bot.rules_consts import (SUEBI_TRIBES, DISPERSED, GERMANS,
+                                         SCENARIO_GREAT_REVOLT)
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        for t in SUEBI_TRIBES:
+            st["tribes"][t]["allied_faction"] = None
+            st["tribes"][t]["status"] = DISPERSED
+        execute_event(st, 29, shaded=False)
+        for t in SUEBI_TRIBES:
+            # "Remove any Dispersed" — status cleared; no Tribe left both
+            # Dispersed and (newly) Allied.
+            assert st["tribes"][t]["status"] != DISPERSED
+
+    def test_card57_shaded_removes_dispersed_from_britannia(self):
+        from fs_bot.rules_consts import DISPERSED, SCENARIO_GREAT_REVOLT
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        st["tribes"]["Catuvellauni"]["allied_faction"] = None
+        st["tribes"]["Catuvellauni"]["status"] = DISPERSED
+        st["event_params"] = {"removal": {
+            "type": "dispersed", "tribe": "Catuvellauni"}}
+        execute_event(st, 57, shaded=True)
+        assert st["tribes"]["Catuvellauni"]["status"] is None
+
+    def test_cardA51_dispersed_remi_does_not_qualify(self):
+        from fs_bot.rules_consts import (DISPERSED, ROMANS, AUXILIA, ATREBATES,
+                                         SCENARIO_ARIOVISTUS)
+        from fs_bot.board.pieces import count_pieces
+        from fs_bot.state.state_schema import build_initial_state
+
+        def _run(remi_status):
+            st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+            st["tribes"]["Remi"]["allied_faction"] = None
+            st["tribes"]["Remi"]["status"] = remi_status
+            execute_event(st, "A51", shaded=False)
+            return count_pieces(st, ATREBATES, ROMANS, AUXILIA)
+
+        # Subdued Remi (status None) qualifies -> Auxilia placed.
+        assert _run(None) > 0
+        # Dispersed Remi does NOT qualify -> nothing placed.
+        assert _run(DISPERSED) == 0

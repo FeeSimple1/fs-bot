@@ -258,3 +258,43 @@ is added, a human non-Pass turn driven by the bundled CLI carries no
 plan." A front-end that supplies a `player_action` plan executes fully today.
 
 **Files:** `fs_bot/engine/execute.py` — `execute_decision`, `_execute_event`.
+
+---
+
+## [RESOLVED] Dispersed/Subdued stored in tribe["status"], not the markers dict — bug-class sweep
+
+**Context:** During review of the card 22/68 fixes, a systemic bug class surfaced.
+Disperse (and Razed) are canonically stored in `tribe["status"]` (= `Dispersed`
+/ `Dispersed-Gathering` / `Razed`; set by Seize, setup, card 23; read by
+seize.py, rally.py, victory.py, interlude.py). Nothing ever writes a Disperse
+marker into `state["markers"][tribe]` — that dict is only ever *popped*. Several
+card handlers tested or cleared Disperse against `state["markers"]`, so the check
+was dead (a Dispersed Tribe read as Subdued; a "remove Dispersed" del was a
+no-op). A Subdued Tribe is one that is neither Allied nor Dispersed (Key Terms
+Index) = `allied_faction is None and status is None`.
+
+**Resolution (all fixed against `tribe["status"]`):**
+- Card 22 shaded deriver, Card 68 unshaded deriver+handler — Dispersed Tribe/Remi
+  no longer mis-read as Subdued.
+- Card A51 unshaded — a Dispersed Remi no longer wrongly satisfies "Remi ... or
+  Subdued."
+- Card 29 — "Remove any Dispersed from both Suebi" now clears `status` (was a
+  no-op, leaving a Tribe both Dispersed and newly Allied).
+- Card 57 shaded — "Remove ... Dispersed from Britannia" now clears `status`.
+- Card 68 shaded — "remove anything" at Alesia/Cenabum now clears a Dispersed/
+  Razed `status` before placing the Citadel.
+- Card 52 unshaded — left as-is: its `is_roman_ally or is_subdued or is_dispersed`
+  gate triggers identically for a Dispersed Carnutes (no behavioural error), so
+  the imprecise label has no effect.
+
+Each fix has a regression test (TestSubduedDispersedHandling,
+TestDispersedStatusHandling).
+
+**Known dead code (not a live bug, left for a focused follow-up):**
+`event_eval.py::_has_subdued_tribes` / `_has_subdued_city_tribes` test
+`status == "subdued"` (lowercase), which no Tribe ever has (Subdued = `status is
+None`; the constant is `SUBDUED = "Subdued"`). Both helpers are currently
+**unreferenced**, so they affect no behaviour; flagged here for cleanup.
+
+**Files:** `fs_bot/cards/card_effects.py` (cards 29, 57, 68, A51),
+`fs_bot/engine/execute.py` (`_derive_card_22`, `_derive_card_68`).

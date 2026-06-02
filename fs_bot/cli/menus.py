@@ -141,7 +141,10 @@ def prompt_action(state, faction, options, position, stdin, stdout):
         stdin/stdout: Streams.
 
     Returns:
-        Dict with "action" key set to the chosen engine action constant.
+        Dict with "action" set to the chosen engine action constant. For a
+        non-Pass action, also "player_action": the full plan (Command/Event)
+        the engine executes via execute_decision, so a human turn resolves
+        through the same machinery as a bot turn.
     """
     scenario = state["scenario"]
     card_id = state.get("current_card")
@@ -163,4 +166,18 @@ def prompt_action(state, faction, options, position, stdin, stdout):
         (ACTION_LABELS.get(opt, opt), opt) for opt in options
     ]
     chosen = prompt_choice(stdin, stdout, "Choose your action:", choices)
-    return {"action": chosen}
+    decision = {"action": chosen}
+    if chosen != ACTION_PASS:
+        # Collect the concrete plan so the engine can execute the human turn.
+        # If input ends before the plan is complete (piped/scripted input),
+        # fall back to the action type alone — execute_decision then reports
+        # "no executable plan" rather than crashing the turn.
+        from fs_bot.cli.human_plan import collect_player_action
+        try:
+            player_action = collect_player_action(
+                state, faction, chosen, stdin, stdout)
+        except EOFError:
+            player_action = None
+        if player_action is not None:
+            decision["player_action"] = player_action
+    return decision

@@ -350,7 +350,7 @@ def _rank_march_destinations(state, scenario):
                 defending_faction=ROMANS)
             # (c) Most Allies/Citadels of this enemy in the region
             local_ac = ally_count + citadel_count
-            # (d) Ending in Supply Line — best-effort approximation
+            # (d) Ending in a Supply Line — real §3.2.1 check (has_supply_line).
             in_supply = 1 if has_supply_line(state, region) else 0
             # (e) Least Harassment — fewest enemy Hidden Warbands
             enemy_hidden_wb = 0

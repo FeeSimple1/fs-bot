@@ -458,3 +458,37 @@ needs full battle simulation at decision time. These are deliberate choices by
 the original authors, predate this work, and affect *how the bot chooses*, not
 the *rules-correct execution* of the chosen action. Flagged for awareness; not
 changed.
+
+---
+
+## [BOT FAITHFULNESS] Decision-layer approximations replaced with exact rules
+
+The NP bot decision nodes had several documented approximations (made before the
+battle engine / supply-line helpers were complete). All are now exact:
+
+- **Roman R_BATTLE (§8.8.1)** — now applies the real condition "Roman Losses
+  will be < 1/2 enemy's AND no Loss on Caesar," evaluated by a deterministic
+  battle predictor (predict_battle: resolves on a state copy forcing all
+  Defender Loss rolls to removals, no Defender Retreat — the flowchart's stated
+  basis). Previously it battled every threat Region.
+- **Roman R_MARCH (b)** — ranks destinations by the actual Losses the enemy
+  would inflict (Battle loss formula), not a "fewest enemy mobile pieces" proxy.
+  (d) already used the real has_supply_line.
+- **Roman R1 threat** — implements "enemy Battle or Rampage would force a Loss
+  on a Legion or Caesar" (Auxilia buffer the hard pieces, §3.2.4 no-Retreat).
+- **Roman Besiege check** — uses the exact predicted inflicted Losses.
+- **Roman R_RECRUIT (§8.8.4)** — decides on what can ACTUALLY be placed (Region
+  eligibility, Subdued Tribes, Auxilia caps), not raw Available counts. Fixed a
+  latent ally-placement bug (the Subdued-tribe helper returns a list).
+- **Aedui Trade estimate (§4.4.1)** — computes the exact Trade gain via the real
+  Trade mechanic (real §3.2.1 Supply Lines), not an allies+citadels count.
+- **German-Phase Raid (§6.2.3) / March (§6.2.2)** — target/destination priority
+  now distinguishes player vs Non-player Factions (state["non_player_factions"]).
+- **Seize Harassment (§3.2.3)** — the hard-target roll now actually removes a
+  Legion/Leader/Fort (was a no-op recording "hard_target_hit").
+- **Event decline (§8.1.1)** — should_decline_event now checks Ineffectiveness
+  via event_eval.is_event_effective (and fixed a latent crash in
+  _any_active_capabilities). Bots no longer play Ineffective Events.
+
+All exercised by the test suite (1911) and validated across all-bot games
+(valid + deterministic in every scenario).

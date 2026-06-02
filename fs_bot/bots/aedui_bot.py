@@ -1569,8 +1569,9 @@ def node_a_agreements(state, requesting_faction, request_type, *,
 
     Per A8.6.6 (Ariovistus):
     - Admagetobriga: NP Belgae agree to use of their Warbands only where
-      the executing Faction has pieces. (This is primarily a Belgae
-      agreement rule — see TODO below.)
+      the executing Faction has pieces. (A Belgae agreement rule; this
+      function delegates the "admagetobriga_warbands" request to
+      belgae_bot.node_b_agreements.)
     - Frumentum: Transfer half of Aedui's total Resources to NP Romans
       only (none to player Romans).
 

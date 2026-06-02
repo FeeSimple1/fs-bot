@@ -316,9 +316,14 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     command executors. Game-run Factions (Germans in base, Arverni in
     Ariovistus) have no bot flowchart and are skipped.
 
-    SCOPE NOTE: the Command is the Faction's board-wide best per flowchart; a
-    card's "in/from <Region>" restriction is not yet imposed on the chosen
-    Command (a documented refinement) — the chooser itself is fully faithful.
+    REGION RESTRICTION (cards 9/62/67/70/...): when ``allowed_regions`` is
+    given, the Faction's flowchart-best Command is constrained to those
+    Regions. If that board-wide best Command cannot act there, we follow the
+    Faction's flowchart command order (the order its decision tree considers
+    Commands) and take the first whose plan, constrained to the allowed
+    Regions, is legal — i.e. "execute a free Command in/from <Region>" per the
+    Faction's own command priority (§8.x flowcharts; NP guideline "follow their
+    flowcharts"). See _region_restricted_free_command.
     """
     from fs_bot.bots.bot_dispatch import dispatch_bot_turn
     nps = state.get("non_player_factions", set())
@@ -351,15 +356,88 @@ def _resolve_free_command(state, faction, allowed_regions=None,
             allowed_regions = ({primary} if allowed_regions is None
                                else set(allowed_regions) & {primary})
     if allowed_regions is not None:
-        bot_action = _constrain_bot_action(bot_action, set(allowed_regions))
-        if bot_action is None:
-            return {"executed": False, "command": cmd,
-                    "reason": "chosen Command has no action in the allowed Region(s)"}
+        constrained = _constrain_bot_action(bot_action, set(allowed_regions))
+        if constrained is None:
+            # The flowchart's board-wide best Command cannot act in the named
+            # Region(s). Follow the Faction's flowchart command order to take
+            # its highest-priority Command that legally can (faithful to
+            # "execute a free Command in/from <Region>").
+            constrained = _region_restricted_free_command(
+                state, faction, set(allowed_regions), exclude_commands)
+            if constrained is None:
+                return {"executed": False, "command": cmd,
+                        "reason": "no Command available in the allowed Region(s)"}
+        bot_action = constrained
     res = _execute_bot_command(state, faction, bot_action)
     if res is None:
         return {"executed": False, "command": cmd,
                 "reason": "chosen Command not executable"}
     return res
+
+
+# Each Faction's Command nodes in flowchart-decision order (the order its
+# decision tree considers Commands). Used to pick a free Command restricted to
+# a named Region when the board-wide best cannot act there — §8.5-8.8 / A8.7-8.8
+# flowcharts; NP guideline "for free Commands ... follow their flowcharts".
+_FACTION_COMMAND_NODE_ORDER = {
+    "Romans": ("fs_bot.bots.roman_bot",
+               ("node_r_battle", "node_r_march", "node_r_recruit",
+                "node_r_seize")),
+    "Arverni": ("fs_bot.bots.arverni_bot",
+                ("node_v_battle", "node_v_rally", "node_v_march_spread",
+                 "node_v_raid", "node_v_march_mass")),
+    "Aedui": ("fs_bot.bots.aedui_bot",
+              ("node_a_battle", "node_a_rally", "node_a_raid", "node_a_march")),
+    "Belgae": ("fs_bot.bots.belgae_bot",
+               ("node_b_battle", "node_b_rally", "node_b_raid", "node_b_march")),
+    "Germans": ("fs_bot.bots.german_bot",
+                ("node_g_battle", "node_g_march_threat", "node_g_raid",
+                 "node_g_rally", "node_g_march_expand")),
+}
+
+
+def _region_restricted_free_command(state, faction, allowed_regions,
+                                    exclude_commands=None):
+    """Pick a free Command for ``faction`` that legally acts within
+    ``allowed_regions``, following the Faction's flowchart command order.
+
+    Evaluates each of the Faction's Command nodes (in flowchart-decision
+    order), constrains its plan to ``allowed_regions``, and returns the first
+    constrained action that has a legal action there — or None if the Faction
+    has no Command available in those Region(s). The Command nodes are
+    read-only planners; only the returned action is later executed.
+    """
+    spec = _FACTION_COMMAND_NODE_ORDER.get(faction)
+    if spec is None:
+        return None
+    import importlib, copy
+    module_name, node_names = spec
+    try:
+        module = importlib.import_module(module_name)
+    except Exception:
+        return None
+    exclude = set(exclude_commands or ())
+    for node_name in node_names:
+        node = getattr(module, node_name, None)
+        if node is None:
+            continue
+        try:
+            # Plan on a deep copy: Command nodes consume state["rng"] for
+            # §8.3.4 tie-breaks; isolating the copy keeps the real RNG stream
+            # deterministic (only the executed Command advances it). The plan
+            # is region/target strings, valid to execute on the real state.
+            action = node(copy.deepcopy(state))
+        except Exception:
+            continue  # a node mis-fires out of its flowchart context — skip
+        if not isinstance(action, dict):
+            continue
+        cmd = action.get("command")
+        if cmd in (None, _CMD_EVENT, "Pass") or cmd in exclude:
+            continue  # _constrain_bot_action also rejects non-Command actions
+        constrained = _constrain_bot_action(action, allowed_regions)
+        if constrained is not None:
+            return constrained
+    return None
 
 
 def _resolve_free_rally(state, faction, allowed_regions=None):

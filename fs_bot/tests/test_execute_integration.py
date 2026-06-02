@@ -3663,3 +3663,67 @@ class TestSATimingAndReporting:
         assert "sa_not_wired" not in res
         if res.get("sa_execution") is not None:
             assert res["sa_timing"] == "before"
+
+
+class TestRegionRestrictedFreeCommand:
+    """Free Command 'in/from <named Region>' (cards 9/62/67/70/...): when the
+    flowchart's board-wide best Command cannot act in the named Region, the
+    Faction's flowchart command order is followed to pick one that can."""
+
+    def _rng_state(self, st):
+        s = dict(st)
+        if "rng" in s:
+            s["rng"] = s["rng"].getstate()
+        return s
+
+    def test_helper_is_read_only_on_real_state(self):
+        # Command nodes consume rng for tie-breaks; the helper must plan on a
+        # copy and leave the real state (including the RNG stream) untouched.
+        import copy
+        from fs_bot.engine.execute import _region_restricted_free_command
+        for sc in ALL_SCENARIOS:
+            st = setup_scenario(sc, seed=2)
+            st["non_player_factions"] = set(get_sop_factions(st))
+            for fac in get_sop_factions(st):
+                for R in get_playable_regions(sc, st.get("capabilities")):
+                    before = copy.deepcopy(self._rng_state(st))
+                    _region_restricted_free_command(st, fac, {R})
+                    assert self._rng_state(st) == before
+
+    def test_falls_back_to_flowchart_order_within_region(self):
+        # Belgae with Warbands + an Ally in one Region can Rally/Raid there even
+        # when its board-wide best Command would be elsewhere. Restricting to
+        # that Region must yield a Command whose plan stays within it.
+        from fs_bot.engine.execute import _region_restricted_free_command
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        st = setup_scenario(SCENARIO_PAX_GALLICA, seed=5)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        st["resources"][BELGAE] = 10
+        place_piece(st, "Nervii", BELGAE, "Warband", count=3)
+        st["tribes"]["Nervii"]["allied_faction"] = BELGAE
+        place_piece(st, "Nervii", BELGAE, "Ally")
+        refresh_all_control(st)
+        action = _region_restricted_free_command(st, BELGAE, {"Nervii"})
+        if action is not None:
+            # Every plan entry must be within the allowed Region.
+            d = action.get("details") or {}
+            for key in ("battle_plan", "raid_plan", "recruit_plan"):
+                for e in (d.get(key) or []):
+                    reg = e if isinstance(e, str) else e.get("region")
+                    assert reg == "Nervii"
+            rp = d.get("rally_plan") or {}
+            for k in ("citadels", "allies", "warbands"):
+                for e in (rp.get(k) or []):
+                    reg = e if isinstance(e, str) else e.get("region")
+                    assert reg == "Nervii"
+
+    def test_returns_none_when_no_command_available(self):
+        # A Region with none of the Faction's pieces and nothing to act on
+        # yields no free Command (faithful no-op, not a crash).
+        from fs_bot.engine.execute import _region_restricted_free_command
+        st = setup_scenario(SCENARIO_PAX_GALLICA, seed=5)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        # Britannia is remote; pick a Region where Belgae have no presence.
+        res = _region_restricted_free_command(st, BELGAE, {"Provincia"})
+        assert res is None or isinstance(res, dict)

@@ -160,8 +160,9 @@ def execute_card_2(state, shaded=False):
     already at Firm Uproar.
 
     Shaded: Free Battle against Romans in a Region. The first Loss
-    removes a Legion automatically, if any there.
-    TODO: Free Battle implementation requires battle module integration.
+    removes a Legion automatically, if any there. (The Battle is resolved by
+    the orchestration layer via the card_2_auto_legion_loss event modifier ->
+    _resolve_card2_battle in engine/execute.py.)
 
     Source: Card Reference, card 2
     """
@@ -193,10 +194,10 @@ def execute_card_2(state, shaded=False):
                 place_piece(state, PROVINCIA, ROMANS, LEGION,
                             count=from_fallen, from_fallen=True)
     else:
-        # Shaded: Free Battle against Romans in a Region
-        # The first Loss removes a Legion automatically if any there
-        # TODO: Integrate with battle module — for now, mark the
-        # auto-Legion-loss flag in event_params for the battle caller
+        # Shaded: Free Battle against Romans in a Region. The first Loss
+        # removes a Legion automatically if any there. The Battle itself is
+        # resolved by the orchestration layer (_resolve_card2_battle) from the
+        # event modifiers set below.
         params = state.get("event_params", {})
         battle_region = params.get("battle_region")
         if battle_region:
@@ -880,8 +881,8 @@ def execute_card_21(state, shaded=False):
             if to_place > 0:
                 place_piece(state, PROVINCIA, ARVERNI, WARBAND,
                             count=to_place)
-            # Free Raid or Battle as if no Fort — store modifier
-            # TODO: Bot/CLI decides Raid vs Battle; for now store modifier
+            # Free Battle as if no Fort — resolved by the orchestration layer
+            # (_resolve_card21_provincia_battle) from the modifier set below.
             state.setdefault("event_modifiers", {})
             state["event_modifiers"]["card_21_no_fort"] = True
 

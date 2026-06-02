@@ -3635,6 +3635,21 @@ class TestShadedDerivers:
                   + count_pieces(s, "Carnutes", AEDUI, CITADEL))
         assert placed == 0
 
+    def test_cardA18_shaded_bogged_down_drains_romans(self):
+        # Shaded "Bogged down": a Roman Legion within 1 of Germania -> Romans
+        # lose 6 Resources and go Ineligible (self-executing; no deriver param).
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import ROMANS, LEGION, INELIGIBLE
+        s = self._base(SCENARIO_ARIOVISTUS)
+        s["resources"][ROMANS] = 15
+        place_piece(s, "Ubii", ROMANS, LEGION, from_legions_track=True)
+        refresh_all_control(s)
+        res = execute_decision(s, AEDUI, self._ev("A18"))
+        assert res["executed"] is True
+        assert s["resources"][ROMANS] == 9
+        assert s["eligibility"][ROMANS] == INELIGIBLE
+
 
 class TestSATimingAndReporting:
     """SA orchestration: §8.8.4 Build-before-Recruit timing and honest

@@ -13,44 +13,16 @@ Source: Card Reference, A Card Reference
 """
 
 from fs_bot.rules_consts import (
-    CARD_NAMES_BASE, CARD_NAMES_ARIOVISTUS,
-    SECOND_EDITION_CARDS,
-    # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    GALLIC_FACTIONS, FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
-    # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
-    DIVICIACUS, BODUOGNATUS, SUCCESSOR,
-    # Senate
-    UPROAR, INTRIGUE, ADULATION,
-    SENATE_POSITIONS,
-    SENATE_UP, SENATE_DOWN,
-    # Regions
-    PROVINCIA, CISALPINA,
-    ALL_REGIONS,
-    # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
-    # Legions
-    LEGIONS_ROWS, LEGIONS_PER_ROW,
-    LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
-    # Resources
-    MAX_RESOURCES,
-    # Markers
-    MARKER_DEVASTATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
-    MARKER_SCOUTED, MARKER_CIRCUMVALLATION, MARKER_COLONY,
-    MARKER_GALLIA_TOGATA, MARKER_RAZED,
-    MARKER_INTIMIDATED, MARKER_ABATIS,
-    # Capabilities
-    CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
-    # Events
-    EVENT_SHADED, EVENT_UNSHADED,
-    # Control
-    ROMAN_CONTROL, NO_CONTROL, FACTION_CONTROL,
-    # Eligibility
+    ROMANS, ARVERNI, AEDUI, BELGAE,
+    GERMANS, GALLIC_FACTIONS, FACTIONS, LEADER,
+    LEGION, AUXILIA, WARBAND, FORT,
+    ALLY, CITADEL, SETTLEMENT, HIDDEN,
+    REVEALED, SCOUTED, CAESAR, VERCINGETORIX,
+    AMBIORIX, ARIOVISTUS_LEADER, ADULATION, SENATE_POSITIONS,
+    SENATE_UP, SENATE_DOWN, PROVINCIA, CISALPINA,
+    MAX_RESOURCES, MARKER_DEVASTATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
+    MARKER_CIRCUMVALLATION, MARKER_COLONY, MARKER_GALLIA_TOGATA, MARKER_RAZED,
+    MARKER_ABATIS, EVENT_SHADED, EVENT_UNSHADED, NO_CONTROL,
     ELIGIBLE, INELIGIBLE,
 )
 from fs_bot.board.pieces import (
@@ -64,7 +36,7 @@ from fs_bot.board.control import (
     is_controlled_by, get_controlled_regions,
 )
 from fs_bot.cards.capabilities import (
-    activate_capability, deactivate_capability, is_capability_active,
+    activate_capability, deactivate_capability,
 )
 
 
@@ -1145,7 +1117,7 @@ def execute_card_26(state, shaded=False):
     Source: Card Reference, card 26
     """
     from fs_bot.rules_consts import (
-        TRIBE_ARVERNI, ARVERNI_REGION, CITY_GERGOVIA, TRIBE_TO_REGION,
+        TRIBE_ARVERNI, ARVERNI_REGION,
     )
     if not shaded:
         params = state.get("event_params", {})
@@ -1462,7 +1434,7 @@ def execute_card_34(state, shaded=False):
 
     Source: Card Reference, card 34
     """
-    from fs_bot.rules_consts import CARNUTES, MANDUBII, TRIBE_TO_REGION
+    from fs_bot.rules_consts import CARNUTES, MANDUBII
     from fs_bot.map.map_data import get_tribes_in_region
     if not shaded:
         # Free Rally in 3 Regions as if with Control — deferred to caller
@@ -1550,7 +1522,6 @@ def execute_card_37(state, shaded=False):
     Source: Card Reference, card 37
     """
     from fs_bot.rules_consts import TRIBE_TO_REGION
-    from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
     params = state.get("event_params", {})
     if not shaded:
         # Place 2 Allies + 2 Warbands/Auxilia at/adjacent to Aedui Control
@@ -2035,7 +2006,6 @@ def execute_card_51(state, shaded=False):
 
     Source: Card Reference, card 51
     """
-    from fs_bot.rules_consts import TREVERI
     params = state.get("event_params", {})
     if not shaded:
         # Replace 4 Warbands with Aedui Warbands in region within 1 of Treveri
@@ -2080,7 +2050,7 @@ def execute_card_52(state, shaded=False):
 
     Source: Card Reference, card 52
     """
-    from fs_bot.rules_consts import CARNUTES, TRIBE_CARNUTES
+    from fs_bot.rules_consts import TRIBE_CARNUTES
     params = state.get("event_params", {})
     if not shaded:
         # Check Carnutes tribe status
@@ -2190,7 +2160,6 @@ def execute_card_56(state, shaded=False):
     Source: Card Reference, card 56
     """
     from fs_bot.rules_consts import GERMANIA_REGIONS
-    from fs_bot.map.map_data import get_adjacent
     params = state.get("event_params", {})
     scenario = state["scenario"]
     if not shaded:
@@ -2240,7 +2209,7 @@ def execute_card_57(state, shaded=False):
 
     Source: Card Reference, card 57
     """
-    from fs_bot.rules_consts import BRITANNIA, TRIBE_TO_REGION
+    from fs_bot.rules_consts import BRITANNIA
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
     if not shaded:
@@ -2510,7 +2479,7 @@ def execute_card_64(state, shaded=False):
 
     Source: Card Reference, card 64
     """
-    from fs_bot.rules_consts import ATREBATES, TRIBE_TO_REGION
+    from fs_bot.rules_consts import ATREBATES
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
     if not shaded:
@@ -3393,8 +3362,8 @@ def execute_card_A30(state, shaded=False):
 
     Source: A Card Reference, card A30
     """
-    from fs_bot.rules_consts import SEQUANI, AEDUI_REGION, TRIBE_TO_REGION
-    from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
+    from fs_bot.rules_consts import SEQUANI, AEDUI_REGION
+    from fs_bot.map.map_data import get_tribes_in_region
     params = state.get("event_params", {})
     scenario = state["scenario"]
     if not shaded:
@@ -3571,7 +3540,7 @@ def execute_card_A35(state, shaded=False):
     Source: A Card Reference, card A35
     """
     from fs_bot.rules_consts import (
-        TREVERI, TRIBE_TREVERI, GERMANIA_REGIONS, TRIBE_TO_REGION,
+        TREVERI, TRIBE_TREVERI, GERMANIA_REGIONS,
     )
     from fs_bot.map.map_data import get_adjacent
     params = state.get("event_params", {})
@@ -3711,8 +3680,7 @@ def execute_card_A37(state, shaded=False):
 
     Source: A Card Reference, card A37
     """
-    from fs_bot.rules_consts import CELTICA_REGIONS, TRIBE_TO_REGION
-    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.rules_consts import TRIBE_TO_REGION
     params = state.get("event_params", {})
     scenario = state["scenario"]
     faction = state.get("executing_faction")
@@ -3771,7 +3739,6 @@ def execute_card_A40(state, shaded=False):
 
     Source: A Card Reference, card A40
     """
-    from fs_bot.rules_consts import TRIBE_TO_REGION
     from fs_bot.map.map_data import get_adjacent
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
@@ -3822,9 +3789,7 @@ def execute_card_A43(state, shaded=False):
     """
     from fs_bot.rules_consts import (
         TRIBE_BITURIGES, TRIBE_AEDUI, TRIBE_HELVETII, TRIBE_TO_REGION,
-        CITY_BIBRACTE,
     )
-    from fs_bot.map.map_data import get_adjacent
     params = state.get("event_params", {})
     scenario = state["scenario"]
     if not shaded:
@@ -4099,7 +4064,7 @@ def execute_card_A58(state, shaded=False):
 
     Source: A Card Reference, card A58
     """
-    from fs_bot.rules_consts import BELGICA_REGIONS, TRIBE_TO_REGION
+    from fs_bot.rules_consts import BELGICA_REGIONS
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
     if not shaded:
@@ -4333,7 +4298,7 @@ def execute_card_A69(state, shaded=False):
     Source: A Card Reference, card A69
     """
     from fs_bot.rules_consts import (
-        ATREBATES, TRIBE_BELLOVACI, TRIBE_TO_REGION,
+        TRIBE_BELLOVACI, TRIBE_TO_REGION,
     )
     params = state.get("event_params", {})
     faction = state.get("executing_faction")

@@ -962,18 +962,24 @@ def _any_allies_on_map(state, factions=None):
 
 
 def _has_subdued_tribes(state):
-    """Check if any Subdued tribes exist."""
+    """Check if any Subdued tribes exist.
+
+    Subdued = neither Allied nor Dispersed (Key Terms Index): allied_faction is
+    None and status is None (Disperse/Razed live in status).
+    """
     for tribe_data in state.get("tribes", {}).values():
-        if tribe_data.get("status") == "subdued":
+        if (tribe_data.get("allied_faction") is None
+                and tribe_data.get("status") is None):
             return True
     return False
 
 
 def _has_subdued_city_tribes(state):
-    """Check if any Subdued tribes at Cities exist."""
+    """Check if any Subdued tribes at Cities exist (see _has_subdued_tribes)."""
     for city, tribe in CITY_TO_TRIBE.items():
         tribe_data = state.get("tribes", {}).get(tribe, {})
-        if tribe_data.get("status") == "subdued":
+        if (tribe_data.get("allied_faction") is None
+                and tribe_data.get("status") is None):
             return True
     return False
 

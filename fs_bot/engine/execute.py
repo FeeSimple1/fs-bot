@@ -37,7 +37,7 @@ from fs_bot.commands.sa_besiege import get_besiege_targets
 from fs_bot.commands.rally import recruit_in_region
 from fs_bot.commands.march import march_group, _flip_origin_pieces
 from fs_bot.board.pieces import count_pieces, get_leader_in_region
-from fs_bot.map.map_data import is_adjacent, get_playable_regions
+from fs_bot.map.map_data import get_playable_regions
 from fs_bot.bots.bot_common import random_select
 from fs_bot.commands.sa_trade import trade as _sa_trade
 from fs_bot.commands.sa_settle import settle as _sa_settle
@@ -1031,11 +1031,11 @@ def _resolve_card_A5_evict(state):
     """Card A5 Gallia Togata (unshaded): only Romans may stack in Cisalpina, so
     non-Roman pieces there move to a Home Region of their Faction (or are
     removed if none is available)."""
-    from fs_bot.rules_consts import (CISALPINA, ROMANS, ARVERNI, AEDUI, BELGAE,
-        GERMANS, LEADER, LEGION, AUXILIA, WARBAND, HIDDEN, REVEALED, SCOUTED,
-        ARIOVISTUS_SCENARIOS, ARVERNI_HOME_REGIONS_BASE,
-        ARVERNI_HOME_REGIONS_ARIOVISTUS, AEDUI_HOME_REGIONS,
-        BELGAE_HOME_REGIONS, GERMAN_HOME_REGIONS_BASE)
+    from fs_bot.rules_consts import (CISALPINA, ARVERNI, AEDUI, BELGAE, GERMANS,
+        LEADER, LEGION, AUXILIA, WARBAND, HIDDEN, REVEALED, SCOUTED, ARIOVISTUS_SCENARIOS,
+        ARVERNI_HOME_REGIONS_BASE, ARVERNI_HOME_REGIONS_ARIOVISTUS,
+        AEDUI_HOME_REGIONS, BELGAE_HOME_REGIONS,
+        GERMAN_HOME_REGIONS_BASE)
     from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
         get_leader_in_region, move_piece, remove_piece)
     from fs_bot.board.control import refresh_all_control
@@ -1154,9 +1154,9 @@ def _resolve_card67_arduenna(state, faction):
     Nervii and/or Treveri, then a free Command except March in those Regions,
     then flip all friendly Warbands/Auxilia there Hidden."""
     from fs_bot.rules_consts import (NERVII, TREVERI, WARBAND, AUXILIA, LEGION,
-                                     LEADER, REVEALED, HIDDEN)
+                                     REVEALED, HIDDEN)
     from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
-                                     get_leader_in_region, flip_piece)
+                                     flip_piece)
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     scen = state["scenario"]
@@ -2063,11 +2063,9 @@ def _resolve_card65_german_march_ambush(state, march_limit):
     every Region where the Germans are able (Hidden-majority + would cause a
     Loss), best target first.
     """
-    from fs_bot.rules_consts import (GERMANS, WARBAND, HIDDEN)
-    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
-                                     move_piece)
+    from fs_bot.rules_consts import GERMANS
     from fs_bot.board.control import refresh_all_control
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.map.map_data import get_playable_regions
     from fs_bot.battle.resolve import resolve_battle
     scen = state["scenario"]
     playable = list(get_playable_regions(scen, state.get("capabilities")))
@@ -2180,7 +2178,7 @@ def _resolve_card72_hidden_march_battle(state, faction):
     from fs_bot.rules_consts import (ARVERNI, GERMANS, BELGAE, AEDUI, ROMANS,
                                      WARBAND, HIDDEN, FACTIONS)
     from fs_bot.board.pieces import count_pieces, count_pieces_by_state, move_piece
-    from fs_bot.board.control import refresh_all_control, is_controlled_by
+    from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     from fs_bot.engine.victory import calculate_victory_margin
     from fs_bot.battle.resolve import resolve_battle
@@ -2745,8 +2743,8 @@ def _resolve_a67_arduenna(state, faction):
     """
     from fs_bot.rules_consts import (GERMANS, ROMANS, AEDUI, BELGAE, WARBAND,
                                      NERVII, TREVERI, REVEALED, HIDDEN, AUXILIA)
-    from fs_bot.board.pieces import (count_pieces, get_leader_in_region,
-                                     count_pieces_by_state, flip_piece)
+    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
+                                     flip_piece)
     from fs_bot.board.control import is_controlled_by
     from fs_bot.map.map_data import get_adjacent
     out = []
@@ -3619,8 +3617,6 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
         ROMANS, GERMANS, ARVERNI, LEGION, AUXILIA, WARBAND, CITADEL, FORT,
         BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     )
-    from fs_bot.map.map_data import get_adjacent
-    from fs_bot.board.control import is_controlled_by
     from fs_bot.battle.losses import calculate_losses
 
     if is_ambush:
@@ -3824,7 +3820,7 @@ def _resolve_seize_harassment(state, region):
     Romans take each Loss on their least valuable piece first — Auxilia, then
     Roman Ally — or, with only hard targets (Legion/Leader/Fort), roll a die.
     """
-    from fs_bot.rules_consts import ROMANS, AUXILIA, ALLY, LEGION, LEADER, FORT
+    from fs_bot.rules_consts import ROMANS, AUXILIA, ALLY, LEGION, FORT
     losses_applied = []
     for faction, hwb in _np_harassers(state, region, ROMANS, None):
         for _ in range(hwb // _HWB_PER_LOSS):
@@ -4092,7 +4088,7 @@ def _derive_card_41(state, faction, shaded):
     at Subdued Tribes within 1 of Bituriges and upgrade one City Ally to a
     Citadel (§8.2.3/§8.3.1 — benefit self near Avaricum)."""
     from fs_bot.rules_consts import (CITY_AVARICUM, CITY_TO_TRIBE,
-                                     TRIBE_TO_REGION, BITURIGES, ALLY, CITADEL)
+                                     BITURIGES, ALLY, CITADEL)
     from fs_bot.map.map_data import (get_adjacent, get_tribes_in_region,
                                      is_city_tribe)
     from fs_bot.board.pieces import get_available, count_pieces
@@ -4689,7 +4685,7 @@ def _derive_card_16(state, faction, shaded):
     """Card 16 Ambacti (unshaded): place 4 Auxilia in a Region with Romans, or
     6 with Caesar. Prefer Caesar's Region (6); else the Region with the most
     Roman pieces. Shaded (die-roll removal) is handled in the card."""
-    from fs_bot.rules_consts import ROMANS, CAESAR, AUXILIA
+    from fs_bot.rules_consts import ROMANS, AUXILIA
     from fs_bot.board.pieces import find_leader, count_pieces, get_available
     if shaded or faction != ROMANS:
         return None
@@ -4750,7 +4746,7 @@ def _derive_card_A58(state, faction, shaded):
     the Roman Battle+Seize, executed not derived.)"""
     if not shaded:
         return None
-    from fs_bot.rules_consts import ROMANS, AUXILIA, ALLY, BELGICA_REGIONS
+    from fs_bot.rules_consts import ROMANS, AUXILIA, BELGICA_REGIONS
     from fs_bot.board.pieces import count_pieces
     from fs_bot.map.map_data import get_tribes_in_region
     for R in BELGICA_REGIONS:

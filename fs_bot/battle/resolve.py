@@ -55,7 +55,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                    ignore_citadel=False, extra_losses=0,
                    no_counterattack=False, ally_first=False,
                    attacker_stays_hidden=False, allied_factions=(),
-                   warband_full_loss=False):
+                   warband_full_loss=False, auxilia_only_attack=False):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -321,6 +321,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         double_auxilia=double_auxilia,
         allied_factions=allied_factions,
         warband_full_loss=warband_full_loss,
+        auxilia_only=auxilia_only_attack,
     )
 
     # extra_losses (e.g. card 25: "inflicting 3 extra Losses").
@@ -440,7 +441,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
                              defending_faction, *, is_retreat,
                              had_citadel_at_start, had_fort_at_start,
                              double_auxilia=False, allied_factions=(),
-                             warband_full_loss=False):
+                             warband_full_loss=False, auxilia_only=False):
     """Calculate Attack step losses, accounting for original Citadel state.
 
     The halving check uses the original Fort/Citadel state (before Besiege)
@@ -461,6 +462,14 @@ def _calculate_attack_losses(state, region, attacking_faction,
         enemy_legions += _ap.get(LEGION, 0)
         enemy_auxilia += _count_all_flippable(_ap, AUXILIA)
         enemy_warbands += _count_all_flippable(_ap, WARBAND)
+
+    if auxilia_only:
+        # Card 11 (Ariovistus, A Card Ref rationale): the free Battle's attack
+        # is "restricted to Auxilia" — Legions, Warbands and the Leader do not
+        # contribute to the attacking Loss-causing force.
+        enemy_legions = 0
+        enemy_warbands = 0
+        enemy_leader = None
 
     scenario = state["scenario"]
 

@@ -1441,3 +1441,36 @@ class TestEdgeCases:
 
         # Results should be identical despite different global seed
         assert result1["attack"]["losses_taken"] == result2["attack"]["losses_taken"]
+
+
+def test_auxilia_only_attack_excludes_legions():
+    """Card 11 (Ariovistus): the free Battle's attack is restricted to Auxilia —
+    Legions do not contribute to the attacking Loss-causing force."""
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, AEDUI,
+                                     LEGION, AUXILIA, WARBAND)
+    from fs_bot.battle.resolve import _calculate_attack_losses
+
+    def _mk():
+        s = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        region = "Sequani"
+        # Clear, then a known force: Romans 3 Legions + 2 Auxilia vs Aedui WBs.
+        for f in (ROMANS, AEDUI):
+            for pt in (LEGION, AUXILIA, WARBAND):
+                c = count_pieces(s, region, f, pt)
+                if c:
+                    remove_piece(s, region, f, pt, count=c)
+        place_piece(s, region, ROMANS, LEGION, count=3, from_legions_track=True)
+        place_piece(s, region, ROMANS, AUXILIA, count=2)
+        place_piece(s, region, AEDUI, WARBAND, count=8)
+        return s, region
+
+    s, region = _mk()
+    kw = dict(is_retreat=False, had_citadel_at_start=False,
+              had_fort_at_start=False, double_auxilia=True)
+    full = _calculate_attack_losses(s, region, ROMANS, AEDUI, **kw)
+    aux_only = _calculate_attack_losses(s, region, ROMANS, AEDUI,
+                                        auxilia_only=True, **kw)
+    # double_auxilia -> 2 Auxilia = 2 Losses either way; the 3 Legions add 3 to
+    # the full attack but nothing under auxilia_only.
+    assert full == 5
+    assert aux_only == 2

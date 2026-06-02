@@ -1158,6 +1158,12 @@ def _resolve_card_A53_frumentum(state):
                 "result": _resolve_free_rally(state, ROMANS)})
     out.append({"free_action": "free_march", "flag": "card_A53",
                 "result": _resolve_free_march(state, ROMANS)})
+    # ...+ 1 free Special Activity. The Roman NP's default SA is Build (both
+    # node_r_recruit and node_r_march select Build, §8.8.1/§8.8.4); run it free.
+    sa_res = _execute_sa(state, ROMANS, {"sa": _SA_BUILD, "sa_regions": [],
+                                         "details": {}})
+    out.append({"free_action": "free_sa", "flag": "card_A53", "sa": _SA_BUILD,
+                "result": sa_res})
     return out
 
 
@@ -2377,10 +2383,11 @@ def _resolve_card2_battle(state, faction, region):
              "defender": ROMANS, "result": res}]
 
 
-def _free_double_aux_battle(state, region):
+def _free_double_aux_battle(state, region, auxilia_only=False):
     """Resolve a Roman free Battle in ``region`` with double Auxilia Losses,
     targeting the top Roman Battle-priority defender (8.8.1). Returns the
-    battle result dict, or None if there is no valid target."""
+    battle result dict, or None if there is no valid target. ``auxilia_only``
+    restricts the attack to Auxilia (card 11 Ariovistus)."""
     from fs_bot.rules_consts import ROMANS
     from fs_bot.bots.roman_bot import _rank_battle_targets
     from fs_bot.battle.resolve import resolve_battle
@@ -2392,7 +2399,7 @@ def _free_double_aux_battle(state, region):
     defender = targets[0]
     rd, rr = _decide_defender_retreat(state, region, ROMANS, defender, False)
     return resolve_battle(state, region, ROMANS, defender,
-                          double_auxilia=True,
+                          double_auxilia=True, auxilia_only_attack=auxilia_only,
                           retreat_declaration=rd, retreat_region=rr)
 
 
@@ -2400,7 +2407,7 @@ def _resolve_double_aux_battle_card(state, region, flag):
     """Cards 11 / 11a (unshaded): free Battle in the Auxilia-placement Region
     with double Auxilia Losses (the placement itself was done by the card
     handler from the derived Region)."""
-    res = _free_double_aux_battle(state, region)
+    res = _free_double_aux_battle(state, region, auxilia_only=(flag == "card_11a"))
     if res is None:
         return [{"free_action": "battle", "flag": flag, "executed": False,
                  "reason": "no Battle target in placement Region"}]

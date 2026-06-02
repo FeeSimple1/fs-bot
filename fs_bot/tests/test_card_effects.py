@@ -1261,3 +1261,65 @@ class TestDispersedStatusHandling:
         st["tribes"]["Eburones"]["status"] = DISPERSED
         execute_event(st, 61, shaded=True)
         assert st["tribes"]["Eburones"]["status"] != DISPERSED
+
+
+class TestAuditConditionFixes:
+    """Regression tests for bounded condition bugs found in the card audit."""
+
+    def test_card33_lost_eagle_suppresses_senate_down_shift(self):
+        import fs_bot.engine.winter as w
+        from fs_bot.rules_consts import INTRIGUE, ADULATION, SCENARIO_GREAT_REVOLT
+        from fs_bot.state.state_schema import build_initial_state
+
+        def _mk():
+            s = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+            s["senate"]["position"] = INTRIGUE
+            s["senate"]["firm"] = False
+            s["fallen_legions"] = 0
+            return s
+
+        orig = w.calculate_victory_score
+        w.calculate_victory_score = lambda s, f: 20  # >12 -> shift down
+        try:
+            st = _mk()
+            st["event_modifiers"] = {"lost_eagle_no_shift_down": True}
+            res = w._senate_marker_shift(st)
+            assert res["shifted"] is False               # suppressed
+            assert "lost_eagle_no_shift_down" not in st["event_modifiers"]  # consumed
+            # Control: without the flag the marker WOULD shift down to Adulation.
+            st2 = _mk()
+            st2["event_modifiers"] = {}
+            res2 = w._senate_marker_shift(st2)
+            assert res2["shifted"] is True
+            assert st2["senate"]["position"] == ADULATION
+        finally:
+            w.calculate_victory_score = orig
+
+    def test_cardA18_unshaded_requires_roman_control(self):
+        from fs_bot.engine.execute import _derive_card_A18
+        from fs_bot.board.pieces import place_piece, find_leader
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, ROMANS,
+                                         WARBAND, GERMANIA_REGIONS)
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=2)
+        gr = [r for r in GERMANIA_REGIONS if find_leader(st, GERMANS) != r][0]
+        place_piece(st, gr, GERMANS, WARBAND, 3)
+        refresh_all_control(st)
+        # No Roman Control in/adjacent to any Germania Region -> no target.
+        assert _derive_card_A18(st, ROMANS, False) is None
+
+    def test_cardA60_unshaded_refunds_for_unplaced_ally(self):
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, ALLY, AUXILIA)
+        from fs_bot.board.pieces import get_available
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        st["tribes"]["Remi"]["allied_faction"] = None
+        st["tribes"]["Remi"]["status"] = None
+        st["available"][ROMANS][ALLY] = 0         # Ally cannot be placed
+        assert get_available(st, ROMANS, AUXILIA) >= 4
+        before = st["resources"][ROMANS]
+        st["executing_faction"] = ROMANS
+        execute_event(st, "A60", shaded=False)
+        # 4 Auxilia placed, Ally not placed -> +2 Resources for the 1 unplaced.
+        assert st["resources"][ROMANS] == before + 2

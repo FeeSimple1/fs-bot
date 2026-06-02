@@ -892,10 +892,11 @@ def _get_battle_targets(state, region, target_faction, arverni_hidden):
 # MAIN: RUN ARVERNI PHASE
 # ============================================================================
 
-def run_arverni_phase(state, is_frost=False):
+def run_arverni_phase(state, is_frost=False, force_at_war=False):
     """Execute the full Arverni Phase — A6.2.
 
-    Check At War. If At Peace, skip.
+    Check At War. If At Peace, skip — unless ``force_at_war`` (cards A24/A27/A32
+    conduct the phase "as if At War" regardless of the live check).
     Select targets, then Rally, March, Raid, Battle with Ambush.
 
     Args:
@@ -920,8 +921,10 @@ def run_arverni_phase(state, is_frost=False):
         "battle": None,
     }
 
-    # Check At War
+    # Check At War (cards A24/A27/A32 force it "as if At War").
     is_at_war, triggering_regions = check_arverni_at_war(state)
+    if force_at_war:
+        is_at_war = True
     result["at_war"] = is_at_war
     result["triggering_regions"] = triggering_regions
 

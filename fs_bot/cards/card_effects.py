@@ -2955,7 +2955,11 @@ def execute_card_A18(state, shaded=False):
         region = params.get("region")
         if region and region in GERMANIA_REGIONS:
             leader = get_leader_in_region(state, region, GERMANS)
-            if leader != ARIOVISTUS_LEADER:
+            # "...under or adjacent to Roman Control" (A Card Reference A18).
+            roman_near = (is_controlled_by(state, region, ROMANS)
+                          or any(is_controlled_by(state, a, ROMANS)
+                                 for a in get_adjacent(region, scenario)))
+            if leader != ARIOVISTUS_LEADER and roman_near:
                 for ps in (HIDDEN, REVEALED):
                     c = count_pieces_by_state(state, region, GERMANS,
                                               WARBAND, ps)
@@ -4144,15 +4148,18 @@ def execute_card_A60(state, shaded=False):
                     remove_piece(state, region, old_fac, ALLY)
                 t_info["allied_faction"] = None
             # Place Roman Ally
+            ally_placed = 0
             if get_available(state, ROMANS, ALLY) > 0:
                 place_piece(state, region, ROMANS, ALLY)
                 t_info["allied_faction"] = ROMANS
+                ally_placed = 1
             # Place up to 4 Auxilia
             avail = get_available(state, ROMANS, AUXILIA)
             to_place = min(4, avail)
             if to_place > 0:
                 place_piece(state, region, ROMANS, AUXILIA, count=to_place)
-            not_placed = 4 - to_place
+            # 5 placeable pieces (1 Ally + 4 Auxilia); +2 Resources each not placed.
+            not_placed = (1 - ally_placed) + (4 - to_place)
             if not_placed > 0:
                 _cap_resources(state, ROMANS, 2 * not_placed)
     else:

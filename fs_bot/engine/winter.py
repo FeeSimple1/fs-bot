@@ -787,10 +787,20 @@ def _senate_marker_shift(state, first_senate_after_interlude=False):
         # Above 12: shift toward Adulation
         direction = "down"
 
+    # Card 33 (Lost Eagle), shaded: "This upcoming Senate Phase, no shift down."
+    # The flag persists from event play to here; consume it this phase.
+    mods = state.get("event_modifiers")
+    no_shift_down = False
+    if isinstance(mods, dict):
+        no_shift_down = bool(mods.pop("lost_eagle_no_shift_down", False))
+
     # EXCEPTION: Do not shift down (toward Adulation, including to Intrigue
-    # from Uproar) if any Legions are in the Fallen box — §6.5.1
-    if direction == "down" and fallen > 0:
-        result["reason"] = "Fallen Legions prevent downward shift"
+    # from Uproar) if any Legions are in the Fallen box — §6.5.1 — or if a
+    # Lost Eagle (card 33) suppresses the downward shift this phase.
+    if direction == "down" and (fallen > 0 or no_shift_down):
+        result["reason"] = ("Lost Eagle prevents downward shift" if no_shift_down
+                            and fallen == 0 else
+                            "Fallen Legions prevent downward shift")
         return result
 
     if direction is None:

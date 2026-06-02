@@ -1322,17 +1322,32 @@ def test_acard_event_param_derivers_registered():
     from fs_bot.state.setup import setup_scenario
     from fs_bot.state.state_schema import validate_state
     from fs_bot.board.pieces import place_piece, count_pieces, find_leader
-    from fs_bot.board.control import refresh_all_control
+    from fs_bot.board.control import refresh_all_control, is_controlled_by
     from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, GERMANS, WARBAND,
-                                     EVENT_UNSHADED, GERMANIA_REGIONS)
+                                     AUXILIA, FORT, EVENT_UNSHADED, GERMANIA_REGIONS)
     for cid in ("A18", "A37", "A45", "A64", "A66"):
         assert cid in _EVENT_PARAM_DERIVERS
     # A18: Roman event removes all Germans from a non-Ariovistus Germania Region
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=2)
     st["current_card"] = "A18"
+    from fs_bot.board.pieces import remove_piece, count_pieces_by_state
+    from fs_bot.rules_consts import HIDDEN, REVEALED, ALLY, SETTLEMENT
     gr = [r for r in GERMANIA_REGIONS if find_leader(st, GERMANS) != r][0]
+    # Clear gr of setup German pieces, then place a known 3 German Warbands and
+    # give the Romans Control (A18 needs the Region under/adjacent Roman Control).
+    for ps in (HIDDEN, REVEALED):
+        c = count_pieces_by_state(st, gr, GERMANS, WARBAND, ps)
+        if c:
+            remove_piece(st, gr, GERMANS, WARBAND, count=c, piece_state=ps)
+    for pt in (ALLY, SETTLEMENT):
+        c = count_pieces(st, gr, GERMANS, pt)
+        if c:
+            remove_piece(st, gr, GERMANS, pt, count=c)
     place_piece(st, gr, GERMANS, WARBAND, 3)
+    place_piece(st, gr, ROMANS, FORT)
+    place_piece(st, gr, ROMANS, AUXILIA, 4)
     refresh_all_control(st)
+    assert is_controlled_by(st, gr, ROMANS)
     assert count_pieces(st, gr, GERMANS, WARBAND) > 0
     res = _execute_event(st, ROMANS, {"command": "Event", "sa": "No SA",
         "sa_regions": [], "details": {"card_id": "A18", "text_preference": EVENT_UNSHADED}})

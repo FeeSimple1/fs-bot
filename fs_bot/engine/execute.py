@@ -865,6 +865,9 @@ def _resolve_free_actions(state, faction):
         results.append({"free_action": "german_ambush", "flag": "card_51",
                         "ambushes": _faction_ambush_sweep(state, _G)})
     if mods.get("card_44a_free_command"):
+        # NOTE: card 44 (Ariovistus) shaded says "in Regions placed"; the
+        # region restriction is a documented refinement (see QUESTIONS.md) —
+        # the chooser is faithful but board-wide here.
         results.append({"free_action": "free_command", "flag": "card_44a",
                         "result": _resolve_free_command(state, faction)})
     if mods.get("card_A29_german_raid"):
@@ -877,8 +880,10 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_A69_ambush"):
         results.extend(_resolve_card_A69_ambush(state))
     if mods.get("card_A58_free_ambush"):
+        from fs_bot.rules_consts import ROMANS as _ROM
         results.append({"free_action": "ambush", "flag": "card_A58",
-                        "ambushes": _faction_ambush_sweep(state, faction)})
+                        "ambushes": _faction_ambush_sweep(state, faction,
+                                                          only_faction=_ROM)})
     if mods.get("card_A45_free_intimidate"):
         results.extend(_resolve_card_A45_intimidate(state))
     if mods.get("card_67_arduenna"):
@@ -1205,7 +1210,7 @@ def _resolve_event_arverni_phase(state):
     Arverni Phase as if At War (A6.2) via run_arverni_phase."""
     from fs_bot.engine.arverni_phase import run_arverni_phase
     try:
-        res = run_arverni_phase(state)
+        res = run_arverni_phase(state, force_at_war=True)
     except Exception as exc:
         return [{"free_action": "arverni_phase", "flag": "arverni_phase",
                  "executed": False, "reason": repr(exc)}]
@@ -1920,18 +1925,21 @@ def _resolve_card17_germans_phase(state):
              "executed": res is not None, "result": res}]
 
 
-def _faction_ambush_target(state, region, attacker):
+def _faction_ambush_target(state, region, attacker, only_faction=None):
     """Best enemy for ``attacker`` to Ambush in ``region`` — the attacker's
     Hidden Warbands must outnumber the defender's Hidden pieces and the Ambush
-    must cause a Loss. Picks the legal target with the most pieces."""
+    must cause a Loss. Picks the legal target with the most pieces. When
+    ``only_faction`` is set, the Ambush target is restricted to that Faction
+    (e.g. card A58 shaded "free Ambush Romans")."""
     from fs_bot.rules_consts import FACTIONS, WARBAND, AUXILIA, HIDDEN
     from fs_bot.board.pieces import count_pieces, count_pieces_by_state
     from fs_bot.battle.losses import calculate_losses
     a_hidden = count_pieces_by_state(state, region, attacker, WARBAND, HIDDEN)
     if a_hidden <= 0:
         return None
+    candidates = [only_faction] if only_faction else FACTIONS
     best, best_score = None, None
-    for ef in FACTIONS:
+    for ef in candidates:
         if ef == attacker or count_pieces(state, region, ef) <= 0:
             continue
         e_hidden = (count_pieces_by_state(state, region, ef, WARBAND, HIDDEN)
@@ -1955,15 +1963,16 @@ def _german_ambush_target(state, region):
     return _faction_ambush_target(state, region, GERMANS)
 
 
-def _faction_ambush_sweep(state, attacker):
+def _faction_ambush_sweep(state, attacker, only_faction=None):
     """Ambush in every Region where ``attacker`` is able (Hidden-majority,
-    Loss-causing). Returns the list of ambush results."""
+    Loss-causing). Returns the list of ambush results. ``only_faction``
+    restricts the defender (e.g. card A58 shaded Ambushes Romans only)."""
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_playable_regions
     from fs_bot.battle.resolve import resolve_battle
     out = []
     for region in get_playable_regions(state["scenario"], state.get("capabilities")):
-        tgt = _faction_ambush_target(state, region, attacker)
+        tgt = _faction_ambush_target(state, region, attacker, only_faction)
         if tgt is None:
             continue
         try:
@@ -4361,13 +4370,21 @@ def _derive_card_A18(state, faction, shaded):
     Region without Ariovistus. Choose the such Region with the most German
     pieces. Any non-German Faction benefits. Shaded deferred."""
     from fs_bot.rules_consts import (GERMANIA_REGIONS, GERMANS, ARIOVISTUS_LEADER,
-                                     WARBAND, ALLY, SETTLEMENT)
+                                     WARBAND, ALLY, SETTLEMENT, ROMANS)
     from fs_bot.board.pieces import count_pieces, get_leader_in_region
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.map.map_data import get_adjacent
     if shaded or faction == GERMANS:
         return None
+    scen = state["scenario"]
     best = None
     for region in GERMANIA_REGIONS:
         if get_leader_in_region(state, region, GERMANS) == ARIOVISTUS_LEADER:
+            continue
+        # "...under or adjacent to Roman Control" (A18) — only such Regions.
+        if not (is_controlled_by(state, region, ROMANS)
+                or any(is_controlled_by(state, a, ROMANS)
+                       for a in get_adjacent(region, scen))):
             continue
         g = (count_pieces(state, region, GERMANS, WARBAND)
              + count_pieces(state, region, GERMANS, ALLY)

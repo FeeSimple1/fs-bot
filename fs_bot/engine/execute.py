@@ -103,6 +103,26 @@ _BEFORE_BATTLE_SAS = {_SA_INTIMIDATE, _SA_DEVASTATE, _SA_ENTREAT}
 _UNWIRED_COMMANDS = set()
 
 
+def _apply_end_of_action_capabilities(state):
+    """Ongoing capability effects checked at the end of any Faction's action.
+
+    A70 (Nervii, shaded): "If Nervii Subdued at end of any Faction's action,
+    place Belgic Ally there." Subdued = the Nervii Tribe neither Allied nor
+    Dispersed (allied_faction None, status None).
+    """
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import (BELGAE, NERVII, TRIBE_NERVII, ALLY,
+                                     EVENT_SHADED)
+    from fs_bot.board.pieces import get_available, place_piece
+    if not is_capability_active(state, "A70", EVENT_SHADED):
+        return
+    ti = state.get("tribes", {}).get(TRIBE_NERVII)
+    if (ti and ti.get("allied_faction") is None and ti.get("status") is None
+            and get_available(state, BELGAE, ALLY) > 0):
+        place_piece(state, NERVII, BELGAE, ALLY)
+        ti["allied_faction"] = BELGAE
+
+
 def _sa_runs_before_command(command, sa):
     """Whether a Command's accompanying Special Activity resolves BEFORE the
     Command rather than after.
@@ -188,6 +208,7 @@ def execute_decision(state, faction, decision):
             result = dict(result)
             result["sa_execution"] = sa_result
             result["sa_timing"] = "before" if before else "after"
+        _apply_end_of_action_capabilities(state)
         return result
     if command in _UNWIRED_COMMANDS:
         return {"executed": False, "command": command,

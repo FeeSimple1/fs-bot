@@ -653,7 +653,14 @@ def _gallic_warband_cap(state, region, faction):
         return allies + citadels + leader_count + ARVERNI_RALLY_EXTRA_WARBAND
     else:
         # Aedui or Belgae
-        return allies + citadels
+        cap = allies + citadels
+        # A70 (Nervii, shaded): Belgic Rally at Nervii places +2 Warbands.
+        from fs_bot.cards.capabilities import is_capability_active
+        from fs_bot.rules_consts import BELGAE as _BE, NERVII as _NV, EVENT_SHADED as _ES
+        if (faction == _BE and region == _NV
+                and is_capability_active(state, "A70", _ES)):
+            cap += 2
+        return cap
 
 
 def _german_warband_cap(state, region):

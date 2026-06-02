@@ -1380,3 +1380,39 @@ class TestAuditConditionFixes:
         got = [r for r in get_playable_regions(st["scenario"], st.get("capabilities"))
                if count_pieces(st, r, AEDUI, WARBAND) > 0]
         assert len(got) >= 1
+
+    def test_cardA70_rally_plus2_warbands_at_nervii(self):
+        from fs_bot.commands.rally import _gallic_warband_cap
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, BELGAE, NERVII,
+                                         ALLY, EVENT_SHADED)
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        st["tribes"]["Nervii"]["allied_faction"] = BELGAE
+        place_piece(st, NERVII, BELGAE, ALLY)
+        base = _gallic_warband_cap(st, NERVII, BELGAE)
+        activate_capability(st, "A70", EVENT_SHADED)
+        assert _gallic_warband_cap(st, NERVII, BELGAE) == base + 2
+        # Not for Aedui, and not in other Regions.
+        assert _gallic_warband_cap(st, "Atrebates", BELGAE) == \
+            _gallic_warband_cap(st, "Atrebates", BELGAE)
+
+    def test_cardA70_places_belgic_ally_when_nervii_subdued(self):
+        from fs_bot.engine.execute import _apply_end_of_action_capabilities
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, BELGAE, NERVII,
+                                         TRIBE_NERVII, ALLY, EVENT_SHADED)
+        from fs_bot.board.pieces import count_pieces
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        st["tribes"][TRIBE_NERVII]["allied_faction"] = None
+        st["tribes"][TRIBE_NERVII]["status"] = None
+        activate_capability(st, "A70", EVENT_SHADED)
+        _apply_end_of_action_capabilities(st)
+        assert st["tribes"][TRIBE_NERVII]["allied_faction"] == BELGAE
+        n = count_pieces(st, NERVII, BELGAE, ALLY)
+        assert n >= 1
+        # No double-trigger once Allied.
+        _apply_end_of_action_capabilities(st)
+        assert count_pieces(st, NERVII, BELGAE, ALLY) == n

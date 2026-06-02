@@ -1416,3 +1416,78 @@ class TestAuditConditionFixes:
         # No double-trigger once Allied.
         _apply_end_of_action_capabilities(st)
         assert count_pieces(st, NERVII, BELGAE, ALLY) == n
+
+    def test_card30_unshaded_arverni_rally_cap_drops_leader_plus1(self):
+        from fs_bot.commands.rally import _gallic_warband_cap
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, ALLY,
+                                         CITADEL, LEADER, VERCINGETORIX,
+                                         EVENT_UNSHADED, ARVERNI_RALLY_EXTRA_WARBAND)
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        region = "Arverni"
+        place_piece(st, region, ARVERNI, ALLY)
+        place_piece(st, region, ARVERNI, LEADER, leader_name=VERCINGETORIX)
+        base = _gallic_warband_cap(st, region, ARVERNI)  # allies + leader + 1
+        activate_capability(st, 30, EVENT_UNSHADED)
+        capped = _gallic_warband_cap(st, region, ARVERNI)
+        assert capped == base - (1 + ARVERNI_RALLY_EXTRA_WARBAND)
+
+    def test_card39_trade_capability(self):
+        from fs_bot.commands.sa_trade import trade
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, AEDUI, ALLY,
+                                         EVENT_UNSHADED)
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        # Sequani borders Cisalpina -> on a Supply Line.
+        st["tribes"]["Sequani"]["allied_faction"] = AEDUI
+        place_piece(st, "Sequani", AEDUI, ALLY)
+        refresh_all_control(st)
+        base = trade(st)["resources_gained"]
+        activate_capability(st, 39, EVENT_UNSHADED)
+        boosted = trade(st)["resources_gained"]
+        # Unshaded yields +2 each instead of +1.
+        assert boosted >= base * 2 and boosted > base
+
+    def test_card19_shaded_relocates_successor_on_map(self):
+        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, LEADER,
+                                         VERCINGETORIX, EVENT_SHADED)
+        from fs_bot.board.pieces import place_piece, find_leader, count_pieces
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
+        # Leader already on map in Arverni; relocate to Bituriges.
+        if find_leader(st, ARVERNI) is None:
+            place_piece(st, "Arverni", ARVERNI, LEADER, leader_name=VERCINGETORIX)
+        start = find_leader(st, ARVERNI)
+        dest = "Bituriges" if start != "Bituriges" else "Pictones"
+        st["event_params"] = {"target_region": dest}
+        execute_event(st, 19, shaded=True)
+        assert find_leader(st, ARVERNI) == dest
+        assert count_pieces(st, start, ARVERNI, LEADER) == 0
+
+    def test_cardA65_no_attacker_leader_excludes_leader(self):
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, BELGAE, GERMANS,
+                                         WARBAND, LEADER, AMBIORIX)
+        from fs_bot.board.pieces import place_piece, remove_piece, count_pieces
+        from fs_bot.state.state_schema import build_initial_state
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
+        region = "Nervii"
+        for pt in (WARBAND,):
+            c = count_pieces(st, region, BELGAE, pt)
+            if c:
+                remove_piece(st, region, BELGAE, pt, count=c)
+        place_piece(st, region, BELGAE, WARBAND, count=4)
+        if count_pieces(st, region, BELGAE, LEADER) == 0:
+            place_piece(st, region, BELGAE, LEADER, leader_name=AMBIORIX)
+        place_piece(st, region, GERMANS, WARBAND, count=6)
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        with_leader = _calculate_attack_losses(st, region, BELGAE, GERMANS, **kw)
+        no_leader = _calculate_attack_losses(st, region, BELGAE, GERMANS,
+                                             no_attacker_leader=True, **kw)
+        assert no_leader < with_leader

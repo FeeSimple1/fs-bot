@@ -804,10 +804,20 @@ def execute_card_19(state, shaded=False):
                 place_piece(state, PROVINCIA, ROMANS, AUXILIA,
                             count=to_place)
     else:
-        # Shaded: Place Arverni Successor as Vercingetorix
+        # Shaded: place the Arverni Successor anywhere "on map or Available",
+        # symbol up, as if Vercingetorix.
+        from fs_bot.board.pieces import find_leader
         params = state.get("event_params", {})
         target = params.get("target_region")
-        if target and get_available(state, ARVERNI, LEADER) >= 1:
+        if not target:
+            return
+        current = find_leader(state, ARVERNI)
+        if current == target:
+            return  # already there
+        if current is not None:
+            # On map: relocate (remove returns the Leader to Available).
+            remove_piece(state, current, ARVERNI, LEADER)
+        if get_available(state, ARVERNI, LEADER) >= 1:
             place_piece(state, target, ARVERNI, LEADER,
                         leader_name=VERCINGETORIX)
 
@@ -2225,9 +2235,8 @@ def execute_card_57(state, shaded=False):
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_57_march_britannia"] = True
         state["event_modifiers"]["card_57_free_sa"] = True
-        # +4 Resources if faction has pieces in Britannia
-        if faction:
-            _cap_resources(state, faction, 4)
+        # +4 Resources only "if in Britannia" — applied after the free March
+        # resolves (_resolve_card57_britannia_march), not unconditionally here.
     else:
         # Remove Ally or Dispersed from Britannia
         removal = params.get("removal")

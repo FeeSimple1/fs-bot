@@ -1025,7 +1025,7 @@ def _resolve_card_A65_battle(state, faction):
     from fs_bot.battle.resolve import resolve_battle
     rd, rr = _decide_defender_retreat(state, R, faction, opp, False)
     try:
-        res = resolve_battle(state, R, faction, opp,
+        res = resolve_battle(state, R, faction, opp, no_attacker_leader=True,
                              retreat_declaration=rd, retreat_region=rr)
     except _EXEC_ERRORS as exc:
         return [{"free_action": "battle", "flag": "card_A65",
@@ -1953,8 +1953,15 @@ def _resolve_card57_britannia_march(state, faction):
     except _EXEC_ERRORS as exc:
         return [{"free_action": "march", "flag": "card_57_march_britannia",
                  "source": S, "executed": False, "reason": repr(exc)}]
+    # "...then — if in Britannia — add +4 Resources." Only when the group
+    # actually reached Britannia.
+    bonus = 0
+    if final == BRITANNIA and count_pieces(state, BRITANNIA, faction) > 0:
+        from fs_bot.cards.card_effects import _cap_resources
+        _cap_resources(state, faction, 4)
+        bonus = 4
     return [{"free_action": "march", "flag": "card_57_march_britannia",
-             "source": S, "final_region": final,
+             "source": S, "final_region": final, "resources_bonus": bonus,
              "sa_deferred": "any free Special Ability (open-ended)"}]
 
 

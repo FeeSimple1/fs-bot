@@ -647,6 +647,12 @@ def _gallic_warband_cap(state, region, faction):
     citadels = count_pieces(state, region, faction, CITADEL)
 
     if faction == ARVERNI:
+        # Card 30 (Vercingetorix's Elite) unshaded capability: "Arverni Rally
+        # places Warbands up to Allies+Citadels (not Leader+1)."
+        from fs_bot.cards.capabilities import is_capability_active
+        from fs_bot.rules_consts import EVENT_UNSHADED as _EU
+        if is_capability_active(state, 30, _EU):
+            return allies + citadels
         leader_count = (
             1 if get_leader_in_region(state, region, ARVERNI) else 0
         )

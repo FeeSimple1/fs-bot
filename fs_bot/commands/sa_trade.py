@@ -67,7 +67,12 @@ def trade(state, agreements=None, roman_agreed=False):
     scenario = state["scenario"]
     result = {"resources_gained": 0, "per_item": []}
 
-    per_item_value = 2 if roman_agreed else 1
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_UNSHADED as _EU, EVENT_SHADED as _ESh
+    # Card 39 (River Commerce) unshaded: Aedui Allies/Citadels in Supply Lines
+    # "always yield +2 Resources each in Trade".
+    per_item_value = 2 if (roman_agreed
+                           or is_capability_active(state, 39, _EU)) else 1
 
     # Find all regions on Supply Lines
     supply_line_regions = set()
@@ -89,6 +94,13 @@ def trade(state, agreements=None, roman_agreed=False):
 
     if not supply_line_regions:
         return result
+
+    # Card 39 (River Commerce) shaded: "Trade is maximum 1 Region."
+    if is_capability_active(state, 39, _ESh) and len(supply_line_regions) > 1:
+        def _aedui_value(r):
+            ap = state["spaces"][r].get("pieces", {}).get(AEDUI, {})
+            return ap.get(ALLY, 0) + ap.get(CITADEL, 0)
+        supply_line_regions = {max(sorted(supply_line_regions), key=_aedui_value)}
 
     total = 0
 

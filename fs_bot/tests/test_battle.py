@@ -1552,3 +1552,46 @@ class TestCard30ShadedLegionWarbands:
         none = calculate_losses(st, region, ARVERNI, AEDUI, is_counterattack=True,
                                 arverni_legion_override=0)
         assert none == full - 1  # the +1 Legion bonus is suppressed
+
+    def test_only_two_warbands_get_the_legion_save_roll(self):
+        # With 6 Warbands and all rolls forced to "remove" (1), exactly 2
+        # Warbands roll (the 2 picked Legions); the rest auto-remove. This pins
+        # that only 2 Warbands ever get the §3.2.4 save roll.
+        from fs_bot.battle.losses import resolve_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import ARVERNI, WARBAND, EVENT_SHADED
+
+        class _Fixed:
+            def __init__(self, v):
+                self.v = v
+            def randint(self, a, b):
+                return self.v
+
+        st, region = self._setup()
+        from fs_bot.board.pieces import place_piece
+        place_piece(st, region, ARVERNI, WARBAND, count=2)  # 4 -> 6
+        activate_capability(st, 30, EVENT_SHADED)
+        st["rng"] = _Fixed(1)  # every roll removes
+        res = resolve_losses(st, region, ARVERNI, 4)
+        assert len(res["rolls"]) == 2          # only the 2 Legion-Warbands roll
+        assert res["losses_taken"] == 4        # 2 via roll + 2 auto-removed
+
+    def test_legion_warbands_absorb_multiple_losses(self):
+        # §3.2.4: a piece that survives 4-6 may absorb more. The 2 Legion-
+        # Warbands shield the rest when rolls are forced to "absorb" (6).
+        from fs_bot.battle.losses import resolve_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import ARVERNI, EVENT_SHADED
+
+        class _Fixed:
+            def __init__(self, v):
+                self.v = v
+            def randint(self, a, b):
+                return self.v
+
+        st, region = self._setup()
+        activate_capability(st, 30, EVENT_SHADED)
+        st["rng"] = _Fixed(6)  # every roll absorbs
+        res = resolve_losses(st, region, ARVERNI, 5)
+        assert res["losses_taken"] == 0        # the 2 Legions absorbed all 5
+        assert res["losses_absorbed"] == 5

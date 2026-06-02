@@ -818,52 +818,62 @@ def node_r_recruit(state):
     avail_allies = get_available(state, ROMANS, ALLY)
     avail_auxilia = get_available(state, ROMANS, AUXILIA)
 
-    # Count how many could actually be placed (simplified — full validation
-    # requires checking region eligibility, which depends on Supply Lines)
-    potential_allies = avail_allies
-    potential_auxilia = avail_auxilia
-    total_potential = potential_allies + potential_auxilia
+    # §8.8.4: Recruit only if it would actually ADD 2+ Allies or 6+ pieces.
+    # Build the concrete plan and count what can really be placed — region
+    # eligibility, Subdued Tribes, and Auxilia caps all gate placement.
+    from fs_bot.commands.rally import (
+        validate_recruit_region, has_supply_line,
+        _find_subdued_tribe_for_ally, _count_recruit_auxilia_cap,
+    )
+    playable = get_playable_regions(scenario, state.get("capabilities"))
+    eligible = [r for r in playable if validate_recruit_region(state, r)[0]]
+    # Supply-Line Regions first (to save Resources), then a stable order.
+    eligible.sort(key=lambda r: (0 if has_supply_line(state, r) else 1, r))
 
-    if potential_allies >= 2 or total_potential >= 6:
-        # Build before Recruit — §8.8.4
-        sa = SA_ACTION_BUILD
+    # (1) Place all Allies able (one per Subdued Tribe, capped by Available).
+    recruit_plan = []
+    rem_allies = avail_allies
+    new_ally_in = {}
+    used_tribes = set()
+    for r in eligible:
+        if rem_allies <= 0:
+            break
+        # _find_subdued_tribe_for_ally returns the LIST of eligible Tribes;
+        # take the first not already targeted (recruit_in_region needs a single
+        # Tribe name, not the list).
+        eligible_tribes = _find_subdued_tribe_for_ally(state, r, ROMANS) or []
+        tribe = next((tt for tt in eligible_tribes if tt not in used_tribes),
+                     None)
+        if tribe is not None:
+            recruit_plan.append({"region": r, "action": "place_ally",
+                                 "tribe": tribe})
+            used_tribes.add(tribe)
+            rem_allies -= 1
+            new_ally_in[r] = new_ally_in.get(r, 0) + 1
+    placed_allies = avail_allies - rem_allies
 
-        # Build the concrete target list per §8.8.4: place all Allies able,
-        # then all Auxilia able, Supply-Line Regions first (to save Resources).
-        from fs_bot.commands.rally import (
-            validate_recruit_region, has_supply_line,
-            _find_subdued_tribe_for_ally, _count_recruit_auxilia_cap,
-        )
-        playable = get_playable_regions(scenario, state.get("capabilities"))
-        eligible = [r for r in playable
-                    if validate_recruit_region(state, r)[0]]
-        # Supply-Line Regions first, then a stable alphabetical order.
-        eligible.sort(key=lambda r: (0 if has_supply_line(state, r) else 1, r))
+    # (2) Place all Auxilia able — each Region up to its cap (which counts the
+    # Allies just placed, since Allies recruit before Auxilia), capped by
+    # Available.
+    placed_auxilia = 0
+    rem_aux = avail_auxilia
+    for r in eligible:
+        if rem_aux <= 0:
+            break
+        cap = _count_recruit_auxilia_cap(state, r) + new_ally_in.get(r, 0)
+        take = min(cap, rem_aux)
+        if take > 0:
+            recruit_plan.append({"region": r, "action": "place_auxilia"})
+            rem_aux -= take
+            placed_auxilia += take
 
-        recruit_plan = []
-        rem_allies = avail_allies
-        for r in eligible:
-            if rem_allies <= 0:
-                break
-            tribe = _find_subdued_tribe_for_ally(state, r, ROMANS)
-            if tribe is not None:
-                recruit_plan.append({
-                    "region": r, "action": "place_ally", "tribe": tribe})
-                rem_allies -= 1
-        rem_aux = avail_auxilia
-        for r in eligible:
-            if rem_aux <= 0:
-                break
-            if _count_recruit_auxilia_cap(state, r) > 0:
-                recruit_plan.append({"region": r, "action": "place_auxilia"})
-                rem_aux -= 1
-
+    if placed_allies >= 2 or (placed_allies + placed_auxilia) >= 6:
         return _make_action(
             ACTION_RECRUIT,
-            sa=sa,
+            sa=SA_ACTION_BUILD,  # Build before Recruit — §8.8.4
             details={
-                "potential_allies": potential_allies,
-                "potential_auxilia": potential_auxilia,
+                "potential_allies": placed_allies,
+                "potential_auxilia": placed_auxilia,
                 "recruit_plan": recruit_plan,
             },
         )

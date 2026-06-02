@@ -492,11 +492,28 @@ class TestNodeRMarch:
 class TestNodeRRecruit:
 
     def test_recruit_with_enough_pieces(self):
-        """Recruit when placing 2+ Allies or 6+ pieces is possible."""
+        """Recruit when placing 2+ Allies or 6+ pieces is actually possible.
+
+        §8.8.4 counts what can really be placed: Roman presence + Subdued Tribes
+        gate it. Two Roman Forts give two eligible Regions, each with a Subdued
+        Tribe -> 2 Allies placeable -> Recruit.
+        """
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.rules_consts import FORT
         state = _make_state()
-        # Keep many pieces in Available (default state)
+        for region in ("Provincia", "Bituriges"):
+            place_piece(state, region, ROMANS, FORT)
+        refresh_all_control(state)
         result = node_r_recruit(state)
         assert result["command"] == ACTION_RECRUIT
+        assert result["details"]["potential_allies"] >= 2
+
+    def test_recruit_declines_when_nothing_placeable(self):
+        """No Roman presence -> nothing can be placed -> not Recruit (Seize)."""
+        state = _make_state()
+        result = node_r_recruit(state)
+        assert result["command"] != ACTION_RECRUIT
 
     def test_recruit_falls_through_to_seize(self):
         """If can't place enough, fall through to Seize."""

@@ -759,7 +759,14 @@ def _resolve_free_actions(state, faction):
     if mods.get("card_A58_roman_battle_seize"):
         results.extend(_resolve_a58_battle_seize(state, faction))
     if mods.get("card_A67_arduenna"):
-        results.extend(_resolve_a67_arduenna(state, faction))
+        # A67 = base 67 effect, "updated to allow German use" (A Card Ref). A
+        # non-German actor (Be/Ae/Ro) uses the faction-agnostic base resolver;
+        # the German path has its own (March-to-Control + Battle + flip Hidden).
+        from fs_bot.rules_consts import GERMANS as _G67
+        if faction == _G67:
+            results.extend(_resolve_a67_arduenna(state, faction))
+        else:
+            results.extend(_resolve_card67_arduenna(state, faction))
     if mods.get("card_A20_free_seize_veneti"):
         results.extend(_resolve_a20_free_seize(state))
     if mods.get("card_A20_arverni_ambush"):
@@ -1526,11 +1533,18 @@ def _resolve_card54_joined_ranks(state, faction, march_limit,
     Region that already has >=2 other Gallic/Roman Factions; then it free
     Battles there (No Retreat) and a 2nd such Faction free Battles there
     (Retreat allowed), each against a 3rd Faction."""
-    from fs_bot.rules_consts import ROMANS, ARVERNI, AEDUI, BELGAE
+    from fs_bot.rules_consts import (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+                                     ARIOVISTUS_SCENARIOS)
     from fs_bot.board.pieces import count_pieces
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    gr = (ROMANS, ARVERNI, AEDUI, BELGAE)
     scen = state["scenario"]
+    # The player Factions that count toward "2 other Factions" and may be the
+    # 2nd Battler. In Ariovistus the card reads "2 other Factions" and Germans
+    # are a player while Arverni are game-run (A6.2) — swap them in.
+    if scen in ARIOVISTUS_SCENARIOS:
+        gr = (ROMANS, GERMANS, AEDUI, BELGAE)
+    else:
+        gr = (ROMANS, ARVERNI, AEDUI, BELGAE)
     playable = set(get_playable_regions(scen, state.get("capabilities")))
     # Target Region: >=2 other Gallic/Roman Factions, reachable/occupied by us.
     T = None

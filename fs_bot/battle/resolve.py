@@ -43,7 +43,8 @@ from fs_bot.board.pieces import (
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import get_adjacent, is_adjacent
 from fs_bot.battle.losses import (calculate_losses, resolve_losses,
-                                  _remove_battle_piece)
+                                  _remove_battle_piece,
+                                  card30_arverni_legion_warbands)
 
 
 def resolve_battle(state, region, attacking_faction, defending_faction,
@@ -382,11 +383,17 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     if counterattack:
         # Counterattack: surviving Defenders cause Losses to Attackers
         # "Attacker takes normal Losses. Allies, Forts, Citadels last."
+        # Card 30 shaded Tip: a defending Arverni's Legion-Warbands inflict in
+        # the Counterattack only if they SURVIVED the Attack absorb step — pass
+        # the surviving count so removed picked Warbands grant no Legion bonus.
+        _legion_override = result.get("attack", {}).get(
+            "legion_warbands_surviving")
         counter_losses = calculate_losses(
             state, region,
             attacking_faction=defending_faction,
             defending_faction=attacking_faction,
             is_counterattack=True,
+            arverni_legion_override=_legion_override,
         )
         counter_result = resolve_losses(
             state, region, attacking_faction, counter_losses,
@@ -503,6 +510,13 @@ def _calculate_attack_losses(state, region, attacking_faction,
     component_b = leader_value + enemy_auxilia * aux_factor
 
     total = component_a + component_b
+
+    # Card 30 (Vercingetorix's Elite) shaded: 2 attacking Arverni "Legion"
+    # Warbands inflict 1 Loss each (not 1/2) when their Leader is present.
+    _legion_wb = card30_arverni_legion_warbands(state, region, attacking_faction)
+    if _legion_wb:
+        _wb_factor = 1.0 if warband_full_loss else 0.5
+        total += _legion_wb * (1.0 - _wb_factor)
 
     # Ariovistus doubling — A3.2.4
     if ariovistus_in_battle and not state.get("event_modifiers", {}).get(

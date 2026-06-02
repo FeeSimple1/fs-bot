@@ -1474,3 +1474,81 @@ def test_auxilia_only_attack_excludes_legions():
     # the full attack but nothing under auxilia_only.
     assert full == 5
     assert aux_only == 2
+
+
+class TestCard30ShadedLegionWarbands:
+    """Card 30 (Vercingetorix's Elite) shaded: in any Battle with their Leader,
+    2 Arverni Warbands take & inflict Losses as if Legions."""
+
+    def _setup(self, seed=3, leader=True):
+        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, AEDUI,
+                                         WARBAND, LEADER, VERCINGETORIX)
+        st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=seed)
+        region = "Arverni"
+        for f in (ARVERNI, AEDUI):
+            c = count_pieces(st, region, f, WARBAND)
+            if c:
+                remove_piece(st, region, f, WARBAND, count=c)
+        if leader and count_pieces(st, region, ARVERNI, LEADER) == 0:
+            place_piece(st, region, ARVERNI, LEADER, leader_name=VERCINGETORIX)
+        elif not leader and count_pieces(st, region, ARVERNI, LEADER) > 0:
+            remove_piece(st, region, ARVERNI, LEADER)
+        place_piece(st, region, ARVERNI, WARBAND, count=4)
+        place_piece(st, region, AEDUI, WARBAND, count=2)
+        return st, region
+
+    def test_inflict_as_legions_adds_one(self):
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import ARVERNI, AEDUI, EVENT_SHADED
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        st, region = self._setup()
+        base = _calculate_attack_losses(st, region, ARVERNI, AEDUI, **kw)
+        activate_capability(st, 30, EVENT_SHADED)
+        boosted = _calculate_attack_losses(st, region, ARVERNI, AEDUI, **kw)
+        # 2 of the 4 Warbands now inflict 1 each instead of 1/2 -> +1.
+        assert boosted == base + 1
+
+    def test_no_effect_without_leader(self):
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import ARVERNI, AEDUI, EVENT_SHADED
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        st, region = self._setup(leader=False)
+        base = _calculate_attack_losses(st, region, ARVERNI, AEDUI, **kw)
+        activate_capability(st, 30, EVENT_SHADED)
+        assert _calculate_attack_losses(st, region, ARVERNI, AEDUI, **kw) == base
+
+    def test_absorb_save_roll_for_two_warbands(self):
+        from fs_bot.battle.losses import resolve_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import ARVERNI, EVENT_SHADED
+        # With the capability, Arverni Warband losses get the §3.2.4 save roll.
+        st, region = self._setup()
+        activate_capability(st, 30, EVENT_SHADED)
+        st["rng"].seed(11)
+        res = resolve_losses(st, region, ARVERNI, 3)
+        assert res["rolls"], "Legion-Warbands should roll to absorb"
+        assert "legion_warbands_surviving" in res
+        # Without the capability, the same losses auto-remove (no rolls).
+        st2, region2 = self._setup()
+        st2["rng"].seed(11)
+        res2 = resolve_losses(st2, region2, ARVERNI, 3)
+        assert res2["rolls"] == []
+        assert res2["losses_taken"] == 3
+
+    def test_counterattack_override_zero_gives_no_bonus(self):
+        # Tip: if the 2 picked Warbands were removed while absorbing, the
+        # Counterattack inflicts no Legion bonus. The override carries the
+        # surviving count (0 here) so no bonus is added.
+        from fs_bot.battle.losses import calculate_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import ARVERNI, AEDUI, EVENT_SHADED
+        st, region = self._setup()
+        activate_capability(st, 30, EVENT_SHADED)
+        full = calculate_losses(st, region, ARVERNI, AEDUI, is_counterattack=True)
+        none = calculate_losses(st, region, ARVERNI, AEDUI, is_counterattack=True,
+                                arverni_legion_override=0)
+        assert none == full - 1  # the +1 Legion bonus is suppressed

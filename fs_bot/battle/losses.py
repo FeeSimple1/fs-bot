@@ -48,7 +48,7 @@ from fs_bot.board.pieces import (
 def calculate_losses(state, region, attacking_faction, defending_faction,
                      *, is_retreat=False, is_counterattack=False,
                      double_auxilia=False, allied_factions=(),
-                     warband_full_loss=False):
+                     warband_full_loss=False, arverni_legion_override=None):
     """Calculate the number of Losses inflicted.
 
     Per §3.2.4/§3.3.4/§3.4.4 LOSSES:
@@ -150,6 +150,17 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
 
     total = component_a + component_b
 
+    # Card 30 (Vercingetorix's Elite) shaded: the acting Arverni's 2 "Legion"
+    # Warbands inflict 1 Loss each, not 1/2. arverni_legion_override lets the
+    # caller pass the count that SURVIVED an earlier absorb step (the Tip: if
+    # the picked Warbands were removed, the Counterattack gains no Legion bonus).
+    _legion_wb = (arverni_legion_override if arverni_legion_override is not None
+                  else card30_arverni_legion_warbands(state, region,
+                                                      attacking_faction))
+    if _legion_wb:
+        _wb_factor = 1.0 if warband_full_loss else 0.5
+        total += _legion_wb * (1.0 - _wb_factor)
+
     # Ariovistus doubling — A3.2.4, A3.4.4
     # Doubles total losses unless enemy (faction taking losses) is Defending
     # with Fort or Citadel. But an Attacker always takes double in
@@ -195,6 +206,23 @@ def _count_all_flippable(faction_pieces, piece_type):
     for ps in (HIDDEN, REVEALED, SCOUTED):
         total += faction_pieces.get(ps, {}).get(piece_type, 0)
     return total
+
+
+def card30_arverni_legion_warbands(state, region, faction):
+    """Card 30 (Vercingetorix's Elite) shaded capability: "In any Battles with
+    their Leader, Arverni pick 2 Arverni Warbands — they take & inflict Losses
+    as if Legions." Returns how many such "Legion" Warbands apply right now
+    (0, 1, or 2): 0 unless the capability is active, the Faction is Arverni, and
+    the Arverni Leader is in the Battle Region.
+    """
+    from fs_bot.rules_consts import ARVERNI, WARBAND, EVENT_SHADED
+    from fs_bot.cards.capabilities import is_capability_active
+    if faction != ARVERNI or not is_capability_active(state, 30, EVENT_SHADED):
+        return 0
+    if get_leader_in_region(state, region, ARVERNI) is None:
+        return 0
+    f_pieces = state["spaces"][region].get("pieces", {}).get(ARVERNI, {})
+    return min(2, _count_all_flippable(f_pieces, WARBAND))
 
 
 # ============================================================================
@@ -257,6 +285,12 @@ def resolve_losses(state, region, faction, num_losses, *,
     # Normal: yes. Ambush: no (auto-remove). Exception: Caesar counterattacks.
     use_rolls = not is_ambush or caesar_counterattacks
 
+    # Card 30 (Vercingetorix's Elite) shaded: up to 2 Arverni Warbands "take
+    # Losses as if Legions" — they get the §3.2.4 save roll. Track how many
+    # such Legion-Warbands remain alive (decrement only when one is removed).
+    arverni_legions_alive = card30_arverni_legion_warbands(state, region, faction)
+    card30_active = arverni_legions_alive > 0
+
     remaining = num_losses
     while remaining > 0:
         # Build the priority list of pieces to take losses
@@ -274,6 +308,9 @@ def resolve_losses(state, region, faction, num_losses, *,
 
         # Determine if this is a hard target that gets a die roll
         is_hard_target = piece_type in HARD_TARGET_PIECES
+        # Card 30 shaded: a surviving Arverni "Legion" Warband absorbs via the
+        # §3.2.4 save roll, just like a Legion (and may be targeted repeatedly).
+        is_legion_warband = (piece_type == WARBAND and arverni_legions_alive > 0)
 
         # Provincia Fort never absorbs Losses — §1.4.2
         if piece_type == FORT and region == PROVINCIA:
@@ -289,7 +326,7 @@ def resolve_losses(state, region, faction, num_losses, *,
             leader_name = get_leader_in_region(state, region, faction)
             is_diviciacus = (leader_name == DIVICIACUS)
 
-        if is_hard_target and use_rolls:
+        if (is_hard_target or is_legion_warband) and use_rolls:
             # Roll to remove — §3.2.4
             roll = state["rng"].randint(DIE_MIN, DIE_MAX)
 
@@ -303,6 +340,8 @@ def resolve_losses(state, region, faction, num_losses, *,
                 # Remove the piece
                 _remove_battle_piece(state, region, faction,
                                      piece_type, piece_state)
+                if is_legion_warband:
+                    arverni_legions_alive -= 1
                 result["rolls"].append((piece_type, roll, True))
                 result["removed"].append((piece_type, 1))
                 result["losses_taken"] += 1
@@ -325,6 +364,9 @@ def resolve_losses(state, region, faction, num_losses, *,
             result["losses_taken"] += 1
 
         remaining -= 1
+
+    if card30_active:
+        result["legion_warbands_surviving"] = arverni_legions_alive
 
     return result
 

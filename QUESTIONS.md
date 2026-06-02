@@ -390,15 +390,22 @@ grounded in the rules. Resolved with tests:
 - **A20 unshaded** — free Seize "as if Roman Control" Disperses Veneti
   regardless of actual Control (as_if_control override).
 
-### Still open — one item (intricate battle-engine modifier)
-- **Card 30 shaded (capability)** — "In any Battles with their Leader, Arverni
-  pick 2 Arverni Warbands — they take & inflict Losses as if Legions." The rule
-  is clear (§3.2.4: hard pieces get a 1-3 save roll; Legions inflict 1 not ½),
-  but faithful implementation requires tracking *2 specific* Arverni Warbands as
-  hard pieces through `resolve_losses` / `_build_loss_priority` (a per-piece
-  distinction the type-based loss engine does not currently express), including
-  the counterattack interaction noted in the card Tip. Deferred deliberately:
-  a subtly-wrong loss modifier would silently corrupt many Battles, so per
-  CLAUDE.md ("rules-accurate over simple; never guess") this needs its own
-  isolated change with a focused test suite rather than a hasty edit.
-  Card 30 *unshaded* (the Rally cap) is implemented.
+### Resolved — Card 30 shaded (capability)
+- **Card 30 shaded** — "In any Battles with their Leader, Arverni pick 2 Arverni
+  Warbands — they take & inflict Losses as if Legions." Implemented:
+  - INFLICT: in the Attack step (`_calculate_attack_losses`) and the
+    Counterattack step (`calculate_losses`), 2 Arverni Warbands count as Legions
+    (1 Loss each, not ½) when the Arverni Leader is in the Battle and the
+    capability is active (`card30_arverni_legion_warbands`).
+  - ABSORB: in `resolve_losses`, up to 2 Arverni Warband Losses take the §3.2.4
+    save roll (1-3 remove to Available — not Fallen, per Tip; 4-6 absorb, and
+    the survivor may be targeted again).
+  - Counterattack Tip: the surviving picked-Warband count from the Attack absorb
+    is threaded (`arverni_legion_override`) into the Counterattack inflict, so
+    if both picked Warbands were removed while absorbing, the Counterattack
+    gains no Legion bonus.
+  Tested in TestCard30ShadedLegionWarbands (inflict, no-leader, absorb save
+  roll, counterattack override). Card 30 *unshaded* (the Rally cap) was already
+  implemented.
+
+### Open items: none from the audit remain.

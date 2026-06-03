@@ -3738,13 +3738,26 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
     if defender == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
         return (False, None)  # A3.2.4: Arverni never Retreat
 
-    # Condition (3): a Retreat removes no pieces only if a legal destination
-    # exists — an adjacent Region the defender Controls, OR one Controlled by
-    # a Faction that agrees to the Retreat (§1.5.2; Aedui/Romans per
-    # §8.6.6/§8.8.6, via np_agrees_to_retreat).
-    dest = _best_retreat_destination(state, region, defender)
-    if dest is None:
+    # Legal Retreat destinations (adjacent Regions the defender Controls, or
+    # ones whose controller agrees — §1.5.2).
+    legal = _retreat_destinations(state, region, defender)
+
+    # Agent hook: a human/LLM controlling the defender decides the Retreat.
+    from fs_bot.engine.agent import consult_agent, RETREAT
+    resp = consult_agent(state, defender, {
+        "kind": RETREAT, "region": region, "attacker": attacker,
+        "defender": defender, "is_ambush": is_ambush,
+        "legal_regions": sorted(legal)})
+    if resp is not None:
+        if resp.get("retreat") and resp.get("region") in legal:
+            return (True, resp["region"])
         return (False, None)
+
+    # Default NP logic. Condition (3): a Retreat removes no pieces only if a
+    # legal destination exists.
+    if not legal:
+        return (False, None)
+    dest = max(sorted(legal), key=lambda r: count_pieces(state, r, defender))
 
     suffer = calculate_losses(state, region, attacker, defender)
     suffer_if_retreat = calculate_losses(
@@ -3797,7 +3810,16 @@ def _retreat_destinations(state, region, faction):
             if c == faction:
                 continue
             if is_controlled_by(state, r, c):
-                if np_agrees_to_retreat(c, faction, state):
+                # The controlling Faction agrees? Agent hook (§1.5.2) for a
+                # human/LLM-controlled Faction; else the NP rule.
+                from fs_bot.engine.agent import consult_agent, AGREEMENT
+                _a = consult_agent(state, c, {
+                    "kind": AGREEMENT, "request_type": "retreat_into_control",
+                    "requesting_faction": faction,
+                    "context": {"region": r, "from_region": region}})
+                agrees = (bool(_a) if _a is not None
+                          else np_agrees_to_retreat(c, faction, state))
+                if agrees:
                     dests.append(r)
                 break
     return dests

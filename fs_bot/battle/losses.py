@@ -303,8 +303,21 @@ def resolve_losses(state, region, faction, num_losses, *,
             # No more pieces to remove — stop
             break
 
-        # Take the first available piece from the priority list
+        # Take the first available piece from the priority list (default), or
+        # let a human/LLM agent choose which present piece absorbs this Loss.
         piece_type, piece_state = piece_order[0]
+        if loss_order is None:
+            from fs_bot.engine.agent import consult_agent, LOSS_ORDER
+            _resp = consult_agent(state, faction, {
+                "kind": LOSS_ORDER, "region": region, "faction": faction,
+                "num_losses": remaining, "is_retreat": is_retreat,
+                "is_ambush": is_ambush, "pieces": list(piece_order)})
+            if _resp:
+                _present = set(piece_order)
+                for _e in _resp:
+                    if tuple(_e) in _present:
+                        piece_type, piece_state = tuple(_e)
+                        break
 
         # Determine if this is a hard target that gets a die roll
         is_hard_target = piece_type in HARD_TARGET_PIECES

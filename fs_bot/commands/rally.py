@@ -143,6 +143,15 @@ def _region_allows_supply_line(state, region, faction, agreements=None):
     if agreements is not None:
         return agreements.get(controlling_faction, False)
 
+    # Agent hook: a human/LLM-controlled controlling Faction decides whether to
+    # agree to the Supply Line through its Region (§3.2.1/§1.5.2).
+    from fs_bot.engine.agent import consult_agent, AGREEMENT
+    _a = consult_agent(state, controlling_faction, {
+        "kind": AGREEMENT, "request_type": "supply_line",
+        "requesting_faction": faction, "context": {"region": region}})
+    if _a is not None:
+        return bool(_a)
+
     # Default: other factions agree (caller can override)
     return True
 

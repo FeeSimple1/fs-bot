@@ -3230,6 +3230,12 @@ def _execute_battle(state, faction, bot_action):
             defender = targets[0] if targets else None
         if defender is None:
             continue
+        # A Battle requires the defender to actually be present in the Region
+        # (§3.x) — skip a no-target entry rather than resolving a no-op.
+        if count_pieces(state, region, defender) <= 0:
+            errors.append({"region": region, "defender": defender,
+                           "error": "defender not present"})
+            continue
 
         is_ambush = (sa == _SA_AMBUSH and region in sa_regions)
 

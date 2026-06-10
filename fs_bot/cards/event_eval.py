@@ -1035,9 +1035,22 @@ def is_event_effective(state, card_id, shaded=False):
     if flags & free_action_flags:
         return True
 
-    # If the card shifts the Senate, it's always effective
+    # If the card shifts the Senate, it's effective — unless the Senate
+    # marker is off-track (Pax Gallica? 1st year: "the Senate ... does
+    # not shift"), in which case the shift is a no-op and any other
+    # flags on the card decide.
     if SHIFTS_SENATE in flags:
-        return True
+        if state.get("senate", {}).get("position") is not None:
+            return True
+        other = flags - {SHIFTS_SENATE}
+        if not other:
+            return False
+        # Cards 2 and 3 unshaded place Legions only through the Senate
+        # (card 2: shift-to-place; card 3: place if at Adulation). With
+        # the marker off-track neither can happen.
+        if not shaded and card_id in (2, 3):
+            return False
+        # fall through to evaluate the remaining flags
 
     # If the card triggers Germans Phase or Arverni Phase, check if
     # relevant faction has pieces

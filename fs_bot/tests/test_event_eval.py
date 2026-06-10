@@ -575,3 +575,40 @@ class TestCapabilityFlagsConsistency:
         # Card 49 (Drought) is not a Capability
         un = get_event_flags(49, shaded=False)
         assert IS_CAPABILITY not in un
+
+
+class TestSenateOffTrack:
+    """Pax Gallica? 1st year: Senate marker off-track 'does not shift'.
+
+    Regression: Senate-shift card handlers crashed (KeyError: None) and
+    bots burned turns on no-op Events while the marker was in the
+    Winter-track Senate box.
+    """
+
+    def _state(self):
+        from fs_bot.state.setup import setup_scenario
+        from fs_bot.rules_consts import SCENARIO_PAX_GALLICA
+        return setup_scenario(SCENARIO_PAX_GALLICA, seed=1)
+
+    def test_senate_shift_events_ineffective_off_track(self):
+        st = self._state()
+        assert st["senate"]["position"] is None
+        for cid in (1, 2, 3):
+            assert is_event_effective(st, cid, shaded=False) is False, cid
+
+    def test_senate_shift_effective_once_on_track(self):
+        from fs_bot.rules_consts import INTRIGUE
+        st = self._state()
+        st["senate"]["position"] = INTRIGUE
+        for cid in (1, 2, 3):
+            assert is_event_effective(st, cid, shaded=False) is True, cid
+
+    def test_shift_handlers_noop_off_track(self):
+        from fs_bot.cards.card_effects import (
+            execute_card_1, execute_card_2, execute_card_3)
+        st = self._state()
+        st["event_params"] = {"senate_direction": "down"}
+        execute_card_1(st)
+        execute_card_2(st)
+        execute_card_3(st)
+        assert st["senate"] == {"position": None, "firm": False}

@@ -67,6 +67,12 @@ def _apply_senate_shift(state, direction):
         return
     position = state["senate"]["position"]
     is_firm = state["senate"]["firm"]
+    if position is None:
+        # Pax Gallica? 1st year: the Senate marker starts in the Winter
+        # track Senate box — "the Senate is not in Uproar, nor Intrigue,
+        # nor Adulation and does not shift" (Scenario: Pax Gallica?,
+        # Senate and Legions Track NOTE). A shift Event is a no-op.
+        return
     pos_idx = _SENATE_INDEX[position]
 
     if direction == SENATE_UP:
@@ -171,6 +177,11 @@ def execute_card_2(state, shaded=False):
         # Cannot shift if already at Firm Uproar (per Tips)
         position = state["senate"]["position"]
         is_firm = state["senate"]["firm"]
+
+        # Senate off-track (Pax Gallica? 1st year): "does not shift", so
+        # the shift-to-place is impossible — no shift, no Legions.
+        if position is None:
+            return
         pos_idx = _SENATE_INDEX[position]
 
         can_shift = not (pos_idx == 0 and is_firm)  # Not at Firm Uproar

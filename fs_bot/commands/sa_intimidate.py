@@ -182,6 +182,11 @@ def intimidate(state, region, warbands_to_flip, target_faction,
     for piece_type, piece_state in target_removals:
         if piece_type == ALLY:
             remove_piece(state, region, target_faction, ALLY, 1)
+            # The removed Ally's tribe returns to Subdued (§1.4);
+            # enemy removal clears a City tribe first (§8.4.1).
+            from fs_bot.board.pieces import clear_allied_tribe
+            clear_allied_tribe(state, region, target_faction,
+                               prefer_cities=True)
         else:
             remove_piece(state, region, target_faction, piece_type, 1,
                          piece_state=piece_state)

@@ -350,10 +350,10 @@ def _arverni_phase_rally(state, at_war_regions):
             continue
         if count_pieces(state, region, ARVERNI, ALLY) < 1:
             continue
-        # Remove Ally, place Citadel
+        # Remove Ally, place Citadel — §1.4.1. The tribe REMAINS Allied
+        # to the Arverni: the Citadel is its allegiance marker now (the
+        # same way rally_in_region's replace_citadel keeps it Allied).
         remove_piece(state, region, ARVERNI, ALLY)
-        tribe_info["allied_faction"] = None
-        tribe_info["status"] = None
         place_piece(state, region, ARVERNI, CITADEL)
         result["citadels_placed"].append((region, tribe))
         rallied_regions.add(region)
@@ -953,4 +953,10 @@ def run_arverni_phase(state, is_frost=False, force_at_war=False):
     )
 
     refresh_all_control(state)
+    # Integrity backstop: tribe allegiance must match Ally/Citadel
+    # pieces after the game-run Arverni actions.
+    from fs_bot.board.pieces import reconcile_allied_tribes
+    fixes = reconcile_allied_tribes(state)
+    if fixes:
+        result["tribe_reconciliation"] = fixes
     return result

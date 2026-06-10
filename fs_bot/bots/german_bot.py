@@ -1174,6 +1174,10 @@ def node_g_rally(state):
     """
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    # Only Regions where Rally is legal (§3.3.1/A3.4.1 via the
+    # executor's own validator).
+    from fs_bot.bots.bot_common import filter_rally_regions
+    playable = filter_rally_regions(state, GERMANS, playable)
     resources = state.get("resources", {}).get(GERMANS, 0)
 
     rally_plan = {
@@ -1207,21 +1211,20 @@ def node_g_rally(state):
         sa = SA_ACTION_NONE
         sa_regions = []
 
-    # Phase B: Place all Allies possible — A8.7.4
+    # Phase B: Place all Allies possible — A8.7.4.
+    # Placing an Ally requires Germanic Control (§3.3.1, as the
+    # executor enforces), and only at tribes the Germans may Ally
+    # (faction-restricted tribes; Subdued only).
+    from fs_bot.commands.rally import _find_subdued_tribe_for_ally
     avail_allies = get_available(state, GERMANS, ALLY)
     for region in playable:
         if avail_allies <= 0:
             break
-        if (count_pieces(state, region, GERMANS) == 0
-                and not is_controlled_by(state, region, GERMANS)
-                and region not in GERMANIA_REGIONS):
+        if not is_controlled_by(state, region, GERMANS):
             continue
-        for tribe in get_tribes_in_region(region, scenario):
+        for tribe in _find_subdued_tribe_for_ally(state, region, GERMANS):
             if avail_allies <= 0:
                 break
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") is not None:
-                continue
             cost = _german_rally_cost(state, region)
             if resources < cost:
                 continue
@@ -1310,6 +1313,19 @@ def node_g_rally(state):
             and not rally_plan["settlements_after"]):
         sa = SA_ACTION_NONE
         sa_regions = []
+
+    # If nothing at all can be placed/paid for, the G4 gate's answer
+    # was really "No" — continue at G_MARCH_EXPAND (A8.7.5). March can
+    # route back to Rally (A8.7.5 "IF NONE"), so guard against the
+    # cycle: when both nodes have nothing, the Germans Pass.
+    if not all_regions:
+        if state.get("_g_rally_march_guard"):
+            return _make_action(ACTION_PASS)
+        state["_g_rally_march_guard"] = True
+        try:
+            return node_g_march_expand(state)
+        finally:
+            state.pop("_g_rally_march_guard", None)
 
     return _make_action(
         ACTION_RALLY,

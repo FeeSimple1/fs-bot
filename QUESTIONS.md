@@ -492,3 +492,22 @@ battle engine / supply-line helpers were complete). All are now exact:
 
 All exercised by the test suite (1911) and validated across all-bot games
 (valid + deterministic in every scenario).
+
+---
+
+## [RESOLVED] Gallic War Interlude — Ally at Nori when Gallia Togata skips the Cisalpina relocation
+
+**Context:** The Interlude's Markers step removes the Nori Tribe marker
+unconditionally. The Adjust Forces step relocates/removes all Forces from
+Cisalpina — "unless Gallia Togata is in effect". With Gallia Togata in
+effect, an Ally (or Citadel) may still sit at Nori when the marker is
+removed, and the scenario text does not say what happens to it.
+
+**Resolution:** The piece is removed to Available together with the tribe.
+An Ally disc/Citadel physically sits on its tribe circle (1.4.2); when the
+Nori marker leaves play, the circle it provided no longer exists, so the
+piece on it cannot remain. The second half plays under original Falling
+Sky rules, where Cisalpina has no tribe at all (the Gallia Togata Colony
+aside, which is its own marker and unaffected).
+
+**Files:** `fs_bot/engine/interlude.py` — `_swap_nori_for_catuvellauni`.

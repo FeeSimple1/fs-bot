@@ -209,6 +209,16 @@ def execute_decision(state, faction, decision):
             result["sa_execution"] = sa_result
             result["sa_timing"] = "before" if before else "after"
         _apply_end_of_action_capabilities(state)
+        # Integrity backstop (like refresh_all_control, but for tribe
+        # allegiance): every Ally/Citadel piece is a tribe's allegiance
+        # marker, so the counts must match at the end of any action.
+        # No-op when all paths kept state["tribes"] in step.
+        from fs_bot.board.pieces import reconcile_allied_tribes
+        fixes = reconcile_allied_tribes(state)
+        if fixes:
+            result = dict(result)
+            result["tribe_reconciliation"] = (
+                result.get("tribe_reconciliation", []) + fixes)
         return result
     if command in _UNWIRED_COMMANDS:
         return {"executed": False, "command": command,
@@ -3013,9 +3023,17 @@ def _execute_event(state, faction, bot_action, *, human=False):
     free_actions = _resolve_free_actions(state, faction)
     state["event_params"] = prev_params
     state["executing_faction"] = prev_faction
+    # Card handlers place/remove Ally and Citadel pieces; any that skip
+    # the state["tribes"] bookkeeping leave the board inconsistent (the
+    # bots plan from the tribes dict, the executor validates pieces).
+    # Repair per the §8.4.1 priorities; no-op for well-behaved handlers.
+    from fs_bot.board.pieces import reconcile_allied_tribes
+    tribe_fixes = reconcile_allied_tribes(state)
     result = {"executed": True, "command": _CMD_EVENT,
               "card_id": card_id, "shaded": shaded,
               "event_result": event_result}
+    if tribe_fixes:
+        result["tribe_reconciliation"] = tribe_fixes
     if free_actions:
         result["free_actions"] = free_actions
     return result
@@ -3643,7 +3661,8 @@ def _execute_suborn(state, faction, bot_action):
             elif act == "remove_ally":
                 ops.append({"action": "remove",
                             "faction": a.get("target_faction"),
-                            "piece_type": _ALLY})
+                            "piece_type": _ALLY,
+                            "tribe": a.get("tribe")})
             elif act == "remove_warband":
                 ops.append({"action": "remove",
                             "faction": a.get("target_faction"),

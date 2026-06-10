@@ -173,11 +173,14 @@ def suborn(state, region, operations):
                          piece_state=piece_state)
             result["removed"].append((faction, piece_type, 1))
 
-            # If removing an Ally, update tribe status
+            # If removing an Ally, update tribe status. When the plan
+            # does not say which tribe, derive it (enemy removal —
+            # "Allies (Cities first)" per §8.4.1).
             if piece_type == ALLY:
                 tribe = op.get("tribe")
-                if tribe:
-                    state["tribes"][tribe]["allied_faction"] = None
+                from fs_bot.board.pieces import clear_allied_tribe
+                clear_allied_tribe(state, region, faction, tribe,
+                                   prefer_cities=True)
 
         elif action == "place":
             if piece_type == ALLY:

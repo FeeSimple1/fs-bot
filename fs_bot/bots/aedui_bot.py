@@ -597,15 +597,16 @@ def _would_raid_gain_enough(state, scenario):
         is_devastated = state["spaces"].get(region, {}).get(
             "devastated", False)
 
-        # Build steal targets for this region
+        # Build steal targets for this region — use the executor's own
+        # validator (§3.3.3: presence, no Fort/Citadel, has Resources;
+        # A1.8: Arverni untargetable in Ariovistus).
+        from fs_bot.commands.raid import validate_raid_steal_target
         steal_targets = []
         for target in raid_targets:
-            if count_pieces(state, region, target) == 0:
-                continue
-            if (count_pieces(state, region, target, CITADEL) > 0
-                    or count_pieces(state, region, target, FORT) > 0):
-                continue
-            steal_targets.append(target)
+            ok, _ = validate_raid_steal_target(state, region, AEDUI,
+                                               target)
+            if ok:
+                steal_targets.append(target)
 
         region_entries = []
         remaining_flips = flips
@@ -832,6 +833,12 @@ def node_a_rally(state):
     """
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    # Only Regions where Rally is legal (§3.3.1 via the executor's own
+    # validator) — Devastation, Intimidation, Control/Ally/Citadel/
+    # Rally-symbol are all enforced there.
+    from fs_bot.bots.bot_common import (filter_rally_regions,
+                                        trim_rally_plan_to_budget)
+    playable = filter_rally_regions(state, AEDUI, playable)
 
     rally_plan = {
         "citadels": [],
@@ -854,6 +861,15 @@ def node_a_rally(state):
             tribe_info = state["tribes"].get(tribe, {})
             if (tribe_info.get("allied_faction") == AEDUI
                     and is_city_tribe(tribe)):
+                # The replacement removes an Ally piece — there must be
+                # one in the Region beyond those already being replaced
+                # (a City allied via an existing Citadel has no Ally).
+                planned_here = sum(
+                    1 for e in rally_plan["citadels"]
+                    if e["region"] == region)
+                if (count_pieces(state, region, AEDUI, ALLY)
+                        <= planned_here):
+                    continue
                 rally_plan["citadels"].append({
                     "region": region, "tribe": tribe,
                 })
@@ -871,9 +887,12 @@ def node_a_rally(state):
             tribe_info = state["tribes"].get(tribe, {})
             if tribe_info.get("allied_faction") is not None:
                 continue
-            # Must have Aedui presence for Rally — §3.3.1
-            if (count_pieces(state, region, AEDUI) > 0
-                    or is_controlled_by(state, region, AEDUI)):
+            # Tribe must be Subdued (not Dispersed) — 1.4.2
+            if tribe_info.get("status") is not None:
+                continue
+            # Placing an Ally requires Aedui Control — §3.3.1 (the
+            # Vercingetorix exception is Arverni-only)
+            if is_controlled_by(state, region, AEDUI):
                 rally_plan["allies"].append({
                     "region": region, "tribe": tribe,
                 })
@@ -892,12 +911,19 @@ def node_a_rally(state):
                 break
         if count_pieces(state, region, AEDUI, CITADEL) > 0:
             has_base = True
-        if is_controlled_by(state, region, AEDUI):
+        # Placing Warbands requires an Aedui Ally or Citadel — §3.3.1
+        # (Control alone is not sufficient); Home Region allows one.
+        from fs_bot.commands.rally import _get_home_regions
+        if not has_base and region in _get_home_regions(AEDUI, scenario):
             has_base = True
 
         if has_base:
             rally_plan["warbands"].append(region)
             avail_warbands -= 1
+
+    # Pay only for Regions the Aedui can afford — §3.3.1 cost,
+    # priority order preserved.
+    rally_plan = trim_rally_plan_to_budget(state, AEDUI, rally_plan)
 
     total_placed = (len(rally_plan["citadels"]) + len(rally_plan["allies"])
                     + len(rally_plan["warbands"]))

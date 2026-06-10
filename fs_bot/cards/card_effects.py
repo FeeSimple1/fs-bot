@@ -2913,10 +2913,12 @@ def execute_card_71(state, shaded=False):
     no_control = (calculate_control(state, region) == NO_CONTROL)
     if not (has_control or no_control):
         return
-    # Place Colony marker
+    # Place Colony marker. Store the owning faction as the value (the
+    # Colony "is a Tribe" whose Ally belongs to the placing Faction);
+    # presence checks ("MARKER_COLONY in markers") still work.
     markers = state.setdefault("markers", {})
     region_markers = markers.setdefault(region, {})
-    region_markers[MARKER_COLONY] = True
+    region_markers[MARKER_COLONY] = faction
     # Place Ally
     if get_available(state, faction, ALLY) > 0:
         place_piece(state, region, faction, ALLY)
@@ -3229,11 +3231,16 @@ def execute_card_A24(state, shaded=False):
         t_info = state.get("tribes", {}).get(tribe)
         if not t_info:
             continue
-        # Remove existing Ally
+        # Remove existing Ally. A tribe whose allegiance is held by a
+        # CITADEL has no Ally to remove ("Remove any Allies"), keeps its
+        # allegiance, and cannot take a new Ally (1.4.2: Allies go at
+        # Subdued Tribes only) — skip it.
         if t_info.get("allied_faction"):
             old_fac = t_info["allied_faction"]
-            if region and count_pieces(state, region, old_fac, ALLY) > 0:
-                remove_piece(state, region, old_fac, ALLY)
+            if not (region and count_pieces(state, region, old_fac,
+                                            ALLY) > 0):
+                continue
+            remove_piece(state, region, old_fac, ALLY)
             t_info["allied_faction"] = None
         # Place Arverni Ally
         if region and get_available(state, ARVERNI, ALLY) > 0:

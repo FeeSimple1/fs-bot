@@ -1303,4 +1303,11 @@ def run_winter_round(state, is_final=False,
     # Phase 6: Spring
     result["phases"]["spring"] = spring_phase(state)
 
+    # Integrity backstop: tribe allegiance must match Ally/Citadel
+    # pieces after the Winter Round's removals and relocations.
+    from fs_bot.board.pieces import reconcile_allied_tribes
+    fixes = reconcile_allied_tribes(state)
+    if fixes:
+        result["tribe_reconciliation"] = fixes
+
     return result

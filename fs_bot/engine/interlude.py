@@ -634,6 +634,33 @@ def _adjust_belgae_forces(state):
 # ============================================================================
 
 
+def _claim_home_city(state, region, city_tribe, faction, result_key,
+                     result):
+    """Interlude home-city rule (Bibracte / Gergovia).
+
+    "If no [own] Ally or Citadel at <city>, remove whatever is there
+    and place [own] Ally there." "There" is the city's tribe circle:
+    remove the occupying enemy Ally/Citadel (if any) and any Dispersed/
+    Razed status, then place the Faction's Ally at that tribe.
+    """
+    ti = state.get("tribes", {}).get(city_tribe)
+    if ti is None:
+        return
+    occupier = ti.get("allied_faction")
+    if occupier and occupier != faction:
+        if count_pieces(state, region, occupier, CITADEL) > 0:
+            remove_piece(state, region, occupier, CITADEL, 1)
+        elif count_pieces(state, region, occupier, ALLY) > 0:
+            remove_piece(state, region, occupier, ALLY, 1)
+        ti["allied_faction"] = None
+    ti["status"] = None
+    if get_available(state, faction, ALLY) > 0:
+        place_piece(state, region, faction, ALLY, 1)
+        ti["status"] = "Allied"
+        ti["allied_faction"] = faction
+        result[result_key] = True
+
+
 def _adjust_aedui_forces(state):
     """Aedui adjustments.
 
@@ -738,54 +765,16 @@ def _adjust_aedui_forces(state):
     result["warbands_to_available"] = wb_removed
 
     # Bibracte rule: if no Aedui Ally or Citadel at Bibracte, remove
-    # whatever is there and place an Aedui Ally there.
+    # whatever occupies the Bibracte circle and place an Aedui Ally
+    # there (Interlude, Aedui adjusts). "There" is the city circle,
+    # not the whole Region.
     bib_allies = count_pieces(state, AEDUI_REGION, AEDUI, ALLY)
     bib_citadels = count_pieces(state, AEDUI_REGION, AEDUI, CITADEL)
     if bib_allies == 0 and bib_citadels == 0:
-        # Remove every non-permanent piece in the Aedui Region.
-        space = state["spaces"].get(AEDUI_REGION, {})
-        for faction in list(space.get("pieces", {}).keys()):
-            for pt in (WARBAND, AUXILIA):
-                for ps in (HIDDEN, REVEALED, SCOUTED):
-                    n = count_pieces_by_state(
-                        state, AEDUI_REGION, faction, pt, ps,
-                    )
-                    if n > 0:
-                        remove_piece(
-                            state, AEDUI_REGION, faction, pt, n,
-                            piece_state=ps,
-                        )
-            for pt in (ALLY, CITADEL, SETTLEMENT):
-                n = count_pieces(state, AEDUI_REGION, faction, pt)
-                if n > 0:
-                    remove_piece(
-                        state, AEDUI_REGION, faction, pt, n,
-                    )
-            n_fort = count_pieces(state, AEDUI_REGION, faction, FORT)
-            if n_fort > 0:
-                remove_piece(state, AEDUI_REGION, faction, FORT, n_fort)
-            n_leg = count_pieces(state, AEDUI_REGION, faction, LEGION)
-            if n_leg > 0:
-                remove_piece(
-                    state, AEDUI_REGION, faction, LEGION, n_leg,
-                    to_track=True,
-                )
-            if get_leader_in_region(
-                state, AEDUI_REGION, faction,
-            ) is not None:
-                remove_piece(state, AEDUI_REGION, faction, LEADER)
-        # Then place an Aedui Ally.
-        if get_available(state, AEDUI, ALLY) > 0:
-            place_piece(state, AEDUI_REGION, AEDUI, ALLY, 1)
-            # Allied tribe attachment
-            tribes = get_tribes_in_region(AEDUI_REGION, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") is None:
-                    ti["status"] = "Allied"
-                    ti["allied_faction"] = AEDUI
-                    break
-            result["bibracte_replaced"] = True
+        from fs_bot.rules_consts import CITY_TO_TRIBE, CITY_BIBRACTE
+        _claim_home_city(state, AEDUI_REGION,
+                         CITY_TO_TRIBE[CITY_BIBRACTE], AEDUI,
+                         "bibracte_replaced", result)
 
     refresh_all_control(state)
     return result
@@ -963,55 +952,15 @@ def _adjust_arverni_forces(state):
     )
     result["warbands_to_available"] = wb_removed
 
-    # 4. Gergovia rule.
+    # 4. Gergovia rule: same as Bibracte — clear and claim the city
+    # circle only.
     g_allies = count_pieces(state, ARVERNI_REGION, ARVERNI, ALLY)
     g_citadels = count_pieces(state, ARVERNI_REGION, ARVERNI, CITADEL)
     if g_allies == 0 and g_citadels == 0:
-        space = state["spaces"].get(ARVERNI_REGION, {})
-        for faction in list(space.get("pieces", {}).keys()):
-            for pt in (WARBAND, AUXILIA):
-                for ps in (HIDDEN, REVEALED, SCOUTED):
-                    n = count_pieces_by_state(
-                        state, ARVERNI_REGION, faction, pt, ps,
-                    )
-                    if n > 0:
-                        remove_piece(
-                            state, ARVERNI_REGION, faction, pt, n,
-                            piece_state=ps,
-                        )
-            for pt in (ALLY, CITADEL, SETTLEMENT):
-                n = count_pieces(state, ARVERNI_REGION, faction, pt)
-                if n > 0:
-                    remove_piece(
-                        state, ARVERNI_REGION, faction, pt, n,
-                    )
-            n_fort = count_pieces(state, ARVERNI_REGION, faction, FORT)
-            if n_fort > 0:
-                remove_piece(
-                    state, ARVERNI_REGION, faction, FORT, n_fort,
-                )
-            n_leg = count_pieces(state, ARVERNI_REGION, faction, LEGION)
-            if n_leg > 0:
-                remove_piece(
-                    state, ARVERNI_REGION, faction, LEGION, n_leg,
-                    to_track=True,
-                )
-            if get_leader_in_region(
-                state, ARVERNI_REGION, faction,
-            ) is not None:
-                remove_piece(state, ARVERNI_REGION, faction, LEADER)
-        if get_available(state, ARVERNI, ALLY) > 0:
-            place_piece(state, ARVERNI_REGION, ARVERNI, ALLY, 1)
-            tribes = get_tribes_in_region(
-                ARVERNI_REGION, state["scenario"],
-            )
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") is None:
-                    ti["status"] = "Allied"
-                    ti["allied_faction"] = ARVERNI
-                    break
-            result["gergovia_replaced"] = True
+        from fs_bot.rules_consts import CITY_TO_TRIBE, CITY_GERGOVIA
+        _claim_home_city(state, ARVERNI_REGION,
+                         CITY_TO_TRIBE[CITY_GERGOVIA], ARVERNI,
+                         "gergovia_replaced", result)
 
     # 5. Place Arverni Warbands in Arverni Region until >= 3.
     current_wb = count_pieces(state, ARVERNI_REGION, ARVERNI, WARBAND)
@@ -1438,18 +1387,17 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
     else:
         # Decline / unable: no change to Roman forces; place 1 Belgic
         # Ally + 2 Belgic Warbands (and Belgic Control) in Britannia.
-        from fs_bot.rules_consts import TRIBE_CATUVELLAUNI
-        # Find a subdued tribe in Britannia to ally
-        from fs_bot.map.map_data import get_tribes_in_region
-        tribes = get_tribes_in_region(BRITANNIA, state["scenario"])
+        # The Belgic Ally goes at Catuvellauni — Britannia's only tribe.
+        # NOTE: don't query the map by scenario here; the active scenario
+        # is still Ariovistus (Britannia "not in play") until the Step 11
+        # handoff. The tribe swap (run before this step) has already
+        # restored Catuvellauni to state["tribes"].
         if get_available(state, BELGAE, ALLY) > 0:
             place_piece(state, BRITANNIA, BELGAE, ALLY, 1)
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") is None:
-                    ti["status"] = "Allied"
-                    ti["allied_faction"] = BELGAE
-                    break
+            ti = state["tribes"].get(TRIBE_CATUVELLAUNI)
+            if ti and ti.get("allied_faction") is None:
+                ti["status"] = "Allied"
+                ti["allied_faction"] = BELGAE
         avail_wb = get_available(state, BELGAE, WARBAND)
         place_wb = min(2, avail_wb)
         if place_wb > 0:
@@ -1480,9 +1428,22 @@ def _swap_nori_for_catuvellauni(state):
     Runs before the Britannia Expedition so a declined expedition can
     place the Belgic Ally at Catuvellauni.
     """
-    out = {"nori_tribe_removed": False, "catuvellauni_restored": False}
+    out = {"nori_tribe_removed": False, "catuvellauni_restored": False,
+           "nori_ally_removed": None}
     tribes = state.get("tribes", {})
     if TRIBE_NORI in tribes:
+        # If an Ally still sits at Nori (possible when Gallia Togata
+        # skipped the Cisalpina relocation), it leaves with the tribe —
+        # an Ally piece cannot exist without its tribe circle. See
+        # QUESTIONS.md (Nori marker removal vs. Gallia Togata).
+        holder = tribes[TRIBE_NORI].get("allied_faction")
+        if holder and count_pieces(state, CISALPINA, holder, ALLY) > 0:
+            remove_piece(state, CISALPINA, holder, ALLY, 1)
+            out["nori_ally_removed"] = holder
+        elif holder and count_pieces(state, CISALPINA, holder,
+                                     CITADEL) > 0:
+            remove_piece(state, CISALPINA, holder, CITADEL, 1)
+            out["nori_ally_removed"] = holder
         del tribes[TRIBE_NORI]
         out["nori_tribe_removed"] = True
     if TRIBE_CATUVELLAUNI not in tribes:
@@ -1880,6 +1841,11 @@ def run_interlude(state, *, britannia_decision=None,
     state["scenario_phase"] = "second_half"
     state["gallic_war_second_half"] = True
     state["scenario"] = SCENARIO_PAX_GALLICA
+
+    # The adjust-forces loops remove Allies Region by Region; repair any
+    # tribe bookkeeping they missed before the second half begins.
+    from fs_bot.board.pieces import reconcile_allied_tribes
+    result["tribe_reconciliation"] = reconcile_allied_tribes(state)
 
     # The German seat becomes the Arverni seat — keep NP status in sync
     # so bot dispatch recognizes the Arverni as a bot when the Germans

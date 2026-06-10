@@ -245,6 +245,126 @@ def _ensure_faction_pieces_structure(state, region, faction):
         f_pieces.setdefault(ps, {})
 
 
+def clear_allied_tribe(state, region, faction, tribe=None, *,
+                       prefer_cities=False):
+    """Sync the tribes dict after an Ally or Citadel piece is removed.
+
+    An Ally disc / Citadel marks a tribe's allegiance (§1.4); when the
+    piece leaves the map the tribe returns to Subdued. The space piece
+    dict stores only counts, so when the caller doesn't know which tribe
+    the piece sat at, pick among the faction's allied tribes in the
+    Region:
+      - prefer_cities=True: clear a City tribe first — §8.4.1 enemy
+        remove priority "Allies (Cities first)".
+      - prefer_cities=False (default): clear a non-City tribe first —
+        removing own pieces uses the reverse order (§8.4.1).
+    Deterministic (alphabetical) among equals.
+
+    Returns the tribe cleared, or None if no allied tribe was found.
+    """
+    from fs_bot.map.map_data import get_tribes_in_region, is_city_tribe
+    from fs_bot.rules_consts import ALLIED
+    tribes = state.get("tribes", {})
+    if tribe is not None:
+        ti = tribes.get(tribe)
+        if ti and ti.get("allied_faction") == faction:
+            ti["allied_faction"] = None
+            if ti.get("status") == ALLIED:
+                ti["status"] = None  # back to Subdued
+            return tribe
+        return None
+    candidates = sorted(
+        t for t in get_tribes_in_region(region, state["scenario"])
+        if tribes.get(t, {}).get("allied_faction") == faction
+    )
+    if not candidates:
+        return None
+    cities = [t for t in candidates if is_city_tribe(t)]
+    others = [t for t in candidates if not is_city_tribe(t)]
+    ordered = (cities + others) if prefer_cities else (others + cities)
+    chosen = ordered[0]
+    tribes[chosen]["allied_faction"] = None
+    if tribes[chosen].get("status") == ALLIED:
+        tribes[chosen]["status"] = None  # back to Subdued
+    return chosen
+
+
+def colony_owner(state, region):
+    """Return the faction owning a Colony marker in the region, if any.
+
+    The Colony (card 71) "is a Tribe": its Ally piece has no entry in
+    the static map tribe list, so tribe/piece accounting must allow the
+    owner one extra Ally there. Older saves stored True instead of the
+    faction; treat that as unknown-owner (None).
+    """
+    from fs_bot.rules_consts import MARKER_COLONY
+    rm = state.get("markers", {}).get(region)
+    if isinstance(rm, dict):
+        val = rm.get(MARKER_COLONY)
+        return val if isinstance(val, str) else None
+    return None
+
+
+def reconcile_allied_tribes(state):
+    """Enforce the tribe/piece invariant after an Event resolves.
+
+    On the physical board an Ally disc or Citadel IS a tribe's
+    allegiance marker, so per Region and Faction the allied-tribe count
+    always equals the Ally + Citadel piece count. Card handlers that
+    place or remove those pieces must keep state["tribes"] in step; this
+    pass repairs any that don't (and is a no-op when they do):
+      - pieces > allied tribes: ally Subdued tribes, Cities first
+        (§8.4.1 place priorities).
+      - allied tribes > pieces: clear allegiance, non-City tribes first
+        (reverse of the §8.4.1 "Cities first" priority).
+    Deterministic (alphabetical) among equals. Returns a list of
+    (region, faction, tribe, "allied"|"cleared") adjustments.
+    """
+    from fs_bot.map.map_data import get_tribes_in_region, is_city_tribe
+    from fs_bot.rules_consts import ALLIED
+    adjustments = []
+    tribes_state = state.get("tribes", {})
+    for region, space in state["spaces"].items():
+        try:
+            region_tribes = get_tribes_in_region(region, state["scenario"])
+        except KeyError:
+            continue
+        col_owner = colony_owner(state, region)
+        for faction in list(space.get("pieces", {})):
+            f_pieces = space["pieces"][faction]
+            piece_n = f_pieces.get(ALLY, 0) + f_pieces.get(CITADEL, 0)
+            if faction == col_owner and piece_n > 0:
+                piece_n -= 1  # the Colony's own Ally — card 71
+            allied = sorted(
+                t for t in region_tribes
+                if tribes_state.get(t, {}).get("allied_faction") == faction
+            )
+            if piece_n > len(allied):
+                # A tribe with status "Allied" but no allied_faction is
+                # a stale record from a sloppy clear — treat as Subdued.
+                subdued = sorted(
+                    t for t in region_tribes
+                    if t in tribes_state
+                    and tribes_state[t].get("allied_faction") is None
+                    and tribes_state[t].get("status") in (None, ALLIED)
+                )
+                ordered = ([t for t in subdued if is_city_tribe(t)]
+                           + [t for t in subdued if not is_city_tribe(t)])
+                for t in ordered[:piece_n - len(allied)]:
+                    tribes_state[t]["allied_faction"] = faction
+                    tribes_state[t]["status"] = ALLIED
+                    adjustments.append((region, faction, t, "allied"))
+            elif len(allied) > piece_n:
+                ordered = ([t for t in allied if not is_city_tribe(t)]
+                           + [t for t in allied if is_city_tribe(t)])
+                for t in ordered[:len(allied) - piece_n]:
+                    tribes_state[t]["allied_faction"] = None
+                    if tribes_state[t].get("status") == ALLIED:
+                        tribes_state[t]["status"] = None
+                    adjustments.append((region, faction, t, "cleared"))
+    return adjustments
+
+
 def place_piece(state, region, faction, piece_type, count=1, *,
                 from_legions_track=False, from_fallen=False,
                 leader_name=None, piece_state=None):

@@ -1040,6 +1040,11 @@ def node_b_rally(state):
     """
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    # Only Regions where Rally is legal (§3.3.1 via the executor's own
+    # validator).
+    from fs_bot.bots.bot_common import (filter_rally_regions,
+                                        trim_rally_plan_to_budget)
+    playable = filter_rally_regions(state, BELGAE, playable)
 
     rally_plan = {
         "citadels": [],
@@ -1062,6 +1067,15 @@ def node_b_rally(state):
             tribe_info = state["tribes"].get(tribe, {})
             if (tribe_info.get("allied_faction") == BELGAE
                     and is_city_tribe(tribe)):
+                # The replacement removes an Ally piece — there must be
+                # one in the Region beyond those already being replaced
+                # (a City allied via an existing Citadel has no Ally).
+                planned_here = sum(
+                    1 for e in rally_plan["citadels"]
+                    if e["region"] == region)
+                if (count_pieces(state, region, BELGAE, ALLY)
+                        <= planned_here):
+                    continue
                 rally_plan["citadels"].append({
                     "region": region, "tribe": tribe,
                 })
@@ -1079,8 +1093,11 @@ def node_b_rally(state):
             tribe_info = state["tribes"].get(tribe, {})
             if tribe_info.get("allied_faction") is not None:
                 continue
-            if (count_pieces(state, region, BELGAE) > 0
-                    or is_controlled_by(state, region, BELGAE)):
+            # Tribe must be Subdued (not Dispersed) — 1.4.2
+            if tribe_info.get("status") is not None:
+                continue
+            # Placing an Ally requires Belgae Control — §3.3.1
+            if is_controlled_by(state, region, BELGAE):
                 rally_plan["allies"].append({
                     "region": region, "tribe": tribe,
                 })
@@ -1099,7 +1116,10 @@ def node_b_rally(state):
                 break
         if count_pieces(state, region, BELGAE, CITADEL) > 0:
             has_base = True
-        if is_controlled_by(state, region, BELGAE):
+        # Placing Warbands requires a Belgae Ally or Citadel — §3.3.1
+        # (Control alone is not sufficient); Home Region allows one.
+        from fs_bot.commands.rally import _get_home_regions
+        if not has_base and region in _get_home_regions(BELGAE, scenario):
             has_base = True
 
         if has_base:
@@ -1114,6 +1134,20 @@ def node_b_rally(state):
             break
         rally_plan["warbands"].append(region)
         avail_warbands -= 1
+
+    # Pay only for Regions the Belgae can afford — §3.3.1 cost
+    # (2 Resources outside Belgica), priority order preserved.
+    rally_plan = trim_rally_plan_to_budget(state, BELGAE, rally_plan)
+
+    # If nothing can actually be placed/paid for, the B4 gate's answer
+    # was really "No" ("If the Belgae have 0 Resources, a normal Rally
+    # would not place any pieces" — §8.5.3 NOTE) — continue at B5
+    # (Raid on Yes, March on No), as the flowchart routes.
+    if not (rally_plan["citadels"] or rally_plan["allies"]
+            or rally_plan["warbands"]):
+        if node_b5(state) == "Yes":
+            return node_b_raid(state)
+        return node_b_march(state)
 
     # SA: Rampage after Rally — §8.5.3 / flowchart B_RALLY → B_RAMPAGE
     # If none: Enlist — flowchart B_RAMPAGE → If none: B_ENLIST

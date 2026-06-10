@@ -151,6 +151,10 @@ class TestEventDecisions:
     def test_should_not_decline_normal(self):
         state = _make_state()
         state["final_year"] = False
+        # Card 1 shifts the Senate — needs the marker on the track to
+        # be effective (Pax Gallica? starts it off-track).
+        from fs_bot.rules_consts import INTRIGUE
+        state["senate"]["position"] = INTRIGUE
         assert should_decline_event(state, 1, ROMANS) is False
 
 
@@ -566,3 +570,40 @@ class TestScenarioIsolation:
         ario_order = get_enemy_piece_target_order(SCENARIO_ARIOVISTUS)
         assert SETTLEMENT not in base_order
         assert SETTLEMENT in ario_order
+
+
+class TestTribePieceInvariant:
+    """Regression: an Ally disc / Citadel IS a tribe's allegiance marker,
+    so per Region and Faction the allied-tribe count must equal the
+    Ally+Citadel piece count at all times.
+
+    Battle losses, Besiege, Suborn (executor translation dropped the
+    tribe), Intimidate, Seize harassment, the Arverni Phase Citadel
+    replacement, and a dozen card handlers used to desync the tribes
+    dict from the pieces — the bots plan from the tribes dict while the
+    executor validates pieces, so they disagreed and bots wasted whole
+    turns on plans the executor rejected.
+    """
+
+    def test_invariant_holds_through_full_games(self):
+        import contextlib
+        import io
+        from fs_bot.state.setup import setup_scenario
+        from fs_bot.engine.game_engine import run_game, get_sop_factions
+        from fs_bot.cli.dispatcher import make_decision_func
+        from fs_bot.state.state_schema import validate_state
+        from fs_bot.rules_consts import (
+            SCENARIO_GREAT_REVOLT, SCENARIO_ARIOVISTUS,
+            SCENARIO_GALLIC_WAR)
+        for sc in (SCENARIO_GREAT_REVOLT, SCENARIO_ARIOVISTUS,
+                   SCENARIO_GALLIC_WAR):
+            for seed in (1, 5):
+                st = setup_scenario(sc, seed=seed)
+                st["non_player_factions"] = set(get_sop_factions(st))
+                dfn = make_decision_func(
+                    {f: "bot" for f in get_sop_factions(st)},
+                    stdout=io.StringIO(), pause=False)
+                with contextlib.redirect_stdout(io.StringIO()):
+                    run_game(st, decision_func=dfn, execute=True)
+                errs = validate_state(st)
+                assert errs == [], f"{sc} seed={seed}: {errs[:3]}"

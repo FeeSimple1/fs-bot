@@ -311,6 +311,10 @@ def execute_harassment_loss(state, region, loss_choice):
                 f"No Roman Allies in {region} to remove"
             )
         remove_piece(state, region, ROMANS, ALLY, count=1)
+        # The removed Ally's tribe returns to Subdued (§1.4); own
+        # removal keeps Cities (reverse of §8.4.1 "Cities first").
+        from fs_bot.board.pieces import clear_allied_tribe
+        clear_allied_tribe(state, region, ROMANS, prefer_cities=False)
         result["removed"] = ALLY
 
     elif loss_choice == "roll":

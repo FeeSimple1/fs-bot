@@ -205,6 +205,11 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
             remove_piece(state, region, defending_faction, SETTLEMENT, 1)
         else:
             remove_piece(state, region, defending_faction, besiege_piece, 1)
+            # The removed Ally/Citadel Subdues its tribe (§4.2.3
+            # "remove (Subdue)"); enemy removal — Cities first (§8.4.1).
+            from fs_bot.board.pieces import clear_allied_tribe
+            clear_allied_tribe(state, region, defending_faction,
+                               prefer_cities=(besiege_piece == CITADEL))
         result["besiege"] = {"removed": besiege_piece}
 
     # ── Step 3: Attack ──

@@ -232,6 +232,11 @@ class TestNodeR4:
         """R4=No for normal playable event."""
         state = _make_state()
         state["current_card_id"] = 1
+        # Card 1 shifts the Senate; Pax Gallica? starts the marker
+        # off-track ("does not shift") which makes it ineffective —
+        # put it on the track so the Event has an effect.
+        from fs_bot.rules_consts import INTRIGUE
+        state["senate"]["position"] = INTRIGUE
         assert node_r4(state) == "No"
 
     def test_r4_yes_final_year_capability(self):
@@ -798,6 +803,9 @@ class TestExecuteRomanTurn:
         _place_roman_force(state, PROVINCIA, leader=True, legions=3)
         state["can_play_event"] = True
         state["current_card_id"] = 1  # Cicero — not "No Romans"
+        # Card 1 needs the Senate marker on the track to be effective.
+        from fs_bot.rules_consts import INTRIGUE
+        state["senate"]["position"] = INTRIGUE
         result = execute_roman_turn(state)
         assert result["command"] == ACTION_EVENT
 

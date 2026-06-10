@@ -1053,3 +1053,58 @@ def roman_battle_is_favorable(state, region, defending_faction):
     # Roman Losses (taken) strictly less than half the enemy's (inflicted).
     favorable = (taken * 2 < inflicted)
     return favorable and not pred["attacker_leader_lost"]
+
+
+def filter_rally_regions(state, faction, regions):
+    """Keep only Regions where Rally is actually legal for the faction.
+
+    Uses the executor's own validator (§3.3.1/§3.4.1 — Devastation,
+    Intimidation, Control/Ally/Citadel/Leader/Rally-symbol) so the bot
+    planners cannot select Regions the execution layer will reject.
+    """
+    from fs_bot.commands.rally import validate_rally_region
+    out = []
+    for region in regions:
+        ok, _ = validate_rally_region(state, region, faction)
+        if ok:
+            out.append(region)
+    return out
+
+
+def trim_rally_plan_to_budget(state, faction, rally_plan):
+    """Drop whole Regions from a rally plan that the faction cannot pay.
+
+    Rally costs Resources per Region (§3.3.1 / A3.4.1); Non-players pay
+    costs as players do, and the flowcharts Rally only where "able"
+    (e.g., §8.6.3) — which includes affording the Region. Regions are
+    kept in the plan's own priority order (Citadels, then Allies, then
+    Warbands); later Regions are dropped first.
+
+    Returns the trimmed plan (same dict shape, possibly emptied).
+    """
+    from fs_bot.commands.rally import rally_cost
+    budget = state["resources"].get(faction, 0)
+    ordered = []
+    for entry in rally_plan.get("citadels", []):
+        if entry["region"] not in ordered:
+            ordered.append(entry["region"])
+    for entry in rally_plan.get("allies", []):
+        if entry["region"] not in ordered:
+            ordered.append(entry["region"])
+    for region in rally_plan.get("warbands", []):
+        if region not in ordered:
+            ordered.append(region)
+    kept = set()
+    for region in ordered:
+        cost = rally_cost(state, region, faction)
+        if cost <= budget:
+            budget -= cost
+            kept.add(region)
+    return {
+        "citadels": [e for e in rally_plan.get("citadels", [])
+                     if e["region"] in kept],
+        "allies": [e for e in rally_plan.get("allies", [])
+                   if e["region"] in kept],
+        "warbands": [r for r in rally_plan.get("warbands", [])
+                     if r in kept],
+    }

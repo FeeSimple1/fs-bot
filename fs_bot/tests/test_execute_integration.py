@@ -516,9 +516,12 @@ class TestSubornAndBuild:
         from fs_bot.rules_consts import MANDUBII
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
         place_piece(st, MANDUBII, AEDUI, WARBAND, 1, piece_state=HIDDEN)
-        tribe = get_tribes_in_region(MANDUBII, st["scenario"])[0]
-        st["tribes"][tribe]["allied_faction"] = ARVERNI
-        place_piece(st, MANDUBII, ARVERNI, ALLY)
+        # Use the Arverni Ally the Great Revolt setup already has in
+        # Mandubii (Senones) — re-allying another tribe would orphan
+        # its existing Ally piece (tribe/piece invariant).
+        tribe = next(
+            t for t in get_tribes_in_region(MANDUBII, st["scenario"])
+            if st["tribes"][t]["allied_faction"] == ARVERNI)
         refresh_all_control(st)
         before = count_pieces(st, MANDUBII, ARVERNI, ALLY)
         plan = [{"region": MANDUBII, "actions": [
@@ -1000,12 +1003,29 @@ class TestRomanMarchExecutes:
         # the map); place Legions with him and pick an adjacent destination.
         origin = find_leader(st, ROMANS)
         assert origin is not None
-        dest = get_adjacent(origin)[0]
         place_piece(st, origin, ROMANS, LEGION, 2, from_legions_track=True)
-        # Make dest an Arverni-ally region (a legal March destination).
-        tribe = get_tribes_in_region(dest, st["scenario"])[0]
-        st["tribes"][tribe]["allied_faction"] = ARVERNI
-        place_piece(st, dest, ARVERNI, ALLY)
+        # Make dest an Arverni-ally region (a legal March destination):
+        # prefer an adjacent Region that already has an Arverni Ally,
+        # else one with a Subdued tribe to ally (keeping the tribe/
+        # piece invariant intact).
+        dest = None
+        for cand in get_adjacent(origin):
+            cand_tribes = get_tribes_in_region(cand, st["scenario"])
+            if any(st["tribes"][t]["allied_faction"] == ARVERNI
+                   for t in cand_tribes):
+                dest = cand
+                break
+        if dest is None:
+            for cand in get_adjacent(origin):
+                cand_tribes = get_tribes_in_region(cand, st["scenario"])
+                free = [t for t in cand_tribes
+                        if st["tribes"][t]["allied_faction"] is None]
+                if free:
+                    dest = cand
+                    st["tribes"][free[0]]["allied_faction"] = ARVERNI
+                    place_piece(st, dest, ARVERNI, ALLY)
+                    break
+        assert dest is not None
         refresh_all_control(st)
         assert find_leader(st, ROMANS) == origin
         decision = {"action": "command", "bot_action": {

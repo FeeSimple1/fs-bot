@@ -305,4 +305,35 @@ def validate_state(state):
                     f"{total}, cap = {cap}"
                 )
 
+    # Tribe/piece consistency: an Ally disc or Citadel marks a tribe's
+    # allegiance (§1.4), so per Region and Faction the number of allied
+    # tribes must equal the Ally + Citadel piece count. A mismatch means
+    # some path moved a piece without syncing state["tribes"] (or vice
+    # versa) — the bots plan from the tribes dict while the executor
+    # validates pieces, so desync makes them disagree.
+    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.board.pieces import colony_owner
+    for region, space in state["spaces"].items():
+        col_owner = colony_owner(state, region)
+        for faction in FACTIONS:
+            f_pieces = space.get("pieces", {}).get(faction, {})
+            piece_n = f_pieces.get(ALLY, 0) + f_pieces.get(CITADEL, 0)
+            if faction == col_owner and piece_n > 0:
+                piece_n -= 1  # the Colony's own Ally — card 71
+            try:
+                region_tribes = get_tribes_in_region(
+                    region, state["scenario"])
+            except KeyError:
+                continue
+            allied_n = sum(
+                1 for t in region_tribes
+                if state.get("tribes", {}).get(t, {})
+                .get("allied_faction") == faction
+            )
+            if piece_n != allied_n:
+                errors.append(
+                    f"{region}/{faction}: {piece_n} Ally/Citadel pieces "
+                    f"but {allied_n} allied tribes in tribes dict"
+                )
+
     return errors

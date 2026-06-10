@@ -8,17 +8,14 @@ Verifies:
 - Instruction structure is correct
 """
 
-import pytest
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    CARD_NAMES_BASE, CARD_NAMES_ARIOVISTUS,
-    NP_SYMBOL_CARNYX, NP_SYMBOL_LAURELS, NP_SYMBOL_SWORDS,
+    CARD_NAMES_BASE, NP_SYMBOL_CARNYX, NP_SYMBOL_LAURELS, NP_SYMBOL_SWORDS,
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
 )
 from fs_bot.cards.bot_instructions import (
-    get_bot_instruction, get_base_instructions, get_ariovistus_instructions,
-    get_factions_with_instructions,
+    get_bot_instruction, get_base_instructions, get_factions_with_instructions,
     NO_EVENT, PLAY_EVENT, SPECIFIC_INSTRUCTION, CONDITIONAL,
     BotInstruction,
 )

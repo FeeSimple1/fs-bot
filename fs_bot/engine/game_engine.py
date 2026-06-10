@@ -26,7 +26,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS, GALLIC_FACTIONS,
     # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS,
     # Eligibility
     ELIGIBLE, INELIGIBLE,
     # Pass resources — §2.3.3, A2.3.3
@@ -38,7 +38,6 @@ from fs_bot.rules_consts import (
     MAX_RESOURCES,
 )
 from fs_bot.cards.card_data import (
-    get_card,
     get_faction_order as _card_get_faction_order,
     card_has_carnyx_trigger,
 )

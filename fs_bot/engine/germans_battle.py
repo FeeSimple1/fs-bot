@@ -16,7 +16,7 @@ Reference:
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    GERMANS,
     FACTIONS,
     # Piece types
     WARBAND, AUXILIA,

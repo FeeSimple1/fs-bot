@@ -12,73 +12,36 @@ The dispatch loop calls execute_roman_turn(state) which walks the flowchart.
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, GALLIC_FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    MOBILE_PIECES,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
-    # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    FACTIONS, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    HIDDEN, REVEALED, ARIOVISTUS_SCENARIOS,
     # Commands / SAs
-    CMD_RECRUIT, CMD_MARCH, CMD_SEIZE, CMD_BATTLE,
-    SA_BUILD, SA_SCOUT, SA_BESIEGE,
-    # Markers
-    MARKER_FROST,
-    # Leaders
-    CAESAR, DIVICIACUS as DIVICIACUS_LEADER,
-    # Tribes
-    TRIBE_HELVII,
+    CAESAR, TRIBE_HELVII,
     # Map
     PROVINCIA, BELGICA,
-    BELGICA_REGIONS, GERMANIA_REGIONS,
-    # Sequence of play
-    ELIGIBLE, FIRST_ELIGIBLE, SECOND_ELIGIBLE,
-    # Events
-    EVENT_UNSHADED,
-    # Victory
-    ROMAN_VICTORY_THRESHOLD,
-    # Costs
     BUILD_COST_PER_FORT, BUILD_COST_PER_ALLY,
-    # Die
-    DIE_MIN, DIE_MAX,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
     find_leader, get_available, count_on_map,
 )
 from fs_bot.board.control import (
-    is_controlled_by, get_controlled_regions, calculate_control,
+    is_controlled_by,
 )
 from fs_bot.engine.victory import (
-    calculate_victory_score, calculate_victory_margin, check_victory,
+    calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region,
-    get_region_group, ALL_REGION_DATA, is_adjacent,
+    get_playable_regions, get_tribes_in_region,
+    get_region_group, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
     # Event decisions
     should_decline_event, get_dual_use_preference, get_event_instruction,
-    upgrade_limited_command,
-    # Targeting
-    get_faction_targeting_order, get_enemy_piece_target_order,
-    get_own_loss_order,
-    # Frost
     is_frost_active, check_frost_restriction,
     # Harassment
-    get_harassing_factions, np_will_harass,
-    # Retreat
-    should_retreat, get_retreat_preferences,
-    # Random
-    random_select, roll_die,
+    roll_die,
     # Helpers
-    has_enemy_threat_in_region, count_mobile_pieces,
     count_faction_allies_and_citadels,
-    rank_regions_for_event_placement,
-    leader_escort_needed,
-    # Supply line / agreements
-    np_agrees_to_supply_line,
 )
 
 

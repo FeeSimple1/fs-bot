@@ -12,28 +12,23 @@ Covers:
 """
 
 import io
-import sys
 
 import pytest
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
-    SCENARIO_PAX_GALLICA, SCENARIO_RECONQUEST, SCENARIO_GREAT_REVOLT,
-    SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, ALL_SCENARIOS,
-    MORINI, NERVII, ATREBATES, TREVERI,
+    SCENARIO_PAX_GALLICA, SCENARIO_RECONQUEST, SCENARIO_ARIOVISTUS, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, ALL_SCENARIOS,
+    MORINI, NERVII, TREVERI,
 )
 from fs_bot.state.setup import setup_scenario
 from fs_bot.engine.game_engine import (
-    start_game, run_game,
-    ACTION_COMMAND, ACTION_COMMAND_SA, ACTION_LIMITED_COMMAND,
+    start_game, ACTION_COMMAND, ACTION_COMMAND_SA, ACTION_LIMITED_COMMAND,
     ACTION_EVENT, ACTION_PASS,
     get_first_eligible_options, get_second_eligible_options,
 )
 from fs_bot.cli.app import (
     main, setup_wizard, get_assignable_factions,
-    display_card_result, _parse_args, _parse_bots_arg,
+    _parse_args, _parse_bots_arg,
 )
 from fs_bot.cli.display import (
     format_state_summary, format_region_table, format_tribes_table,

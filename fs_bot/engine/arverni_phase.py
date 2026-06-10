@@ -22,40 +22,29 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS,
     # Piece types
-    LEADER, WARBAND, AUXILIA, ALLY, CITADEL, FORT,
-    FLIPPABLE_PIECES,
-    # Piece states
+    WARBAND, AUXILIA, ALLY, CITADEL, FORT,
     HIDDEN, REVEALED, SCOUTED,
     # Scenarios
     ARIOVISTUS_SCENARIOS,
     # Regions
     VENETI, CARNUTES, PICTONES, ARVERNI_REGION,
-    ALL_REGIONS,
-    # Home regions
     ARVERNI_HOME_REGIONS_ARIOVISTUS,
     # Markers
-    MARKER_DEVASTATED, MARKER_INTIMIDATED,
-    MARKER_AT_WAR, MARKER_ARVERNI_TARGET,
-    # Control
-    ARVERNI_CONTROL, AEDUI_CONTROL, ROMAN_CONTROL,
+    AEDUI_CONTROL, ROMAN_CONTROL,
     FACTION_CONTROL,
     # Die
     DIE_MIN, DIE_MAX,
-    # Costs
-    MAX_RESOURCES,
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, flip_piece,
     count_pieces, count_pieces_by_state, get_available,
-    get_leader_in_region, find_leader, PieceError,
 )
 from fs_bot.board.control import (
-    refresh_all_control, is_controlled_by, get_controlled_regions,
-    calculate_control,
+    refresh_all_control, calculate_control,
 )
 from fs_bot.map.map_data import (
     get_adjacent, get_tribes_in_region, is_city_tribe,
-    ALL_REGION_DATA, get_region_data, get_playable_regions,
+    ALL_REGION_DATA,
 )
 from fs_bot.commands.common import CommandError, _is_devastated, _is_intimidated
 from fs_bot.battle.losses import calculate_losses

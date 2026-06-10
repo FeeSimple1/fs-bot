@@ -24,20 +24,11 @@ Reference: §4.2.1, §1.4.1, §1.4.2, A4.2.1
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    GALLIC_FACTIONS,
-    # Piece types
-    FORT, ALLY, CITADEL, SETTLEMENT,
-    # Leaders
-    CAESAR,
+    ROMANS, FORT, ALLY, CAESAR,
     # Costs
     BUILD_COST_PER_FORT, BUILD_COST_PER_ALLY,
     # Stacking
     MAX_FORTS_PER_REGION,
-    # Tribe restrictions
-    TRIBE_FACTION_RESTRICTION,
-    # Scenarios
-    ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, get_available, count_pieces,

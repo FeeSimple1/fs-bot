@@ -34,12 +34,10 @@ from fs_bot.rules_consts import (
     # Stacking
     MAX_SETTLEMENTS_PER_REGION,
     # Markers
-    MARKER_DEVASTATED,
-    # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    place_piece, get_available, count_pieces,
+    place_piece, get_available,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.map.map_data import is_adjacent, get_adjacent

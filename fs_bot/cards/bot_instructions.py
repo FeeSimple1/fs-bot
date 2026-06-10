@@ -23,8 +23,7 @@ Source: §8.2.1, A8.2.1, all *_bot_event_instructions*.txt files
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     CARD_NAMES_BASE, CARD_NAMES_ARIOVISTUS,
-    NP_SYMBOL_CARNYX, NP_SYMBOL_LAURELS, NP_SYMBOL_SWORDS,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS,
 )
 
 # ---------------------------------------------------------------------------

@@ -19,8 +19,8 @@ from fs_bot.cli.dispatcher import make_decision_func
 from fs_bot.commands.seize import count_dispersed_on_map, get_dispersible_tribes
 from fs_bot.map.map_data import get_playable_regions
 from fs_bot.rules_consts import (
-    SCENARIO_GREAT_REVOLT, SCENARIO_RECONQUEST, SCENARIO_PAX_GALLICA,
-    SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR, ALL_SCENARIOS,
+    SCENARIO_GREAT_REVOLT, SCENARIO_PAX_GALLICA,
+    SCENARIO_ARIOVISTUS, ALL_SCENARIOS,
     ROMANS, EVENT_SHADED, EVENT_UNSHADED,
 )
 
@@ -418,11 +418,8 @@ import io as _io
 import contextlib as _ctx
 from fs_bot.board.pieces import find_leader
 from fs_bot.engine.execute import _execute_sa
-from fs_bot.engine.game_engine import run_game, get_sop_factions
 from fs_bot.rules_consts import (
-    AEDUI, GERMANS, SETTLEMENT, MARKER_DEVASTATED, ARIOVISTUS_LEADER,
-    AEDUI_REGION,
-    LEADER, SCENARIO_ARIOVISTUS,
+    GERMANS, MARKER_DEVASTATED, AEDUI_REGION,
 )
 
 
@@ -583,8 +580,7 @@ class TestSubornAndBuild:
 # ---------------------------------------------------------------------------
 
 from fs_bot.engine.execute import _decide_defender_retreat
-from fs_bot.rules_consts import MANDUBII, MORINI, GERMANS, SCENARIO_ARIOVISTUS
-from fs_bot.map.map_data import get_adjacent
+from fs_bot.rules_consts import MANDUBII, MORINI
 from fs_bot.board.control import is_controlled_by
 
 
@@ -646,7 +642,6 @@ class TestDefenderRetreatRouting:
 from fs_bot.engine.execute import _retreat_destinations
 from fs_bot.bots.bot_common import np_agrees_to_retreat
 from fs_bot.board.control import FACTION_CONTROL
-from fs_bot.rules_consts import BELGAE, MORINI
 
 
 class TestAgreementsAndRampage:
@@ -705,7 +700,6 @@ class TestAgreementsAndRampage:
 # ---------------------------------------------------------------------------
 
 from fs_bot.engine.execute import _np_harassers, _resolve_seize_harassment
-from fs_bot.rules_consts import MANDUBII
 
 
 class TestSeizeHarassment:
@@ -758,7 +752,7 @@ class TestSeizeHarassment:
 # ---------------------------------------------------------------------------
 
 from fs_bot.engine.execute import _execute_entreat, _execute_scout
-from fs_bot.board.pieces import count_pieces_by_state, find_leader
+from fs_bot.board.pieces import count_pieces_by_state
 from fs_bot.rules_consts import SCOUTED
 
 
@@ -874,7 +868,6 @@ class TestEventParamPlumbing:
 
     def test_unparameterized_card_still_reported(self):
         # A card whose choice isn't derivable still reports cleanly (no crash).
-        from fs_bot.engine.execute import _execute_event
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
         st["current_card"] = 1
         # Card with no deriver entry that needs params would be reported; here
@@ -947,8 +940,7 @@ class TestSmokeRegressions:
 
 from fs_bot.bots.roman_bot import node_r_build, node_r_scout, _caesar_region
 from fs_bot.commands.sa_build import validate_build_region
-from fs_bot.board.control import is_controlled_by as _is_ctrl
-from fs_bot.map.map_data import is_adjacent as _adj, get_playable_regions
+from fs_bot.map.map_data import is_adjacent as _adj
 from fs_bot.board.pieces import count_pieces_by_state as _cps
 
 
@@ -996,7 +988,7 @@ class TestRomanMarchExecutes:
         # the other bots' nested {"march_plan": {...}} with string dests. The
         # executor must handle both, else Roman Marches silently no-op and
         # Caesar never moves.
-        from fs_bot.rules_consts import LEADER, LEGION, CAESAR
+        from fs_bot.rules_consts import LEGION
         from fs_bot.board.pieces import find_leader
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
         # Use Caesar's actual starting Region as the origin (he is already on
@@ -1051,7 +1043,7 @@ class TestExpandMarchLeader:
         from fs_bot.board.pieces import find_leader
         from fs_bot.board.control import is_controlled_by
         from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT as _SC, ARVERNI as _AR,
-            WARBAND as _WB, ALLY as _AL)
+            WARBAND as _WB)
         st = setup_scenario(_SC, seed=3)
         lr = find_leader(st, _AR)  # Vercingetorix's region (Arverni home)
         assert lr is not None
@@ -1088,7 +1080,7 @@ class TestExpandMarchLeader:
 
 class TestWarbandSpreadMarch:
     def test_warband_only_origin_spreads_keeping_control(self):
-        from fs_bot.board.pieces import find_leader, count_pieces as _cp
+        from fs_bot.board.pieces import count_pieces as _cp
         from fs_bot.board.control import is_controlled_by
         from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT as _SC, ARVERNI as _AR,
             WARBAND as _WB)
@@ -1512,7 +1504,7 @@ def test_free_battle_and_seize_a58():
     Seize in Belgica. Both free actions fire and have real board effects."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.state.state_schema import validate_state
-    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.pieces import place_piece
     from fs_bot.board.control import refresh_all_control
     from fs_bot.engine.execute import _execute_event
     from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, BELGAE,
@@ -1560,7 +1552,7 @@ def test_free_march_command_a67_german():
     from fs_bot.map.map_data import get_adjacent
     from fs_bot.engine.execute import _execute_event
     from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, ROMANS,
-        WARBAND, AUXILIA, REVEALED, HIDDEN, EVENT_UNSHADED, NERVII, TREVERI)
+        WARBAND, AUXILIA, REVEALED, EVENT_UNSHADED, NERVII, TREVERI)
 
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=6)
     st["current_card"] = "A67"
@@ -1668,7 +1660,7 @@ def test_a20_shaded_arverni_projected_ambush():
     from fs_bot.map.map_data import get_adjacent
     from fs_bot.engine.execute import _execute_event
     from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ARVERNI, ROMANS,
-        WARBAND, AUXILIA, ALLY, HIDDEN, REVEALED, EVENT_SHADED, VENETI,
+        WARBAND, AUXILIA, ALLY, REVEALED, EVENT_SHADED, VENETI,
         TRIBE_VENETI)
 
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
@@ -1707,9 +1699,8 @@ def test_a20_shaded_noops_without_ally_or_romans():
     from fs_bot.board.pieces import count_pieces, remove_piece
     from fs_bot.board.control import refresh_all_control
     from fs_bot.engine.execute import _resolve_a20_arverni_ambush
-    from fs_bot.map.map_data import get_adjacent
-    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ARVERNI, ROMANS, ALLY,
-        WARBAND, AUXILIA, LEGION, FACTIONS, VENETI, TRIBE_VENETI)
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ARVERNI, ALLY,
+        VENETI, TRIBE_VENETI)
     # No Arverni Ally in Veneti -> no-op.
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
     ti = st["tribes"].get(TRIBE_VENETI)
@@ -1873,12 +1864,12 @@ def test_a19_shaded_noop_when_no_trap_available():
     """A19 shaded no-ops if no adjacent German Region would outnumber the
     moved Romans (German instruction's precondition not met)."""
     from fs_bot.state.setup import setup_scenario
-    from fs_bot.board.pieces import place_piece, count_pieces, find_leader
+    from fs_bot.board.pieces import count_pieces
     from fs_bot.board.control import refresh_all_control
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.map.map_data import get_playable_regions
     from fs_bot.engine.execute import _resolve_a19_march_romans
-    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, GERMANS,
-        AUXILIA, WARBAND, FACTIONS)
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS,
+        WARBAND)
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=14)
     # Strip every German Warband from the map so no destination can outnumber.
     for r in get_playable_regions(SCENARIO_ARIOVISTUS, st.get("capabilities")):
@@ -1901,7 +1892,7 @@ def test_card11_place_auxilia_and_double_battle():
     from fs_bot.map.map_data import get_adjacent
     from fs_bot.engine.execute import _execute_event, _derive_card_11
     from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
-        WARBAND, AUXILIA, EVENT_UNSHADED)
+        WARBAND, EVENT_UNSHADED)
     st = setup_scenario(SCENARIO_GALLIC_WAR, seed=20)
     st["current_card"] = 11
     cae = find_leader(st, ROMANS)
@@ -1930,8 +1921,7 @@ def test_card11_deriver_no_play_when_under_3_auxilia():
     from fs_bot.board.pieces import get_available, place_piece
     from fs_bot.board.control import refresh_all_control
     from fs_bot.engine.execute import _derive_card_11
-    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, AUXILIA,
-        ALL_REGIONS)
+    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, AUXILIA)
     st = setup_scenario(SCENARIO_GALLIC_WAR, seed=20)
     # Drain Available Auxilia below 3 by placing them on the map.
     while get_available(st, ROMANS, AUXILIA) >= 3:
@@ -2644,11 +2634,9 @@ def test_card52_free_command_includes_special_ability():
     (the up-to-2 allowance is satisfied by the NP's single flowchart SA)."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.state.state_schema import validate_state
-    from fs_bot.board.control import is_controlled_by
     from fs_bot.engine.game_engine import get_sop_factions
     from fs_bot.engine.execute import _execute_event
-    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, BELGAE, CARNUTES,
-        FACTIONS, EVENT_SHADED)
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, BELGAE, EVENT_SHADED)
     st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=120)
     st["non_player_factions"] = set(get_sop_factions(st))
     st["current_card"] = 52
@@ -2758,7 +2746,7 @@ def test_cards_25_36_21_battle_events():
     from fs_bot.engine.game_engine import get_sop_factions
     from fs_bot.engine.execute import _execute_event
     from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, AEDUI,
-        ROMANS, PICTONES, PROVINCIA, WARBAND, AUXILIA, EVENT_UNSHADED,
+        ROMANS, PICTONES, WARBAND, AUXILIA, EVENT_UNSHADED,
         EVENT_SHADED)
     # 25: Arverni free Battle in Pictones with extra Losses.
     st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=162)
@@ -2886,7 +2874,7 @@ def test_card45_shaded_combined_battle_event():
     test_combined_battle_allied_factions."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.state.state_schema import validate_state
-    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.pieces import place_piece
     from fs_bot.board.control import refresh_all_control
     from fs_bot.engine.game_engine import get_sop_factions
     from fs_bot.engine.execute import _execute_event
@@ -2919,7 +2907,7 @@ def test_card16_place_and_dieroll_remove():
     from fs_bot.engine.execute import _execute_event, _derive_card_16
     from fs_bot.map.map_data import get_playable_regions
     from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ROMANS, ARVERNI,
-        CAESAR, AUXILIA, EVENT_UNSHADED, EVENT_SHADED)
+        AUXILIA, EVENT_UNSHADED, EVENT_SHADED)
     st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=190)
     st["non_player_factions"] = set(get_sop_factions(st))
     st["current_card"] = 16
@@ -3270,7 +3258,7 @@ def test_capability_hooks_battle_intimidate():
     """Slice 62: A31 (no Ariovistus doubling), A33/A70 (no Retreat), A22
     (Intimidate immune Romans) modifiers honored in the mechanics."""
     from fs_bot.state.setup import setup_scenario
-    from fs_bot.board.pieces import place_piece, count_pieces, find_leader
+    from fs_bot.board.pieces import place_piece, find_leader
     from fs_bot.board.control import refresh_all_control
     from fs_bot.battle.losses import calculate_losses
     from fs_bot.battle.resolve import resolve_battle

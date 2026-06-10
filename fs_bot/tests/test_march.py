@@ -13,37 +13,22 @@ import pytest
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
+    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, HIDDEN, REVEALED, SCOUTED,
     # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
-    DIVICIACUS, SUCCESSOR,
-    # Scenarios
-    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
+    CAESAR, VERCINGETORIX, AMBIORIX, SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     # Regions
     MORINI, NERVII, ATREBATES, TREVERI, CARNUTES, MANDUBII,
-    VENETI, PICTONES, BITURIGES, AEDUI_REGION, SEQUANI,
+    BITURIGES, AEDUI_REGION, SEQUANI,
     ARVERNI_REGION, SUGAMBRI, UBII, PROVINCIA, CISALPINA,
     BRITANNIA,
-    BELGICA_REGIONS, GERMANIA_REGIONS,
-    # Control
-    ROMAN_CONTROL, NO_CONTROL, ARVERNI_CONTROL,
-    GERMANIC_CONTROL, BELGIC_CONTROL, AEDUI_CONTROL,
-    FACTION_CONTROL,
-    # Costs
     ROMAN_MARCH_COST, GALLIC_MARCH_COST,
     # Markers
-    MARKER_DEVASTATED, MARKER_FROST,
-    # Battle / Harassment
-    HARASSMENT_WARBANDS_PER_LOSS,
+    MARKER_DEVASTATED,
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import (
-    place_piece, remove_piece, count_pieces, count_pieces_by_state,
-    get_available, get_leader_in_region, flip_piece, PieceError,
+    place_piece, count_pieces, count_pieces_by_state,
+    get_leader_in_region, flip_piece,
 )
 from fs_bot.board.control import refresh_all_control, is_controlled_by
 from fs_bot.commands.march import (

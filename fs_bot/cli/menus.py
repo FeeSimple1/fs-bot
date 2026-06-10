@@ -14,7 +14,6 @@ Reference:
   §2.3.5  Limited Command
 """
 
-import sys
 
 from fs_bot.rules_consts import (
     FIRST_ELIGIBLE, SECOND_ELIGIBLE,

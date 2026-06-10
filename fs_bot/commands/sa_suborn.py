@@ -24,24 +24,15 @@ Reference: §4.4.2, §1.4.2, A4.4
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
-    # Piece types
-    WARBAND, AUXILIA, ALLY,
+    AEDUI, WARBAND, AUXILIA, ALLY,
     # Piece states
     HIDDEN,
     # Leaders
-    DIVICIACUS,
-    # Costs
     SUBORN_COST_PER_ALLY, SUBORN_COST_PER_PIECE,
     SUBORN_MAX_PIECES, SUBORN_MAX_ALLIES,
-    # Scenarios
-    ARIOVISTUS_SCENARIOS,
-    # Tribe restrictions
-    TRIBE_FACTION_RESTRICTION,
 )
 from fs_bot.board.pieces import (
-    count_pieces, count_pieces_by_state, get_leader_in_region, find_leader,
+    count_pieces, count_pieces_by_state, find_leader,
     place_piece, remove_piece, get_available,
 )
 from fs_bot.board.control import refresh_all_control

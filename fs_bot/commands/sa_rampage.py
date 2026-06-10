@@ -28,19 +28,15 @@ Reference: §4.5.2, §3.2.4, §3.3.4, A4.5
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    GALLIC_FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, CITADEL,
-    FLIPPABLE_PIECES,
-    # Piece states
+    LEGION, AUXILIA, WARBAND, FORT, CITADEL,
     HIDDEN, REVEALED,
     # Leaders
     AMBIORIX, BODUOGNATUS,
     # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    count_pieces, count_pieces_by_state, get_leader_in_region,
+    count_pieces_by_state, get_leader_in_region,
     flip_piece, remove_piece, move_piece,
 )
 from fs_bot.board.control import refresh_all_control

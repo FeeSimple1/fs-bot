@@ -18,29 +18,15 @@ The dispatch loop calls execute_belgae_turn(state) which walks the flowchart.
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, GALLIC_FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    MOBILE_PIECES,
-    # Piece states
+    LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     HIDDEN, REVEALED, SCOUTED,
     # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS,
     # Commands / SAs
-    CMD_RALLY, CMD_MARCH, CMD_RAID, CMD_BATTLE,
-    SA_ENLIST, SA_RAMPAGE, SA_AMBUSH,
-    # Leaders
-    AMBIORIX, BODUOGNATUS, CAESAR, SUCCESSOR,
-    # Regions
-    BRITANNIA, TREVERI, MORINI, NERVII,
+    AMBIORIX, BODUOGNATUS, BRITANNIA, TREVERI, MORINI, NERVII,
     # Region groups
-    BELGICA, GERMANIA,
-    BELGICA_REGIONS, GERMANIA_REGIONS,
+    BELGICA, BELGICA_REGIONS, GERMANIA_REGIONS,
     # Events
-    EVENT_SHADED,
-    # Die
-    DIE_MIN, DIE_MAX,
-    # Map
     REGION_TO_GROUP,
 )
 from fs_bot.board.pieces import (
@@ -48,44 +34,23 @@ from fs_bot.board.pieces import (
     find_leader, get_available, count_on_map,
 )
 from fs_bot.board.control import (
-    is_controlled_by, get_controlled_regions, calculate_control,
-)
-from fs_bot.engine.victory import (
-    calculate_victory_score, calculate_victory_margin, check_victory,
+    is_controlled_by,
 )
 from fs_bot.map.map_data import (
     get_adjacent, get_playable_regions, get_tribes_in_region,
-    get_region_group, is_city_tribe, is_adjacent,
+    is_city_tribe, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
     # Event decisions
     should_decline_event, get_dual_use_preference, get_event_instruction,
-    upgrade_limited_command,
-    # Targeting
-    get_faction_targeting_order, get_enemy_piece_target_order,
-    get_own_loss_order,
-    # Frost
-    is_frost_active, check_frost_restriction,
-    # Harassment
-    get_harassing_factions, np_will_harass,
-    # Retreat
-    should_retreat, get_retreat_preferences,
-    # Random
-    random_select, roll_die,
+    is_frost_active, random_select, roll_die,
     # Helpers
-    has_enemy_threat_in_region, count_mobile_pieces,
+    count_mobile_pieces,
     count_faction_allies_and_citadels,
-    rank_regions_for_event_placement,
-    leader_escort_needed,
     get_leader_placement_region,
-    # Supply line / agreements
-    np_agrees_to_supply_line,
-    is_no_faction_event,
 )
-from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
-    get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
-    CONDITIONAL,
+    NO_EVENT,
 )
 
 

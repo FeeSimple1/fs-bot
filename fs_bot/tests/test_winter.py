@@ -16,7 +16,6 @@ Tests cover:
 Reference: §6.0-§6.6, A6.0-A6.6
 """
 
-import pytest
 
 from fs_bot.rules_consts import (
     # Factions
@@ -27,18 +26,11 @@ from fs_bot.rules_consts import (
     # Piece states
     HIDDEN, REVEALED, SCOUTED,
     # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
-    DIVICIACUS, BODUOGNATUS, SUCCESSOR,
-    # Scenarios
-    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
+    CAESAR, SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
     # Regions
-    MORINI, NERVII, ATREBATES, SUGAMBRI, UBII,
-    TREVERI, CARNUTES, MANDUBII, VENETI, PICTONES,
-    BITURIGES, AEDUI_REGION, SEQUANI, ARVERNI_REGION,
-    BRITANNIA, PROVINCIA, CISALPINA,
-    GERMANIA_REGIONS,
-    # Tribes
-    TRIBE_MENAPII, TRIBE_MORINI, TRIBE_EBURONES, TRIBE_NERVII,
+    MORINI, NERVII, SUGAMBRI, UBII,
+    ARVERNI_REGION,
+    PROVINCIA, TRIBE_MENAPII, TRIBE_MORINI, TRIBE_EBURONES, TRIBE_NERVII,
     TRIBE_BELLOVACI, TRIBE_ATREBATES, TRIBE_REMI,
     TRIBE_SUEBI_NORTH, TRIBE_SUGAMBRI, TRIBE_SUEBI_SOUTH, TRIBE_UBII,
     TRIBE_TREVERI, TRIBE_HELVII,
@@ -46,40 +38,25 @@ from fs_bot.rules_consts import (
     TRIBE_AEDUI,
     # Senate
     UPROAR, INTRIGUE, ADULATION,
-    SENATE_POSITIONS, SENATE_AUXILIA,
     ARIOVISTUS_SENATE_MAX_LEGIONS,
     # Legions
     LEGIONS_ROWS, LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
-    LEGIONS_PER_ROW,
-    # Markers
     MARKER_DEVASTATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
-    MARKER_SCOUTED, MARKER_INTIMIDATED, MARKER_RAZED,
+    MARKER_INTIMIDATED, MARKER_RAZED,
     # Eligibility
     ELIGIBLE, INELIGIBLE,
-    # Harvest
-    AEDUI_RIVER_TOLLS,
-    MAX_RESOURCES,
-    # Quarters
-    QUARTERS_COST_WITH_ALLY, QUARTERS_COST_WITHOUT_ALLY,
-    QUARTERS_DEVASTATED_MULTIPLIER,
-    GERMAN_QUARTERS_SUGAMBRI_THRESHOLD,
-    DESERTION_ROLL_THRESHOLD,
-    # Die
-    DIE_MIN, DIE_MAX,
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import (
-    place_piece, remove_piece, count_pieces, count_pieces_by_state,
-    get_available, flip_piece,
+    place_piece, count_pieces, count_pieces_by_state,
 )
-from fs_bot.board.control import refresh_all_control, is_controlled_by
+from fs_bot.board.control import refresh_all_control
 from fs_bot.engine.winter import (
     run_winter_round,
     victory_phase,
     germans_phase,
     quarters_phase,
     harvest_phase,
-    senate_phase,
     spring_phase,
     _apply_senate_shift,
     _senate_marker_shift,
@@ -88,7 +65,6 @@ from fs_bot.engine.winter import (
     _quarters_german_relocation,
     _quarters_gallic_desertion,
 )
-from fs_bot.engine.victory import calculate_victory_score
 
 
 # ============================================================================

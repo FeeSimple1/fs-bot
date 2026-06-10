@@ -27,8 +27,7 @@ from fs_bot.rules_consts import (
 from fs_bot.cards.card_data import (
     get_card, get_faction_order, is_capability_card,
     get_base_event_card_ids, get_ariovistus_event_card_ids,
-    get_winter_card_ids, get_all_base_cards, get_all_ariovistus_cards,
-    get_np_symbols,
+    get_winter_card_ids, get_all_base_cards, get_np_symbols,
 )
 from fs_bot.cards.capabilities import (
     activate_capability, deactivate_capability,

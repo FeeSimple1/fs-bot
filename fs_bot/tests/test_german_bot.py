@@ -10,27 +10,19 @@ import pytest
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    HIDDEN, REVEALED, SCOUTED,
-    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
+    HIDDEN, REVEALED, SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
-    ARIOVISTUS_LEADER, BODUOGNATUS, CAESAR, SUCCESSOR, DIVICIACUS,
+    ARIOVISTUS_LEADER, BODUOGNATUS, CAESAR, DIVICIACUS,
     # Regions
-    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, SUGAMBRI, UBII,
-    AEDUI_REGION, ARVERNI_REGION, SEQUANI, BITURIGES,
-    CARNUTES, PICTONES, VENETI, TREVERI, CISALPINA,
-    GERMANIA_REGIONS,
+    MORINI, NERVII, ATREBATES, MANDUBII, SUGAMBRI, UBII,
+    ARVERNI_REGION, CARNUTES, TREVERI, GERMANIA_REGIONS,
     # Tribes
-    TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
-    TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
-    TRIBE_ATREBATES, TRIBE_SEQUANI, TRIBE_NERVII,
-    TRIBE_TREVERI, TRIBE_VENETI, TRIBE_UBII, TRIBE_SUGAMBRI,
-    TRIBE_PICTONES, TRIBE_HELVETII, TRIBE_NORI,
+    TRIBE_MANDUBII, TRIBE_ATREBATES, TRIBE_UBII, TRIBE_SUGAMBRI,
     EVENT_SHADED,
     MARKER_DISPERSED,
 )
 from fs_bot.state.state_schema import build_initial_state
-from fs_bot.board.pieces import place_piece, count_pieces, get_available
+from fs_bot.board.pieces import place_piece
 from fs_bot.board.control import refresh_all_control, is_controlled_by
 from fs_bot.bots.german_bot import (
     # Node functions
@@ -39,23 +31,12 @@ from fs_bot.bots.german_bot import (
     node_g_event, node_g_battle, node_g_march_threat,
     node_g_rally, node_g_raid, node_g_march_expand,
     # SA helpers
-    _check_ambush, _check_intimidate_before_battle,
-    _select_intimidate_targets, _can_intimidate_region,
-    _determine_intimidate_after_raid,
-    _determine_intimidate_or_settle_after_march,
+    _check_ambush, _select_intimidate_targets, _can_intimidate_region,
     node_g_settle,
     # Helpers
     _has_german_threat, _can_battle_in_region,
     _ariovistus_region, _has_ariovistus,
-    _estimate_battle_losses, _romans_at_victory,
-    _get_threat_regions, _get_settle_destinations,
-    _is_in_or_adjacent_to_germania,
-    _instruction_says_no_germans,
-    _estimate_rally_settle_would_qualify,
-    _would_raid_gain_enough,
-    _find_largest_german_warband_group_leaderless,
-    # Winter
-    node_g_quarters, node_g_spring,
+    _estimate_battle_losses, node_g_quarters, node_g_spring,
     # Agreements
     node_g_agreements,
     # Main driver
@@ -63,8 +44,7 @@ from fs_bot.bots.german_bot import (
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RALLY, ACTION_RAID,
     ACTION_EVENT, ACTION_PASS,
-    SA_ACTION_AMBUSH, SA_ACTION_SETTLE, SA_ACTION_INTIMIDATE,
-    SA_ACTION_NONE,
+    SA_ACTION_SETTLE, SA_ACTION_NONE,
 )
 from fs_bot.bots.bot_dispatch import (
     dispatch_bot_turn, BotDispatchError,

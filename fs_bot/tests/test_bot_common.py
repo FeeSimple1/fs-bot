@@ -9,19 +9,15 @@ import pytest
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    HIDDEN, REVEALED, SCOUTED,
+    LEADER, LEGION, AUXILIA, FORT, ALLY, CITADEL, SETTLEMENT,
+    HIDDEN, SCOUTED,
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     EVENT_UNSHADED, EVENT_SHADED,
-    CAESAR, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
-    TRIBE_REMI, TRIBE_CARNUTES, TRIBE_AEDUI, TRIBE_ARVERNI,
-    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII,
-    AEDUI_REGION, ARVERNI_REGION, SUGAMBRI,
-    CAPABILITY_CARDS,
+    CAESAR, TRIBE_REMI, TRIBE_CARNUTES, TRIBE_AEDUI, MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII,
+    ARVERNI_REGION,
 )
 from fs_bot.state.state_schema import build_initial_state
-from fs_bot.board.pieces import place_piece, count_pieces
+from fs_bot.board.pieces import place_piece
 from fs_bot.bots.bot_common import (
     # Limited Command
     upgrade_limited_command,
@@ -29,13 +25,9 @@ from fs_bot.bots.bot_common import (
     get_dual_use_preference,
     # Event decisions
     is_no_faction_event, is_final_year_capability, should_decline_event,
-    get_event_instruction,
-    # Random
     random_select, random_select_multiple, roll_die,
     # Frost
-    is_frost_active, check_frost_restriction,
-    # Place/Remove ordering
-    get_enemy_piece_target_order, get_own_loss_order,
+    is_frost_active, get_enemy_piece_target_order, get_own_loss_order,
     get_flippable_target_order, get_own_flippable_loss_order,
     is_ally_in_city_or_remi,
     # Faction targeting
@@ -43,9 +35,7 @@ from fs_bot.bots.bot_common import (
     # Harassment
     get_harassing_factions, get_vercingetorix_harassers, np_will_harass,
     # Retreat
-    should_retreat, get_retreat_preferences,
-    # Event locations
-    rank_regions_for_event_placement,
+    should_retreat, rank_regions_for_event_placement,
     # Leader placement
     get_leader_placement_region,
     # Leader escort

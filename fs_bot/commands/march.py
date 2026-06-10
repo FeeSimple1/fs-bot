@@ -16,38 +16,26 @@ Reference: §3.2.2 (Roman March), §3.3.2 (Gallic March), §3.4.2 (Germanic Marc
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    ROMANS, ARVERNI, GERMANS,
     GALLIC_FACTIONS,
     # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    FLIPPABLE_PIECES,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
+    LEADER, LEGION, AUXILIA, WARBAND, HIDDEN, REVEALED, SCOUTED,
     # Leaders
     CAESAR, VERCINGETORIX,
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Regions
     BRITANNIA, CISALPINA,
-    GERMANIA_REGIONS,
-    # Adjacency types
-    ADJ_RHENUS, ADJ_COASTAL,
-    # Costs
-    ROMAN_MARCH_COST, GALLIC_MARCH_COST,
+    ADJ_RHENUS, ROMAN_MARCH_COST, GALLIC_MARCH_COST,
     GERMAN_COMMAND_COST_BASE,
     # Markers
-    MARKER_DEVASTATED,
-    # Battle / Harassment
     HARASSMENT_WARBANDS_PER_LOSS,
     LOSS_ROLL_THRESHOLD,
-    DIE_SIDES, DIE_MIN, DIE_MAX,
-    # Control
-    FACTION_CONTROL,
+    DIE_MIN, DIE_MAX,
 )
 from fs_bot.board.pieces import (
     move_piece, count_pieces, count_pieces_by_state,
     flip_piece, remove_piece, get_leader_in_region,
-    PieceError,
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import (

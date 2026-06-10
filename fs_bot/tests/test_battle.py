@@ -15,26 +15,21 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    FLIPPABLE_PIECES,
-    # Piece states
     HIDDEN, REVEALED, SCOUTED,
     # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
-    BODUOGNATUS, SUCCESSOR,
+    CAESAR, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
+    SUCCESSOR,
     # Scenarios
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     # Regions
-    MORINI, NERVII, ATREBATES, TREVERI, MANDUBII, PROVINCIA,
-    SEQUANI, AEDUI_REGION, ARVERNI_REGION, CARNUTES, SUGAMBRI, UBII,
-    # Battle constants
+    MORINI, ATREBATES, PROVINCIA,
     LOSS_ROLL_THRESHOLD, DIVICIACUS_LOSS_ROLL_THRESHOLD,
-    CAESAR_AMBUSH_ROLL_THRESHOLD, CAESAR_BELGIC_AMBUSH_ROLL_THRESHOLD,
-    DIE_MIN, DIE_MAX,
+    CAESAR_AMBUSH_ROLL_THRESHOLD, DIE_MIN, DIE_MAX,
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import (
     place_piece, remove_piece, count_pieces, count_pieces_by_state,
-    get_leader_in_region, get_available, flip_piece,
+    get_leader_in_region,
 )
 from fs_bot.battle.losses import calculate_losses, resolve_losses
 from fs_bot.battle.resolve import resolve_battle
@@ -1345,7 +1340,6 @@ class TestEdgeCases:
         setup_battle(state, MORINI, ARVERNI, BELGAE,
                      attacker_pieces={WARBAND: 10},
                      defender_pieces={WARBAND: 2})
-        from fs_bot.board.control import calculate_control
         result = resolve_battle(
             state, MORINI, ARVERNI, BELGAE,
             retreat_declaration=False,

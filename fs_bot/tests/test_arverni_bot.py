@@ -10,27 +10,23 @@ import pytest
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL,
-    HIDDEN, REVEALED, SCOUTED,
-    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
-    SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    HIDDEN, REVEALED, SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
+    SCENARIO_GALLIC_WAR,
     VERCINGETORIX, CAESAR, AMBIORIX,
-    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII,
-    AEDUI_REGION, ARVERNI_REGION, SEQUANI, BITURIGES,
-    CARNUTES, PICTONES, VENETI, TREVERI,
-    TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
+    MORINI, MANDUBII,
+    AEDUI_REGION, ARVERNI_REGION, BITURIGES,
+    CARNUTES, PICTONES, VENETI, TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
     TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
     EVENT_SHADED,
 )
 from fs_bot.state.state_schema import build_initial_state
-from fs_bot.board.pieces import place_piece, count_pieces, get_available
+from fs_bot.board.pieces import place_piece, get_available
 from fs_bot.board.control import refresh_all_control, is_controlled_by
 from fs_bot.bots.arverni_bot import (
     # Node functions
     node_v1, node_v2, node_v2b, node_v2c, node_v3, node_v4, node_v5,
     # Process nodes
-    node_v_event, node_v_battle, node_v_march_threat,
-    node_v_rally, node_v_march_spread, node_v_raid, node_v_march_mass,
+    node_v_battle, node_v_rally, node_v_march_spread, node_v_raid, node_v_march_mass,
     # SA helpers
     _check_ambush, _check_devastate, _check_entreat,
     # Winter/Spring
@@ -41,13 +37,10 @@ from fs_bot.bots.arverni_bot import (
     execute_arverni_turn,
     # Helpers
     _has_arverni_threat, _can_battle_in_region, _check_caesar_ratio,
-    _count_arverni_warbands_on_map, _estimate_rally_placements,
-    _would_raid_gain_enough,
+    _count_arverni_warbands_on_map, _would_raid_gain_enough,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RALLY, ACTION_RAID,
     ACTION_EVENT, ACTION_PASS,
-    SA_ACTION_AMBUSH, SA_ACTION_DEVASTATE, SA_ACTION_ENTREAT, SA_ACTION_NONE,
-    MARCH_THREAT, MARCH_SPREAD, MARCH_MASS,
 )
 from fs_bot.bots.bot_dispatch import (
     dispatch_bot_turn, BotDispatchError,
@@ -396,9 +389,7 @@ class TestNodeV3:
         _place_arverni_force(state, ARVERNI_REGION, warbands=9)
         # Use up all Available Allies by placing them on tribes
         from fs_bot.rules_consts import (
-            TRIBE_CADURCI, TRIBE_VOLCAE, TRIBE_BITURIGES as TB,
-            TRIBE_PICTONES, TRIBE_SANTONES, TRIBE_VENETI, TRIBE_NAMNETES,
-            TRIBE_AULERCI, TRIBE_SENONES, TRIBE_LINGONES,
+            TRIBE_CADURCI, TRIBE_VOLCAE, TRIBE_PICTONES, TRIBE_SANTONES, TRIBE_VENETI, TRIBE_NAMNETES,
             TRIBE_TO_REGION,
         )
         for tribe in (TRIBE_ARVERNI, TRIBE_CADURCI, TRIBE_VOLCAE,

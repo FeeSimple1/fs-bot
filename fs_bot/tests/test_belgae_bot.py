@@ -5,33 +5,24 @@ Tests every flowchart node with Yes/No branches, seeded RNG, and
 both base game and Ariovistus scenarios.
 """
 
-import pytest
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    HIDDEN, REVEALED, SCOUTED,
-    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
-    SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    HIDDEN, REVEALED, SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     AMBIORIX, BODUOGNATUS, CAESAR, SUCCESSOR,
-    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, SUGAMBRI, UBII,
-    AEDUI_REGION, ARVERNI_REGION, SEQUANI, BITURIGES,
-    CARNUTES, PICTONES, VENETI, TREVERI, BRITANNIA,
-    TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
-    TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
-    TRIBE_ATREBATES, TRIBE_SEQUANI, TRIBE_NERVII,
-    TRIBE_TREVERI, TRIBE_VENETI,
-    EVENT_SHADED,
+    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, SUGAMBRI, AEDUI_REGION, SEQUANI, BITURIGES,
+    CARNUTES, TREVERI, TRIBE_MANDUBII, TRIBE_MORINI,
+    TRIBE_ATREBATES, TRIBE_NERVII,
 )
 from fs_bot.state.state_schema import build_initial_state
-from fs_bot.board.pieces import place_piece, count_pieces, get_available
-from fs_bot.board.control import refresh_all_control, is_controlled_by
+from fs_bot.board.pieces import place_piece, get_available
+from fs_bot.board.control import refresh_all_control
 from fs_bot.bots.belgae_bot import (
     # Node functions
     node_b1, node_b2, node_b3, node_b3b, node_b4, node_b5,
     # Process nodes
-    node_b_event, node_b_battle,
+    node_b_battle,
     node_b_rally, node_b_raid, node_b_march,
     node_b_march_threat,
     # SA helpers
@@ -46,16 +37,16 @@ from fs_bot.bots.belgae_bot import (
     execute_belgae_turn,
     # Helpers
     _has_belgae_threat, _can_battle_in_region,
-    _count_belgae_warbands_on_map, _estimate_rally_would_qualify,
+    _estimate_rally_would_qualify,
     _would_raid_gain_enough, _estimate_battle_losses,
     _find_largest_belgae_warband_group, _get_non_german_enemies,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RALLY, ACTION_RAID,
-    ACTION_EVENT, ACTION_PASS,
-    SA_ACTION_AMBUSH, SA_ACTION_RAMPAGE, SA_ACTION_ENLIST, SA_ACTION_NONE,
+    ACTION_PASS,
+    SA_ACTION_RAMPAGE, SA_ACTION_ENLIST,
 )
 from fs_bot.bots.bot_dispatch import (
-    dispatch_bot_turn, BotDispatchError,
+    dispatch_bot_turn,
 )
 
 

@@ -23,52 +23,19 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     GALLIC_FACTIONS, FACTIONS,
     # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     # Piece states
-    HIDDEN, REVEALED, SCOUTED,
-    # Senate
-    SENATE_POSITIONS,
-    # Regions / groups
-    PROVINCIA, CISALPINA,
     ALL_REGIONS,
-    BELGICA_REGIONS, GERMANIA_REGIONS, CELTICA_REGIONS,
-    # Tribes
-    TRIBE_CARNUTES, TRIBE_REMI, TRIBE_MANDUBII,
-    TRIBE_AEDUI, TRIBE_ARVERNI, TRIBE_SEQUANI,
-    TRIBE_HELVETII, TRIBE_VENETI, TRIBE_NAMNETES,
-    TRIBE_MORINI, TRIBE_MENAPII, TRIBE_HELVII,
-    TRIBE_PICTONES, TRIBE_SANTONES, TRIBE_VOLCAE, TRIBE_CADURCI,
-    TRIBE_ATREBATES, TRIBE_NERVII, TRIBE_EBURONES,
-    TRIBE_TREVERI, TRIBE_BITURIGES, TRIBE_NORI,
-    TRIBE_TO_REGION,
-    # Cities
-    CITY_AVARICUM, CITY_CENABUM, CITY_ALESIA,
-    CITY_BIBRACTE, CITY_GERGOVIA,
     CITY_TO_TRIBE,
     # Markers
-    MARKER_DEVASTATED, MARKER_GALLIA_TOGATA,
-    MARKER_CIRCUMVALLATION, MARKER_COLONY,
-    # Capabilities
-    CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
-    # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
-    # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
-    # Legions track
-    LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
-    # Max resources
-    MAX_RESOURCES,
-    # Control
-    ROMAN_CONTROL, NO_CONTROL,
+    ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    get_available, count_pieces, find_leader,
-    _count_on_legions_track,
+    get_available, count_pieces, _count_on_legions_track,
 )
-from fs_bot.board.control import is_controlled_by, get_controlled_regions
 from fs_bot.cards.card_data import is_capability_card
 from fs_bot.cards.bot_instructions import (
-    get_bot_instruction, NO_EVENT, CONDITIONAL,
+    get_bot_instruction, NO_EVENT,
 )
 
 

@@ -20,18 +20,8 @@ from fs_bot.rules_consts import (
     # Piece states
     HIDDEN, REVEALED,
     # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, SUCCESSOR,
-    # Regions
-    PROVINCIA, SEQUANI, ARVERNI_REGION, AEDUI_REGION, MANDUBII,
-    ATREBATES, NERVII, MORINI, TREVERI, CARNUTES, BITURIGES,
-    SUGAMBRI, UBII,
-    # Legions track
-    LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
+    CAESAR, PROVINCIA, SEQUANI, ARVERNI_REGION, AEDUI_REGION, ATREBATES, SUGAMBRI, LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
     # Resources
-    MAX_RESOURCES,
-    # Control
-    ROMAN_CONTROL, NO_CONTROL, FACTION_CONTROL,
-    # Eligibility
     ELIGIBLE, INELIGIBLE,
     # Markers
     MARKER_DEVASTATED,
@@ -39,10 +29,10 @@ from fs_bot.rules_consts import (
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.cards.card_effects import execute_event
 from fs_bot.board.pieces import (
-    place_piece, remove_piece, count_pieces, get_leader_in_region,
+    place_piece, count_pieces, get_leader_in_region,
 )
-from fs_bot.board.control import refresh_all_control, is_controlled_by
-from fs_bot.cards.capabilities import is_capability_active, activate_capability
+from fs_bot.board.control import refresh_all_control
+from fs_bot.cards.capabilities import is_capability_active
 from fs_bot.rules_consts import EVENT_SHADED, EVENT_UNSHADED
 
 
@@ -796,7 +786,7 @@ class TestCard34Acco:
     def test_card_34_shaded_replaces_allies(self):
         """Shaded: Replace non-Arverni Allies in Carnutes/Mandubii."""
         from fs_bot.rules_consts import (
-            CARNUTES, TRIBE_CARNUTES, TRIBE_TO_REGION,
+            CARNUTES, TRIBE_CARNUTES,
         )
         state = _setup_base_state()
         # Place Aedui Ally at Carnutes tribe
@@ -843,7 +833,6 @@ class TestCard52AssemblyOfGaul:
 
     def test_card_52_unshaded_drain_gallic_resources(self):
         """Unshaded: Drain Gallic factions -8 if Carnutes is Subdued."""
-        from fs_bot.rules_consts import TRIBE_CARNUTES
         state = _setup_base_state()
         # Carnutes tribe is Subdued by default (allied_faction=None, no Dispersed)
         state["event_params"] = {"target_factions": [ARVERNI]}
@@ -905,7 +894,7 @@ class TestCardA25AriovistusWife:
 
     def test_card_A25_shaded_place_at_nori(self):
         """Shaded: Place German Ally and 6 Warbands at Nori, +6 Resources."""
-        from fs_bot.rules_consts import TRIBE_NORI, TRIBE_TO_REGION, CISALPINA
+        from fs_bot.rules_consts import TRIBE_NORI, TRIBE_TO_REGION
         state = _setup_ariovistus_state()
         region = TRIBE_TO_REGION[TRIBE_NORI]
         execute_event(state, "A25", shaded=True)
@@ -1187,8 +1176,7 @@ class TestDispersedStatusHandling:
     read/clear status. Regression for the markers-vs-status bug class."""
 
     def test_card29_removes_dispersed_from_suebi(self):
-        from fs_bot.rules_consts import (SUEBI_TRIBES, DISPERSED, GERMANS,
-                                         SCENARIO_GREAT_REVOLT)
+        from fs_bot.rules_consts import (SUEBI_TRIBES, DISPERSED, SCENARIO_GREAT_REVOLT)
         from fs_bot.state.state_schema import build_initial_state
         st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
         for t in SUEBI_TRIBES:
@@ -1421,7 +1409,7 @@ class TestAuditConditionFixes:
         from fs_bot.commands.rally import _gallic_warband_cap
         from fs_bot.cards.capabilities import activate_capability
         from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, ALLY,
-                                         CITADEL, LEADER, VERCINGETORIX,
+                                         LEADER, VERCINGETORIX,
                                          EVENT_UNSHADED, ARVERNI_RALLY_EXTRA_WARBAND)
         from fs_bot.board.pieces import place_piece
         from fs_bot.state.state_schema import build_initial_state
@@ -1458,7 +1446,7 @@ class TestAuditConditionFixes:
 
     def test_card19_shaded_relocates_successor_on_map(self):
         from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, LEADER,
-                                         VERCINGETORIX, EVENT_SHADED)
+                                         VERCINGETORIX)
         from fs_bot.board.pieces import place_piece, find_leader, count_pieces
         from fs_bot.state.state_schema import build_initial_state
         st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
@@ -1499,7 +1487,7 @@ class TestAuditConditionFixes:
         from fs_bot.engine.execute import _resolve_a20_free_seize
         from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, BELGAE,
                                          VENETI, AUXILIA, WARBAND, DISPERSED)
-        from fs_bot.board.pieces import place_piece, remove_piece, count_pieces
+        from fs_bot.board.pieces import place_piece
         from fs_bot.board.control import refresh_all_control, is_controlled_by
         from fs_bot.state.state_schema import build_initial_state
         st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
@@ -1547,9 +1535,9 @@ class TestAuditConditionFixes:
         # Harassment" — Disperse a Subdued Tribe even where Romans don't Control.
         from fs_bot.engine.execute import _resolve_a58_battle_seize
         from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, BELGAE,
-                                         AUXILIA, WARBAND, DISPERSED,
+                                         WARBAND, DISPERSED,
                                          BELGICA_REGIONS)
-        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.pieces import place_piece
         from fs_bot.board.control import refresh_all_control, is_controlled_by
         from fs_bot.state.state_schema import build_initial_state
         st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)

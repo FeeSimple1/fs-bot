@@ -19,23 +19,17 @@ from fs_bot.rules_consts import (
     # Factions
     ROMANS,
     # Piece types
-    AUXILIA, WARBAND, FLIPPABLE_PIECES,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
+    AUXILIA, WARBAND, HIDDEN, REVEALED, SCOUTED,
     # Leaders
     CAESAR,
     # Regions
     BRITANNIA,
-    # Scenarios
-    ARIOVISTUS_SCENARIOS,
-    # Markers
-    MARKER_SCOUTED,
 )
 from fs_bot.board.pieces import (
     count_pieces_by_state,
     move_piece, flip_piece,
 )
-from fs_bot.map.map_data import is_adjacent, get_adjacent
+from fs_bot.map.map_data import is_adjacent
 from fs_bot.commands.common import CommandError, check_leader_proximity
 
 

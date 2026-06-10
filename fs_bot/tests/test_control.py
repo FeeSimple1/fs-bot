@@ -7,22 +7,17 @@ with Settlements, tied pieces = no control, stacking restriction enforcement.
 Reference: §1.6, A1.4
 """
 
-import pytest
 
 from fs_bot.rules_consts import (
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    HIDDEN, REVEALED,
-    CAESAR, AMBIORIX, ARIOVISTUS_LEADER,
-    ROMAN_CONTROL, ARVERNI_CONTROL, AEDUI_CONTROL,
-    BELGIC_CONTROL, GERMANIC_CONTROL, NO_CONTROL,
+    ROMANS, ARVERNI, BELGAE, GERMANS,
+    LEADER, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    AMBIORIX, ROMAN_CONTROL, BELGIC_CONTROL, GERMANIC_CONTROL, NO_CONTROL,
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
-    MORINI, NERVII, PROVINCIA, SUGAMBRI, UBII, SEQUANI,
-    AEDUI_REGION,
+    MORINI, NERVII, SUGAMBRI,
 )
 
 from fs_bot.state.state_schema import build_initial_state
-from fs_bot.board.pieces import place_piece, count_pieces
+from fs_bot.board.pieces import place_piece
 from fs_bot.board.control import (
     calculate_control, refresh_all_control, is_controlled_by,
     get_controlled_regions,

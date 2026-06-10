@@ -15,20 +15,12 @@ Reference: §3.2.3, A3.2.3
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, GALLIC_FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL,
-    PROVINCIA,
+    ROMANS, ARVERNI, BELGAE, FACTIONS, LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, PROVINCIA,
     # Piece states
     HIDDEN,
     # Costs
     SEIZE_COST,
     # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
-    # Markers
-    MARKER_DEVASTATED,
-    # Tribe statuses
     DISPERSED, DISPERSED_GATHERING,
     # Dispersed limit
     MAX_DISPERSED_MARKERS,
@@ -41,7 +33,6 @@ from fs_bot.rules_consts import (
 
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, remove_piece,
-    PieceError,
 )
 from fs_bot.board.control import (
     is_controlled_by, refresh_all_control,

@@ -15,18 +15,14 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    FLIPPABLE_PIECES,
-    # Piece states
-    HIDDEN,
-    # Control
-    ROMAN_CONTROL, NO_CONTROL,
+    AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    NO_CONTROL,
     FACTION_CONTROL,
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Regions
     PROVINCIA, CISALPINA, UBII, SEQUANI,
-    BELGICA_REGIONS, GERMANIA_REGIONS,
+    GERMANIA_REGIONS,
     # Home regions
     ROMAN_HOME_REGIONS,
     ARVERNI_HOME_REGIONS_BASE, ARVERNI_HOME_REGIONS_ARIOVISTUS,
@@ -43,27 +39,21 @@ from fs_bot.rules_consts import (
     # Misc
     ARVERNI_RALLY_EXTRA_WARBAND,
     # Markers
-    MARKER_DEVASTATED, MARKER_INTIMIDATED,
-    # Leaders
-    VERCINGETORIX,
+    MARKER_DEVASTATED, VERCINGETORIX,
     # Tribes
-    TRIBE_FACTION_RESTRICTION,
-    TRIBE_SUEBI_NORTH, TRIBE_SUEBI_SOUTH,
     SUEBI_TRIBES,
-    # Senate
-    ADULATION,
 )
 
 from fs_bot.board.pieces import (
     place_piece, remove_piece, count_pieces, get_available,
-    get_leader_in_region, PieceError,
+    get_leader_in_region,
 )
 from fs_bot.board.control import (
-    is_controlled_by, refresh_all_control, calculate_control,
+    is_controlled_by, refresh_all_control,
 )
 from fs_bot.map.map_data import (
     get_adjacent, get_tribes_in_region, get_tribe_data,
-    get_region_data, get_region_group, is_city_tribe,
+    get_region_group, is_city_tribe,
     ALL_REGION_DATA,
 )
 from fs_bot.commands.common import CommandError, _is_devastated, _is_intimidated

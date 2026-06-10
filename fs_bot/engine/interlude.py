@@ -41,27 +41,13 @@ import math
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    GALLIC_FACTIONS,
-    # Scenarios
     SCENARIO_GALLIC_WAR, SCENARIO_PAX_GALLICA,
-    ARIOVISTUS_SCENARIOS, BASE_SCENARIOS,
-    # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    FLIPPABLE_PIECES,
-    # Piece states
     HIDDEN, REVEALED, SCOUTED,
     # Leaders
     CAESAR, VERCINGETORIX, AMBIORIX, BODUOGNATUS,
-    ARIOVISTUS_LEADER, DIVICIACUS, SUCCESSOR,
-    LEADER_FACTION,
-    # Regions
-    ALL_REGIONS, BELGICA_REGIONS, GERMANIA_REGIONS,
-    PROVINCIA, CISALPINA, BRITANNIA,
+    DIVICIACUS, PROVINCIA, CISALPINA, BRITANNIA,
     AEDUI_REGION, ARVERNI_REGION,
-    MORINI, NERVII, ATREBATES, SUGAMBRI, UBII,
-    TREVERI, MANDUBII, VENETI, CARNUTES, PICTONES, BITURIGES,
-    SEQUANI,
-    # Home regions
     ROMAN_HOME_REGIONS, AEDUI_HOME_REGIONS, BELGAE_HOME_REGIONS,
     ARVERNI_HOME_REGIONS_ARIOVISTUS, GERMAN_HOME_REGIONS_BASE,
     # Tribes (used for Cadurci/Volcae and Nori)
@@ -70,17 +56,14 @@ from fs_bot.rules_consts import (
     # Markers
     MARKER_CIRCUMVALLATION, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     MARKER_BRITANNIA_NOT_IN_PLAY, MARKER_ARVERNI_RALLY,
-    MARKER_INTIMIDATED, MARKER_GALLIA_TOGATA, MARKER_COLONY,
-    MARKER_ABATIS, MARKER_WINTER_UPRISING, MARKER_AT_WAR,
-    MARKER_NORI, MARKER_CISALPINA_CONTROL_BOX,
+    MARKER_INTIMIDATED, MARKER_GALLIA_TOGATA, MARKER_WINTER_UPRISING, MARKER_NORI, MARKER_CISALPINA_CONTROL_BOX,
     # Senate
-    UPROAR, INTRIGUE, ADULATION, SENATE_POSITIONS,
+    INTRIGUE, SENATE_POSITIONS,
     # Eligibility
     ELIGIBLE,
     # Victory check helper
     MAX_RESOURCES,
     # Interlude config
-    INTERLUDE_VICTORY_TRIGGER_WINTER,
     INTERLUDE_GERMAN_WARBANDS_REMOVED,
     PAX_GALLICA_START_ARVERNI, PAX_GALLICA_START_AEDUI,
     PAX_GALLICA_START_BELGAE, PAX_GALLICA_START_ROMANS,
@@ -91,15 +74,13 @@ from fs_bot.rules_consts import (
     BRITANNIA_EXPEDITION_MIN_AUXILIA_TO_BRITANNIA,
     # Cards
     CARD_NAMES_BASE, WINTER_CARD,
-    CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, count_pieces,
     count_pieces_by_state, get_available, get_leader_in_region,
-    find_leader, PieceError,
+    find_leader,
 )
 from fs_bot.board.control import refresh_all_control
-from fs_bot.cards.capabilities import is_capability_active
 
 
 # ============================================================================
@@ -1274,7 +1255,6 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
         - dict: {"conduct": bool, "legions_from": {region: count}, ...}
           for player-customized choices (only "conduct" is required).
     """
-    from fs_bot.rules_consts import ROMAN_CONTROL, BELGIC_CONTROL
 
     result = {
         "conducted": False,

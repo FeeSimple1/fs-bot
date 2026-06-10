@@ -2547,7 +2547,6 @@ def _resolve_a20_free_seize(state):
     """
     from fs_bot.rules_consts import ROMANS, VENETI
     from fs_bot.board.pieces import count_pieces
-    from fs_bot.board.control import is_controlled_by
     if count_pieces(state, VENETI, ROMANS) <= 0:
         return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
                  "executed": False, "reason": "Romans have no pieces in Veneti"}]
@@ -2932,7 +2931,6 @@ def _resolve_a67_arduenna(state, faction):
 def _resolve_a58_battle_seize(state, faction):
     from fs_bot.rules_consts import ROMANS, BELGICA_REGIONS
     from fs_bot.board.pieces import count_pieces
-    from fs_bot.board.control import is_controlled_by
     out = []
     if faction != ROMANS:
         return out
@@ -3516,14 +3514,9 @@ def _execute_sa(state, faction, bot_action):
     Returns a result dict, or None when there is no standalone SA to run
     (No SA, or a battle-modifying SA already handled in _execute_battle).
 
-    Wired (execution-complete from the bot plan):
-      - Trade (Aedui): trade(state) — no targets.
-      - Settle (German): settle(state, region) for each sa_region.
-      - Devastate (Arverni/Aedui): devastate_region(state, region) per region.
-      - Intimidate (German): intimidate(...) grouped by region + target.
-
-    Deferred (need faithful plan translation / secondary choices — reported,
-    not guessed): Build, Scout, Entreat, Suborn, Rampage, Enlist.
+    All standalone SAs are wired: Trade, Settle, Devastate, Intimidate,
+    Suborn, Build, Rampage, Entreat, Scout, and Enlist. Battle-modifying
+    SAs (Ambush, Besiege) resolve inside _execute_battle instead.
     """
     sa = bot_action.get("sa")
     if not sa or sa == SA_ACTION_NONE_LABEL or sa in _BATTLE_MODIFYING_SAS:

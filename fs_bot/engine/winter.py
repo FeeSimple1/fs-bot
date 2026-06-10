@@ -19,21 +19,16 @@ from fs_bot.rules_consts import (
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    FLIPPABLE_PIECES, MOBILE_PIECES,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
+    FLIPPABLE_PIECES, HIDDEN, REVEALED, SCOUTED,
     # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
-    DIVICIACUS, BODUOGNATUS, SUCCESSOR,
+    DIVICIACUS, SUCCESSOR,
     BASE_LEADERS, ARIOVISTUS_LEADERS,
     LEADER_FACTION,
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     SCENARIO_GALLIC_WAR,
     # Regions
-    ALL_REGIONS,
-    PROVINCIA, CISALPINA,
-    SUGAMBRI, UBII,
+    PROVINCIA, SUGAMBRI, UBII,
     GERMANIA_REGIONS,
     # Legions
     LEGIONS_ROWS, LEGIONS_PER_ROW,
@@ -60,32 +55,25 @@ from fs_bot.rules_consts import (
     GERMAN_HOME_REGIONS_BASE,
     # Markers
     MARKER_DEVASTATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
-    MARKER_SCOUTED, MARKER_INTIMIDATED, MARKER_RAZED,
-    # Eligibility
-    ELIGIBLE,
+    MARKER_INTIMIDATED, ELIGIBLE,
     # Die
     DIE_MIN, DIE_MAX,
-    # Control
-    NO_CONTROL, GERMANIC_CONTROL,
-    FACTION_CONTROL,
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, flip_piece,
     count_pieces, count_pieces_by_state, get_available,
-    get_leader_in_region, find_leader, PieceError,
-    _count_on_legions_track,
+    get_leader_in_region, find_leader,
 )
 from fs_bot.board.control import (
-    refresh_all_control, is_controlled_by, get_controlled_regions,
+    refresh_all_control,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region,
-    ALL_REGION_DATA, get_region_group,
+    ALL_REGION_DATA,
 )
-from fs_bot.commands.common import _is_devastated, _is_intimidated
+from fs_bot.commands.common import _is_devastated
 from fs_bot.engine.victory import (
-    check_any_victory, check_victory, calculate_victory_score,
-    calculate_victory_margin, determine_final_ranking,
+    check_any_victory, calculate_victory_score,
+    determine_final_ranking,
 )
 from fs_bot.engine.germans_battle import germans_phase_battle
 from fs_bot.commands.rally import germans_phase_rally

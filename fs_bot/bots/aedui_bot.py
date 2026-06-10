@@ -15,26 +15,11 @@ The dispatch loop calls execute_aedui_turn(state) which walks the flowchart.
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, GALLIC_FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    MOBILE_PIECES,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
-    # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    FACTIONS, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    HIDDEN, ARIOVISTUS_SCENARIOS,
     # Commands / SAs
-    CMD_RALLY, CMD_MARCH, CMD_RAID, CMD_BATTLE,
-    SA_TRADE, SA_SUBORN, SA_AMBUSH,
-    # Leaders
-    DIVICIACUS, CAESAR,
-    # Regions
-    AEDUI_REGION, BRITANNIA,
+    BRITANNIA,
     # Events
-    EVENT_UNSHADED,
-    # Die
-    DIE_MIN, DIE_MAX,
-    # Suborn limits
     SUBORN_MAX_PIECES, SUBORN_MAX_ALLIES,
 )
 from fs_bot.board.pieces import (
@@ -42,44 +27,25 @@ from fs_bot.board.pieces import (
     find_leader, get_available, count_on_map,
 )
 from fs_bot.board.control import (
-    is_controlled_by, get_controlled_regions, calculate_control,
+    is_controlled_by, get_controlled_regions,
 )
 from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
     get_adjacent, get_playable_regions, get_tribes_in_region,
-    get_region_group, is_city_tribe,
+    is_city_tribe,
 )
 from fs_bot.bots.bot_common import (
     # Event decisions
     should_decline_event, get_dual_use_preference, get_event_instruction,
-    upgrade_limited_command,
-    # Targeting
-    get_faction_targeting_order, get_enemy_piece_target_order,
-    get_own_loss_order,
-    # Frost
-    is_frost_active, check_frost_restriction,
-    # Harassment
-    get_harassing_factions, np_will_harass,
-    # Retreat
-    should_retreat, get_retreat_preferences,
-    # Random
-    random_select, roll_die,
+    get_faction_targeting_order, is_frost_active, roll_die,
     # Helpers
-    has_enemy_threat_in_region, count_mobile_pieces,
+    count_mobile_pieces,
     count_faction_allies_and_citadels,
-    rank_regions_for_event_placement,
-    leader_escort_needed,
-    get_leader_placement_region,
-    # Supply line / agreements
-    np_agrees_to_supply_line,
-    is_no_faction_event,
 )
-from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
-    get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
-    CONDITIONAL,
+    NO_EVENT,
 )
 
 

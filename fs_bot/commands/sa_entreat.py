@@ -23,19 +23,13 @@ Reference: §4.3.1, §1.4.1, §1.4.2
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    ARVERNI, AEDUI, BELGAE, GERMANS,
     # Piece types
-    WARBAND, AUXILIA, ALLY, CITADEL,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
-    # Leaders
-    VERCINGETORIX,
+    WARBAND, AUXILIA, ALLY, HIDDEN, VERCINGETORIX,
     # Costs
     ENTREAT_COST,
     # Scenarios
     ARIOVISTUS_SCENARIOS,
-    # Tribe restrictions
-    TRIBE_FACTION_RESTRICTION,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state,

@@ -20,11 +20,10 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS,
     # Piece types
-    ALLY, CITADEL, SETTLEMENT,
+    CITADEL, SETTLEMENT,
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Tribes
-    BASE_TRIBES, ARIOVISTUS_TRIBES,
     SUEBI_TRIBES, TRIBE_TO_REGION,
     # Victory constants
     ROMAN_VICTORY_THRESHOLD,
@@ -36,26 +35,16 @@ from fs_bot.rules_consts import (
     TIEBREAK_ORDER_BASE,
     TIEBREAK_ORDER_ARIOVISTUS,
     # Control
-    BELGIC_CONTROL, GERMANIC_CONTROL,
-    FACTION_CONTROL,
-    # Regions
     GERMANIA_REGIONS,
     # Map
-    REGION_CONTROL_VALUES,
-    CISALPINA, CISALPINA_CV_ARIOVISTUS,
-    # Markers
     MARKER_DISPERSED, MARKER_DISPERSED_GATHERING, MARKER_COLONY,
     # Legions
     LEGIONS_ROWS,
-    # Misc
-    TOTAL_TRIBES_BASE,
-    COLONY_EXTRA_TRIBE,
 )
 from fs_bot.board.pieces import count_pieces, count_on_map
-from fs_bot.board.control import get_controlled_regions, is_controlled_by
+from fs_bot.board.control import get_controlled_regions
 from fs_bot.map.map_data import (
-    get_tribes_in_region, get_control_value, get_playable_regions,
-    ALL_REGION_DATA,
+    get_control_value,
 )
 
 

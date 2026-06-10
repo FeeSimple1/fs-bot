@@ -12,32 +12,25 @@ Reference:
   battle_procedure_flowchart.txt
 """
 
-import math
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
-    # Piece types
+    ARVERNI, GERMANS,
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    HARD_TARGET_PIECES, FLIPPABLE_PIECES, MOBILE_PIECES,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
+    HARD_TARGET_PIECES, FLIPPABLE_PIECES, HIDDEN, REVEALED, SCOUTED,
     # Leaders
     CAESAR, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
-    LEADER_FACTION,
-    # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Regions
     PROVINCIA,
     # Battle constants
     LOSS_ROLL_THRESHOLD,
     DIVICIACUS_LOSS_ROLL_THRESHOLD,
-    DIE_SIDES, DIE_MIN, DIE_MAX,
+    DIE_MIN, DIE_MAX,
 )
 from fs_bot.board.pieces import (
-    count_pieces, count_pieces_by_state, get_leader_in_region,
-    remove_piece, flip_piece, clear_allied_tribe,
+    get_leader_in_region,
+    remove_piece, clear_allied_tribe,
 )
 
 

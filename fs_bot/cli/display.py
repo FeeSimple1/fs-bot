@@ -19,38 +19,25 @@ Reference:
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, GALLIC_FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    FACTIONS, LEADER, LEGION, AUXILIA, WARBAND, FORT, CITADEL, SETTLEMENT,
     # Piece states
-    HIDDEN, REVEALED, SCOUTED,
-    # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Regions
     ALL_REGIONS,
     # Senate
-    UPROAR, INTRIGUE, ADULATION,
-    # Legions track
     LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
     LEGIONS_ROWS, LEGIONS_PER_ROW,
     # Eligibility
-    ELIGIBLE, INELIGIBLE,
-    # Control
-    ROMAN_CONTROL, ARVERNI_CONTROL, AEDUI_CONTROL,
+    ELIGIBLE, ROMAN_CONTROL, ARVERNI_CONTROL, AEDUI_CONTROL,
     BELGIC_CONTROL, GERMANIC_CONTROL, NO_CONTROL,
-    FACTION_CONTROL,
-    # Tribe status
-    ALLIED, DISPERSED, DISPERSED_GATHERING, SUBDUED,
-    MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
+    ALLIED, DISPERSED, DISPERSED_GATHERING, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     # Markers
-    MARKER_AT_WAR,
-    # Events
-    EVENT_SHADED, EVENT_UNSHADED,
+    EVENT_SHADED,
 )
 from fs_bot.cards.card_data import (
-    get_card, get_np_symbols, get_faction_order, card_has_carnyx_trigger,
+    get_card, card_has_carnyx_trigger,
 )
-from fs_bot.board.pieces import count_pieces, get_available
+from fs_bot.board.pieces import count_pieces
 from fs_bot.map.map_data import (
     get_playable_regions, get_tribes_in_region,
 )

@@ -25,18 +25,16 @@ import sys
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, ALL_SCENARIOS,
+    ARIOVISTUS_SCENARIOS, ALL_SCENARIOS,
     SCENARIO_GALLIC_WAR,
 )
 from fs_bot.state.setup import setup_scenario
 from fs_bot.engine.game_engine import (
-    run_game, get_sop_factions,
+    run_game,
 )
 from fs_bot.cli.dispatcher import make_decision_func, maybe_pause
 from fs_bot.cli.display import (
-    format_state_summary, format_region_table, format_tribes_table,
-    format_victory_state, format_action, format_card,
+    format_state_summary, format_region_table, format_victory_state, format_action, format_card,
 )
 from fs_bot.cli.menus import prompt_choice
 

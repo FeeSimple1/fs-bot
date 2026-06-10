@@ -11,7 +11,7 @@ from fs_bot.state.setup import setup_scenario
 from fs_bot.state.state_schema import validate_state
 from fs_bot.engine.execute import execute_decision
 from fs_bot.engine.game_engine import (
-    ACTION_COMMAND, ACTION_COMMAND_SA, ACTION_EVENT, get_sop_factions,
+    ACTION_COMMAND, ACTION_EVENT, get_sop_factions,
 )
 from fs_bot.cli.human_plan import collect_player_action, _regions_with_pieces
 from fs_bot.cli.menus import prompt_action
@@ -19,7 +19,7 @@ from fs_bot.commands.seize import count_dispersed_on_map, get_dispersible_tribes
 from fs_bot.map.map_data import get_playable_regions
 from fs_bot.board.pieces import count_pieces
 from fs_bot.rules_consts import (
-    SCENARIO_GREAT_REVOLT, ROMANS, AEDUI, EVENT_UNSHADED, EVENT_SHADED,
+    SCENARIO_GREAT_REVOLT, ROMANS, AEDUI, EVENT_SHADED,
 )
 
 

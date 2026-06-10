@@ -21,9 +21,7 @@ from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     # Scenarios
-    SCENARIO_PAX_GALLICA, SCENARIO_RECONQUEST, SCENARIO_GREAT_REVOLT,
-    SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Eligibility
     ELIGIBLE, INELIGIBLE,
     # Pass resources
@@ -56,16 +54,12 @@ from fs_bot.engine.game_engine import (
     adjust_eligibility,
     # Resolution
     resolve_card_turn,
-    resolve_winter_card,
-    play_card,
-    # Actions
     ACTION_COMMAND,
     ACTION_COMMAND_SA,
     ACTION_LIMITED_COMMAND,
     ACTION_EVENT,
     ACTION_PASS,
 )
-from fs_bot.cards.card_data import card_has_carnyx_trigger
 
 
 # ---------------------------------------------------------------------------

@@ -36,24 +36,18 @@ handled by resolve_battle(is_ambush=True) in fs_bot/battle/resolve.py.
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    GALLIC_FACTIONS,
-    # Piece types
-    WARBAND, AUXILIA, FLIPPABLE_PIECES,
+    ARVERNI, AEDUI, BELGAE, GERMANS,
+    FLIPPABLE_PIECES,
     # Piece states
     HIDDEN,
     # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
+    VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
-    # SAs
-    SA_AMBUSH,
-    # Commands
-    CMD_BATTLE,
 )
 from fs_bot.board.pieces import count_pieces_by_state, find_leader
 from fs_bot.map.map_data import is_adjacent
-from fs_bot.commands.common import CommandError, check_leader_proximity
+from fs_bot.commands.common import check_leader_proximity
 
 
 def validate_ambush_region(state, region, faction, defending_faction):
@@ -132,7 +126,6 @@ def _check_leader_proximity(state, region, faction):
         # of Diviciacus. If Diviciacus removed, revert to original rules
         # (no leader needed per §4.4.3).
         if scenario in ARIOVISTUS_SCENARIOS:
-            from fs_bot.rules_consts import DIVICIACUS
             leader_region = find_leader(state, AEDUI)
             if leader_region is not None:
                 # Must be within 1 of Diviciacus — A4.4, A4.1.2

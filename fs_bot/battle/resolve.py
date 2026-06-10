@@ -19,29 +19,24 @@ Reference:
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    ROMANS, ARVERNI, BELGAE, GERMANS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    MOBILE_PIECES, FLIPPABLE_PIECES,
+    FLIPPABLE_PIECES,
     # Piece states
     HIDDEN, REVEALED, SCOUTED,
     # Leaders
-    CAESAR, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
-    # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    CAESAR, AMBIORIX, ARIOVISTUS_LEADER, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Battle constants
     CAESAR_AMBUSH_ROLL_THRESHOLD,
     CAESAR_BELGIC_AMBUSH_ROLL_THRESHOLD,
     DIE_MIN, DIE_MAX,
-    # Regions
-    PROVINCIA,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
     move_piece, flip_piece, remove_piece,
 )
 from fs_bot.board.control import refresh_all_control
-from fs_bot.map.map_data import get_adjacent, is_adjacent
 from fs_bot.battle.losses import (calculate_losses, resolve_losses,
                                   _remove_battle_piece,
                                   card30_arverni_legion_warbands)
@@ -239,61 +234,24 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                      and scenario in BASE_SCENARIOS):
         # Ambush or Germanic (base game) attack: auto-remove hard targets
         ambush_auto_remove = True
-        # But NOT if defender has Citadel or Fort (they still get half losses
-        # and the normal roll mechanic) — Wait, re-read the rules...
+        # Per §3.4.4 / §4.3.3: "the Defender must remove a piece for
+        # each Loss suffered, including Leader, Legion, Citadel, or
+        # Fort without first rolling a 1-3" — Ambush (and Germanic
+        # base-game attack) removes the absorb-roll ability.
         #
-        # §3.4.4: "the Defender must remove a piece for each Loss suffered,
-        # including Leader, Legion, Citadel, or Fort without first rolling
-        # a 1-3."
-        # §4.3.3: same text.
-        #
-        # So Ambush removes the roll ability regardless of Fort/Citadel.
-        # Fort/Citadel only halves the total losses, doesn't restore rolls.
-        #
-        # EXCEPTION: Caesar — §3.4.4, §4.3.3
+        # EXCEPTION 1 — Fort/Citadel: §4.3.3 "(but may use any Fort or
+        # Citadel normally)". A Defender with a Fort or Citadel halves
+        # Losses AND keeps the normal roll mechanic, so auto-remove
+        # applies only when the Defender has neither (handled below).
+        # EXCEPTION 2 — Caesar: "Romans Defending in the same Region
+        # as Caesar on a die roll of 4, 5, or 6 may absorb Losses by
+        # rolling a die and removing Legion, Caesar, or Fort only on
+        # 1-3" (5-6 threshold vs a Belgic Ambush).
         if caesar_defending:
-            # "Romans Defending in the same Region as Caesar on a die roll
-            # of 4, 5, or 6 may absorb Losses by rolling a die and removing
-            # Legion, Caesar, or Fort only on 1-3."
-            #
-            # But only if no Citadel/Fort for the branching path?
-            # Re-reading the flowchart:
-            # Step_3_Attack_No_Retreat → "Defender has Citadel or Fort?" →
-            #   Yes: half losses, rolls still apply (Citadel/Fort path)
-            #   No: "Ambush or Germanic Attack?" →
-            #     Yes: auto-remove (no rolls)
-            #       BUT "Caesar Defending?" → roll 4-6 to retain rolls
-            #     No: normal losses with rolls
-            #
-            # Wait — looking at the flowchart more carefully:
-            # The Citadel/Fort check is SEPARATE from the Ambush check.
-            # If you have a Citadel or Fort → half losses, LAST priority,
-            # and normal roll mechanics.
-            # If NO Citadel/Fort → then check Ambush.
-            #
-            # So: Defender with Citadel/Fort ALWAYS gets rolls, even in Ambush.
-            # Defender WITHOUT Citadel/Fort in Ambush → no rolls (unless Caesar).
-            #
-            # Re-reading §3.3.4: "A Defender taking such Losses when Ambiorix
-            # is Attacking must take one for each Belgic Warband, not just ½."
-            # Then later: same roll mechanic text as Roman Battle.
-            # Then: "If the Faction taking Losses is a Defender who has opted
-            # to Retreat..."
-            #
-            # And §4.3.3 specifically says "The Defender must remove a piece
-            # for each Loss suffered, including Leader, Legion, Citadel, or
-            # Fort without first rolling a 1-3."
-            # EXCEPTION: Caesar on 4-6 retains rolls.
-            #
-            # But the flowchart has: No Retreat → Citadel/Fort? → Yes →
-            # "half Losses, Allies/Forts/Citadels last" (with normal rolls)
-            # That path doesn't go through the Ambush check at all.
-            #
-            # Hmm, but §4.3.3 says "(but may use any Fort or Citadel normally)"
-            # This means Ambush + Citadel/Fort → half losses AND normal rolls.
-            #
-            # So: Fort/Citadel DOES restore rolls during Ambush. The auto-remove
-            # only applies when NO Fort/Citadel. Let me fix this logic.
+            # Caesar Defending without Fort/Citadel: roll to retain the
+            # absorb-roll ability (threshold 4-6, or 5-6 vs a Belgic
+            # Ambush) — §3.4.4, §4.3.3. With a Fort/Citadel present the
+            # normal rolls already apply (Exception 1 above).
             if not has_fort_now and not has_citadel_now:
                 # No Fort/Citadel → Caesar must roll to retain rolls
                 # Determine threshold based on attacking faction

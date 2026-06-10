@@ -22,7 +22,7 @@ from fs_bot.engine.game_engine import (
     get_first_eligible_options, get_second_eligible_options,
 )
 from fs_bot.engine.execute import execute_decision
-from fs_bot.cli.human_plan import (
+from fs_bot.cli.human_plan import (  # noqa: F401 — public re-exports
     _FACTION_COMMANDS as _FACTION_COMMANDS,
     _faction_special_abilities as faction_special_abilities,
     _regions_with_pieces as regions_with_pieces,

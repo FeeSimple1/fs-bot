@@ -15,38 +15,19 @@ import pytest
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    # Piece states
-    HIDDEN, REVEALED, SCOUTED,
-    # Leaders
-    CAESAR, ARIOVISTUS_LEADER, BODUOGNATUS,
-    # Scenarios
-    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
+    ROMANS, ARVERNI, AEDUI, BELGAE, LEGION, AUXILIA, WARBAND, ALLY, CITADEL, HIDDEN, REVEALED, SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
     # Regions
-    MORINI, NERVII, ATREBATES, SUGAMBRI, UBII,
-    TREVERI, CARNUTES, MANDUBII, VENETI, PICTONES,
-    BITURIGES, AEDUI_REGION, SEQUANI, ARVERNI_REGION,
-    PROVINCIA,
-    # Tribes
-    TRIBE_VENETI, TRIBE_NAMNETES, TRIBE_CARNUTES, TRIBE_AULERCI,
-    TRIBE_PICTONES, TRIBE_SANTONES,
-    TRIBE_ARVERNI, TRIBE_CADURCI, TRIBE_VOLCAE,
-    TRIBE_AEDUI,
-    # Home
-    ARVERNI_HOME_REGIONS_ARIOVISTUS,
+    MORINI, MANDUBII, VENETI, PICTONES,
+    ARVERNI_REGION,
+    TRIBE_VENETI, ARVERNI_HOME_REGIONS_ARIOVISTUS,
     # Markers
     MARKER_DEVASTATED, MARKER_INTIMIDATED,
-    MAX_RESOURCES,
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import (
-    place_piece, remove_piece, count_pieces, count_pieces_by_state,
-    get_available, flip_piece,
+    place_piece, count_pieces, count_pieces_by_state,
 )
-from fs_bot.board.control import refresh_all_control, is_controlled_by
+from fs_bot.board.control import refresh_all_control
 from fs_bot.commands.common import CommandError
 from fs_bot.engine.arverni_phase import (
     check_arverni_at_war,
@@ -54,8 +35,6 @@ from fs_bot.engine.arverni_phase import (
     run_arverni_phase,
     _arverni_phase_rally,
     _arverni_phase_march,
-    _arverni_phase_raid,
-    _arverni_phase_battle,
 )
 
 

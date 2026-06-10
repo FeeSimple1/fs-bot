@@ -23,11 +23,9 @@ Reference: A4.6.2, A3.2.1, A3.3.1
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    GERMANS,
     # Piece types
-    WARBAND, AUXILIA, ALLY, LEGION,
-    # Piece states
-    HIDDEN, REVEALED,
+    WARBAND, AUXILIA, ALLY, HIDDEN, REVEALED,
     # Leaders
     ARIOVISTUS_LEADER,
     # Markers

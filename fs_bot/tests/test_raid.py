@@ -13,14 +13,13 @@ from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     # Piece types
-    WARBAND, AUXILIA, FORT, CITADEL, ALLY, LEGION, SETTLEMENT,
+    WARBAND, AUXILIA, FORT, CITADEL, SETTLEMENT,
     # Piece states
     HIDDEN, REVEALED,
     # Scenarios
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     # Regions
-    MORINI, NERVII, ATREBATES, TREVERI, CARNUTES, MANDUBII,
-    SEQUANI, ARVERNI_REGION, SUGAMBRI, UBII, PROVINCIA, BRITANNIA,
+    MORINI, SUGAMBRI, BRITANNIA,
     # Markers
     MARKER_DEVASTATED,
     # Resources
@@ -28,7 +27,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import (
-    place_piece, count_pieces, count_pieces_by_state, flip_piece,
+    place_piece, count_pieces_by_state,
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.commands.raid import (

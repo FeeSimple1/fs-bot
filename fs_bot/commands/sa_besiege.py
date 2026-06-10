@@ -30,7 +30,6 @@ from fs_bot.rules_consts import (
     ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import count_pieces
-from fs_bot.commands.common import CommandError
 
 
 def validate_besiege_region(state, region, defending_faction):

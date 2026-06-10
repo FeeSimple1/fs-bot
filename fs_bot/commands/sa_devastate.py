@@ -21,12 +21,9 @@ Reference: §4.3.2, §4.3.3 (this is the Devastate SA not the Ambush §4.3.3)
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
+    ARVERNI, FACTIONS,
     # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND,
-    FLIPPABLE_PIECES,
-    # Piece states
+    LEGION, AUXILIA, WARBAND,
     HIDDEN, REVEALED, SCOUTED,
     # Leaders
     VERCINGETORIX,
@@ -36,10 +33,10 @@ from fs_bot.rules_consts import (
     ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    count_pieces, count_pieces_by_state, remove_piece,
+    remove_piece,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
-from fs_bot.commands.common import CommandError, check_leader_proximity
+from fs_bot.commands.common import check_leader_proximity
 
 
 def validate_devastate_region(state, region):

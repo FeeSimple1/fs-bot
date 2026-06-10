@@ -10,44 +10,30 @@ and Event location selection.
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, GALLIC_FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    MOBILE_PIECES, FLIPPABLE_PIECES,
-    # Piece states
+    FACTIONS, LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     HIDDEN, REVEALED, SCOUTED,
     # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS,
     # Events
     EVENT_UNSHADED, EVENT_SHADED,
     # NP symbols
-    NP_SYMBOL_CARNYX, NP_SYMBOL_LAURELS, NP_SYMBOL_SWORDS,
-    # Markers
-    MARKER_FROST, MARKER_WINTER,
-    # Cities / tribes
     TRIBE_REMI,
     # Victory
-    ROMAN_VICTORY_THRESHOLD, ARVERNI_LEGIONS_THRESHOLD,
-    ARVERNI_ALLIES_THRESHOLD, BELGAE_VICTORY_THRESHOLD,
-    GERMAN_VICTORY_THRESHOLD,
-    # Die
     DIE_MIN, DIE_MAX,
 )
 from fs_bot.board.pieces import (
-    count_pieces, count_pieces_by_state, get_leader_in_region,
-    find_leader, get_available,
+    count_pieces, get_leader_in_region,
+    find_leader,
 )
-from fs_bot.board.control import is_controlled_by, get_controlled_regions
+from fs_bot.board.control import is_controlled_by
 from fs_bot.engine.victory import (
-    calculate_victory_score, calculate_victory_margin, check_victory,
+    calculate_victory_score, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region,
-    is_city_tribe, get_tribe_data, ALL_TRIBE_DATA,
+    get_adjacent, get_playable_regions, is_city_tribe,
 )
 from fs_bot.cards.bot_instructions import (
-    get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
-    CONDITIONAL,
+    get_bot_instruction, NO_EVENT,
 )
 
 

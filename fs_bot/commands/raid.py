@@ -17,7 +17,7 @@ Reference: §3.3.3, §3.4.3, §6.2.3, A3.3.3, A3.4.3
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    ARVERNI, GERMANS,
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
     WARBAND, FORT, CITADEL,
@@ -28,13 +28,11 @@ from fs_bot.rules_consts import (
     # Costs
     RAID_COST,
     # Markers
-    MARKER_DEVASTATED,
-    # Resources
     MAX_RESOURCES,
 )
 
 from fs_bot.board.pieces import (
-    flip_piece, count_pieces, count_pieces_by_state, PieceError,
+    flip_piece, count_pieces, count_pieces_by_state,
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import ALL_REGION_DATA

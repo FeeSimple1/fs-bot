@@ -11,11 +11,10 @@ import random
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    ROMANS, ARVERNI, AEDUI, GERMANS,
     FACTIONS,
     # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    FLIPPABLE_PIECES,
+    LEADER, LEGION, ALLY, CITADEL, FLIPPABLE_PIECES,
     # Piece states
     HIDDEN, REVEALED, SCOUTED,
     # Caps
@@ -23,29 +22,16 @@ from fs_bot.rules_consts import (
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, ALL_SCENARIOS,
     # Regions
-    ALL_REGIONS, PROVINCIA,
-    # Tribes
-    BASE_TRIBES, ARIOVISTUS_TRIBES,
-    TRIBE_TO_REGION,
-    # Senate
-    UPROAR, INTRIGUE, ADULATION,
-    # Legions track
-    LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
+    ALL_REGIONS, BASE_TRIBES, ARIOVISTUS_TRIBES,
     LEGIONS_ROWS, LEGIONS_PER_ROW,
     # Victory
-    MAX_RESOURCES,
-    # Eligibility
     ELIGIBLE,
     # Control
     NO_CONTROL,
-    # Markers
-    MARKER_GALLIA_TOGATA,
 )
 
 from fs_bot.map.map_data import (
-    ALL_REGION_DATA,
     get_playable_regions,
-    get_tribes_in_region,
 )
 
 

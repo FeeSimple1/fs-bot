@@ -10,33 +10,24 @@ import pytest
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    HIDDEN, REVEALED, SCOUTED,
-    CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
-    DIVICIACUS, BODUOGNATUS,
-    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
-    UPROAR, INTRIGUE, ADULATION,
+    CAESAR, VERCINGETORIX, ARIOVISTUS_LEADER,
+    DIVICIACUS, SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
     PROVINCIA, CISALPINA, BRITANNIA,
     AEDUI_REGION, ARVERNI_REGION,
-    MORINI, NERVII, ATREBATES, SUGAMBRI, UBII,
-    TREVERI, MANDUBII, VENETI, CARNUTES, PICTONES, SEQUANI,
+    MORINI, NERVII, ATREBATES, UBII,
+    SEQUANI,
     MARKER_CIRCUMVALLATION, MARKER_BRITANNIA_NOT_IN_PLAY,
-    MARKER_ARVERNI_RALLY, MARKER_NORI, MARKER_CISALPINA_CONTROL_BOX,
+    MARKER_NORI, MARKER_CISALPINA_CONTROL_BOX,
     MARKER_INTIMIDATED, MARKER_GALLIA_TOGATA,
-    MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
-    ELIGIBLE, INELIGIBLE,
-    INTERLUDE_VICTORY_TRIGGER_WINTER,
+    MARKER_DISPERSED, ELIGIBLE, INELIGIBLE,
     INTERLUDE_DIVICIACUS_CARD,
-    PAX_GALLICA_START_ARVERNI, PAX_GALLICA_START_AEDUI,
-    PAX_GALLICA_START_BELGAE, PAX_GALLICA_START_ROMANS,
-    PAX_GALLICA_DECK_EVENTS, PAX_GALLICA_WINTER_PILES,
     WINTER_CARD, EVENT_SHADED,
-    TRIBE_NORI, TRIBE_VENETI,
+    TRIBE_VENETI,
 )
 from fs_bot.state.setup import setup_scenario
 from fs_bot.state.state_schema import validate_state
 from fs_bot.board.pieces import (
-    place_piece, remove_piece, count_pieces, count_pieces_by_state,
-    get_available, find_leader, get_leader_in_region,
+    place_piece, remove_piece, count_pieces, get_available, find_leader, get_leader_in_region,
 )
 from fs_bot.engine.interlude import run_interlude
 
@@ -667,7 +658,6 @@ class Test1stWinterAfterInterlude:
         assert senate_before["position"] == senate_after["position"]
 
     def test_harvest_special_no_belgica_legions_if_track_empty(self):
-        from fs_bot.engine.winter import run_winter_round
         state = fresh_gallic_war()
         # Decline expedition -> no winter_track_legions
         run_interlude(state, britannia_decision=False)

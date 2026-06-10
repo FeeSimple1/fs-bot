@@ -25,22 +25,15 @@ from fs_bot.rules_consts import (
     # Piece types
     ALLY, CITADEL,
     # Leaders
-    DIVICIACUS,
-    # Resources
     MAX_RESOURCES,
-    # Scenarios
-    ARIOVISTUS_SCENARIOS,
-    # Tribe restrictions
-    TRIBE_FACTION_RESTRICTION,
 )
 from fs_bot.board.pieces import (
-    count_pieces, find_leader, get_leader_in_region,
+    find_leader,
 )
 from fs_bot.board.control import is_controlled_by
 from fs_bot.map.map_data import (
     is_adjacent, get_tribes_in_region, get_playable_regions,
 )
-from fs_bot.commands.common import CommandError
 from fs_bot.commands.rally import has_supply_line
 
 

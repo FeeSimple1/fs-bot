@@ -5,7 +5,6 @@ Tests every adjacency pair from Map Transcription, Rhenus and coastal flags,
 playability gating per scenario, tribe-to-region mappings, CV values.
 """
 
-import pytest
 
 from fs_bot.rules_consts import (
     # Regions
@@ -47,15 +46,11 @@ from fs_bot.rules_consts import (
     AEDUI, ARVERNI, GERMANS,
     # Markers
     MARKER_GALLIA_TOGATA,
-    # CVs
-    REGION_CONTROL_VALUES, CISALPINA_CV_ARIOVISTUS,
 )
 
 from fs_bot.map.map_data import (
     get_region_data,
-    get_tribe_data,
     get_adjacent,
-    get_adjacent_with_type,
     is_adjacent,
     get_adjacency_type,
     get_region_for_tribe,
@@ -66,7 +61,6 @@ from fs_bot.map.map_data import (
     get_tribe_restriction,
     is_city_tribe,
     get_region_group,
-    ALL_REGION_DATA,
 )
 
 

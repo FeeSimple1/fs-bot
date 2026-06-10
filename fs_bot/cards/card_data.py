@@ -21,7 +21,7 @@ from fs_bot.rules_consts import (
     # Capability dicts
     CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
     # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS,
     # NP symbols
     NP_SYMBOL_CARNYX, NP_SYMBOL_LAURELS, NP_SYMBOL_SWORDS,
     # Winter

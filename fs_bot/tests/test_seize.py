@@ -11,25 +11,15 @@ import pytest
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL,
-    # Piece states
-    HIDDEN, REVEALED,
+    ROMANS, ARVERNI, BELGAE, LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, REVEALED,
     # Leaders
-    CAESAR,
-    # Scenarios
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     # Regions
-    MORINI, NERVII, ATREBATES, TREVERI, CARNUTES, MANDUBII,
-    SEQUANI, ARVERNI_REGION, SUGAMBRI, UBII, PROVINCIA, BRITANNIA,
+    MORINI, BRITANNIA,
     # Tribes
     TRIBE_MENAPII, TRIBE_MORINI,
     TRIBE_EBURONES, TRIBE_NERVII,
-    TRIBE_BELLOVACI, TRIBE_ATREBATES, TRIBE_REMI,
-    TRIBE_TREVERI,
-    TRIBE_HELVII,
-    # Markers
+    TRIBE_BELLOVACI, TRIBE_ATREBATES, TRIBE_TREVERI,
     MARKER_DEVASTATED,
     # Tribe statuses
     DISPERSED, DISPERSED_GATHERING,
@@ -39,7 +29,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import (
-    place_piece, count_pieces, count_pieces_by_state, remove_piece,
+    place_piece, count_pieces,
 )
 from fs_bot.board.control import refresh_all_control, is_controlled_by
 from fs_bot.commands.seize import (

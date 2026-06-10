@@ -5,32 +5,23 @@ Tests every flowchart node with Yes/No branches, seeded RNG, and
 both base game and Ariovistus scenarios.
 """
 
-import pytest
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    HIDDEN, REVEALED, SCOUTED,
-    SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
-    SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    HIDDEN, REVEALED, SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     DIVICIACUS, CAESAR, AMBIORIX,
-    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, SUGAMBRI, UBII,
-    AEDUI_REGION, ARVERNI_REGION, SEQUANI, BITURIGES,
-    CARNUTES, PICTONES, VENETI, TREVERI,
-    TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
-    TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
-    TRIBE_ATREBATES, TRIBE_SEQUANI,
-    EVENT_UNSHADED,
+    MANDUBII, SUGAMBRI, AEDUI_REGION, SEQUANI, CARNUTES, TRIBE_AEDUI,
+    TRIBE_MANDUBII,
 )
 from fs_bot.state.state_schema import build_initial_state
-from fs_bot.board.pieces import place_piece, count_pieces, get_available
-from fs_bot.board.control import refresh_all_control, is_controlled_by
+from fs_bot.board.pieces import place_piece
+from fs_bot.board.control import refresh_all_control
 from fs_bot.bots.aedui_bot import (
     # Node functions
     node_a1, node_a2, node_a3, node_a4, node_a5, node_a6,
     # Process nodes
-    node_a_event, node_a_battle,
+    node_a_battle,
     node_a_rally, node_a_raid, node_a_march,
     # SA helpers
     _check_ambush, _determine_trade_sa, _determine_suborn_sa,
@@ -43,17 +34,15 @@ from fs_bot.bots.aedui_bot import (
     # Main driver
     execute_aedui_turn,
     # Helpers
-    _count_aedui_warbands_on_map, _estimate_rally_placements,
-    _would_raid_gain_enough, _aedui_at_victory,
-    _estimate_battle_losses, _would_force_loss_on_high_value,
+    _would_raid_gain_enough, _estimate_battle_losses, _would_force_loss_on_high_value,
     _get_battle_enemies, _estimate_trade_resources,
     # Action constants
     ACTION_BATTLE, ACTION_MARCH, ACTION_RALLY, ACTION_RAID,
     ACTION_EVENT, ACTION_PASS,
-    SA_ACTION_AMBUSH, SA_ACTION_TRADE, SA_ACTION_SUBORN, SA_ACTION_NONE,
+    SA_ACTION_TRADE, SA_ACTION_SUBORN, SA_ACTION_NONE,
 )
 from fs_bot.bots.bot_dispatch import (
-    dispatch_bot_turn, BotDispatchError,
+    dispatch_bot_turn,
 )
 
 

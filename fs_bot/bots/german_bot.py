@@ -24,31 +24,14 @@ flowchart.
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, GALLIC_FACTIONS,
-    # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    MOBILE_PIECES,
-    # Piece states
+    LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     HIDDEN, REVEALED, SCOUTED,
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Commands / SAs
-    CMD_RALLY, CMD_MARCH, CMD_RAID, CMD_BATTLE,
-    SA_AMBUSH, SA_SETTLE, SA_INTIMIDATE,
-    # Leaders
-    ARIOVISTUS_LEADER, SUCCESSOR,
-    # Regions
-    GERMANIA_REGIONS, BELGICA_REGIONS,
-    # Events
-    EVENT_SHADED,
-    # Markers
-    MARKER_INTIMIDATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
+    ARIOVISTUS_LEADER, GERMANIA_REGIONS, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     MARKER_DEVASTATED,
     # Die
-    DIE_MIN, DIE_MAX,
-    # Map
-    REGION_TO_GROUP, GERMANIA,
-    # Costs
     GERMAN_RALLY_COST_OUTSIDE_GERMANIA_NO_SETTLEMENT,
     GERMAN_RALLY_COST_AT_SETTLEMENT,
     GERMAN_RALLY_COST_IN_GERMANIA,
@@ -60,27 +43,24 @@ from fs_bot.board.pieces import (
     find_leader, get_available, count_on_map,
 )
 from fs_bot.board.control import (
-    is_controlled_by, get_controlled_regions, calculate_control,
+    is_controlled_by,
 )
 from fs_bot.engine.victory import (
-    calculate_victory_score, calculate_victory_margin, check_victory,
+    calculate_victory_margin,
 )
 from fs_bot.map.map_data import (
     get_adjacent, get_playable_regions, get_tribes_in_region,
-    get_region_group, is_city_tribe, is_adjacent,
+    is_adjacent,
 )
 from fs_bot.bots.bot_common import (
     get_dual_use_preference, get_event_instruction,
-    get_faction_targeting_order, get_enemy_piece_target_order,
     is_frost_active,
     random_select, roll_die,
-    count_mobile_pieces, count_faction_allies_and_citadels,
-    get_leader_placement_region,
+    count_mobile_pieces, get_leader_placement_region,
 )
 from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
-    get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
-    CONDITIONAL,
+    NO_EVENT, SPECIFIC_INSTRUCTION,
 )
 
 

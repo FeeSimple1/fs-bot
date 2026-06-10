@@ -1706,6 +1706,9 @@ def _build_pax_gallica_deck_for_interlude(state):
             deck.append(WINTER_CARD)
 
     state["deck"] = deck
+    # Preserve the first half's play history for end-of-game reporting
+    # before starting the second-half deck fresh.
+    state["played_cards_first_half"] = list(state.get("played_cards", []))
     state["played_cards"] = []
     state["current_card"] = None
     state["next_card"] = deck[0] if deck else None

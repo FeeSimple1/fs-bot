@@ -695,6 +695,8 @@ def run_game(state, decision_func, *, execute=False):
     return {
         "card_results": results,
         "game_over": True,
-        "total_cards_played": len(state["played_cards"]),
+        "total_cards_played": (
+            len(state["played_cards"])
+            + len(state.get("played_cards_first_half", []))),
         "winter_count": state["winter_count"],
     }

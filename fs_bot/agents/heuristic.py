@@ -348,3 +348,291 @@ def make_reactive(agent_faction):
             return False
         return None
     return reactive
+
+
+# --------------------------------------------------------------------------- #
+# AE-DEEP: state-scored, Suborn-centric Aedui planner.
+#
+# Aedui victory (7.2): own Allies+Citadels must exceed EVERY other Faction's.
+# The seat therefore plays a positional race: grow own Allies/Citadels via
+# Rally, and use Suborn (4.4.2 -- accompanies Rally/March/Raid, one Region
+# with a Hidden Aedui Warband; 2 Resources per Ally, 1 per Warband/Auxilia,
+# max 3 pieces, max 1 Ally) to simultaneously add own Allies and strip the
+# current leader's. Targeting follows the NP priorities (8.6.3): place own
+# Ally; else remove an Ally of the enemy with the most Allies+Citadels;
+# place own Warbands; remove enemy Warbands (Arverni, Belgae, Germans);
+# remove Auxilia. Trade is the fallback SA when no Suborn Region exists.
+# --------------------------------------------------------------------------- #
+from fs_bot.board.pieces import count_pieces_by_state
+from fs_bot.rules_consts import (HIDDEN as _HIDDEN, TRIBE_TO_CITY,
+                                 GERMANS as _GERMANS)
+
+
+def _ac_by_faction(state):
+    """Allies + Citadels per faction (Forts don't count -- 7.2).
+
+    Uses the engine's own victory counter: ``state["tribes"]`` is the
+    authoritative record of alliances (space ALLY pieces can drift out of
+    sync with it -- see the tribe/piece sync issue in QUESTIONS.md).
+    """
+    from fs_bot.engine.victory import _count_allies_and_citadels
+    out = {}
+    for fac in (rc.ROMANS, rc.ARVERNI, rc.AEDUI, rc.BELGAE, _GERMANS):
+        try:
+            out[fac] = _count_allies_and_citadels(state, fac)
+        except Exception:
+            out[fac] = 0
+    return out
+
+
+def _allied_tribes_in_region(state, region, faction):
+    """Tribes in *region* currently allied to *faction* (tribes dict)."""
+    from fs_bot.map.map_data import get_tribes_in_region
+    out = []
+    try:
+        tribes = get_tribes_in_region(region, state["scenario"])
+    except Exception:
+        return out
+    for t in tribes:
+        if state.get("tribes", {}).get(t, {}).get("allied_faction") == faction:
+            out.append(t)
+    return out
+
+
+def _hidden_wb(state, region, faction):
+    try:
+        return count_pieces_by_state(state, region, faction, WB, _HIDDEN)
+    except Exception:
+        return 0
+
+
+def _enemy_ally_factions(state, region, exclude=(rc.AEDUI,)):
+    out = []
+    for fac in (rc.ARVERNI, rc.BELGAE, rc.ROMANS, _GERMANS):
+        if fac in exclude:
+            continue
+        if _allied_tribes_in_region(state, region, fac):
+            out.append(fac)
+    return out
+
+
+def build_suborn_plan(state, budget):
+    """Best single-region Suborn: (region, actions, cost, score) or None."""
+    ac = _ac_by_faction(state)
+    rivals = sorted((f for f in ac if f != rc.AEDUI),
+                    key=lambda f: -ac[f])
+    best = None
+    for region in moves.regions_with_pieces(state, rc.AEDUI):
+        if _hidden_wb(state, region, rc.AEDUI) < 1:
+            continue
+        actions, cost, score, pieces = [], 0, 0, 0
+        # 1. Place own Ally at a Subdued Tribe (2 Resources).
+        sub = _subdued(state, region)
+        if sub and cost + 2 <= budget:
+            actions.append({"action": "place_ally", "tribe": sub[0]})
+            cost += 2; score += 30; pieces += 1
+        else:
+            # 2. Remove the leading rival's Ally here (max 1 Ally total).
+            present = _enemy_ally_factions(state, region)
+            for rival in rivals:
+                if rival in present and cost + 2 <= budget:
+                    rt = _allied_tribes_in_region(state, region, rival)
+                    actions.append({"action": "remove_ally",
+                                    "target_faction": rival,
+                                    "tribe": rt[0] if rt else None})
+                    cost += 2; score += 20 + ac[rival]; pieces += 1
+                    break
+        # 3/4. Fill remaining slots: own Warbands in, rival Warbands out.
+        while pieces < 3 and cost + 1 <= budget:
+            placed = False
+            if state.get("available", {}).get(rc.AEDUI, {}).get(WB, 1) or True:
+                actions.append({"action": "place_warband"})
+                cost += 1; score += 2; pieces += 1
+                placed = True
+            if not placed:
+                break
+        for rival in (rc.ARVERNI, rc.BELGAE, _GERMANS):
+            if pieces >= 3 or cost + 1 > budget:
+                break
+            if count_pieces(state, region, rival, WB) > 0:
+                actions.append({"action": "remove_warband",
+                                "target_faction": rival})
+                cost += 1; score += 4; pieces += 1
+        if actions and (best is None or score > best[3]):
+            best = (region, actions, cost, score)
+    return best
+
+
+def build_rally_deep(state, budget, max_regions=3):
+    """Citadel upgrades first, then Allies at Subdued Tribes, then Warbands."""
+    citadels, allies, warbands = [], [], []
+    spent = 0
+    regions = moves.regions_with_pieces(state, rc.AEDUI)
+    # 1. Citadel: replace an Aedui-Allied City Tribe (score +0 net Ally->
+    #    Citadel keeps the count but hardens it; prefer when safe budget).
+    for region in regions:
+        if spent + 1 > budget or len(citadels) >= 1:
+            break
+        for tribe, city in TRIBE_TO_CITY.items():
+            tin = state["tribes"].get(tribe, {})
+            if (tin.get("allied_faction") == rc.AEDUI
+                    and count_pieces(state, region, rc.AEDUI, CIT) == 0
+                    and tribe in (moves.subdued_tribes(state, region) or [tribe])
+                    or tin.get("allied_faction") == rc.AEDUI):
+                from fs_bot.map.map_data import get_tribes_in_region
+                try:
+                    if tribe in get_tribes_in_region(region,
+                                                     state["scenario"]):
+                        citadels.append({"region": region, "tribe": tribe})
+                        spent += 1
+                        break
+                except Exception:
+                    continue
+    # 2. Allies at Subdued Tribes, highest-value regions first.
+    scored = sorted(regions, key=lambda r: -len(_subdued(state, r)))
+    for region in scored:
+        if len(citadels) + len(allies) >= max_regions or spent + 1 > budget:
+            break
+        sub = _subdued(state, region)
+        if sub and not any(a["region"] == region for a in allies):
+            allies.append({"region": region, "tribe": sub[0]})
+            spent += 1
+    # 3. Warbands where cap allows, to seed future Suborn.
+    for region in scored:
+        total = len(citadels) + len(allies) + len(warbands)
+        if total >= max_regions or spent + 1 > budget:
+            break
+        if (count_pieces(state, region, rc.AEDUI, ALLY)
+                + count_pieces(state, region, rc.AEDUI, CIT)) > 0 \
+                and region not in warbands \
+                and not any(a["region"] == region for a in allies) \
+                and not any(c["region"] == region for c in citadels):
+            warbands.append(region)
+            spent += 1
+    if not (citadels or allies or warbands):
+        return None, 0
+    return {"citadels": citadels, "allies": allies,
+            "warbands": warbands}, spent
+
+
+def build_march_seed(state):
+    """March one Hidden Warband stack toward the leading rival's Allies,
+    to create future Suborn Regions."""
+    ac = _ac_by_faction(state)
+    rivals = sorted((f for f in ac if f != rc.AEDUI), key=lambda f: -ac[f])
+    origins = [r for r in moves.regions_with_pieces(state, rc.AEDUI)
+               if count_pieces(state, r, rc.AEDUI, WB) > 1]
+    best = None
+    for origin in origins:
+        for dest in get_adjacent(origin, state["scenario"]):
+            if _hidden_wb(state, dest, rc.AEDUI) > 0:
+                continue
+            score = 0
+            for rank, rival in enumerate(rivals):
+                if _allied_tribes_in_region(state, dest, rival):
+                    score += 10 - 2 * rank
+            score += len(_subdued(state, dest)) * 3
+            if score > 0 and (best is None or score > best[2]):
+                best = (origin, dest, score)
+    if best is None:
+        return None
+    return {"command": "March", "regions": [],
+            "details": {"origins": [best[0]], "destinations": [best[1]]}}
+
+
+def plan_turn_aedui_deep(state, faction, options, position):
+    """Decision function body for the AE-DEEP profile."""
+    from fs_bot.engine.game_engine import ACTION_PASS, ACTION_COMMAND, \
+        ACTION_COMMAND_SA, ACTION_LIMITED_COMMAND
+    cmd_action = None
+    single = False
+    if ACTION_COMMAND_SA in options or ACTION_COMMAND in options:
+        cmd_action = ACTION_COMMAND
+    elif ACTION_LIMITED_COMMAND in options:
+        cmd_action = ACTION_LIMITED_COMMAND
+        single = True
+    if cmd_action is None:
+        return {"action": ACTION_PASS}
+    can_sa = ACTION_COMMAND_SA in options and not single
+
+    res = state.get("resources", {}).get(rc.AEDUI, 0)
+    # Suborn gets the full budget: a Suborned Ally both scores for the Aedui
+    # and denies Rome a Subdued tribe, and Raid (the fallback carrier) costs
+    # nothing.
+    suborn = build_suborn_plan(state, res) if can_sa else None
+    # Only Suborn when it moves the Ally race (places own Ally or removes a
+    # rival's). Warband-only Suborns burn Resources without touching any
+    # victory margin -- and the score encodes that: ally actions are >= 20.
+    if suborn and suborn[3] < 20:
+        suborn = None
+
+    candidates = []
+    rally_budget = max(0, res - (suborn[2] if suborn else 0))
+    rally_plan, _ = build_rally_deep(state, rally_budget,
+                                     max_regions=1 if single else 3)
+    rally_scores = bool(rally_plan and (rally_plan["citadels"]
+                                        or rally_plan["allies"]))
+    p = {"rally_allies": True, "battle_edge": 99, "march_foe": None,
+         "march_subdue_w": 1}
+    raid = build_raid(state, rc.AEDUI, p, single)
+    m = build_march_seed(state)
+
+    # Carrier order. With a scoring Suborn in hand: Rally (if it also
+    # scores) > March > Raid. Without one: March Hidden Warbands toward the
+    # next Suborn target (Raid would Reveal them, killing future Suborns),
+    # with Trade as the income SA; Raid only as a last resort when broke.
+    rally_cand = ({"command": "Rally", "regions": [],
+                   "details": {"rally_plan": rally_plan}}
+                  if rally_plan else None)
+    if suborn:
+        if rally_scores:
+            candidates.append(rally_cand)
+        if m:
+            candidates.append(m)
+        if raid:
+            candidates.append(raid)
+        if rally_cand and not rally_scores:
+            candidates.append(rally_cand)
+    else:
+        if rally_scores:
+            candidates.append(rally_cand)
+        if m:
+            candidates.append(m)
+        if res <= 2 and raid:
+            candidates.append(raid)
+        if rally_cand and not rally_scores:
+            candidates.append(rally_cand)
+        if raid and raid not in candidates:
+            candidates.append(raid)
+
+    for cand in candidates:
+        attempts = []
+        if can_sa and suborn and cand["command"] in ("Rally", "March", "Raid"):
+            attempts.append(({**cand, "sa": "Suborn",
+                              "sa_regions": [suborn[0]],
+                              "details": {**cand["details"],
+                                          "suborn_plan": [
+                                              {"region": suborn[0],
+                                               "actions": suborn[1]}]}},
+                             ACTION_COMMAND_SA))
+        if can_sa:
+            attempts.append(({**cand, "sa": "Trade", "sa_regions": []},
+                             ACTION_COMMAND_SA))
+        attempts.append(({**cand, "sa": "No SA", "sa_regions": []},
+                         cmd_action))
+        for pa, act in attempts:
+            try:
+                ok, _info = moves.validate_player_action(state, rc.AEDUI, pa)
+            except Exception:
+                ok = False
+            if ok:
+                return {"action": act, "player_action": pa}
+    return {"action": ACTION_PASS}
+
+
+PROFILES["AE-DEEP"] = {
+    "faction": rc.AEDUI,
+    "planner": plan_turn_aedui_deep,
+    "commands": ["Rally", "Raid", "March", "Battle"],   # for tooling display
+    "sa": "Suborn",
+}

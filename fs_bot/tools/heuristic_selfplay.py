@@ -66,6 +66,9 @@ def _make(label, seed):
         pol = RandomPlanPolicy(fac, seed=seed)
         return fac, pol.plan_turn
     prof = PROFILES[label]
+    custom = prof.get("planner")
+    if custom is not None:
+        return prof["faction"], custom
     return prof["faction"], (lambda s, f, o, p, _pr=prof:
                              plan_turn(s, f, _pr, o, p))
 

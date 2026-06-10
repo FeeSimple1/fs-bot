@@ -3643,7 +3643,8 @@ def _execute_suborn(state, faction, bot_action):
             elif act == "remove_ally":
                 ops.append({"action": "remove",
                             "faction": a.get("target_faction"),
-                            "piece_type": _ALLY})
+                            "piece_type": _ALLY,
+                            "tribe": a.get("tribe")})
             elif act == "remove_warband":
                 ops.append({"action": "remove",
                             "faction": a.get("target_faction"),

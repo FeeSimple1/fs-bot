@@ -578,3 +578,34 @@ appears Arverni-favored in bot-only play — Arverni begin over their
 Allies+Citadels threshold. Whether bot-only balance is a design target at all is
 outside what the Reference Documents state, so this is recorded as an observation,
 not a defect.)
+
+---
+
+## Q13: Event handlers desync `state["tribes"]` from space ALLY/CITADEL pieces — BUG REPORT (not a rules question)
+
+**Discovered:** while building the AE-DEEP agent profile: per-space
+`count_pieces(..., ALLY)` disagreed wildly with `victory._count_allies_and_citadels`
+late in games (e.g. Belgae 0 vs 13).
+
+**Evidence:** `python -m fs_bot.tools.sync_check --scenario "Reconquest of Gaul"
+--seeds 1-4` replays bot games and attributes each new desync to the card that
+introduced it. Across 4 seeds, ~20 distinct Event cards introduce tribe/piece
+desyncs (cards 2, 3, 8, 10, 13, 22, 23, 24, 36, 37, 38, 42, 45, 58, 60, 63, 64,
+67, 68, 69, 71, 72 observed so far; both directions occur — allied tribes with
+no piece, and more pieces than allied tribes).
+
+**Cause class:** `fs_bot/cards/card_effects.py` has ~71 sites mutating
+`allied_faction`; some pair the mutation with `place_piece`/`remove_piece`
+(e.g. card 23), many do not. Rally/Suborn/Build/Entreat command paths are clean.
+One agent-interface instance is already fixed in this commit:
+`_execute_suborn` dropped the `tribe` field on `remove_ally`, leaving the tribes
+dict stale after agent-driven Suborn removals.
+
+**Why it matters:** victory counts read `tribes` (authoritative), but Winter
+Quarters free-stay counting, Control refresh inputs, and any space-piece-based
+logic read pieces — they silently diverge as Events fire. Not a rules
+ambiguity; this is an implementation defect list. Suggest a dedicated pass:
+audit the 71 mutation sites against the Card Reference, pair each with the
+piece operation, and add the sync invariant to `validate_state` once clean
+(sync_check exits non-zero while any desync remains, so it can serve as the
+acceptance gate).

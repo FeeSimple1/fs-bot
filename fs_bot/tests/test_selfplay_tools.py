@@ -87,3 +87,24 @@ def test_np_roman_quarters_changes_winter_outcome():
     # tool path (winner recorded in the balance baseline as deterministic).
     r = play_game(rc.SCENARIO_GREAT_REVOLT, seed=2)
     assert r["winner"] in (rc.ARVERNI, rc.AEDUI, rc.BELGAE, rc.ROMANS)
+
+
+def test_ae_deep_profile_finishes_and_suborn_remove_carries_tribe():
+    """AE-DEEP completes games; its Suborn remove_ally ops carry the tribe so
+    the executor can keep state["tribes"] in sync (Q13)."""
+    from fs_bot.agents.heuristic import (PROFILES, build_suborn_plan,
+                                         _allied_tribes_in_region)
+    from fs_bot.state.setup import setup_scenario
+
+    prof = PROFILES["AE-DEEP"]
+    r = play_game(rc.SCENARIO_RECONQUEST, seed=3,
+                  agent_faction=rc.AEDUI, planner=prof["planner"])
+    assert r["winner"] is not None
+
+    st = setup_scenario(rc.SCENARIO_RECONQUEST, seed=1)
+    st["non_player_factions"] = {rc.ROMANS, rc.ARVERNI, rc.AEDUI, rc.BELGAE}
+    plan = build_suborn_plan(st, 20)
+    if plan:
+        for a in plan[1]:
+            if a["action"] == "remove_ally":
+                assert a.get("tribe"), "remove_ally must carry its tribe"

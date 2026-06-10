@@ -131,3 +131,32 @@ beneficiary is mostly the Belgae, whose Control-based score profits from a longe
 multipolar war. Findings 1–3 above describe the pre-fix engine; finding 4's
 Roman skill-elasticity and findings 5–6 remain directionally consistent post-fix.
 The balance baseline was refreshed at this commit; the canary guards the new state.
+
+---
+
+## Addendum: the AE-DEEP experiment (Suborn-aware Aedui)
+
+To test whether the Aedui's 0%-everywhere was a heuristic limitation or a seat
+property, `AE-DEEP` (`fs_bot/agents/heuristic.py`) replaces keyword preferences
+with a state-scored planner: Suborn only when it moves the Ally race (place own
+Ally at a Subdued Tribe, else remove the leading rival's Ally — NP 8.6.3
+priorities), Rally as the carrier when it scores, March to push Hidden Warbands
+toward future Suborn Regions (never Raid as carrier when solvent, since Raiding
+Reveals the Warbands Suborn needs Hidden), Trade for income otherwise.
+
+Result (20 seeds, post-Q12 field): Reconquest 15% (3/20) vs 0–10% for the keyword
+profile and 0% for random — the first repeatable Aedui wins in the study — but
+Pax Gallica 0/20 and Great Revolt 1/20. Verdict: partly heuristics, mostly seat.
+State-aware Suborn play lifts the Aedui floor in their best scenario, yet their
+margin (beat EVERY rival's Allies+Citadels) keeps failing against the Belgae
+bot's Control-value engine and the Arverni's scale; mid-game Aedui ally counts
+peak around 4 and get stripped faster than Suborn rebuilds them.
+
+The diagnostic value exceeded the win rate. Building the profile surfaced two
+defects: the agent-interface Suborn executor dropped the tribe on `remove_ally`
+(fixed — it silently desynced the tribes record), and, behind it, a whole class
+of Event handlers that mutate tribe allegiance without touching space pieces —
+roughly 20 Event cards desync `state["tribes"]` from board pieces in ordinary
+bot games (filed as Q13 with a per-card detector, `fs_bot/tools/sync_check.py`).
+Until that audit lands, treat space-piece ALLY counts as unreliable; victory
+math reads the tribes dict and is unaffected.

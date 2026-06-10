@@ -492,3 +492,75 @@ battle engine / supply-line helpers were complete). All are now exact:
 
 All exercised by the test suite (1911) and validated across all-bot games
 (valid + deterministic in every scenario).
+
+---
+
+## Q12: Roman bot Quarters/Spring plans never consumed by the Winter engine — OPEN
+
+**Discovered:** via self-play instrumentation (see `selfplay-strategy-notes.md`).
+
+**What I was doing:** running bot-only and agent-vs-bots games across all three
+base scenarios to characterize balance. In **The Great Revolt**, the Arverni win
+essentially every game (20/20 across all seat configurations, including bot-only),
+which prompted a root-cause audit.
+
+**The defect (unambiguous part):** `fs_bot/bots/roman_bot.py:node_r_quarters`
+builds a faithful §8.8.7 Quarters plan (1 Auxilia stays per Fort & Roman Ally;
+all others incl. Leader move to Provincia if able, incl. via adjacent Supply-Line
+Regions; pay to avoid rolls — Roman Allies first, then non-Devastated, Devastated
+last). `node_r_spring` similarly exists. **Neither is ever called in production.**
+The only call sites are unit tests:
+
+```
+$ grep -rn node_r_quarters fs_bot/ --include=*.py | grep -v 'def \|test'
+(no output)
+```
+
+`resolve_winter_card` → `run_winter_round` is always invoked with
+`relocations=None` (`game_engine.py:583, 633`). As a result, in every Winter:
+- `_apply_relocations(state, ROMANS, [])` moves no Roman pieces — legions never
+  retreat to Provincia or along Supply Lines, and
+- `_quarters_roman_pay_or_roll(state, {})` hits its documented default of
+  "rolling for all" (`winter.py`): every Legion/Auxilia outside Provincia (beyond
+  the free per-Fort/per-Ally pieces) rolls, removed on 1–3, Legions to Fallen —
+  with **no payment even when the Romans can afford it.**
+
+**Measured effect (The Great Revolt, bot-only, 12 seeds):**
+- As shipped: Arverni 12/12. Off-map Legions climb 2 → ~12 (every Legion ends
+  off-map), satisfying the Arverni off-map-Legions condition outright.
+- With the Quarters roll neutralized (pay/keep all): Arverni 10/12, Belgae 2/12,
+  and off-map Legions stay at ~3 — the Arverni win on end-game margin ranking
+  rather than by crossing threshold (their Allies+Citadels start at 11, already
+  over the threshold of 8).
+
+So the unconsumed Quarters plan is a real, quantified contributor (it converts
+"Arverni lead on margin" into "Arverni achieve outright victory"), layered on top
+of a scenario that already favors the Arverni at setup.
+
+**The ambiguity (why I did not just fix it):** wiring the bot's plan into the
+Winter engine faithfully requires choices the flowchart text does not pin down
+for me without risk of guessing, contrary to CLAUDE.md:
+1. **Supply-Line routing.** `node_r_quarters` says move to Provincia "if able,
+   including via adjacent Supply Line regions," but the returned plan
+   (`move_to_provincia`: a flat region list) does not encode the route, and
+   reaching Provincia from interior Regions (e.g. Mandubii, Treveri in Great
+   Revolt) depends on Supply Lines that may pass through enemy-Controlled or
+   Devastated Regions. What is the exact legality test the bot should apply, and
+   what does a Legion that *cannot* reach Provincia do (stay and pay, or stay and
+   roll)?
+2. **Pay budget.** "Pay to avoid rolls" in priority order — but for how many
+   pieces? All it can afford? Reserve Resources for the coming year? The
+   flowchart gives an order, not a quantity.
+3. **`node_r_spring`** is likewise unconsumed; does Spring need a parallel wiring?
+
+**Decision needed:** Please confirm (a) that the Roman Quarters/Spring bot plans
+*should* drive the Winter engine (i.e. this is a wiring omission, not an
+intentional simplification), and (b) the intended routing-legality and
+pay-quantity rules, so the translation can be implemented to the letter. Until
+then the engine continues to use the roll-all default.
+
+(Separately and for the record: even with faithful Quarters, the Great Revolt
+appears Arverni-favored in bot-only play — Arverni begin over their
+Allies+Citadels threshold. Whether bot-only balance is a design target at all is
+outside what the Reference Documents state, so this is recorded as an observation,
+not a defect.)

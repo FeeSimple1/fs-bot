@@ -14,11 +14,10 @@ Scenario isolation per CLAUDE.md:
   - In base scenarios, Germans are game-run (§6.2) and CANNOT be human
     or bot. Arverni CAN be either.
 
-The CLI scope is the DECISION layer + state display only. The engine's
-resolve_card_turn records what each faction decided; the
-commands/ mechanical functions (rally_in_region, march_group, ...)
-exist but are not yet wired in from the engine. Actual command-mechanic
-execution is a separate workstream.
+The CLI runs the full rules engine: each faction's decision is both
+recorded and EXECUTED on the board (run_game(..., execute=True)), so
+the displayed state, victory track, and final outcome reflect real
+play.
 """
 
 import argparse
@@ -167,9 +166,8 @@ def _parse_args(argv):
     p = argparse.ArgumentParser(
         prog="fs_bot",
         description=(
-            "Falling Sky bot engine — interactive CLI. "
-            "Decision layer only; command-mechanic execution is not yet "
-            "wired in from the engine."
+            "Falling Sky bot engine — interactive CLI. Runs the full "
+            "rules engine: decisions are executed on the board."
         ),
     )
     p.add_argument(
@@ -186,7 +184,7 @@ def _parse_args(argv):
         "--bots", default=None,
         help=(
             "Comma-separated faction names to be bot-controlled "
-            "(e.g. Romans,Aedui,Belgae). Others become human. "
+            "(e.g. Romans,Aedui,Belgae), or 'all'. Others become human. "
             "If omitted, the wizard asks per faction."
         ),
     )
@@ -206,6 +204,8 @@ def _parse_bots_arg(bots_arg, assignable):
     if bots_arg is None:
         return None
     bot_names = [s.strip() for s in bots_arg.split(",") if s.strip()]
+    if any(n.lower() == "all" for n in bot_names):
+        return {f: "bot" for f in assignable}
     valid_names = {f.lower(): f for f in assignable}
     chosen_bots = set()
     for n in bot_names:
@@ -284,18 +284,26 @@ def main(argv=None, stdin=None, stdout=None):
     stdout.write(format_region_table(state) + "\n")
     stdout.flush()
 
-    # Run game — engine calls our decision_func for every faction turn
-    # Wrap the decision so we can pause/display between cards
+    # Run game — engine calls our decision_func for every faction turn.
+    # Wrap the decision callback so we can pause and show the card header
+    # whenever a new card comes up (run_game exposes no per-card hook).
+    last_card = [None]
+
+    def per_card_decision(st, faction, options, position):
+        card = st.get("current_card")
+        if card != last_card[0]:
+            if last_card[0] is not None:
+                maybe_pause(decision)
+            last_card[0] = card
+            stdout.write("\n" + format_card(card, st["scenario"]) + "\n")
+            stdout.flush()
+        return decision(st, faction, options, position)
+
     try:
-        # We can't easily hook between cards without monkey-patching
-        # play_card, so we delegate to run_game. Cards are displayed
-        # via the decision_func and the final summary below.
-        result = run_game(state, decision)
+        result = run_game(state, per_card_decision, execute=True)
     except Exception as exc:
         stdout.write(f"\nGame stopped with exception: {type(exc).__name__}: "
                      f"{exc}\n")
-        stdout.write("(Note: the CLI is decision-layer only; the engine "
-                     "does not yet execute command mechanics.)\n")
         return 1
 
     stdout.write("\n" + format_state_summary(state) + "\n")

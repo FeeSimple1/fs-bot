@@ -422,3 +422,22 @@ class TestScenarioIsolation:
         state = build_initial_state(SCENARIO_GALLIC_WAR, seed=42)
         is_at_war, regions = check_arverni_at_war(state)
         assert is_at_war is False  # No enemies initially
+
+
+class TestArverniPhaseRaidNoBanking:
+    """A1.8: the Arverni Phase Raid removes the victim's Resource but
+    does not bank it on a phantom Arverni track."""
+
+    def test_raid_does_not_credit_arverni(self):
+        import io
+        from fs_bot.state.setup import setup_scenario
+        from fs_bot.engine.game_engine import run_game, get_sop_factions
+        from fs_bot.cli.dispatcher import make_decision_func
+        from fs_bot.rules_consts import SCENARIO_ARIOVISTUS, ARVERNI
+        st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        dfn = make_decision_func(
+            {f: "bot" for f in get_sop_factions(st)},
+            stdout=io.StringIO(), pause=False)
+        run_game(st, decision_func=dfn, execute=True)
+        assert st["resources"].get(ARVERNI, 0) == 0

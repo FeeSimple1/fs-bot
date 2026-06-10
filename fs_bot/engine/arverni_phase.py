@@ -669,12 +669,10 @@ def _arverni_phase_raid(state, target_faction):
                 )
                 wb_remaining -= 1
 
-                # Steal Resource
+                # Steal Resource. The victim loses it, but the Arverni
+                # do not track Resources in Ariovistus (A1.8: "set green
+                # cylinders aside") — the stolen Resource is not banked.
                 state["resources"][target] = target_resources - 1
-                arverni_resources = state["resources"].get(ARVERNI, 0)
-                state["resources"][ARVERNI] = min(
-                    arverni_resources + 1, MAX_RESOURCES
-                )
                 result["total_stolen"][target] = (
                     result["total_stolen"].get(target, 0) + 1
                 )

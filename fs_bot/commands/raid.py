@@ -150,6 +150,12 @@ def validate_raid_steal_target(state, region, faction, target_faction):
     if target_forts > 0:
         return False, f"{target_faction} has a Fort in {region}"
 
+    # Arverni do not track Resources in Ariovistus (A1.8) — there is
+    # nothing to steal from them.
+    if (target_faction == ARVERNI
+            and state["scenario"] in ARIOVISTUS_SCENARIOS):
+        return False, "Arverni do not track Resources in Ariovistus"
+
     # Must have Resources to steal
     target_resources = state["resources"].get(target_faction, 0)
     if target_resources < 1:

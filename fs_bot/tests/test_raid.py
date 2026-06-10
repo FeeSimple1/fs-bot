@@ -485,22 +485,40 @@ class TestGermanicRaidAriovistus:
         assert state["resources"][GERMANS] == 6
 
     def test_german_raid_steal_from_gallic(self):
-        """Germans can steal from Gallic factions in Ariovistus."""
+        """Germans can steal from Resource-tracking factions in Ariovistus."""
+        state = make_state(SCENARIO_ARIOVISTUS)
+        setup_hidden_warbands(state, SUGAMBRI, GERMANS, 2)
+        place_piece(state, SUGAMBRI, AEDUI, WARBAND, 2)
+        give_resources(state, GERMANS, 5)
+        give_resources(state, AEDUI, 10)
+
+        result = raid_in_region(
+            state, SUGAMBRI, GERMANS,
+            [{"type": RAID_STEAL, "target": AEDUI}]
+        )
+
+        assert result["resources_gained"] == 1
+        assert result["resources_stolen"] == {AEDUI: 1}
+        assert state["resources"][GERMANS] == 6
+        assert state["resources"][AEDUI] == 9
+
+    def test_arverni_not_a_steal_target_in_ariovistus(self):
+        """A1.8: Arverni do not track Resources in Ariovistus — they
+        cannot be stolen from, even if the resources dict has a stale
+        nonzero entry."""
+        import pytest
+        from fs_bot.commands.common import CommandError
         state = make_state(SCENARIO_ARIOVISTUS)
         setup_hidden_warbands(state, SUGAMBRI, GERMANS, 2)
         place_piece(state, SUGAMBRI, ARVERNI, WARBAND, 2)
         give_resources(state, GERMANS, 5)
-        give_resources(state, ARVERNI, 10)
+        state["resources"][ARVERNI] = 10  # stale/phantom entry
 
-        result = raid_in_region(
-            state, SUGAMBRI, GERMANS,
-            [{"type": RAID_STEAL, "target": ARVERNI}]
-        )
-
-        assert result["resources_gained"] == 1
-        assert result["resources_stolen"] == {ARVERNI: 1}
-        assert state["resources"][GERMANS] == 6
-        assert state["resources"][ARVERNI] == 9
+        with pytest.raises(CommandError):
+            raid_in_region(
+                state, SUGAMBRI, GERMANS,
+                [{"type": RAID_STEAL, "target": ARVERNI}]
+            )
 
 
 # ============================================================================

@@ -710,6 +710,20 @@ _build_ariovistus_aedui_instructions()
 _build_ariovistus_belgae_instructions()
 _build_ariovistus_german_instructions()
 
+# Card O38 (Diviciacus 2nd Ed) — appears only in the Gallic War
+# second-half deck, which plays under the base ruleset. The card has the
+# same (absent) NP symbols as base card 38, so each faction's directive
+# mirrors its base-38 entry. Kept in a separate table so the base
+# instruction set stays exactly 72 cards x 4 factions.
+_SPECIAL_INSTRUCTIONS = {}
+for _f in (ROMANS, ARVERNI, AEDUI, BELGAE):
+    _base38 = _BASE_INSTRUCTIONS.get((38, _f))
+    if _base38 is not None:
+        _SPECIAL_INSTRUCTIONS[("O38", _f)] = BotInstruction(
+            card_id="O38", faction=_f, action=_base38.action,
+            instruction=getattr(_base38, "instruction", None),
+        )
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -741,6 +755,8 @@ def get_bot_instruction(card_id, faction, scenario):
         key = (card_id, faction)
         if key in _BASE_INSTRUCTIONS:
             return _BASE_INSTRUCTIONS[key]
+        if key in _SPECIAL_INSTRUCTIONS:
+            return _SPECIAL_INSTRUCTIONS[key]
         raise KeyError(
             f"No base game bot instruction for card {card_id!r}, "
             f"faction {faction!r}"

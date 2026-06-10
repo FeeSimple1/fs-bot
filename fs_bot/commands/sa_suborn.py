@@ -72,16 +72,18 @@ def validate_suborn_region(state, region):
         return (False,
                 "Region must have a Hidden Aedui Warband for Suborn")
 
-    # Ariovistus Diviciacus proximity — A4.4, A4.1.2
-    scenario = state["scenario"]
-    if scenario in ARIOVISTUS_SCENARIOS:
-        leader_region = find_leader(state, AEDUI)
-        if leader_region is not None:
-            # Must be within 1 of Diviciacus
-            if region != leader_region and not is_adjacent(region, leader_region):
-                return (False,
-                        "Region must be within 1 of Diviciacus for Suborn "
-                        "in Ariovistus")
+    # Diviciacus proximity — A4.4, A4.1.2. Applies whenever the
+    # Diviciacus piece is on the map: natively in Ariovistus scenarios,
+    # and in the Gallic War second half if card O38 returns him
+    # ("Ariovistus Diviciacus Leader rules apply"). In base scenarios
+    # the Aedui have no Leader, so this is naturally inert.
+    leader_region = find_leader(state, AEDUI)
+    if leader_region is not None:
+        # Must be within 1 of Diviciacus
+        if region != leader_region and not is_adjacent(region, leader_region):
+            return (False,
+                    "Region must be within 1 of Diviciacus for Suborn "
+                    "while Diviciacus is on the map")
 
     return (True, "")
 

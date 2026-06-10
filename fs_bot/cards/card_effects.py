@@ -1586,6 +1586,62 @@ def execute_card_38(state, shaded=False):
     side = EVENT_UNSHADED if not shaded else EVENT_SHADED
     activate_capability(state, 38, side)
 
+def execute_card_O38(state, shaded=False):
+    """Card O38: Diviciacus (2nd Edition) — Gallic War second half only.
+
+    Unshaded: "Place Diviciacus piece in any Region. Ariovistus
+    Diviciacus Leader rules apply." Region from
+    event_params["diviciacus_region"]; a Non-player Aedui places him
+    with the most friendly pieces (NP guideline: "Leaders join most
+    friendly pieces").
+    Shaded: identical to base card 38 shaded — Romans and Aedui may not
+    transfer Resources (CAPABILITY). Reuses capability key 38 so all
+    existing transfer checks apply unchanged.
+
+    Source: A Card Reference, card O38; A Scenario: The Gallic War.
+    """
+    if shaded:
+        activate_capability(state, 38, EVENT_SHADED)
+        return
+
+    # Unshaded — place Diviciacus from out of play.
+    from fs_bot.rules_consts import DIVICIACUS
+    from fs_bot.board.pieces import find_leader, place_piece
+
+    if find_leader(state, AEDUI) is not None:
+        return  # Diviciacus already on the map — nothing to place
+
+    params = state.get("event_params", {})
+    region = params.get("diviciacus_region")
+    if region is None:
+        # NP default: Region with the most Aedui pieces ("Leaders join
+        # most friendly pieces" — non_player_guidelines_summary).
+        best, best_count = None, -1
+        for r in state["spaces"]:
+            n = 0
+            for pt_counts in (state["spaces"][r].get("pieces", {})
+                              .get(AEDUI, {})).values():
+                if isinstance(pt_counts, dict):
+                    n += sum(pt_counts.values())
+                elif pt_counts:
+                    n += 1
+            if n > best_count:
+                best, best_count = r, n
+        region = best
+
+    # Diviciacus was "removed from play" at the Interlude (not to
+    # Available); the Event returns him. Move him from removed_pieces
+    # to Available so the placement helper's accounting reconciles.
+    avail = state["available"].setdefault(AEDUI, {})
+    if avail.get(LEADER, 0) < 1:
+        rp = state.setdefault("removed_pieces", {}).setdefault(AEDUI, {})
+        if rp.get(LEADER, 0) > 0:
+            rp[LEADER] -= 1
+        avail[LEADER] = 1
+    place_piece(state, region, AEDUI, LEADER, leader_name=DIVICIACUS)
+    state["diviciacus_in_play"] = True
+
+
 def execute_card_39(state, shaded=False):
     """Card 39: River Commerce — CAPABILITY (both sides).
 
@@ -4670,6 +4726,10 @@ def execute_event(state, card_id, shaded=False):
         if card_id in _ARIOVISTUS_HANDLERS:
             return _ARIOVISTUS_HANDLERS[card_id](state, shaded)
         raise KeyError(f"Unknown Ariovistus card: {card_id!r}")
+
+    # O38 — Diviciacus 2nd Ed (Gallic War second-half deck only)
+    if card_id == "O38":
+        return execute_card_O38(state, shaded)
 
     # Integer card IDs
     if isinstance(card_id, int):

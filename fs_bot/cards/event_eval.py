@@ -369,6 +369,11 @@ _BASE_FLAGS = {
     38: (frozenset({IS_CAPABILITY}),
          frozenset({IS_CAPABILITY})),
 
+    # Card O38: Diviciacus 2nd Ed (Gallic War second-half deck) —
+    # Capability; unshaded also places the Diviciacus Leader piece.
+    "O38": (frozenset({IS_CAPABILITY}),
+            frozenset({IS_CAPABILITY})),
+
     # Card 39: River Commerce — Capability
     # Un: Aedui Trade +2 per Ally/Citadel in Supply Lines
     # Sh: Trade max 1 Region

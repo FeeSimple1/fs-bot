@@ -743,10 +743,11 @@ def _senate_marker_shift(state, first_senate_after_interlude=False):
         "reason": None,
     }
 
-    # A6.5.1: In Gallic War scenario, skip shift during first Senate
-    # after Interlude
-    if (scenario == SCENARIO_GALLIC_WAR
-            and first_senate_after_interlude):
+    # A6.5.1: skip the shift during the first Senate Phase after the
+    # Gallic War Interlude. The flag is only ever set by the Interlude,
+    # and the active ruleset has switched to Pax Gallica? by then, so
+    # gate on the flag alone.
+    if first_senate_after_interlude:
         result["reason"] = "First Senate Phase after Interlude — no shift"
         return result
 

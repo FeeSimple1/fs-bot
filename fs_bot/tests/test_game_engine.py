@@ -946,3 +946,65 @@ class TestMultiCardSequence:
         eligible = get_eligible_factions(state)
         sop = get_sop_factions(state)
         assert set(eligible) == set(sop)
+
+
+class TestGallicWarSecondHalf:
+    """Regression: the Interlude must be reachable in real play.
+
+    The 3rd Winter of the Gallic War first half was treated as a final
+    Winter, so victory_phase declared a margin winner and returned
+    game_over before run_winter_round's Interlude trigger — interlude.py
+    was dead code in actual games (0/30 seeded games ever ran it).
+    """
+
+    def _play(self, seed):
+        import contextlib
+        import io
+        from fs_bot.engine.game_engine import run_game, get_sop_factions
+        from fs_bot.cli.dispatcher import make_decision_func
+        from fs_bot.state.setup import setup_scenario
+        from fs_bot.rules_consts import SCENARIO_GALLIC_WAR, ARVERNI
+        st = setup_scenario(SCENARIO_GALLIC_WAR, seed=seed)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        modes = {f: "bot" for f in get_sop_factions(st)}
+        modes[ARVERNI] = "bot"
+        dfn = make_decision_func(modes, stdout=io.StringIO(), pause=False)
+        with contextlib.redirect_stdout(io.StringIO()):
+            res = run_game(st, decision_func=dfn, execute=True)
+        return st, res
+
+    def test_interlude_reached_when_no_first_half_victor(self):
+        # Seeds chosen to reach the 3rd Victory Phase without a victor.
+        from fs_bot.state.state_schema import validate_state
+        reached = 0
+        for seed in (1, 2, 3):
+            st, res = self._play(seed)
+            if st.get("interlude_completed"):
+                reached += 1
+                assert st.get("scenario_phase") == "second_half"
+                # Second half plays under the base (Pax Gallica?) ruleset.
+                from fs_bot.rules_consts import (SCENARIO_PAX_GALLICA,
+                                                 ARVERNI, GERMANS)
+                assert st["scenario"] == SCENARIO_PAX_GALLICA
+                assert st.get("gallic_war_second_half") is True
+                # German seat became the Arverni seat.
+                assert ARVERNI in st["non_player_factions"]
+                assert GERMANS not in st["non_player_factions"]
+                # Piece accounting reconciles after the handoff.
+                assert validate_state(st) == []
+                # The game continued past the 3rd Winter.
+                assert st["winter_count"] > 3
+        assert reached >= 1, "no seed reached the Interlude"
+
+    def test_first_half_winter3_is_not_final(self):
+        from fs_bot.state.setup import setup_scenario
+        from fs_bot.rules_consts import SCENARIO_GALLIC_WAR
+        st = setup_scenario(SCENARIO_GALLIC_WAR, seed=1)
+        from fs_bot.engine.game_engine import (
+            resolve_winter_card, _count_winter_cards_in_game)
+        st["winter_count"] = 2  # about to resolve the 3rd Winter
+        # Reproduce resolve_winter_card's is_final computation.
+        total = _count_winter_cards_in_game(st)
+        assert st["winter_count"] + 1 >= total  # would be final pre-fix
+        result = resolve_winter_card(st)
+        assert result["is_final"] is False

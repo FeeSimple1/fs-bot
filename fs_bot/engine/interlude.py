@@ -43,7 +43,8 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     GALLIC_FACTIONS,
     # Scenarios
-    SCENARIO_GALLIC_WAR, ARIOVISTUS_SCENARIOS, BASE_SCENARIOS,
+    SCENARIO_GALLIC_WAR, SCENARIO_PAX_GALLICA,
+    ARIOVISTUS_SCENARIOS, BASE_SCENARIOS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     FLIPPABLE_PIECES,
@@ -64,7 +65,7 @@ from fs_bot.rules_consts import (
     ROMAN_HOME_REGIONS, AEDUI_HOME_REGIONS, BELGAE_HOME_REGIONS,
     ARVERNI_HOME_REGIONS_ARIOVISTUS, GERMAN_HOME_REGIONS_BASE,
     # Tribes (used for Cadurci/Volcae and Nori)
-    TRIBE_CADURCI, TRIBE_VOLCAE, TRIBE_NORI,
+    TRIBE_CADURCI, TRIBE_VOLCAE, TRIBE_NORI, TRIBE_CATUVELLAUNI,
     TRIBE_TO_REGION,
     # Markers
     MARKER_CIRCUMVALLATION, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
@@ -1468,6 +1469,29 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
 # ============================================================================
 
 
+def _swap_nori_for_catuvellauni(state):
+    """Restore the Catuvellauni tribe for the second half.
+
+    Removing the Nori marker uncovers the Catuvellauni tribe circle
+    (Nori exists only in Ariovistus — A1.3.2). Swap the tribe entries
+    so base-ruleset tribe targeting works: Catuvellauni returns
+    Subdued/unallied, Nori leaves the game. Any Ally at Nori was
+    already handled by the Adjust Forces Cisalpina relocation (step 2).
+    Runs before the Britannia Expedition so a declined expedition can
+    place the Belgic Ally at Catuvellauni.
+    """
+    out = {"nori_tribe_removed": False, "catuvellauni_restored": False}
+    tribes = state.get("tribes", {})
+    if TRIBE_NORI in tribes:
+        del tribes[TRIBE_NORI]
+        out["nori_tribe_removed"] = True
+    if TRIBE_CATUVELLAUNI not in tribes:
+        tribes[TRIBE_CATUVELLAUNI] = {"status": None,
+                                      "allied_faction": None}
+        out["catuvellauni_restored"] = True
+    return out
+
+
 def _step4_markers_cleanup(state):
     """Remove the Arverni Home 'Rally', 'Britannia (Not in play)', Nori
     tribe, Cisalpina Control box, and all Intimidated markers.
@@ -1807,6 +1831,8 @@ def run_interlude(state, *, britannia_decision=None,
     result["step2_cisalpina"] = _cisalpina_relocation(state)
 
     # 3. Britannia expedition
+    result["tribe_swap"] = _swap_nori_for_catuvellauni(state)
+
     result["step3_britannia"] = _step3_britannia(
         state, britannia_decision,
         roman_dispersed_keep=roman_dispersed_keep,
@@ -1835,8 +1861,32 @@ def run_interlude(state, *, britannia_decision=None,
     # 10. Deck rebuild
     result["step10_deck"] = _build_pax_gallica_deck_for_interlude(state)
 
-    # 11. State flags
+    # 11. State flags + ruleset handoff.
+    # Per A Scenario: The Gallic War, Second Half: "Original Falling Sky
+    # rules are in effect" and the half is played as Pax Gallica? (deck,
+    # 1st-Winter rules, victory). The engine's ~160 scenario gates all key
+    # off state["scenario"], so the faithful handoff is to switch the
+    # active ruleset to Pax Gallica? while remembering the true scenario:
+    #   - Germans revert to the game-run §6.2 procedure (no SoP turn);
+    #   - Arverni return to the Sequence of Play ("Any Germanic player
+    #     from the first half plays as the Arverni Faction in this half,
+    #     using Arverni victory conditions");
+    #   - base victory formulas, base bot flowcharts, base event
+    #     instruction tables, base map playability all apply.
+    # Gallic-War-specific post-Interlude exceptions (first Senate /
+    # first Harvest) are carried by the pending flags set above and by
+    # state["gallic_war_second_half"].
     state["interlude_completed"] = True
     state["scenario_phase"] = "second_half"
+    state["gallic_war_second_half"] = True
+    state["scenario"] = SCENARIO_PAX_GALLICA
+
+    # The German seat becomes the Arverni seat — keep NP status in sync
+    # so bot dispatch recognizes the Arverni as a bot when the Germans
+    # were one (and the engine never again dispatches the Germans).
+    np = state.get("non_player_factions")
+    if np is not None and GERMANS in np:
+        np.discard(GERMANS)
+        np.add(ARVERNI)
 
     return result

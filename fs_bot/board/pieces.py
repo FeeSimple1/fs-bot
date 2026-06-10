@@ -53,7 +53,14 @@ def _get_faction_cap(state, faction, piece_type):
     """Get the cap for a specific faction/piece_type in the current scenario."""
     caps = _get_caps(state)
     faction_caps = caps.get(faction, {})
-    return faction_caps.get(piece_type, 0)
+    cap = faction_caps.get(piece_type, 0)
+    # Gallic War second half: the base ruleset is active (no Aedui
+    # Leader in CAPS_BASE), but Diviciacus "may return by Event" —
+    # card O38 (A Scenario: The Gallic War, Interlude Adjust Forces).
+    if (cap == 0 and piece_type == LEADER and faction == AEDUI
+            and state.get("gallic_war_second_half")):
+        cap = 1
+    return cap
 
 
 def _count_on_map(state, faction, piece_type):
@@ -415,10 +422,14 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
         if f_pieces.get(LEADER) is None:
             raise PieceError(f"No {faction} Leader in {region}")
         leader_name = f_pieces[LEADER]
-        # Diviciacus: removed from play, not to Available — A1.4
+        # Diviciacus: removed from play, not to Available — A1.4.
+        # Record him in removed_pieces so piece accounting reconciles
+        # (map + available + removed = cap); card O38 may return him.
         if leader_name == DIVICIACUS:
             f_pieces[LEADER] = None
-            # Do NOT add to available — removed from play
+            rp = state.setdefault("removed_pieces", {}).setdefault(
+                faction, {})
+            rp[LEADER] = rp.get(LEADER, 0) + 1
             return
         f_pieces[LEADER] = None
         if to_available:

@@ -27,6 +27,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS,
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, ALL_SCENARIOS,
+    SCENARIO_GALLIC_WAR,
 )
 from fs_bot.state.setup import setup_scenario
 from fs_bot.engine.game_engine import (
@@ -264,6 +265,13 @@ def main(argv=None, stdin=None, stdout=None):
             preset_scenario=args.scenario,
             preset_faction_modes=preset_modes,
         )
+
+    # Gallic War: after the Interlude the German seat plays the Arverni
+    # (A Scenario: The Gallic War, Second Half). Mirror the German
+    # human/bot assignment onto the Arverni up front so the decision
+    # callback handles both halves.
+    if scenario == SCENARIO_GALLIC_WAR and GERMANS in faction_modes:
+        faction_modes.setdefault(ARVERNI, faction_modes[GERMANS])
 
     # Build state
     state = setup_scenario(scenario, seed=args.seed)

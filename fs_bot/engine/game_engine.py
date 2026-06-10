@@ -580,6 +580,17 @@ def resolve_winter_card(state, britannia_decision=None,
     total_winters = _count_winter_cards_in_game(state)
     is_final = (state["winter_count"] + 1 >= total_winters)
 
+    # Gallic War (A2.1): the first half ends at the 3rd Victory Phase
+    # with the Interlude — not with a final-Winter margin ranking. While
+    # the Interlude has not yet run, no Winter is "final": the game ends
+    # in the first half only by an actual victory condition. After the
+    # Interlude rebuilds the deck, the count above includes the second
+    # half's Winter cards and final-Winter detection works normally.
+    from fs_bot.rules_consts import SCENARIO_GALLIC_WAR
+    if (state["scenario"] == SCENARIO_GALLIC_WAR
+            and not state.get("interlude_completed", False)):
+        is_final = False
+
     winter_result = run_winter_round(
         state, is_final=is_final,
         britannia_decision=britannia_decision,

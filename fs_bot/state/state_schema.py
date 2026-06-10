@@ -187,6 +187,18 @@ def validate_state(state):
     errors = []
     scenario = state["scenario"]
     caps = CAPS_ARIOVISTUS if scenario in ARIOVISTUS_SCENARIOS else CAPS_BASE
+    # Gallic War second half: the base ruleset is active, but the physical
+    # pieces came from the Ariovistus inventory. The Interlude removed the
+    # Germanic Leader and 15 Warbands "from play" (they reconcile in the
+    # removed pool), and Diviciacus may return by Event (card O38). Use
+    # Ariovistus caps for the Germans and the Aedui Leader so the
+    # accounting identity still holds.
+    if state.get("gallic_war_second_half"):
+        caps = dict(caps)
+        caps[GERMANS] = CAPS_ARIOVISTUS.get(GERMANS, {})
+        aedui_caps = dict(caps.get(AEDUI, {}))
+        aedui_caps[LEADER] = CAPS_ARIOVISTUS.get(AEDUI, {}).get(LEADER, 1)
+        caps[AEDUI] = aedui_caps
 
     for faction in FACTIONS:
         faction_caps = caps.get(faction, {})

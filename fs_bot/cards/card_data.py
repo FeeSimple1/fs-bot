@@ -258,6 +258,26 @@ for card_id in range(1, 73):
         is_winter=False,
     )
 
+# Card O38 — Diviciacus (2nd Edition / Ariovistus version). Used only by
+# the Gallic War second-half deck in place of base card 38 (A Scenario:
+# The Gallic War, Interlude Deck step; A Card Reference O38). Same faction
+# order and (absent) NP symbols as base 38; Capability on both sides.
+# Kept in a separate table (not _BASE_CARDS) per the dual-purpose-data
+# rule in CLAUDE.md: O38 must be findable by get_card but must never
+# count as a base deck card or appear in deck composition.
+_O38_TOKENS = _BASE_FACTION_TOKENS[38].split()
+_O38_ORDER, _O38_SYMBOLS = _parse_faction_line(_O38_TOKENS)
+_SPECIAL_CARDS = {
+    "O38": CardData(
+        card_id="O38",
+        title=CARD_NAMES_BASE[38],
+        faction_order=_O38_ORDER,
+        np_symbols=_O38_SYMBOLS,
+        is_capability=True,
+        is_winter=False,
+    ),
+}
+
 # Winter cards (base game) — §2.4
 # Winter cards have no faction order or NP symbols
 for i in range(1, 6):
@@ -390,6 +410,9 @@ def get_card(card_id, scenario=None):
     # Base game lookup
     if card_id in _BASE_CARDS:
         return _BASE_CARDS[card_id]
+    # Special lookup-only cards (O38 — Gallic War second-half deck)
+    if card_id in _SPECIAL_CARDS:
+        return _SPECIAL_CARDS[card_id]
     # Try Ariovistus cards directly (for A-prefix lookups without scenario)
     if card_id in _ARIOVISTUS_SPECIFIC_CARDS:
         return _ARIOVISTUS_SPECIFIC_CARDS[card_id]

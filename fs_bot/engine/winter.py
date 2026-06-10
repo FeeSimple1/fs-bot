@@ -529,7 +529,13 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
     }
     rng = state["rng"]
 
-    for region in list(state["spaces"].keys()):
+    # §8.8.7 pay priority: an explicit region order may be supplied; pay
+    # processing is sequential, so order decides who gets scarce Resources.
+    _order = quartering_decisions.get("_pay_order") or []
+    _regions = [r for r in _order if r in state["spaces"]] + \
+        [r for r in state["spaces"] if r not in _order]
+
+    for region in _regions:
         if region == PROVINCIA:
             continue
 
@@ -568,6 +574,8 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
 
         # Apply decisions or default to rolling
         decisions = quartering_decisions.get(region, {})
+        if not isinstance(decisions, dict):
+            decisions = {}
         pay_count = decisions.get("pay", 0)
         roll_count = decisions.get("roll", pieces_needing_quarters - pay_count)
 
@@ -1120,8 +1128,15 @@ def _place_successor_leaders(state):
         if leader_name == DIVICIACUS:
             continue
 
-        # Find placement region: where faction has a piece, or Home Region
-        placement = _find_successor_placement(state, faction)
+        # Find placement region: where faction has a piece, or Home Region.
+        # Q12: NP Romans follow §8.3.2 -- place with the most Roman pieces.
+        placement = None
+        if (faction == ROMANS
+                and faction in state.get("non_player_factions", set())):
+            from fs_bot.bots.bot_common import get_leader_placement_region
+            placement = get_leader_placement_region(state, ROMANS)
+        if placement is None:
+            placement = _find_successor_placement(state, faction)
         if placement is not None:
             place_piece(
                 state, placement, faction, LEADER,
@@ -1262,6 +1277,16 @@ def run_winter_round(state, is_final=False,
         result["phases"]["germans"] = germans_phase(state)
 
     # Phase 3: Quarters
+    # Q12 (QUESTIONS.md): when the Romans are Non-player and no explicit
+    # relocation decisions were provided, drive the Quarters Phase from the
+    # Roman bot's §8.8.7 plan (§6.3.3 procedure) instead of the roll-all
+    # default. Built HERE -- after the Germans Phase -- so piece counts are
+    # current. Owner-confirmed reading: relocate to Provincia via Supply
+    # Lines, then pay-all-affordable in §8.8.7 priority order.
+    if relocations is None and ROMANS in state.get("non_player_factions",
+                                                   set()):
+        from fs_bot.bots.roman_bot import build_np_winter_relocations
+        relocations = build_np_winter_relocations(state)
     result["phases"]["quarters"] = quarters_phase(
         state, relocations=relocations
     )

@@ -1340,6 +1340,166 @@ def node_r_spring(state):
     return None
 
 
+def _quarters_host_agrees(state, host_faction, region):
+    """Does *host_faction* agree to Roman Quarters relocation into its
+    Control (§6.3.3 "Control of a Faction that agrees")?
+
+    Consults the decision agent first (AGREEMENT hook), then the host's
+    NP agreements node.
+    """
+    if host_faction == ROMANS:
+        return True
+    from fs_bot.engine.agent import consult_agent, AGREEMENT
+    resp = consult_agent(state, host_faction, {
+        "kind": AGREEMENT, "request_type": "quarters",
+        "requesting_faction": ROMANS, "context": {"region": region},
+    })
+    if resp is not None:
+        return bool(resp)
+    if host_faction not in state.get("non_player_factions", set()):
+        return False
+    if host_faction == AEDUI:
+        from fs_bot.bots.aedui_bot import node_a_agreements
+        return bool(node_a_agreements(state, ROMANS, "quarters"))
+    if host_faction == ARVERNI:
+        from fs_bot.bots.arverni_bot import node_v_agreements
+        return bool(node_v_agreements(state, ROMANS, "quarters"))
+    if host_faction == BELGAE:
+        from fs_bot.bots.belgae_bot import node_b_agreements
+        return bool(node_b_agreements(state, ROMANS, "quarters"))
+    if host_faction == GERMANS:
+        from fs_bot.bots.german_bot import node_g_agreements
+        return bool(node_g_agreements(state, ROMANS, "quarters"))
+    return False
+
+
+def build_np_winter_relocations(state):
+    """Translate the R_QUARTERS plan (§8.8.7) into the Winter engine's
+    ``relocations`` dict, per the §6.3.3 procedure.
+
+    Steps (Q12 in QUESTIONS.md; owner-confirmed):
+    1. One Auxilia per Roman Fort and per Roman Ally stays in place.
+    2. Legions/Auxilia in Supply-Line Regions (3.2.1, determined now) and
+       the Roman Leader from any Region relocate to Provincia.
+    3. Pieces not in a Supply-Line Region first hop to an adjacent
+       un-Devastated Region under Roman Control (or Control of a Faction
+       that agrees) that has a Supply Line, then on to Provincia.
+    4. Pieces in Devastated Regions that cannot reach Provincia move to an
+       adjacent un-Devastated Roman/agreed-Control Region.
+    5. Pay to avoid rolls for every remaining piece, in §8.8.7 priority
+       order (Roman Allies first, then un-Devastated, Devastated last),
+       until Resources run out ("pay to avoid rolls" -- no reserve).
+    """
+    from fs_bot.commands.rally import has_supply_line
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.engine.victory import is_controlled_by
+
+    scenario = state["scenario"]
+    relocations = []
+    remaining = {}          # region -> (legions, auxilia) left after moves
+
+    def _devastated(region):
+        return state["spaces"].get(region, {}).get("devastated", False)
+
+    def _controller(region):
+        for fac in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS):
+            try:
+                if is_controlled_by(state, region, fac):
+                    return fac
+            except Exception:
+                continue
+        return None
+
+    def _hoppable(region):
+        """Adjacent un-Devastated Region under Roman/agreed Control."""
+        for adj in get_adjacent(region, scenario, state.get("capabilities")):
+            if adj == PROVINCIA or _devastated(adj):
+                continue
+            ctrl = _controller(adj)
+            if ctrl is None:
+                continue
+            if ctrl == ROMANS or _quarters_host_agrees(state, ctrl, adj):
+                yield adj
+
+    for region in list(state["spaces"].keys()):
+        if region == PROVINCIA:
+            continue
+        legions = count_pieces(state, region, ROMANS, LEGION)
+        auxilia = count_pieces(state, region, ROMANS, AUXILIA)
+        if legions + auxilia == 0:
+            continue
+
+        # Step 1: free stayers -- 1 Auxilia per Fort & per Roman Ally.
+        forts = count_pieces(state, region, ROMANS, FORT)
+        allies = count_pieces(state, region, ROMANS, ALLY)
+        stay_aux = min(auxilia, forts + allies)
+        mov_leg, mov_aux = legions, auxilia - stay_aux
+
+        if mov_leg + mov_aux == 0:
+            remaining[region] = (0, 0)
+            continue
+
+        if has_supply_line(state, region, ROMANS):
+            # Step 2: direct to Provincia.
+            if mov_leg:
+                relocations.append((LEGION, region, PROVINCIA, mov_leg))
+            if mov_aux:
+                relocations.append((AUXILIA, region, PROVINCIA, mov_aux))
+            remaining[region] = (0, 0)
+            continue
+
+        # Step 3: hop to an adjacent Supply-Line Region, then Provincia.
+        hop = next((a for a in _hoppable(region)
+                    if has_supply_line(state, a, ROMANS)), None)
+        if hop is not None:
+            if mov_leg:
+                relocations.append((LEGION, region, hop, mov_leg))
+                relocations.append((LEGION, hop, PROVINCIA, mov_leg))
+            if mov_aux:
+                relocations.append((AUXILIA, region, hop, mov_aux))
+                relocations.append((AUXILIA, hop, PROVINCIA, mov_aux))
+            remaining[region] = (0, 0)
+            continue
+
+        # Step 4: stuck -- if Devastated, at least move somewhere safer.
+        if _devastated(region):
+            hop = next(iter(_hoppable(region)), None)
+            if hop is not None:
+                if mov_leg:
+                    relocations.append((LEGION, region, hop, mov_leg))
+                if mov_aux:
+                    relocations.append((AUXILIA, region, hop, mov_aux))
+                hl, ha = remaining.get(hop, (0, 0))
+                remaining[hop] = (hl + mov_leg, ha + mov_aux)
+                remaining[region] = (0, 0)
+                continue
+        remaining[region] = (mov_leg, mov_aux)
+
+    # Roman Leader -> Provincia from any Region (§6.3.3).
+    leader_region = None
+    for region in state["spaces"]:
+        if region != PROVINCIA and count_pieces(state, region, ROMANS, LEADER):
+            leader_region = region
+            break
+    if leader_region:
+        relocations.append((LEADER, leader_region, PROVINCIA, 1))
+
+    # Step 5: pay plan, §8.8.7 priority order, pay-all-affordable.
+    quartering = {}
+    order = []
+    for region, (legs, aux) in remaining.items():
+        if legs + aux <= 0:
+            continue
+        has_ally = count_pieces(state, region, ROMANS, ALLY) > 0
+        priority = (0 if has_ally else 2 if _devastated(region) else 1)
+        order.append((priority, region))
+        quartering[region] = {"pay": legs + aux}
+    order.sort()
+    quartering["_pay_order"] = [r for _, r in order]
+
+    return {ROMANS: relocations, ROMANS + "_quartering": quartering}
+
+
 # ============================================================================
 # AGREEMENTS AND DIVICIACUS
 # ============================================================================

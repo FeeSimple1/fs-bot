@@ -495,7 +495,7 @@ All exercised by the test suite (1911) and validated across all-bot games
 
 ---
 
-## Q12: Roman bot Quarters/Spring plans never consumed by the Winter engine — OPEN
+## Q12: Roman bot Quarters/Spring plans never consumed by the Winter engine — RESOLVED
 
 **Discovered:** via self-play instrumentation (see `selfplay-strategy-notes.md`).
 
@@ -553,11 +553,25 @@ for me without risk of guessing, contrary to CLAUDE.md:
    flowchart gives an order, not a quantity.
 3. **`node_r_spring`** is likewise unconsumed; does Spring need a parallel wiring?
 
-**Decision needed:** Please confirm (a) that the Roman Quarters/Spring bot plans
-*should* drive the Winter engine (i.e. this is a wiring omission, not an
-intentional simplification), and (b) the intended routing-legality and
-pay-quantity rules, so the translation can be implemented to the letter. Until
-then the engine continues to use the roll-all default.
+**Decision (owner, 2026-06-10):**
+(a) Wire both Quarters and Spring — the dead code was a wiring omission.
+(b) Routing: implement §6.3.3 to the letter (adjacent un-Devastated
+Roman/agreed-Control hop; Supply-Line Regions, determined at that time, to
+Provincia; Leader from anywhere; agreement via the AGREEMENT hook then the
+host's NP agreements node).
+(c) Pay quantity: most literally rules-faithful reading — "pay to avoid
+rolls" means pay for every remaining piece in §8.8.7 priority order until
+Resources run out; no reserve. The priority order only has work to do if
+payment continues until funds run short, and the order tracks cost
+(Allies cheapest), consistent with maximizing pieces saved per Resource.
+
+**Implemented:** `roman_bot.build_np_winter_relocations` (built after the
+Germans Phase so counts are current), consumed by `run_winter_round`;
+`_quarters_roman_pay_or_roll` honors `_pay_order`; Spring successor
+placement for NP Romans follows §8.3.2 (most Roman pieces). Balance impact
+(bot-only, 20 seeds): Great Revolt Arverni 100% → 55% (Belgae 45%);
+Pax Gallica Belgae 40% → 60%; Reconquest Belgae 45% → 30%. Baseline
+refreshed; regression tests added.
 
 (Separately and for the record: even with faithful Quarters, the Great Revolt
 appears Arverni-favored in bot-only play — Arverni begin over their

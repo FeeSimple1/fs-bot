@@ -114,3 +114,20 @@ Designer faction-strategy articles (priors only): InsideGMT —
 [Arverni](https://insidegmt.com/coin-series-falling-sky-arverni-strategy/),
 [Aedui](https://insidegmt.com/coin-series-falling-sky-aedui-strategy/),
 [Belgic](https://insidegmt.com/coin-series-falling-sky-belgic-strategy/).
+
+---
+
+## Addendum: Q12 resolved and wired
+
+The owner confirmed Q12 (see QUESTIONS.md): the Roman Quarters/Spring bot plans now
+drive the Winter engine — §6.3.3 relocation (Supply-Line Regions to Provincia, one
+adjacent hop for stranded stacks, Leader from anywhere) and §8.8.7
+pay-all-affordable in priority order. Bot-only balance, before → after (20 seeds):
+Great Revolt Arverni 100% → 55% with Belgae taking 45%; Pax Gallica Belgae
+40% → 60%; Reconquest Belgae 45% → 30% (Arverni 35% → 45%). The Great Revolt is no
+longer a foregone conclusion: Rome keeping its Legions alive through Winter denies
+the Arverni their off-map-Legions condition in nearly half of games, and the
+beneficiary is mostly the Belgae, whose Control-based score profits from a longer,
+multipolar war. Findings 1–3 above describe the pre-fix engine; finding 4's
+Roman skill-elasticity and findings 5–6 remain directionally consistent post-fix.
+The balance baseline was refreshed at this commit; the canary guards the new state.

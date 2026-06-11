@@ -160,3 +160,33 @@ roughly 20 Event cards desync `state["tribes"]` from board pieces in ordinary
 bot games (filed as Q13 with a per-card detector, `fs_bot/tools/sync_check.py`).
 Until that audit lands, treat space-piece ALLY counts as unreliable; victory
 math reads the tribes dict and is unaffected.
+
+---
+
+## Addendum: Q13 fixed — and it was a balance bug wearing a bookkeeping costume
+
+The tribe/piece desync audit (Q13, flagged by both this study and an external
+playtest) is complete: ~67 sites across 40 Event handlers paired their
+allegiance mutations with the matching ALLY/CITADEL piece operations, plus the
+reverse direction nobody had flagged — Battle losses, Besiege, Seize, and
+Intimidate removed Ally/Citadel pieces without clearing the authoritative
+tribes record, leaving phantom allied tribes that still scored. A subtle root
+cause: Card 71 Colony tribes carried no region key, making them invisible to
+the detector and smearing blame across a dozen innocent cards.
+
+The balance impact of pure bookkeeping fixes was large (bot-only, 20 seeds):
+
+| Scenario | Before | After |
+|---|---|---|
+| Pax Gallica? | Belgae 60%, Ro 15%, Ar 15%, Ae 10% | Romans 50%, Belgae 30%, Ar 10%, Ae 10% |
+| Reconquest | Ar 45%, Be 30%, Ae 25%, Ro 0% | Aedui 55%, Romans 20%, Ar 15%, Be 10% |
+| Great Revolt | Ar 55%, Be 45% | Belgae 40%, Aedui 35%, Ar 20%, Ro 5% |
+
+Phantom allies had been propping up exactly the factions this study called
+dominant: the Belgae Pax engine and the Arverni everywhere were partly scoring
+tribes whose discs had already been removed in battle, and the Aedui — whose
+entire victory is the allies-and-citadels count — were the systematic victim.
+Post-fix, every faction wins somewhere in bot-only play. All per-faction
+strategy claims in the notes above predate this fix; treat them as historical.
+The sync invariant is now enforced by 15 dedicated tests including per-scenario
+full-game canaries, and the balance baseline was refreshed at this commit.

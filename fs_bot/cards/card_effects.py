@@ -67,6 +67,12 @@ def _apply_senate_shift(state, direction):
         return
     position = state["senate"]["position"]
     is_firm = state["senate"]["firm"]
+    if position is None:
+        # First year (Pax Gallica): "the Senate is not in Uproar, nor
+        # Intrigue, nor Adulation and does not shift." A Senate-shift Event
+        # played before the marker is on the track is a clean no-op, not a
+        # crash (_SENATE_INDEX[None] -> KeyError).
+        return
     pos_idx = _SENATE_INDEX[position]
 
     if direction == SENATE_UP:
@@ -279,6 +285,10 @@ def execute_card_2(state, shaded=False):
         # Cannot shift if already at Firm Uproar (per Tips)
         position = state["senate"]["position"]
         is_firm = state["senate"]["firm"]
+        if position is None:
+            # First-year off-track Senate does not shift, so no Legions can
+            # be placed by this shift-to-place Event.
+            return
         pos_idx = _SENATE_INDEX[position]
 
         can_shift = not (pos_idx == 0 and is_firm)  # Not at Firm Uproar

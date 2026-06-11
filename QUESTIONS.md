@@ -703,3 +703,53 @@ scenarios (seeds 1-16) and the suite is 1951 passing.
   ineffective Event selection. These are planner-quality bugs (the bot
   forfeits the Command via a clean rejection, not a crash) and are the
   main remaining work for bot reliability.
+
+---
+
+## All-bot timing/sync audit (external, June 2026) — triage
+
+The external audit ran a 500-game all-bot sync sweep, a 1,280-game mixed
+human/bot matrix, and a targeted SA-timing audit. Triage:
+
+### Confirmed clean (verification, not defects)
+- 500 all-bot games (100 seeds x 5 scenarios), 20,209 cards: **zero
+  tribe/piece desyncs**. The Q13 / A18 / A25 / Arverni-Phase-Citadel fixes
+  hold at scale.
+
+### FIXED
+- First-year (off-track) Senate shift crashed. Pax Gallica?: "During the
+  first year, the Senate ... does not shift", so setup leaves
+  senate.position = None; Cicero (1), Legiones (2) and Pompey (3) called
+  _SENATE_INDEX[None] -> KeyError(None), caught as "event not applicable"
+  (~72 forfeited bot Events in the matrix). _apply_senate_shift and card 2
+  now treat an off-track Senate as a clean no-op per the year-1 rule.
+  Regression test: test_first_year_senate.py.
+
+### OPEN — planner quality (NOT state-integrity; executor rejects cleanly)
+These are the published-bot planners proposing sub-actions the executor
+legally refuses; the command still does what it legally can, no corruption.
+Per CLAUDE.md (faithful flowcharts, never guess) these need per-faction
+flowchart transcription, not speculative rewrites. Prioritized by frequency
+in the 1,280-game matrix:
+
+- Resource-oblivious / illegal-region Rally (Aedui 2303, Belgae 1979,
+  Arverni 1183, Germans 472 sub-errors): planners propose Rally regions
+  with no Control/Ally/Citadel/Leader/Rally-symbol, or with 0 Resources,
+  or Ally placement without Control. Fix: filter the plan to executor-legal
+  regions/pieces (the "one rule, one implementation" pattern), per each
+  faction's Rally flowchart node.
+- Arverni "expand/mass march: nothing marchable" (912): node_v_march_threat
+  returns a March with no marchable pieces instead of falling through.
+- Romans Recruit (557) / Romans Battle+Scout (2976) / Romans March+Build
+  (1633): after-Command SAs that find nothing to do (executed:False, no
+  effect) and Recruit plans exceeding Resources.
+- Interruptible SA timing (Aedui Rally+Trade, 791 cases where Trade
+  executes after Rally already failed for lack of Resources; Belgae
+  Rally+Enlist control ordering): §4.1 allows an SA before/during/after a
+  Command; the engine has a fixed before/after schedule with no "interrupt
+  Rally to Trade, then continue" model. Architectural.
+- before-Command SA obviates its Command (67: Arverni Battle+Entreat 11,
+  Germans Battle+Intimidate 56): the SA legally converts/removes the
+  Battle's target, then the Battle has nothing to do. The SA effect is
+  legitimate and beneficial (no rollback warranted); the planner should
+  not pair a Battle with an SA that removes its target. Play quality.

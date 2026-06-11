@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Unit, regression, sync-canary, and balance-canary tests
+        run: python -m pytest -q
+
+  sync-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Tribe/piece sync must hold across full bot games (all scenarios)
+        run: |
+          python -m fs_bot.tools.sync_check --scenario "Pax Gallica?" --seeds 1-8
+          python -m fs_bot.tools.sync_check --scenario "Reconquest of Gaul" --seeds 1-8
+          python -m fs_bot.tools.sync_check --scenario "The Great Revolt" --seeds 1-8
+          python -m fs_bot.tools.sync_check --scenario "Ariovistus" --seeds 1-8
+
+  balance-guardrail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Winners must match the committed baseline
+        run: python -m fs_bot.tools.balance_smoke --seeds 1-20

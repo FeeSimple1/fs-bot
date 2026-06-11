@@ -54,13 +54,31 @@ def test_a18_removes_german_allies_in_sync():
     if count_pieces(st, region, rc.GERMANS, rc.ALLY) == 0:
         place_piece(st, region, rc.GERMANS, rc.ALLY)
     st["event_params"] = {"region": region}
-    # Force Roman adjacency by controlling the region outright.
-    place_piece(st, region, rc.ROMANS, rc.LEGION, 3, from_legions_track=True)
+    # Force Roman adjacency by controlling the region outright, and make
+    # sure the German Leader is NOT here (the card skips the Ariovistus
+    # region, which would make this test pass vacuously).
+    from fs_bot.board.pieces import get_leader_in_region
+    from fs_bot.board.control import refresh_all_control, is_controlled_by
+    # Outnumber everything present so Rome actually Controls the region,
+    # then refresh control (place_piece alone does not). Use Auxilia from
+    # Available (the Legions track holds too few).
+    others = sum(count_pieces(st, region, f)
+                 for f in (rc.GERMANS, rc.ARVERNI, rc.AEDUI, rc.BELGAE))
+    from fs_bot.board.pieces import get_available
+    n_aux = min(others + 1, get_available(st, rc.ROMANS, rc.AUXILIA))
+    if n_aux:
+        place_piece(st, region, rc.ROMANS, rc.AUXILIA, n_aux)
+    if get_leader_in_region(st, region, rc.GERMANS) is not None:
+        st["spaces"][region]["pieces"][rc.GERMANS][rc.LEADER] = None
+    refresh_all_control(st)
+    assert is_controlled_by(st, region, rc.ROMANS), (
+        "test setup must establish Roman Control for A18 to fire")
     with contextlib.redirect_stdout(io.StringIO()):
         execute_card_A18(st, shaded=False)
-    # If the removal fired, pieces and allegiance must agree (no stray ally).
-    assert count_pieces(st, region, rc.GERMANS, rc.ALLY) == \
-        len(_allied_tribes(st, region, rc.GERMANS))
+    # The removal must actually fire: no German Ally discs AND no German
+    # allied tribes remain in the region (pieces and allegiance together).
+    assert count_pieces(st, region, rc.GERMANS, rc.ALLY) == 0
+    assert _allied_tribes(st, region, rc.GERMANS) == []
 
 
 def test_after_command_sa_skipped_when_command_fails():

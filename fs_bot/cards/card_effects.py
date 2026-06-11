@@ -3020,10 +3020,16 @@ def execute_card_A18(state, shaded=False):
                     if c > 0:
                         remove_piece(state, region, GERMANS, WARBAND,
                                      count=c, piece_state=ps)
-                for pt in (ALLY, SETTLEMENT):
-                    cnt = count_pieces(state, region, GERMANS, pt)
-                    if cnt > 0:
-                        remove_piece(state, region, GERMANS, pt, count=cnt)
+                # German Allies: pieces and tribes dict together (Q13;
+                # external mixed-matrix playtest, defect family 2).
+                _unally_faction_tribes_in_region(state, region, GERMANS)
+                stray = count_pieces(state, region, GERMANS, ALLY)
+                if stray > 0:
+                    remove_piece(state, region, GERMANS, ALLY, count=stray)
+                setl = count_pieces(state, region, GERMANS, SETTLEMENT)
+                if setl > 0:
+                    remove_piece(state, region, GERMANS, SETTLEMENT,
+                                 count=setl)
     else:
         has_legion_near = False
         for g_region in GERMANIA_REGIONS:
@@ -3236,10 +3242,15 @@ def execute_card_A25(state, shaded=False):
             if c > 0:
                 remove_piece(state, CISALPINA, GERMANS, WARBAND,
                              count=c, piece_state=ps)
-        for pt in (ALLY, SETTLEMENT):
-            cnt = count_pieces(state, CISALPINA, GERMANS, pt)
-            if cnt > 0:
-                remove_piece(state, CISALPINA, GERMANS, pt, count=cnt)
+        # German Allies (e.g. Nori): pieces and tribes dict together (Q13;
+        # external mixed-matrix playtest, defect family 2).
+        _unally_faction_tribes_in_region(state, CISALPINA, GERMANS)
+        stray = count_pieces(state, CISALPINA, GERMANS, ALLY)
+        if stray > 0:
+            remove_piece(state, CISALPINA, GERMANS, ALLY, count=stray)
+        setl = count_pieces(state, CISALPINA, GERMANS, SETTLEMENT)
+        if setl > 0:
+            remove_piece(state, CISALPINA, GERMANS, SETTLEMENT, count=setl)
         _cap_resources(state, GERMANS, -6)
     else:
         region = TRIBE_TO_REGION.get(TRIBE_NORI)

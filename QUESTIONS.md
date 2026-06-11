@@ -660,3 +660,46 @@ Fix (their patch, verified and applied): the upgrade keeps
 Allied tribe. Regression test added; sync_check now clean on Ariovistus
 (seeds 1-8) and The Gallic War (seeds 1-3) in addition to the three base
 scenarios; the in-suite canary now includes an Ariovistus bot game.
+
+
+---
+
+## External mixed-matrix playtest (1,280 games) — three defect families fixed
+
+A 1,280-game mixed human/bot matrix over all five scenarios surfaced three
+state-integrity defects, all fixed here with regression tests
+(test_mixed_matrix_fixes.py); post-fix sync sweeps are clean on all five
+scenarios (seeds 1-16) and the suite is 1951 passing.
+
+1. FIXED — stale one-shot Event free-action flags survived in
+   state["event_modifiers"] and could replay in a later unrelated Event.
+   _resolve_free_actions now consumes a curated set of 75 one-shot flags
+   after their actions resolve, preserving the persistent modifiers later
+   phases read (lost_eagle_no_shift_down, optimates_active,
+   card_A63_quarters_devastated_only, card_A66_winter_uprising).
+2. FIXED — Ariovistus A18 (Rhenus Bridge) and A25 (Ariovistus's Wife)
+   removed German Ally discs without clearing the authoritative tribe
+   allegiance. Both now use _unally_faction_tribes_in_region plus a
+   defensive stray-disc sweep (Q13 class, outside the original card-effects
+   audit because they sit in Ariovistus handlers).
+3. FIXED (rules guard) — an after-Command Special Activity was awarded even
+   when the Command produced no legal effect (e.g. a 0-Resource Aedui
+   Rally still ran Trade). _execute_bot_command and execute_decision now
+   withhold the after-Command SA when the Command did not execute.
+
+## OPEN follow-ups from the same report (not state-integrity; play quality)
+
+- Before-Command SAs (Entreat/Intimidate before a Battle) still mutate the
+  board even when the Battle then fails ("defender not present"). Needs
+  transactional or prevalidated execution; ~65 cases in the matrix. The
+  after-Command guard does not address these by design.
+- Aedui Rally+Trade and Belgae Rally+Enlist need interruptible SA timing
+  (§4.1 allows an SA before/during/after a Command); the engine has a fixed
+  before/after schedule. The guard enforces the rule but does not provide
+  the interrupt.
+- Resource-oblivious Rally plans (Arverni/Aedui plan Citadels/Allies/
+  Warbands after Resources are exhausted); Arverni empty-list threat
+  Marches; German invalid Rally-region Ally placement; occasional
+  ineffective Event selection. These are planner-quality bugs (the bot
+  forfeits the Command via a clean rejection, not a crash) and are the
+  main remaining work for bot reliability.

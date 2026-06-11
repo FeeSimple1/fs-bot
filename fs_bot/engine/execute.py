@@ -123,6 +123,19 @@ def _apply_end_of_action_capabilities(state):
         ti["allied_faction"] = BELGAE
 
 
+def _command_executed(result) -> bool:
+    """True when a Command result represents at least one legal effect.
+
+    §4.1: a Special Ability accompanies a Command executed in at least one
+    Region. An after-Command SA must therefore be withheld when the Command
+    itself produced no legal effect (external mixed-matrix playtest, defect
+    family 3: e.g. a failed zero-Resource Rally must not still award Trade).
+    Before-Command SAs are unaffected (they need transactional handling --
+    documented as an open item).
+    """
+    return bool(result) and result.get("executed") is not False
+
+
 def _sa_runs_before_command(command, sa):
     """Whether a Command's accompanying Special Activity resolves BEFORE the
     Command rather than after.
@@ -203,7 +216,11 @@ def execute_decision(state, faction, decision):
         else:
             result = handler(state, faction, bot_action)
         if not before:
-            sa_result = _execute_sa(state, faction, bot_action)
+            if command == _CMD_EVENT or _command_executed(result):
+                sa_result = _execute_sa(state, faction, bot_action)
+            else:
+                result = dict(result)
+                result["sa_skipped"] = "command produced no legal effect"
         if sa_result is not None:
             result = dict(result)
             result["sa_execution"] = sa_result
@@ -238,7 +255,11 @@ def _execute_bot_command(state, faction, bot_action):
         sa_result = _execute_sa(state, faction, bot_action)
     result = h(state, faction, bot_action)
     if not before:
-        sa_result = _execute_sa(state, faction, bot_action)
+        if _command_executed(result):
+            sa_result = _execute_sa(state, faction, bot_action)
+        else:
+            result = dict(result)
+            result["sa_skipped"] = "command produced no legal effect"
     if sa_result is not None:
         result = dict(result)
         result["sa_execution"] = sa_result
@@ -762,6 +783,92 @@ def _second_battle_worthwhile(state, faction, region):
     return defender if enemy_mobile > 0 else None
 
 
+
+# One-shot Event flags consumed by _resolve_free_actions. Immediate
+# free actions must not survive into later Events: stale flags made a
+# later unrelated Event replay old free Commands/Battles (external
+# mixed-matrix playtest, defect family 1). Persistent modifiers read
+# by later phases (lost_eagle_no_shift_down, optimates_active,
+# card_A63_quarters_devastated_only, card_A66_winter_uprising) are
+# deliberately NOT listed.
+_ONE_SHOT_FREE_ACTION_FLAGS = (
+    "card_11_battle_region",
+    "card_11_double_auxilia_losses",
+    "card_11a_auxilia_battle",
+    "card_11a_battle_region",
+    "card_17_german_ambush",
+    "card_17_germans_phase",
+    "card_17_march_german_groups",
+    "card_21_no_fort",
+    "card_25_battle_region",
+    "card_25_extra_losses",
+    "card_26_arverni_rally",
+    "card_2_auto_legion_loss",
+    "card_2_battle_region",
+    "card_34_free_rally",
+    "card_35_free_limited_command",
+    "card_35_gallic_commands",
+    "card_36_free_battle",
+    "card_36_gallic_ambush_battle",
+    "card_44_free_raid",
+    "card_44_free_scout",
+    "card_44a_free_command",
+    "card_45_battle_romans",
+    "card_46_free_command",
+    "card_47_council",
+    "card_48_druids",
+    "card_48_target_factions",
+    "card_4_free_march_to",
+    "card_51_aedui_free_command",
+    "card_51_german_action",
+    "card_52_free_command_sa",
+    "card_54_joined_ranks",
+    "card_54_march_limit",
+    "card_54a_second_always_retreat",
+    "card_57_march_britannia",
+    "card_58_german_march_battle",
+    "card_62_war_fleet",
+    "card_64_belgae_rally",
+    "card_65_german_march_ambush",
+    "card_65_march_regions",
+    "card_66_german_rally_march",
+    "card_67_arduenna",
+    "card_6_double_auxilia_losses",
+    "card_70_free_command_sa",
+    "card_70_legion_limit",
+    "card_70_roman_march_battle",
+    "card_70_target_regions",
+    "card_72_hidden_march_battle",
+    "card_9_free_march_and_command",
+    "card_9_march_from",
+    "card_9_march_to",
+    "card_A17_roman_march_battle",
+    "card_A19_march_romans",
+    "card_A20_arverni_ambush",
+    "card_A20_free_seize_veneti",
+    "card_A21_double_battle",
+    "card_A21_first_no_retreat",
+    "card_A24_arverni_phase",
+    "card_A27_arverni_phase",
+    "card_A28_combined_battle",
+    "card_A29_german_raid",
+    "card_A32_arverni_phase",
+    "card_A34_free_command",
+    "card_A34_regions_limit",
+    "card_A34_use_german_pieces",
+    "card_A37_place_allies_move",
+    "card_A45_free_intimidate",
+    "card_A53_aedui_corn",
+    "card_A57_double_battle",
+    "card_A57_first_no_retreat",
+    "card_A58_free_ambush",
+    "card_A58_roman_battle_seize",
+    "card_A5_remove_non_romans",
+    "card_A65_kinship_battle",
+    "card_A67_arduenna",
+    "card_A69_ambush",
+)
+
 def _resolve_free_actions(state, faction):
     """Run any free actions granted by the just-resolved Event.
 
@@ -966,6 +1073,11 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card_A37_move(state, faction))
     if mods.get("card_A53_aedui_corn"):
         results.extend(_resolve_card_A53_frumentum(state))
+    # Consume the one-shot flags now that their actions resolved.
+    em = state.get("event_modifiers")
+    if em:
+        for _flag in _ONE_SHOT_FREE_ACTION_FLAGS:
+            em.pop(_flag, None)
     return results
 
 

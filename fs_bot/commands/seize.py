@@ -41,6 +41,7 @@ from fs_bot.rules_consts import (
 
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, remove_piece,
+    clear_allied_tribe,
     PieceError,
 )
 from fs_bot.board.control import (
@@ -311,6 +312,8 @@ def execute_harassment_loss(state, region, loss_choice):
                 f"No Roman Allies in {region} to remove"
             )
         remove_piece(state, region, ROMANS, ALLY, count=1)
+        # Keep state["tribes"] in sync with the removed Roman Ally.
+        clear_allied_tribe(state, region, ROMANS, ALLY)
         result["removed"] = ALLY
 
     elif loss_choice == "roll":

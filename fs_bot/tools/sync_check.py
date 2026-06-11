@@ -27,15 +27,27 @@ from fs_bot.cli.dispatcher import _translate_bot_action
 
 def desyncs(state):
     """Set of (region, faction, allied_tribes, ally+citadel_pieces) where
-    the tribes dict and the space pieces disagree."""
+    the tribes dict and the space pieces disagree.
+
+    Checks BOTH directions: every (region, faction) with allied tribes, and
+    every (region, faction) with ALLY/CITADEL pieces on the map. Dynamic
+    tribes (Card 71 Colony) carry their Region in the tribes-dict entry.
+    """
     per = {}
     for tribe, info in state["tribes"].items():
         fac = info.get("allied_faction")
-        reg = TRIBE_TO_REGION.get(tribe)
+        reg = info.get("region") or TRIBE_TO_REGION.get(tribe)
         if fac and reg:
             per[(reg, fac)] = per.get((reg, fac), 0) + 1
+    keys = set(per)
+    for reg in state["spaces"]:
+        for fac in rc.FACTIONS:
+            if (count_pieces(state, reg, fac, rc.ALLY)
+                    + count_pieces(state, reg, fac, rc.CITADEL)) > 0:
+                keys.add((reg, fac))
     out = set()
-    for (reg, fac), n in per.items():
+    for (reg, fac) in keys:
+        n = per.get((reg, fac), 0)
         pieces = (count_pieces(state, reg, fac, rc.ALLY)
                   + count_pieces(state, reg, fac, rc.CITADEL))
         if pieces != n:

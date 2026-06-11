@@ -23,13 +23,13 @@ from fs_bot.rules_consts import (
     MAX_RESOURCES, MARKER_DEVASTATED, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     MARKER_CIRCUMVALLATION, MARKER_COLONY, MARKER_GALLIA_TOGATA, MARKER_RAZED,
     MARKER_ABATIS, EVENT_SHADED, EVENT_UNSHADED, NO_CONTROL,
-    ELIGIBLE, INELIGIBLE,
+    ELIGIBLE, INELIGIBLE, ALLIED,
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, flip_piece,
     count_pieces, count_pieces_by_state, get_available,
     get_leader_in_region, find_leader, PieceError,
-    _count_on_legions_track,
+    _count_on_legions_track, clear_allied_tribe,
 )
 from fs_bot.board.control import (
     calculate_control, refresh_all_control,
@@ -104,6 +104,114 @@ def _cap_resources(state, faction, amount):
     new_val = max(0, min(MAX_RESOURCES, current + amount))
     state["resources"][faction] = new_val
     return new_val - current
+
+
+# ---------------------------------------------------------------------------
+# Tribe/piece sync helpers (Q13)
+#
+# state["tribes"][tribe]["allied_faction"] is authoritative for victory, but
+# every allied tribe must ALSO be represented by exactly one piece in its
+# Region: an ALLY disc of that faction, or — for a City tribe — a CITADEL of
+# that faction (§1.4.2: a tribe whose Citadel is on the map has no Ally
+# disc). These helpers mutate BOTH records together so Event handlers cannot
+# desync them. A transfer (tribe switches faction) is _unally_tribe followed
+# by _ally_tribe.
+# ---------------------------------------------------------------------------
+
+
+def _tribe_region(state, tribe):
+    """Region a tribe sits in. Dynamic tribes (Card 71 Colony) carry their
+    Region in the tribes-dict entry; static tribes use TRIBE_TO_REGION."""
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    info = state.get("tribes", {}).get(tribe) or {}
+    return info.get("region") or TRIBE_TO_REGION.get(tribe)
+
+
+def _tribe_piece_type(state, tribe):
+    """Which on-map piece represents this allied tribe: ALLY or CITADEL.
+
+    City tribes holding a Citadel are represented by the CITADEL piece
+    (§1.4.2). Returns None if the tribe is not allied or (already-desynced
+    state) no matching piece exists in its Region.
+    """
+    from fs_bot.rules_consts import TRIBE_TO_CITY
+    info = state.get("tribes", {}).get(tribe) or {}
+    faction = info.get("allied_faction")
+    region = _tribe_region(state, tribe)
+    if not faction or region is None:
+        return None
+    if (tribe in TRIBE_TO_CITY
+            and count_pieces(state, region, faction, CITADEL) > 0):
+        return CITADEL
+    if count_pieces(state, region, faction, ALLY) > 0:
+        return ALLY
+    if count_pieces(state, region, faction, CITADEL) > 0:
+        return CITADEL
+    return None
+
+
+def _ally_tribe(state, tribe, faction):
+    """Ally a Subdued tribe to ``faction``: place the ALLY disc in the
+    tribe's Region AND set allied_faction, together.
+
+    Returns True if both records were updated. No-ops (returns False) if
+    the tribe is unknown, not Subdued (already Allied, Dispersed, or
+    Razed), or the faction has no Ally piece Available — without a piece
+    the allegiance is not recorded either, mirroring how Rally behaves.
+    (A leftover status of ALLIED with no allied_faction — setup legacy —
+    counts as Subdued.)
+    """
+    info = state.get("tribes", {}).get(tribe)
+    region = _tribe_region(state, tribe)
+    if (info is None or region is None
+            or info.get("allied_faction") is not None
+            or info.get("status") not in (None, ALLIED)):
+        return False
+    if get_available(state, faction, ALLY) <= 0:
+        return False
+    place_piece(state, region, faction, ALLY)
+    info["allied_faction"] = faction
+    info["status"] = None
+    refresh_all_control(state)
+    return True
+
+
+def _unally_tribe(state, tribe, to_available=True):
+    """Un-ally a tribe: remove its matching on-map piece (ALLY disc, or
+    the CITADEL for a City tribe holding one) AND clear allied_faction,
+    together.
+
+    Returns the faction the tribe was allied to, or None if it was not
+    allied (no-op).
+    """
+    info = state.get("tribes", {}).get(tribe)
+    if not info or not info.get("allied_faction"):
+        return None
+    faction = info["allied_faction"]
+    region = _tribe_region(state, tribe)
+    piece = _tribe_piece_type(state, tribe)
+    if region is not None and piece is not None:
+        remove_piece(state, region, faction, piece,
+                     to_available=to_available)
+    info["allied_faction"] = None
+    if info.get("status") == ALLIED:
+        info["status"] = None
+    refresh_all_control(state)
+    return faction
+
+
+def _unally_faction_tribes_in_region(state, region, faction,
+                                     to_available=True):
+    """Un-ally every tribe of ``faction`` in ``region`` — pieces and tribes
+    dict together, including dynamic Colony tribes. Returns count."""
+    n = 0
+    for tribe in sorted(state.get("tribes", {})):
+        info = state["tribes"][tribe]
+        if (info.get("allied_faction") == faction
+                and _tribe_region(state, tribe) == region):
+            _unally_tribe(state, tribe, to_available=to_available)
+            n += 1
+    return n
 
 
 # ---------------------------------------------------------------------------
@@ -743,7 +851,9 @@ def execute_card_18(state, shaded=False):
             if wbs > 0:
                 remove_piece(state, target, GERMANS, WARBAND,
                              count=wbs, piece_state=ps)
-        # Remove all Germanic Allies
+        # Remove all Germanic Allies — pieces and tribes dict together
+        _unally_faction_tribes_in_region(state, target, GERMANS)
+        # Defensive: clear any stray Germanic Ally discs left behind
         allies = count_pieces(state, target, GERMANS, ALLY)
         if allies > 0:
             remove_piece(state, target, GERMANS, ALLY, count=allies)
@@ -942,10 +1052,10 @@ def execute_card_22(state, shaded=False):
                 continue
             if count_pieces(state, region, ROMANS) <= 0:
                 continue
-            if get_available(state, faction, ALLY) > 0:
-                place_piece(state, region, faction, ALLY)
-                if t_info is not None:
-                    t_info["allied_faction"] = faction
+            # Place the Ally only at a known tribe so the piece and the
+            # tribes dict stay in sync (Q13).
+            if t_info is not None:
+                _ally_tribe(state, tribe, faction)
             wb_faction = tribe_info.get("warband_faction", faction)
             if get_available(state, wb_faction, WARBAND) > 0:
                 place_piece(state, region, wb_faction, WARBAND)
@@ -987,18 +1097,15 @@ def execute_card_23(state, shaded=False):
         _cap_resources(state, ROMANS, 8)
         # Update tribe status to mark as Razed/Dispersed
         if tribe in state.get("tribes", {}):
-            # Remove any existing Ally/Citadel at this tribe
+            # Remove any existing Ally/Citadel at this tribe — the City
+            # tribe's piece may be a Citadel; piece + tribes dict together.
             tribe_info = state["tribes"][tribe]
-            if tribe_info.get("allied_faction"):
-                allied_fac = tribe_info["allied_faction"]
-                ally_count = count_pieces(state, region, allied_fac, ALLY)
-                if ally_count > 0:
-                    remove_piece(state, region, allied_fac, ALLY)
-                tribe_info["allied_faction"] = None
-            # Remove Citadel at this tribe if any
+            _unally_tribe(state, tribe)
+            # Defensive: pair any stray Citadel removal with its tribe entry
             for fac in GALLIC_FACTIONS:
-                if count_pieces(state, region, fac, CITADEL) > 0:
+                while count_pieces(state, region, fac, CITADEL) > 0:
                     remove_piece(state, region, fac, CITADEL)
+                    clear_allied_tribe(state, region, fac, CITADEL)
             tribe_info["status"] = MARKER_RAZED
     else:
         # Shaded: If a Legion where executing faction's Citadel,
@@ -1141,41 +1248,35 @@ def execute_card_26(state, shaded=False):
         # "Remove anything at Gergovia" — remove Ally and/or Citadel
         # at the Arverni tribe (where Gergovia sits).
         tribe_info = state.get("tribes", {}).get(tribe)
-        if tribe_info and tribe_info.get("allied_faction"):
-            allied_fac = tribe_info["allied_faction"]
-            if count_pieces(state, region, allied_fac, ALLY) > 0:
-                remove_piece(state, region, allied_fac, ALLY)
-            tribe_info["allied_faction"] = None
-        # Remove Citadel at Gergovia if any (check all factions)
+        # Remove the tribe's piece (Ally disc or the Gergovia Citadel) and
+        # its tribes-dict entry together.
+        _unally_tribe(state, tribe)
+        # Defensive: pair any stray Citadel removal with its tribe entry
         for fac in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS):
-            if count_pieces(state, region, fac, CITADEL) > 0:
+            while count_pieces(state, region, fac, CITADEL) > 0:
                 remove_piece(state, region, fac, CITADEL)
+                clear_allied_tribe(state, region, fac, CITADEL)
         # Place Roman Ally or Aedui Ally or Citadel (despite Arverni-only)
         place_faction = params.get("place_faction", ROMANS)
         place_type = params.get("place_type", ALLY)
-        if get_available(state, place_faction, place_type) > 0:
+        if tribe_info and get_available(state, place_faction, place_type) > 0:
             place_piece(state, region, place_faction, place_type)
-            if place_type == ALLY:
-                if tribe_info:
-                    tribe_info["allied_faction"] = place_faction
+            # Either piece allies the Tribe — record allegiance with it.
+            tribe_info["allied_faction"] = place_faction
+            refresh_all_control(state)
     else:
         # Shaded: Arverni remove/place Allies in Arverni Region + free Rally
         params = state.get("event_params", {})
         # Ally removals/placements handled by caller via event_params
         removals = params.get("ally_removals", [])
         for tribe_name in removals:
-            t_info = state.get("tribes", {}).get(tribe_name)
-            if t_info and t_info.get("allied_faction"):
-                old_fac = t_info["allied_faction"]
-                if count_pieces(state, ARVERNI_REGION, old_fac, ALLY) > 0:
-                    remove_piece(state, ARVERNI_REGION, old_fac, ALLY)
-                t_info["allied_faction"] = None
+            # "in Arverni Region" — only tribes that sit there qualify
+            if _tribe_region(state, tribe_name) == ARVERNI_REGION:
+                _unally_tribe(state, tribe_name)
         placements = params.get("ally_placements", [])
         for tribe_name in placements:
-            t_info = state.get("tribes", {}).get(tribe_name)
-            if t_info and get_available(state, ARVERNI, ALLY) > 0:
-                place_piece(state, ARVERNI_REGION, ARVERNI, ALLY)
-                t_info["allied_faction"] = ARVERNI
+            if _tribe_region(state, tribe_name) == ARVERNI_REGION:
+                _ally_tribe(state, tribe_name, ARVERNI)
         # Free Rally within 1 Region of Vercingetorix
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_26_arverni_rally"] = True
@@ -1213,13 +1314,8 @@ def execute_card_28(state, shaded=False):
         faction = placement["faction"]
         region = TRIBE_TO_REGION.get(tribe)
         if region and faction in GALLIC_FACTIONS:
-            tribe_info = state.get("tribes", {}).get(tribe)
-            if (tribe_info and tribe_info.get("allied_faction") is None
-                    and tribe_info.get("status") is None
-                    and not is_controlled_by(state, region, ROMANS)):
-                if get_available(state, faction, ALLY) > 0:
-                    place_piece(state, region, faction, ALLY)
-                    tribe_info["allied_faction"] = faction
+            if not is_controlled_by(state, region, ROMANS):
+                _ally_tribe(state, tribe, faction)
     # Replace Gallic Allies at Cities with Citadels of same Faction
     citadel_upgrades = params.get("citadel_upgrades", [])
     for city in citadel_upgrades:
@@ -1259,10 +1355,7 @@ def execute_card_29(state, shaded=False):
                                             MARKER_DISPERSED_GATHERING):
                 tribe_info["status"] = None
         # Place Germanic Ally at each Suebi that has none
-        if tribe_info and tribe_info.get("allied_faction") is None:
-            if region and get_available(state, GERMANS, ALLY) > 0:
-                place_piece(state, region, GERMANS, ALLY)
-                tribe_info["allied_faction"] = GERMANS
+        _ally_tribe(state, tribe, GERMANS)
     # Immediate Germans Phase without Rally: March, Raid, Battle
     from fs_bot.commands.raid import germans_phase_raid_region
     germans_phase_march(state)
@@ -1315,6 +1408,7 @@ def execute_card_31(state, shaded=False):
                     break
         if roman_ally_region:
             remove_piece(state, roman_ally_region, ROMANS, ALLY)
+            clear_allied_tribe(state, roman_ally_region, ROMANS, ALLY)
         # Remove 1 Aedui Ally
         aedui_ally_region = params.get("aedui_ally_region")
         if aedui_ally_region is None:
@@ -1324,6 +1418,7 @@ def execute_card_31(state, shaded=False):
                     break
         if aedui_ally_region:
             remove_piece(state, aedui_ally_region, AEDUI, ALLY)
+            clear_allied_tribe(state, aedui_ally_region, AEDUI, ALLY)
         # Remove 1 more Roman or Aedui Ally (third Ally)
         third_faction = params.get("third_ally_faction")
         third_region = params.get("third_ally_region")
@@ -1344,6 +1439,8 @@ def execute_card_31(state, shaded=False):
                     break
         if third_region and third_faction:
             remove_piece(state, third_region, third_faction, ALLY)
+            clear_allied_tribe(state, third_region, third_faction, ALLY)
+        refresh_all_control(state)
 
 def execute_card_32(state, shaded=False):
     """Card 32: Forced Marches — Relocate pieces freely.
@@ -1469,22 +1566,18 @@ def execute_card_34(state, shaded=False):
                     continue
                 allied_fac = tribe_info.get("allied_faction")
                 if allied_fac and allied_fac != ARVERNI:
-                    # Replace Ally with Arverni Ally
-                    if count_pieces(state, region, allied_fac, ALLY) > 0:
-                        remove_piece(state, region, allied_fac, ALLY)
-                        if get_available(state, ARVERNI, ALLY) > 0:
-                            place_piece(state, region, ARVERNI, ALLY)
-                    tribe_info["allied_faction"] = ARVERNI
-            # Replace Citadels with Arverni Citadels
-            for fac in (ROMANS, AEDUI, BELGAE, GERMANS):
-                cit_count = count_pieces(state, region, fac, CITADEL)
-                if cit_count > 0:
-                    remove_piece(state, region, fac, CITADEL, count=cit_count)
-                    avail = get_available(state, ARVERNI, CITADEL)
-                    to_place = min(cit_count, avail)
-                    if to_place > 0:
-                        place_piece(state, region, ARVERNI, CITADEL,
-                                    count=to_place)
+                    # Replace the tribe's piece with the matching Arverni
+                    # piece (Ally for Ally, Citadel for Citadel), keeping
+                    # the tribes dict in sync: no piece, no allegiance.
+                    removed_type = _tribe_piece_type(state, tribe)
+                    _unally_tribe(state, tribe)
+                    if removed_type == CITADEL:
+                        if get_available(state, ARVERNI, CITADEL) > 0:
+                            place_piece(state, region, ARVERNI, CITADEL)
+                            tribe_info["allied_faction"] = ARVERNI
+                            refresh_all_control(state)
+                    else:
+                        _ally_tribe(state, tribe, ARVERNI)
 
 def execute_card_35(state, shaded=False):
     """Card 35: Gallic Shouts — Romans peek / Gallic Commands.
@@ -1549,12 +1642,8 @@ def execute_card_37(state, shaded=False):
             cnt = p.get("count", 1)
             if piece_type == ALLY:
                 tribe = p.get("tribe")
-                tribe_info = state.get("tribes", {}).get(tribe)
-                if (tribe_info and tribe_info.get("allied_faction") is None
-                        and tribe_info.get("status") is None):
-                    if get_available(state, faction, ALLY) > 0:
-                        place_piece(state, region, faction, ALLY)
-                        tribe_info["allied_faction"] = faction
+                if _tribe_region(state, tribe) == region:
+                    _ally_tribe(state, tribe, faction)
             elif piece_type in (WARBAND, AUXILIA):
                 if get_available(state, faction, piece_type) >= cnt:
                     place_piece(state, region, faction, piece_type, count=cnt)
@@ -1563,15 +1652,12 @@ def execute_card_37(state, shaded=False):
         replacements = params.get("replacements", [])
         for r in replacements:
             tribe = r["tribe"]
-            region = TRIBE_TO_REGION.get(tribe)
             tribe_info = state.get("tribes", {}).get(tribe)
             if (tribe_info and tribe_info.get("allied_faction") == AEDUI
-                    and region):
-                if count_pieces(state, region, AEDUI, ALLY) > 0:
-                    remove_piece(state, region, AEDUI, ALLY)
-                    if get_available(state, ARVERNI, ALLY) > 0:
-                        place_piece(state, region, ARVERNI, ALLY)
-                    tribe_info["allied_faction"] = ARVERNI
+                    and _tribe_piece_type(state, tribe) == ALLY):
+                # "(not Citadels)" — only Ally discs are replaced
+                _unally_tribe(state, tribe)
+                _ally_tribe(state, tribe, ARVERNI)
 
 def execute_card_38(state, shaded=False):
     """Card 38: Diviciacus — CAPABILITY (both sides).
@@ -1625,12 +1711,8 @@ def execute_card_40(state, shaded=False):
                 continue
             if piece_type == ALLY:
                 tribe = p.get("tribe")
-                tribe_info = state.get("tribes", {}).get(tribe)
-                if (tribe_info and tribe_info.get("allied_faction") is None
-                        and tribe_info.get("status") is None):
-                    if get_available(state, pfac, ALLY) > 0:
-                        place_piece(state, region, pfac, ALLY)
-                        tribe_info["allied_faction"] = pfac
+                if _tribe_region(state, tribe) == region:
+                    _ally_tribe(state, tribe, pfac)
             else:
                 avail = get_available(state, pfac, piece_type)
                 to_place = min(cnt, avail)
@@ -1678,12 +1760,7 @@ def execute_card_41(state, shaded=False):
         t = p["tribe"]
         r = TRIBE_TO_REGION.get(t)
         if r in target_regions:
-            t_info = state.get("tribes", {}).get(t)
-            if (t_info and t_info.get("allied_faction") is None
-                    and t_info.get("status") is None):
-                if get_available(state, faction, ALLY) > 0:
-                    place_piece(state, r, faction, ALLY)
-                    t_info["allied_faction"] = faction
+            _ally_tribe(state, t, faction)
     # Citadel upgrade
     citadel_tribe = params.get("citadel_upgrade_tribe")
     if citadel_tribe:
@@ -1727,25 +1804,20 @@ def execute_card_42(state, shaded=False):
         removals = params.get("removals", [])
         for r in removals:
             tribe = r["tribe"]
-            region = TRIBE_TO_REGION.get(tribe)
-            tribe_info = state.get("tribes", {}).get(tribe)
-            if tribe_info and tribe_info.get("allied_faction") and region:
-                fac = tribe_info["allied_faction"]
-                if count_pieces(state, region, fac, ALLY) > 0:
-                    remove_piece(state, region, fac, ALLY)
-                tribe_info["allied_faction"] = None
+            # "(not Citadels)" — only tribes represented by an Ally disc
+            if _tribe_piece_type(state, tribe) == ALLY:
+                _unally_tribe(state, tribe)
     else:
         # Remove 1-3 Roman or Aedui Allies from Supply Lines
         removals = params.get("removals", [])
         for r in removals:
             tribe = r["tribe"]
             fac = r.get("faction", ROMANS)
-            region = TRIBE_TO_REGION.get(tribe)
             tribe_info = state.get("tribes", {}).get(tribe)
-            if tribe_info and tribe_info.get("allied_faction") == fac and region:
-                if count_pieces(state, region, fac, ALLY) > 0:
-                    remove_piece(state, region, fac, ALLY)
-                tribe_info["allied_faction"] = None
+            if (tribe_info and tribe_info.get("allied_faction") == fac
+                    and _tribe_piece_type(state, tribe) == ALLY):
+                # "(not Citadels)" — only Ally discs
+                _unally_tribe(state, tribe)
 
 def execute_card_43(state, shaded=False):
     """Card 43: Convictolitavis — CAPABILITY (both sides).
@@ -1958,6 +2030,8 @@ def execute_card_49(state, shaded=False):
                     remove_piece(state, region, faction, pt)
                 else:
                     remove_piece(state, region, faction, pt)
+                    if pt in (ALLY, CITADEL):
+                        clear_allied_tribe(state, region, faction, pt)
                 continue
             # Default bot removal priority:
             # Romans: Legion (to Fallen) > Auxilia > Fort > Ally > Leader
@@ -1974,6 +2048,7 @@ def execute_card_49(state, shaded=False):
                         pass  # Permanent Fort in Provincia
                 elif count_pieces(state, region, ROMANS, ALLY) > 0:
                     remove_piece(state, region, ROMANS, ALLY)
+                    clear_allied_tribe(state, region, ROMANS, ALLY)
                 elif get_leader_in_region(state, region, ROMANS) is not None:
                     remove_piece(state, region, ROMANS, LEADER)
             elif faction == GERMANS:
@@ -1982,17 +2057,21 @@ def execute_card_49(state, shaded=False):
                     remove_piece(state, region, GERMANS, WARBAND)
                 elif count_pieces(state, region, GERMANS, ALLY) > 0:
                     remove_piece(state, region, GERMANS, ALLY)
+                    clear_allied_tribe(state, region, GERMANS, ALLY)
             else:
                 # Gallic factions: Warband > Ally > Citadel > Leader
                 if count_pieces(state, region, faction, WARBAND) > 0:
                     remove_piece(state, region, faction, WARBAND)
                 elif count_pieces(state, region, faction, ALLY) > 0:
                     remove_piece(state, region, faction, ALLY)
+                    clear_allied_tribe(state, region, faction, ALLY)
                 elif count_pieces(state, region, faction, CITADEL) > 0:
                     remove_piece(state, region, faction, CITADEL)
+                    clear_allied_tribe(state, region, faction, CITADEL)
                 elif get_leader_in_region(
                         state, region, faction) is not None:
                     remove_piece(state, region, faction, LEADER)
+    refresh_all_control(state)
 
 def execute_card_50(state, shaded=False):
     """Card 50: Shifting Loyalties — Remove a Capability.
@@ -2244,12 +2323,8 @@ def execute_card_57(state, shaded=False):
         if removal:
             if removal.get("type") == "ally":
                 tribe = removal.get("tribe")
-                tribe_info = state.get("tribes", {}).get(tribe)
-                if tribe_info and tribe_info.get("allied_faction"):
-                    fac = tribe_info["allied_faction"]
-                    if count_pieces(state, BRITANNIA, fac, ALLY) > 0:
-                        remove_piece(state, BRITANNIA, fac, ALLY)
-                    tribe_info["allied_faction"] = None
+                if _tribe_region(state, tribe) == BRITANNIA:
+                    _unally_tribe(state, tribe)
             elif removal.get("type") == "dispersed":
                 tribe = removal.get("tribe")
                 t_info = state.get("tribes", {}).get(tribe)
@@ -2260,11 +2335,9 @@ def execute_card_57(state, shaded=False):
         # Place 1 Gallic Ally and up to 4 Warbands
         ally_faction = params.get("ally_faction")
         ally_tribe = params.get("ally_tribe")
-        if ally_faction and ally_tribe:
-            tribe_info = state.get("tribes", {}).get(ally_tribe)
-            if tribe_info and get_available(state, ally_faction, ALLY) > 0:
-                place_piece(state, BRITANNIA, ally_faction, ALLY)
-                tribe_info["allied_faction"] = ally_faction
+        if (ally_faction and ally_tribe
+                and _tribe_region(state, ally_tribe) == BRITANNIA):
+            _ally_tribe(state, ally_tribe, ally_faction)
         wb_faction = params.get("warband_faction")
         wb_count = params.get("warband_count", 0)
         if wb_faction and wb_count > 0:
@@ -2346,11 +2419,13 @@ def execute_card_60(state, shaded=False):
             if rtype == ALLY:
                 tribe = r.get("tribe")
                 tribe_info = state.get("tribes", {}).get(tribe)
-                if tribe_info and tribe_info.get("allied_faction") == BELGAE:
-                    if count_pieces(state, region, BELGAE, ALLY) > 0:
-                        remove_piece(state, region, BELGAE, ALLY)
-                        tribe_info["allied_faction"] = None
-                        total += 1
+                if (tribe_info
+                        and tribe_info.get("allied_faction") == BELGAE
+                        and _tribe_region(state, tribe) == region
+                        and _tribe_piece_type(state, tribe) == ALLY):
+                    # "(not Citadels)" — Ally discs in the named Region only
+                    _unally_tribe(state, tribe)
+                    total += 1
             else:
                 for ps in (HIDDEN, REVEALED):
                     if count_pieces_by_state(state, region, BELGAE, WARBAND, ps) > 0:
@@ -2361,11 +2436,7 @@ def execute_card_60(state, shaded=False):
         # Remove Ally/marker from Treveri and Ubii, place pieces
         for region, tribe in ((TREVERI, TRIBE_TREVERI), (UBII, TRIBE_UBII)):
             tribe_info = state.get("tribes", {}).get(tribe)
-            if tribe_info and tribe_info.get("allied_faction"):
-                fac = tribe_info["allied_faction"]
-                if count_pieces(state, region, fac, ALLY) > 0:
-                    remove_piece(state, region, fac, ALLY)
-                tribe_info["allied_faction"] = None
+            _unally_tribe(state, tribe)
             # Remove Dispersed — Disperse is stored in tribe["status"], not
             # the markers dict; the pops below are harmless legacy cleanup.
             if tribe_info and tribe_info.get("status") in (
@@ -2376,9 +2447,7 @@ def execute_card_60(state, shaded=False):
                 markers[tribe].pop(MARKER_DISPERSED, None)
                 markers[tribe].pop(MARKER_DISPERSED_GATHERING, None)
             # Place Belgic Ally
-            if tribe_info and get_available(state, BELGAE, ALLY) > 0:
-                place_piece(state, region, BELGAE, ALLY)
-                tribe_info["allied_faction"] = BELGAE
+            _ally_tribe(state, tribe, BELGAE)
             # Place 2 Belgic Warbands
             avail_b = get_available(state, BELGAE, WARBAND)
             to_place_b = min(2, avail_b)
@@ -2404,12 +2473,8 @@ def execute_card_61(state, shaded=False):
         # Remove Allies of same Faction + 5 Warbands in Nervii
         ally_removals = params.get("ally_removals", [])
         for tribe in ally_removals:
-            tribe_info = state.get("tribes", {}).get(tribe)
-            if tribe_info and tribe_info.get("allied_faction"):
-                fac = tribe_info["allied_faction"]
-                if count_pieces(state, NERVII, fac, ALLY) > 0:
-                    remove_piece(state, NERVII, fac, ALLY)
-                tribe_info["allied_faction"] = None
+            if _tribe_region(state, tribe) == NERVII:
+                _unally_tribe(state, tribe)
         # Remove 5 Warbands (any faction)
         wb_removals = params.get("warband_removals", [])
         removed = 0
@@ -2431,12 +2496,8 @@ def execute_card_61(state, shaded=False):
             if not tribe_info:
                 continue
             region = NERVII  # Both tribes are in Nervii region
-            # Remove existing Ally
-            if tribe_info.get("allied_faction"):
-                old_fac = tribe_info["allied_faction"]
-                if count_pieces(state, region, old_fac, ALLY) > 0:
-                    remove_piece(state, region, old_fac, ALLY)
-                tribe_info["allied_faction"] = None
+            # Remove existing Ally — piece and tribes dict together
+            _unally_tribe(state, tribe)
             # Remove Dispersed — Disperse is stored in tribe["status"].
             if tribe_info.get("status") in (
                     MARKER_DISPERSED, MARKER_DISPERSED_GATHERING):
@@ -2446,9 +2507,7 @@ def execute_card_61(state, shaded=False):
                 markers[tribe].pop(MARKER_DISPERSED, None)
                 markers[tribe].pop(MARKER_DISPERSED_GATHERING, None)
             # Place Belgic Ally
-            if get_available(state, BELGAE, ALLY) > 0:
-                place_piece(state, region, BELGAE, ALLY)
-                tribe_info["allied_faction"] = BELGAE
+            _ally_tribe(state, tribe, BELGAE)
         # +6 Belgic Resources
         _cap_resources(state, BELGAE, 6)
 
@@ -2515,14 +2574,12 @@ def execute_card_64(state, shaded=False):
             if orig_type == ALLY:
                 tribe = r.get("tribe")
                 tribe_info = state.get("tribes", {}).get(tribe)
-                if tribe_info and tribe_info.get("allied_faction") == BELGAE:
-                    if count_pieces(state, ATREBATES, BELGAE, ALLY) > 0:
-                        remove_piece(state, ATREBATES, BELGAE, ALLY)
-                        if faction and get_available(state, faction, ALLY) > 0:
-                            place_piece(state, ATREBATES, faction, ALLY)
-                            tribe_info["allied_faction"] = faction
-                        else:
-                            tribe_info["allied_faction"] = None
+                if (tribe_info
+                        and tribe_info.get("allied_faction") == BELGAE
+                        and _tribe_region(state, tribe) == ATREBATES):
+                    _unally_tribe(state, tribe)
+                    if faction:
+                        _ally_tribe(state, tribe, faction)
             elif orig_type == WARBAND:
                 ps = r.get("piece_state", HIDDEN)
                 if count_pieces_by_state(state, ATREBATES, BELGAE, WARBAND, ps) > 0:
@@ -2534,20 +2591,13 @@ def execute_card_64(state, shaded=False):
         # Remove 2 Allies from Atrebates
         ally_removals = params.get("ally_removals", [])
         for tribe in ally_removals[:2]:
-            tribe_info = state.get("tribes", {}).get(tribe)
-            if tribe_info and tribe_info.get("allied_faction"):
-                fac = tribe_info["allied_faction"]
-                if count_pieces(state, ATREBATES, fac, ALLY) > 0:
-                    remove_piece(state, ATREBATES, fac, ALLY)
-                tribe_info["allied_faction"] = None
+            if _tribe_region(state, tribe) == ATREBATES:
+                _unally_tribe(state, tribe)
         # Belgae place up to 2 Allies
         belgae_placements = params.get("belgae_ally_placements", [])
         for tribe in belgae_placements[:2]:
-            tribe_info = state.get("tribes", {}).get(tribe)
-            if tribe_info and tribe_info.get("allied_faction") is None:
-                if get_available(state, BELGAE, ALLY) > 0:
-                    place_piece(state, ATREBATES, BELGAE, ALLY)
-                    tribe_info["allied_faction"] = BELGAE
+            if _tribe_region(state, tribe) == ATREBATES:
+                _ally_tribe(state, tribe, BELGAE)
         # Free Rally in 1 Belgica Region — defer
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_64_belgae_rally"] = True
@@ -2588,17 +2638,11 @@ def execute_card_65(state, shaded=False):
         # Replace 1 German Ally
         ally_tribe = params.get("ally_replacement_tribe")
         if ally_tribe:
-            region = TRIBE_TO_REGION.get(ally_tribe)
             tribe_info = state.get("tribes", {}).get(ally_tribe)
-            if (tribe_info and tribe_info.get("allied_faction") == GERMANS
-                    and region):
-                if count_pieces(state, region, GERMANS, ALLY) > 0:
-                    remove_piece(state, region, GERMANS, ALLY)
-                if faction and get_available(state, faction, ALLY) > 0:
-                    place_piece(state, region, faction, ALLY)
-                    tribe_info["allied_faction"] = faction
-                else:
-                    tribe_info["allied_faction"] = None
+            if tribe_info and tribe_info.get("allied_faction") == GERMANS:
+                _unally_tribe(state, ally_tribe)
+                if faction:
+                    _ally_tribe(state, ally_tribe, faction)
 
 def execute_card_66(state, shaded=False):
     """Card 66: Migration — German Rally+March / Gallic relocation.
@@ -2623,13 +2667,7 @@ def execute_card_66(state, shaded=False):
         # Moves handled by caller, but place Ally
         ally_tribe = params.get("ally_tribe")
         if ally_tribe and faction:
-            region = TRIBE_TO_REGION.get(ally_tribe)
-            tribe_info = state.get("tribes", {}).get(ally_tribe)
-            if (tribe_info and tribe_info.get("allied_faction") is None
-                    and tribe_info.get("status") is None
-                    and region and get_available(state, faction, ALLY) > 0):
-                place_piece(state, region, faction, ALLY)
-                tribe_info["allied_faction"] = faction
+            _ally_tribe(state, ally_tribe, faction)
         # Piece moves from event_params
         moves = params.get("moves", [])
         for m in moves:
@@ -2713,13 +2751,11 @@ def execute_card_68(state, shaded=False):
                 continue
             t_info = state.get("tribes", {}).get(tribe)
             if (t_info and t_info.get("allied_faction")
-                    and t_info["allied_faction"] != ROMANS):
-                old_fac = t_info["allied_faction"]
-                if count_pieces(state, region, old_fac, ALLY) > 0:
-                    remove_piece(state, region, old_fac, ALLY)
-                if get_available(state, ROMANS, ALLY) > 0:
-                    place_piece(state, region, ROMANS, ALLY)
-                t_info["allied_faction"] = ROMANS
+                    and t_info["allied_faction"] != ROMANS
+                    and _tribe_piece_type(state, tribe) == ALLY):
+                # "(not Citadels)" — replace the Ally disc, both records
+                _unally_tribe(state, tribe)
+                _ally_tribe(state, tribe, ROMANS)
     else:
         tribe_info = state.get("tribes", {}).get(TRIBE_REMI)
         if not tribe_info or tribe_info.get("allied_faction") not in GALLIC_FACTIONS:
@@ -2732,14 +2768,13 @@ def execute_card_68(state, shaded=False):
         region = TRIBE_TO_REGION.get(tribe)
         # Remove anything at the city
         t_info = state.get("tribes", {}).get(tribe)
-        if t_info and t_info.get("allied_faction"):
-            old_fac = t_info["allied_faction"]
-            if count_pieces(state, region, old_fac, ALLY) > 0:
-                remove_piece(state, region, old_fac, ALLY)
-            t_info["allied_faction"] = None
+        # Remove the City tribe's piece (Ally or Citadel) + dict together
+        _unally_tribe(state, tribe)
+        # Defensive: pair any stray Citadel removal with its tribe entry
         for fac in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS):
             while count_pieces(state, region, fac, CITADEL) > 0:
                 remove_piece(state, region, fac, CITADEL)
+                clear_allied_tribe(state, region, fac, CITADEL)
         # Remove "anything" at the City — Dispersed/Razed live in
         # tribe["status"]; clear so the placed Citadel is consistent.
         if t_info and t_info.get("status") in (
@@ -2750,9 +2785,13 @@ def execute_card_68(state, shaded=False):
             markers[tribe].pop(MARKER_DISPERSED, None)
             markers[tribe].pop(MARKER_DISPERSED_GATHERING, None)
             markers[tribe].pop(MARKER_RAZED, None)
-        # Place Citadel + 4 Warbands of executing faction
+        # Place Citadel + 4 Warbands of executing faction. The Citadel
+        # allies the City tribe — record the allegiance with the piece.
         if faction and get_available(state, faction, CITADEL) > 0:
             place_piece(state, region, faction, CITADEL)
+            if t_info is not None:
+                t_info["allied_faction"] = faction
+            refresh_all_control(state)
         if faction:
             avail = get_available(state, faction, WARBAND)
             to_place = min(4, avail)
@@ -2858,7 +2897,12 @@ def execute_card_71(state, shaded=False):
         state.setdefault("tribes", {})[colony_name] = {
             "status": None,
             "allied_faction": faction,
+            # Dynamic tribe: carry the Region so sync/victory logic can
+            # locate the Colony (clear_allied_tribe and the Q13 sync
+            # helpers read this).
+            "region": region,
         }
+        refresh_all_control(state)
 
 def execute_card_72(state, shaded=False):
     """Card 72: Impetuosity — March into Region + enemy Battle / Hidden March.
@@ -3022,13 +3066,11 @@ def execute_card_A19(state, shaded=False):
                 continue
             t_info = state.get("tribes", {}).get(tribe)
             if (t_info and t_info.get("allied_faction")
-                    and t_info["allied_faction"] != ROMANS):
-                old_fac = t_info["allied_faction"]
-                if count_pieces(state, region, old_fac, ALLY) > 0:
-                    remove_piece(state, region, old_fac, ALLY)
-                if get_available(state, ROMANS, ALLY) > 0:
-                    place_piece(state, region, ROMANS, ALLY)
-                t_info["allied_faction"] = ROMANS
+                    and t_info["allied_faction"] != ROMANS
+                    and _tribe_piece_type(state, tribe) == ALLY):
+                # "replace ... Allies" — Ally discs only; both records
+                _unally_tribe(state, tribe)
+                _ally_tribe(state, tribe, ROMANS)
     else:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A19_march_romans"] = True
@@ -3055,18 +3097,18 @@ def execute_card_A20(state, shaded=False):
                 has_romans = True
                 break
         if has_romans:
-            # Remove all Arverni from Veneti
+            # Remove all Arverni from Veneti — Allied tribes first
+            # (pieces + tribes dict together), then any strays
+            _unally_faction_tribes_in_region(state, VENETI, ARVERNI)
             for pt in (ALLY, CITADEL):
                 while count_pieces(state, VENETI, ARVERNI, pt) > 0:
                     remove_piece(state, VENETI, ARVERNI, pt)
+                    clear_allied_tribe(state, VENETI, ARVERNI, pt)
             for ps in (HIDDEN, REVEALED):
                 c = count_pieces_by_state(state, VENETI, ARVERNI, WARBAND, ps)
                 if c > 0:
                     remove_piece(state, VENETI, ARVERNI, WARBAND,
                                  count=c, piece_state=ps)
-            t_info = state.get("tribes", {}).get(TRIBE_VENETI)
-            if t_info and t_info.get("allied_faction") == ARVERNI:
-                t_info["allied_faction"] = None
             state.setdefault("event_modifiers", {})
             state["event_modifiers"]["card_A20_free_seize_veneti"] = True
     else:
@@ -3162,16 +3204,10 @@ def execute_card_A24(state, shaded=False):
         t_info = state.get("tribes", {}).get(tribe)
         if not t_info:
             continue
-        # Remove existing Ally
-        if t_info.get("allied_faction"):
-            old_fac = t_info["allied_faction"]
-            if region and count_pieces(state, region, old_fac, ALLY) > 0:
-                remove_piece(state, region, old_fac, ALLY)
-            t_info["allied_faction"] = None
-        # Place Arverni Ally
-        if region and get_available(state, ARVERNI, ALLY) > 0:
-            place_piece(state, region, ARVERNI, ALLY)
-            t_info["allied_faction"] = ARVERNI
+        # Remove existing Ally, then place the Arverni Ally — pieces
+        # and tribes dict together
+        _unally_tribe(state, tribe)
+        _ally_tribe(state, tribe, ARVERNI)
     # Place 2 Arverni Warbands in Sequani, Cisalpina, Provincia
     for region in (SEQUANI, CISALPINA, PROVINCIA):
         avail = get_available(state, ARVERNI, WARBAND)
@@ -3209,16 +3245,10 @@ def execute_card_A25(state, shaded=False):
         region = TRIBE_TO_REGION.get(TRIBE_NORI)
         t_info = state.get("tribes", {}).get(TRIBE_NORI)
         if t_info:
-            # Remove any Ally at Nori
-            if t_info.get("allied_faction"):
-                old_fac = t_info["allied_faction"]
-                if region and count_pieces(state, region, old_fac, ALLY) > 0:
-                    remove_piece(state, region, old_fac, ALLY)
-                t_info["allied_faction"] = None
-            # Place German Ally
-            if region and get_available(state, GERMANS, ALLY) > 0:
-                place_piece(state, region, GERMANS, ALLY)
-                t_info["allied_faction"] = GERMANS
+            # Remove any Ally at Nori, then place the German Ally —
+            # pieces and tribes dict together
+            _unally_tribe(state, TRIBE_NORI)
+            _ally_tribe(state, TRIBE_NORI, GERMANS)
         # Place 6 German Warbands at Nori's region
         if region:
             avail = get_available(state, GERMANS, WARBAND)
@@ -3242,11 +3272,8 @@ def execute_card_A26(state, shaded=False):
     if not shaded:
         # Remove Arverni Ally at Helvetii
         t_info = state.get("tribes", {}).get(TRIBE_HELVETII)
-        region = TRIBE_TO_REGION.get(TRIBE_HELVETII)
         if t_info and t_info.get("allied_faction") == ARVERNI:
-            if region and count_pieces(state, region, ARVERNI, ALLY) > 0:
-                remove_piece(state, region, ARVERNI, ALLY)
-            t_info["allied_faction"] = None
+            _unally_tribe(state, TRIBE_HELVETII)
         # Remove all Arverni Warbands from Sequani and Aedui
         for reg in (SEQUANI, AEDUI_REGION):
             for ps in (HIDDEN, REVEALED):
@@ -3291,14 +3318,10 @@ def execute_card_A27(state, shaded=False):
         t_info = state.get("tribes", {}).get(tribe)
         if not t_info:
             continue
-        if t_info.get("allied_faction"):
-            old_fac = t_info["allied_faction"]
-            if region and count_pieces(state, region, old_fac, ALLY) > 0:
-                remove_piece(state, region, old_fac, ALLY)
-            t_info["allied_faction"] = None
-        if region and get_available(state, ARVERNI, ALLY) > 0:
-            place_piece(state, region, ARVERNI, ALLY)
-            t_info["allied_faction"] = ARVERNI
+        # Remove existing Ally, then place the Arverni Ally — pieces
+        # and tribes dict together
+        _unally_tribe(state, tribe)
+        _ally_tribe(state, tribe, ARVERNI)
     for region in (PICTONES, ARVERNI_REGION):
         avail = get_available(state, ARVERNI, WARBAND)
         to_place = min(3, avail)
@@ -3355,12 +3378,8 @@ def execute_card_A29(state, shaded=False):
                 if allies_placed >= 2:
                     continue
                 tribe = p.get("tribe")
-                t_info = state.get("tribes", {}).get(tribe)
-                if (t_info and t_info.get("allied_faction") is None
-                        and t_info.get("status") is None
-                        and pfac and get_available(state, pfac, ALLY) > 0):
-                    place_piece(state, region, pfac, ALLY)
-                    t_info["allied_faction"] = pfac
+                if (pfac and _tribe_region(state, tribe) == region
+                        and _ally_tribe(state, tribe, pfac)):
                     allies_placed += 1
             elif piece_type == WARBAND:
                 # 5 Warbands OR 3 Auxilia — not both.
@@ -3427,35 +3446,28 @@ def execute_card_A30(state, shaded=False):
                 if c > 0:
                     remove_piece(state, region, ARVERNI, WARBAND,
                                  count=c, piece_state=ps)
+            # Remove Arverni Allied tribes (pieces + tribes dict
+            # together, including any Colony), then any strays
+            _unally_faction_tribes_in_region(state, region, ARVERNI)
             for pt in (ALLY, CITADEL):
-                cnt = count_pieces(state, region, ARVERNI, pt)
-                if cnt > 0:
-                    remove_piece(state, region, ARVERNI, pt, count=cnt)
+                while count_pieces(state, region, ARVERNI, pt) > 0:
+                    remove_piece(state, region, ARVERNI, pt)
+                    clear_allied_tribe(state, region, ARVERNI, pt)
             # Clear Arverni leader if present
             leader = get_leader_in_region(state, region, ARVERNI)
             if leader:
                 remove_piece(state, region, ARVERNI, LEADER)
-            # Clear Arverni tribe allies in this region
-            tribes = get_tribes_in_region(region, scenario)
-            for tribe in tribes:
-                t_info = state.get("tribes", {}).get(tribe)
-                if t_info and t_info.get("allied_faction") == ARVERNI:
-                    t_info["allied_faction"] = None
     else:
         # Remove Allies/Citadel, place 9 Arverni pieces in Aedui + Sequani
         for reg in (AEDUI_REGION, SEQUANI):
-            tribes = get_tribes_in_region(reg, scenario)
-            for tribe in tribes:
-                t_info = state.get("tribes", {}).get(tribe)
-                if t_info and t_info.get("allied_faction"):
-                    old_fac = t_info["allied_faction"]
-                    if count_pieces(state, reg, old_fac, ALLY) > 0:
-                        remove_piece(state, reg, old_fac, ALLY)
-                    t_info["allied_faction"] = None
+            # Remove any Allies and Citadel — the Allied tribe's piece may
+            # be a Citadel (Bibracte); pieces + tribes dict together
+            for tribe in get_tribes_in_region(reg, scenario):
+                _unally_tribe(state, tribe)
             for fac in FACTIONS:
-                cnt = count_pieces(state, reg, fac, CITADEL)
-                if cnt > 0:
-                    remove_piece(state, reg, fac, CITADEL, count=cnt)
+                while count_pieces(state, reg, fac, CITADEL) > 0:
+                    remove_piece(state, reg, fac, CITADEL)
+                    clear_allied_tribe(state, reg, fac, CITADEL)
         # Place 9 Arverni pieces total
         placements = params.get("placements", [])
         total = 0
@@ -3469,13 +3481,9 @@ def execute_card_A30(state, shaded=False):
             cnt = min(p.get("count", 1), 9 - total)
             if piece_type == ALLY:
                 tribe = p.get("tribe")
-                t_info = state.get("tribes", {}).get(tribe)
-                if (t_info and t_info.get("allied_faction") is None
-                        and t_info.get("status") is None):
-                    if get_available(state, ARVERNI, ALLY) > 0:
-                        place_piece(state, region, ARVERNI, ALLY)
-                        t_info["allied_faction"] = ARVERNI
-                        total += 1
+                if (_tribe_region(state, tribe) == region
+                        and _ally_tribe(state, tribe, ARVERNI)):
+                    total += 1
             else:
                 avail = get_available(state, ARVERNI, piece_type)
                 to_place = min(cnt, avail)
@@ -3529,14 +3537,10 @@ def execute_card_A32(state, shaded=False):
         t_info = state.get("tribes", {}).get(tribe)
         if not t_info:
             continue
-        if t_info.get("allied_faction"):
-            old_fac = t_info["allied_faction"]
-            if region and count_pieces(state, region, old_fac, ALLY) > 0:
-                remove_piece(state, region, old_fac, ALLY)
-            t_info["allied_faction"] = None
-        if region and get_available(state, ARVERNI, ALLY) > 0:
-            place_piece(state, region, ARVERNI, ALLY)
-            t_info["allied_faction"] = ARVERNI
+        # Remove existing Ally, then place the Arverni Ally — pieces
+        # and tribes dict together
+        _unally_tribe(state, tribe)
+        _ally_tribe(state, tribe, ARVERNI)
     # 4 Warbands in Veneti, 2 in Morini
     for region, cnt in ((VENETI, 4), (MORINI, 2)):
         avail = get_available(state, ARVERNI, WARBAND)
@@ -3602,16 +3606,12 @@ def execute_card_A35(state, shaded=False):
         faction = state.get("executing_faction")
         t_info = state.get("tribes", {}).get(TRIBE_TREVERI)
         if t_info:
-            # Replace anything at Treveri with Ally
-            if t_info.get("allied_faction"):
-                old_fac = t_info["allied_faction"]
-                if count_pieces(state, TREVERI, old_fac, ALLY) > 0:
-                    remove_piece(state, TREVERI, old_fac, ALLY)
-                t_info["allied_faction"] = None
+            # Replace anything at Treveri with Ally — pieces and tribes
+            # dict together
+            _unally_tribe(state, TRIBE_TREVERI)
             ally_faction = params.get("ally_faction", faction)
-            if ally_faction and get_available(state, ally_faction, ALLY) > 0:
-                place_piece(state, TREVERI, ally_faction, ALLY)
-                t_info["allied_faction"] = ally_faction
+            if ally_faction:
+                _ally_tribe(state, TRIBE_TREVERI, ally_faction)
         # Place Warbands or Auxilia
         piece_type = params.get("piece_type", WARBAND)
         limit = 8 if piece_type == WARBAND else 4
@@ -3715,13 +3715,9 @@ def execute_card_A36(state, shaded=False):
         ally_removals = params.get("ally_removals", [])
         for r in ally_removals[:2]:
             tribe = r.get("tribe")
-            t_info = state.get("tribes", {}).get(tribe)
             region = TRIBE_TO_REGION.get(tribe)
-            if t_info and t_info.get("allied_faction") and region in adj_regions:
-                old_fac = t_info["allied_faction"]
-                if count_pieces(state, region, old_fac, ALLY) > 0:
-                    remove_piece(state, region, old_fac, ALLY)
-                t_info["allied_faction"] = None
+            if region in adj_regions:
+                _unally_tribe(state, tribe)
 
 def execute_card_A37(state, shaded=False):
     """Card A37: All Gaul Gathers — Place Allies or remove them.
@@ -3745,26 +3741,21 @@ def execute_card_A37(state, shaded=False):
         ally_placements = params.get("ally_placements", [])
         for p in ally_placements:
             tribe = p["tribe"]
-            region = TRIBE_TO_REGION.get(tribe)
             pfac = p.get("faction", faction)
-            t_info = state.get("tribes", {}).get(tribe)
-            if t_info and t_info.get("allied_faction") is None and pfac:
-                if region and get_available(state, pfac, ALLY) > 0:
-                    place_piece(state, region, pfac, ALLY)
-                    t_info["allied_faction"] = pfac
+            if pfac:
+                _ally_tribe(state, tribe, pfac)
     else:
         # Remove up to 3 Aedui/Roman Allies from Celtica near German Control
         removals = params.get("removals", [])
         for r in removals[:3]:
             tribe = r["tribe"]
             fac = r.get("faction")
-            region = TRIBE_TO_REGION.get(tribe)
             t_info = state.get("tribes", {}).get(tribe)
             if (t_info and t_info.get("allied_faction") == fac
-                    and fac in (AEDUI, ROMANS) and region):
-                if count_pieces(state, region, fac, ALLY) > 0:
-                    remove_piece(state, region, fac, ALLY)
-                t_info["allied_faction"] = None
+                    and fac in (AEDUI, ROMANS)
+                    and _tribe_piece_type(state, tribe) == ALLY):
+                # "(not Citadels)" — only Ally discs
+                _unally_tribe(state, tribe)
 
 def execute_card_A38(state, shaded=False):
     """Card A38: Vergobret — Suborn enhancement / CAPABILITY restriction.
@@ -3826,12 +3817,8 @@ def execute_card_A40(state, shaded=False):
                 continue
             if piece_type == ALLY:
                 tribe = p.get("tribe")
-                t_info = state.get("tribes", {}).get(tribe)
-                if (t_info and t_info.get("allied_faction") is None
-                        and t_info.get("status") is None
-                        and get_available(state, pfac, ALLY) > 0):
-                    place_piece(state, region, pfac, ALLY)
-                    t_info["allied_faction"] = pfac
+                if (_tribe_region(state, tribe) == region
+                        and _ally_tribe(state, tribe, pfac)):
                     region_count[region] += 1
             else:
                 to_place = min(cnt, room, get_available(state, pfac, piece_type))
@@ -3874,14 +3861,12 @@ def execute_card_A43(state, shaded=False):
                 tribe = r.get("tribe")
                 t_info = state.get("tribes", {}).get(tribe)
                 if (t_info and t_info.get("allied_faction") == ARVERNI
-                        and region):
-                    if count_pieces(state, region, ARVERNI, ALLY) > 0:
-                        remove_piece(state, region, ARVERNI, ALLY)
-                    if to_faction and get_available(state, to_faction, ALLY) > 0:
-                        place_piece(state, region, to_faction, ALLY)
-                        t_info["allied_faction"] = to_faction
-                    else:
-                        t_info["allied_faction"] = None
+                        and _tribe_region(state, tribe) == region
+                        and _tribe_piece_type(state, tribe) == ALLY):
+                    # "Replace ... Arverni Allies" — Ally discs only
+                    _unally_tribe(state, tribe)
+                    if to_faction:
+                        _ally_tribe(state, tribe, to_faction)
             elif from_type == WARBAND:
                 ps = r.get("piece_state", HIDDEN)
                 to_type = AUXILIA if to_faction == ROMANS else WARBAND
@@ -3900,21 +3885,16 @@ def execute_card_A43(state, shaded=False):
             t_info = state.get("tribes", {}).get(tribe)
             if not t_info or not region:
                 continue
-            # Remove Ally
-            if t_info.get("allied_faction"):
-                old_fac = t_info["allied_faction"]
-                if count_pieces(state, region, old_fac, ALLY) > 0:
-                    remove_piece(state, region, old_fac, ALLY)
-                t_info["allied_faction"] = None
-            # Remove Citadels
+            # Remove the tribe's Citadel/Ally — piece and tribes dict
+            # together (Bibracte's piece may be a Citadel)
+            _unally_tribe(state, tribe)
+            # Defensive: pair any stray Citadel removal with its tribe
             for fac in FACTIONS:
-                cnt = count_pieces(state, region, fac, CITADEL)
-                if cnt > 0:
-                    remove_piece(state, region, fac, CITADEL, count=cnt)
+                while count_pieces(state, region, fac, CITADEL) > 0:
+                    remove_piece(state, region, fac, CITADEL)
+                    clear_allied_tribe(state, region, fac, CITADEL)
             # Place Arverni Ally + 2 Warbands
-            if get_available(state, ARVERNI, ALLY) > 0:
-                place_piece(state, region, ARVERNI, ALLY)
-                t_info["allied_faction"] = ARVERNI
+            _ally_tribe(state, tribe, ARVERNI)
             avail = get_available(state, ARVERNI, WARBAND)
             to_place = min(2, avail)
             if to_place > 0:
@@ -3938,14 +3918,9 @@ def execute_card_A45(state, shaded=False):
             tribe = p["tribe"]
             faction = p["faction"]
             region = TRIBE_TO_REGION.get(tribe)
-            t_info = state.get("tribes", {}).get(tribe)
             from fs_bot.rules_consts import CELTICA_REGIONS as _CELTICA
-            if (t_info and t_info.get("allied_faction") is None
-                    and t_info.get("status") is None
-                    and faction != GERMANS and region in _CELTICA):
-                if get_available(state, faction, ALLY) > 0:
-                    place_piece(state, region, faction, ALLY)
-                    t_info["allied_faction"] = faction
+            if faction != GERMANS and region in _CELTICA:
+                _ally_tribe(state, tribe, faction)
     else:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A45_free_intimidate"] = True
@@ -4066,16 +4041,13 @@ def execute_card_A56(state, shaded=False):
             if c > 0:
                 remove_piece(state, ATREBATES, BELGAE, WARBAND,
                              count=c, piece_state=ps)
+        # Remove Belgic Allied tribes (pieces + tribes dict together,
+        # including any Colony), then any strays
+        _unally_faction_tribes_in_region(state, ATREBATES, BELGAE)
         for pt in (ALLY, CITADEL):
-            cnt = count_pieces(state, ATREBATES, BELGAE, pt)
-            if cnt > 0:
-                remove_piece(state, ATREBATES, BELGAE, pt, count=cnt)
-        # Clear Belgae tribe allies in Atrebates
-        tribes = get_tribes_in_region(ATREBATES, scenario)
-        for tribe in tribes:
-            t_info = state.get("tribes", {}).get(tribe)
-            if t_info and t_info.get("allied_faction") == BELGAE:
-                t_info["allied_faction"] = None
+            while count_pieces(state, ATREBATES, BELGAE, pt) > 0:
+                remove_piece(state, ATREBATES, BELGAE, pt)
+                clear_allied_tribe(state, ATREBATES, BELGAE, pt)
         _cap_resources(state, BELGAE, -4)
     else:
         # Place 4 Warbands in Belgica
@@ -4103,17 +4075,11 @@ def execute_card_A56(state, shaded=False):
             t_info = state.get("tribes", {}).get(tribe)
             if not t_info:
                 continue
-            # May replace existing Ally
-            if t_info.get("allied_faction") and t_info["allied_faction"] != BELGAE:
-                old_fac = t_info["allied_faction"]
-                if count_pieces(state, region, old_fac, ALLY) > 0:
-                    remove_piece(state, region, old_fac, ALLY)
-                t_info["allied_faction"] = None
-            if (t_info.get("allied_faction") is None
-                    and t_info.get("status") is None):
-                if get_available(state, BELGAE, ALLY) > 0:
-                    place_piece(state, region, BELGAE, ALLY)
-                    t_info["allied_faction"] = BELGAE
+            # May replace existing Ally — both records together
+            if (t_info.get("allied_faction")
+                    and t_info["allied_faction"] != BELGAE):
+                _unally_tribe(state, tribe)
+            _ally_tribe(state, tribe, BELGAE)
         _cap_resources(state, BELGAE, 4)
 
 def execute_card_A57(state, shaded=False):
@@ -4151,14 +4117,11 @@ def execute_card_A58(state, shaded=False):
             ally_tribe = params.get("ally_tribe")
             if ally_tribe:
                 t_info = state.get("tribes", {}).get(ally_tribe)
-                if t_info and t_info.get("allied_faction") == ROMANS:
-                    if count_pieces(state, region, ROMANS, ALLY) > 0:
-                        remove_piece(state, region, ROMANS, ALLY)
-                    if faction and get_available(state, faction, ALLY) > 0:
-                        place_piece(state, region, faction, ALLY)
-                        t_info["allied_faction"] = faction
-                    else:
-                        t_info["allied_faction"] = None
+                if (t_info and t_info.get("allied_faction") == ROMANS
+                        and _tribe_region(state, ally_tribe) == region):
+                    _unally_tribe(state, ally_tribe)
+                    if faction:
+                        _ally_tribe(state, ally_tribe, faction)
             # Replace 3 Auxilia with Warbands
             replaced = 0
             for _ in range(3):
@@ -4190,18 +4153,10 @@ def execute_card_A60(state, shaded=False):
         region = TRIBE_TO_REGION.get(TRIBE_REMI)
         t_info = state.get("tribes", {}).get(TRIBE_REMI)
         if t_info and region:
-            # Replace any Ally at Remi
-            if t_info.get("allied_faction"):
-                old_fac = t_info["allied_faction"]
-                if count_pieces(state, region, old_fac, ALLY) > 0:
-                    remove_piece(state, region, old_fac, ALLY)
-                t_info["allied_faction"] = None
+            # Replace any Ally at Remi — pieces and tribes dict together
+            _unally_tribe(state, TRIBE_REMI)
             # Place Roman Ally
-            ally_placed = 0
-            if get_available(state, ROMANS, ALLY) > 0:
-                place_piece(state, region, ROMANS, ALLY)
-                t_info["allied_faction"] = ROMANS
-                ally_placed = 1
+            ally_placed = 1 if _ally_tribe(state, TRIBE_REMI, ROMANS) else 0
             # Place up to 4 Auxilia
             avail = get_available(state, ROMANS, AUXILIA)
             to_place = min(4, avail)
@@ -4219,14 +4174,10 @@ def execute_card_A60(state, shaded=False):
             if from_type == ALLY:
                 tribe = r.get("tribe")
                 t_info = state.get("tribes", {}).get(tribe)
-                if (t_info and t_info.get("allied_faction") == ROMANS):
-                    if count_pieces(state, ATREBATES, ROMANS, ALLY) > 0:
-                        remove_piece(state, ATREBATES, ROMANS, ALLY)
-                    if get_available(state, BELGAE, ALLY) > 0:
-                        place_piece(state, ATREBATES, BELGAE, ALLY)
-                        t_info["allied_faction"] = BELGAE
-                    else:
-                        t_info["allied_faction"] = None
+                if (t_info and t_info.get("allied_faction") == ROMANS
+                        and _tribe_region(state, tribe) == ATREBATES):
+                    _unally_tribe(state, tribe)
+                    _ally_tribe(state, tribe, BELGAE)
             elif from_type == AUXILIA:
                 ps = r.get("piece_state", HIDDEN)
                 if count_pieces_by_state(state, ATREBATES, ROMANS,
@@ -4308,17 +4259,12 @@ def execute_card_A65(state, shaded=False):
         ally_replacements = params.get("ally_replacements", [])
         for r in ally_replacements[:2]:
             tribe = r["tribe"]
-            region = TRIBE_TO_REGION.get(tribe)
             t_info = state.get("tribes", {}).get(tribe)
             if (t_info and t_info.get("allied_faction") == from_faction
-                    and region):
-                if count_pieces(state, region, from_faction, ALLY) > 0:
-                    remove_piece(state, region, from_faction, ALLY)
-                if get_available(state, to_faction, ALLY) > 0:
-                    place_piece(state, region, to_faction, ALLY)
-                    t_info["allied_faction"] = to_faction
-                else:
-                    t_info["allied_faction"] = None
+                    and _tribe_piece_type(state, tribe) == ALLY):
+                # "Replace ... Allies" — Ally discs only; both records
+                _unally_tribe(state, tribe)
+                _ally_tribe(state, tribe, to_faction)
 
 def execute_card_A66(state, shaded=False):
     """Card A66: Winter Uprising! — Place Uprising marker for later.
@@ -4383,11 +4329,9 @@ def execute_card_A69(state, shaded=False):
     t_info = state.get("tribes", {}).get(TRIBE_BELLOVACI)
     if not shaded:
         if t_info and region:
-            # Remove Belgic Ally
+            # Remove Belgic Ally — piece and tribes dict together
             if t_info.get("allied_faction") == BELGAE:
-                if count_pieces(state, region, BELGAE, ALLY) > 0:
-                    remove_piece(state, region, BELGAE, ALLY)
-                t_info["allied_faction"] = None
+                _unally_tribe(state, TRIBE_BELLOVACI)
             # Remove 4 Belgic Warbands
             removed = 0
             for ps in (HIDDEN, REVEALED):
@@ -4399,9 +4343,7 @@ def execute_card_A69(state, shaded=False):
                     removed += to_remove
             # Place Roman/Aedui Ally
             ally_fac = params.get("ally_faction", ROMANS)
-            if get_available(state, ally_fac, ALLY) > 0:
-                place_piece(state, region, ally_fac, ALLY)
-                t_info["allied_faction"] = ally_fac
+            _ally_tribe(state, TRIBE_BELLOVACI, ally_fac)
             # Place 4 Warbands or Auxilia
             piece_type = params.get("piece_type", AUXILIA)
             pfac = params.get("piece_faction", ally_fac)

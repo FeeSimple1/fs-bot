@@ -37,7 +37,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
-    remove_piece, flip_piece,
+    remove_piece, flip_piece, clear_allied_tribe,
 )
 
 
@@ -570,6 +570,9 @@ def _remove_battle_piece(state, region, faction, piece_type, piece_state):
 
     Legions go to Fallen (§1.4.1).
     All other pieces go to Available.
+    Removing an ALLY or CITADEL also clears the matching allied tribe in
+    state["tribes"] (the dict is authoritative for victory and must stay in
+    sync with on-map pieces).
     """
     if piece_type == LEGION:
         remove_piece(state, region, faction, LEGION, 1, to_fallen=True)
@@ -578,3 +581,5 @@ def _remove_battle_piece(state, region, faction, piece_type, piece_state):
                      piece_state=piece_state)
     else:
         remove_piece(state, region, faction, piece_type, 1)
+        if piece_type in (ALLY, CITADEL):
+            clear_allied_tribe(state, region, faction, piece_type)

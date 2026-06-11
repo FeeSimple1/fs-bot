@@ -581,7 +581,7 @@ not a defect.)
 
 ---
 
-## Q13: Event handlers desync `state["tribes"]` from space ALLY/CITADEL pieces — BUG REPORT (not a rules question)
+## Q13: Event handlers desync `state["tribes"]` from space ALLY/CITADEL pieces — BUG REPORT (not a rules question) — FIXED in this commit
 
 **Discovered:** while building the AE-DEEP agent profile: per-space
 `count_pieces(..., ALLY)` disagreed wildly with `victory._count_allies_and_citadels`
@@ -609,3 +609,35 @@ audit the 71 mutation sites against the Card Reference, pair each with the
 piece operation, and add the sync invariant to `validate_state` once clean
 (sync_check exits non-zero while any desync remains, so it can serve as the
 acceptance gate).
+
+**RESOLUTION (this commit):** Dedicated pass completed. All ~71
+`allied_faction` mutation sites and all ALLY/CITADEL `place_piece`/
+`remove_piece` sites in `fs_bot/cards/card_effects.py` were audited against
+the Card Reference / A Card Reference; 40 handlers (21 base-game: 18, 22,
+23, 26, 28, 29, 31, 34, 37, 40, 41, 42, 49, 57, 60, 61, 64, 65, 66, 68, 71;
+19 Ariovistus: A19, A20, A24, A25, A26, A27, A29, A30, A32, A35, A36, A37,
+A40, A43, A45, A56, A58, A60, A65, A69) were fixed — roughly 67 individual
+sites. Four shared helpers were added near the top of card_effects.py and
+the sites refactored onto them: `_ally_tribe` (place ALLY disc + set
+`allied_faction` together; no piece Available means no allegiance recorded,
+mirroring Rally), `_unally_tribe` (remove the tribe's matching piece — the
+ALLY disc, or the CITADEL for a City tribe holding one — + clear
+`allied_faction` together), `_tribe_piece_type`, and
+`_unally_faction_tribes_in_region`; transfers are `_unally_tribe` then
+`_ally_tribe`. Region-targeted removals that pick a piece (not a tribe) now
+pair with the existing `clear_allied_tribe` (cards 31, 49 and the defensive
+Citadel sweeps in 23, 26, 68, A20, A30, A43, A56). Card 71 Colony tribes
+now carry their `"region"` in the tribes-dict entry, and
+`sync_check.desyncs()` was extended to (a) read that dynamic region and
+(b) also flag pieces with NO tribes-dict entry (it previously only checked
+(region, faction) pairs that had allied tribes) — the detector is strictly
+stronger than before. Cards 2, 3, 8, 10, 13, 14, 17, 55 etc. from the
+original observation list were attribution artifacts: an earlier desync
+(usually the invisible Colony) changing shape on a later card's turn.
+`python -m fs_bot.tools.sync_check` is now clean for all three base
+scenarios, seeds 1–6, and `fs_bot/tests/test_tribe_piece_sync.py` adds unit
+coverage for the helpers plus per-scenario bot-game canaries. No handler
+was found whose existing logic contradicts the Card Reference text beyond
+the missing bookkeeping fixed here, so no new OPEN items were filed.
+Remaining follow-up (unchanged): add the sync invariant to
+`validate_state`.

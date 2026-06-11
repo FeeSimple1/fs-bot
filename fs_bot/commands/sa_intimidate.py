@@ -37,7 +37,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     count_pieces_by_state, get_leader_in_region,
-    flip_piece, remove_piece,
+    flip_piece, remove_piece, clear_allied_tribe,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.commands.common import CommandError, check_leader_proximity
@@ -182,6 +182,8 @@ def intimidate(state, region, warbands_to_flip, target_faction,
     for piece_type, piece_state in target_removals:
         if piece_type == ALLY:
             remove_piece(state, region, target_faction, ALLY, 1)
+            # Keep state["tribes"] in sync with the removed Ally.
+            clear_allied_tribe(state, region, target_faction, ALLY)
         else:
             remove_piece(state, region, target_faction, piece_type, 1,
                          piece_state=piece_state)

@@ -38,7 +38,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
-    move_piece, flip_piece, remove_piece,
+    move_piece, flip_piece, remove_piece, clear_allied_tribe,
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import get_adjacent, is_adjacent
@@ -205,6 +205,9 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
             remove_piece(state, region, defending_faction, SETTLEMENT, 1)
         else:
             remove_piece(state, region, defending_faction, besiege_piece, 1)
+            # Keep state["tribes"] in sync with the removed Ally/Citadel.
+            clear_allied_tribe(state, region, defending_faction,
+                               besiege_piece)
         result["besiege"] = {"removed": besiege_piece}
 
     # ── Step 3: Attack ──

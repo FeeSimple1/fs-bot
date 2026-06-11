@@ -685,3 +685,59 @@ def find_leader(state, faction):
         if get_leader_in_region(state, region, faction) is not None:
             return region
     return None
+
+
+def clear_allied_tribe(state, region, faction, removed_piece_type):
+    """Clear the tribes-dict entry matching an ALLY/CITADEL piece removal.
+
+    ``state["tribes"][tribe]["allied_faction"]`` is authoritative for victory
+    and must stay in sync with on-map ALLY/CITADEL pieces (one allied tribe
+    per piece). Call this immediately AFTER removing an ALLY or CITADEL piece
+    of ``faction`` from ``region`` through a path that does not already know
+    which tribe the piece belonged to (battle losses, Besiege, Seize,
+    Intimidate, generic Event removals).
+
+    For a CITADEL removal the city tribe holding it is cleared; for an ALLY
+    removal a non-Citadel-holding allied tribe is preferred (a tribe whose
+    Citadel is on the map has no Ally disc — §1.4.2). Selection among equal
+    candidates is deterministic (sorted) for replay stability.
+
+    Returns:
+        The tribe name cleared, or None if no matching tribe was found.
+    """
+    from fs_bot.rules_consts import TRIBE_TO_REGION, TRIBE_TO_CITY
+    if removed_piece_type not in (ALLY, CITADEL):
+        return None
+    tribes = state.get("tribes", {})
+    candidates = []
+    for tribe in sorted(tribes):
+        info = tribes[tribe]
+        if info.get("allied_faction") != faction:
+            continue
+        # Dynamic tribes (Card 71 Colony) carry their region in the entry.
+        reg = info.get("region") or TRIBE_TO_REGION.get(tribe)
+        if reg != region:
+            continue
+        candidates.append((tribe, tribe in TRIBE_TO_CITY))
+    if not candidates:
+        return None
+    if removed_piece_type == CITADEL:
+        # Citadels sit only at Cities — clear the city tribe if allied.
+        for tribe, is_city in candidates:
+            if is_city:
+                tribes[tribe]["allied_faction"] = None
+                return tribe
+        tribe = candidates[0][0]
+        tribes[tribe]["allied_faction"] = None
+        return tribe
+    # ALLY removal: if the faction still has a CITADEL piece here, the city
+    # tribe is represented by that Citadel — keep it allied and clear a
+    # non-city tribe instead.
+    citadel_remains = count_pieces(state, region, faction, CITADEL) > 0
+    for tribe, is_city in candidates:
+        if not (is_city and citadel_remains):
+            tribes[tribe]["allied_faction"] = None
+            return tribe
+    tribe = candidates[0][0]
+    tribes[tribe]["allied_faction"] = None
+    return tribe

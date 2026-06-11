@@ -305,6 +305,19 @@ class TestArverniRally:
         result = _arverni_phase_rally(state, at_war_regions)
         assert ARVERNI_REGION not in result.get("warbands_placed", {})
 
+    def test_city_ally_upgrade_keeps_tribe_allied(self):
+        """Ally -> Citadel replacement keeps authoritative allegiance."""
+        state = make_state()
+        set_tribe_allied(state, TRIBE_ARVERNI, ARVERNI)
+        place_piece(state, ARVERNI_REGION, ARVERNI, ALLY)
+        place_piece(state, ARVERNI_REGION, ROMANS, LEGION, 1,
+                    from_legions_track=True)
+        result = _arverni_phase_rally(state, [ARVERNI_REGION])
+        assert (ARVERNI_REGION, TRIBE_ARVERNI) in result["citadels_placed"]
+        assert count_pieces(state, ARVERNI_REGION, ARVERNI, ALLY) == 0
+        assert count_pieces(state, ARVERNI_REGION, ARVERNI, CITADEL) == 1
+        assert state["tribes"][TRIBE_ARVERNI]["allied_faction"] == ARVERNI
+
 
 # ============================================================================
 # TEST: ARVERNI MARCH (A6.2.2)

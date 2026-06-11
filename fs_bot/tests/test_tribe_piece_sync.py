@@ -194,3 +194,11 @@ def test_no_desyncs_reconquest_bot_game():
 def test_no_desyncs_great_revolt_bot_game():
     state = _play_bot_game(rc.SCENARIO_GREAT_REVOLT, seed=2)
     assert desyncs(state) == set()
+
+
+def test_no_desyncs_full_bot_game_ariovistus():
+    """Ariovistus exercises the game-run Arverni Phase, whose Rally
+    Ally->Citadel upgrade desynced allegiance until the external-playtest
+    patch (Citadel keeps the tribe allied)."""
+    state = _play_bot_game(rc.SCENARIO_ARIOVISTUS, seed=2)
+    assert desyncs(state) == set()

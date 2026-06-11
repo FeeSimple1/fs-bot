@@ -352,9 +352,11 @@ def _arverni_phase_rally(state, at_war_regions):
             continue
         # Remove Ally, place Citadel
         remove_piece(state, region, ARVERNI, ALLY)
-        tribe_info["allied_faction"] = None
-        tribe_info["status"] = None
         place_piece(state, region, ARVERNI, CITADEL)
+        # A Citadel is the fortified form of this same Allied City tribe.
+        # Keep the authoritative tribe record allied to the Arverni so it
+        # remains synchronized with the replacement Citadel piece.
+        tribe_info["allied_faction"] = ARVERNI
         result["citadels_placed"].append((region, tribe))
         rallied_regions.add(region)
         refresh_all_control(state)

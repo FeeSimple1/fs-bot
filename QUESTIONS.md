@@ -641,3 +641,22 @@ was found whose existing logic contradicts the Card Reference text beyond
 the missing bookkeeping fixed here, so no new OPEN items were filed.
 Remaining follow-up (unchanged): add the sync invariant to
 `validate_state`.
+
+
+---
+
+## Q13 follow-up: Ariovistus Arverni-Phase Citadel upgrade desync — FIXED
+
+The external four-seat playtest (effective-play bundle) found one residual
+Q13-class defect outside the audited Event layer: the game-run Arverni
+Phase's Rally procedure (A6.2.1) upgraded a City Ally to a Citadel by
+removing the Ally piece AND clearing `allied_faction`, then placing the
+Citadel — leaving an Arverni Citadel on the map with no allied-tribe
+record. Its 34 "triggering cards" in Ariovistus replays were activation
+triggers of this single procedural bug, not 34 handler defects.
+
+Fix (their patch, verified and applied): the upgrade keeps
+`allied_faction = ARVERNI` — a Citadel is the fortified form of the same
+Allied tribe. Regression test added; sync_check now clean on Ariovistus
+(seeds 1-8) and The Gallic War (seeds 1-3) in addition to the three base
+scenarios; the in-suite canary now includes an Ariovistus bot game.

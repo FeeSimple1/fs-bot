@@ -571,6 +571,7 @@ class TestNodeVRally:
     def test_rally_places_warbands(self):
         """V_RALLY places Warbands where Arverni have a base."""
         state = _make_state()
+        state["resources"][ARVERNI] = 10  # Rally costs 1/Region — §3.3.1
         _place_arverni_force(state, ARVERNI_REGION,
                              ally_tribe=TRIBE_ARVERNI, warbands=2)
         result = node_v_rally(state)
@@ -1165,6 +1166,7 @@ class TestExecuteArverniTurn:
         """Full turn: few Warbands triggers Rally."""
         state = _make_state()
         state["can_play_event"] = False  # Skip Event path
+        state["resources"][ARVERNI] = 10  # Rally costs 1/Region — §3.3.1
         _place_arverni_force(state, ARVERNI_REGION, warbands=3,
                              ally_tribe=TRIBE_ARVERNI)
         result = execute_arverni_turn(state)

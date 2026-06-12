@@ -1053,3 +1053,190 @@ def roman_battle_is_favorable(state, region, defending_faction):
     # Roman Losses (taken) strictly less than half the enemy's (inflicted).
     favorable = (taken * 2 < inflicted)
     return favorable and not pred["attacker_leader_lost"]
+
+
+# ============================================================================
+# Rally plan prevalidation — §3.3.1 / §3.4.1 / A3.4.1
+# ============================================================================
+# "One rule, one implementation": the flowchart Rally nodes (§8.5.3, §8.6.3,
+# §8.7.3, A8.7.4) Rally "wherever able to place a piece". What a Rally is
+# "able" to place is defined by the executor (fs_bot.commands.rally.
+# rally_in_region), so each planner passes its draft rally_plan through this
+# filter, which simulates the executor's own checks with the executor's own
+# primitives, in _execute_rally order (Citadels, then Allies, then Warbands),
+# against a running Resource budget that mirrors rally_in_region's per-call
+# charging. Entries the executor would reject are dropped; per the Q12 owner
+# ruling ("pay ... until Resources run out; no reserve"), the budget is spent
+# in plan-priority order, skipping unaffordable entries while still taking
+# cheaper later ones — exactly what the executor's sequential charging does.
+
+def prevalidate_rally_plan(state, faction, rally_plan, *, resources=None):
+    """Filter a draft rally_plan to the entries rally_in_region will accept.
+
+    Simulates, without mutating state: region legality
+    (validate_rally_region), the place_ally Control-or-Vercingetorix gate,
+    Subdued-tribe eligibility (_find_subdued_tribe_for_ally), Available-pool
+    tracking (a Citadel replacement frees its Ally back to Available, as
+    _execute_rally's Citadels-first sequencing does), Warband prerequisites
+    and caps (_gallic_warband_cap / _german_warband_cap, Home-Region
+    minimum), and per-call Resource charging (rally_cost).
+
+    Mid-command Control changes are not simulated (the executor refreshes
+    Control after every placement); placing your own pieces never removes
+    your own Control, so this can only under-approximate, never propose an
+    entry the executor rejects on that ground.
+
+    Args:
+        state: Game state dict (read-only here).
+        faction: Faction executing the Rally.
+        rally_plan: Draft dict with optional "citadels"/"allies"/"warbands"
+            lists in executor shapes ({"region","tribe"} dicts; warbands as
+            region strings or {"region", ...} dicts). Other keys (e.g. the
+            German bot's settlements) pass through untouched.
+        resources: Resource budget override (default: faction's Resources).
+
+    Returns:
+        A new rally_plan dict, same shape, filtered to executor-legal
+        entries.
+    """
+    from fs_bot.commands.rally import (
+        validate_rally_region, rally_cost, _find_subdued_tribe_for_ally,
+        _gallic_warband_cap, _german_warband_cap, _get_home_regions,
+    )
+
+    scenario = state["scenario"]
+    budget = (state.get("resources", {}).get(faction, 0)
+              if resources is None else resources)
+
+    avail = {
+        ALLY: get_available(state, faction, ALLY),
+        CITADEL: get_available(state, faction, CITADEL),
+        WARBAND: get_available(state, faction, WARBAND),
+    }
+    # Overlay of this plan's effects on the real state (never mutated).
+    ally_delta = {}        # region -> net Allies placed/replaced this plan
+    citadel_delta = {}     # region -> Citadels placed this plan
+    tribes_allied = set()  # tribes allied earlier in this plan
+
+    home = _get_home_regions(faction, scenario)
+    out = dict(rally_plan)
+
+    def _cost(region):
+        return rally_cost(state, region, faction)
+
+    # --- Citadels (executed first; freed Allies return to Available) ---
+    kept = []
+    ally_discs_used = {}  # region -> Ally discs consumed by replacements
+    for entry in rally_plan.get("citadels") or []:
+        region, tribe = entry.get("region"), entry.get("tribe")
+        if region is None or tribe is None:
+            continue
+        if not validate_rally_region(state, region, faction)[0]:
+            continue
+        if not is_city_tribe(tribe):
+            continue
+        if state.get("tribes", {}).get(tribe, {}).get(
+                "allied_faction") != faction:
+            continue
+        # The replacement removes an Ally disc; a City tribe already allied
+        # via a Citadel has none, and rally_in_region would refuse
+        # ("Only 0 ... Ally ..., need 1").
+        used = ally_discs_used.get(region, 0)
+        if count_pieces(state, region, faction, ALLY) - used < 1:
+            continue
+        if avail[CITADEL] < 1 or _cost(region) > budget:
+            continue
+        ally_discs_used[region] = used + 1
+        budget -= _cost(region)
+        avail[CITADEL] -= 1
+        avail[ALLY] += 1  # freed Ally — rally_in_region to_available=True
+        ally_delta[region] = ally_delta.get(region, 0) - 1
+        citadel_delta[region] = citadel_delta.get(region, 0) + 1
+        kept.append(entry)
+    out["citadels"] = kept
+
+    # --- Allies ---
+    vercingetorix_gate = (faction == ARVERNI and scenario in BASE_SCENARIOS)
+    kept = []
+    for entry in rally_plan.get("allies") or []:
+        region, tribe = entry.get("region"), entry.get("tribe")
+        if region is None or tribe is None:
+            continue
+        if not validate_rally_region(state, region, faction)[0]:
+            continue
+        # place_ally gate — §3.3.1: faction Control (or Vercingetorix
+        # for Arverni in the base game).
+        gate = is_controlled_by(state, region, faction)
+        if not gate and vercingetorix_gate:
+            from fs_bot.rules_consts import VERCINGETORIX
+            gate = (get_leader_in_region(state, region, ARVERNI)
+                    == VERCINGETORIX)
+        if not gate:
+            continue
+        if tribe in tribes_allied:
+            continue
+        if tribe not in _find_subdued_tribe_for_ally(state, region, faction):
+            continue
+        if avail[ALLY] < 1 or _cost(region) > budget:
+            continue
+        budget -= _cost(region)
+        avail[ALLY] -= 1
+        tribes_allied.add(tribe)
+        ally_delta[region] = ally_delta.get(region, 0) + 1
+        kept.append(entry)
+    out["allies"] = kept
+
+    # --- Warbands ---
+    kept = []
+    for entry in rally_plan.get("warbands") or []:
+        region = entry if isinstance(entry, str) else entry.get("region")
+        if region is None:
+            continue
+        if not validate_rally_region(state, region, faction)[0]:
+            continue
+        d_ally = ally_delta.get(region, 0)
+        d_citadel = citadel_delta.get(region, 0)
+        if faction == GERMANS:
+            cap = _german_warband_cap(state, region) + d_ally
+            has_ally = (count_pieces(state, region, GERMANS, ALLY)
+                        + d_ally > 0)
+            has_settlement = (
+                scenario in ARIOVISTUS_SCENARIOS
+                and count_pieces(state, region, GERMANS, SETTLEMENT) > 0)
+            is_home = region in home or has_settlement
+            if not (has_ally or has_settlement):
+                if is_home:
+                    cap = max(cap, 1)  # §3.4.1 home minimum
+                elif cap <= 0:
+                    continue  # executor raises: needs Ally/Settlement
+        else:
+            has_ally = (count_pieces(state, region, faction, ALLY)
+                        + d_ally > 0)
+            has_citadel = (count_pieces(state, region, faction, CITADEL)
+                           + d_citadel > 0)
+            has_leader = (
+                faction == ARVERNI
+                and get_leader_in_region(state, region, ARVERNI) is not None)
+            if not (has_ally or has_citadel or has_leader):
+                if region in home:
+                    cap = 1  # §3.3.1 Home Region: "at least one Warband"
+                else:
+                    continue  # executor raises: needs Ally/Citadel(/Leader)
+            else:
+                cap = (_gallic_warband_cap(state, region, faction)
+                       + d_ally + d_citadel)
+            if region in home:
+                cap = max(cap, 1)
+        if _cost(region) > budget:
+            continue
+        to_place = min(cap, avail[WARBAND])
+        if to_place <= 0:
+            # rally_in_region would charge yet place nothing; the flowchart
+            # Rallies only "wherever able to place a piece" — drop it.
+            continue
+        budget -= _cost(region)
+        avail[WARBAND] -= to_place
+        kept.append(entry)
+    out["warbands"] = kept
+
+    return out

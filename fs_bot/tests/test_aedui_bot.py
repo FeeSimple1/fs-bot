@@ -451,6 +451,7 @@ class TestRally:
     def test_rally_places_citadel_in_city(self):
         """Rally replaces City Ally with Citadel."""
         state = _make_state()
+        state["resources"][AEDUI] = 10  # Rally costs 1/Region — §3.3.1
         _place_aedui_force(state, AEDUI_REGION, warbands=3,
                            ally_tribe=TRIBE_AEDUI)
         refresh_all_control(state)
@@ -1049,6 +1050,7 @@ class TestExecuteAeduiTurn:
         """Full flowchart Rallies on A5 condition (few Warbands)."""
         state = _make_state()
         state["can_play_event"] = False
+        state["resources"][AEDUI] = 10  # Rally costs 1/Region — §3.3.1
         # Place few Warbands + Ally so Rally has somewhere to place
         _place_aedui_force(state, AEDUI_REGION, warbands=2,
                            ally_tribe=TRIBE_AEDUI)

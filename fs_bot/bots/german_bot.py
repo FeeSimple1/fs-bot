@@ -76,7 +76,9 @@ from fs_bot.bots.bot_common import (
     random_select, roll_die,
     count_mobile_pieces, count_faction_allies_and_citadels,
     get_leader_placement_region,
+    prevalidate_rally_plan,
 )
+from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
     get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
@@ -1208,20 +1210,18 @@ def node_g_rally(state):
         sa_regions = []
 
     # Phase B: Place all Allies possible — A8.7.4
+    # place_ally requires German Control — §3.3.1/A3.4.1; tribe eligibility
+    # per the executor's _find_subdued_tribe_for_ally. Final legality and
+    # the Resource budget are enforced by prevalidate_rally_plan below.
     avail_allies = get_available(state, GERMANS, ALLY)
     for region in playable:
         if avail_allies <= 0:
             break
-        if (count_pieces(state, region, GERMANS) == 0
-                and not is_controlled_by(state, region, GERMANS)
-                and region not in GERMANIA_REGIONS):
+        if not is_controlled_by(state, region, GERMANS):
             continue
-        for tribe in get_tribes_in_region(region, scenario):
+        for tribe in _find_subdued_tribe_for_ally(state, region, GERMANS):
             if avail_allies <= 0:
                 break
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") is not None:
-                continue
             cost = _german_rally_cost(state, region)
             if resources < cost:
                 continue
@@ -1274,6 +1274,11 @@ def node_g_rally(state):
         if cost == 0:
             continue
 
+    # Filter to exactly what the executor accepts (legality, Available
+    # pools, Resources in execution order) — "one rule, one implementation".
+    # The settlements_* keys are Special Activity plans and pass through.
+    rally_plan = prevalidate_rally_plan(state, GERMANS, rally_plan)
+
     # Phase D: Settle AFTER Rally only if not done before — A8.7.4
     if not rally_plan["settlements_before"]:
         if settle_dests:
@@ -1310,6 +1315,10 @@ def node_g_rally(state):
             and not rally_plan["settlements_after"]):
         sa = SA_ACTION_NONE
         sa_regions = []
+
+    # IF NONE: "If cannot Rally, Raid per A8.7.3" — flowchart G_RALLY edge.
+    if not all_regions:
+        return node_g_raid(state)
 
     return _make_action(
         ACTION_RALLY,

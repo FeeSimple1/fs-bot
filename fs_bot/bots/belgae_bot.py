@@ -81,7 +81,10 @@ from fs_bot.bots.bot_common import (
     # Supply line / agreements
     np_agrees_to_supply_line,
     is_no_faction_event,
+    # Rally prevalidation (executor-legal plans)
+    prevalidate_rally_plan,
 )
+from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
     get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
@@ -1047,73 +1050,58 @@ def node_b_rally(state):
         "warbands": [],
     }
 
-    avail_citadels = get_available(state, BELGAE, CITADEL)
-    avail_allies = get_available(state, BELGAE, ALLY)
-    avail_warbands = get_available(state, BELGAE, WARBAND)
+    # Draft in flowchart priority order; legality, Available pools, and the
+    # Resource budget are enforced by prevalidate_rally_plan, which simulates
+    # the executor's own checks (fs_bot.commands.rally) in execution order.
 
     # Step 1: Citadels — replace Allies in Cities — §8.5.3
     for region in playable:
-        if avail_citadels <= 0:
-            break
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            if avail_citadels <= 0:
-                break
+        for tribe in get_tribes_in_region(region, scenario):
             tribe_info = state["tribes"].get(tribe, {})
             if (tribe_info.get("allied_faction") == BELGAE
                     and is_city_tribe(tribe)):
                 rally_plan["citadels"].append({
                     "region": region, "tribe": tribe,
                 })
-                avail_citadels -= 1
-                avail_allies += 1  # Freed Ally
 
     # Step 2: Allies — place all possible — §8.5.3
+    # place_ally requires Belgic Control — §3.3.1; tribe eligibility per
+    # the executor's _find_subdued_tribe_for_ally.
     for region in playable:
-        if avail_allies <= 0:
-            break
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            if avail_allies <= 0:
-                break
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") is not None:
-                continue
-            if (count_pieces(state, region, BELGAE) > 0
-                    or is_controlled_by(state, region, BELGAE)):
-                rally_plan["allies"].append({
-                    "region": region, "tribe": tribe,
-                })
-                avail_allies -= 1
+        if not is_controlled_by(state, region, BELGAE):
+            continue
+        for tribe in _find_subdued_tribe_for_ally(state, region, BELGAE):
+            rally_plan["allies"].append({
+                "region": region, "tribe": tribe,
+            })
 
     # Step 3: Warbands — place all possible — §8.5.3
-    # "first where they would add any Belgic Control" — §8.5.3
+    # "first where they would add any Belgic Control" — §8.5.3. Draft every
+    # playable region in that order; the filter keeps those where
+    # rally_in_region can place (existing or just-planned Ally/Citadel, or
+    # Home Region — §3.3.1).
     wb_candidates = []
     for region in playable:
-        has_base = False
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") == BELGAE:
-                has_base = True
-                break
-        if count_pieces(state, region, BELGAE, CITADEL) > 0:
-            has_base = True
-        if is_controlled_by(state, region, BELGAE):
-            has_base = True
-
-        if has_base:
-            adds_control = 0 if is_controlled_by(state, region, BELGAE) else 1
-            wb_candidates.append((region, adds_control))
+        adds_control = 0 if is_controlled_by(state, region, BELGAE) else 1
+        wb_candidates.append((region, adds_control))
 
     # Sort: regions that add Control first — §8.5.3
     wb_candidates.sort(key=lambda x: x[1], reverse=True)
+    rally_plan["warbands"] = [region for region, _ in wb_candidates]
 
-    for region, _ in wb_candidates:
-        if avail_warbands <= 0:
-            break
-        rally_plan["warbands"].append(region)
-        avail_warbands -= 1
+    rally_plan = prevalidate_rally_plan(state, BELGAE, rally_plan)
+
+    total_placed = (len(rally_plan["citadels"]) + len(rally_plan["allies"])
+                    + len(rally_plan["warbands"]))
+
+    # IF NONE: B4 qualified on a placement the executor refuses (e.g. no
+    # Resources mid-card, or no legal Region). The flowchart gate B4 would
+    # then have answered "No" (§8.5.3 NOTE), so continue its published path:
+    # B5 — Raid on 0-3 Resources and roll 1-4 (§8.5.4), else March (§8.5.5).
+    if total_placed == 0:
+        if node_b5(state) == "Yes":
+            return node_b_raid(state)
+        return node_b_march(state)
 
     # SA: Rampage after Rally — §8.5.3 / flowchart B_RALLY → B_RAMPAGE
     # If none: Enlist — flowchart B_RAMPAGE → If none: B_ENLIST

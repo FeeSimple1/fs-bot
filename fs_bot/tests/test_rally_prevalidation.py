@@ -169,3 +169,67 @@ class TestPlannersExecuteCleanly:
         res = execute_decision(st, AEDUI, {"bot_action": action})
         assert res["executed"]
         assert res["errors"] == []
+
+
+class TestControlFlagFreshness:
+    """Piece operations keep space['control'] equal to calculate_control —
+    §1.6 / CLAUDE.md 'Piece Operations'. Regression for the stale-flag
+    family: the bot March path (march_group called directly) and many Event
+    handlers mutated pieces without a refresh, so planners read stale
+    Control (e.g. an Aedui Rally place_ally kept by prevalidation, then
+    refused by the executor after an Arverni March had really flipped the
+    Region)."""
+
+    def test_place_remove_move_refresh_control(self):
+        from fs_bot.board.control import calculate_control
+        from fs_bot.board.pieces import remove_piece, move_piece
+        st = _state()
+        # place: empty region -> Belgae control
+        place_piece(st, TREVERI, BELGAE, WARBAND, 2, piece_state=HIDDEN)
+        assert st["spaces"][TREVERI]["control"] == \
+            calculate_control(st, TREVERI)
+        # move: both regions refreshed
+        move_piece(st, TREVERI, ATREBATES, BELGAE, WARBAND, count=2,
+                   piece_state=HIDDEN)
+        for reg in (TREVERI, ATREBATES):
+            assert st["spaces"][reg]["control"] == calculate_control(st, reg)
+        # remove: refreshed again
+        remove_piece(st, ATREBATES, BELGAE, WARBAND, 2)
+        assert st["spaces"][ATREBATES]["control"] == \
+            calculate_control(st, ATREBATES)
+
+    def test_bot_game_control_flags_stay_fresh(self):
+        """Canary: all-bot game, every decision boundary, every playable
+        Region — stored flag matches recomputation."""
+        import contextlib, io
+        from fs_bot.state.setup import setup_scenario
+        from fs_bot.engine.game_engine import (run_game, ACTION_EVENT,
+                                               get_sop_factions)
+        from fs_bot.bots.bot_dispatch import dispatch_bot_turn
+        from fs_bot.cli.dispatcher import _translate_bot_action
+        from fs_bot.board.control import calculate_control
+        from fs_bot.map.map_data import get_playable_regions
+        from fs_bot.rules_consts import SCENARIO_RECONQUEST
+
+        stale = []
+        st = setup_scenario(SCENARIO_RECONQUEST, seed=3)
+        st["non_player_factions"] = set(get_sop_factions(st))
+
+        def df(state, faction, options, position):
+            for region in get_playable_regions(state["scenario"],
+                                               state.get("capabilities")):
+                sp = state["spaces"][region]
+                calc = calculate_control(state, region)
+                if sp.get("control") != calc:
+                    stale.append((state.get("current_card"), region,
+                                  sp.get("control"), calc))
+            state["current_card_id"] = state.get("current_card")
+            state["is_second_eligible"] = (position == "2nd_eligible")
+            state["can_play_event"] = (ACTION_EVENT in options)
+            ba = dispatch_bot_turn(state, faction)
+            return {"action": _translate_bot_action(ba, options),
+                    "bot_action": ba}
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            run_game(st, decision_func=df, execute=True)
+        assert stale == [], f"stale Control flags: {stale[:5]}"

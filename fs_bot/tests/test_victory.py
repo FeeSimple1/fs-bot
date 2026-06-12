@@ -381,7 +381,12 @@ class TestGermanVictoryScore:
     def test_settlement_not_under_control(self):
         """Settlement not under Germanic Control doesn't count."""
         state = make_state(SCENARIO_ARIOVISTUS)
-        place_settlement(state, MORINI)  # Not under German control
+        place_settlement(state, MORINI)
+        # Deny Germanic Control with an equal opposing force (a lone
+        # Settlement in an empty Region would Control it — §1.6/A1.4).
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.rules_consts import ROMANS, AUXILIA
+        place_piece(state, MORINI, ROMANS, AUXILIA, 1)
         score = calculate_victory_score(state, GERMANS)
         assert score == 0
 

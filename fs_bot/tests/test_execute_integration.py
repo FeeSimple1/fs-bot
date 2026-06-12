@@ -1302,8 +1302,17 @@ class TestEventParamDerivers3:
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
         st["current_card"] = 22
         reg = "Mandubii"
-        st["spaces"][reg]["control"] = FACTION_CONTROL[ARVERNI]
         place_piece(st, reg, AEDUI, WARBAND, 3)
+        # Real Arverni Control (piece ops keep flags honest — §1.6):
+        # clear the Roman garrison so Arverni can outnumber the rest.
+        from fs_bot.board.pieces import remove_piece
+        from fs_bot.rules_consts import LEGION, FORT, ALLY
+        remove_piece(st, reg, ROMANS, LEGION, 8)
+        remove_piece(st, reg, ROMANS, AUXILIA, 2)
+        remove_piece(st, reg, ROMANS, FORT, 1)
+        remove_piece(st, reg, ROMANS, ALLY, 1)
+        place_piece(st, reg, ARVERNI, WARBAND, 5)
+        assert st["spaces"][reg]["control"] == FACTION_CONTROL[ARVERNI]
         enemy_before = (count_pieces(st, reg, AEDUI, WARBAND)
                         + count_pieces(st, reg, ROMANS, AUXILIA))
         res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",

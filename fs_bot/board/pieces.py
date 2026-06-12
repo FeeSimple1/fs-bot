@@ -741,3 +741,60 @@ def clear_allied_tribe(state, region, faction, removed_piece_type):
     tribe = candidates[0][0]
     tribes[tribe]["allied_faction"] = None
     return tribe
+
+
+# ============================================================================
+# Control-flag maintenance — §1.6 / CLAUDE.md "Piece Operations"
+# ============================================================================
+# CLAUDE.md promises that the piece-operation helpers "recalculate control".
+# Historically only some *callers* did (execute_march, rally_in_region, ...),
+# so any path that placed/removed/moved pieces without its own refresh —
+# notably the bot March path and ~dozens of Event handlers — left stale
+# ``space["control"]`` flags that planners and Winter logic then read.
+# Control is a region-local function of the pieces in that region (§1.6), so
+# each mutating helper now refreshes exactly the region(s) it touched.
+
+def _refresh_region_control(state, *regions):
+    from fs_bot.board.control import calculate_control
+    spaces = state.get("spaces", {})
+    for region in regions:
+        if region in spaces:
+            spaces[region]["control"] = calculate_control(state, region)
+
+
+_place_piece_inner = place_piece
+
+
+def place_piece(state, region, faction, piece_type, count=1, **kwargs):
+    result = _place_piece_inner(state, region, faction, piece_type, count,
+                                **kwargs)
+    _refresh_region_control(state, region)
+    return result
+
+
+place_piece.__doc__ = _place_piece_inner.__doc__
+
+_remove_piece_inner = remove_piece
+
+
+def remove_piece(state, region, faction, piece_type, count=1, **kwargs):
+    result = _remove_piece_inner(state, region, faction, piece_type, count,
+                                 **kwargs)
+    _refresh_region_control(state, region)
+    return result
+
+
+remove_piece.__doc__ = _remove_piece_inner.__doc__
+
+_move_piece_inner = move_piece
+
+
+def move_piece(state, from_region, to_region, faction, piece_type, count=1,
+               **kwargs):
+    result = _move_piece_inner(state, from_region, to_region, faction,
+                               piece_type, count, **kwargs)
+    _refresh_region_control(state, from_region, to_region)
+    return result
+
+
+move_piece.__doc__ = _move_piece_inner.__doc__

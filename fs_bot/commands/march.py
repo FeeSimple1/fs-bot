@@ -432,8 +432,9 @@ def resolve_harassment(state, region, marching_faction, departing_pieces,
 
         result["losses_by_faction"].append(faction_result)
 
+    # Harassment removes pieces; keep Control flags current.
+    refresh_all_control(state)
     return result
-
 
 def _auto_detect_harassers(state, region, marching_faction):
     """Auto-detect factions that will harass in a region.
@@ -651,8 +652,10 @@ def march_group(state, faction, origin, destinations, group, *,
     if group.get(LEADER) is not None:
         result["pieces_moved"][LEADER] = 1
 
+    # Keep Control flags trustworthy for any caller (the bot March path
+    # calls march_group directly, without execute_march's tail refresh).
+    refresh_all_control(state)
     return result
-
 
 def _iter_group_pieces(group):
     """Iterate over (piece_type, count) pairs in a group dict.

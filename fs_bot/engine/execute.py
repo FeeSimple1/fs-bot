@@ -5167,27 +5167,32 @@ def _control_keep_warbands(state, faction, region, *, leader_leaving):
     return min(total_wb, keep)
 
 
-def _execute_expand_march(state, faction, plan):
-    """Execute an "expand/mass/spread/control" March (§8.6.5/§8.7.4-5/A8.7.5).
+def plan_expand_march_moves(state, faction, plan):
+    """Dry-run of an "expand/mass/spread/control" March (§8.6.5/§8.7.4-6/
+    A8.7.5): compute the moves the executor would make, WITHOUT mutating
+    state.
 
-    Two parts, both with a Control-preserving leave-behind:
-      1. Move the Faction LEADER's group toward its Leader destination
-         (preferred) or a control/spread destination.
-      2. Move spare Warbands from each other origin toward a control/spread
-         destination to add Control, leaving one Warband and enough to keep
-         the origin's Control.
-    Returns the standard March result dict.
+    Shared by _execute_expand_march (which applies the moves) and the bot
+    March nodes (which consult it for their flowchart "IF NONE" edges — e.g.
+    V_MARCH_MASS/V_MARCH_SPREAD redirect to Raid when nothing is marchable,
+    §8.7.4/§8.7.6). One rule, one implementation.
+
+    Returns:
+        List of move dicts {"origin", "path", "group", "leader": bool}.
+        Empty list when nothing can March (pinned by Control-keeping
+        leave-behinds, no reachable destination, or no plan).
     """
     from fs_bot.rules_consts import LEADER, WARBAND, LEGION, AUXILIA
     from fs_bot.board.pieces import find_leader
 
     if not isinstance(plan, dict):
-        return {"executed": False, "command": _CMD_MARCH,
-                "reason": "no expand/mass march plan"}
+        return []
 
+    # "destination" (singular) is the V_MARCH_MASS shape (§8.7.6): a Leader
+    # march. It was previously unread, so every mass March was refused.
     leader_dests = [plan.get(k) for k in
                     ("leader_destination", "leader_or_group_destination",
-                     "diviciacus_destination")
+                     "diviciacus_destination", "destination")
                     if isinstance(plan.get(k), str)]
     cs_dests = []
     cd = plan.get("control_destination")
@@ -5199,6 +5204,8 @@ def _execute_expand_march(state, faction, plan):
                 cs_dests.append(v)
             elif isinstance(v, (list, tuple)) and v and isinstance(v[0], str):
                 cs_dests.append(v[0])
+    if not cs_dests and isinstance(plan.get("destination"), str):
+        cs_dests.append(plan["destination"])
 
     origins = list(plan.get("origins") or [])
     o1 = plan.get("origin")
@@ -5220,7 +5227,7 @@ def _execute_expand_march(state, faction, plan):
                 best = (len(path), d, path)
         return best
 
-    marches, errors, processed = [], [], set()
+    moves, processed = [], set()
 
     # --- 1. Leader group march ---
     leader_region = find_leader(state, faction)
@@ -5232,16 +5239,12 @@ def _execute_expand_march(state, faction, plan):
                                           leader_leaving=True)
             march_wb = max(0, count_pieces(state, leader_region, faction,
                                            WARBAND) - keep)
-            group = {LEADER: get_leader_in_region(state, leader_region, faction),
+            group = {LEADER: get_leader_in_region(state, leader_region,
+                                                  faction),
                      WARBAND: march_wb, LEGION: 0, AUXILIA: 0}
-            try:
-                _flip_origin_pieces(state, leader_region, faction)
-                final = _march_group_fixed(state, faction, leader_region,
-                                           best[2], group)
-                marches.append({"origin": leader_region, "final_region": final,
-                                "leader": True, "warbands": march_wb})
-            except _EXEC_ERRORS as exc:
-                errors.append({"origin": leader_region, "error": str(exc)})
+            moves.append({"origin": leader_region, "path": best[2],
+                          "group": group, "leader": True,
+                          "warbands": march_wb})
             processed.add(leader_region)
 
     # --- 2. Warband-only control-spreading from other origins ---
@@ -5257,14 +5260,38 @@ def _execute_expand_march(state, faction, plan):
         if best is None:
             continue
         group = {LEADER: None, WARBAND: march_wb, LEGION: 0, AUXILIA: 0}
-        try:
-            _flip_origin_pieces(state, origin, faction)
-            final = _march_group_fixed(state, faction, origin, best[2], group)
-            marches.append({"origin": origin, "final_region": final,
-                            "leader": False, "warbands": march_wb})
-        except _EXEC_ERRORS as exc:
-            errors.append({"origin": origin, "error": str(exc)})
+        moves.append({"origin": origin, "path": best[2], "group": group,
+                      "leader": False, "warbands": march_wb})
         processed.add(origin)
+
+    return moves
+
+
+def _execute_expand_march(state, faction, plan):
+    """Execute an "expand/mass/spread/control" March (§8.6.5/§8.7.4-6/A8.7.5).
+
+    Two parts, both with a Control-preserving leave-behind:
+      1. Move the Faction LEADER's group toward its Leader destination
+         (preferred) or a control/spread destination.
+      2. Move spare Warbands from each other origin toward a control/spread
+         destination to add Control, leaving one Warband and enough to keep
+         the origin's Control.
+    The moves themselves come from plan_expand_march_moves (also used by the
+    bot planners' IF-NONE checks). Returns the standard March result dict.
+    """
+    moves = plan_expand_march_moves(state, faction, plan)
+
+    marches, errors = [], []
+    for mv in moves:
+        try:
+            _flip_origin_pieces(state, mv["origin"], faction)
+            final = _march_group_fixed(state, faction, mv["origin"],
+                                       mv["path"], mv["group"])
+            marches.append({"origin": mv["origin"], "final_region": final,
+                            "leader": mv["leader"],
+                            "warbands": mv["warbands"]})
+        except _EXEC_ERRORS as exc:
+            errors.append({"origin": mv["origin"], "error": str(exc)})
 
     if not marches:
         return {"executed": False, "command": _CMD_MARCH,

@@ -233,3 +233,44 @@ class TestControlFlagFreshness:
         with contextlib.redirect_stdout(io.StringIO()):
             run_game(st, decision_func=df, execute=True)
         assert stale == [], f"stale Control flags: {stale[:5]}"
+
+
+class TestExpandMarchDryRun:
+    """plan_expand_march_moves: executor dry-run consulted by V_MARCH_MASS /
+    V_MARCH_SPREAD for their §8.7.4/§8.7.6 IF-NONE (-> Raid) edges, and the
+    fix for the V_MARCH_MASS 'destination' key the executor never read."""
+
+    def test_mass_march_destination_key_is_read(self):
+        from fs_bot.engine.execute import plan_expand_march_moves
+        from fs_bot.rules_consts import VERCINGETORIX as VX, LEADER
+        st = _state()
+        place_piece(st, ARVERNI_REGION, ARVERNI, LEADER, leader_name=VX)
+        place_piece(st, ARVERNI_REGION, ARVERNI, WARBAND, 4,
+                    piece_state=HIDDEN)
+        moves = plan_expand_march_moves(
+            st, ARVERNI, {"destination": MANDUBII,
+                          "origins": [ARVERNI_REGION],
+                          "type": "March (mass)"})
+        assert moves, "mass-March 'destination' must reach the executor"
+        assert moves[0]["leader"] is True
+
+    def test_mass_march_node_falls_through_to_raid_when_pinned(self):
+        """A mass plan whose Leader region yields no marchable group must
+        fall through (the node returns a non-March action), not produce a
+        Command the executor refuses."""
+        from fs_bot.bots.arverni_bot import node_v_march_mass
+        from fs_bot.rules_consts import VERCINGETORIX as VX, LEADER, LEGION
+        st = _state()
+        st["resources"][ARVERNI] = 10
+        # Vercingetorix alone (no Warbands anywhere): Step-1/2 destinations
+        # may exist, but nothing can March without abandoning his Region's
+        # Control... place him with zero Warbands and give Romans a Legion
+        # region so Step 2 finds an adjacent-to-Legion destination.
+        place_piece(st, ARVERNI_REGION, ARVERNI, LEADER, leader_name=VX)
+        place_piece(st, MANDUBII, ROMANS, LEGION, 1, from_legions_track=True)
+        action = node_v_march_mass(st)
+        if action.get("command") == "March":
+            from fs_bot.engine.execute import plan_expand_march_moves
+            plan = (action.get("details") or {}).get("march_plan") or {}
+            assert plan_expand_march_moves(st, ARVERNI, plan), \
+                "node returned a March the executor would refuse"

@@ -1067,6 +1067,15 @@ def node_v_march_spread(state):
     has_any_march = (march_plan["spread_destinations"]
                      or march_plan["control_destination"] is not None)
 
+    # IF NONE: Raid per §8.7.5. Checked with the executor's own dry-run so
+    # a plan whose every origin is pinned by the Control-keeping
+    # leave-behind (or has no reachable destination) also falls through —
+    # the executor would refuse it ("nothing marchable").
+    if has_any_march:
+        from fs_bot.engine.execute import plan_expand_march_moves
+        if not plan_expand_march_moves(state, ARVERNI, march_plan):
+            has_any_march = False
+
     if not has_any_march:
         return node_v_raid(state)
 
@@ -1200,6 +1209,14 @@ def node_v_march_mass(state):
             march_plan["origins"].append(verc_region)
 
     if march_plan["destination"] is None:
+        return node_v_raid(state)
+
+    # IF NONE: "If the Arverni cannot so March ... they instead Raid per
+    # 8.7.5" — §8.7.6. The executor's own dry-run is the test, so a Leader
+    # pinned by the Control-keeping leave-behind or an unreachable
+    # destination falls through instead of yielding a refused Command.
+    from fs_bot.engine.execute import plan_expand_march_moves
+    if not plan_expand_march_moves(state, ARVERNI, march_plan):
         return node_v_raid(state)
 
     # SA: Devastate or Entreat after March — §8.7.6

@@ -86,6 +86,11 @@ def _walk(ex, faction, cmd, sa, counts, examples, scenario, seed, card):
             counts[key] += 1
             examples.setdefault(key, (scenario, seed, card, str(e)))
         if sx.get("executed") is False:
+            if sx.get("declined_no_effect"):
+                # The flowchart's own "If none ... no Special Ability"
+                # outcome (e.g. R_BUILD/R_SCOUT) — a legal decline, not a
+                # refused proposal.
+                return
             why = sx.get("reason") or ("no effect" if not sx.get("actions")
                                        and not sx.get("regions") else "?")
             key = (faction, f"{cmd}+{sa}", "sa-no-effect", _norm(why))

@@ -830,6 +830,15 @@ def node_r_recruit(state):
     # Supply-Line Regions first (to save Resources), then a stable order.
     eligible.sort(key=lambda r: (0 if has_supply_line(state, r) else 1, r))
 
+    # The plan must be executor-legal ("one rule, one implementation"):
+    # recruit_in_region charges recruit_cost per sub-action, gates place_ally
+    # on Roman Control or Caesar (§3.2.1), and gates place_auxilia on a Roman
+    # Leader/Ally/Fort. Mirror those checks and a sequential Resource budget
+    # here so the executor never refuses a planned component.
+    from fs_bot.commands.rally import recruit_cost
+    from fs_bot.rules_consts import CAESAR as _CAESAR
+    budget = state.get("resources", {}).get(ROMANS, 0)
+
     # (1) Place all Allies able (one per Subdued Tribe, capped by Available).
     recruit_plan = []
     rem_allies = avail_allies
@@ -838,6 +847,13 @@ def node_r_recruit(state):
     for r in eligible:
         if rem_allies <= 0:
             break
+        # place_ally gate — §3.2.1: Roman Control or Caesar in the Region.
+        if not (is_controlled_by(state, r, ROMANS)
+                or get_leader_in_region(state, r, ROMANS) == _CAESAR):
+            continue
+        cost = recruit_cost(state, r, ROMANS)
+        if cost > budget:
+            continue
         # _find_subdued_tribe_for_ally returns the LIST of eligible Tribes;
         # take the first not already targeted (recruit_in_region needs a single
         # Tribe name, not the list).
@@ -849,23 +865,34 @@ def node_r_recruit(state):
                                  "tribe": tribe})
             used_tribes.add(tribe)
             rem_allies -= 1
+            budget -= cost
             new_ally_in[r] = new_ally_in.get(r, 0) + 1
     placed_allies = avail_allies - rem_allies
 
     # (2) Place all Auxilia able — each Region up to its cap (which counts the
     # Allies just placed, since Allies recruit before Auxilia), capped by
-    # Available.
+    # Available. place_auxilia gate — §3.2.1: Roman Leader, Ally, or Fort.
     placed_auxilia = 0
     rem_aux = avail_auxilia
     for r in eligible:
         if rem_aux <= 0:
             break
+        has_base = (get_leader_in_region(state, r, ROMANS) is not None
+                    or count_pieces(state, r, ROMANS, ALLY) > 0
+                    or new_ally_in.get(r, 0) > 0
+                    or count_pieces(state, r, ROMANS, FORT) > 0)
+        if not has_base:
+            continue
+        cost = recruit_cost(state, r, ROMANS)
+        if cost > budget:
+            continue
         cap = _count_recruit_auxilia_cap(state, r) + new_ally_in.get(r, 0)
         take = min(cap, rem_aux)
         if take > 0:
             recruit_plan.append({"region": r, "action": "place_auxilia"})
             rem_aux -= take
             placed_auxilia += take
+            budget -= cost
 
     if placed_allies >= 2 or (placed_allies + placed_auxilia) >= 6:
         return _make_action(
@@ -1111,23 +1138,44 @@ def node_r_build(state, *, exclude_regions=None):
         _spend(BUILD_COST_PER_FORT)
 
     # (2) Subdue Allies — best victory margins, players first
-    from fs_bot.board.control import is_controlled_by as _ctrl
+    from fs_bot.board.control import (is_controlled_by as _ctrl,
+                                      _count_faction_forces)
     fort_set = set(build_plan["forts"])
+
+    def _roman_control_now_or_with_fort(region):
+        # §4.2.1: Subdue only where the Region is (now) under Roman Control.
+        # A Fort planned this Build counts only if it really flips Control
+        # (+1 Roman force > all others combined — §1.6), not by assumption.
+        if _ctrl(state, region, ROMANS):
+            return True
+        if region not in fort_set:
+            return False
+        space = state["spaces"].get(region, {})
+        mine = _count_faction_forces(space, ROMANS, scenario) + 1
+        others = sum(_count_faction_forces(space, f, scenario)
+                     for f in FACTIONS if f != ROMANS)
+        return mine > others
+
     subdue_candidates = []
+    ally_discs_used = {}
     for region in playable:
         if region in exclude:
             continue
         if not _eligible(region):
             continue  # §4.2.1 Build region eligibility
-        # §4.2.1: Subdue only where the Region is (now) under Roman Control —
-        # already controlled, or controlled via a Fort placed this Build.
-        if not (_ctrl(state, region, ROMANS) or region in fort_set):
+        if not _roman_control_now_or_with_fort(region):
             continue
         tribes = get_tribes_in_region(region, scenario)
         for tribe in tribes:
             tribe_info = state["tribes"].get(tribe, {})
             allied_to = tribe_info.get("allied_faction")
             if allied_to and allied_to != ROMANS:
+                # §4.2.1: Subdue removes "a disc, not a Citadel" — skip a
+                # tribe allied via Citadel (no Ally disc to remove).
+                used = ally_discs_used.get((region, allied_to), 0)
+                if count_pieces(state, region, allied_to, ALLY) - used < 1:
+                    continue
+                ally_discs_used[(region, allied_to)] = used + 1
                 try:
                     margin = calculate_victory_margin(state, allied_to)
                 except Exception:
@@ -1152,14 +1200,22 @@ def node_r_build(state, *, exclude_regions=None):
             continue
         if not _eligible(region):
             continue  # §4.2.1 Build region eligibility
-        if not (_ctrl(state, region, ROMANS) or region in fort_set):
+        if not _roman_control_now_or_with_fort(region):
             continue
         tribes = get_tribes_in_region(region, scenario)
         for tribe in tribes:
             tribe_info = state["tribes"].get(tribe, {})
-            if (tribe_info.get("allied_faction") is None
+            if not (tribe_info.get("allied_faction") is None
                     and tribe_info.get("status") is None):
-                ally_candidates.append((region, tribe))
+                continue
+            # §1.4.2 stacking restriction (build_place_ally enforces it):
+            # no Roman Ally at Aedui, Arverni, or Suebi tribes.
+            from fs_bot.map.map_data import get_tribe_data
+            td = get_tribe_data(tribe)
+            if (td.faction_restriction is not None
+                    and td.faction_restriction != ROMANS):
+                continue
+            ally_candidates.append((region, tribe))
 
     placed = 0
     for region, tribe in ally_candidates:

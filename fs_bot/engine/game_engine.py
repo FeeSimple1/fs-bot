@@ -428,6 +428,21 @@ def _maybe_execute(state, faction, decision, actions_taken):
     rec = actions_taken.get(faction)
     if isinstance(rec, dict):
         rec["execution"] = exec_result
+        # Effective action — §2.3.4 with the NP flowcharts' "If none ...
+        # no Special Ability": when the declared Command + Special Ability
+        # resolves with an SA that did nothing (the SA was withheld, or it
+        # recomputed against the post-Command board and found no effect),
+        # the Faction in fact took a Command only. Record that, so the 2nd
+        # Eligible's options and Eligibility adjustment see the real turn.
+        if rec.get("action") == ACTION_COMMAND_SA and isinstance(exec_result,
+                                                                 dict):
+            sx = exec_result.get("sa_execution")
+            sa_did_nothing = (
+                exec_result.get("sa_skipped")
+                or (isinstance(sx, dict) and not sx.get("executed")))
+            if sa_did_nothing:
+                rec["action"] = ACTION_COMMAND
+                rec["declared_action"] = ACTION_COMMAND_SA
     return exec_result
 
 
@@ -513,7 +528,10 @@ def resolve_card_turn(state, decision_func, *, execute=False):
             actions_taken[faction] = decision
             if execute:
                 _maybe_execute(state, faction, decision, actions_taken)
-            first_action = action
+            # Use the EFFECTIVE action (an empty Command+SA records as
+            # Command only — see _maybe_execute) for the 2nd Eligible's
+            # options per §2.3.4.
+            first_action = decision.get("action", action)
             # Remove this faction from the eligible pool for 2nd slot
             idx += 1
             break

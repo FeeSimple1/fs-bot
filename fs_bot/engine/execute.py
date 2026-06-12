@@ -92,6 +92,7 @@ _SA_BUILD = "Build"
 _SA_RAMPAGE = "Rampage"
 _SA_ENTREAT = "Entreat"
 _SA_SCOUT = "Scout"
+from fs_bot.rules_consts import ROMANS as _ROMANS_F
 _SA_ENLIST = "Enlist"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
@@ -3409,26 +3410,48 @@ def _execute_recruit(state, faction, bot_action):
 
     placed = []
     errors = []
+    superseded = []
     for entry in plan:
         region = entry.get("region")
         action = entry.get("action")
         if region is None or action is None:
             continue
+        tribe = entry.get("tribe")
+        if action == "place_ally" and tribe is not None:
+            # The Build SA resolves BEFORE this Recruit (§8.8.4 'Build
+            # before Recruit') and may itself have allied the planned
+            # tribe. Re-derive against the current board: keep the planned
+            # tribe if still eligible, substitute another eligible Subdued
+            # Tribe there, or drop the entry as superseded (not an error —
+            # the piece the entry wanted is already on the map).
+            from fs_bot.commands.rally import _find_subdued_tribe_for_ally
+            eligible_now = _find_subdued_tribe_for_ally(state, region,
+                                                        _ROMANS_F) or []
+            if tribe not in eligible_now:
+                replacement = next(
+                    (t for t in eligible_now
+                     if not any(p.get("tribe") == t for p in placed)), None)
+                if replacement is None:
+                    superseded.append({"region": region, "tribe": tribe})
+                    continue
+                tribe = replacement
         try:
-            res = recruit_in_region(state, region, action,
-                                    tribe=entry.get("tribe"))
+            res = recruit_in_region(state, region, action, tribe=tribe)
             placed.append({"region": region, "action": action,
-                           "tribe": entry.get("tribe")})
+                           "tribe": tribe})
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "action": action,
                            "error": str(exc)})
 
-    return {
+    result = {
         "executed": len(placed) > 0,
         "command": _CMD_RECRUIT,
         "placements": placed,
         "errors": errors,
     }
+    if superseded:
+        result["superseded_by_build"] = superseded
+    return result
 
 
 def _mobile_march_group(state, faction, region):
@@ -3634,7 +3657,17 @@ def _execute_sa(state, faction, bot_action):
     if sa == _SA_SUBORN:
         return _execute_suborn(state, faction, bot_action)
     if sa == _SA_BUILD:
-        return _execute_build(state, faction, bot_action)
+        result = _execute_build(state, faction, bot_action)
+        if faction == _ROMANS_F and not result.get("actions"):
+            # R_BUILD "If no Build: R_SCOUT" — Scout after Command instead
+            # (roman_bot_flowchart §8.8.1). Recompute against the current
+            # (post-Command) board, exactly like the Build it replaces.
+            scout = _execute_scout(state, faction, bot_action)
+            if scout.get("executed"):
+                scout = dict(scout)
+                scout["fell_through_from"] = _SA_BUILD
+                return scout
+        return result
     if sa == _SA_RAMPAGE:
         return _execute_rampage(state, faction, bot_action)
     if sa == _SA_ENTREAT:
@@ -3820,8 +3853,13 @@ def _execute_build(state, faction, bot_action):
         except _EXEC_ERRORS as exc:
             errors.append({"action": "ally", "region": region,
                            "tribe": tribe, "error": str(exc)})
-    return {"executed": len(done) > 0, "sa": _SA_BUILD,
-            "actions": done, "errors": errors}
+    result = {"executed": len(done) > 0, "sa": _SA_BUILD,
+              "actions": done, "errors": errors}
+    if not done and not errors:
+        # R_BUILD found nothing to do — the flowchart's "If no Build" case,
+        # a legal outcome (-> Scout / no SA), not a refused proposal.
+        result["declined_no_effect"] = True
+    return result
 
 
 def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
@@ -4176,8 +4214,12 @@ def _execute_scout(state, faction, bot_action):
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "error": str(exc)})
 
-    return {"executed": len(done) > 0, "sa": _SA_SCOUT,
-            "actions": done, "errors": errors}
+    result = {"executed": len(done) > 0, "sa": _SA_SCOUT,
+              "actions": done, "errors": errors}
+    if not done and not errors:
+        # R_SCOUT "If none ... no Special Ability" — legal outcome.
+        result["declined_no_effect"] = True
+    return result
 
 
 def _execute_enlist(state, faction, bot_action):

@@ -762,6 +762,7 @@ class TestSuborn:
         Place 1 Ally (1 piece, 1 ally) + should cap Warbands/removals at 2 more.
         """
         state = _make_state()
+        state["resources"][AEDUI] = 10  # Suborn costs 2/Ally, 1/piece — §4.4.2
         _place_aedui_force(state, MANDUBII, warbands=2, hidden=True)
         # Lots of available Warbands and enemy pieces to affect
         state["available"][AEDUI][WARBAND] = 10

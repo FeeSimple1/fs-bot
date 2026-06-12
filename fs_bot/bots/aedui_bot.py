@@ -1343,6 +1343,20 @@ def _determine_suborn_sa(state, scenario):
     avail_allies = get_available(state, AEDUI, ALLY)
     avail_warbands = get_available(state, AEDUI, WARBAND)
 
+    # §4.4.2 costs: 2 Resources per Ally placed/removed, 1 per Warband or
+    # Auxilia. suborn() refuses a Region's whole op list if its total cost
+    # exceeds Resources at execution, so the plan must respect a sequential
+    # budget ("one rule, one implementation").
+    from fs_bot.rules_consts import (SUBORN_COST_PER_ALLY,
+                                     SUBORN_COST_PER_PIECE)
+    budget = state.get("resources", {}).get(AEDUI, 0)
+
+    def _affordable(action):
+        cost = (SUBORN_COST_PER_ALLY if action in ("place_ally",
+                                                   "remove_ally")
+                else SUBORN_COST_PER_PIECE)
+        return cost if cost <= budget else None
+
     for region in playable:
         if regions_used >= max_regions:
             break
@@ -1367,10 +1381,14 @@ def _determine_suborn_sa(state, scenario):
             for tribe in tribes:
                 tribe_info = state["tribes"].get(tribe, {})
                 if tribe_info.get("allied_faction") is None:
+                    cost = _affordable("place_ally")
+                    if cost is None:
+                        break
                     region_actions.append({
                         "action": "place_ally",
                         "tribe": tribe,
                     })
+                    budget -= cost
                     avail_allies -= 1
                     ally_placed = True
                     pieces_affected += 1
@@ -1410,15 +1428,20 @@ def _determine_suborn_sa(state, scenario):
                                 "target_faction": target_faction,
                             }
 
-            if best_target:
+            if best_target and _affordable("remove_ally") is not None:
                 region_actions.append(best_target)
+                budget -= _affordable("remove_ally") or 0
                 pieces_affected += 1
                 allies_affected += 1
 
         # Step 3: Place all Aedui Warbands able — §8.6.3
         # Capped by remaining piece slots — §4.4.2
         while avail_warbands > 0 and pieces_affected < SUBORN_MAX_PIECES:
+            cost = _affordable("place_warband")
+            if cost is None:
+                break
             region_actions.append({"action": "place_warband"})
+            budget -= cost
             avail_warbands -= 1
             pieces_affected += 1
 
@@ -1438,10 +1461,14 @@ def _determine_suborn_sa(state, scenario):
             for _ in range(enemy_wb):
                 if pieces_affected >= SUBORN_MAX_PIECES:
                     break
+                cost = _affordable("remove_warband")
+                if cost is None:
+                    break
                 region_actions.append({
                     "action": "remove_warband",
                     "target_faction": target_faction,
                 })
+                budget -= cost
                 pieces_affected += 1
 
         # Step 5: Remove Auxilia — §8.6.3
@@ -1454,10 +1481,14 @@ def _determine_suborn_sa(state, scenario):
             for _ in range(enemy_aux):
                 if pieces_affected >= SUBORN_MAX_PIECES:
                     break
+                cost = _affordable("remove_auxilia")
+                if cost is None:
+                    break
                 region_actions.append({
                     "action": "remove_auxilia",
                     "target_faction": target_faction,
                 })
+                budget -= cost
                 pieces_affected += 1
 
         if region_actions:

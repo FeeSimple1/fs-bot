@@ -93,6 +93,7 @@ _SA_RAMPAGE = "Rampage"
 _SA_ENTREAT = "Entreat"
 _SA_SCOUT = "Scout"
 from fs_bot.rules_consts import ROMANS as _ROMANS_F
+from fs_bot.rules_consts import AEDUI as _AEDUI_F
 _SA_ENLIST = "Enlist"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
@@ -3646,6 +3647,40 @@ def _execute_sa(state, faction, bot_action):
     if not sa or sa == SA_ACTION_NONE_LABEL or sa in _BATTLE_MODIFYING_SAS:
         return None
 
+    if (faction == _AEDUI_F and sa in (_SA_TRADE, _SA_SUBORN)
+            and faction in state.get("non_player_factions", set())):
+        # §8.6.3 evaluates Trade "at that moment" — i.e. when the Special
+        # Ability resolves, AFTER the Command has spent/earned Resources —
+        # and falls through Trade -> Suborn -> no SA. Re-derive the whole
+        # choice now against the current board (the decision-time pick used
+        # pre-Command Resources; e.g. a Rally can spend the Aedui below the
+        # Suborn price between planning and resolution). Humans keep their
+        # declared SA.
+        from fs_bot.bots.aedui_bot import (_determine_trade_sa,
+                                           SA_ACTION_NONE as _A_NONE,
+                                           SA_ACTION_TRADE as _A_TRADE)
+        battled = bot_action.get("command") == _CMD_BATTLE
+        new_sa, new_regions, new_details = _determine_trade_sa(
+            state, state["scenario"], battled=battled)
+        if new_sa == _A_NONE:
+            return {"executed": False, "sa": sa,
+                    "declined_no_effect": True,
+                    "reason": "no Trade or Suborn at SA time (§8.6.3 "
+                              "'at that moment'; if none, no SA)"}
+        if new_sa == _A_TRADE:
+            result = _execute_trade(state, faction)
+            result.setdefault("rederived_at_sa_time", True)
+            return result
+        rederived = dict(bot_action)
+        rederived["sa"] = new_sa
+        rederived["sa_regions"] = new_regions
+        d = dict(bot_action.get("details") or {})
+        d.update(new_details or {})
+        rederived["details"] = d
+        result = _execute_suborn(state, faction, rederived)
+        result.setdefault("rederived_at_sa_time", True)
+        return result
+
     if sa == _SA_TRADE:
         return _execute_trade(state, faction)
     if sa == _SA_SETTLE:
@@ -3675,7 +3710,30 @@ def _execute_sa(state, faction, bot_action):
     if sa == _SA_SCOUT:
         return _execute_scout(state, faction, bot_action)
     if sa == _SA_ENLIST:
-        return _execute_enlist(state, faction, bot_action)
+        result = _execute_enlist(state, faction, bot_action)
+        if (not result.get("executed")
+                and bot_action.get("command") != _CMD_BATTLE
+                and faction in state.get("non_player_factions", set())):
+            # B_ENLIST after a Command: the decision-time sub-command can be
+            # stale by the time the SA resolves (the Command itself moved
+            # pieces/Control). Re-derive per §8.5.1 against the current
+            # board; the flowchart's "If none: no Special Ability" applies
+            # when nothing is found.
+            from fs_bot.bots.belgae_bot import _check_enlist_after_command
+            fresh = _check_enlist_after_command(state, state["scenario"])
+            if fresh:
+                rederived = dict(bot_action)
+                rederived["sa_regions"] = fresh.get("regions", [])
+                d = dict(bot_action.get("details") or {})
+                d["enlist"] = fresh
+                rederived["details"] = d
+                retry = _execute_enlist(state, faction, rederived)
+                if retry.get("executed"):
+                    retry["rederived_at_sa_time"] = True
+                    return retry
+            result = dict(result)
+            result["declined_no_effect"] = True
+        return result
 
     return {"executed": False, "sa": sa,
             "reason": "SA not yet wired (plan translation deferred)"}

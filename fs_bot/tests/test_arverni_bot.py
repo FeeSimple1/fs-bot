@@ -974,13 +974,49 @@ class TestSpecialAbilities:
         """Entreat replaces enemy Allies with Arverni Allies."""
         state = _make_state()
         # Need Hidden Arverni Warband + Vercingetorix nearby — §4.3.1
+        # Region must be Arverni Controlled to replace an Allied Tribe, and
+        # Arverni must have Resources to pay 1/Region — §4.3.1.
         _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
         state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
         place_piece(state, MANDUBII, AEDUI, ALLY)
+        refresh_all_control(state)
+        state["resources"][ARVERNI] = 3
         actions = _check_entreat(state, state["scenario"])
         replace_actions = [a for a in actions if a["action"] == "replace_ally"]
         assert len(replace_actions) > 0
         assert replace_actions[0]["target_faction"] == AEDUI
+
+    def test_entreat_replace_ally_requires_arverni_control(self):
+        """§4.3.1: replacing an Allied Tribe is legal only if the Region is
+        Arverni Controlled. With an enemy in strength (no Arverni Control),
+        the planner must not propose a replace_ally the executor would refuse.
+        """
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=1)
+        state["resources"][ARVERNI] = 3
+        # Aedui Ally + enough Aedui strength that Arverni do NOT Control.
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
+        place_piece(state, MANDUBII, AEDUI, ALLY)
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 4)
+        refresh_all_control(state)
+        assert not is_controlled_by(state, MANDUBII, ARVERNI)
+        actions = _check_entreat(state, state["scenario"])
+        replace_actions = [a for a in actions
+                           if a["action"] == "replace_ally"
+                           and a.get("region") == MANDUBII]
+        assert replace_actions == []
+
+    def test_entreat_capped_by_available_resources(self):
+        """§4.3.1: Entreat pays 1 Resource per Region. With 0 Resources the
+        planner proposes no Entreat actions ('If none ... no Special Ability').
+        """
+        state = _make_state()
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
+        place_piece(state, MANDUBII, AEDUI, ALLY)
+        refresh_all_control(state)
+        state["resources"][ARVERNI] = 0
+        assert _check_entreat(state, state["scenario"]) == []
 
     def test_entreat_requires_hidden_warband(self):
         """Entreat requires Hidden Arverni Warband — §4.3.1.

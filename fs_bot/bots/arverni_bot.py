@@ -1400,11 +1400,16 @@ def _check_entreat(state, scenario):
 
     # Step 1: Replace enemy Allies with Arverni Allies — §8.7.1
     # Priority: (1) Aedui, (2) Belgic, (3) Germanic
+    # §4.3.1: replacing an Allied Tribe is legal ONLY if the Region is
+    # already Arverni Controlled. Filter here so the planner never proposes
+    # a replace_ally the executor must refuse.
     for target_faction in (AEDUI, BELGAE, GERMANS):
         for region in playable:
             if avail_allies <= 0:
                 break
             if not _region_eligible(region):
+                continue
+            if not is_controlled_by(state, region, ARVERNI):
                 continue
             tribes = get_tribes_in_region(region, scenario)
             for tribe in tribes:
@@ -1456,11 +1461,15 @@ def _check_entreat(state, scenario):
                     })
 
         # Player Allies only — §8.7.1
+        # §4.3.1: removing an Allied Tribe (Subdue) also requires Arverni
+        # Control of the Region, same as the replace branch.
         for target_faction in (AEDUI, BELGAE, ROMANS):
             if target_faction in non_players:
                 continue  # Only player Factions
             for region in playable:
                 if not _region_eligible(region):
+                    continue
+                if not is_controlled_by(state, region, ARVERNI):
                     continue
                 tribes = get_tribes_in_region(region, scenario)
                 for tribe in tribes:
@@ -1472,6 +1481,16 @@ def _check_entreat(state, scenario):
                             "tribe": tribe,
                             "target_faction": target_faction,
                         })
+
+    # §4.3.1: Entreat pays one Resource per Region selected. The executor
+    # charges 1 Resource per action; the bot cannot select more Entreat
+    # actions than it can afford at the moment Entreat resolves (after the
+    # Command is paid). Truncate the priority-ordered list to the budget so
+    # the planner never proposes an Entreat the executor must refuse for
+    # lack of Resources. If the budget is 0, "If none ... no Special Ability."
+    budget = state["resources"].get(ARVERNI, 0)
+    if len(entreat_actions) > budget:
+        entreat_actions = entreat_actions[:budget]
 
     return entreat_actions
 

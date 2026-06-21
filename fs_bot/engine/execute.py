@@ -3598,24 +3598,46 @@ def _march_with_harassment(state, faction, origin, path):
     """
     # §3.2.2: marching pieces flip to Hidden as they March.
     _flip_origin_pieces(state, origin, faction)
+    # §3.2.2: the marching group is SELECTED AT THE ORIGIN and carried through
+    # the whole path. It must NOT be recomputed from each intermediate Region:
+    # doing so absorbed that Region's RESIDENT forces into the march (and tried
+    # to move resident Revealed Warbands as Hidden, e.g. "Only 1 Hidden Warband
+    # in <R>, need 15"), and applied Harassment to residents too. Pieces do not
+    # join a March mid-route; Harassment only hits the marching group.
+    group = _mobile_march_group(state, faction, origin)
     current = origin
     for i, nxt in enumerate(path):
-        group = _mobile_march_group(state, faction, current)
         if not _group_has_pieces(group):
             break
         res = march_group(state, faction, current, [nxt], group)
         current = res.get("final_region", nxt)
         if current != nxt:
             break  # a crossing stop halted the group early
-        # Intermediate Region (entered then about to be left) -> Harassment.
+        # Intermediate Region (entered then about to be left) -> Harassment
+        # against the carried group only; survivors continue.
         if i < len(path) - 1:
-            group_now = _mobile_march_group(state, faction, current)
-            harassers = _np_harassers(state, current, faction, group_now)
+            harassers = _np_harassers(state, current, faction, group)
             if harassers:
                 from fs_bot.commands.march import resolve_harassment
-                resolve_harassment(state, current, faction, group_now,
-                                   harassing_factions=harassers)
+                hres = resolve_harassment(state, current, faction, group,
+                                          harassing_factions=harassers)
+                _apply_harassment_losses_to_group(group, hres)
     return current
+
+
+def _apply_harassment_losses_to_group(group, harass_result):
+    """Subtract Harassment removals from the carried marching group so the
+    next hop moves only the survivors (§3.2.2). Removals are
+    ``(piece_type, count, roll_or_None)``; a removed Leader clears the slot.
+    """
+    from fs_bot.rules_consts import LEADER
+    for fl in (harass_result or {}).get("losses_by_faction", []):
+        for removal in fl.get("removals", []):
+            ptype, count = removal[0], removal[1]
+            if ptype == LEADER:
+                group[LEADER] = None
+            else:
+                group[ptype] = max(0, group.get(ptype, 0) - count)
 
 
 def _sa_detail(bot_action, key):

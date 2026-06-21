@@ -958,3 +958,29 @@ class TestEdgeCases:
         assert count_pieces(state, SEQUANI, ROMANS, LEGION) == 2
         assert count_pieces(state, AEDUI_REGION, ROMANS, LEGION) == 2
         assert count_pieces(state, AEDUI_REGION, ROMANS, AUXILIA) == 3
+
+
+def test_multihop_march_leaves_intermediate_residents_behind():
+    """§3.2.2: a March's group is selected at the ORIGIN and carried through
+    the path. Multi-hop marches must not absorb an intermediate Region's
+    resident forces, nor try to move resident Revealed Warbands as Hidden
+    ('Only N Hidden Warband in <R>, need M'). Regression for the threat-March
+    executor re-scooping each hop.
+    """
+    from fs_bot.engine.execute import _march_with_harassment
+    state = make_state()
+    # Origin Aedui: 3 Aedui Warbands (the marching group).
+    place_piece(state, AEDUI_REGION, AEDUI, WARBAND, 3, piece_state=HIDDEN)
+    # Intermediate Mandubii: 14 RESIDENT Aedui Warbands, mostly Revealed.
+    place_piece(state, MANDUBII, AEDUI, WARBAND, 14, piece_state=REVEALED)
+    # Remove enemy hidden warbands that could harass, to isolate the mechanic.
+    refresh_all_control(state)
+    before_resident = count_pieces(state, MANDUBII, AEDUI, WARBAND)
+    # March Aedui -> Mandubii -> Atrebates (2 hops).
+    final = _march_with_harassment(state, AEDUI, AEDUI_REGION,
+                                   [MANDUBII, ATREBATES])
+    assert final == ATREBATES
+    # The 3 origin Warbands reached Atrebates; the 14 residents stayed.
+    assert count_pieces(state, ATREBATES, AEDUI, WARBAND) == 3
+    assert count_pieces(state, MANDUBII, AEDUI, WARBAND) == before_resident == 14
+    assert count_pieces(state, AEDUI_REGION, AEDUI, WARBAND) == 0

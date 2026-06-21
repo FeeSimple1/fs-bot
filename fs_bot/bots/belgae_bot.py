@@ -477,35 +477,25 @@ def _would_raid_gain_enough(state, scenario):
         is_devastated = _is_devastated(state, region)
 
         # Build ordered list of steal targets — §8.5.4
-        # "Versus players (only)": (1) Romans (2) Aedui (3) Other
-        steal_targets = []
-        for target in (ROMANS, AEDUI):
-            if target in non_players:
-                continue  # "players (only)" — §8.5.4
-            if count_pieces(state, region, target) == 0:
-                continue
-            if (count_pieces(state, region, target, CITADEL) > 0
-                    or count_pieces(state, region, target, FORT) > 0):
-                continue
-            steal_targets.append(target)
-
-        # "Other" player factions — §8.5.4
-        # Per §3.3.3: Raid steals from "a non-Germanic enemy" — exclude
-        # GERMANS in base game. Per A8.4: swap "Germans" ↔ "Arverni"
-        # throughout §8.4-§8.5, so exclude ARVERNI in Ariovistus.
+        # "Versus players (only)": (1) Romans (2) Aedui (3) Other.
+        # §3.3.3 legality (pieces, no Citadel/Fort, >=1 Resource, non-Germanic
+        # base / Germanic-Arverni swap in Ariovistus) is enforced by the
+        # canonical validator; here we only add the §8.5.4 "players only" gate
+        # and the tier ordering. The missing Resource check previously produced
+        # 'Cannot steal from <F>: <F> has 0 Resources'.
+        from fs_bot.commands.raid import validate_raid_steal_target
         if scenario in ARIOVISTUS_SCENARIOS:
             other_targets = (GERMANS,)  # Arverni excluded per A8.4
         else:
             other_targets = (ARVERNI,)  # Germans excluded per §3.3.3
-        for target in other_targets:
+        steal_targets = []
+        for target in (ROMANS, AEDUI) + other_targets:
             if target in non_players:
-                continue
-            if count_pieces(state, region, target) == 0:
-                continue
-            if (count_pieces(state, region, target, CITADEL) > 0
-                    or count_pieces(state, region, target, FORT) > 0):
-                continue
-            steal_targets.append(target)
+                continue  # "players (only)" — §8.5.4
+            valid, _ = validate_raid_steal_target(
+                state, region, BELGAE, target)
+            if valid:
+                steal_targets.append(target)
 
         region_entries = []
         remaining_flips = flips

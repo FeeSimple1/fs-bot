@@ -561,6 +561,7 @@ class TestRaidEstimation:
     def test_raid_can_steal_from_arverni_in_base_game(self):
         """Raid CAN steal from Arverni in base game — §3.3.3."""
         state = _make_state(non_players={BELGAE})
+        state["resources"][ARVERNI] = 5  # §3.3.3: target must have Resources
         _place_belgae_force(state, MANDUBII, warbands=2)
         place_piece(state, MANDUBII, ARVERNI, WARBAND, 3)
         enough, plan = _would_raid_gain_enough(state, SCENARIO_PAX_GALLICA)
@@ -571,6 +572,7 @@ class TestRaidEstimation:
         """Raid CAN steal from Germans in Ariovistus — A8.4."""
         state = _make_state(scenario=SCENARIO_ARIOVISTUS,
                             non_players={BELGAE})
+        state["resources"][GERMANS] = 5  # §3.3.3: target must have Resources
         _place_belgae_force(state, SUGAMBRI, warbands=2)
         place_piece(state, SUGAMBRI, GERMANS, WARBAND, 3)
         enough, plan = _would_raid_gain_enough(state, SCENARIO_ARIOVISTUS)

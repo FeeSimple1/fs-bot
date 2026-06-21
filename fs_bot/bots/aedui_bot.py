@@ -602,14 +602,15 @@ def _would_raid_gain_enough(state, scenario):
         is_devastated = _is_devastated(state, region)
 
         # Build steal targets for this region
+        # §3.3.3: a steal target must have pieces, no Citadel/Fort, AND >=1
+        # Resource. Use the canonical validator (the missing Resource check
+        # produced 'Cannot steal from <F>: <F> has 0 Resources').
+        from fs_bot.commands.raid import validate_raid_steal_target
         steal_targets = []
         for target in raid_targets:
-            if count_pieces(state, region, target) == 0:
-                continue
-            if (count_pieces(state, region, target, CITADEL) > 0
-                    or count_pieces(state, region, target, FORT) > 0):
-                continue
-            steal_targets.append(target)
+            valid, _ = validate_raid_steal_target(state, region, AEDUI, target)
+            if valid:
+                steal_targets.append(target)
 
         region_entries = []
         remaining_flips = flips

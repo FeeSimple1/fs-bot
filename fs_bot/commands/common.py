@@ -15,9 +15,19 @@ class CommandError(Exception):
 
 
 def _is_devastated(state, region):
-    """Check if a region has the Devastated marker."""
-    markers = state.get("markers", {}).get(region, {})
-    return MARKER_DEVASTATED in markers
+    """Check if a region is Devastated — the single source of truth.
+
+    Devastation is stored canonically as MARKER_DEVASTATED in
+    state["markers"][region] (placed by the Devastate SA, cleared in Winter).
+    A legacy state["spaces"][region]["devastated"] flag is also honoured so
+    that callers/tests using either representation agree with the executor.
+    Markers may be a dict ({MARKER_DEVASTATED: True}) or a set.
+    """
+    m = state.get("markers", {}).get(region) or {}
+    if MARKER_DEVASTATED in m:  # key membership (dict) or membership (set)
+        return True
+    return bool(state.get("spaces", {}).get(region, {}).get(
+        "devastated", False))
 
 
 def _is_intimidated(state, region):

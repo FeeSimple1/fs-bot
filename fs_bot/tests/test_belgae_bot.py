@@ -23,6 +23,7 @@ from fs_bot.rules_consts import (
     TRIBE_ATREBATES, TRIBE_SEQUANI, TRIBE_NERVII,
     TRIBE_TREVERI, TRIBE_VENETI,
     EVENT_SHADED,
+    MARKER_DEVASTATED,
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import place_piece, count_pieces, get_available
@@ -509,6 +510,22 @@ class TestRaidEstimation:
         for entry in plan:
             if entry["target"] is not None:
                 assert entry["target"] not in state["non_player_factions"]
+
+    def test_raid_no_bank_gain_in_devastated_marker_region(self):
+        """§3.3.3: no +1 bank gain in a Devastated Region. Devastation lives
+        in state["markers"][region] (the Devastate SA never sets the legacy
+        spaces['devastated'] flag), so the planner must read the marker — else
+        it proposes a bank gain the executor refuses ('Cannot gain Resources
+        from Raid in Devastated Region').
+        """
+        state = _make_state(non_players={BELGAE})
+        _place_belgae_force(state, MANDUBII, warbands=2)
+        # No steal targets present; only a possible bank gain.
+        state["markers"].setdefault(MANDUBII, {})[MARKER_DEVASTATED] = True
+        enough, plan = _would_raid_gain_enough(state, SCENARIO_PAX_GALLICA)
+        mandubii = [e for e in plan if e["region"] == MANDUBII]
+        assert all(e["target"] is not None for e in mandubii), \
+            "must not bank-gain in a marker-Devastated region"
 
     def test_raid_gains_2_plus(self):
         """Raid qualifies when gaining 2+ Resources."""

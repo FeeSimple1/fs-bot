@@ -80,6 +80,7 @@ from fs_bot.bots.bot_common import (
     prevalidate_rally_plan,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
+from fs_bot.commands.common import _is_devastated
 from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
     get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
@@ -598,8 +599,7 @@ def _would_raid_gain_enough(state, scenario):
             continue
 
         flips = min(2, hidden_wb)
-        is_devastated = state["spaces"].get(region, {}).get(
-            "devastated", False)
+        is_devastated = _is_devastated(state, region)
 
         # Build steal targets for this region
         steal_targets = []
@@ -1543,8 +1543,7 @@ def node_a_quarters(state):
     for region in playable:
         if count_pieces(state, region, AEDUI) == 0:
             continue
-        is_devastated = state["spaces"].get(region, {}).get(
-            "devastated", False)
+        is_devastated = _is_devastated(state, region)
         if not is_devastated:
             continue
         # Check for Ally or Citadel
@@ -1559,8 +1558,7 @@ def node_a_quarters(state):
         if not has_ally and not has_citadel:
             # Find adjacent non-Devastated region to move to
             for adj in get_adjacent(region, scenario):
-                adj_devastated = state["spaces"].get(adj, {}).get(
-                    "devastated", False)
+                adj_devastated = _is_devastated(state, adj)
                 if not adj_devastated:
                     quarters_plan["leave_devastated"].append({
                         "from": region, "to": adj,

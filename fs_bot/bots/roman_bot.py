@@ -57,6 +57,7 @@ from fs_bot.map.map_data import (
     get_adjacent, get_playable_regions, get_tribes_in_region,
     get_region_group, ALL_REGION_DATA, is_adjacent,
 )
+from fs_bot.commands.common import _is_devastated
 from fs_bot.bots.bot_common import (
     # Event decisions
     should_decline_event, get_dual_use_preference, get_event_instruction,
@@ -1360,7 +1361,7 @@ def node_r_quarters(state):
             if t_info.get("allied_faction") == ROMANS:
                 has_roman_ally = True
                 break
-        is_devastated = state["spaces"].get(region, {}).get("devastated", False)
+        is_devastated = _is_devastated(state, region)
         # Priority: (0=ally, 1=no devas, 2=devastated)
         if has_roman_ally:
             priority = 0
@@ -1455,7 +1456,7 @@ def build_np_winter_relocations(state):
     remaining = {}          # region -> (legions, auxilia) left after moves
 
     def _devastated(region):
-        return state["spaces"].get(region, {}).get("devastated", False)
+        return _is_devastated(state, region)
 
     def _controller(region):
         for fac in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS):

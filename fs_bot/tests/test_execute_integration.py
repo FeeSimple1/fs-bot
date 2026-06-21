@@ -2103,7 +2103,25 @@ def test_card72_shaded_hidden_warband_march_battle():
     _clear_all_mobiles(st, SCENARIO_GALLIC_WAR)
     pl = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))
     S = pl[5]
-    B = next(r for r in get_adjacent(S, SCENARIO_GALLIC_WAR) if r in pl)
+    # The resolver scans sources/destinations in sorted (deterministic) order
+    # and breaks ties toward the sorted-first Region, so choose the sorted-first
+    # adjacent playable Region as the unique target (setup may leave Roman
+    # Allies in other neighbours).
+    B = sorted(r for r in get_adjacent(S, SCENARIO_GALLIC_WAR) if r in pl)[0]
+    # Clear B of any setup pieces (e.g. a Roman Ally/Citadel/Fort) so the Battle
+    # outcome is unambiguous — B should hold only the 3 Auxilia we place. Use
+    # the piece helper so Available pools stay reconciled (validate_state).
+    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.board.pieces import remove_piece as _rm
+    from fs_bot.rules_consts import ALLY as _ALLY, CITADEL as _CIT, FORT as _FORT
+    for _f in (ROMANS, ARVERNI, AEDUI):
+        for _pt in (_ALLY, _CIT, _FORT):
+            _n = count_pieces(st, B, _f, _pt)
+            if _n:
+                _rm(st, B, _f, _pt, _n, to_available=True)
+    for _t in get_tribes_in_region(B, SCENARIO_GALLIC_WAR):
+        if _t in st["tribes"]:
+            st["tribes"][_t]["allied_faction"] = None
     place_piece(st, S, ARVERNI, WARBAND, 6)
     place_piece(st, B, ROMANS, AUXILIA, 3)
     refresh_all_control(st)

@@ -1028,13 +1028,18 @@ def node_v_march_spread(state):
     while remaining_dests:
         # Count how many remaining dests each origin can serve
         origin_coverage = {}
-        for dest in remaining_dests:
+        # Sort the set before iterating: set order is PYTHONHASHSEED-dependent
+        # and would make origin_coverage's insertion order (hence the max()
+        # tie-break below) nondeterministic — violating replay determinism.
+        for dest in sorted(remaining_dests):
             for orig in dest_to_origins[dest]:
                 origin_coverage.setdefault(orig, set()).add(dest)
         if not origin_coverage:
             break
-        # Pick origin that covers the most destinations
-        best_origin = max(origin_coverage, key=lambda o: len(origin_coverage[o]))
+        # Pick origin that covers the most destinations; break ties by Region
+        # name (sorted) for a deterministic choice.
+        best_origin = max(sorted(origin_coverage),
+                          key=lambda o: len(origin_coverage[o]))
         chosen_origins.add(best_origin)
         covered = origin_coverage[best_origin]
         remaining_dests -= covered

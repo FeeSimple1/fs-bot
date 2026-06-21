@@ -1734,7 +1734,7 @@ def _resolve_card54_joined_ranks(state, faction, march_limit,
     playable = set(get_playable_regions(scen, state.get("capabilities")))
     # Target Region: >=2 other Gallic/Roman Factions, reachable/occupied by us.
     T = None
-    for R in playable:
+    for R in sorted(playable):
         others = [f for f in gr if f != faction and count_pieces(state, R, f) > 0]
         if len(others) < 2:
             continue
@@ -2231,7 +2231,7 @@ def _german_setup_marches(state, march_limit):
     scen = state["scenario"]
     playable = list(get_playable_regions(scen, state.get("capabilities")))
     candidates = []
-    for S in playable:
+    for S in sorted(playable):
         hid = count_pieces_by_state(state, S, GERMANS, WARBAND, HIDDEN)
         if hid <= 0:
             continue
@@ -2290,7 +2290,7 @@ def _resolve_card65_german_march_ambush(state, march_limit):
 
     # ---- Ambush with all Germans able (every legal Region).
     ambushes = []
-    for region in playable:
+    for region in sorted(playable):
         tgt = _german_ambush_target(state, region)
         if tgt is None:
             continue
@@ -2335,7 +2335,7 @@ def _resolve_card58_german_ambush(state):
                 + count_pieces_by_state(state, r, ROMANS, WARBAND, HIDDEN))
 
     best = None  # (gatherable, R, sources)
-    for R in playable:
+    for R in sorted(playable):
         if count_pieces(state, R, ROMANS, FORT) <= 0:
             continue
         if count_pieces(state, R, ROMANS) <= 0:
@@ -2428,11 +2428,14 @@ def _resolve_card72_hidden_march_battle(state, faction):
     # Enumerate (source S with Hidden Warbands) -> adjacent destination B with
     # a valid target. Score per Faction priority.
     best = None  # (score_tuple, S, B, target, hidden)
-    for S in playable:
+    # Sorted iteration: 'playable' is a set, whose order is
+    # PYTHONHASHSEED-dependent; with the strict-'>' tie-break below that would
+    # make the chosen (source, destination) nondeterministic across replays.
+    for S in sorted(playable):
         hid = count_pieces_by_state(state, S, faction, WARBAND, HIDDEN)
         if hid <= 0:
             continue
-        for B in get_adjacent(S, scen):
+        for B in sorted(get_adjacent(S, scen)):
             if B not in playable:
                 continue
             tgt = target_in(B)
@@ -2904,7 +2907,7 @@ def _resolve_a19_march_romans(state, faction):
         return m
 
     best = None  # (S, D, trapped, advantage)
-    for S in playable:
+    for S in sorted(playable):
         rs = roman_mobile(S)
         if rs <= 0:
             continue
@@ -4484,7 +4487,7 @@ def _derive_card_71(state, faction, shaded):
         return None
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
     controlled, nocontrol = [], []
-    for r in playable:
+    for r in sorted(playable):
         m = state.get("markers", {}).get(r) or {}
         if MARKER_COLONY in m:
             continue
@@ -4700,7 +4703,7 @@ def _derive_card_58(state, faction, shaded):
         return None
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
     best = None
-    for region in playable:
+    for region in sorted(playable):
         if count_pieces(state, region, ROMANS, FORT) <= 0:
             continue
         bg = (count_pieces(state, region, BELGAE, WARBAND)
@@ -4756,7 +4759,7 @@ def _derive_card_22(state, faction, shaded):
         return {"target_tribes": target_tribes} if target_tribes else None
     replacements = []
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
-    for region in playable:
+    for region in sorted(playable):
         if not is_controlled_by(state, region, faction):
             continue
         for tf in FACTIONS:
@@ -4888,7 +4891,7 @@ def _derive_card_A64(state, faction, shaded):
     from fs_bot.board.pieces import count_pieces
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
     frontier, plain = None, None
-    for region in playable:
+    for region in sorted(playable):
         if count_pieces(state, region, faction, WARBAND) <= 0:
             continue
         m = state.get("markers", {}).get(region) or {}
@@ -4910,7 +4913,7 @@ def _derive_card_A66(state, faction, shaded):
     placement+Command)."""
     from fs_bot.board.pieces import count_pieces
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
-    cands = [r for r in playable if count_pieces(state, r, faction) > 0
+    cands = [r for r in sorted(playable) if count_pieces(state, r, faction) > 0
              and "Uprising" not in (state.get("markers", {}).get(r) or {})]
     return {"region": sorted(cands)[0]} if cands else None
 
@@ -4933,12 +4936,12 @@ def _derive_card_A17(state, faction, shaded):
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     scen = state["scenario"]
     playable = get_playable_regions(scen, state.get("capabilities"))
-    cands = [(r, count_pieces(state, r, ROMANS, AUXILIA)) for r in playable]
+    cands = [(r, count_pieces(state, r, ROMANS, AUXILIA)) for r in sorted(playable)]
     cands = [(r, n) for r, n in cands if n > 0]
     if not cands:
         return None
     if faction == GERMANS:
-        settlement_regions = {r for r in playable
+        settlement_regions = {r for r in sorted(playable)
                               if count_pieces(state, r, GERMANS, SETTLEMENT) > 0}
         core = set(GERMANIA_REGIONS) | settlement_regions
         adj = set()
@@ -4989,7 +4992,7 @@ def _derive_card_11(state, faction, shaded):
     playable = set(get_playable_regions(scen, state.get("capabilities")))
     within1 = ({leader} | set(get_adjacent(leader, scen))) & playable
     best = None  # (region, enemy_mobile)
-    for r in within1:
+    for r in sorted(within1):
         targets = _rank_battle_targets(state, r, scen)
         if not targets:
             continue
@@ -5023,7 +5026,7 @@ def _derive_card_2(state, faction, shaded):
     from fs_bot.map.map_data import get_playable_regions
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
     best = None  # (region, has_legion, roman_pieces)
-    for r in playable:
+    for r in sorted(playable):
         if not _attacker_has_force(state, r, faction):
             continue
         if count_pieces(state, r, ROM) <= 0:
@@ -5052,7 +5055,7 @@ def _derive_card_4(state, faction, shaded):
         return None
     playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
     best = None  # (region, enemy_pieces)
-    for R in playable:
+    for R in sorted(playable):
         has_enemy_citadel = any(
             f != ROMANS and count_pieces(state, R, f, CITADEL) > 0
             for f in FACTIONS)
@@ -5157,7 +5160,7 @@ def _derive_card_44(state, faction, shaded):
     if not shaded:
         to_type = AUXILIA if faction == ROMANS else WARBAND
         reps = []
-        for region in playable:
+        for region in sorted(playable):
             for ef in FACTIONS:
                 if ef == faction:
                     continue
@@ -5171,7 +5174,7 @@ def _derive_card_44(state, faction, shaded):
                                      "piece_state": ps})
         return {"replacements": reps} if reps else None
     reps = []
-    for region in playable:
+    for region in sorted(playable):
         for _ in range(count_pieces(state, region, ROMANS, AUXILIA)):
             if len(reps) >= 3:
                 break

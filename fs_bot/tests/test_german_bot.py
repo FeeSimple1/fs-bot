@@ -639,6 +639,9 @@ class TestNodeGRaid:
 
     def test_raid_prefers_romans_then_belgae(self):
         state = _make_state()
+        # §3.3.3: can only steal from a faction that HAS Resources.
+        state["resources"][ROMANS] = 5
+        state["resources"][BELGAE] = 5
         _place_german_force(state, ATREBATES, warbands=2, hidden=True)
         _place_roman_force(state, ATREBATES, auxilia=1)
         _place_enemy_force(state, ATREBATES, BELGAE, warbands=1)
@@ -650,6 +653,20 @@ class TestNodeGRaid:
         targets = [p["target"] for p in plan if p["region"] == ATREBATES]
         assert ROMANS in targets
         assert BELGAE in targets
+
+    def test_raid_skips_zero_resource_target(self):
+        """§3.3.3: do not target a faction with 0 Resources (executor
+        refuses 'Cannot steal from <F>: <F> has 0 Resources'). With Aedui at
+        0 Resources, the Aedui-present Region yields no steal from Aedui."""
+        state = _make_state()
+        state["resources"][AEDUI] = 0
+        _place_german_force(state, ATREBATES, warbands=2, hidden=True)
+        _place_enemy_force(state, ATREBATES, AEDUI, warbands=1)
+        refresh_all_control(state)
+        _, plan = _would_raid_gain_enough(state, state["scenario"])
+        steals = [p for p in plan
+                  if p["region"] == ATREBATES and p["target"] == AEDUI]
+        assert steals == []
 
 
 # ===================================================================

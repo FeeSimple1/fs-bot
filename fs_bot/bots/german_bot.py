@@ -1121,19 +1121,18 @@ def _would_raid_gain_enough(state, scenario):
         flips = min(2, hidden_wb)
         is_devastated = _is_devastated(state, region)
 
-        # Tier 1: Romans then Aedui — A8.7.3
+        # Steal targets per A8.7.3 priority: (1) Romans or Aedui, (2) Belgae.
+        # Use the canonical executor validator so the planner never proposes a
+        # steal the executor must refuse (§3.3.3 requires the target to have
+        # pieces, no Citadel/Fort, AND at least 1 Resource — the missing
+        # Resource check produced 'Cannot steal from <F>: <F> has 0 Resources').
+        from fs_bot.commands.raid import validate_raid_steal_target
         steal_targets = []
-        for target in (ROMANS, AEDUI):
-            if count_pieces(state, region, target) == 0:
-                continue
-            if (count_pieces(state, region, target, CITADEL) > 0
-                    or count_pieces(state, region, target, FORT) > 0):
-                continue
-            steal_targets.append(target)
-        # Tier 2: Belgae — A8.7.3
-        if (count_pieces(state, region, BELGAE) > 0
-                and count_pieces(state, region, BELGAE, CITADEL) == 0):
-            steal_targets.append(BELGAE)
+        for target in (ROMANS, AEDUI, BELGAE):
+            valid, _ = validate_raid_steal_target(
+                state, region, GERMANS, target)
+            if valid:
+                steal_targets.append(target)
 
         region_entries = []
         remaining = flips

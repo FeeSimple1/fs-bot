@@ -688,6 +688,30 @@ def _validate_group_in_region(state, region, faction, group):
                 f"need {count}")
 
 
+def _move_flippable_preserving_state(state, from_region, to_region, faction,
+                                     piece_type, count):
+    """Move ``count`` flippable pieces, taking Hidden first, then Revealed,
+    then Scouted, so each piece keeps its current flip state across the move
+    (§3.2.2/§3.3.2). The group dict only carries a total per type, so we
+    distribute across the states actually present in the origin.
+    """
+    remaining = count
+    for ps in (HIDDEN, REVEALED, SCOUTED):
+        if remaining <= 0:
+            break
+        avail = count_pieces_by_state(state, from_region, faction,
+                                      piece_type, ps)
+        take = min(avail, remaining)
+        if take > 0:
+            move_piece(state, from_region, to_region, faction, piece_type,
+                       count=take, piece_state=ps)
+            remaining -= take
+    if remaining > 0:
+        # Fall back to the helper's own validation error for the shortfall.
+        move_piece(state, from_region, to_region, faction, piece_type,
+                   count=remaining, piece_state=HIDDEN)
+
+
 def _move_group_to(state, from_region, to_region, faction, group):
     """Move all pieces in a group from one region to another.
 
@@ -704,17 +728,20 @@ def _move_group_to(state, from_region, to_region, faction, group):
         move_piece(state, from_region, to_region, faction, LEGION,
                    count=legion_count)
 
-    # Move Auxilia (Hidden — they were flipped at origin)
+    # Move Auxilia / Warbands preserving their CURRENT flip state. The origin
+    # flip (_flip_origin_pieces) leaves most pieces Hidden, but Scouted pieces
+    # are de-Scouted to REVEALED (§3.3.2/§4.2.2) and March Revealed — so the
+    # group can legally contain Revealed pieces. Forcing HIDDEN here raised
+    # "Only 0 Hidden Warband in <R>, need N" for a group of de-Scouted pieces.
     auxilia_count = group.get(AUXILIA, 0)
     if auxilia_count > 0:
-        move_piece(state, from_region, to_region, faction, AUXILIA,
-                   count=auxilia_count, piece_state=HIDDEN)
+        _move_flippable_preserving_state(
+            state, from_region, to_region, faction, AUXILIA, auxilia_count)
 
-    # Move Warbands (Hidden — they were flipped at origin)
     warband_count = group.get(WARBAND, 0)
     if warband_count > 0:
-        move_piece(state, from_region, to_region, faction, WARBAND,
-                   count=warband_count, piece_state=HIDDEN)
+        _move_flippable_preserving_state(
+            state, from_region, to_region, faction, WARBAND, warband_count)
 
 
 # ============================================================================

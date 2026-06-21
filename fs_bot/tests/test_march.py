@@ -984,3 +984,25 @@ def test_multihop_march_leaves_intermediate_residents_behind():
     assert count_pieces(state, ATREBATES, AEDUI, WARBAND) == 3
     assert count_pieces(state, MANDUBII, AEDUI, WARBAND) == before_resident == 14
     assert count_pieces(state, AEDUI_REGION, AEDUI, WARBAND) == 0
+
+
+def test_march_group_with_scouted_warbands_moves_as_revealed():
+    """§3.3.2/§4.2.2: a marching group's Scouted Warbands are de-Scouted to
+    Revealed (not Hidden) and March Revealed. The mover must not assume the
+    whole group is Hidden ('Only 0 Hidden Warband in <R>, need N'). Regression
+    for _move_group_to forcing HIDDEN.
+    """
+    from fs_bot.engine.execute import _march_with_harassment
+    state = make_state()
+    # Origin Aedui with 5 SCOUTED Arverni... use AEDUI faction for simplicity.
+    place_piece(state, AEDUI_REGION, AEDUI, WARBAND, 5, piece_state=SCOUTED)
+    refresh_all_control(state)
+    assert count_pieces_by_state(state, AEDUI_REGION, AEDUI, WARBAND,
+                                 SCOUTED) == 5
+    final = _march_with_harassment(state, AEDUI, AEDUI_REGION, [MANDUBII])
+    assert final == MANDUBII
+    # All 5 reached the destination; none left behind.
+    assert count_pieces(state, MANDUBII, AEDUI, WARBAND) == 5
+    assert count_pieces(state, AEDUI_REGION, AEDUI, WARBAND) == 0
+    # They March Revealed (Scouted marker removed at the origin flip).
+    assert count_pieces_by_state(state, MANDUBII, AEDUI, WARBAND, REVEALED) == 5

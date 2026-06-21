@@ -18,6 +18,7 @@ from fs_bot.rules_consts import (
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    TRIBE_TO_CITY,
     MOBILE_PIECES,
     # Piece states
     HIDDEN, REVEALED, SCOUTED,
@@ -1417,16 +1418,29 @@ def _determine_suborn_sa(state, scenario):
                 if target_faction == ROMANS and ROMANS in non_players:
                     priority = -1
 
+                # §4.4.2: Suborn can remove an Ally disc but NOT a Citadel.
+                # allied_faction is set by EITHER an Ally or a Citadel, so a
+                # City tribe holding the faction's Citadel is allied but has
+                # no removable Ally disc (§1.4.2). Require an actual Ally piece
+                # in the Region and name an Ally-backed (non-Citadel) tribe,
+                # mirroring board.pieces.clear_allied_tribe.
+                if count_pieces(state, region, target_faction, ALLY) < 1:
+                    continue
+                citadel_here = (
+                    count_pieces(state, region, target_faction, CITADEL) > 0)
                 for tribe in tribes:
                     tribe_info = state["tribes"].get(tribe, {})
-                    if tribe_info.get("allied_faction") == target_faction:
-                        if priority > best_ac:
-                            best_ac = priority
-                            best_target = {
-                                "action": "remove_ally",
-                                "tribe": tribe,
-                                "target_faction": target_faction,
-                            }
+                    if tribe_info.get("allied_faction") != target_faction:
+                        continue
+                    if tribe in TRIBE_TO_CITY and citadel_here:
+                        continue  # represented by the Citadel, not an Ally
+                    if priority > best_ac:
+                        best_ac = priority
+                        best_target = {
+                            "action": "remove_ally",
+                            "tribe": tribe,
+                            "target_faction": target_faction,
+                        }
 
             if best_target and _affordable("remove_ally") is not None:
                 region_actions.append(best_target)

@@ -18,7 +18,7 @@ from fs_bot.rules_consts import (
     MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, SUGAMBRI, UBII,
     AEDUI_REGION, ARVERNI_REGION, SEQUANI, BITURIGES,
     CARNUTES, PICTONES, VENETI, TREVERI,
-    TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
+    TRIBE_CARNUTES, TRIBE_AULERCI, TRIBE_ARVERNI, TRIBE_AEDUI,
     TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
     TRIBE_ATREBATES, TRIBE_SEQUANI,
     EVENT_UNSHADED,
@@ -748,6 +748,50 @@ class TestSuborn:
                 for sp in plan for a in sp["actions"]
             )
             assert has_place_ally
+
+    def test_suborn_remove_ally_skips_citadel_tribe(self):
+        """§4.4.2: Suborn removes an Ally disc, not a Citadel. When a Region
+        holds both an enemy Ally (on a non-city tribe) and an enemy Citadel
+        (on the city tribe), the planner must target the Ally-backed tribe so
+        the executor does not refuse ('No Arverni Ally to remove') and does
+        not clear the wrong (Citadel) tribe.
+        """
+        state = _make_state()
+        state["resources"][AEDUI] = 10
+        _place_aedui_force(state, CARNUTES, warbands=2, hidden=True)
+        # Arverni Ally on Aulerci (non-city) and Citadel on Carnutes (city).
+        place_piece(state, CARNUTES, ARVERNI, ALLY)
+        state["tribes"][TRIBE_AULERCI]["allied_faction"] = ARVERNI
+        place_piece(state, CARNUTES, ARVERNI, CITADEL)
+        state["tribes"][TRIBE_CARNUTES]["allied_faction"] = ARVERNI
+        refresh_all_control(state)
+        sa, regions, details = _determine_suborn_sa(state, SCENARIO_PAX_GALLICA)
+        assert sa == SA_ACTION_SUBORN
+        removes = [a for sp in details["suborn_plan"]
+                   for a in sp["actions"] if a["action"] == "remove_ally"]
+        assert removes, "expected a remove_ally once both tribes are allied"
+        for a in removes:
+            assert a["tribe"] == TRIBE_AULERCI
+            assert a["tribe"] != TRIBE_CARNUTES
+
+    def test_suborn_no_remove_ally_when_only_citadel(self):
+        """§4.4.2: a Citadel-only enemy presence has no removable Ally disc;
+        the planner must not propose remove_ally there.
+        """
+        state = _make_state()
+        state["resources"][AEDUI] = 10
+        _place_aedui_force(state, CARNUTES, warbands=2, hidden=True)
+        # Only an Arverni Citadel (city tribe), no Ally disc anywhere.
+        place_piece(state, CARNUTES, ARVERNI, CITADEL)
+        state["tribes"][TRIBE_CARNUTES]["allied_faction"] = ARVERNI
+        refresh_all_control(state)
+        sa, regions, details = _determine_suborn_sa(state, SCENARIO_PAX_GALLICA)
+        if sa == SA_ACTION_SUBORN:
+            removes = [a for sp in details["suborn_plan"]
+                       for a in sp["actions"]
+                       if a["action"] == "remove_ally"
+                       and a.get("target_faction") == ARVERNI]
+            assert removes == []
 
     def test_suborn_needs_hidden_warband(self):
         """Suborn requires Hidden Aedui Warband in region."""

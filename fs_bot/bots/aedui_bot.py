@@ -50,6 +50,7 @@ from fs_bot.engine.victory import (
 )
 from fs_bot.map.map_data import (
     get_adjacent, get_playable_regions, get_tribes_in_region,
+    get_tribe_data,
     get_region_group, is_city_tribe,
 )
 from fs_bot.bots.bot_common import (
@@ -1383,6 +1384,13 @@ def _determine_suborn_sa(state, scenario):
             for tribe in tribes:
                 tribe_info = state["tribes"].get(tribe, {})
                 if tribe_info.get("allied_faction") is None:
+                    # §1.4.2: cannot place an Aedui Ally at a Tribe restricted
+                    # to another Faction (e.g. Suebi -> Germans). The executor
+                    # refuses it; skip such Tribes here.
+                    td = get_tribe_data(tribe)
+                    if (td.faction_restriction is not None
+                            and td.faction_restriction != AEDUI):
+                        continue
                     cost = _affordable("place_ally")
                     if cost is None:
                         break

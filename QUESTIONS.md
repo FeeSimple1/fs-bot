@@ -753,3 +753,61 @@ in the 1,280-game matrix:
   Battle's target, then the Battle has nothing to do. The SA effect is
   legitimate and beneficial (no rollback warranted); the planner should
   not pair a Battle with an SA that removes its target. Play quality.
+
+---
+
+## Census-driven executor-rejection sweep (June 2026 continuation)
+
+Resumed the planner-quality backlog using `fs_bot.tools.error_census` as the
+acceptance instrument (bot-only games, all scenarios, seeds 1-20 = 100 games).
+Starting point this sweep: 462 incidents/100 games (the ~6,800 figure predates
+the Rally/March/Roman/Aedui fixes already on main). Endpoint: ~150.
+
+### FIXED (each with a regression test; faithful to the cited rule)
+- Arverni Entreat (§4.3.1): filter replace_ally/remove_ally to Arverni-
+  Controlled Regions and to the Resource budget (1/Region); and require an
+  actual Ally disc — Entreat replaces "not a Citadel", so a City tribe holding
+  the faction's Citadel is not a removable Ally. 462 -> 305 -> (later) clean.
+- Aedui Suborn (§4.4.2 / §8.6.3 step 2): "remove enemy Ally" removes an Ally
+  disc, never a Citadel; require an Ally piece and name an Ally-backed tribe
+  (mirrors board.pieces.clear_allied_tribe). 305 -> 237.
+- German/Aedui/Belgae Raid (§3.3.3 / A8.7.3 / §8.5.4): only steal from a
+  Faction that has Resources; route all three through the canonical
+  validate_raid_steal_target. Eliminated "Cannot steal from <F>: 0 Resources"
+  from the bot Raid planners.
+- All bots — Devastation source of truth: planners read MARKER_DEVASTATED in
+  state["markers"], not the never-set state["spaces"][R]["devastated"] flag.
+  commands.common._is_devastated is now canonical (honours both). Fixed Belgae
+  Raid bank-gain in Devastated Regions and made all Devastation-aware play
+  correct (Quarters, Devastate timing, March cost).
+- German Intimidate (A8.7.1): re-derive Intimidate-or-Settle "at that moment"
+  (after the Raid/March moves/reveals pieces), mirroring the Aedui Trade/Suborn
+  re-derivation. Eliminated stale "Only 0 Hidden Germanic Warbands in <R>".
+- March (§3.2.2): a March's group is selected at the ORIGIN and carried through
+  multi-hop paths; the executor no longer re-scoops each Region's RESIDENT
+  forces (which ballooned the army and tried to move resident Revealed Warbands
+  as Hidden — "Only 1 Hidden Warband in <R>, need 15") nor applies Harassment
+  to residents. Balance baseline rebaselined (intended deterministic change).
+
+### OPEN — remaining tail (data, not vibes)
+- Determinism under PYTHONHASHSEED: the census total drifts ~5% across
+  PYTHONHASHSEED values with identical game seeds (e.g. seeds 1-5: 27 incidents
+  at HASHSEED=0/1, 33 at HASHSEED=2). Some decision depends on set-iteration
+  order. state["rng"] is used for explicit tie-breaks, so the leak is a set
+  built/iterated in decision logic upstream of an rng draw (candidate list
+  order). Not an executor error, but it violates strict replay determinism
+  (CLAUDE.md) and should be hunted by sorting any set before it feeds a choice.
+- before-Command SA obviates its Command ("defender not present" on
+  Germans/Arverni Battle): the paired Entreat/Intimidate legally removes the
+  Battle's lone target first. Documented previously as legitimate play-quality
+  (the SA effect is beneficial; no corruption). Planner should not pair a
+  Battle with an SA that removes its target.
+- Event-path Raids (cards A38, 40) steal from a 0-Resource Faction, and a few
+  card/capability effects (A22 "Intimidate has no effect on Romans"); these run
+  through Event handlers, not the bot Raid planner that was fixed.
+- Suborn/Rally Ally placement at a faction-restricted Tribe ("Cannot place
+  Aedui Ally at Suebi — restricted to Germans"): planner should respect
+  TribeData.faction_restriction (§1.4.2) when choosing the place_ally Tribe.
+- A handful of "Only N Hidden Warband in <R>, need M" March residuals
+  (off-by-a-few) surface only under some PYTHONHASHSEED values; investigate
+  together with the determinism item above.

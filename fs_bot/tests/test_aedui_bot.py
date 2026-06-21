@@ -22,6 +22,7 @@ from fs_bot.rules_consts import (
     TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
     TRIBE_ATREBATES, TRIBE_SEQUANI,
     EVENT_UNSHADED,
+    TRIBE_SUEBI_NORTH,
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import place_piece, count_pieces, get_available
@@ -792,6 +793,21 @@ class TestSuborn:
                        if a["action"] == "remove_ally"
                        and a.get("target_faction") == ARVERNI]
             assert removes == []
+
+    def test_suborn_skips_faction_restricted_tribe_for_ally(self):
+        """§1.4.2: cannot place an Aedui Ally at a Tribe restricted to another
+        Faction (Suebi -> Germans). The planner must not propose place_ally
+        there (executor refuses 'Cannot place Aedui Ally at Suebi ...').
+        """
+        state = _make_state()
+        state["resources"][AEDUI] = 10
+        _place_aedui_force(state, SUGAMBRI, warbands=2, hidden=True)
+        sa, regions, details = _determine_suborn_sa(state, SCENARIO_PAX_GALLICA)
+        if sa == SA_ACTION_SUBORN:
+            for sp in details["suborn_plan"]:
+                for a in sp["actions"]:
+                    if a["action"] == "place_ally":
+                        assert a["tribe"] != TRIBE_SUEBI_NORTH
 
     def test_suborn_needs_hidden_warband(self):
         """Suborn requires Hidden Aedui Warband in region."""

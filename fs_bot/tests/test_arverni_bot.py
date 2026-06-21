@@ -1006,6 +1006,26 @@ class TestSpecialAbilities:
                            and a.get("region") == MANDUBII]
         assert replace_actions == []
 
+    def test_entreat_skips_citadel_allied_tribe(self):
+        """§4.3.1: Entreat replaces an Allied Tribe 'not a Citadel'. When the
+        enemy's allegiance in an Arverni-Controlled Region is a Citadel (city
+        tribe, no Ally disc), the planner must not propose replace_ally there
+        (executor refuses: 'Only 0 <F> Ally in <R>, need 1').
+        """
+        state = _make_state()
+        state["resources"][ARVERNI] = 3
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
+        # Aedui presence is a Citadel on the Mandubii city tribe — no Ally disc.
+        place_piece(state, MANDUBII, AEDUI, CITADEL)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
+        refresh_all_control(state)
+        actions = _check_entreat(state, state["scenario"])
+        bad = [a for a in actions
+               if a.get("action") in ("replace_ally", "remove_ally")
+               and a.get("region") == MANDUBII
+               and a.get("tribe") == TRIBE_MANDUBII]
+        assert bad == []
+
     def test_entreat_capped_by_available_resources(self):
         """§4.3.1: Entreat pays 1 Resource per Region. With 0 Resources the
         planner proposes no Entreat actions ('If none ... no Special Ability').

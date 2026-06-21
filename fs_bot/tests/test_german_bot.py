@@ -670,6 +670,44 @@ class TestNodeGRaid:
 
 
 # ===================================================================
+# Intimidate re-derivation at SA time (after March)
+# ===================================================================
+
+class TestIntimidateRederivation:
+    def test_stale_after_march_intimidate_no_executor_error(self):
+        """A8.7.1: Intimidate resolves AFTER the March. A plan picked pre-March
+        that points at a Region the March emptied of Hidden Warbands must not
+        reach the executor as-is (it would raise 'Only 0 Hidden Germanic
+        Warbands'). _execute_sa re-derives against the current board, so the
+        result carries no executor error.
+        """
+        from fs_bot.engine.execute import _execute_sa
+        state = _make_state(non_players={GERMANS})
+        # Live region: Ariovistus + Hidden German Warbands + a player target.
+        _place_german_force(state, UBII, warbands=2, hidden=True, leader=True)
+        _place_enemy_force(state, UBII, AEDUI, warbands=1)
+        refresh_all_control(state)
+        # Stale plan points at MORINI, which has no German Warbands.
+        bot_action = {
+            "command": "March",
+            "sa": "Intimidate",
+            "sa_regions": [MORINI],
+            "details": {
+                "march_plan": {"origins": [UBII], "destinations": [UBII]},
+                "intimidate_plan": [{
+                    "region": MORINI, "free": False, "tier": 2,
+                    "target_faction": AEDUI, "target_piece": WARBAND,
+                    "target_state": HIDDEN,
+                }],
+            },
+        }
+        result = _execute_sa(state, GERMANS, bot_action)
+        assert result is not None
+        assert not result.get("errors"), result.get("errors")
+        assert result.get("rederived_at_sa_time") is True
+
+
+# ===================================================================
 # G_RALLY (+ Settle)
 # ===================================================================
 

@@ -94,6 +94,7 @@ _SA_ENTREAT = "Entreat"
 _SA_SCOUT = "Scout"
 from fs_bot.rules_consts import ROMANS as _ROMANS_F
 from fs_bot.rules_consts import AEDUI as _AEDUI_F
+from fs_bot.rules_consts import GERMANS as _GERMANS_F
 _SA_ENLIST = "Enlist"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
@@ -3687,6 +3688,47 @@ def _execute_sa(state, faction, bot_action):
         return _execute_settle(state, faction, bot_action)
     if sa == _SA_DEVASTATE:
         return _execute_devastate(state, faction, bot_action)
+    if (sa == _SA_INTIMIDATE
+            and faction == _GERMANS_F
+            and bot_action.get("command") in (_CMD_MARCH, _CMD_RAID)
+            and faction in state.get("non_player_factions", set())):
+        # A8.7.1: the Germans Intimidate "after Raid or March" — i.e. when the
+        # SA resolves, AFTER the Command has moved/revealed pieces. The plan
+        # picked at decision time reads the pre-Command board, so a March that
+        # empties its origin of Hidden Warbands leaves a stale Intimidate the
+        # executor refuses ("Only 0 Hidden Germanic Warbands in <R>"). Re-derive
+        # the Intimidate-or-Settle choice against the current board, exactly as
+        # the Aedui Trade/Suborn path re-derives "at that moment". Humans keep
+        # their declared SA.
+        from fs_bot.bots.german_bot import (
+            _determine_intimidate_or_settle_after_march as _g_march_sa,
+            _determine_intimidate_after_raid as _g_raid_sa,
+            SA_ACTION_INTIMIDATE as _G_INTIM,
+            SA_ACTION_SETTLE as _G_SETTLE)
+        details = bot_action.get("details") or {}
+        if bot_action.get("command") == _CMD_MARCH:
+            new_sa, new_regions, new_details = _g_march_sa(
+                state, details.get("march_plan") or {})
+        else:
+            new_sa, new_regions, new_details = _g_raid_sa(
+                state, details.get("raid_plan") or [])
+        rederived = dict(bot_action)
+        d = dict(details)
+        d.update(new_details or {})
+        rederived["details"] = d
+        rederived["sa_regions"] = new_regions  # _execute_settle reads this
+        if new_sa == _G_INTIM:
+            result = _execute_intimidate(state, faction, rederived)
+            result.setdefault("rederived_at_sa_time", True)
+            return result
+        if new_sa == _G_SETTLE:
+            result = _execute_settle(state, faction, rederived)
+            result.setdefault("rederived_at_sa_time", True)
+            return result
+        return {"executed": False, "sa": _SA_INTIMIDATE,
+                "declined_no_effect": True, "rederived_at_sa_time": True,
+                "reason": "no Intimidate or Settle at SA time (A8.7.1 "
+                          "evaluated after the Command; if none, no SA)"}
     if sa == _SA_INTIMIDATE:
         return _execute_intimidate(state, faction, bot_action)
     if sa == _SA_SUBORN:

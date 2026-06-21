@@ -33,6 +33,7 @@ from fs_bot.rules_consts import (
     EVENT_SHADED,
     # Die
     DIE_MIN, DIE_MAX,
+    TRIBE_TO_CITY,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
@@ -1412,11 +1413,20 @@ def _check_entreat(state, scenario):
                 continue
             if not is_controlled_by(state, region, ARVERNI):
                 continue
+            # §4.3.1: Entreat replaces an Allied Tribe "not a Citadel". A City
+            # tribe holding the faction's Citadel is allied but has no Ally
+            # disc, so require an actual Ally piece and skip the Citadel tribe.
+            if count_pieces(state, region, target_faction, ALLY) < 1:
+                continue
+            citadel_here = (
+                count_pieces(state, region, target_faction, CITADEL) > 0)
             tribes = get_tribes_in_region(region, scenario)
             for tribe in tribes:
                 if avail_allies <= 0:
                     break
                 tribe_info = state["tribes"].get(tribe, {})
+                if tribe in TRIBE_TO_CITY and citadel_here:
+                    continue
                 if tribe_info.get("allied_faction") == target_faction:
                     entreat_actions.append({
                         "action": "replace_ally",
@@ -1472,9 +1482,15 @@ def _check_entreat(state, scenario):
                     continue
                 if not is_controlled_by(state, region, ARVERNI):
                     continue
+                if count_pieces(state, region, target_faction, ALLY) < 1:
+                    continue
+                citadel_here = (
+                    count_pieces(state, region, target_faction, CITADEL) > 0)
                 tribes = get_tribes_in_region(region, scenario)
                 for tribe in tribes:
                     tribe_info = state["tribes"].get(tribe, {})
+                    if tribe in TRIBE_TO_CITY and citadel_here:
+                        continue
                     if tribe_info.get("allied_faction") == target_faction:
                         entreat_actions.append({
                             "action": "remove_ally",

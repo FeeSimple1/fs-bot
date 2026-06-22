@@ -1443,6 +1443,10 @@ def _check_entreat(state, scenario):
 
     # Step 2: Replace Auxilia/Aedui Warbands with Arverni Warbands — §8.7.1
     # (1) Auxilia, (2) Aedui Warbands only
+    # Track how many of each (region, faction, type) the plan already targets
+    # so Step 3 below does not re-target a piece Step 2 already replaces (which
+    # left the executor with "No <F> <type> in <R>" once Step 2 removed it).
+    targeted = {}
     for target_faction, target_type in ((ROMANS, AUXILIA), (AEDUI, WARBAND)):
         for region in playable:
             if avail_warbands <= 0:
@@ -1457,6 +1461,8 @@ def _check_entreat(state, scenario):
                     "target_faction": target_faction,
                     "target_type": target_type,
                 })
+                targeted[(region, target_faction, target_type)] = (
+                    targeted.get((region, target_faction, target_type), 0) + 1)
                 avail_warbands -= 1
 
     # Step 3: Remove (once no Arverni Available) — §8.7.1
@@ -1468,7 +1474,9 @@ def _check_entreat(state, scenario):
                     continue
                 target_count = count_pieces(
                     state, region, target_faction, target_type)
-                if target_count > 0:
+                # Don't re-target pieces Step 2 already replaced in this Region.
+                already = targeted.get((region, target_faction, target_type), 0)
+                if target_count - already > 0:
                     entreat_actions.append({
                         "action": "remove_piece",
                         "region": region,

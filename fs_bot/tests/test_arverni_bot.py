@@ -1006,6 +1006,31 @@ class TestSpecialAbilities:
                            and a.get("region") == MANDUBII]
         assert replace_actions == []
 
+    def test_entreat_step3_does_not_retarget_step2_pieces(self):
+        """§8.7.1: a piece replaced in Step 2 must not also be removed in Step
+        3 (the executor would refuse 'No <F> <type> in <R>' after Step 2 took
+        it). No (region, faction, type) may appear in both a replace_piece and
+        a remove_piece action.
+        """
+        state = _make_state()
+        state["resources"][ARVERNI] = 5
+        # Vercingetorix in MANDUBII; MANDUBII and adjacent CARNUTES both
+        # eligible, each with a Roman Auxilia to target.
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=2)
+        _place_arverni_force(state, CARNUTES, warbands=2)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 1)
+        place_piece(state, CARNUTES, ROMANS, AUXILIA, 1)
+        # Only ONE Arverni Warband Available now, so Step 2 replaces in one
+        # Region and Step 3 (avail==0) then scans the rest.
+        state["available"][ARVERNI][WARBAND] = 1
+        refresh_all_control(state)
+        actions = _check_entreat(state, state["scenario"])
+        replaced = {(a["region"], a["target_faction"], a["target_type"])
+                    for a in actions if a["action"] == "replace_piece"}
+        removed = {(a["region"], a["target_faction"], a["target_type"])
+                   for a in actions if a["action"] == "remove_piece"}
+        assert replaced.isdisjoint(removed)
+
     def test_entreat_skips_citadel_allied_tribe(self):
         """§4.3.1: Entreat replaces an Allied Tribe 'not a Citadel'. When the
         enemy's allegiance in an Arverni-Controlled Region is a Citadel (city

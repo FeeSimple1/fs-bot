@@ -1337,6 +1337,7 @@ def execute_card_28(state, shaded=False):
         if tribe_info and tribe_info.get("allied_faction") in GALLIC_FACTIONS:
             fac = tribe_info["allied_faction"]
             if (count_pieces(state, region, fac, ALLY) > 0
+                    and count_pieces(state, region, fac, CITADEL) == 0
                     and get_available(state, fac, CITADEL) > 0):
                 remove_piece(state, region, fac, ALLY)
                 place_piece(state, region, fac, CITADEL)
@@ -1779,6 +1780,7 @@ def execute_card_41(state, shaded=False):
             t_info = state.get("tribes", {}).get(citadel_tribe)
             if (t_info and t_info.get("allied_faction") == faction
                     and count_pieces(state, r, faction, ALLY) > 0
+                    and count_pieces(state, r, faction, CITADEL) == 0
                     and get_available(state, faction, CITADEL) > 0):
                 remove_piece(state, r, faction, ALLY)
                 place_piece(state, r, faction, CITADEL)
@@ -2797,7 +2799,8 @@ def execute_card_68(state, shaded=False):
             markers[tribe].pop(MARKER_RAZED, None)
         # Place Citadel + 4 Warbands of executing faction. The Citadel
         # allies the City tribe — record the allegiance with the piece.
-        if faction and get_available(state, faction, CITADEL) > 0:
+        if (faction and get_available(state, faction, CITADEL) > 0
+                and count_pieces(state, region, faction, CITADEL) == 0):
             place_piece(state, region, faction, CITADEL)
             if t_info is not None:
                 t_info["allied_faction"] = faction

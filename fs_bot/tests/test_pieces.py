@@ -419,3 +419,20 @@ class TestCountOnMap:
     def test_count_on_map_zero(self):
         state = make_state()
         assert count_on_map(state, BELGAE, CITADEL) == 0
+
+
+def test_citadel_one_per_region_invariant():
+    """§1.4/§3.3.1: a Region has one City holding one Citadel — so at most one
+    Citadel per Region, of any Faction. place_piece must refuse a 2nd."""
+    state = make_state()
+    # Ensure a clean Region, then place one Arverni Citadel.
+    state["spaces"][MANDUBII]["pieces"] = {}
+    place_piece(state, MANDUBII, ARVERNI, CITADEL)
+    assert count_pieces(state, MANDUBII, ARVERNI, CITADEL) == 1
+    # A 2nd Citadel (same Faction) must be refused.
+    with pytest.raises(PieceError):
+        place_piece(state, MANDUBII, ARVERNI, CITADEL)
+    # A 2nd Citadel (different Faction) must also be refused.
+    with pytest.raises(PieceError):
+        place_piece(state, MANDUBII, AEDUI, CITADEL)
+    assert count_pieces(state, MANDUBII, ARVERNI, CITADEL) == 1

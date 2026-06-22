@@ -856,8 +856,14 @@ def node_a_rally(state):
     # Resource budget are enforced by prevalidate_rally_plan, which simulates
     # the executor's own checks (fs_bot.commands.rally) in execution order.
 
-    # Step 1: Citadels — replace Allies in Cities
+    # Step 1: Citadels — replace a City ALLY with a Citadel (§3.3.1). Skip a
+    # Region whose City already holds a Citadel (no Ally to replace) — else a
+    # 2nd Citadel would be proposed and the executor refuses it.
     for region in playable:
+        if count_pieces(state, region, AEDUI, CITADEL) > 0:
+            continue
+        if count_pieces(state, region, AEDUI, ALLY) < 1:
+            continue
         for tribe in get_tribes_in_region(region, scenario):
             tribe_info = state["tribes"].get(tribe, {})
             if (tribe_info.get("allied_faction") == AEDUI

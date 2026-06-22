@@ -350,6 +350,8 @@ def _arverni_phase_rally(state, at_war_regions):
             continue
         if count_pieces(state, region, ARVERNI, ALLY) < 1:
             continue
+        if count_pieces(state, region, ARVERNI, CITADEL) >= 1:
+            continue  # City already Citadel-backed — no Ally to upgrade
         # Remove Ally, place Citadel
         remove_piece(state, region, ARVERNI, ALLY)
         place_piece(state, region, ARVERNI, CITADEL)

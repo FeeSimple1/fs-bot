@@ -360,6 +360,18 @@ def place_piece(state, region, faction, piece_type, count=1, *,
         return
 
     if piece_type == CITADEL:
+        # Invariant (§1.4 / §3.3.1): a Region has one City, a City holds one
+        # Citadel — so at most one Citadel per Region, of any Faction. This
+        # backstops every placement path (Rally, Events, Arverni Phase) against
+        # over-placing a 2nd Citadel after an Ally elsewhere in the Region was
+        # consumed by mistake.
+        existing = sum(count_pieces(state, region, f, CITADEL)
+                       for f in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS))
+        if existing + count > 1:
+            raise PieceError(
+                f"Cannot place a Citadel in {region}: it already has a "
+                f"Citadel (one City/Citadel per Region)"
+            )
         avail = get_available(state, faction, CITADEL)
         if avail < count:
             raise PieceError(

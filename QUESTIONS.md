@@ -952,3 +952,38 @@ These closed the two remaining Arverni entries in the census `illegal` tier
   the symptom for the planner, but the underlying allegiance/piece mismatch
   should be traced to its source (Event handler or piece op) and confirmed
   legal or fixed.
+
+---
+
+## STATE-INTEGRITY FIX — Citadel over-placement (one Citadel per Region)
+
+The Arverni audit's Mandubii oddity (3 tribes allied to Aedui, 1 Ally + 2
+Citadels) traced to a real corruption: a Region's one City holds one Citadel,
+so a Region may have at most ONE Citadel — but multiple placement paths placed
+a SECOND. They keyed on "Faction has an Ally disc in the Region" (region-level)
+instead of "the City tribe has an Ally to upgrade", so a City already
+Citadel-backed plus a non-City Ally elsewhere in the Region triggered a 2nd
+Citadel (consuming the non-City tribe's Ally instead). validate_state only
+checks the global pool cap, so it never caught two Citadels in one Region.
+This was happening silently ~2.7 times per game in the all-bot census.
+
+FIXED at every layer:
+- board.pieces.place_piece(CITADEL): hard invariant — refuse if the Region
+  already holds any Faction's Citadel (one City/Citadel per Region). Backstops
+  all paths; PieceError is already caught by command/event execution.
+- commands.rally.rally_in_region place_citadel: require the Region to have a
+  Faction Ally and NO existing Faction Citadel before replacing.
+- Event handlers (cards 28 / 30 / the Arverni-upgrade card / Suebi) and
+  engine.arverni_phase: same Ally-present + Citadel-absent guard before each
+  Ally->Citadel upgrade (prevents partial state: Ally removed, no Citadel).
+- Rally planners (Aedui node_a_rally, Arverni V_RALLY): Step 1 proposes a
+  Citadel only where the City has an Ally and the Region has no Citadel yet —
+  previously these proposed 2nd Citadels the executor silently accepted (199
+  Arverni + 69 Aedui such proposals per 100 games once the executor guard
+  surfaced them).
+
+Verified: across all 5 scenarios x seeds 1-20, NO Region ever holds >1 Citadel.
+Census illegal stays at 3 (architectural Roman Recruit + the documented Arverni
+Battle/Entreat obviation); total 117 -> 97; determinism and balance hold.
+Regression: test_citadel_one_per_region_invariant (+ updated Arverni Rally
+tests that had been draining the pool by stacking Citadels in one Region).

@@ -911,6 +911,23 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
                 f"Tribe {tribe} does not have a {faction} Ally"
             )
 
+        # §3.3.1: a Citadel is placed by replacing a City ALLY. A Region's one
+        # City holds at most one Citadel, so if the Faction already has a
+        # Citadel here the City is Citadel-backed (no Ally to replace) — reject,
+        # else a 2nd Citadel would be placed in the Region (and a different
+        # tribe's Ally removed in its stead).
+        if count_pieces(state, region, faction, CITADEL) >= 1:
+            raise CommandError(
+                f"{faction} already has a Citadel in {region} "
+                f"(City has no Ally to replace)"
+            )
+        # There must be an actual Ally disc of the Faction in the Region (the
+        # City tribe's Ally) to replace.
+        if count_pieces(state, region, faction, ALLY) < 1:
+            raise CommandError(
+                f"No {faction} Ally in {region} to replace with a Citadel"
+            )
+
         # Check Available Citadels
         if get_available(state, faction, CITADEL) < 1:
             raise CommandError(f"No {faction} Citadels Available")

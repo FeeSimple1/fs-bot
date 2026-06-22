@@ -406,10 +406,9 @@ class TestNodeV3:
             place_piece(state, region, ARVERNI, ALLY)
             if get_available(state, ARVERNI, ALLY) == 0:
                 break
-        # All 3 Citadels placed too
-        for _ in range(3):
-            if get_available(state, ARVERNI, CITADEL) > 0:
-                place_piece(state, ARVERNI_REGION, ARVERNI, CITADEL)
+        # Exhaust Available Citadels (one Citadel per Region is the rule, so
+        # drain the pool directly rather than stacking them in one Region).
+        state["available"][ARVERNI][CITADEL] = 0
         # Exhaust Available Warbands
         remaining_wb = get_available(state, ARVERNI, WARBAND)
         if remaining_wb > 0:
@@ -605,8 +604,7 @@ class TestNodeVRally:
         # Also exhaust all Allies and Citadels
         while get_available(state, ARVERNI, ALLY) > 0:
             place_piece(state, MANDUBII, ARVERNI, ALLY)
-        while get_available(state, ARVERNI, CITADEL) > 0:
-            place_piece(state, MANDUBII, ARVERNI, CITADEL)
+        state["available"][ARVERNI][CITADEL] = 0
         # Now wb_on_map >= 10 but Rally can't place anything (nothing Available)
         assert _count_arverni_warbands_on_map(state) >= 10
         result = node_v_rally(state)

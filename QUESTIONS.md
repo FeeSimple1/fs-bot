@@ -899,3 +899,56 @@ A8.4 German/Arverni swap), and A_QUARTERS all match.
   score < 10. The Agreements rule has a 10-12 die-roll tier (agree on 1-4);
   the estimate treats 10-12 as "won't agree", so it can under-estimate Trade
   yield in that band and skip an otherwise-triggered Trade. Conservative.
+
+---
+
+## Flowchart-conformance audit — Arverni (§8.7, June 2026)
+
+Node-by-node comparison of arverni_bot_flowchart.txt against arverni_bot.py.
+The Arverni bot is highly faithful: V1-V5 routing (incl. the V2c Carnyx
+"Auto 1-4" event branch), V_BATTLE (the §8.7.1 Loss restriction via
+_can_battle_in_region, the Caesar >2:1 mobile-ratio gate, trigger Battles then
+Step-5 extras restricted to Romans/Aedui/player-Belgae and NOT NP Belgae or
+Germans), V_RALLY, V_MARCH_THREAT/SPREAD/MASS, and the Ambush/Devastate/Entreat
+SA-selection order all match.
+
+### FIXED (each with a regression test)
+- V_RAID (§8.7.5): the Arverni Raid planner was the last of the four still
+  missing the §3.3.3 Resource check and the cross-Region steal ledger, so it
+  stole from a 0-Resource Faction. Now routed through validate_raid_steal_target
+  with a planned-steal ledger, like German/Aedui/Belgae.
+- V_ENTREAT (§4.3.1): replacing/removing an Allied Tribe consumes an Ally disc.
+  When a Region holds more allied tribes of a Faction than Ally pieces (the
+  surplus represented by Citadels), Step 1/Step 3 emitted one action PER TRIBE
+  and overran the discs. Capped Ally actions per Region at the Ally-piece count.
+
+These closed the two remaining Arverni entries in the census `illegal` tier
+(4 -> 2; the lone survivor is the architectural Roman Recruit/Build-SA case).
+
+### DOCUMENTED (not fixed)
+- V_ENTREAT NOTE / V_BATTLE: "In the rare case that Entreat prevents Battle by
+  removing a lone target piece, instead March and Entreat per above." Not
+  implemented — when the before-Battle Entreat removes a Battle's only target,
+  the Battle resolves as a no-op (executor skips "defender not present") and the
+  Entreat still happens. Prior analysis judged this benign (the Entreat is a
+  legal, beneficial conversion; rolling it back would undo a good action). The
+  faithful "March instead" remedy is a Command re-plan whose multi-Battle
+  semantics ("March instead" vs "drop the obviated Battle") are ambiguous in the
+  text — left for a ruling rather than guessed.
+- V_MARCH_THREAT planner approximations: the Vercingetorix destination is chosen
+  as the Region with the most Arverni pieces without checking reachability or
+  the §8.7.1 Harassment-loss limits ("no more than three Losses, none on
+  Vercingetorix"); Step 2 marches every other Region with 2+ Warbands toward
+  Vercingetorix's destination rather than "toward Vercingetorix counting by
+  adjacent Regions". The executor enforces leave-behind/Control and Harassment,
+  so these are graceful, but the planner is more permissive than the chart.
+
+### STATE-INTEGRITY QUESTION (to investigate)
+- In a Reconquest game, Mandubii showed THREE tribes allied to Aedui (Mandubii
+  city + Senones + Lingones) backed by 1 Ally disc + 2 Citadels. Citadels sit
+  only at Cities and Mandubii has one City, so 2 Aedui Citadels there — and a
+  3rd allied tribe with no remaining backing piece — looks like a tribe/piece
+  desync (the Q13 class) rather than legal state. The V_ENTREAT cap above hides
+  the symptom for the planner, but the underlying allegiance/piece mismatch
+  should be traced to its source (Event handler or piece op) and confirmed
+  legal or fixed.

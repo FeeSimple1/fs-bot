@@ -527,6 +527,25 @@ class TestMarch:
             plan = result["details"]["march_plan"]
             assert plan["origin"] is not None or plan["control_destination"]
 
+    def test_march_does_not_spread_from_control_critical_region(self):
+        """§8.6.5 'Lose no Aedui Control': the spread March must not move
+        Warbands out of a Region if doing so would drop Aedui Control there
+        (the planner now mirrors the executor's keep rule, not a bare leave-1).
+        """
+        # MANDUBII: 3 Aedui Warbands vs 2 Arverni Warbands -> Aedui Control (3>2),
+        # and Control needs all 3 to stay, so 0 are spare.
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=3, hidden=True)
+        _place_enemy_force(state, MANDUBII, ARVERNI, warbands=2)
+        # An enemy Ally next door makes CARNUTES a tempting spread target.
+        _place_enemy_force(state, CARNUTES, ARVERNI, ally_tribe=TRIBE_CARNUTES)
+        refresh_all_control(state)
+        assert is_controlled_by(state, MANDUBII, AEDUI)
+        result = node_a_march(state)
+        if result["command"] == ACTION_MARCH:
+            plan = result["details"]["march_plan"]
+            assert plan.get("origin") != MANDUBII
+
     def test_diviciacus_marches_to_largest_warband_group(self):
         """Per A8.6.5: Diviciacus joins largest Aedui Warband group.
 

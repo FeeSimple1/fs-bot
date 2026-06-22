@@ -985,9 +985,14 @@ def node_a_march(state):
         if aedui_wb < 2:  # Need at least 2 (leave 1 behind)
             continue
 
-        # Check if removing Warbands would lose Aedui Control — §8.6.5
-        # We can move at most (aedui_wb - 1) out
-        max_moveable = aedui_wb - 1
+        # §8.6.5: "Lose no Aedui Control" — leave one Warband AND enough to
+        # keep Control. Use the executor's own keep rule so the planner never
+        # promises a move the executor must trim (one rule, one implementation).
+        from fs_bot.engine.execute import _control_keep_warbands
+        max_moveable = aedui_wb - _control_keep_warbands(
+            state, AEDUI, origin, leader_leaving=False)
+        if max_moveable < 1:
+            continue
 
         # Find adjacent destinations with no Hidden Aedui
         candidate_dests = []
@@ -1069,8 +1074,10 @@ def node_a_march(state):
             if adj not in set(playable):
                 continue
             adj_wb = count_pieces(state, adj, AEDUI, WARBAND)
-            # Leave 1 behind, don't lose Control
-            moveable = adj_wb - 1
+            # §8.6.5: leave one Warband AND enough to keep Control at the source.
+            from fs_bot.engine.execute import _control_keep_warbands
+            moveable = adj_wb - _control_keep_warbands(
+                state, AEDUI, adj, leader_leaving=False)
             if moveable >= needed:
                 can_supply = True
                 break

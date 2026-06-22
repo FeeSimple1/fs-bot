@@ -861,3 +861,41 @@ executor errors reduced to 4 incidents/100 games.
   and flowchart-legal `command-refused` ("event not applicable", "expand/mass
   march: nothing marchable" IF-NONE fall-throughs). None are executor
   rejections of illegal moves and none corrupt state.
+
+---
+
+## Flowchart-conformance audit — Aedui (§8.6, June 2026)
+
+Node-by-node comparison of aedui_bot_flowchart.txt against aedui_bot.py.
+Overall the Aedui bot is highly faithful: A1-A6 routing, A_BATTLE (enemy set
+Gauls/Germans + Romans only at victory; Step-2 high-value and Step-3
+favorable conditions), A_RALLY (Citadel/Ally/Warband order), A_TRADE (exact
+§8.6.3 precondition + trigger + IF-NONE edges), A_SUBORN (priority order incl.
+A8.4 German/Arverni swap), and A_QUARTERS all match.
+
+### FIXED
+- A_MARCH "Lose no Aedui Control" (§8.6.5): the spread (Step 1) and control-
+  supply (Step 2) planning used a bare `warbands - 1` leave-behind and ignored
+  Control preservation, so the planner picked origins the executor then had to
+  trim (surfacing as the "expand/mass march: nothing marchable" legal-decline).
+  Both now use the executor's own `_control_keep_warbands` (leave one Warband
+  AND enough to keep Control) — one rule, one implementation. Legal-decline
+  incidents 41 -> 29 (seeds 1-20). Regression:
+  test_march_does_not_spread_from_control_critical_region.
+
+### DOCUMENTED (minor; not fixed — would benefit from a ruling)
+- A_RAID priority (§8.6.4): the chart orders (1) players at 0+ victory margin,
+  then (2) other non-Roman enemies. The code special-cases only Romans (raid
+  only if a player at 0+ victory); it does not order a *non-Roman* player at
+  0+ victory ahead of a non-Roman enemy below victory. Impact is limited to
+  steal-target choice among enemies co-present in a Raid Region.
+- A_MARCH Britannia / §4.1.3: "Marched into or out of Britannia -> no SA" is
+  detected from the destination list and Step-1 origin only; a Step-2 control-
+  supply move or the Diviciacus march that happens to depart Britannia is not
+  counted as "out of Britannia". Rare (Britannia is base-game only and seldom
+  the supply source).
+- _estimate_trade_resources: when estimating whether Trade clears the ">2
+  Resources" trigger, a *player* Roman is assumed to agree only at victory
+  score < 10. The Agreements rule has a 10-12 die-roll tier (agree on 1-4);
+  the estimate treats 10-12 as "won't agree", so it can under-estimate Trade
+  yield in that band and skip an otherwise-triggered Trade. Conservative.

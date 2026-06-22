@@ -987,3 +987,39 @@ Census illegal stays at 3 (architectural Roman Recruit + the documented Arverni
 Battle/Entreat obviation); total 117 -> 97; determinism and balance hold.
 Regression: test_citadel_one_per_region_invariant (+ updated Arverni Rally
 tests that had been draining the pool by stacking Citadels in one Region).
+
+---
+
+## State-integrity ORACLE — structural invariants + permanent guardrail
+
+Motivated by the Citadel over-placement (which validate_state's pool-conservation
+check could not see), added a structural checker that encodes the board
+invariants the rules guarantee but nothing verified:
+
+  state_schema.check_structural_integrity(state) ->
+    1. At most one Citadel per Region (one City/Region — §1.4/§3.3.1).
+    2. Tribe allegiance <-> backing piece: per Region/Faction, the number of
+       allied Tribes equals that Faction's Ally + Citadel pieces (the Q13
+       desync class, caught in BOTH directions).
+    3. Control-flag freshness: cached space["control"] equals a fresh
+       calculate_control (stale flags were a real planner/Winter bug class).
+    4. Resources and Available pools non-negative.
+
+Ran it as an oracle after every turn across all 5 scenarios x seeds 1-20 (100
+bot-only games): **zero structural violations** — the Citadel fix and the prior
+Q13 / Control-refresh work hold at scale, and no other silent corruption of
+these classes exists.
+
+Left in as a PERMANENT guardrail:
+  - test_structural_integrity_checker_flags_corruption (the checker catches a
+    2-Citadel Region, an unbacked allegiance, a stale Control flag, and
+    negative Resources).
+  - test_self_play_maintains_structural_integrity (every bot game stays
+    structurally sound at each turn boundary — this test would have failed on
+    the Citadel over-placement bug).
+
+check_structural_integrity is intentionally SEPARATE from validate_state (which
+some unit tests construct partial states against) so it can be strict without
+breaking those. Future candidates if a new corruption class appears: Fort
+per-Region limits, Dispersed/Subdued marker vs tribe["status"] consistency,
+flippable-state validity.

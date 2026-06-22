@@ -294,3 +294,93 @@ def validate_state(state):
                 )
 
     return errors
+
+
+def check_structural_integrity(state):
+    """Structural board invariants the rules guarantee but that
+    ``validate_state`` (a pool-conservation check) does not catch.
+
+    These are the silent-corruption class: a state can conserve every piece
+    pool yet still be illegal (e.g. two Citadels in one Region, or a Tribe
+    flagged allied with no backing piece). Returns a list of violation
+    strings; empty means structurally sound.
+
+    Invariants checked:
+      1. At most one Citadel per Region (one City per Region, §1.4/§3.3.1).
+      2. Tribe allegiance <-> backing piece: in each Region, the number of
+         Tribes allied to a Faction equals that Faction's Ally + Citadel
+         pieces there (the Q13 desync class, both directions).
+      3. Resources are non-negative.
+      4. Available pools are non-negative.
+    """
+    errors = []
+    spaces = state.get("spaces", {})
+
+    # 1. One Citadel per Region (any Faction).
+    for region, space in spaces.items():
+        pieces = space.get("pieces", {})
+        total_cit = sum(
+            pieces.get(f, {}).get(CITADEL, 0) for f in FACTIONS)
+        if total_cit > 1:
+            errors.append(
+                f"{region}: {total_cit} Citadels (max 1 per Region)")
+
+    # 2. Tribe allegiance <-> backing Ally/Citadel pieces, per Region/Faction.
+    allied_by_region = {}  # (region, faction) -> count of allied tribes
+    for tribe, info in (state.get("tribes") or {}).items():
+        fac = info.get("allied_faction")
+        if fac is None:
+            continue
+        region = info.get("region") or TRIBE_TO_REGION.get(tribe)
+        if region is None:
+            continue
+        allied_by_region[(region, fac)] = (
+            allied_by_region.get((region, fac), 0) + 1)
+
+    seen = set()
+    for region, space in spaces.items():
+        pieces = space.get("pieces", {})
+        for fac in FACTIONS:
+            backing = (pieces.get(fac, {}).get(ALLY, 0)
+                       + pieces.get(fac, {}).get(CITADEL, 0))
+            allied = allied_by_region.get((region, fac), 0)
+            seen.add((region, fac))
+            if allied != backing:
+                errors.append(
+                    f"{region}/{fac}: {allied} allied Tribe(s) but "
+                    f"{backing} backing Ally/Citadel piece(s)")
+    # Tribes allied in a Region that has no piece dict entry at all.
+    for (region, fac), allied in allied_by_region.items():
+        if (region, fac) in seen:
+            continue
+        if allied:
+            errors.append(
+                f"{region}/{fac}: {allied} allied Tribe(s) but 0 backing "
+                f"Ally/Citadel piece(s)")
+
+    # 3. Control flag consistency: the cached space["control"] must equal a
+    # fresh recomputation from the pieces (§1.6). Stale flags are a real bug
+    # class (planners and Winter logic read space["control"]).
+    from fs_bot.board.control import calculate_control
+    for region in spaces:
+        stored = spaces[region].get("control")
+        if stored is None:
+            continue  # never computed yet — not a staleness violation
+        fresh = calculate_control(state, region)
+        if stored != fresh:
+            errors.append(
+                f"{region}: control flag '{stored}' but recompute is "
+                f"'{fresh}' (stale)")
+
+    # 4. Resources non-negative.
+    for fac, res in (state.get("resources") or {}).items():
+        if res < 0:
+            errors.append(f"{fac} Resources negative ({res})")
+
+    # 5. Available pools non-negative.
+    for fac, pool in (state.get("available") or {}).items():
+        for pt, n in (pool or {}).items():
+            if n < 0:
+                errors.append(f"{fac} {pt} Available negative ({n})")
+
+    return errors

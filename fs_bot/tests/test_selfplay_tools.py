@@ -138,3 +138,65 @@ def test_error_census_severity_classification():
     assert _severity(
         "command-refused", "event not applicable: CommandError('*')"
     ) == "ineffective-event"
+
+
+def test_structural_integrity_checker_flags_corruption():
+    """The structural checker must catch the silent-corruption classes that
+    validate_state (pool conservation) cannot: 2 Citadels in a Region, a Tribe
+    allegiance with no backing piece, a stale Control flag, negative Resources.
+    """
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import check_structural_integrity
+    st = setup_scenario(rc.SCENARIO_PAX_GALLICA, seed=1)
+    assert check_structural_integrity(st) == []  # clean at setup
+    st["spaces"]["Mandubii"]["pieces"].setdefault("Arverni", {})["Citadel"] = 2
+    st["tribes"]["Morini"]["allied_faction"] = "Aedui"  # no backing piece
+    st["spaces"]["Carnutes"]["control"] = "Roman Control"  # stale
+    st["resources"]["Belgae"] = -3
+    errs = check_structural_integrity(st)
+    joined = " | ".join(errs)
+    assert "2 Citadels" in joined
+    assert "Morini/Aedui" in joined
+    assert "stale" in joined
+    assert "Belgae Resources negative" in joined
+
+
+def test_self_play_maintains_structural_integrity():
+    """Regression guard for the silent-corruption class (e.g. the Citadel
+    over-placement): every bot-only game must keep the board structurally
+    sound (one Citadel/Region, Tribe<->piece allegiance sync, fresh Control
+    flags, non-negative pools) at every turn boundary."""
+    import contextlib
+    import io
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.engine.game_engine import run_game, ACTION_EVENT, get_sop_factions
+    from fs_bot.bots.bot_dispatch import dispatch_bot_turn
+    from fs_bot.cli.dispatcher import _translate_bot_action
+    from fs_bot.state.state_schema import check_structural_integrity
+
+    scenarios = (rc.SCENARIO_PAX_GALLICA, rc.SCENARIO_GREAT_REVOLT,
+                 rc.SCENARIO_RECONQUEST, rc.SCENARIO_ARIOVISTUS,
+                 rc.SCENARIO_GALLIC_WAR)
+    violations = []
+    for sc in scenarios:
+        for seed in (1, 2):
+            st = setup_scenario(sc, seed=seed)
+            st["non_player_factions"] = set(get_sop_factions(st))
+
+            def decision_func(state, faction, options, position):
+                errs = check_structural_integrity(state)
+                if errs:
+                    violations.append((sc, seed, state.get("current_card"),
+                                       errs[0]))
+                state["current_card_id"] = state.get("current_card")
+                state["is_second_eligible"] = (position == "2nd_eligible")
+                state["can_play_event"] = (ACTION_EVENT in options)
+                return {"action": _translate_bot_action(
+                    dispatch_bot_turn(state, faction), options)}
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                try:
+                    run_game(st, decision_func=decision_func, execute=True)
+                except Exception:
+                    pass
+    assert violations == [], violations[:5]

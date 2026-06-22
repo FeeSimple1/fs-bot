@@ -1632,7 +1632,7 @@ def _can_intimidate_region(state, region):
     return (False, "not in Successor's region")
 
 
-def _select_intimidate_targets(state, region, max_count):
+def _select_intimidate_targets(state, region, max_count, exclude_faction=None):
     """Pick up to max_count pieces to Intimidate in this region per A8.7.1.
 
     Targets ordered by:
@@ -1652,9 +1652,17 @@ def _select_intimidate_targets(state, region, max_count):
     def _faction_has_leader(faction):
         return get_leader_in_region(state, region, faction) is not None
 
+    def _skip(faction):
+        # A8.7.1 / G_INTIMIDATE: before a Battle, do not Intimidate-remove the
+        # Battle's own defender — those pieces are "removed in Battle". Removing
+        # them here can leave the Battle with no target ('defender not present').
+        return faction == exclude_faction
+
     # Tier 1 — Player Allies (Roman, Aedui, Belgae)
     for faction in (ROMANS, AEDUI, BELGAE):
         if faction in non_players:
+            continue
+        if _skip(faction):
             continue
         if _faction_has_leader(faction):
             continue
@@ -1677,6 +1685,8 @@ def _select_intimidate_targets(state, region, max_count):
     for faction, piece in tier2:
         if faction in non_players:
             continue
+        if _skip(faction):
+            continue
         if _faction_has_leader(faction):
             continue
         for st in (HIDDEN, REVEALED, SCOUTED):
@@ -1694,6 +1704,8 @@ def _select_intimidate_targets(state, region, max_count):
     # Tier 3 — Non-player Roman/Aedui Allies (NOT Belgae or Arverni)
     for faction in (ROMANS, AEDUI):
         if faction not in non_players:
+            continue
+        if _skip(faction):
             continue
         if _faction_has_leader(faction):
             continue
@@ -1714,6 +1726,8 @@ def _select_intimidate_targets(state, region, max_count):
     )
     for faction, piece in tier4:
         if faction not in non_players:
+            continue
+        if _skip(faction):
             continue
         if _faction_has_leader(faction):
             continue
@@ -1754,7 +1768,11 @@ def _check_intimidate_before_battle(state, battle_plan):
             state, region, GERMANS, WARBAND, HIDDEN)
         if hidden == 0:
             continue
-        targets = _select_intimidate_targets(state, region, max_count=hidden)
+        # A8.7.1: Intimidate removes pieces "not removed in Battle" — so in a
+        # Battle Region, exclude the Battle's defender (the Battle handles it;
+        # removing it here can leave 'defender not present').
+        targets = _select_intimidate_targets(
+            state, region, max_count=hidden, exclude_faction=bp.get("target"))
         for t in targets:
             plan.append({"region": region, "free": False, **t})
     return plan

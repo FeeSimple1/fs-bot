@@ -834,6 +834,22 @@ class TestIntimidatePriority:
         assert first["target_piece"] == ALLY
         assert first["tier"] == 1
 
+    def test_intimidate_before_battle_excludes_defender(self):
+        """A8.7.1 / G_INTIMIDATE: before a Battle, Intimidate removes pieces
+        the Battle will NOT remove — so it must not target the Battle's own
+        defender (which would leave 'defender not present').
+        """
+        state = _make_state(non_players={GERMANS, BELGAE, AEDUI})
+        _place_german_force(state, SUGAMBRI, leader=True, warbands=2)
+        # Roman (player) Auxilia is the Battle's defender in SUGAMBRI.
+        _place_roman_force(state, SUGAMBRI, auxilia=1)
+        battle_plan = [{"region": SUGAMBRI, "target": ROMANS}]
+        plan = _check_intimidate_before_battle(state, battle_plan)
+        # No Intimidate target may be the Battle's defender in the Battle Region.
+        for t in plan:
+            if t["region"] == SUGAMBRI:
+                assert t["target_faction"] != ROMANS
+
     def test_tier2_player_aux_warbands(self):
         """Tier 2: Roman Auxilia / Aedui Warbands / Belgic Warbands."""
         state = _make_state(non_players={GERMANS, BELGAE})  # Aedui is player

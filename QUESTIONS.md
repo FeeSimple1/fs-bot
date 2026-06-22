@@ -811,3 +811,53 @@ the Rally/March/Roman/Aedui fixes already on main). Endpoint: ~150.
 - A handful of "Only N Hidden Warband in <R>, need M" March residuals
   (off-by-a-few) surface only under some PYTHONHASHSEED values; investigate
   together with the determinism item above.
+
+---
+
+## Determinism + tail sweep (June 2026, continuation 2)
+
+Picked up the OPEN items from the previous sweep.
+
+### FIXED — strict replay determinism (the big one)
+Several bot/event paths iterated a `set` whose order is PYTHONHASHSEED-dependent
+and then kept the first element under a strict `>`/`max()` tie-break, so play
+diverged across processes with identical game seeds (census drifted ~5% by
+hashseed). Sorted every such decision-feeding iteration (arverni_bot V_MARCH
+spread; execute.py card-72 Hidden-Warband March+Battle; 17 `for ... in playable`
+/ comprehensions over `set(get_playable_regions(...))`). Verified bit-identical
+play across PYTHONHASHSEED 0/1/2/3/5/7/13/42/99 for all 5 scenarios x seeds
+1-20; the census is now constant (128) regardless of hashseed.
+
+### FIXED — remaining executor rejections (each with a regression test)
+- March: move a group's Warbands/Auxilia in their actual flip state, not forced
+  Hidden — a group of de-Scouted (Revealed) Warbands raised "Only 0 Hidden
+  Warband in <R>, need N" (§3.3.2).
+- Raid (German/Aedui/Belgae): per-Faction steal ledger across Regions, so the
+  plan never steals more than a Faction has ("Cannot steal from <F>: 0
+  Resources" on the 2nd Region) (§3.3.3).
+- German Intimidate before Battle: exclude the Battle's defender, so Intimidate
+  complements (not replaces) the Battle — eliminated "defender not present" and
+  the A22 Romans-Intimidate refusals (A8.7.1).
+- Roman Scout: a Successor may Scout only its own Region, not within-1 (§4.1.2).
+- Arverni Entreat: Step 3 (remove) no longer re-targets a piece Step 2
+  (replace) already took (§8.7.1).
+
+Census trajectory this continuation: 214 (post-determinism) -> 128, hard
+executor errors reduced to 4 incidents/100 games.
+
+### OPEN — residual tail (4 hard incidents/100 games; documented, low-value)
+- Romans Recruit "No Roman Allies Available" (2): a paired Build SA places
+  Roman Allies before the Recruit Command, draining the shared Ally pool; the
+  Recruit's planned Ally then fails. Cross-Command/SA resource coordination
+  (same architectural class as interruptible-SA timing).
+- Arverni Battle "defender not present" (1): the paired before-Battle Entreat
+  legally removes the Battle's lone target. The Arverni flowchart NOTE
+  prescribes "instead March and Entreat" — a Command re-plan (not implemented;
+  the German analog was handled by excluding the defender from Intimidate, but
+  Entreat's cross-Region targeting makes the Arverni case a larger change).
+- Arverni March+Entreat (1): a residual Entreat targeting edge.
+- The remaining ~124 incidents are soft: `sa-no-effect` (an SA that legally
+  accomplishes nothing — the planner should "if none, no SA"), `sa-skipped`,
+  and flowchart-legal `command-refused` ("event not applicable", "expand/mass
+  march: nothing marchable" IF-NONE fall-throughs). None are executor
+  rejections of illegal moves and none corrupt state.

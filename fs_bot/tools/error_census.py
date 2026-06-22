@@ -1,10 +1,21 @@
 """All-bot sub-action error census.
 
-Plays bot-only games across scenarios/seeds and aggregates every executor
-rejection: plan components the executor legally refused (``errors`` lists),
-Special Activities that executed with no effect, and Commands that produced
-no legal effect. This is the acceptance instrument for the planner-quality
-backlog in QUESTIONS.md ("OPEN — planner quality").
+Plays bot-only games across scenarios/seeds and aggregates executor outcomes,
+classified by SEVERITY so the headline reflects real defects, not the
+flowchart legally declining:
+
+  illegal           — the bot proposed a sub-action the executor must refuse
+                      (command-error / sa-error). THE number to drive to zero.
+  wasteful-sa       — an SA was attached but accomplished nothing
+                      (sa-no-effect): play quality, no corruption.
+  ineffective-event — the bot played an Event that did nothing
+                      ("event not applicable"): play quality.
+  legal-decline     — the published flowchart's own "If none ... no SA" /
+                      IF-NONE fall-through (nothing marchable, command produced
+                      no legal effect): NOT a defect.
+
+This is the acceptance instrument for the planner-quality backlog in
+QUESTIONS.md ("OPEN — planner quality").
 
     python -m fs_bot.tools.error_census --seeds 1-10
     python -m fs_bot.tools.error_census --seeds 1-10 --scenario "The Great Revolt"
@@ -98,6 +109,38 @@ def _walk(ex, faction, cmd, sa, counts, examples, scenario, seed, card):
             examples.setdefault(key, (scenario, seed, card, str(why)))
 
 
+_SEVERITY_ORDER = ("illegal", "wasteful-sa", "ineffective-event",
+                  "legal-decline", "other-refused")
+
+# Reason substrings (post-_norm) that mark a Command refusal as the published
+# flowchart legally declining rather than a defect.
+_LEGAL_DECLINE_REASONS = (
+    "nothing marchable",          # expand/mass/spread March IF-NONE fall-through
+    "no legal effect",            # "command produced no legal effect"
+    "no trade or suborn at sa",   # Aedui §8.6.3 "at that moment" decline
+    "no intimidate or settle",    # German A8.7.1 decline
+    "if none",                    # generic flowchart IF-NONE text
+)
+
+
+def _severity(kind, msg):
+    """Bucket one census incident by severity (see module docstring)."""
+    if kind in ("command-error", "sa-error"):
+        return "illegal"
+    if kind == "sa-no-effect":
+        return "wasteful-sa"
+    if kind == "sa-skipped":
+        return "legal-decline"
+    if kind == "command-refused":
+        low = str(msg).lower()
+        if any(r in low for r in _LEGAL_DECLINE_REASONS):
+            return "legal-decline"
+        if "event not applicable" in low:
+            return "ineffective-event"
+        return "other-refused"   # an unexpected refusal — surfaced, not hidden
+    return "other-refused"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenario", default=None,
@@ -105,6 +148,8 @@ def main(argv=None) -> int:
     ap.add_argument("--seeds", default="1-10")
     ap.add_argument("--out", default=None, help="write JSON detail here")
     ap.add_argument("--top", type=int, default=60)
+    ap.add_argument("--illegal-only", action="store_true",
+                    help="list only 'illegal' defects (hide wasteful/legal)")
     args = ap.parse_args(argv)
 
     lo, _, hi = args.seeds.partition("-")
@@ -120,17 +165,40 @@ def main(argv=None) -> int:
             games += 1
 
     total = sum(counts.values())
-    print(f"games={games}  total_incidents={total}")
-    for key, n in counts.most_common(args.top):
+
+    # Aggregate by severity tier.
+    by_sev = Counter()
+    for key, n in counts.items():
+        by_sev[_severity(key[2], key[3])] += n
+    illegal = by_sev.get("illegal", 0)
+
+    print(f"games={games}  total_incidents={total}  "
+          f"illegal={illegal}  (defects to drive to zero)")
+    print("severity: " + "  ".join(
+        f"{sev}={by_sev.get(sev, 0)}" for sev in _SEVERITY_ORDER
+        if by_sev.get(sev, 0)))
+
+    # Optionally restrict the detailed list to genuine defects.
+    items = counts.most_common()
+    if args.illegal_only:
+        items = [(k, n) for k, n in items
+                 if _severity(k[2], k[3]) == "illegal"]
+    for key, n in items[:args.top]:
         faction, cmd, kind, msg = key
-        print(f"{n:6d}  {faction:8s} {cmd or '-':22s} {kind:15s} {msg}")
+        sev = _severity(kind, msg)
+        print(f"{n:6d}  [{sev:15s}] {faction:8s} {cmd or '-':22s} "
+              f"{kind:15s} {msg}")
         sc, seed, card, raw = examples[key]
         print(f"        e.g. {sc} seed={seed} card={card}: {raw[:110]}")
     if args.out:
         with open(args.out, "w") as f:
             json.dump({"games": games, "total": total,
+                       "by_severity": dict(by_sev),
+                       "illegal": illegal,
                        "counts": [{"faction": k[0], "command": k[1],
-                                   "kind": k[2], "msg": k[3], "n": n}
+                                   "kind": k[2],
+                                   "severity": _severity(k[2], k[3]),
+                                   "msg": k[3], "n": n}
                                   for k, n in counts.most_common()]}, f,
                       indent=1)
     return 0

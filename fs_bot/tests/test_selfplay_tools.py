@@ -108,3 +108,33 @@ def test_ae_deep_profile_finishes_and_suborn_remove_carries_tribe():
         for a in plan[1]:
             if a["action"] == "remove_ally":
                 assert a.get("tribe"), "remove_ally must carry its tribe"
+
+
+def test_error_census_severity_classification():
+    """The census must separate genuine illegal-move defects from the
+    flowchart legally declining, so the headline reflects real bugs."""
+    from fs_bot.tools.error_census import _severity
+
+    # Executor rejections of an illegal proposal -> illegal.
+    assert _severity("command-error", "{'error': 'No Roman Allies Available'}") \
+        == "illegal"
+    assert _severity("sa-error", "{'error': 'Only N * Ally in *, need N'}") \
+        == "illegal"
+
+    # An SA attached but with no effect -> wasteful (play quality, not a defect).
+    assert _severity("sa-no-effect", "no effect") == "wasteful-sa"
+
+    # Flowchart IF-NONE fall-throughs and "no legal effect" -> legal-decline.
+    assert _severity(
+        "command-refused",
+        "expand/mass march: nothing marchable (leader/warbands pinned ...)"
+    ) == "legal-decline"
+    assert _severity("sa-skipped", "command produced no legal effect") \
+        == "legal-decline"
+    assert _severity("command-refused", "command produced no legal effect") \
+        == "legal-decline"
+
+    # An Event that did nothing -> ineffective-event (play quality).
+    assert _severity(
+        "command-refused", "event not applicable: CommandError('*')"
+    ) == "ineffective-event"

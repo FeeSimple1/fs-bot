@@ -1268,10 +1268,22 @@ def node_r_scout(state):
     # §4.2.2: Reveal only in Regions within 1 of Caesar (or the Successor's
     # Region) AND only by flipping a Roman Hidden Auxilia present THERE.
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    # §4.1.2: Scout Reveal is allowed within 1 Region of the NAMED leader
+    # (Caesar), but only in the SAME Region as a Successor. Using within-1 for
+    # a Successor made the executor refuse ('Successor must be in the same
+    # region for Scout Reveal').
+    leader_name = (get_leader_in_region(state, caesar_region, ROMANS)
+                   if caesar_region is not None else None)
+    leader_is_caesar = (leader_name == CAESAR)
     for region in playable:
-        if not (caesar_region is not None
-                and (region == caesar_region
-                     or is_adjacent(region, caesar_region))):
+        if caesar_region is None:
+            continue
+        if leader_is_caesar:
+            in_range = (region == caesar_region
+                        or is_adjacent(region, caesar_region))
+        else:
+            in_range = (region == caesar_region)  # Successor: same Region only
+        if not in_range:
             continue
         if count_pieces_by_state(state, region, ROMANS, AUXILIA, HIDDEN) == 0:
             continue

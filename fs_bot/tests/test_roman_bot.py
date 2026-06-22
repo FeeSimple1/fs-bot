@@ -14,7 +14,7 @@ from fs_bot.rules_consts import (
     SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS,
     SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
-    CAESAR, AMBIORIX, ARIOVISTUS_LEADER,
+    CAESAR, AMBIORIX, ARIOVISTUS_LEADER, SUCCESSOR,
     MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII,
     AEDUI_REGION, ARVERNI_REGION, SUGAMBRI, SEQUANI,
     CARNUTES, BITURIGES,
@@ -677,6 +677,24 @@ class TestNodeRScout:
         if targets:
             # Hidden should be prioritized
             assert targets[0]["hidden"] > 0
+
+    def test_scout_successor_limited_to_same_region(self):
+        """§4.1.2: Scout Reveal is within 1 of the named leader (Caesar) but
+        only in the SAME Region as a Successor. With a Successor (not Caesar)
+        on the map, no Scout target may be in an adjacent Region (executor
+        refuses: 'Successor must be in the same region for Scout Reveal').
+        """
+        state = _make_state()
+        # Successor (not Caesar) + Hidden Auxilia in MANDUBII.
+        place_piece(state, MANDUBII, ROMANS, LEADER, leader_name=SUCCESSOR)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 5, piece_state=HIDDEN)
+        # Enemy to Scout in an ADJACENT Region (also with a Hidden Auxilia).
+        place_piece(state, ATREBATES, ROMANS, AUXILIA, 2, piece_state=HIDDEN)
+        place_piece(state, ATREBATES, BELGAE, WARBAND, 2, piece_state=HIDDEN)
+        place_piece(state, MANDUBII, BELGAE, WARBAND, 2, piece_state=HIDDEN)
+        plan = node_r_scout(state)
+        for t in plan["scout_targets"]:
+            assert t["region"] == MANDUBII
 
 
 # ===================================================================

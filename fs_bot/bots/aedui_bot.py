@@ -593,6 +593,9 @@ def _would_raid_gain_enough(state, scenario):
                 continue
         raid_targets.append(target)
 
+    # §3.3.3: track Resources already committed to steals so the plan never
+    # steals more from a Faction than it has across all Regions.
+    planned_steals = {}
     for region in playable:
         hidden_wb = count_pieces_by_state(
             state, region, AEDUI, WARBAND, HIDDEN)
@@ -618,7 +621,11 @@ def _would_raid_gain_enough(state, scenario):
         for target in steal_targets:
             if remaining_flips <= 0:
                 break
+            if state["resources"].get(target, 0) - planned_steals.get(
+                    target, 0) < 1:
+                continue
             region_entries.append({"region": region, "target": target})
+            planned_steals[target] = planned_steals.get(target, 0) + 1
             total_gain += 1
             remaining_flips -= 1
 

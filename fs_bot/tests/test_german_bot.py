@@ -654,6 +654,23 @@ class TestNodeGRaid:
         assert ROMANS in targets
         assert BELGAE in targets
 
+    def test_raid_steal_ledger_caps_at_target_resources(self):
+        """§3.3.3: a steal takes 1 Resource. Across multiple Raid Regions the
+        plan must not steal more from a Faction than it has — a 2nd steal from
+        a Faction already drained to 0 would be refused at execution.
+        """
+        state = _make_state(non_players={GERMANS})
+        state["resources"][BELGAE] = 1  # only ONE Resource to steal, total
+        # German Hidden Warbands + Belgae present in two distinct Regions.
+        _place_german_force(state, MORINI, warbands=2, hidden=True)
+        _place_enemy_force(state, MORINI, BELGAE, warbands=1)
+        _place_german_force(state, NERVII, warbands=2, hidden=True)
+        _place_enemy_force(state, NERVII, BELGAE, warbands=1)
+        refresh_all_control(state)
+        _, plan = _would_raid_gain_enough(state, state["scenario"])
+        belgae_steals = [p for p in plan if p["target"] == BELGAE]
+        assert len(belgae_steals) <= 1, belgae_steals
+
     def test_raid_skips_zero_resource_target(self):
         """§3.3.3: do not target a faction with 0 Resources (executor
         refuses 'Cannot steal from <F>: <F> has 0 Resources'). With Aedui at

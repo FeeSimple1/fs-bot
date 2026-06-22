@@ -1111,6 +1111,11 @@ def _would_raid_gain_enough(state, scenario):
     playable = get_playable_regions(scenario, state.get("capabilities"))
     total_gain = 0
     plan = []
+    # §3.3.3: each steal takes 1 Resource. Track Resources already committed
+    # to steals so the plan never steals more from a Faction than it has
+    # across ALL Regions (a 2nd steal from a Faction drained to 0 by an
+    # earlier Region would be refused: 'Cannot steal from <F>: 0 Resources').
+    planned_steals = {}
 
     for region in playable:
         hidden_wb = count_pieces_by_state(
@@ -1139,7 +1144,12 @@ def _would_raid_gain_enough(state, scenario):
         for target in steal_targets:
             if remaining <= 0:
                 break
+            avail = state["resources"].get(target, 0) - planned_steals.get(
+                target, 0)
+            if avail < 1:
+                continue  # already fully drained by earlier planned steals
             region_entries.append({"region": region, "target": target})
+            planned_steals[target] = planned_steals.get(target, 0) + 1
             total_gain += 1
             remaining -= 1
 

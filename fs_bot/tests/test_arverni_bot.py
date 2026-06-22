@@ -21,6 +21,7 @@ from fs_bot.rules_consts import (
     TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
     TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
     EVENT_SHADED,
+    TRIBE_SENONES, TRIBE_LINGONES,
 )
 from fs_bot.state.state_schema import build_initial_state
 from fs_bot.board.pieces import place_piece, count_pieces, get_available
@@ -755,6 +756,20 @@ class TestNodeVRaid:
         mandubii_entries = [r for r in raid_plan if r["region"] == MANDUBII]
         assert len(mandubii_entries) <= 2
 
+    def test_raid_skips_zero_resource_target_and_ledgers(self):
+        """§3.3.3: only steal from a Faction that has Resources, and never more
+        than it has across Regions. With Belgae at 1 Resource and present in two
+        Raid Regions, at most one steal targets Belgae."""
+        state = _make_state()
+        state["resources"][BELGAE] = 1
+        place_piece(state, MORINI, ARVERNI, WARBAND, 2)
+        place_piece(state, MORINI, BELGAE, WARBAND, 1)
+        place_piece(state, NERVII, ARVERNI, WARBAND, 2)
+        place_piece(state, NERVII, BELGAE, WARBAND, 1)
+        _, raid_plan = _would_raid_gain_enough(state, state["scenario"])
+        belgae_steals = [r for r in raid_plan if r["target"] == BELGAE]
+        assert len(belgae_steals) <= 1
+
     def test_raid_no_steal_from_enemy_with_fort(self):
         """Raid: can't steal from enemy with Fort in region — §3.3.3 (b).
 
@@ -1030,6 +1045,29 @@ class TestSpecialAbilities:
         removed = {(a["region"], a["target_faction"], a["target_type"])
                    for a in actions if a["action"] == "remove_piece"}
         assert replaced.isdisjoint(removed)
+
+    def test_entreat_ally_actions_capped_at_ally_piece_count(self):
+        """§4.3.1: Entreat replaces an Allied Tribe via its Ally disc. When more
+        tribes are allied than there are Ally pieces in the Region (the surplus
+        held by Citadels), the planner must emit at most one replace_ally per
+        Ally disc — not one per tribe ('Only 0 <F> Ally in <R>' on the overrun).
+        """
+        state = _make_state()
+        state["resources"][ARVERNI] = 5
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
+        # Two Senones/Lingones tribes allied to Aedui, but only ONE Aedui Ally
+        # disc present (the other allegiance is unbacked / would be a Citadel).
+        place_piece(state, MANDUBII, AEDUI, ALLY)
+        state["tribes"][TRIBE_SENONES]["allied_faction"] = AEDUI
+        state["tribes"][TRIBE_LINGONES]["allied_faction"] = AEDUI
+        refresh_all_control(state)
+        actions = _check_entreat(state, state["scenario"])
+        aedui_ally_actions = [
+            a for a in actions
+            if a.get("region") == MANDUBII
+            and a.get("target_faction") == AEDUI
+            and a.get("action") in ("replace_ally", "remove_ally")]
+        assert len(aedui_ally_actions) <= 1
 
     def test_entreat_skips_citadel_allied_tribe(self):
         """§4.3.1: Entreat replaces an Allied Tribe 'not a Citadel'. When the

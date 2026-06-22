@@ -397,6 +397,9 @@ def _would_raid_gain_enough(state, scenario):
     playable = get_playable_regions(scenario, state.get("capabilities"))
     total_gain = 0
     raid_plan = []
+    # §3.3.3: each steal takes 1 Resource. Track Resources already committed so
+    # the plan never steals more from a Faction than it has across all Regions.
+    planned_steals = {}
 
     for region in playable:
         hidden_wb = count_pieces_by_state(
@@ -409,17 +412,18 @@ def _would_raid_gain_enough(state, scenario):
 
         is_devastated = _is_devastated(state, region)
 
-        # Build ordered list of available targets for this region.
-        # Priority: (1) Romans, (2) Aedui, (3) Belgae — §8.7.5
-        # Stealing requires enemy has pieces but neither Citadel nor Fort — §3.3.3
+        # Build ordered list of valid steal targets for this region.
+        # Priority: (1) Romans, (2) Aedui, (3) Belgae — §8.7.5 (player or NP).
+        # §3.3.3 legality (pieces, no Citadel/Fort, >=1 Resource, non-Germanic)
+        # is enforced by the canonical validator — the missing Resource check
+        # produced "Cannot steal from <F>: <F> has 0 Resources".
+        from fs_bot.commands.raid import validate_raid_steal_target
         steal_targets = []
         for target in (ROMANS, AEDUI, BELGAE):
-            if count_pieces(state, region, target) == 0:
-                continue
-            if (count_pieces(state, region, target, CITADEL) > 0
-                    or count_pieces(state, region, target, FORT) > 0):
-                continue
-            steal_targets.append(target)
+            valid, _ = validate_raid_steal_target(
+                state, region, ARVERNI, target)
+            if valid:
+                steal_targets.append(target)
 
         # Assign each flip to the best available use
         region_entries = []
@@ -427,7 +431,11 @@ def _would_raid_gain_enough(state, scenario):
         for target in steal_targets:
             if remaining_flips <= 0:
                 break
+            if state["resources"].get(target, 0) - planned_steals.get(
+                    target, 0) < 1:
+                continue
             region_entries.append({"region": region, "target": target})
+            planned_steals[target] = planned_steals.get(target, 0) + 1
             total_gain += 1
             remaining_flips -= 1
 
@@ -1421,13 +1429,19 @@ def _check_entreat(state, scenario):
             # §4.3.1: Entreat replaces an Allied Tribe "not a Citadel". A City
             # tribe holding the faction's Citadel is allied but has no Ally
             # disc, so require an actual Ally piece and skip the Citadel tribe.
-            if count_pieces(state, region, target_faction, ALLY) < 1:
+            ally_pieces = count_pieces(state, region, target_faction, ALLY)
+            if ally_pieces < 1:
                 continue
             citadel_here = (
                 count_pieces(state, region, target_faction, CITADEL) > 0)
             tribes = get_tribes_in_region(region, scenario)
+            # Cap Ally targets at the number of Ally DISCS in the Region: more
+            # allied tribes than Ally pieces (the surplus held by Citadels)
+            # would otherwise emit a replace_ally per tribe and overrun the
+            # discs ("Only 0 <F> Ally in <R>, need 1" on the second action).
+            ally_taken = 0
             for tribe in tribes:
-                if avail_allies <= 0:
+                if avail_allies <= 0 or ally_taken >= ally_pieces:
                     break
                 tribe_info = state["tribes"].get(tribe, {})
                 if tribe in TRIBE_TO_CITY and citadel_here:
@@ -1440,6 +1454,7 @@ def _check_entreat(state, scenario):
                         "target_faction": target_faction,
                     })
                     avail_allies -= 1
+                    ally_taken += 1
 
     # Step 2: Replace Auxilia/Aedui Warbands with Arverni Warbands — §8.7.1
     # (1) Auxilia, (2) Aedui Warbands only
@@ -1495,12 +1510,17 @@ def _check_entreat(state, scenario):
                     continue
                 if not is_controlled_by(state, region, ARVERNI):
                     continue
-                if count_pieces(state, region, target_faction, ALLY) < 1:
+                ally_pieces = count_pieces(
+                    state, region, target_faction, ALLY)
+                if ally_pieces < 1:
                     continue
                 citadel_here = (
                     count_pieces(state, region, target_faction, CITADEL) > 0)
                 tribes = get_tribes_in_region(region, scenario)
+                ally_taken = 0
                 for tribe in tribes:
+                    if ally_taken >= ally_pieces:
+                        break
                     tribe_info = state["tribes"].get(tribe, {})
                     if tribe in TRIBE_TO_CITY and citadel_here:
                         continue
@@ -1511,6 +1531,7 @@ def _check_entreat(state, scenario):
                             "tribe": tribe,
                             "target_faction": target_faction,
                         })
+                        ally_taken += 1
 
     # §4.3.1: Entreat pays one Resource per Region selected. The executor
     # charges 1 Resource per action; the bot cannot select more Entreat

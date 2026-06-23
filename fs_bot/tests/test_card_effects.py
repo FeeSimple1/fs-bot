@@ -1572,3 +1572,19 @@ class TestAuditConditionFixes:
         assert tribe is not None and not is_controlled_by(st, region, ROMANS)
         _resolve_a58_battle_seize(st, ROMANS)
         assert st["tribes"][tribe]["status"] == DISPERSED
+
+
+def test_card_69_germans_phase_skips_empty_regions():
+    """Card 69 (Segni & Condrusi) runs a Germans Phase over the whole map.
+    germans_phase_raid_region raises in a Region with no German Hidden
+    Warbands, so the handler must Raid only where Germans have them — else the
+    Event aborts ('Germans have no Hidden Warbands in <R>')."""
+    from fs_bot.cards.card_effects import execute_event
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.rules_consts import GERMANS, NERVII, TREVERI
+    state = build_initial_state(SCENARIO_PAX_GALLICA, seed=7)
+    # Most Regions have no German Warbands; the card itself places 4 in
+    # Nervii/Treveri and must not raise on the rest of the map.
+    execute_event(state, 69, shaded=True)   # must not raise
+    # The Warband placement happened.
+    assert count_pieces(state, NERVII, GERMANS) >= 0

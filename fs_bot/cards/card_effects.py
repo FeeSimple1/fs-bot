@@ -2831,8 +2831,11 @@ def execute_card_69(state, shaded=False):
             place_piece(state, region, GERMANS, WARBAND, count=to_place)
     # Germans Phase without Rally
     germans_phase_march(state)
+    # Raid only where Germans have Hidden Warbands (germans_phase_raid_region
+    # raises otherwise — §6.2.3), matching the other Germans-Phase card events.
     for region in list(state["spaces"]):
-        germans_phase_raid_region(state, region)
+        if count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN) > 0:
+            germans_phase_raid_region(state, region)
     germans_phase_battle(state)
     refresh_all_control(state)
 

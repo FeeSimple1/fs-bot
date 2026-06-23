@@ -1210,3 +1210,25 @@ hashseeds. The remaining 38 are all legal: legal-decline (the published flow-
 chart's IF-NONE fall-throughs) and a few ineffective-event (Events that resolve
 to no effect — a separate small play-quality item). None are executor
 rejections of illegal moves or wasted SA attempts.
+
+---
+
+## ineffective-event cleanup — card 69 Germans Phase (June 2026)
+
+The last soft tier (ineffective-event = 6/100 games, all Arverni Event) was NOT
+an Arverni decision error — node_v2b already declines ineffective Events via
+should_decline_event. It was a bug in card 69 (Segni & Condrusi): its inline
+Germans Phase looped EVERY Region calling germans_phase_raid_region, which
+raises in a Region with no German Hidden Warbands (§6.2.3). The first empty
+Region aborted the whole Event ("Germans have no Hidden Warbands in <R>"). The
+other Germans-Phase card events already guard the loop with a Hidden-Warband
+check; card 69 now does the same.
+
+### CENSUS STATE — fully clean
+illegal=0, wasteful-sa=0, ineffective-event=0. Total 38 -> 32, and ALL 32
+remaining are legal-decline (the published flowchart's own IF-NONE fall-throughs
+— "command produced no legal effect", "event not applicable", "nothing
+marchable"). Deterministic across hashseeds. There are no executor rejections,
+no wasted SAs, and no ineffective Events left: every census incident is the
+bot/flowchart working exactly as published. Regression:
+test_card_69_germans_phase_skips_empty_regions.

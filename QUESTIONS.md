@@ -883,13 +883,16 @@ A8.4 German/Arverni swap), and A_QUARTERS all match.
   incidents 41 -> 29 (seeds 1-20). Regression:
   test_march_does_not_spread_from_control_critical_region.
 
-### DOCUMENTED (minor; not fixed — would benefit from a ruling)
-- A_RAID priority (§8.6.4): the chart orders (1) players at 0+ victory margin,
+### DOCUMENTED — status updated (see 'Reconciliation' at end of file)
+- [RESOLVED June 2026] A_RAID priority (§8.6.4): now orders players at 0+
+  victory margin ahead of other non-Roman enemies (tier-1/tier-2 target list).
+  ORIGINAL NOTE: the chart orders (1) players at 0+ victory margin,
   then (2) other non-Roman enemies. The code special-cases only Romans (raid
   only if a player at 0+ victory); it does not order a *non-Roman* player at
   0+ victory ahead of a non-Roman enemy below victory. Impact is limited to
   steal-target choice among enemies co-present in a Raid Region.
-- A_MARCH Britannia / §4.1.3: "Marched into or out of Britannia -> no SA" is
+- [RESOLVED June 2026] A_MARCH Britannia / §4.1.3: the no-SA gate now covers
+  every tracked march origin (Step-1 spread + Diviciacus). ORIGINAL NOTE:
   detected from the destination list and Step-1 origin only; a Step-2 control-
   supply move or the Diviciacus march that happens to depart Britannia is not
   counted as "out of Britannia". Rare (Britannia is base-game only and seldom
@@ -925,8 +928,11 @@ SA-selection order all match.
 These closed the two remaining Arverni entries in the census `illegal` tier
 (4 -> 2; the lone survivor is the architectural Roman Recruit/Build-SA case).
 
-### DOCUMENTED (not fixed)
-- V_ENTREAT NOTE / V_BATTLE: "In the rare case that Entreat prevents Battle by
+### DOCUMENTED — status updated (see 'Reconciliation' at end of file)
+- [RESOLVED June 2026] V_ENTREAT NOTE / V_BATTLE obviation: implemented — drop
+  Battles whose lone target the before-Battle Entreat removes; if EVERY Battle
+  is obviated, March and Entreat instead. This cleared the last census illegal
+  defect. ORIGINAL NOTE: V_ENTREAT NOTE / V_BATTLE: "In the rare case that Entreat prevents Battle by
   removing a lone target piece, instead March and Entreat per above." Not
   implemented — when the before-Battle Entreat removes a Battle's only target,
   the Battle resolves as a no-op (executor skips "defender not present") and the
@@ -943,8 +949,10 @@ These closed the two remaining Arverni entries in the census `illegal` tier
   adjacent Regions". The executor enforces leave-behind/Control and Harassment,
   so these are graceful, but the planner is more permissive than the chart.
 
-### STATE-INTEGRITY QUESTION (to investigate)
-- In a Reconquest game, Mandubii showed THREE tribes allied to Aedui (Mandubii
+### STATE-INTEGRITY QUESTION — RESOLVED by the 'Citadel over-placement' fix
+### directly below (traced to card 69 / Rally / Arverni Phase; fixed at
+### place_piece + each upgrade site + the oracle).
+- [HISTORICAL] In a Reconquest game, Mandubii showed THREE tribes allied to Aedui (Mandubii
   city + Senones + Lingones) backed by 1 Ally disc + 2 Citadels. Citadels sit
   only at Cities and Mandubii has one City, so 2 Aedui Citadels there — and a
   3rd allied tribe with no remaining backing piece — looks like a tribe/piece
@@ -1057,14 +1065,17 @@ and determinism all hold. The control-keep fix raises the legal-decline tier
 (the Belgae March now correctly falls through to Raid when it cannot add Control
 without losing Control — faithful conservative play, not a defect).
 
-### DOCUMENTED (minor; not fixed)
-- B_BATTLE / B_ENLIST set the order of Battles among equal candidates by a fixed
+### DOCUMENTED — both RESOLVED June 2026 (see 'Reconciliation' at end of file)
+- [RESOLVED] B_BATTLE now uses the §8.3.4 random tie-break (random_select).
+  ORIGINAL NOTE: B_BATTLE / B_ENLIST set the order of Battles among equal
+  candidates by a fixed
   Region iteration rather than the chart's §8.3.4 random tie-break. Deterministic
   and consistent with the other faction bots; a faithful rng-based tie-break
   would still be replay-deterministic but is a behaviour change deferred for a
   ruling.
-- B_ENLIST Step 2(1) German March does not verify the destination is OUTSIDE
-  Belgica/Germania (A8.5.1 "move them out of" those Regions); it only requires
+- [RESOLVED June 2026] B_ENLIST Step 2(1): the German free-March destination is
+  now required to be OUTSIDE Belgica/Germania (A8.5.1). ORIGINAL NOTE:
+  the destination was not verified to be outside those Regions; it only requires
   enemy Control at an adjacent destination. Rare edge.
 
 ---
@@ -1099,11 +1110,11 @@ the Besiege/Scout SA selection all match.
   change today), so it is a consistency/robustness fix guarding against the
   instruction data diverging from is_no_faction_event.
 
-### DOCUMENTED (minor)
-- R_BUILD Fort placement assumes one Fort per Region (skips a Region that
+### DOCUMENTED — RESOLVED June 2026 (see 'Reconciliation' at end of file)
+- [RESOLVED] R_BUILD Fort placement assumes one Fort per Region (skips a Region that
   already has a Roman Fort). If that is the intended rule, a "one Fort per
-  Region" structural invariant (like the Citadel one) would belong in the
-  state-integrity oracle; not added pending confirmation Forts are 1/Region.
+  Region" structural invariant now lives in both place_piece and the
+  state-integrity oracle (§1.4 'Only one Roman Fort may be in each Region').
 
 ---
 
@@ -1171,9 +1182,10 @@ executor rejections of illegal moves.
   victory score < 10, ignoring the 10-12 die-roll tier — a conservative
   estimate used only to test the ">2 Resources" Trade trigger; left as-is
   because modelling a future die roll inside a yield ESTIMATE is itself dubious.
-- The soft wasteful-sa tier (planners attaching an Entreat/Rampage/Enlist with
-  no legal effect) — the faithful "if none, no SA" cleanup; tracked as the
-  remaining play-quality work, not a correctness defect.
+- [RESOLVED June 2026] The soft wasteful-sa tier: re-derive after-Command SAs
+  and decline cleanly ("if none, no SA"); plus the _check_rampage ally-only
+  over-attachment fix. wasteful-sa 84 -> 0. (See the wasteful-sa cleanup
+  section below.)
 
 ---
 
@@ -1232,3 +1244,44 @@ marchable"). Deterministic across hashseeds. There are no executor rejections,
 no wasted SAs, and no ineffective Events left: every census incident is the
 bot/flowchart working exactly as published. Regression:
 test_card_69_germans_phase_skips_empty_regions.
+
+---
+
+## Reconciliation — authoritative current status (June 2026)
+
+This section supersedes every earlier "OPEN" / "DOCUMENTED (not fixed)" note.
+The all-bot census (5 scenarios x seeds 1-20, deterministic across hashseeds)
+is now **defect-free**: illegal=0, wasteful-sa=0, ineffective-event=0. The only
+remaining incidents are legal-decline — the published flowcharts' own IF-NONE
+fall-throughs, which are correct behaviour, not bugs.
+
+### Earlier OPEN backlogs — all superseded / resolved
+- "OPEN — planner quality (executor rejects cleanly)" and the various
+  "residual tail" lists (resource-oblivious Rally, before-Command SA obviating
+  Battle, interruptible SA timing, Raid 0-Resource steals, Suborn/Entreat
+  Citadel-vs-Ally, March 'need N' / scouted-Warband, German Intimidate
+  staleness, the Roman Recruit Build-SA Ally-pool case): all resolved on the
+  path to illegal=0.
+- "STATE-INTEGRITY QUESTION" (Mandubii 2 Citadels): resolved by the Citadel
+  over-placement fix (one Citadel per Region enforced at place_piece, every
+  upgrade site, and the oracle).
+- Per-faction audit "DOCUMENTED (not fixed)" notes: A_RAID priority, A_MARCH
+  Britannia gate, the Arverni V_BATTLE/V_ENTREAT obviation, the Belgae §8.3.4
+  Battle tie-break and Enlist-destination, and the Roman Fort-per-Region
+  invariant — all FIXED (annotated [RESOLVED] in place above).
+- The wasteful-sa and ineffective-event tiers: cleared to 0.
+
+### Genuinely OPEN (not defects)
+1. Aedui _estimate_trade_resources: when testing the ">2 Resources" Trade
+   trigger it assumes a *player* Roman agrees only at victory score < 10,
+   ignoring the 10-12 die-roll tier. A conservative estimate; modelling a
+   future die roll inside a yield estimate is itself questionable — left for a
+   ruling.
+2. March-planner approximations (Arverni V_MARCH_THREAT, German
+   G_MARCH_THREAT): the Leader destination is chosen by piece count without the
+   planner predicting reachability or the §8.7.1/A8.7.1 Harassment-loss limits.
+   The EXECUTOR enforces leave-behind, Control preservation, and Harassment, so
+   the bot never makes an illegal or corrupting move — this is planner
+   permissiveness, not a defect.
+
+There are no correctness defects outstanding.

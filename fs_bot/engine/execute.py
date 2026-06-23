@@ -3440,6 +3440,15 @@ def _execute_recruit(state, faction, bot_action):
                     superseded.append({"region": region, "tribe": tribe})
                     continue
                 tribe = replacement
+            # The Build SA (§8.8.4 'Build before Recruit') may have placed the
+            # Allies this Recruit planned, emptying the shared Ally pool. "Place
+            # all Allies ABLE" — once none are Available, skip the entry as
+            # superseded rather than letting the executor refuse it.
+            from fs_bot.board.pieces import get_available as _get_avail
+            from fs_bot.rules_consts import ALLY as _ALLY_C
+            if _get_avail(state, _ROMANS_F, _ALLY_C) < 1:
+                superseded.append({"region": region, "tribe": tribe})
+                continue
         try:
             res = recruit_in_region(state, region, action, tribe=tribe)
             placed.append({"region": region, "action": action,

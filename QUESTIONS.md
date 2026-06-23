@@ -1066,3 +1066,41 @@ without losing Control — faithful conservative play, not a defect).
 - B_ENLIST Step 2(1) German March does not verify the destination is OUTSIDE
   Belgica/Germania (A8.5.1 "move them out of" those Regions); it only requires
   enemy Control at an adjacent destination. Rare edge.
+
+---
+
+## Flowchart-conformance audit — Roman (§8.8, June 2026)
+
+Node-by-node comparison of roman_bot_flowchart.txt against roman_bot.py. The
+Roman bot is the most complex and is highly faithful: R1-R5 routing (incl. the
+R2 "2+ Legions and 4+ Auxilia with Caesar" detail), R_BATTLE target ranking
+(a Leaders, b most Warbands, c players, d most Allies+Citadels, e victory
+margin — exact), the R_BATTLE Loss restriction + "Caesar can't Battle -> March",
+the R_MARCH destination tiers (1 enemies at 0+ victory players-first; die-roll
+tiers 2-4 incl. the Ariovistus Arverni swap; sub-priorities b-e), R_RECRUIT,
+R_SEIZE (no-Harassment gate, Disperse player-pieces-then-Belgica), R_BUILD
+(Forts at non-Aedui Warbands; Subdue best-margin-then-players with the
+Ally-disc cap; faction-restricted Ally placement; the <6 Resource floor), and
+the Besiege/Scout SA selection all match.
+
+### FIXED
+- R_RECRUIT / _execute_recruit (§8.8.4 "Build before Recruit"): the Build SA
+  resolves first and can empty the shared Ally pool; the Recruit then refused
+  its planned place_ally ("No Roman Allies Available") — the last standing
+  `illegal` census defect. Recruit now skips a place_ally once no Roman Ally is
+  Available (treated as superseded-by-Build, faithful to "place all Allies
+  ABLE"). Census illegal 2 -> 1 (only the documented Arverni Battle/Entreat
+  obviation remains). Regression:
+  test_recruit_place_ally_superseded_when_pool_exhausted.
+- R4 event-decline: unlike the other four faction bots, the Roman R4 did not
+  consult the bot Event Instruction's NO_EVENT directive (it `pass`ed). Now it
+  checks `instr.action == NO_EVENT` like Aedui/Arverni/Belgae/German. In the
+  current card sets this coincides with should_decline_event (no behaviour
+  change today), so it is a consistency/robustness fix guarding against the
+  instruction data diverging from is_no_faction_event.
+
+### DOCUMENTED (minor)
+- R_BUILD Fort placement assumes one Fort per Region (skips a Region that
+  already has a Roman Fort). If that is the intended rule, a "one Fort per
+  Region" structural invariant (like the Citadel one) would belong in the
+  state-integrity oracle; not added pending confirmation Forts are 1/Region.

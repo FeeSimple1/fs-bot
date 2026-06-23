@@ -61,6 +61,7 @@ from fs_bot.commands.common import _is_devastated
 from fs_bot.bots.bot_common import (
     # Event decisions
     should_decline_event, get_dual_use_preference, get_event_instruction,
+    NO_EVENT,
     upgrade_limited_command,
     # Targeting
     get_faction_targeting_order, get_enemy_piece_target_order,
@@ -517,12 +518,11 @@ def node_r4(state):
     if should_decline_event(state, card_id, ROMANS):
         return "Yes"
 
-    # Check specific instructions that might render Event ineffective
+    # Non-player Roman Event Instructions (§8.2.1) may render the Event
+    # "No Romans" — decline then, matching the other faction bots (§8.8.2).
     instr = get_event_instruction(card_id, ROMANS, state["scenario"])
-    if instr and instr.instruction:
-        # Some instructions say "treat as 'No Romans'" conditionally
-        # This will be evaluated by the Event handler
-        pass
+    if instr and instr.action == NO_EVENT:
+        return "Yes"
 
     return "No"
 

@@ -509,6 +509,30 @@ class TestNodeRRecruit:
         assert result["command"] == ACTION_RECRUIT
         assert result["details"]["potential_allies"] >= 2
 
+    def test_recruit_place_ally_superseded_when_pool_exhausted(self):
+        """§8.8.4 'Build before Recruit': the Build SA can place the Allies the
+        Recruit planned, emptying the shared pool. _execute_recruit must then
+        skip the Recruit place_ally as superseded, NOT refuse it ('No Roman
+        Allies Available').
+        """
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        from fs_bot.engine.execute import _execute_recruit
+        from fs_bot.rules_consts import FORT, ROMANS as RF, ALLY as AL
+        state = _make_state()
+        # A Roman-Controlled Region with a Subdued Tribe (a valid place_ally).
+        place_piece(state, MANDUBII, ROMANS, FORT)
+        _place_roman_force(state, MANDUBII, legions=2)
+        refresh_all_control(state)
+        # Simulate the Build SA having drained the Roman Ally pool.
+        state["available"][RF][AL] = 0
+        bot_action = {"command": "Recruit", "sa": "Build", "details": {
+            "recruit_plan": [{"region": MANDUBII, "action": "place_ally",
+                              "tribe": "Mandubii"}]}}
+        result = _execute_recruit(state, ROMANS, bot_action)
+        assert result.get("errors") == []  # no executor refusal
+        assert result.get("superseded_by_build")  # entry skipped, not errored
+
     def test_recruit_declines_when_nothing_placeable(self):
         """No Roman presence -> nothing can be placed -> not Recruit (Seize)."""
         state = _make_state()

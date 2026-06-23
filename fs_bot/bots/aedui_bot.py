@@ -576,21 +576,23 @@ def _would_raid_gain_enough(state, scenario):
     # 3. No faction (non-Devastated)
     targeting = get_faction_targeting_order(AEDUI, scenario)
 
-    # Determine which factions are valid raid targets
+    # §8.6.4 priority: (1) players at 0+ victory margin, then (2) OTHER
+    # NON-ROMAN enemies. Romans are only ever raided as a tier-1 player at 0+
+    # victory ("do not take Resources from Romans unless player at 0+ victory").
     raid_targets = []
+    # Tier 1 — player Factions currently at a 0+ victory margin.
     for target in targeting:
-        if target == AEDUI:
+        if target == AEDUI or target in non_players:
             continue
-        # Don't take from Romans unless player at 0+ victory — §8.6.4
-        if target == ROMANS:
-            if target in non_players:
-                continue  # NP Romans — never raid
-            try:
-                margin = calculate_victory_margin(state, ROMANS)
-                if margin < 0:
-                    continue  # Player Romans below victory — skip
-            except Exception:
-                continue
+        try:
+            if calculate_victory_margin(state, target) >= 0:
+                raid_targets.append(target)
+        except Exception:
+            pass
+    # Tier 2 — other non-Roman enemies (player or Non-player), not already added.
+    for target in targeting:
+        if target == AEDUI or target == ROMANS or target in raid_targets:
+            continue
         raid_targets.append(target)
 
     # §3.3.3: track Resources already committed to steals so the plan never
@@ -1125,9 +1127,18 @@ def node_a_march(state):
         all_dests.append(march_plan["control_destination"])
     if march_plan.get("diviciacus_destination"):
         all_dests.append(march_plan["diviciacus_destination"])
+    # §4.1.3: any move into OR out of Britannia suppresses the SA. Cover every
+    # origin the plan carries: the Step-1 spread origin and the Diviciacus
+    # march origin. (The executor marches only from these tracked origins;
+    # Britannia is base-game-only while Diviciacus is Ariovistus-only, so the
+    # Diviciacus origin can never itself be Britannia — included for
+    # completeness.)
+    march_origins = [march_plan.get("origin")]
+    if march_plan.get("diviciacus_destination") is not None:
+        march_origins.append(_diviciacus_region(state))
     marched_britannia = (
         BRITANNIA in all_dests
-        or march_plan.get("origin") == BRITANNIA
+        or BRITANNIA in march_origins
     )
 
     # SA: Trade or Suborn after March — §8.6.5

@@ -802,19 +802,16 @@ def node_b_battle(state):
     if ambiorix_region and ambiorix_region in threat_regions:
         belgae_mobile = count_mobile_pieces(state, ambiorix_region, BELGAE)
         enemies = _get_non_german_enemies(scenario)
-        # Find enemy with fewer mobile pieces than Belgae
-        best_enemy = None
-        for enemy in enemies:
-            if count_pieces(state, ambiorix_region, enemy) == 0:
-                continue
-            enemy_mobile = count_mobile_pieces(
-                state, ambiorix_region, enemy)
-            if enemy_mobile < belgae_mobile:
-                if _can_battle_in_region(
-                        state, ambiorix_region, scenario, enemy):
-                    best_enemy = enemy
-                    break  # First matching enemy in priority order
-
+        # Enemies with fewer mobile pieces than Belgae that can be Battled;
+        # §8.3.4 random tie-break among equal candidates.
+        cands = [e for e in enemies
+                 if count_pieces(state, ambiorix_region, e) > 0
+                 and count_mobile_pieces(state, ambiorix_region, e)
+                 < belgae_mobile
+                 and _can_battle_in_region(
+                     state, ambiorix_region, scenario, e)]
+        best_enemy = (random_select(state, cands) if len(cands) > 1
+                      else (cands[0] if cands else None))
         if best_enemy:
             battle_plan.append({
                 "region": ambiorix_region,
@@ -831,16 +828,15 @@ def node_b_battle(state):
     for region in threat_regions:
         if any(bp["region"] == region for bp in battle_plan):
             continue
-        for enemy in enemies:
-            if count_pieces(state, region, enemy) == 0:
-                continue
-            if _can_battle_in_region(state, region, scenario, enemy):
-                battle_plan.append({
-                    "region": region,
-                    "target": enemy,
-                    "is_trigger": True,
-                })
-                break
+        cands = [e for e in enemies
+                 if count_pieces(state, region, e) > 0
+                 and _can_battle_in_region(state, region, scenario, e)]
+        if cands:
+            target = (random_select(state, cands) if len(cands) > 1
+                      else cands[0])
+            battle_plan.append({
+                "region": region, "target": target, "is_trigger": True,
+            })
 
     # Step 4: Fight other non-Germans (or all in Ariovistus) — §8.5.1
     for region in playable:
@@ -848,16 +844,15 @@ def node_b_battle(state):
             continue
         if count_pieces(state, region, BELGAE) == 0:
             continue
-        for enemy in enemies:
-            if count_pieces(state, region, enemy) == 0:
-                continue
-            if _can_battle_in_region(state, region, scenario, enemy):
-                battle_plan.append({
-                    "region": region,
-                    "target": enemy,
-                    "is_trigger": False,
-                })
-                break
+        cands = [e for e in enemies
+                 if count_pieces(state, region, e) > 0
+                 and _can_battle_in_region(state, region, scenario, e)]
+        if cands:
+            target = (random_select(state, cands) if len(cands) > 1
+                      else cands[0])
+            battle_plan.append({
+                "region": region, "target": target, "is_trigger": False,
+            })
 
     if not battle_plan:
         return node_b_march_threat(state)
@@ -1682,6 +1677,10 @@ def _check_enlist_after_command(state, scenario):
                 continue
             for dest in get_adjacent(origin, scenario):
                 if dest not in playable:
+                    continue
+                # A8.5.1: "move them OUT of a Belgica or Germania Region" —
+                # the destination must be outside Belgica/Germania.
+                if dest in BELGICA_REGIONS or dest in GERMANIA_REGIONS:
                     continue
                 for target in (ROMANS, AEDUI, ARVERNI):
                     if (target not in non_players) != prefer_player:

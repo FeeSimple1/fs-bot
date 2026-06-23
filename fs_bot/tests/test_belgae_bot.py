@@ -720,6 +720,22 @@ class TestRampage:
 class TestEnlist:
     """Test _check_enlist_after_command."""
 
+    def test_enlist_march_destination_outside_belgica_germania(self):
+        """A8.5.1: the Enlist German March moves Warbands OUT of Belgica/
+        Germania. A Belgica/Germania-Region destination must not be chosen.
+        """
+        state = _make_state(non_players={BELGAE})
+        _place_belgae_force(state, MORINI, leader=True)  # Ambiorix in Belgica
+        place_piece(state, MORINI, GERMANS, WARBAND, 3)
+        # Only an in-Belgica neighbour (Nervii) is enemy-Controlled.
+        _place_roman_force(state, NERVII, auxilia=4, ally_tribe=TRIBE_NERVII)
+        refresh_all_control(state)
+        result = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
+        if result and result.get("type") == "german_march":
+            from fs_bot.rules_consts import BELGICA_REGIONS, GERMANIA_REGIONS
+            assert result["destination"] not in BELGICA_REGIONS
+            assert result["destination"] not in GERMANIA_REGIONS
+
     def test_enlist_battle_prefers_player_target(self):
         """§8.5.1 Step 1: the Enlist German Battle targets a player Faction
         before a Non-player, regardless of Faction order. With Romans a

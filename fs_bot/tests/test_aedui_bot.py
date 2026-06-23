@@ -488,6 +488,27 @@ class TestRaid:
         result = node_a_raid(state)
         assert result["command"] == ACTION_PASS
 
+    def test_raid_prefers_player_at_victory_over_nonroman_enemy(self, monkeypatch):
+        """§8.6.4: Raid priority (1) players at 0+ victory margin before
+        (2) other non-Roman enemies. In a Region holding both a player Belgae
+        at victory and a Non-player Arverni, the steal targets Belgae.
+        """
+        import fs_bot.bots.aedui_bot as ab
+        state = _make_state(non_players={AEDUI, ARVERNI})  # Belgae is a player
+        state["resources"][BELGAE] = 5
+        state["resources"][ARVERNI] = 5
+        _place_aedui_force(state, MANDUBII, warbands=2, hidden=True)
+        _place_enemy_force(state, MANDUBII, BELGAE, warbands=1)
+        _place_enemy_force(state, MANDUBII, ARVERNI, warbands=1)
+        refresh_all_control(state)
+        # Control "at victory": Belgae at +1, everyone else below.
+        monkeypatch.setattr(ab, "calculate_victory_margin",
+                            lambda st, f: 1 if f == BELGAE else -1)
+        _, plan = _would_raid_gain_enough(state, SCENARIO_PAX_GALLICA)
+        mandubii = [e for e in plan if e["region"] == MANDUBII
+                    and e["target"] is not None]
+        assert mandubii and mandubii[0]["target"] == BELGAE
+
     def test_raid_works_with_hidden_warbands_and_targets(self):
         """Raid succeeds with Hidden Warbands near enemy."""
         state = _make_state()

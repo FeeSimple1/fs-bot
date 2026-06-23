@@ -1518,6 +1518,14 @@ def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None):
             if count_pieces(state, region, enemy, FORT) > 0:
                 continue
 
+            # §4.5.2: Rampage removes/Retreats only MOBILE pieces (Warbands,
+            # Auxilia, Legions). An enemy whose only presence is an Ally has
+            # nothing Rampage can affect — skip it so the planner does not
+            # attach a no-op Rampage (and instead falls through to Enlist).
+            enemy_mobile = count_mobile_pieces(state, region, enemy)
+            if enemy_mobile == 0:
+                continue
+
             # If before Battle, don't Rampage against last piece — §8.5.1
             if before_battle and region in battle_region_set:
                 if enemy_count <= 1:
@@ -1525,10 +1533,7 @@ def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None):
 
             # Would this force removal? — §8.5.1 step 1
             # "force removal of pieces, assuming no Faction grants Retreat"
-            forces_removal = False
-            enemy_mobile = count_mobile_pieces(state, region, enemy)
-            if enemy_mobile > 0 and hidden_wb > 0:
-                forces_removal = True
+            forces_removal = hidden_wb > 0
 
             # Would this add Belgic Control? — §8.5.1 step 2
             adds_control = not is_controlled_by(state, region, BELGAE)

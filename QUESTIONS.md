@@ -1174,3 +1174,39 @@ executor rejections of illegal moves.
 - The soft wasteful-sa tier (planners attaching an Entreat/Rampage/Enlist with
   no legal effect) — the faithful "if none, no SA" cleanup; tracked as the
   remaining play-quality work, not a correctness defect.
+
+---
+
+## wasteful-sa cleanup — re-derive after-Command SAs / "if none, no SA" (June 2026)
+
+The census "wasteful-sa" tier (84/100 games) was the planner attaching an SA
+that legally accomplished nothing. Root cause: an after-Command SA is chosen at
+decision time but resolves AFTER the Command moves/reveals pieces (e.g. a Raid
+Reveals the very Belgic Warbands a Rampage would flip, or a March empties the
+Region the Entreat targeted). The flowchart's "If none ... no Special Ability"
+applies at resolution.
+
+### FIXED
+- Arverni Entreat: re-derived _check_entreat already runs at execution; when it
+  yields nothing, return declined_no_effect ("if none, no SA") instead of a
+  bare no-effect.
+- Belgae Rampage (after Rally/Raid): re-derive _check_rampage against the
+  post-Command board (like the German Intimidate / Aedui Trade-Suborn paths);
+  decline cleanly if nothing. The generic Rampage path (e.g. after Battle) also
+  reports declined_no_effect when it legally removes nothing.
+- Belgae Enlist: the after-Command re-derivation already existed but EXCLUDED
+  Battle commands; removed that exclusion so a standalone Enlist after a Battle
+  re-derives too (the in-Battle loss-absorbing Enlist is a separate mechanism
+  under Ambush/Rampage, so this is safe).
+- Belgae _check_rampage: a real planner over-attachment — it approved a Region
+  where the enemy's only presence was an ALLY, but §4.5.2 Rampage removes/
+  Retreats only MOBILE pieces (Warbands/Auxilia/Legions/Leader). The bot would
+  pick a no-op Rampage over a possibly-effective Enlist. Now requires an enemy
+  mobile piece.
+
+### CENSUS STATE — effectively clean
+wasteful-sa 84 -> 0; illegal 0; total 120 -> 38, deterministic across
+hashseeds. The remaining 38 are all legal: legal-decline (the published flow-
+chart's IF-NONE fall-throughs) and a few ineffective-event (Events that resolve
+to no effect — a separate small play-quality item). None are executor
+rejections of illegal moves or wasted SA attempts.

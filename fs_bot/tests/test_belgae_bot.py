@@ -657,6 +657,20 @@ class TestRampage:
         assert len(result) > 0
         assert result[0]["region"] == MANDUBII
 
+    def test_rampage_skips_ally_only_target(self):
+        """§4.5.2: Rampage removes/Retreats only MOBILE pieces. A target whose
+        only presence is an Ally cannot be Rampaged, so the planner must not
+        attach a (no-op) Rampage there (it falls through to Enlist instead).
+        """
+        state = _make_state()
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True,
+                            leader=True)
+        # Romans present ONLY as an Ally (no mobile pieces) in MANDUBII.
+        _place_roman_force(state, MANDUBII, ally_tribe=TRIBE_MANDUBII)
+        refresh_all_control(state)
+        result = _check_rampage(state, SCENARIO_PAX_GALLICA)
+        assert all(r["region"] != MANDUBII for r in result)
+
     def test_rampage_priority_forces_removal_first(self):
         """Rampage prioritizes forced removal — §8.5.1 step 1."""
         state = _make_state()

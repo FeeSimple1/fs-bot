@@ -95,6 +95,7 @@ _SA_SCOUT = "Scout"
 from fs_bot.rules_consts import ROMANS as _ROMANS_F
 from fs_bot.rules_consts import AEDUI as _AEDUI_F
 from fs_bot.rules_consts import GERMANS as _GERMANS_F
+from fs_bot.rules_consts import BELGAE as _BELGAE_F
 _SA_ENLIST = "Enlist"
 SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
@@ -3779,8 +3780,35 @@ def _execute_sa(state, faction, bot_action):
                 scout["fell_through_from"] = _SA_BUILD
                 return scout
         return result
+    if (sa == _SA_RAMPAGE
+            and faction == _BELGAE_F
+            and bot_action.get("command") in (_CMD_RALLY, _CMD_RAID)
+            and faction in state.get("non_player_factions", set())):
+        # §8.5.1: Rampage "after Rally or Raid" resolves AFTER the Command has
+        # moved/revealed pieces (a Raid Reveals the very Belgic Warbands a
+        # Rampage would flip). Re-derive against the current board, exactly as
+        # the German Intimidate / Aedui Trade-Suborn paths do; if none, no SA.
+        from fs_bot.bots.belgae_bot import _check_rampage
+        new_plan = _check_rampage(state, state["scenario"],
+                                  before_battle=False)
+        if not new_plan:
+            return {"executed": False, "sa": _SA_RAMPAGE,
+                    "declined_no_effect": True, "rederived_at_sa_time": True,
+                    "reason": "no legal Rampage at SA time (§8.5.1 'if "
+                              "none')"}
+        rederived = dict(bot_action)
+        rederived["sa_regions"] = new_plan
+        result = _execute_rampage(state, faction, rederived)
+        result.setdefault("rederived_at_sa_time", True)
+        if not result.get("executed") and not result.get("errors"):
+            # Re-derived plan still removed/Retreated nothing -> "if none".
+            result.setdefault("declined_no_effect", True)
+        return result
     if sa == _SA_RAMPAGE:
-        return _execute_rampage(state, faction, bot_action)
+        result = _execute_rampage(state, faction, bot_action)
+        if not result.get("executed") and not result.get("errors"):
+            result.setdefault("declined_no_effect", True)
+        return result
     if sa == _SA_ENTREAT:
         return _execute_entreat(state, faction, bot_action)
     if sa == _SA_SCOUT:
@@ -3788,13 +3816,15 @@ def _execute_sa(state, faction, bot_action):
     if sa == _SA_ENLIST:
         result = _execute_enlist(state, faction, bot_action)
         if (not result.get("executed")
-                and bot_action.get("command") != _CMD_BATTLE
                 and faction in state.get("non_player_factions", set())):
-            # B_ENLIST after a Command: the decision-time sub-command can be
-            # stale by the time the SA resolves (the Command itself moved
-            # pieces/Control). Re-derive per §8.5.1 against the current
-            # board; the flowchart's "If none: no Special Ability" applies
-            # when nothing is found.
+            # B_ENLIST as a standalone SA (after any Command, incl. Battle):
+            # the decision-time sub-command can be stale by the time the SA
+            # resolves (the Command itself moved/revealed pieces and Control).
+            # Re-derive the free Germanic sub-Command per §8.5.1 against the
+            # current board; the flowchart's "If none: no Special Ability"
+            # applies when nothing is found. (The in-Battle Enlist that absorbs
+            # Losses is a separate mechanism carried under the Ambush/Rampage
+            # SA, not here, so re-deriving the standalone Enlist is safe.)
             from fs_bot.bots.belgae_bot import _check_enlist_after_command
             fresh = _check_enlist_after_command(state, state["scenario"])
             if fresh:
@@ -4282,6 +4312,14 @@ def _execute_entreat(state, faction, bot_action):
         # (the Battle path passes the full plan and is used directly above).
         from fs_bot.bots.arverni_bot import _check_entreat
         plan = _check_entreat(state, state["scenario"]) or []
+    if not plan:
+        # Re-derived against the post-Command board, there is no legal Entreat
+        # — the flowchart's "If none ... no Special Ability" (§8.7.1). A clean
+        # decline, not a wasted attempt.
+        return {"executed": False, "sa": _SA_ENTREAT,
+                "declined_no_effect": True, "rederived_at_sa_time": True,
+                "reason": "no legal Entreat at SA time (§8.7.1 'if none, "
+                          "no Special Ability')"}
     done, errors = [], []
     for a in plan:
         act = a.get("action")

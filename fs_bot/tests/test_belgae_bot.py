@@ -720,6 +720,44 @@ class TestRampage:
 class TestEnlist:
     """Test _check_enlist_after_command."""
 
+    def test_enlist_battle_prefers_player_target(self):
+        """§8.5.1 Step 1: the Enlist German Battle targets a player Faction
+        before a Non-player, regardless of Faction order. With Romans a
+        Non-player and Aedui a player, both battleable, the player (Aedui) wins.
+        """
+        state = _make_state(non_players={BELGAE, ROMANS, ARVERNI})
+        _place_belgae_force(state, MANDUBII, leader=True)
+        place_piece(state, MANDUBII, GERMANS, WARBAND, 6)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 2)   # Non-player
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 2)    # player
+        result = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
+        assert result is not None
+        assert result["type"] == "german_battle"
+        assert result["target"] == AEDUI
+
+    def test_enlist_raid_skips_zero_resource_target(self):
+        """§8.5.1 Step 4 / §3.3.3: the Enlist German Raid only takes Resources
+        from a player that HAS Resources; a 0-Resource target is skipped."""
+        state = _make_state(non_players={BELGAE})
+        # 1 Hidden German Warband -> Battle inflicts 0 Losses (no Battle);
+        # MANDUBII is not Belgica/Germania (no March origin) -> reaches Raid.
+        _place_belgae_force(state, MANDUBII, leader=True)
+        place_piece(state, MANDUBII, GERMANS, WARBAND, 1, piece_state=HIDDEN)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 2)  # player, present
+        # Drain German Rally pools (after placement) so Step 3 cannot fire.
+        state["available"][GERMANS][ALLY] = 0
+        state["available"][GERMANS][WARBAND] = 0
+        state["resources"][ROMANS] = 0
+        refresh_all_control(state)
+        result = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
+        # No effectful Enlist (the only candidate, a Raid, has no Resources).
+        assert result is None or result.get("type") != "german_raid"
+        # And with Resources, the Raid is available.
+        state["resources"][ROMANS] = 5
+        result2 = _check_enlist_after_command(state, SCENARIO_PAX_GALLICA)
+        assert result2 is not None and result2["type"] == "german_raid"
+        assert result2["target"] == ROMANS
+
     def test_enlist_german_battle(self):
         """Enlist Germans to Battle enemy."""
         state = _make_state(non_players={BELGAE})
@@ -965,6 +1003,24 @@ class TestNodeBRaid:
 
 class TestNodeBMarch:
     """B_MARCH process node tests."""
+
+    def test_march_does_not_supply_from_control_critical_origin(self):
+        """§8.5.5 'losing no Belgic Control': a Region whose Warbands are all
+        needed to hold Control must not supply a control-March (the planner now
+        mirrors the executor's keep rule, not a bare leave-1). With MANDUBII at
+        3 Belgae vs 2 Arverni (Control needs all 3) and an empty adjacent
+        CARNUTES as the only target, the Belgae must NOT March from MANDUBII.
+        """
+        state = _make_state()
+        state["resources"][BELGAE] = 10
+        _place_belgae_force(state, MANDUBII, warbands=3, hidden=True)
+        _place_enemy_force(state, MANDUBII, ARVERNI, warbands=2)
+        refresh_all_control(state)
+        assert is_controlled_by(state, MANDUBII, BELGAE)
+        result = node_b_march(state)
+        if result["command"] == ACTION_MARCH:
+            origins = result["details"]["march_plan"]["origins"]
+            assert MANDUBII not in origins
 
     def test_march_falls_back_to_raid_on_frost(self):
         """March → Raid when Frost active — §8.5.5."""

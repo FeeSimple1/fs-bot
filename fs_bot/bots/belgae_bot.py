@@ -1052,8 +1052,14 @@ def node_b_rally(state):
     # Resource budget are enforced by prevalidate_rally_plan, which simulates
     # the executor's own checks (fs_bot.commands.rally) in execution order.
 
-    # Step 1: Citadels — replace Allies in Cities — §8.5.3
+    # Step 1: Citadels — replace a City ALLY with a Citadel (§8.5.3 / §3.3.1).
+    # Skip a Region whose City already holds a Citadel (no Ally to replace) —
+    # else a 2nd Citadel would be proposed and the executor refuses it.
     for region in playable:
+        if count_pieces(state, region, BELGAE, CITADEL) > 0:
+            continue
+        if count_pieces(state, region, BELGAE, ALLY) < 1:
+            continue
         for tribe in get_tribes_in_region(region, scenario):
             tribe_info = state["tribes"].get(tribe, {})
             if (tribe_info.get("allied_faction") == BELGAE
@@ -1239,13 +1245,13 @@ def node_b_march(state):
             if region not in adj_regions:
                 continue
             origin_wb = count_pieces(state, origin, BELGAE, WARBAND)
-            # Leave 1 per origin, and don't remove Control — §8.5.5
-            keep_for_control = 0
-            if is_controlled_by(state, origin, BELGAE):
-                # Need to keep enough to retain control
-                keep_for_control = 1
+            # §8.5.5: leave one Warband AND enough to keep Belgic Control. Use
+            # the executor's own keep rule (one rule, one implementation) so the
+            # planner never promises Warbands the executor must hold back.
+            from fs_bot.engine.execute import _control_keep_warbands
             available_from_origin = max(
-                0, origin_wb - 1 - keep_for_control)
+                0, origin_wb - _control_keep_warbands(
+                    state, BELGAE, origin, leader_leaving=False))
             if available_from_origin > 0:
                 origin_supply.append((origin, available_from_origin))
 
@@ -1291,7 +1297,12 @@ def node_b_march(state):
                 if region not in adj_regions:
                     continue
                 origin_wb = count_pieces(state, origin, BELGAE, WARBAND)
-                available_from_origin = max(0, origin_wb - 1)
+                # §8.5.5: leave one Warband AND enough to keep Belgic Control
+                # at the supply origin (same rule in or outside Belgica).
+                from fs_bot.engine.execute import _control_keep_warbands
+                available_from_origin = max(
+                    0, origin_wb - _control_keep_warbands(
+                        state, BELGAE, origin, leader_leaving=False))
                 if available_from_origin > 0:
                     origin_supply.append((origin, available_from_origin))
 
@@ -1618,41 +1629,36 @@ def _check_enlist_after_command(state, scenario):
     non_players = state.get("non_player_factions", set())
 
     # Step 1: Battle — §8.5.1
-    for region in playable:
-        # §4.5.1: Must be within 1 of Ambiorix or have Successor
-        if not _is_within_one_of_ambiorix(state, region, scenario):
-            continue
-
-        german_wb = count_pieces(state, region, GERMANS, WARBAND)
-        if german_wb == 0:
-            continue
-
-        # Check if Battle can cause enemy Loss
-        # (a) against player, (b) against Non-player
-        for enemy in (ROMANS, AEDUI, ARVERNI, BELGAE):
-            if enemy == BELGAE:
-                continue  # Don't battle self
-            if count_pieces(state, region, enemy) == 0:
+    # §8.5.1 Step 1: "Versus a. player b. other Non-player" — prefer a player
+    # target across all eligible Regions before any Non-player target.
+    for prefer_player in (True, False):
+        for region in playable:
+            # §4.5.1: Must be within 1 of Ambiorix or have Successor
+            if not _is_within_one_of_ambiorix(state, region, scenario):
                 continue
-
-            # Estimate German Attack Losses
-            german_mobile = count_mobile_pieces(state, region, GERMANS)
-            enemy_fort = count_pieces(state, region, enemy, FORT)
-            enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-            attack_raw = german_wb * 0.5
-            if enemy_fort > 0 or enemy_citadel > 0:
-                attack_raw = attack_raw / 2
-            losses = int(attack_raw)
-
-            if losses > 0:
-                is_player_target = enemy not in non_players
-                return {
-                    "type": "german_battle",
-                    "region": region,
-                    "target": enemy,
-                    "is_player": is_player_target,
-                    "regions": [region],
-                }
+            german_wb = count_pieces(state, region, GERMANS, WARBAND)
+            if german_wb == 0:
+                continue
+            for enemy in (ROMANS, AEDUI, ARVERNI):
+                if (enemy not in non_players) != prefer_player:
+                    continue
+                if count_pieces(state, region, enemy) == 0:
+                    continue
+                # Estimate German Attack Losses
+                enemy_fort = count_pieces(state, region, enemy, FORT)
+                enemy_citadel = count_pieces(state, region, enemy, CITADEL)
+                attack_raw = german_wb * 0.5
+                if enemy_fort > 0 or enemy_citadel > 0:
+                    attack_raw = attack_raw / 2
+                losses = int(attack_raw)
+                if losses > 0:
+                    return {
+                        "type": "german_battle",
+                        "region": region,
+                        "target": enemy,
+                        "is_player": prefer_player,
+                        "regions": [region],
+                    }
 
     # Step 2: March — §8.5.1
     # (1) From Belgica/Germania to enemy Control
@@ -1662,33 +1668,34 @@ def _check_enlist_after_command(state, scenario):
     if scenario in ARIOVISTUS_SCENARIOS:
         march_origin_groups.append(TREVERI)
 
-    for origin in march_origin_groups:
-        if origin not in playable:
-            continue
-        # §4.5.1: origin must be within 1 of Ambiorix
-        if not _is_within_one_of_ambiorix(state, origin, scenario):
-            continue
-        german_wb = count_pieces(state, origin, GERMANS, WARBAND)
-        if german_wb < 2:
-            continue
-
-        # Find destination with enemy Control
-        for dest in get_adjacent(origin, scenario):
-            if dest not in playable:
+    # §8.5.1 Step 2(1): "to ... Control: a. Player's b. Non-player's" — prefer
+    # a player-Controlled destination before any Non-player-Controlled one.
+    for prefer_player in (True, False):
+        for origin in march_origin_groups:
+            if origin not in playable:
                 continue
-            # Player Control first, then Non-player — §8.5.1
-            for target in (ROMANS, AEDUI, ARVERNI):
-                if is_controlled_by(state, dest, target):
-                    is_player = target not in non_players
-                    return {
-                        "type": "german_march",
-                        "origin": origin,
-                        "destination": dest,
-                        "target_control": target,
-                        "is_player": is_player,
-                        "warbands": german_wb,
-                        "regions": [origin, dest],
-                    }
+            # §4.5.1: origin must be within 1 of Ambiorix
+            if not _is_within_one_of_ambiorix(state, origin, scenario):
+                continue
+            german_wb = count_pieces(state, origin, GERMANS, WARBAND)
+            if german_wb < 2:
+                continue
+            for dest in get_adjacent(origin, scenario):
+                if dest not in playable:
+                    continue
+                for target in (ROMANS, AEDUI, ARVERNI):
+                    if (target not in non_players) != prefer_player:
+                        continue
+                    if is_controlled_by(state, dest, target):
+                        return {
+                            "type": "german_march",
+                            "origin": origin,
+                            "destination": dest,
+                            "target_control": target,
+                            "is_player": prefer_player,
+                            "warbands": german_wb,
+                            "regions": [origin, dest],
+                        }
 
     # (2) In place with 2+ Revealed/Scouted to Hide — §8.5.1
     for region in playable:
@@ -1757,6 +1764,7 @@ def _check_enlist_after_command(state, scenario):
 
     # Step 4: Raid — §8.5.1
     # "take 1-2 Resources from player"
+    from fs_bot.commands.raid import validate_raid_steal_target
     for region in playable:
         # §4.5.1: Must be within 1 of Ambiorix
         if not _is_within_one_of_ambiorix(state, region, scenario):
@@ -1768,10 +1776,12 @@ def _check_enlist_after_command(state, scenario):
         for target in (ROMANS, AEDUI, ARVERNI):
             if target in non_players:
                 continue
-            if count_pieces(state, region, target) == 0:
-                continue
-            if (count_pieces(state, region, target, CITADEL) > 0
-                    or count_pieces(state, region, target, FORT) > 0):
+            # §8.5.1 Step 4: "take 1-2 Resources from a player" — the target
+            # must actually HAVE Resources, no Citadel/Fort, and pieces present
+            # (canonical §3.3.3 steal legality), else the free Raid is refused.
+            valid, _ = validate_raid_steal_target(
+                state, region, GERMANS, target)
+            if not valid:
                 continue
             return {
                 "type": "german_raid",

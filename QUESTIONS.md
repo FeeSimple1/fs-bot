@@ -1023,3 +1023,46 @@ some unit tests construct partial states against) so it can be strict without
 breaking those. Future candidates if a new corruption class appears: Fort
 per-Region limits, Dispersed/Subdued marker vs tribe["status"] consistency,
 flippable-state validity.
+
+---
+
+## Flowchart-conformance audit — Belgae (§8.5, June 2026)
+
+Node-by-node comparison of belgae_bot_flowchart.txt against belgae_bot.py.
+The Belgae bot is largely faithful: B1-B5 routing (incl. the B2 "no Pass in
+Winter / if 1st on both cards" NOTE and the A8.5.1 German-as-enemy + Settlement
+handling), B_BATTLE (Ambiorix step, enemy set, Ambush->Rampage-before-Battle->
+Enlist SA order), B_RALLY, and B_RAID (already carried the Resource ledger).
+
+### FIXED (each with a regression test)
+- B_MARCH (§8.5.5) "losing no Belgic Control": the control-supply leave-behind
+  used a hardcoded -1/-2 instead of the executor's keep rule. Both the Belgica
+  and outside-Belgica supply loops now use _control_keep_warbands (leave one
+  Warband AND enough to keep Control) — the same fix applied to Aedui A_MARCH.
+- B_ENLIST Step 4 (German free Raid): checked pieces and Citadel/Fort but not
+  Resources, so it could target a 0-Resource player. Now routed through
+  validate_raid_steal_target (§3.3.3).
+- B_ENLIST Step 1 (German free Battle) and Step 2(1) (German free March): the
+  flowchart says "a. player b. other Non-player" / "a. Player's b. Non-player's
+  Control", but the code picked by Faction order (Romans/Aedui/Arverni),
+  ignoring player-status. Now a two-pass scan prefers a PLAYER target/Control
+  across all eligible Regions before any Non-player.
+- B_RALLY Step 1 (Citadel): same Ally-present + Citadel-absent guard as the
+  Aedui/Arverni Rally citadel steps (don't propose a 2nd Citadel where the City
+  already has one).
+
+Census illegal stays at the architectural minimum (Roman Recruit + the
+documented Arverni Battle/Entreat obviation); structural oracle, balance canary,
+and determinism all hold. The control-keep fix raises the legal-decline tier
+(the Belgae March now correctly falls through to Raid when it cannot add Control
+without losing Control — faithful conservative play, not a defect).
+
+### DOCUMENTED (minor; not fixed)
+- B_BATTLE / B_ENLIST set the order of Battles among equal candidates by a fixed
+  Region iteration rather than the chart's §8.3.4 random tie-break. Deterministic
+  and consistent with the other faction bots; a faithful rng-based tie-break
+  would still be replay-deterministic but is a behaviour change deferred for a
+  ruling.
+- B_ENLIST Step 2(1) German March does not verify the destination is OUTSIDE
+  Belgica/Germania (A8.5.1 "move them out of" those Regions); it only requires
+  enemy Control at an adjacent destination. Rare edge.

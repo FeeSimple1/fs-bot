@@ -1104,3 +1104,34 @@ the Besiege/Scout SA selection all match.
   already has a Roman Fort). If that is the intended rule, a "one Fort per
   Region" structural invariant (like the Citadel one) would belong in the
   state-integrity oracle; not added pending confirmation Forts are 1/Region.
+
+---
+
+## Flowchart-conformance audit — German (Ariovistus, §A8.7, June 2026)
+
+Node-by-node comparison of Ariovistus/german_bot_flowchart.txt against
+german_bot.py (the Germans are an Ariovistus-only player faction). The bot is
+highly faithful: G1/G1b routing (Ariovistus or 6+ Warbands vs ANY enemy; the
+12+ Warband victory check), G2 (the "no Pass in Winter / 1st on both cards"
+NOTE), G3b (the most thorough event-decline of all five bots — NO_Germans,
+final-year Capability, and per-card "treat as No Germans" conditionals for
+Romans/Belgae-NP and final Winter), G4/G5, G_BATTLE (Ariovistus-first vs
+fewer-mobile, all-enemy set, Resource cap, and it correctly uses the §8.3.4
+random tie-break), G_MARCH_THREAT (the nested victory destination priorities —
+Dispersed Tribes if Romans at victory, then at-victory-Gaul Allies, then most
+Control — with the random tie-break), G_MARCH_EXPAND (already computes the
+proper leave-1-and-keep-Control supply inline), G_RAID (Resource ledger +
+validator, fixed earlier), and Intimidate (before-Battle defender exclusion +
+re-derivation, fixed earlier).
+
+### FIXED (regression test)
+- G3b was missing the "Event Ineffective" decline branch that the flowchart
+  lists ("Event Ineffective, or Capability in final year, or 'No Germans'?")
+  and that all four other faction bots check. Added is_event_effective (SHADED,
+  as the Germans use shaded text) for GENERIC (PLAY_EVENT) cards only —
+  specific-instruction cards remain governed by their A8.2.1 directive.
+  Ariovistus census ineffective-event -> 0. Regression:
+  test_g3b_declines_ineffective_generic_event.
+
+All five faction bots are now audited (Aedui, Arverni, Belgae, Roman, German).
+Ariovistus census: illegal=0; structural oracle, balance, determinism hold.

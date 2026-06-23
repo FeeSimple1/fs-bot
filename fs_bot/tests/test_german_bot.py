@@ -415,6 +415,21 @@ class TestNodeG3b:
         result = node_g3b(state)
         assert result == "Yes"  # decline (Romans Non-Player)
 
+    def test_g3b_declines_ineffective_generic_event(self, monkeypatch):
+        """A8.7.2 / §8.1.1 'Event Ineffective': for a generic (PLAY_EVENT) card,
+        decline when the Event would have no effect now — the branch the other
+        four faction bots already have. Specific-instruction cards are governed
+        by their directive and are not subject to this generic check.
+        """
+        import fs_bot.cards.event_eval as ev
+        state = _make_state()
+        state["current_card_id"] = 9  # a generic German PLAY_EVENT card
+        state["final_year"] = False
+        monkeypatch.setattr(ev, "is_event_effective", lambda *a, **k: False)
+        assert node_g3b(state) == "Yes"
+        monkeypatch.setattr(ev, "is_event_effective", lambda *a, **k: True)
+        assert node_g3b(state) == "No"
+
     def test_play_balearic_when_romans_player(self):
         """If Romans IS a player, don't treat Pompey/Balearic as No Germans."""
         state = _make_state(non_players={GERMANS, BELGAE, AEDUI})

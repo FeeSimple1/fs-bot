@@ -531,10 +531,21 @@ def node_g3b(state):
     if is_cap and state.get("final_year", False):
         return "Yes"
 
-    # Specific-instruction conditional decline cases — per-card text.
+    # Specific-instruction conditional decline cases — per-card text. A card
+    # with a specific bot directive is governed by that directive (A8.2.1), so
+    # the generic effectiveness check below does NOT apply to it.
     if instr.action == SPECIFIC_INSTRUCTION:
         if _instruction_says_no_germans(state, card_id, instr):
             return "Yes"
+        return "No"
+
+    # "Event Ineffective" — A8.7.2 / §8.1.1. For a generic (PLAY_EVENT) card,
+    # decline if the Event would have no effect now. The Germans use SHADED
+    # text (like Arverni/Belgae). This branch was missing here while all four
+    # other faction bots check it.
+    from fs_bot.cards.event_eval import is_event_effective
+    if not is_event_effective(state, card_id, shaded=True):
+        return "Yes"
 
     return "No"
 

@@ -150,12 +150,14 @@ def test_structural_integrity_checker_flags_corruption():
     st = setup_scenario(rc.SCENARIO_PAX_GALLICA, seed=1)
     assert check_structural_integrity(st) == []  # clean at setup
     st["spaces"]["Mandubii"]["pieces"].setdefault("Arverni", {})["Citadel"] = 2
+    st["spaces"]["Bituriges"]["pieces"].setdefault("Romans", {})["Fort"] = 2
     st["tribes"]["Morini"]["allied_faction"] = "Aedui"  # no backing piece
     st["spaces"]["Carnutes"]["control"] = "Roman Control"  # stale
     st["resources"]["Belgae"] = -3
     errs = check_structural_integrity(st)
     joined = " | ".join(errs)
     assert "2 Citadels" in joined
+    assert "2 Forts" in joined
     assert "Morini/Aedui" in joined
     assert "stale" in joined
     assert "Belgae Resources negative" in joined

@@ -508,6 +508,23 @@ class TestNodeV5:
 
 class TestNodeVBattle:
 
+    def test_battle_obviated_by_entreat_marches_instead(self):
+        """V_ENTREAT NOTE: if the before-Battle Entreat removes a Battle
+        Region's lone target, March and Entreat instead of Battling (else the
+        Battle would resolve as 'defender not present').
+        """
+        state = _make_state(non_players={ARVERNI, BELGAE})  # Aedui is a player
+        state["resources"][ARVERNI] = 5
+        # Verc + Hidden Arverni Warbands Control MANDUBII; a LONE Aedui Ally
+        # there is both the Battle target and the Entreat's replace target.
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
+        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = AEDUI
+        place_piece(state, MANDUBII, AEDUI, ALLY)
+        refresh_all_control(state)
+        result = node_v_battle(state)
+        # The only Battle is obviated by the Entreat -> March instead.
+        assert result["command"] == ACTION_MARCH
+
     def test_battle_redirects_to_march_if_no_threats(self):
         """V_BATTLE redirects to March (threat) if no threats found."""
         state = _make_state()

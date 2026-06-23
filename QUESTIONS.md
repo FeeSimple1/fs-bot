@@ -1135,3 +1135,42 @@ re-derivation, fixed earlier).
 
 All five faction bots are now audited (Aedui, Arverni, Belgae, Roman, German).
 Ariovistus census: illegal=0; structural oracle, balance, determinism hold.
+
+---
+
+## All documented audit findings resolved (June 2026)
+
+Worked through every outstanding documented finding from the five-faction audit:
+
+### FIXED
+- Aedui A_RAID priority (§8.6.4): targets ordered (1) players at 0+ victory
+  margin, then (2) other non-Roman enemies (Romans only via tier 1).
+- Aedui A_MARCH Britannia (§4.1.3): the no-SA gate covers every tracked march
+  origin (Step-1 spread + Diviciacus), not just the Step-1 origin.
+- Belgae B_BATTLE (§8.3.4): random tie-break (random_select) among equally-valid
+  Battle targets, like the German bot (was fixed Region order).
+- Belgae Enlist German March (A8.5.1): the destination must be OUTSIDE
+  Belgica/Germania ("move them out of").
+- Arverni V_BATTLE / V_ENTREAT NOTE: when the before-Battle Entreat removes a
+  Battle Region's lone target, drop that obviated Battle; if EVERY Battle is
+  obviated, March and Entreat instead. This eliminated the last census `illegal`
+  defect ("defender not present"): census illegal 1 -> 0.
+- Fort one-per-Region (§1.4 "Only one Roman Fort may be in each Region"): the
+  place_piece executor already enforces it (MAX_FORTS_PER_REGION); added the
+  same invariant to the structural-integrity oracle alongside the Citadel one.
+
+### CENSUS STATE
+illegal=0 across all 5 scenarios x seeds 1-20 (deterministic across hashseeds).
+The remaining ~120 incidents are all soft: wasteful-sa (an SA that legally
+accomplishes nothing — the flowchart's "if none, no SA"), a few
+ineffective-event, and legal-decline (published IF-NONE fall-throughs). None are
+executor rejections of illegal moves.
+
+### STILL OPEN (judgment calls, not bugs)
+- Aedui _estimate_trade_resources assumes a player Roman agrees to Trade only at
+  victory score < 10, ignoring the 10-12 die-roll tier — a conservative
+  estimate used only to test the ">2 Resources" Trade trigger; left as-is
+  because modelling a future die roll inside a yield ESTIMATE is itself dubious.
+- The soft wasteful-sa tier (planners attaching an Entreat/Rampage/Enlist with
+  no legal effect) — the faithful "if none, no SA" cleanup; tracked as the
+  remaining play-quality work, not a correctness defect.

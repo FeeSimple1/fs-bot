@@ -316,7 +316,7 @@ def check_structural_integrity(state):
     errors = []
     spaces = state.get("spaces", {})
 
-    # 1. One Citadel per Region (any Faction).
+    # 1. One Citadel per Region (any Faction), and one Roman Fort per Region.
     for region, space in spaces.items():
         pieces = space.get("pieces", {})
         total_cit = sum(
@@ -324,6 +324,11 @@ def check_structural_integrity(state):
         if total_cit > 1:
             errors.append(
                 f"{region}: {total_cit} Citadels (max 1 per Region)")
+        # §1.4: "Only one Roman Fort may be in each Region."
+        total_fort = sum(pieces.get(f, {}).get(FORT, 0) for f in FACTIONS)
+        if total_fort > 1:
+            errors.append(
+                f"{region}: {total_fort} Forts (max 1 per Region)")
 
     # 2. Tribe allegiance <-> backing Ally/Citadel pieces, per Region/Faction.
     allied_by_region = {}  # (region, faction) -> count of allied tribes

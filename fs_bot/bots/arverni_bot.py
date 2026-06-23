@@ -796,6 +796,32 @@ def node_v_battle(state):
     # Determine SA — §8.7.1
     sa, sa_regions = _determine_battle_sa(state, battle_plan, scenario)
 
+    # V_ENTREAT NOTE: "In the rare case that Entreat prevents Battle by removing
+    # a lone target piece, instead March and Entreat per above." A
+    # before-Battle Entreat that removes/replaces ALL of a Battle Region's
+    # target pieces leaves that Battle with no defender ('defender not
+    # present'). Drop such obviated Battles (the Entreat already did the job);
+    # if EVERY Battle is obviated, March and Entreat instead.
+    if sa == SA_ACTION_ENTREAT and sa_regions:
+        _ENT_REMOVES = ("replace_ally", "remove_ally",
+                        "replace_piece", "remove_piece")
+
+        def _entreat_obviates(region, defender):
+            present = count_pieces(state, region, defender)
+            removed = sum(
+                1 for a in sa_regions
+                if isinstance(a, dict)
+                and a.get("region") == region
+                and a.get("target_faction") == defender
+                and a.get("action") in _ENT_REMOVES)
+            return present > 0 and removed >= present
+
+        kept = [bp for bp in battle_plan
+                if not _entreat_obviates(bp["region"], bp["target"])]
+        if not kept:
+            return node_v_march_threat(state)
+        battle_plan = kept
+
     return _make_action(
         ACTION_BATTLE,
         regions=[bp["region"] for bp in battle_plan],

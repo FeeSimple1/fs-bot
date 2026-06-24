@@ -1449,3 +1449,52 @@ class TestHelpers:
         _place_arverni_force(state, ARVERNI_REGION, warbands=5)
         _place_arverni_force(state, MANDUBII, warbands=3)
         assert _count_arverni_warbands_on_map(state) == 8
+
+
+class TestVercMarchHarassment:
+    """§8.7.1 Vercingetorix March: Harassment-aware destination/route."""
+
+    def _clear_warbands(self, state):
+        # Remove every faction's Warbands so only the test's pieces matter.
+        from fs_bot.rules_consts import FACTIONS, WARBAND, HIDDEN, REVEALED, SCOUTED
+        for r, sp in state["spaces"].items():
+            for f in FACTIONS:
+                fp = sp.get("pieces", {}).get(f, {})
+                for ps in (HIDDEN, REVEALED, SCOUTED):
+                    if isinstance(fp.get(ps), dict):
+                        fp[ps][WARBAND] = 0
+
+    def test_excludes_destination_reachable_only_over_3_losses(self):
+        """The most-Arverni Region reachable only via a >3-Loss route is
+        excluded; Vercingetorix goes to a reachable Region within the cap."""
+        from fs_bot.bots.arverni_bot import _verc_march_route
+        state = _make_state(non_players={ARVERNI, AEDUI, BELGAE})
+        self._clear_warbands(state)
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
+        # Clean 1-hop join (Carnutes, adjacent) with fewer Arverni.
+        place_piece(state, CARNUTES, ARVERNI, WARBAND, 2)
+        # More-Arverni Morini, reachable from MANDUBII ONLY via Atrebates,
+        # where 12 Hidden Aedui Warbands inflict 12//3 = 4 Losses (> 3).
+        place_piece(state, MORINI, ARVERNI, WARBAND, 6)
+        place_piece(state, ATREBATES, AEDUI, WARBAND, 12, piece_state=HIDDEN)
+        refresh_all_control(state)
+        dest, route = _verc_march_route(state, state["scenario"], MANDUBII)
+        assert dest == CARNUTES          # not Morini
+        assert route == [CARNUTES]
+        assert MORINI not in (route or [])
+
+    def test_picks_most_arverni_within_loss_cap(self):
+        """With the route under the 3-Loss cap, the most-Arverni Region wins,
+        and its route is recorded for the executor."""
+        from fs_bot.bots.arverni_bot import _verc_march_route
+        state = _make_state(non_players={ARVERNI, AEDUI, BELGAE})
+        self._clear_warbands(state)
+        _place_arverni_force(state, MANDUBII, leader=True, warbands=5)
+        place_piece(state, CARNUTES, ARVERNI, WARBAND, 2)
+        place_piece(state, MORINI, ARVERNI, WARBAND, 6)
+        # Only 6 Hidden Aedui in Atrebates -> 2 Losses (<= 3): Morini valid & wins.
+        place_piece(state, ATREBATES, AEDUI, WARBAND, 6, piece_state=HIDDEN)
+        refresh_all_control(state)
+        dest, route = _verc_march_route(state, state["scenario"], MANDUBII)
+        assert dest == MORINI
+        assert route == [ATREBATES, MORINI]

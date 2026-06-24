@@ -1285,3 +1285,36 @@ fall-throughs, which are correct behaviour, not bugs.
    permissiveness, not a defect.
 
 There are no correctness defects outstanding.
+
+---
+
+## RESOLVED — Vercingetorix March Harassment-aware routing (§8.7.1, June 2026)
+
+Previously a known planner approximation: node_v_march_threat picked the
+Vercingetorix destination by Arverni piece-count alone, ignoring reachability
+and the §8.7.1 Harassment-loss limits ("fewest possible Harassment Losses ...
+only to Regions reachable suffering no more than three Losses that March and
+none on Vercingetorix").
+
+FIXED:
+- _verc_march_route now chooses the destination with the MOST Arverni pieces
+  that Vercingetorix can reach within 2 Regions (3.3.2) by the Harassment-
+  minimizing route, subject to <=3 total Losses and 0 on Vercingetorix. A
+  group is safe iff total Losses <= the Warbands marching with him (Warbands
+  are lost first). Harassment is predicted with the executor's own
+  _np_harassers (H//3 Losses per opting Faction per pass-through Region) — one
+  rule, one implementation. Ties: most Arverni, then fewest Losses, then random
+  (§8.3.4).
+- The planner records the chosen route in march_plan["routes"]; _execute_march
+  now honours a planner-supplied per-origin route verbatim instead of BFS, so
+  Vercingetorix takes exactly the Losses the planner accounted for and no other.
+
+Remaining of the original item: only the German G_MARCH_THREAT reachability
+note — the German threat-March has NO Harassment-loss cap in A8.7.1 (that limit
+is Vercingetorix-specific), and the executor marches whatever it legally can, so
+there is no faithful constraint left to enforce there. The Aedui Trade-yield
+estimate (player-Roman 10-12 tier) remains the sole genuinely-open judgment call.
+
+Census stays defect-free (illegal=0, wasteful-sa=0, ineffective-event=0),
+deterministic across hashseeds; balance within band. Regression:
+TestVercMarchHarassment.

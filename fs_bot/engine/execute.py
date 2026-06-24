@@ -3541,11 +3541,26 @@ def _execute_march(state, faction, bot_action):
     scenario = state["scenario"]
     playable = set(get_playable_regions(scenario, state.get("capabilities")))
 
+    # A planner may supply an explicit route per origin (e.g. the §8.7.1
+    # Vercingetorix March's Harassment-minimizing path). When present, march
+    # that exact route instead of the executor's BFS shortest path, so the
+    # group takes the Losses the planner accounted for and no others.
+    forced_routes = plan.get("routes") or {}
+
     marched = []
     errors = []
     deferred_origins = []
     for origin in origins:
         if not _group_has_pieces(_mobile_march_group(state, faction, origin)):
+            continue
+        forced = forced_routes.get(origin)
+        if (isinstance(forced, list) and forced
+                and all(r in playable for r in forced)):
+            try:
+                final = _march_with_harassment(state, faction, origin, forced)
+                marched.append({"origin": origin, "final_region": final})
+            except _EXEC_ERRORS as exc:
+                errors.append({"origin": origin, "error": str(exc)})
             continue
         # Choose the nearest reachable planned destination; BFS the path.
         best = None  # (path_len, dest, path)

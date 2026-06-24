@@ -27,6 +27,7 @@ from fs_bot.rules_consts import (
     SA_DEVASTATE, SA_ENTREAT, SA_AMBUSH,
     # Leaders
     VERCINGETORIX, CAESAR,
+    HARASSMENT_WARBANDS_PER_LOSS,
     # Regions
     AEDUI_REGION, BRITANNIA,
     # Events
@@ -856,6 +857,80 @@ def _determine_battle_sa(state, battle_plan, scenario):
     return (SA_ACTION_NONE, [])
 
 
+def _verc_march_route(state, scenario, verc_region):
+    """§8.7.1 Vercingetorix March destination + route.
+
+    Vercingetorix (with all his Warbands) Marches out of his Region "to join
+    the most Arverni pieces able", into a 2nd Region if needed (3.3.2), "by
+    routes that will inflict the fewest possible Harassment Losses ... and only
+    to Regions that they can reach suffering no more than three Losses that
+    March and none on Vercingetorix."
+
+    Harassment is predicted with the executor's own _np_harassers (one rule,
+    one implementation): in each Region the group passes THROUGH (enters then
+    leaves), each opting Faction with H Hidden Warbands inflicts H // 3 Losses.
+    The Region the group stops in is not passed through. Vercingetorix takes a
+    Loss only once the Warbands marching with him are exhausted, so he is safe
+    iff total Losses <= those Warbands.
+
+    Returns (destination, route) where route is the list of Regions to move
+    INTO (1 or 2 hops), or (None, None) if no legal join destination exists.
+    """
+    from fs_bot.engine.execute import _np_harassers
+    playable = set(get_playable_regions(scenario, state.get("capabilities")))
+    warbands = count_pieces(state, verc_region, ARVERNI, WARBAND)
+    group = {LEADER: VERCINGETORIX, WARBAND: warbands}
+
+    def _adj(r):
+        return [a for a in get_adjacent(r, scenario) if a in playable]
+
+    def _harass(region):
+        return sum(h // HARASSMENT_WARBANDS_PER_LOSS
+                   for _f, h in _np_harassers(state, region, ARVERNI, group))
+
+    verc_adj = set(_adj(verc_region))
+    # (arverni_pieces, harass_cost, dest, route)
+    candidates = []
+    for dest in sorted(playable):
+        if dest == verc_region:
+            continue
+        arverni_there = count_pieces(state, dest, ARVERNI)
+        if arverni_there < 1:
+            continue  # "join the most Arverni pieces" — must have some to join
+        cost = None
+        route = None
+        if dest in verc_adj:
+            cost, route = 0, [dest]          # 1 hop: no pass-through, 0 Losses
+        else:
+            for mid in sorted(verc_adj):     # 2 hops: pass through one Region
+                if mid == dest or dest not in _adj(mid):
+                    continue
+                c = _harass(mid)
+                if cost is None or c < cost:
+                    cost, route = c, [mid, dest]
+        if cost is None:
+            continue                          # unreachable within 2 Regions
+        # §8.7.1 constraint: <= 3 total Losses AND none on Vercingetorix.
+        if cost > 3 or cost > warbands:
+            continue
+        candidates.append((arverni_there, cost, dest, route))
+
+    if not candidates:
+        return None, None
+    # Objective: the most Arverni pieces; within that, fewest Harassment
+    # Losses; within that, random (§8.3.4).
+    best_ap = max(c[0] for c in candidates)
+    tier = [c for c in candidates if c[0] == best_ap]
+    best_cost = min(c[1] for c in tier)
+    tier = [c for c in tier if c[1] == best_cost]
+    if len(tier) == 1:
+        chosen = tier[0]
+    else:
+        pick = random_select(state, [c[2] for c in tier])  # roll ONCE
+        chosen = next(c for c in tier if c[2] == pick)
+    return chosen[2], chosen[3]
+
+
 def node_v_march_threat(state):
     """V_MARCH_THREAT: March (from threat).
 
@@ -873,26 +948,19 @@ def node_v_march_threat(state):
     march_plan = {
         "origins": [],
         "destinations": [],
+        "routes": {},
         "type": MARCH_THREAT,
     }
 
-    # Step 1: Vercingetorix Marches to region with most Arverni pieces
+    # Step 1: Vercingetorix Marches to the Region with the most Arverni pieces
+    # he can REACH within the §8.7.1 Harassment restriction (<=3 Losses, none
+    # on Vercingetorix), by the Harassment-minimizing route.
     if verc_region:
-        best_dest = None
-        best_count = -1
-        for region in playable:
-            if region == verc_region:
-                continue
-            # Check Harassment restrictions — §8.7.1
-            # "no more than three Losses that March and none on Vercingetorix"
-            arverni_there = count_pieces(state, region, ARVERNI)
-            if arverni_there > best_count:
-                best_count = arverni_there
-                best_dest = region
-
+        best_dest, verc_route = _verc_march_route(state, scenario, verc_region)
         if best_dest is not None:
             march_plan["origins"].append(verc_region)
             march_plan["destinations"].append(best_dest)
+            march_plan["routes"][verc_region] = verc_route
 
     # Step 2: Move all other Warbands toward Vercingetorix, leave 1 per origin
     verc_dest = march_plan["destinations"][0] if march_plan["destinations"] else verc_region

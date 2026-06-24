@@ -992,16 +992,16 @@ def node_g_march_threat(state):
         origin_list.insert(0, aristos_region)
 
     excluded = set(origin_list)
-    max_dests = len(origin_list)
 
     romans_at_vic = _romans_at_victory(state)
     aedui_at_vic = _gaul_at_victory(state, AEDUI)
     belgae_at_vic = _gaul_at_victory(state, BELGAE)
 
-    candidates = []
-    for region in playable:
-        if region in excluded:
-            continue
+    # A8.7.1 destination priorities, scored per Region:
+    #   (a) if Romans at victory, most Dispersed Tribes;
+    #   (b) within that, most Allied Tribes of any Gaul at victory;
+    #   (c) within that, add the most Germanic Control (no current Control).
+    def _dest_key(region):
         dispersed = _count_dispersed_tribes_in_region(state, region, scenario)
         gaul_allies = 0
         if aedui_at_vic:
@@ -1011,29 +1011,34 @@ def node_g_march_threat(state):
             gaul_allies += _count_allied_tribes_in_region(
                 state, region, scenario, BELGAE)
         adds_control = 0 if is_controlled_by(state, region, GERMANS) else 1
-        key_a = dispersed if romans_at_vic else 0
-        key_b = gaul_allies if (aedui_at_vic or belgae_at_vic) else 0
-        candidates.append({
-            "region": region,
-            "key_a": key_a,
-            "key_b": key_b,
-            "key_c": adds_control,
-        })
+        return (
+            dispersed if romans_at_vic else 0,
+            gaul_allies if (aedui_at_vic or belgae_at_vic) else 0,
+            adds_control,
+        )
 
-    candidates.sort(key=lambda c: (-c["key_a"], -c["key_b"], -c["key_c"]))
-
+    # A8.7.1: "March all mobile Germanic Forces OUT OF EACH Region" — so every
+    # origin Marches out — to "Regions that they can reach", which (A3.4.2) is a
+    # single adjacent Region, and "not ... Regions that other Germans are
+    # departing" (the origins). Each origin therefore Marches to its highest-
+    # priority adjacent non-origin Region, recorded as a per-origin route the
+    # executor honours verbatim. Deduplicated this yields at least one and at
+    # most one-per-origin distinct destinations — exactly the A8.7.1 cap — and
+    # origins adjacent to a shared high-value Region converge on it. Ties are
+    # broken randomly (8.3.4). This replaces ranking over ALL playable Regions,
+    # which could pick (and over-March toward) a Region no group can reach.
+    routes = {}
     destinations = []
-    remaining = list(candidates)
-    while remaining and len(destinations) < max_dests:
-        head = remaining[0]
-        equal = [c for c in remaining
-                 if (c["key_a"], c["key_b"], c["key_c"])
-                 == (head["key_a"], head["key_b"], head["key_c"])]
-        chosen = (random_select(state, equal)
-                  if len(equal) > 1 else equal[0])
-        destinations.append(chosen["region"])
-        remaining = [c for c in remaining
-                     if c["region"] != chosen["region"]]
+    for o in origin_list:
+        nbrs = sorted(r for r in get_adjacent(o, scenario) if r not in excluded)
+        if not nbrs:
+            continue  # no legal one-Region destination — this origin stays put
+        best_key = max(_dest_key(r) for r in nbrs)
+        tied = [r for r in nbrs if _dest_key(r) == best_key]
+        pick = random_select(state, tied) if len(tied) > 1 else tied[0]
+        routes[o] = [pick]
+        if pick not in destinations:
+            destinations.append(pick)
 
     if not destinations or not origins:
         return _make_action(ACTION_PASS)
@@ -1041,6 +1046,8 @@ def node_g_march_threat(state):
     march_plan = {
         "origins": origin_list,
         "destinations": destinations,
+        "routes": routes,
+        "max_steps": 1,  # A3.4.2: German groups March exactly one adjacent Region
         "type": MARCH_THREAT,
     }
 

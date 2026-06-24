@@ -630,6 +630,58 @@ class TestNodeGMarchThreat:
             dests = result["regions"]
             assert SUGAMBRI not in dests
 
+    def test_destinations_are_reachable_in_one_region(self):
+        """A8.7.1 'Regions that they can reach' + A3.4.2 (German groups March
+        one adjacent Region only): every destination is adjacent to an origin,
+        and a high-priority Region 2 Regions away is never selected."""
+        from fs_bot.map.map_data import get_adjacent
+        from fs_bot.rules_consts import MARKER_DISPERSED, TRIBE_MANDUBII
+        state = _make_state(seed=11)
+        # Origin: threatened Ariovistus in SUGAMBRI (adj: Morini/Nervii/Treveri/Ubii).
+        _place_german_force(state, SUGAMBRI, leader=True, warbands=12)
+        _place_roman_force(state, SUGAMBRI, legions=4)
+        # The most attractive destination (a Dispersed tribe) sits in MANDUBII,
+        # which is TWO Regions from SUGAMBRI — unreachable in one German March.
+        state["tribes"][TRIBE_MANDUBII]["status"] = MARKER_DISPERSED
+        refresh_all_control(state)
+        scenario = state["scenario"]
+        result = node_g_march_threat(state)
+        assert result["command"] == ACTION_MARCH
+        plan = result["details"]["march_plan"]
+        origins = set(plan["origins"])
+        reachable = set()
+        for o in origins:
+            reachable |= set(get_adjacent(o, scenario))
+        assert MANDUBII not in plan["destinations"]      # 2 Regions away
+        for d in plan["destinations"]:
+            assert d in reachable                         # every dest adjacent
+        assert plan.get("max_steps") == 1
+        # A8.7.1 "March out of EACH Region": every origin with a legal
+        # one-Region destination gets a route to an adjacent non-origin Region.
+        routes = plan.get("routes", {})
+        for o in origins:
+            nbrs = [r for r in get_adjacent(o, scenario) if r not in origins]
+            if nbrs:
+                assert o in routes
+                assert len(routes[o]) == 1
+                assert routes[o][0] in nbrs
+
+    def test_executor_max_steps_blocks_over_march(self):
+        """With max_steps=1 the executor never chains BFS steps to over-march a
+        German group to a non-adjacent destination (A3.4.2)."""
+        from fs_bot.engine.execute import _execute_march
+        from fs_bot.board.pieces import get_leader_in_region
+        state = _make_state(seed=11)
+        _place_german_force(state, SUGAMBRI, leader=True, warbands=12)
+        # MANDUBII is 2 Regions away; without max_steps the BFS would march
+        # the group there over two steps.
+        plan = {"march_plan": {"origins": [SUGAMBRI], "destinations": [MANDUBII],
+                               "max_steps": 1}}
+        res = _execute_march(state, GERMANS, {"command": "March", "details": plan})
+        # The group cannot reach MANDUBII in one Region, so it does not arrive.
+        assert get_leader_in_region(state, MANDUBII, GERMANS) is None
+        assert SUGAMBRI in res.get("deferred_origins", [])
+
 
 # ===================================================================
 # G_RAID

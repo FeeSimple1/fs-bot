@@ -1318,3 +1318,38 @@ estimate (player-Roman 10-12 tier) remains the sole genuinely-open judgment call
 Census stays defect-free (illegal=0, wasteful-sa=0, ineffective-event=0),
 deterministic across hashseeds; balance within band. Regression:
 TestVercMarchHarassment.
+
+---
+
+## RESOLVED — German threat-March reachability (A8.7.1 / A3.4.2, June 2026)
+
+Previously the last remaining piece of the March-planner approximation:
+node_g_march_threat ranked destination Regions over ALL playable Regions, and
+the executor chained BFS steps to reach a far one — over-Marching a German group
+through two or three Regions.
+
+The rules resolve this unambiguously. A3.4.2: "The German Leader and Warbands
+March in the same way as Gallic Leaders and Warbands do (3.3.2; NOT into a 2nd
+Region — an effect particular to Vercingetorix)." So every German group Marches
+exactly ONE adjacent Region, and A8.7.1's "Regions that they can reach" means
+Regions adjacent to an origin.
+
+FIXED:
+- node_g_march_threat now assigns each origin its highest-priority ADJACENT
+  non-origin Region (A8.7.1 priorities a/b/c, random tie-break 8.3.4), recorded
+  as a per-origin route. Deduplicated this is >=1 and <= one-per-origin distinct
+  destinations (the A8.7.1 cap); origins adjacent to a shared high-value Region
+  converge on it; and "March out of EACH Region" is honoured for every origin
+  that has any legal one-Region destination.
+- _execute_march honours a planner-supplied max_steps bound (German plan sets
+  max_steps=1) so an origin can never be BFS-routed beyond its legal one-Region
+  March, even absent an explicit route.
+
+This closes the March-planner item entirely (Arverni Vercingetorix harassment
+routing + German reachability both done). Census defect-free (illegal=0) and
+deterministic across hashseeds; balance within band. Regressions:
+test_destinations_are_reachable_in_one_region, test_executor_max_steps_blocks_
+over_march.
+
+Only genuinely-open item remaining: the Aedui Trade-yield estimate (player-Roman
+10-12 tier), a judgment call the rules do not resolve.

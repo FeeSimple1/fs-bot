@@ -3546,6 +3546,10 @@ def _execute_march(state, faction, bot_action):
     # that exact route instead of the executor's BFS shortest path, so the
     # group takes the Losses the planner accounted for and no others.
     forced_routes = plan.get("routes") or {}
+    # A3.4.2 / 3.3.2: non-Roman groups March exactly one adjacent Region (the
+    # German planner sets max_steps=1). When set, an origin may only March to a
+    # destination within that many Regions, never over-marching via BFS.
+    max_steps = plan.get("max_steps")
 
     marched = []
     errors = []
@@ -3568,6 +3572,8 @@ def _execute_march(state, faction, bot_action):
             path = _bfs_march_path(origin, d, playable)
             if path is None:
                 continue
+            if max_steps is not None and len(path) > max_steps:
+                continue  # would over-march this group (A3.4.2)
             if best is None or len(path) < best[0]:
                 best = (len(path), d, path)
             elif len(path) == best[0]:

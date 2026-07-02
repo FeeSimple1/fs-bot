@@ -3971,3 +3971,109 @@ def test_cardA34_unshaded_germans_battle_acting_factions_rivals():
     # Germans hit the Roman rival; the acting Aedui were not the target.
     assert count_pieces(st, region, ROMANS, AUXILIA) < before
     assert all(f.get("defender") != AEDUI for f in fa)
+
+
+def test_harassment_opt_in_consults_player_faction():
+    """§3.2.2: ANY Faction with 3+ Hidden Warbands MAY Harass — the §8.4.2
+    table is the NP instruction only. A player faction decides via the
+    AGREEMENT hook; deferring keeps the NP table."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.engine.execute import _np_harassers
+    from fs_bot.engine.agent import AGREEMENT
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, AEDUI, BELGAE,
+                                     WARBAND, HIDDEN)
+
+    def fresh():
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=6)
+        region = "Treveri"
+        place_piece(st, region, AEDUI, WARBAND, 4, piece_state=HIDDEN)
+        return st, region
+
+    # NP table: the Aedui do NOT harass a Belgic March (§8.4.2 says the
+    # Aedui harass only Vercingetorix).
+    st, region = fresh()
+    st["non_player_factions"] = {AEDUI}
+    assert AEDUI not in [f for f, _ in
+                         _np_harassers(st, region, BELGAE, None)]
+
+    # A PLAYER Aedui may opt in via the agent...
+    st, region = fresh()
+    st["non_player_factions"] = set()
+    seen = []
+
+    def agent(state, faction, request):
+        if request.get("kind") == AGREEMENT and \
+                request.get("request_type") == "harassment":
+            seen.append((faction, request["context"]["hidden_warbands"]))
+            return faction == AEDUI
+        return None
+
+    st["decision_agent"] = agent
+    got = _np_harassers(st, region, BELGAE, None)
+    assert (AEDUI, 4) in got
+    assert (AEDUI, 4) in seen
+
+    # ...and deferring (agent returns None) keeps the NP table.
+    st, region = fresh()
+    st["non_player_factions"] = set()
+    st["decision_agent"] = lambda s, f, r: None
+    assert AEDUI not in [f for f, _ in
+                         _np_harassers(st, region, BELGAE, None)]
+
+
+def test_rampage_target_choice_consults_player():
+    """§4.5.2: the Rampage TARGET chooses remove vs Retreat. A player
+    target is consulted (RETREAT hook, rampage context); deferring keeps
+    the NP default (Retreat to save pieces when a destination exists)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _execute_rampage
+    from fs_bot.engine.agent import RETREAT
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, BELGAE, ROMANS,
+                                     WARBAND, AUXILIA, HIDDEN)
+
+    def fresh():
+        st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=6)
+        region = "Nervii"
+        place_piece(st, region, BELGAE, WARBAND, 3, piece_state=HIDDEN)
+        place_piece(st, region, ROMANS, AUXILIA, 2)
+        # A friendly stack next door so a Retreat destination exists.
+        place_piece(st, "Atrebates", ROMANS, AUXILIA, 2)
+        refresh_all_control(st)
+        st["non_player_factions"] = {BELGAE}
+        return st, region
+
+    plan = {"sa": "Rampage", "sa_regions": [{"region": "Nervii",
+                                             "target": ROMANS}]}
+
+    # Player Rome chooses REMOVAL despite a legal destination.
+    st, region = fresh()
+    seen = []
+
+    def remove_agent(state, faction, request):
+        if request.get("kind") == RETREAT and \
+                (request.get("context") or {}).get("rampage"):
+            seen.append(faction)
+            return {"retreat": False, "region": None}
+        return None
+
+    st["decision_agent"] = remove_agent
+    before = count_pieces(st, region, ROMANS, AUXILIA)
+    base_atre = count_pieces(st, "Atrebates", ROMANS, AUXILIA)
+    res = _execute_rampage(st, BELGAE, plan)
+    assert res["executed"] and seen == [ROMANS]
+    assert count_pieces(st, region, ROMANS, AUXILIA) < before
+    # No retreat happened: the destination stack is unchanged.
+    assert count_pieces(st, "Atrebates", ROMANS, AUXILIA) == base_atre
+
+    # Deferring keeps the NP default: Retreat to the best destination.
+    st, region = fresh()
+    st["decision_agent"] = lambda s, f, r: None
+    grew = {r: count_pieces(st, r, ROMANS, AUXILIA)
+            for r in st["spaces"]}
+    res = _execute_rampage(st, BELGAE, plan)
+    assert res["executed"]
+    assert any(count_pieces(st, r, ROMANS, AUXILIA) > n
+               for r, n in grew.items() if r != region)   # retreated

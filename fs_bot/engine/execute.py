@@ -4269,6 +4269,25 @@ def _execute_rampage(state, faction, bot_action):
         n = min(2, hidden_belgic, len(pool))
         dest = _best_retreat_destination(state, region, target)
         force_remove = (scenario in ARIOVISTUS_SCENARIOS and target == ARVERNI)
+        # §4.5.2: the TARGET chooses remove or Retreat (A4.5 forces
+        # removal for a Rampaged Arverni in Ariovistus — no choice). A
+        # player target is consulted via the RETREAT hook with a rampage
+        # context; deferring keeps the NP default (§8.4.1/§8.4.3:
+        # Retreat to save pieces when a destination exists).
+        if (not force_remove
+                and target not in state.get("non_player_factions", set())):
+            from fs_bot.engine.agent import consult_agent, RETREAT
+            legal = sorted(_retreat_destinations(state, region, target))
+            resp = consult_agent(state, target, {
+                "kind": RETREAT, "region": region, "attacker": faction,
+                "defender": target, "is_ambush": False,
+                "legal_regions": legal,
+                "context": {"rampage": True, "num_pieces": n}})
+            if isinstance(resp, dict):
+                if resp.get("retreat") and resp.get("region") in legal:
+                    dest = resp["region"]
+                else:
+                    dest = None    # the player chose removal
 
         actions = []
         for i in range(n):
@@ -4319,6 +4338,23 @@ def _np_harassers(state, region, target_faction, group):
         hwb = _count_state(state, region, f, WARBAND, HIDDEN)
         if hwb < _HWB_PER_LOSS:
             continue
+        # §3.2.2: ANY Faction with 3+ Hidden Warbands MAY opt to Harass —
+        # the §8.4.2 table below is the NON-PLAYER instruction. A player
+        # Faction decides for itself via the decision-agent hook
+        # (AGREEMENT / "harassment"); if it defers (or no agent), fall
+        # back to the NP table so the all-bot harness is unchanged.
+        if f not in state.get("non_player_factions", set()):
+            from fs_bot.engine.agent import consult_agent, AGREEMENT
+            from fs_bot.rules_consts import VERCINGETORIX as _VERC
+            resp = consult_agent(state, f, {
+                "kind": AGREEMENT, "request_type": "harassment",
+                "requesting_faction": target_faction,
+                "context": {"region": region, "hidden_warbands": hwb,
+                            "vercingetorix": has_verc}})
+            if resp is not None:
+                if resp:
+                    harassers.append((f, hwb))
+                continue
         opt = False
         if f == GERMANS and scenario in BASE_SCENARIOS:
             opt = True  # §3.4.5

@@ -31,6 +31,20 @@ def make_cli_reactive(human_factions, stdin, stdout):
         try:
             if kind == RETREAT:
                 legal = list(request.get("legal_regions") or [])
+                ctx = request.get("context") or {}
+                if ctx.get("rampage"):
+                    stdout.write(
+                        f"\n{faction}: {request.get('attacker')} Rampages "
+                        f"in {request.get('region')} — "
+                        f"{ctx.get('num_pieces')} of your piece(s) must "
+                        f"Retreat or be removed (§4.5.2).\n")
+                    opts = [("Remove them", "stay")]
+                    opts += [(f"Retreat them to {r}", r) for r in legal]
+                    pick = prompt_choice(stdin, stdout,
+                                         "Remove or Retreat?", opts)
+                    if pick == "stay":
+                        return {"retreat": False, "region": None}
+                    return {"retreat": True, "region": pick}
                 stdout.write(
                     f"\n{faction}: {request.get('attacker')} Battles you in "
                     f"{request.get('region')}"
@@ -70,6 +84,16 @@ def make_cli_reactive(human_factions, stdin, stdout):
                 rf = request.get("requesting_faction")
                 ctx = request.get("context") or {}
                 where = f" in {ctx['region']}" if ctx.get("region") else ""
+                if rt == "harassment":
+                    # An opt-in, not a favour: your Hidden Warbands may
+                    # Harass the moving/foraging group (§3.2.2).
+                    return prompt_yes_no(
+                        stdin, stdout,
+                        f"\n{faction}: your {ctx.get('hidden_warbands')} "
+                        f"Hidden Warbands may Harass {rf}'s "
+                        f"{'Vercingetorix ' if ctx.get('vercingetorix') else ''}"
+                        f"group{where} (1 Loss per 3). Harass?",
+                        default=False)
                 return prompt_yes_no(
                     stdin, stdout,
                     f"\n{faction}: {rf} asks your agreement — {rt}{where}. "

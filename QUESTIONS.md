@@ -1622,3 +1622,46 @@ Sweeps: seeds 1-115 x 5 scenarios (575 games, ~4,900 fuzzed player
 turns per 100 games incl. Events), double-run, hard-findings=0,
 batch digests identical across PYTHONHASHSEED 0/7. Suite 2038 passing;
 census unchanged (illegal=0, hashseed-identical).
+
+---
+
+## REACTIVE-DECISION HOOK COMPLETENESS (July 2026)
+
+Audit of every reactive decision point against the decision-agent hook —
+the class the Trade Roman-agreement bug belonged to (a player faction's
+choice silently made for them by NP logic).
+
+Already wired: Supply Line (§3.2.1), Trade Roman agreement (§4.4.1),
+Quarters host agreement (§6.3.3), defender Retreat (§3.2.4), Retreat
+into another's Control (§3.2.4), Loss order (§3.2.4).
+
+**Gaps found and wired (agent defers -> NP logic, all-bot unchanged):**
+1. **Harassment opt-in (§3.2.2)** — `_np_harassers` (all March
+   intermediate stops + Seize) applied the §8.4.2 NON-PLAYER table to
+   player factions: e.g. a human Aedui could never Harass a Belgic March
+   because the NP instruction says the Aedui only Harass Vercingetorix.
+   Player factions with 3+ Hidden Warbands are now consulted
+   (AGREEMENT / "harassment", context: region, hidden_warbands,
+   vercingetorix); the table remains the NP default.
+2. **Rampage target response (§4.5.2)** — the target's remove-vs-Retreat
+   choice was auto-decided by the NP defaults (§8.4.1/§8.4.3) even for a
+   player target. Player targets are now consulted (RETREAT kind with
+   ``context={"rampage": True, "num_pieces": n}``); A4.5 forced removal
+   (Ariovistus Arverni) bypasses the choice as the rule requires.
+
+CLI: reactive.py gained tailored prompts for both (harassment opt-in
+defaults to No — it is an opt-in, not a favour; Rampage offers
+remove-vs-retreat with legal destinations). The fuzzer's random reactive
+agent covers both automatically (AGREEMENT coin flip / RETREAT choice),
+so mixed-game sweeps now exercise player harassment and Rampage
+responses; agent.py documents the wired request_types.
+
+**Not modeled (documented, not a defect):** voluntary resource transfers
+(§1.5.2 open deal-making) — no engine action exists to give Resources
+away, so there is nothing to consult; adding one would be a new
+mechanic, not a hook fix.
+
+Verification: 2040 tests (new: harassment opt-in consult honored +
+NP-table fallback; Rampage player-choice honored + NP fallback);
+census unchanged (illegal=0); fuzz sweeps seeds 1-90 all scenarios
+hard-findings=0, hashseed-identical.

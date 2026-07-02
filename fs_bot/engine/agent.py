@@ -32,12 +32,27 @@ Request kinds
   response: an ordered subset/permutation of ``pieces`` (the loss priority), or
   ``None`` to defer. Entries not currently present are skipped safely.
 
-- ``AGREEMENT`` — an inter-Faction agreement (§1.5.2): Supply Line, Retreat into
-  this Faction's Control, Quarters, Harassment, resource transfers.
+- ``AGREEMENT`` — an inter-Faction agreement or opt-in (§1.5.2/§3.2.2).
   request: ``{"kind": AGREEMENT, "request_type", "requesting_faction",
               "context": {...}}``
-  response: ``bool`` (agree?) or a details ``dict`` (e.g. transfers), or
-  ``None`` to defer.
+  response: ``bool`` (agree / opt in?) or a details ``dict``, or ``None``
+  to defer.
+  Wired request_types:
+    "supply_line"            — §3.2.1 (commands/rally.py)
+    "trade_roman_agreement"  — §4.4.1 (execute._trade_roman_agreement)
+    "quarters"               — §6.3.3 (execute._quarters_host_agrees)
+    "retreat_into_control"   — §3.2.4 (execute, Battle retreat)
+    "harassment"             — §3.2.2 opt-in (execute._np_harassers; the
+                               §8.4.2 table remains the NP default).
+                               requesting_faction is the marching/seizing
+                               Faction being harassed.
+  Voluntary resource transfers (§1.5.2 deal-making) have no engine
+  mechanism and are NOT consulted — documented in QUESTIONS.md.
+
+The ``RETREAT`` kind also carries ``context={"rampage": True, "num_pieces"}``
+for a Rampage target's remove-vs-Retreat choice (§4.5.2): respond
+``{"retreat": True, "region": <legal>}`` to Retreat the affected pieces or
+``{"retreat": False}`` to remove them; defer for the NP default.
 """
 
 RETREAT = "retreat"

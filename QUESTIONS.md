@@ -326,7 +326,10 @@ Phase "as if At War" forced), A58 shaded (Ambush Romans only), A67 (non-German
 routing), card 54 (Ariovistus player set: Germans not Arverni), A45 (Celtica +
 within-1-of-Intimidated).
 
-### Remaining — larger engine features (real, unimplemented; need new logic)
+### Remaining — larger engine features
+**[RECONCILED July 2026 — see "Card-audit gaps closed" at the end of this
+file: every item below was implemented in later passes (this note was
+stale); the last true gap, A70 unshaded, is now closed too.]**
 - **A34 unshaded** — "A non-German player may use German pieces to free March or
   Battle in/from up to 3 Regions." Flag set, no consumer → no-op. Needs a
   borrow-German-pieces March/Battle resolver.
@@ -1728,3 +1731,48 @@ Verification: 2054 tests passing (13 new); census 26 legal-declines /
 illegal=0 both hashseeds (26 vs 28: the Suborn planner fix changed two
 games' trajectories); fuzz sweeps seeds 1-85 all scenarios
 hard-findings=0, hashseed-identical.
+
+
+---
+
+## Card-audit gaps closed — reconciliation (July 2026)
+
+The audit's "Remaining — larger engine features" list was stale: later
+passes implemented nearly all of it without updating the ledger. Verified
+item by item against current code, with tests added where coverage was
+missing:
+
+- **A34 unshaded** — IMPLEMENTED (`execute._resolve_card_A34_german_pieces`:
+  borrowed-German free Battles in up to 3 Regions, never against the
+  acting Faction; free March permitted via the same layer). New test:
+  test_card_A34_unshaded_borrowed_german_battles.
+- **A70 shaded** — IMPLEMENTED (end-of-action Nervii-Subdued hook in
+  execute.py + Rally-at-Nervii +2 Warbands in rally.py); already tested.
+- **A53 unshaded** — IMPLEMENTED incl. the granted +1 Special Activity
+  (`_resolve_card_A53_frumentum`: transfer + free Recruit + free March +
+  free Build SA). New test: test_card_A53_unshaded_grants_recruit_march_
+  and_sa.
+- **Card 11a unshaded** — IMPLEMENTED (`_free_double_aux_battle(...,
+  auxilia_only=True)` restricts the attack to Auxilia); already tested.
+- **A29 / A40 unshaded** — IMPLEMENTED (Settlement gating + 2-Ally/5-WB-
+  or-3-AUX caps; 3-Region + per-Region caps; NP derivers exist for both);
+  already tested.
+- **Minor tail** — A65 "without Leader" (no_attacker_leader=True), card 57
+  Britannia-conditional +4, card 19 shaded on-map Successor branch, A20
+  as-if-Roman-Control Disperse, cards 30/39 2nd-ed text-change handlers:
+  all present and consumed.
+
+**The one real gap found and closed: A70 unshaded ("Belgae never
+Retreat").** The handler set `card_A70_no_belgae_retreat` and the battle
+mechanic refused Belgae Retreats (persisting un-popped — correct
+capability semantics), but `_decide_defender_retreat` neither knew the
+modifier nor A33's German equivalent: NP logic could still DECLARE a
+Retreat (harmlessly refused downstream) and, worse, a human Belgae
+defender was consulted about a choice that does not exist. Both
+modifiers now short-circuit the decision (no agent consult), mirroring
+the base-German/Ariovistus-Arverni lines. End-to-end test proves the
+declared-Retreat refusal, the consult skip, and the modifier's
+persistence.
+
+Verification: 2057 tests passing; census illegal=0 both hashseeds (26
+legal-declines); fuzz seeds 1-20 hard-findings=0, hashseed-identical.

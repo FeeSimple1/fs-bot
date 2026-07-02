@@ -4159,8 +4159,8 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
     that agreement routing is a separate, documented extension.
     """
     from fs_bot.rules_consts import (
-        ROMANS, GERMANS, ARVERNI, LEGION, AUXILIA, WARBAND, CITADEL, FORT,
-        BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+        ROMANS, GERMANS, ARVERNI, BELGAE, LEGION, AUXILIA, WARBAND, CITADEL,
+        FORT, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     )
     from fs_bot.battle.losses import calculate_losses
 
@@ -4171,6 +4171,13 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
         return (False, None)  # §3.2.4: Germans never Retreat (base)
     if defender == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
         return (False, None)  # A3.2.4: Arverni never Retreat
+    mods = state.get("event_modifiers") or {}
+    if defender == BELGAE and mods.get("card_A70_no_belgae_retreat"):
+        # A70 unshaded: "Belgae never Retreat" — no choice exists, so the
+        # agent is not consulted (the battle mechanic refuses regardless).
+        return (False, None)
+    if defender == GERMANS and mods.get("card_A33_no_german_retreat"):
+        return (False, None)  # A33 Wailing Women: Germans never Retreat
 
     # Legal Retreat destinations (adjacent Regions the defender Controls, or
     # ones whose controller agrees — §1.5.2).

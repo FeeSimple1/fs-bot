@@ -4077,3 +4077,99 @@ def test_rampage_target_choice_consults_player():
     assert res["executed"]
     assert any(count_pieces(st, r, ROMANS, AUXILIA) > n
                for r, n in grew.items() if r != region)   # retreated
+
+
+def test_card_A70_unshaded_belgae_never_retreat_end_to_end():
+    """A70 unshaded ('Fight to the death: Belgae never Retreat'): the NP
+    retreat decision returns no-Retreat without consulting the agent, and
+    the battle mechanic refuses even an explicit human declaration. The
+    modifier persists (capability semantics — it is never popped)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import (_decide_defender_retreat,
+                                       _ONE_SHOT_FREE_ACTION_FLAGS)
+    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.cards import card_effects as ce
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, BELGAE, ROMANS,
+                                     WARBAND, AUXILIA, LEGION, HIDDEN)
+
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
+    st["non_player_factions"] = set()
+    st["executing_faction"] = ROMANS
+    ce.execute_event(st, "A70", shaded=False)
+    assert st["event_modifiers"]["card_A70_no_belgae_retreat"]
+    assert "card_A70_no_belgae_retreat" not in _ONE_SHOT_FREE_ACTION_FLAGS
+
+    region, safe = "Nervii", "Atrebates"
+    place_piece(st, region, BELGAE, WARBAND, 3, piece_state=HIDDEN)
+    place_piece(st, safe, BELGAE, WARBAND, 4, piece_state=HIDDEN)
+    place_piece(st, region, ROMANS, LEGION, 2, from_legions_track=True)
+    place_piece(st, region, ROMANS, AUXILIA, 2)
+    refresh_all_control(st)
+
+    # NP decision: no Retreat, and the agent is never consulted.
+    asked = []
+    st["decision_agent"] = lambda s, f, r: asked.append(f) or None
+    assert _decide_defender_retreat(st, region, ROMANS, BELGAE,
+                                    False) == (False, None)
+    assert asked == []
+
+    # Mechanic: an explicit Retreat declaration is refused — the Belgae
+    # stand and die; nothing arrives in the destination.
+    before_safe = count_pieces(st, safe, BELGAE, WARBAND)
+    resolve_battle(st, region, ROMANS, BELGAE,
+                   retreat_declaration=True, retreat_region=safe)
+    assert count_pieces(st, safe, BELGAE, WARBAND) == before_safe
+
+
+def test_card_A34_unshaded_borrowed_german_battles():
+    """A34 unshaded: a non-German player uses German pieces to free Battle
+    in up to 3 Regions — the Germans attack the acting Faction's rivals,
+    never the acting Faction."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.cards import card_effects as ce
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, BELGAE, ROMANS,
+                                     GERMANS, WARBAND, AUXILIA, HIDDEN,
+                                     EVENT_UNSHADED)
+
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
+    st["non_player_factions"] = set()
+    place_piece(st, "Sequani", GERMANS, WARBAND, 6, piece_state=HIDDEN)
+    place_piece(st, "Sequani", ROMANS, AUXILIA, 2)
+    refresh_all_control(st)
+    res = _execute_event(st, BELGAE, {
+        "command": "Event", "sa": "No SA", "sa_regions": [],
+        "details": {"card_id": "A34",
+                    "text_preference": EVENT_UNSHADED}}, human=True)
+    assert res["executed"], res
+    battles = [f for f in (res.get("free_actions") or [])
+               if f.get("flag") == "card_A34"]
+    assert battles, res.get("free_actions")
+    assert all(f.get("defender") != BELGAE for f in battles)
+    assert len(battles) <= 3
+
+
+def test_card_A53_unshaded_grants_recruit_march_and_sa():
+    """A53 unshaded (Frumentum): Aedui lend Resources; the Romans get a
+    free Recruit + March + 1 Special Activity."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, ROMANS,
+                                     EVENT_UNSHADED)
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
+    st["non_player_factions"] = {ROMANS, AEDUI}
+    st["resources"][AEDUI] = 12
+    res = _execute_event(st, AEDUI, {
+        "command": "Event", "sa": "No SA", "sa_regions": [],
+        "details": {"card_id": "A53",
+                    "text_preference": EVENT_UNSHADED}}, human=False)
+    assert res["executed"], res
+    kinds = [f.get("free_action") for f in (res.get("free_actions") or [])
+             if f.get("flag") == "card_A53"]
+    assert "resource_transfer" in kinds
+    assert "free_recruit" in kinds and "free_march" in kinds
+    assert "free_sa" in kinds     # the granted +1 Special Activity

@@ -249,3 +249,49 @@ def test_rampage_collector_targets_enemy():
                                      rc.WARBAND, rc.HIDDEN) > 0
         assert e["target"] in _enemies_in_region(st, e["region"],
                                                  rc.BELGAE)
+
+
+def test_prompt_action_validation_feedback_loop():
+    """An uncollectable/invalid plan triggers the dry-run feedback: the
+    player sees why, declines the re-plan, and the turn falls back
+    safely. A valid plan passes through without extra prompts."""
+    from fs_bot.cli.menus import prompt_action
+    from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_PASS
+    from fs_bot.board.pieces import place_piece
+
+    # Invalid: Aedui Rally warbands in a Region with no Ally/Citadel
+    # (§3.3.1) — validation fails, player answers 'n' to re-plan.
+    st = _mk_state()
+    region = "Morini"
+    place_piece(st, region, rc.AEDUI, rc.WARBAND, 2, piece_state=rc.HIDDEN)
+    st["current_card"] = 5
+    out = io.StringIO()
+    # menu: action=Command; command=Rally; region pick; "(done)"?;
+    # place: Warbands; then validation fails -> "Re-plan?" -> n
+    lines = []
+    class Feed:
+        def readline(self):
+            # answer from the menu text like ScriptedPlayer, but answer
+            # the re-plan question 'n'
+            text = out.getvalue()
+            delta = text[getattr(self, "pos", 0):]
+            self.pos = len(text)
+            if "Re-plan this turn?" in delta:
+                lines.append("replan-asked")
+                return "n\n"
+            m = re.findall(r"^\s*(\d+)\) (.*)$", delta, re.M)
+            if m:
+                for num, label in m:
+                    if label.strip() in ("Command (no Special Ability)",
+                                         "Rally", region, "Warbands",
+                                         "(done)"):
+                        return num + "\n"
+                return m[0][0] + "\n"
+            return "y\n"
+    decision = prompt_action(st, rc.AEDUI,
+                             [ACTION_COMMAND, ACTION_PASS],
+                             "1st_eligible", Feed(), out)
+    assert "won't execute" in out.getvalue()
+    assert "replan-asked" in lines
+    # Declined re-plan keeps the plan; the executor stays the validator.
+    assert decision["action"] == ACTION_COMMAND

@@ -178,6 +178,41 @@ def prompt_action(state, faction, options, position, stdin, stdout):
                 state, faction, chosen, stdin, stdout)
         except EOFError:
             player_action = None
+        # Validation feedback loop: dry-run the plan on a copy before
+        # committing it. On failure, show why and offer a re-plan; on
+        # partial success (some sub-actions would have no effect), show
+        # the warnings and let the player confirm or re-plan. EOF (piped
+        # or scripted input) keeps the current plan - the executor stays
+        # the final validator.
+        from fs_bot.engine.moves import validate_player_action
+        while player_action is not None:
+            ok, info = validate_player_action(state, faction, player_action)
+            errors = (info.get("errors") or []) if isinstance(info, dict) \
+                else []
+            if ok and not errors:
+                break
+            try:
+                if ok:
+                    stdout.write("Warning - these parts would have no "
+                                 "effect:\n")
+                    for e in errors[:5]:
+                        stdout.write(f"  - {e}\n")
+                    if not prompt_yes_no(stdin, stdout,
+                                         "Re-plan this turn?",
+                                         default=False):
+                        break
+                else:
+                    why = (info.get("reason") if isinstance(info, dict)
+                           else info) or "no legal effect"
+                    stdout.write(f"That plan won't execute: {why}\n")
+                    if not prompt_yes_no(stdin, stdout,
+                                         "Re-plan this turn?",
+                                         default=True):
+                        break
+                player_action = collect_player_action(
+                    state, faction, chosen, stdin, stdout)
+            except EOFError:
+                break
         if player_action is not None:
             decision["player_action"] = player_action
     return decision

@@ -246,6 +246,9 @@ _OVERRIDES = {
     # Tribe. Omit it from generated/prompted params; the handler's
     # per-Region default ("Colony_<region>") is always safe.
     71: {"colony_tribe_name": {"kind": "omit"}},
+    # Card 22 Hostages unshaded: "remove or replace ... Warbands or
+    # Auxilia" — entry piece_type takes those two only.
+    22: {"replacements": {"values": (WARBAND, AUXILIA)}},
 }
 
 

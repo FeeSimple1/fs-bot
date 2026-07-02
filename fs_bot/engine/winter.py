@@ -1315,6 +1315,12 @@ def run_winter_round(state, is_final=False,
         }
 
     result["phases"]["harvest"] = harvest_phase(state)
+    # §8.6.6 NP Aedui subsidy — Quarters/Harvest are §1.5.2 transfer
+    # windows and Roman Resources drop paying Quarters costs.
+    from fs_bot.engine.execute import maybe_np_aedui_subsidy
+    _sub = maybe_np_aedui_subsidy(state)
+    if _sub:
+        result["phases"]["np_aedui_subsidy"] = _sub
 
     # Phase 5: Senate
     result["phases"]["senate"] = senate_phase(

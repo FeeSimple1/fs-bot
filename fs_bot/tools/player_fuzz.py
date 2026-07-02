@@ -164,6 +164,7 @@ def _sig(ex):
     sa = ex.get("sa_execution")
     return (bool(ex.get("executed")),
             str(ex.get("reason") or ""),
+            tuple(str(t) for t in ex.get("transfers") or []),
             tuple(sorted(str(e) for e in ex.get("errors") or [])),
             None if not isinstance(sa, dict) else
             (bool(sa.get("executed")),
@@ -338,7 +339,7 @@ def _compare_dry_vs_live(res, seats, expected):
                 divergences.append(
                     (faction, cr.get("card"),
                      f"dry-run {want} != live {live}"))
-            elif want[2] or (want[3] and want[3][1]):
+            elif want[3] or (want[4] and want[4][1]):
                 partial += 1
     return divergences, partial
 
@@ -362,10 +363,20 @@ def play_game(scenario, seed, *, reactive=True, events=True):
     events_ok = [0]
     expected = {}   # (card, faction) -> dry-run outcome signature
 
+    def _inject_transfer(pa, faction):
+        """Occasionally ride a §1.5.2 Resource gift on the plan."""
+        if frng.random() < 0.12:
+            others = [f for f in rc.FACTIONS if f != faction]
+            pa.setdefault("details", {})["transfers"] = [
+                {"to": others[frng.randrange(len(others))],
+                 "amount": frng.randrange(1, 6)}]
+
     def _dry_run(state, faction, pa):
         """Execute ``pa`` on an isolated sim under IDENTICAL reactive
         decisions (cloned fuzz rng). Returns (info, dirty) where dirty is
-        True when a FAILED action mutated the persistent board."""
+        True when a FAILED action mutated the persistent board. Plans
+        carrying §1.5.2 transfers skip the dirty check: a successful gift
+        legitimately stands even when the action itself fizzles."""
         from fs_bot.engine.execute import execute_decision
         sim = copy.deepcopy(state)
         sim.pop("decision_agent", None)
@@ -381,7 +392,9 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                              else "crash",
                              state.get("current_card"), repr(exc)))
             return None, False
-        dirty = (not info.get("executed")) and _board_digest(sim) != pre
+        dirty = (not info.get("executed")
+                 and not (pa.get("details") or {}).get("transfers")
+                 and _board_digest(sim) != pre)
         return info, dirty
 
     def decision_func(state, faction, options, position):
@@ -392,6 +405,7 @@ def play_game(scenario, seed, *, reactive=True, events=True):
             dec = None
             if events and ACTION_EVENT in options and frng.random() < 0.5:
                 pa = _build_event_action(state, faction, frng, key_pool)
+                _inject_transfer(pa, faction)
                 info, dirty = _dry_run(state, faction, pa)
                 if dirty:
                     findings.append(
@@ -410,6 +424,7 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                     state, faction, options, position)
                 pa = (dec or {}).get("player_action")
                 if pa is not None:
+                    _inject_transfer(pa, faction)
                     info, dirty = _dry_run(state, faction, pa)
                     if dirty:
                         findings.append(

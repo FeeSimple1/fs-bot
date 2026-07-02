@@ -1418,7 +1418,10 @@ def _determine_suborn_sa(state, scenario):
             tribes = get_tribes_in_region(region, scenario)
             for tribe in tribes:
                 tribe_info = state["tribes"].get(tribe, {})
-                if tribe_info.get("allied_faction") is None:
+                # Subdued = unallied AND no Dispersed/Razed status marker
+                # (§1.7) — the mechanic rejects non-Subdued Tribes.
+                if (tribe_info.get("allied_faction") is None
+                        and tribe_info.get("status") is None):
                     # §1.4.2: cannot place an Aedui Ally at a Tribe restricted
                     # to another Faction (e.g. Suebi -> Germans). The executor
                     # refuses it; skip such Tribes here.
@@ -1663,12 +1666,26 @@ def node_a_agreements(state, requesting_faction, request_type, *,
 
     if request_type == "resources":
         # Transfer 10 Resources to Romans when Romans at 0-1 Resources
-        # AND Aedui at 21+ Resources — §8.6.6
+        # AND Aedui at 21+ Resources — §8.6.6. The NOTE extends the
+        # player-Roman victory-score gates to the transfer as well ("do
+        # not so transfer Resources to Roman players ... while the Roman
+        # score is above 12"): NP Roman always; player < 10 always;
+        # player 10-12 on a die roll of 1-4; player > 12 never.
         if requesting_faction == ROMANS:
             roman_res = state.get("resources", {}).get(ROMANS, 0)
             aedui_res = state.get("resources", {}).get(AEDUI, 0)
             if roman_res <= 1 and aedui_res >= 21:
-                return True
+                if ROMANS in non_players:
+                    return True
+                try:
+                    roman_score = calculate_victory_score(state, ROMANS)
+                except Exception:
+                    return False
+                if roman_score < 10:
+                    return True
+                if roman_score <= 12:
+                    return roll_die(state) <= 4
+                return False
         # Never transfer to Arverni or Belgae — §8.6.6
         return False
 

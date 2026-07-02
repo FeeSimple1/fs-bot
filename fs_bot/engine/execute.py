@@ -193,6 +193,21 @@ def execute_decision(state, faction, decision):
 
     command = bot_action.get("command")
 
+    # §1.5.2: voluntary Resource transfers ride the acting Faction's
+    # Command/Event execution (details["transfers"] = [{"to", "amount"}]).
+    # Transfer errors are reported, never block the Command itself.
+    transfer_results = []
+    for t in (bot_action.get("details") or {}).get("transfers") or []:
+        from fs_bot.commands.transfer import transfer_resources
+        try:
+            transfer_results.append(
+                transfer_resources(state, faction, t.get("to"),
+                                   t.get("amount")))
+        except Exception as exc:
+            transfer_results.append({"error": str(exc),
+                                     "to": t.get("to"),
+                                     "amount": t.get("amount")})
+
     _COMMAND_HANDLERS = {
         _CMD_EVENT: _execute_event,
         _CMD_SEIZE: _execute_seize,
@@ -202,6 +217,11 @@ def execute_decision(state, faction, decision):
         _CMD_RECRUIT: _execute_recruit,
         _CMD_MARCH: _execute_march,
     }
+    def _attach_transfers(res):
+        if transfer_results and isinstance(res, dict):
+            res["transfers"] = transfer_results
+        return res
+
     handler = _COMMAND_HANDLERS.get(command)
     if handler is not None:
         sa = bot_action.get("sa")
@@ -230,7 +250,7 @@ def execute_decision(state, faction, decision):
             result["sa_execution"] = sa_result
             result["sa_timing"] = "before" if before else "after"
         _apply_end_of_action_capabilities(state)
-        return result
+        return _attach_transfers(result)
     if command in _UNWIRED_COMMANDS:
         return {"executed": False, "command": command,
                 "reason": "command not yet wired (proof slice)"}
@@ -3908,6 +3928,33 @@ def _trade_roman_agreement(state):
     if resp is not None:
         return bool(resp)
     return True
+
+
+def maybe_np_aedui_subsidy(state):
+    """§8.6.6: Non-player Aedui transfer 10 Resources to the Romans at
+    each instant Roman Resources drop below 2 while the Aedui hold more
+    than 20 (player-Roman victory-score gates per the §8.6.6 NOTE, applied
+    in node_a_agreements). Called after every executed SoP action and
+    after the Winter Quarters/Harvest phases — the documented
+    approximation of "at each instant".
+
+    Returns the transfer result dict, or None when no transfer fires.
+    """
+    from fs_bot.rules_consts import AEDUI as _AED
+    if _AED not in state.get("non_player_factions", set()):
+        return None
+    if state["resources"].get(_ROMANS_F, 0) >= 2:
+        return None
+    if state["resources"].get(_AED, 0) <= 20:
+        return None
+    from fs_bot.bots.aedui_bot import node_a_agreements
+    if not node_a_agreements(state, _ROMANS_F, "resources"):
+        return None
+    from fs_bot.commands.transfer import transfer_resources
+    try:
+        return transfer_resources(state, _AED, _ROMANS_F, 10)
+    except Exception:
+        return None    # e.g. card 38 shaded bans the transfer
 
 
 def _execute_trade(state, faction):

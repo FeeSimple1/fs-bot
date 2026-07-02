@@ -1656,12 +1656,75 @@ agent covers both automatically (AGREEMENT coin flip / RETREAT choice),
 so mixed-game sweeps now exercise player harassment and Rampage
 responses; agent.py documents the wired request_types.
 
-**Not modeled (documented, not a defect):** voluntary resource transfers
-(§1.5.2 open deal-making) — no engine action exists to give Resources
-away, so there is nothing to consult; adding one would be a new
-mechanic, not a hook fix.
+**Not modeled at the time:** voluntary resource transfers — CLOSED by
+the section below (July 2026).
 
 Verification: 2040 tests (new: harassment opt-in consult honored +
 NP-table fallback; Rampage player-choice honored + NP fallback);
 census unchanged (illegal=0); fuzz sweeps seeds 1-90 all scenarios
+hard-findings=0, hashseed-identical.
+
+---
+
+## RESOLVED — voluntary Resource transfers (§1.5.2/A1.5.2) + the §8.6.6 NP Aedui subsidy (July 2026)
+
+**Rule basis.** §1.5.2: a Faction may transfer Resources to another during
+either's SoP execution of a Command or Event; any amounts to non-German
+Factions during the Winter Quarters/Harvest Phases; A1.5.2 lets Ariovistus
+Germans give/receive like everyone else. §8.4.2/§8.6.6/§8.8.6: NP Belgae,
+Arverni, and Romans never voluntarily transfer; NP Aedui transfer 10 to
+the Romans at each instant Roman Resources drop below 2 while the Aedui
+hold more than 20 (per the §8.6.6 NOTE, gated for player Romans by the
+victory tiers: NP always, <10 always, 10-12 on a 1-4 roll, >12 never).
+
+**What existed before: nothing that moved Resources.** Every bot's
+agreements node had the "resources" decision logic — and no code ever
+called it. The mandatory §8.6.6 subsidy simply never happened.
+
+**Implemented:**
+1. `commands/transfer.py::transfer_resources` — validation: distinct
+   factions, positive amount, base-game German exclusion, card 38 shaded
+   (Diviciacus) Rome<->Aedui ban, giver stock; receiver caps at
+   MAX_RESOURCES with the giver paying only what arrives.
+2. §8.6.6 subsidy (`execute.maybe_np_aedui_subsidy`) — checked after
+   every executed SoP action and after the Winter Quarters/Harvest
+   phases (the documented approximation of "at each instant"). The
+   score gates were also ADDED to node_a_agreements' "resources" branch
+   (it previously ignored the §8.6.6 NOTE). Post-Q12, NP Rome rarely
+   drops below 2 Resources (measured: never in 100 census games), so
+   the subsidy is the safety net the rule intends, not a balance shift
+   — census and canary unchanged.
+3. Player transfers ride the plan: ``details["transfers"] = [{"to",
+   "amount"}]`` on any Command/Event player_action, applied by
+   execute_decision (errors reported, never blocking the action) — so
+   save/replay, the validation dry-run, and the fuzz oracles all get
+   them for free. CLI: a menu-driven optional gift on each Command/
+   Event (first option "No"; one grouped gift per action — documented
+   simplification, as is the lack of interactive transfers during
+   Winter and of the 4-per-execution same-player cap, which cannot
+   bind when no player runs two Factions).
+4. Fuzzer: ~12% of fuzzed plans carry a random transfer (both legal and
+   illegal — the German ban and stock errors are exercised); outcome
+   signatures include transfer results; the dirty-failure oracle skips
+   transfer-carrying plans (a §1.5.2 gift legitimately stands even when
+   the action fizzles).
+
+**Two more silent corruptions found by the reshuffled sweeps, fixed:**
+1. **Suborn allied Dispersed Tribes** (§4.4.2/§1.7): both the Suborn
+   mechanic's validation AND the Aedui bot's planner tested only
+   ``allied_faction is None`` — a Dispersed-Gathering Tribe passed as
+   "Subdued", the NP Aedui allied it, and the next Spring Phase cleared
+   the marker AND the allegiance, stranding the Ally piece (Gallic War
+   seed 2). Both now require ``status is None``. Rally/Recruit already
+   checked status; Suborn was the hole.
+2. **Card A51 shaded stranded allegiances**: removing a Roman/Aedui
+   Ally disc at Atrebates never called clear_allied_tribe (Q13 desync
+   class; Ariovistus seed 45). Also fixed the same class in card 22
+   unshaded, which accepted ANY piece_type for its "Warbands or
+   Auxilia" replacement (now rejected; control requirement also
+   enforced; schema override added).
+
+Verification: 2054 tests passing (13 new); census 26 legal-declines /
+illegal=0 both hashseeds (26 vs 28: the Suborn planner fix changed two
+games' trajectories); fuzz sweeps seeds 1-85 all scenarios
 hard-findings=0, hashseed-identical.

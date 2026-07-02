@@ -1029,6 +1029,17 @@ def execute_card_22(state, shaded=False):
             region = repl.get("region")
             target_faction = repl.get("target_faction")
             piece_type = repl.get("piece_type", WARBAND)
+            # Card text: "remove or replace ... Warbands or Auxilia" —
+            # no other piece type (replacing an Ally disc would strand
+            # the Tribe's allegiance; player_fuzz structural class).
+            if piece_type not in (WARBAND, AUXILIA):
+                raise ValueError(
+                    f"card 22: may replace Warbands or Auxilia, not "
+                    f"{piece_type!r}")
+            # "Among Regions that you Control".
+            if region and executing and not is_controlled_by(
+                    state, region, executing):
+                continue
             if (region and target_faction and executing
                     and count_pieces(state, region, target_faction,
                                      piece_type) > 0):
@@ -4074,6 +4085,11 @@ def execute_card_A51(state, shaded=False):
             elif pt in (ALLY, CITADEL, FORT):
                 if count_pieces(state, ATREBATES, fac, pt) > 0:
                     remove_piece(state, ATREBATES, fac, pt)
+                    # Removing an Ally disc or Citadel must clear its
+                    # Tribe's allegiance entry with it (Q13 desync class;
+                    # found by the player_fuzz structural oracle).
+                    if pt in (ALLY, CITADEL):
+                        clear_allied_tribe(state, ATREBATES, fac, pt)
                     removed += 1
 
 def execute_card_A53(state, shaded=False):

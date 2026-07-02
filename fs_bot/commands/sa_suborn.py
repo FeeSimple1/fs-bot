@@ -241,9 +241,14 @@ def _validate_suborn_operation(state, region, op):
             if tribe not in tribes:
                 raise CommandError(f"Tribe {tribe} is not in {region}")
 
-            # Tribe must be Subdued
+            # Tribe must be Subdued — unallied AND no status marker
+            # (a Dispersed/Dispersed-Gathering Tribe is NOT Subdued,
+            # §1.7/§3.2.3; allying one strands the Ally piece when the
+            # Spring Phase clears the marker — found by the player_fuzz
+            # structural oracle).
             tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") is not None:
+            if (tribe_info.get("allied_faction") is not None
+                    or tribe_info.get("status") is not None):
                 raise CommandError(f"Tribe {tribe} is not Subdued")
 
             # Check stacking restriction — §1.4.2

@@ -1037,10 +1037,31 @@ class TestAgreements:
         assert node_a_agreements(state, ROMANS, "retreat") is True
 
     def test_transfer_resources_to_romans(self):
-        """Transfer Resources to Romans when Romans low, Aedui high."""
-        state = _make_state()
+        """Transfer to NP Romans when Romans low, Aedui high (§8.6.6)."""
+        state = _make_state(
+            non_players={ARVERNI, BELGAE, AEDUI, ROMANS})
         state["resources"][ROMANS] = 1
         state["resources"][AEDUI] = 25
+        assert node_a_agreements(state, ROMANS, "resources") is True
+
+    def test_transfer_gated_by_player_roman_score(self):
+        """§8.6.6 NOTE: the transfer honours the player-Roman victory
+        tiers — score < 10 yes, above 12 never."""
+        state = _make_state()          # Romans are a player here
+        state["resources"][ROMANS] = 1
+        state["resources"][AEDUI] = 25
+        # Bare board: every Tribe Subdued counts for Rome — score > 12,
+        # so a player Rome gets nothing.
+        from fs_bot.engine.victory import calculate_victory_score
+        assert calculate_victory_score(state, ROMANS) > 12
+        assert node_a_agreements(state, ROMANS, "resources") is False
+        # Ally most Tribes to the Arverni to push the Roman score < 10.
+        count = 0
+        for tribe_name, tribe_info in state["tribes"].items():
+            if tribe_info.get("allied_faction") is None and count < 25:
+                tribe_info["allied_faction"] = ARVERNI
+                count += 1
+        assert calculate_victory_score(state, ROMANS) < 10
         assert node_a_agreements(state, ROMANS, "resources") is True
 
     def test_no_transfer_when_aedui_low(self):

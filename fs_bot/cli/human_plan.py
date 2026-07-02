@@ -652,6 +652,38 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     return params
 
 
+def _maybe_collect_transfer(state, faction, action, stdin, stdout):
+    """Offer a §1.5.2 Resource gift riding this Command/Event execution.
+    Menu-driven (first option "No") so scripted input declines naturally;
+    one grouped gift per action (documented simplification)."""
+    from fs_bot.rules_consts import BASE_SCENARIOS
+    stock = state["resources"].get(faction, 0)
+    if stock <= 0:
+        return action
+    others = [f for f in FACTIONS
+              if f != faction
+              and not (state["scenario"] in BASE_SCENARIOS
+                       and f == GERMANS)]
+    if not others:
+        return action
+    try:
+        to = prompt_choice(
+            stdin, stdout,
+            "Transfer Resources with this action (§1.5.2)?",
+            [("No", None)] + [(f"Give Resources to {f}", f)
+                              for f in others])
+        if to is None:
+            return action
+        amt = prompt_choice(
+            stdin, stdout, f"Give how many to {to}?",
+            [(str(n), n) for n in range(1, min(stock, 12) + 1)])
+        action.setdefault("details", {})["transfers"] = [
+            {"to": to, "amount": amt}]
+    except EOFError:
+        pass
+    return action
+
+
 def collect_player_action(state, faction, engine_action, stdin, stdout):
     """Collect a human's full plan for a chosen action TYPE.
 
@@ -671,9 +703,16 @@ def collect_player_action(state, faction, engine_action, stdin, stdout):
             state, faction, card_id, side == EVENT_SHADED, stdin, stdout)
         if params:
             details["event_params"] = params
-        return {"command": "Event", "regions": [], "sa": _SA_NONE,
-                "sa_regions": [], "details": details}
+        return _maybe_collect_transfer(
+            state, faction,
+            {"command": "Event", "regions": [], "sa": _SA_NONE,
+             "sa_regions": [], "details": details}, stdin, stdout)
     if engine_action in (ACTION_COMMAND, ACTION_COMMAND_SA,
                          ACTION_LIMITED_COMMAND):
-        return _collect_command(state, faction, engine_action, stdin, stdout)
+        action = _collect_command(state, faction, engine_action, stdin,
+                                  stdout)
+        if action is not None:
+            action = _maybe_collect_transfer(state, faction, action,
+                                             stdin, stdout)
+        return action
     return None

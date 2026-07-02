@@ -423,8 +423,14 @@ def _maybe_execute(state, faction, decision, actions_taken):
     the recorded action under "execution". Imported lazily to avoid a
     circular import (execute -> commands -> ...).
     """
-    from fs_bot.engine.execute import execute_decision
+    from fs_bot.engine.execute import execute_decision, \
+        maybe_np_aedui_subsidy
     exec_result = execute_decision(state, faction, decision)
+    # §8.6.6: the NP Aedui subsidy fires "at each instant" Roman
+    # Resources drop below 2 — checked after every executed action.
+    subsidy = maybe_np_aedui_subsidy(state)
+    if subsidy and isinstance(exec_result, dict):
+        exec_result["np_aedui_subsidy"] = subsidy
     rec = actions_taken.get(faction)
     if isinstance(rec, dict):
         rec["execution"] = exec_result

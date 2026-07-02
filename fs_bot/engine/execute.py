@@ -12,7 +12,7 @@ Scope of THIS slice (deliberately narrow — see WIRING_SCOPE.md):
   - Event  — via the existing `card_effects.execute_event` dispatcher.
 
 Every other Command/SA is recognized but intentionally left as a no-op
-here (``executed: False, reason: "not yet wired"``) so that enabling
+here (``executed: False`` with a reason) so that enabling
 execution does not crash or silently corrupt a full game while the rest
 of the integration is built out incrementally.
 
@@ -103,8 +103,6 @@ _BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
 # Standalone SAs that resolve BEFORE the Battle they accompany.
 _BEFORE_BATTLE_SAS = {_SA_INTIMIDATE, _SA_DEVASTATE, _SA_ENTREAT}
 
-# Commands recognized but not yet wired in this slice.
-_UNWIRED_COMMANDS = set()
 
 
 def _apply_end_of_action_capabilities(state):
@@ -251,9 +249,6 @@ def execute_decision(state, faction, decision):
             result["sa_timing"] = "before" if before else "after"
         _apply_end_of_action_capabilities(state)
         return _attach_transfers(result)
-    if command in _UNWIRED_COMMANDS:
-        return {"executed": False, "command": command,
-                "reason": "command not yet wired (proof slice)"}
     # Pass / None / unknown
     return {"executed": False, "command": command,
             "reason": "no executable command"}
@@ -3733,14 +3728,11 @@ def _execute_sa(state, faction, bot_action):
     Returns a result dict, or None when there is no standalone SA to run
     (No SA, or a battle-modifying SA already handled in _execute_battle).
 
-    Wired (execution-complete from the bot plan):
-      - Trade (Aedui): trade(state) — no targets.
-      - Settle (German): settle(state, region) for each sa_region.
-      - Devastate (Arverni/Aedui): devastate_region(state, region) per region.
-      - Intimidate (German): intimidate(...) grouped by region + target.
-
-    Deferred (need faithful plan translation / secondary choices — reported,
-    not guessed): Build, Scout, Entreat, Suborn, Rampage, Enlist.
+    All standalone SAs are wired: Trade, Settle, Devastate, Intimidate,
+    Suborn, Build, Scout, Entreat, Rampage, and Enlist execute from the
+    bot/human plan (battle-modifying SAs — Ambush, Besiege — are applied
+    inside _execute_battle). An unrecognized SA label is reported, not
+    guessed.
     """
     sa = bot_action.get("sa")
     if not sa or sa == SA_ACTION_NONE_LABEL or sa in _BATTLE_MODIFYING_SAS:
@@ -3905,7 +3897,7 @@ def _execute_sa(state, faction, bot_action):
         return result
 
     return {"executed": False, "sa": sa,
-            "reason": "SA not yet wired (plan translation deferred)"}
+            "reason": f"unrecognized Special Activity label: {sa!r}"}
 
 
 def _trade_roman_agreement(state):

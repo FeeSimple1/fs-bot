@@ -299,11 +299,13 @@ Index) = `allied_faction is None and status is None`.
 Each fix has a regression test (TestSubduedDispersedHandling,
 TestDispersedStatusHandling).
 
-**Known dead code (not a live bug, left for a focused follow-up):**
-`event_eval.py::_has_subdued_tribes` / `_has_subdued_city_tribes` test
-`status == "subdued"` (lowercase), which no Tribe ever has (Subdued = `status is
-None`; the constant is `SUBDUED = "Subdued"`). Both helpers are currently
-**unreferenced**, so they affect no behaviour; flagged here for cleanup.
+**Known dead code — REMOVED (July 2026):**
+`event_eval.py::_has_subdued_tribes` / `_has_subdued_city_tribes` had been
+corrected at some point but remained unreferenced; deleted. In the same
+hygiene pass: the stale `_execute_sa` docstring (claimed Build/Scout/
+Entreat/Suborn/Rampage/Enlist were "deferred" — all are wired), the dead
+`_UNWIRED_COMMANDS` branch (empty since the proof slice), and the "not
+yet wired" reason strings. Fuzz digest unchanged — behaviour-free.
 
 **Files:** `fs_bot/cards/card_effects.py` (cards 29, 57, 68, A51),
 `fs_bot/engine/execute.py` (`_derive_card_22`, `_derive_card_68`).

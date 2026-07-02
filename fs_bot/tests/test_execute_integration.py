@@ -495,13 +495,13 @@ class TestStandaloneSAs:
             assert validate_state(st) == []
         assert settle_count > 0
 
-    def test_deferred_sa_is_reported_not_executed(self):
+    def test_unrecognized_sa_is_reported_not_executed(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
-        # Every real SA is now wired; an unrecognized label is a safe no-op.
+        # Every real SA is wired; an unrecognized label is a safe no-op.
         res = _execute_sa(st, BELGAE, {"sa": "Bogus", "sa_regions": [],
                                        "details": {}})
         assert res["executed"] is False
-        assert "not yet wired" in res["reason"]
+        assert "unrecognized" in res["reason"]
 
 
 # ---------------------------------------------------------------------------

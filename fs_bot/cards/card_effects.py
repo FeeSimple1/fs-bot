@@ -2535,10 +2535,26 @@ def execute_card_62(state, shaded=False):
     # Complex multi-step: movement + free Command — defer to caller
     state.setdefault("event_modifiers", {})
     state["event_modifiers"]["card_62_war_fleet"] = True
-    # Piece movements handled via event_params by bot/CLI layer
+    # Piece movements handled via event_params by bot/CLI layer.
+    # Card text: moves are "among Arverni Region, Pictones, and Regions
+    # within 1 of Britannia" — validate EVERY move (both endpoints in the
+    # allowed set, required keys present) before applying any.
+    from fs_bot.rules_consts import ARVERNI_REGION, PICTONES, BRITANNIA
+    from fs_bot.map.map_data import get_adjacent
     params = state.get("event_params", {})
     moves = params.get("moves", [])
     faction = state.get("executing_faction")
+    allowed = {ARVERNI_REGION, PICTONES, BRITANNIA,
+               *get_adjacent(BRITANNIA, state["scenario"])}
+    for m in moves:
+        for key in ("from_region", "to_region", "piece_type"):
+            if key not in m:
+                raise ValueError(f"card 62 move missing '{key}': {m}")
+        for endpoint in (m["from_region"], m["to_region"]):
+            if endpoint not in allowed:
+                raise ValueError(
+                    f"card 62: '{endpoint}' is not among Arverni Region, "
+                    f"Pictones, or Regions within 1 of Britannia")
     for m in moves:
         from_region = m["from_region"]
         to_region = m["to_region"]
@@ -3631,16 +3647,30 @@ def execute_card_A35(state, shaded=False):
     scenario = state["scenario"]
     if not shaded:
         faction = state.get("executing_faction")
+        # Validate the card's own constraints BEFORE mutating: the Ally is
+        # "Gallic/Roman" (never Germanic), and the accompanying placement
+        # is "up to 8 Warbands or 4 Auxilia" — no other piece type. An
+        # unvalidated piece_type of Ally/Citadel would stack backing
+        # pieces with no allied Tribe (tribe<->piece desync; found by the
+        # player_fuzz structural oracle).
+        ally_faction = params.get("ally_faction",
+                                  state.get("executing_faction"))
+        if ally_faction == GERMANS:
+            raise ValueError(
+                "card A35: the Treveri Ally must be Gallic or Roman")
+        piece_type = params.get("piece_type", WARBAND)
+        if piece_type not in (WARBAND, AUXILIA):
+            raise ValueError(
+                f"card A35: may place Warbands or Auxilia, not "
+                f"{piece_type!r}")
         t_info = state.get("tribes", {}).get(TRIBE_TREVERI)
         if t_info:
             # Replace anything at Treveri with Ally — pieces and tribes
             # dict together
             _unally_tribe(state, TRIBE_TREVERI)
-            ally_faction = params.get("ally_faction", faction)
             if ally_faction:
                 _ally_tribe(state, TRIBE_TREVERI, ally_faction)
         # Place Warbands or Auxilia
-        piece_type = params.get("piece_type", WARBAND)
         limit = 8 if piece_type == WARBAND else 4
         cnt = params.get("count", limit)
         cnt = min(cnt, limit)
@@ -3977,8 +4007,13 @@ def execute_card_A51(state, shaded=False):
                     or (allied is None and t_info.get("status") is None))
         if not is_valid:
             return
-        # Place 4 Auxilia or Aedui Warbands
+        # Place 4 Auxilia or Aedui Warbands — no other piece type (an
+        # unvalidated Ally/Citadel would desync tribe<->piece backing).
         piece_type = params.get("piece_type", AUXILIA)
+        if piece_type not in (AUXILIA, WARBAND):
+            raise ValueError(
+                f"card A51: may place Auxilia or Aedui Warbands, not "
+                f"{piece_type!r}")
         pfac = ROMANS if piece_type == AUXILIA else AEDUI
         avail = get_available(state, pfac, piece_type)
         to_place = min(4, avail)
@@ -4368,12 +4403,24 @@ def execute_card_A69(state, shaded=False):
                     remove_piece(state, region, BELGAE, WARBAND,
                                  count=to_remove, piece_state=ps)
                     removed += to_remove
-            # Place Roman/Aedui Ally
+            # Place Roman/Aedui Ally — the card names those two only.
             ally_fac = params.get("ally_faction", ROMANS)
+            if ally_fac not in (ROMANS, AEDUI):
+                raise ValueError(
+                    f"card A69: the Bellovaci Ally must be Roman or "
+                    f"Aedui, not {ally_fac!r}")
             _ally_tribe(state, TRIBE_BELLOVACI, ally_fac)
-            # Place 4 Warbands or Auxilia
+            # Place 4 Warbands or Auxilia — no other piece type.
             piece_type = params.get("piece_type", AUXILIA)
+            if piece_type not in (WARBAND, AUXILIA):
+                raise ValueError(
+                    f"card A69: may place Warbands or Auxilia, not "
+                    f"{piece_type!r}")
             pfac = params.get("piece_faction", ally_fac)
+            if pfac not in (ROMANS, AEDUI):
+                raise ValueError(
+                    f"card A69: pieces must be Roman or Aedui, not "
+                    f"{pfac!r}")
             avail = get_available(state, pfac, piece_type)
             to_place = min(4, avail)
             if to_place > 0:

@@ -1464,7 +1464,65 @@ test_player_fuzz.py (shapes, determinism, clean smoke incl. the two
 formerly-diverging games), test_free_battle_tie_break_is_input_order_
 independent.
 
-**Not yet fuzzed:** player EVENT execution (RandomPlanPolicy builds Command
-plans only; card-specific event params need a per-card param fuzzer — the
-natural next extension, and the highest-value one given the card-audit
-gaps).
+**Not yet fuzzed:** player EVENT execution — CLOSED by the extension below.
+
+---
+
+## EXTENSION — player Event fuzzing + transactional Events (July 2026)
+
+player_fuzz now fuzzes player EVENT execution: seated players play Events on
+~50% of SoP turns where legal, with `event_params` generated three ways —
+NP-derived (well-formed), mutated-derived, and from-scratch against the
+param-key inventory harvested from card_effects.py source (auto-tracks new
+cards). Every generated param set is dry-run in an isolated sim with two new
+oracles: **event-crash** (handler raised outside the _EVENT_SAFE_ERRORS
+"report, do not crash" contract) and **dirty-event** (handler reported
+not-applicable but MUTATED the board — a half-applied Event). The outcome
+signature now also includes the refusal reason, sharpening the dry-vs-live
+divergence oracle.
+
+### Defects found and fixed
+
+1. **Half-applied Events (systemic) — `_execute_event` is now
+   TRANSACTIONAL.** Card 62 (War Fleet) applied its per-move list one move
+   at a time and set its event modifier BEFORE validating; a later illegal
+   move raised a safe error, leaving earlier moves and the modifier behind
+   an ``executed=False`` "not applicable" report. The class is generic (any
+   handler that mutates mid-loop then raises), so the fix is at the
+   dispatcher: `_execute_event` snapshots the state and rolls back on the
+   safe-error path. "Report, do not crash" now also means "a failed Event
+   did not happen." The decision agent is shared (never copied); the rng is
+   part of the snapshot, so failed-Event die rolls roll back too —
+   replay-deterministic either way.
+
+2. **Card 62 region constraint unenforced.** Moves are "among Arverni
+   Region, Pictones, and Regions within 1 of Britannia"; the handler moved
+   pieces between ANY regions. All moves now validated (endpoints in the
+   allowed set, required keys) before any is applied.
+
+3. **Tribe<->piece desync via unvalidated `piece_type` (A35, A51, A69).**
+   The structural oracle caught A35 unshaded placing 4 tribe-less Aedui
+   Ally pieces at Treveri from a fuzzed ``piece_type="Ally"`` — the card
+   allows "up to 8 Warbands or 4 Auxilia" only. Same unvalidated pattern in
+   A51 ("4 Auxilia or Aedui Warbands") and A69 ("4 Warbands/Auxilia", plus
+   the Ally must be Roman/Aedui; A35's Ally must be Gallic/Roman). All
+   three now raise ValueError on illegal types/factions (rolled back
+   cleanly by fix 1).
+
+### Status
+
+525 event-fuzzed games (5 scenarios x seeds 1-105, double-run), ~4,200
+fuzzed Event turns: ZERO hard findings, batch digests identical across
+PYTHONHASHSEED 0 and 7. Suite 2017 passing; bot-only census unchanged
+(illegal=0, 28 legal-declines, hashseed-identical); balance canary within
+band. Regressions: test_execute_event_rolls_back_failed_event,
+test_card_62_moves_restricted_to_coastal_regions,
+test_card_a35_a51_a69_reject_illegal_piece_types, and the fuzz smoke now
+replays every past catch (Great Revolt 1/47, Ariovistus 27, Gallic War 73).
+
+Remaining fuzz frontier: param generation is name-heuristic typed, so
+deeply-structured params (multi-step moves with piece_state/leader_name,
+card-specific nested shapes) are exercised mostly through the derived +
+mutated modes on the 25 derivable cards; a per-card schema would deepen
+coverage of the other ~90 handlers' success paths (their failure paths are
+now well covered).

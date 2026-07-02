@@ -3124,13 +3124,30 @@ def _execute_event(state, faction, bot_action, *, human=False):
     # the acting faction (restored afterwards).
     prev_faction = state.get("executing_faction")
     state["executing_faction"] = faction
+    # TRANSACTIONAL: "report, do not crash" means a failed Event did not
+    # happen — but a handler that mutates mid-loop and then raises (e.g. a
+    # per-move/per-placement list where a later entry is illegal) would
+    # otherwise leave a half-applied Event behind executed=False. Snapshot
+    # the state and roll back on the safe-error path. (Found by the
+    # player_fuzz dirty-event oracle on card 62; the class is generic.)
+    import copy as _copy
+    _agent = state.pop("decision_agent", None)   # shared, never copied
+    snapshot = _copy.deepcopy(state)
+    if _agent is not None:
+        state["decision_agent"] = _agent
     try:
         event_result = execute_event(state, card_id, shaded=shaded)
     except _EVENT_SAFE_ERRORS as exc:
         # Ineffective/non-applicable Event in this state (missing pieces, a
-        # stub, or a choice not derivable here). Report, do not crash.
+        # stub, or a choice not derivable here). Report, do not crash —
+        # and restore the pre-Event state (which also restores
+        # event_params/executing_faction to their pre-call values).
+        state.clear()
+        state.update(snapshot)
         state["event_params"] = prev_params
         state["executing_faction"] = prev_faction
+        if _agent is not None:
+            state["decision_agent"] = _agent
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"event not applicable: {exc!r}"}

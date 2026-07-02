@@ -56,10 +56,14 @@ def test_fuzzed_games_clean_and_replay_deterministic():
     and identical digests on in-process replay (base + Ariovistus). The
     cross-PYTHONHASHSEED digest check runs in the tool/CI, not here (the
     hash seed is fixed per process)."""
+    # Seeds include past fuzzer catches: Great Revolt 47 / Ariovistus 27
+    # (free-Battle tie hashseed leak), Great Revolt 1 (card 62 dirty
+    # event), The Gallic War 73 (card A35 piece_type corruption).
     for scenario, seed in ((rc.SCENARIO_PAX_GALLICA, 1),
-                           (rc.SCENARIO_PAX_GALLICA, 2),
+                           (rc.SCENARIO_GREAT_REVOLT, 1),
                            (rc.SCENARIO_GREAT_REVOLT, 47),
-                           (rc.SCENARIO_ARIOVISTUS, 27)):
+                           (rc.SCENARIO_ARIOVISTUS, 27),
+                           (rc.SCENARIO_GALLIC_WAR, 73)):
         r1 = play_game(scenario, seed)
         assert r1["findings"] == [], (scenario, seed, r1["findings"][:3])
         assert r1["seats"], "at least one seated player per fuzzed game"

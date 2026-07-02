@@ -1588,3 +1588,78 @@ def test_card_69_germans_phase_skips_empty_regions():
     execute_event(state, 69, shaded=True)   # must not raise
     # The Warband placement happened.
     assert count_pieces(state, NERVII, GERMANS) >= 0
+
+
+def test_execute_event_rolls_back_failed_event():
+    """_execute_event is transactional: a handler that mutates the board and
+    THEN raises (e.g. a per-move list whose later entry is illegal) must
+    report 'not applicable' with the board unchanged — a failed Event did
+    not happen. Found by the player_fuzz dirty-event oracle on card 62."""
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI,
+                                     ARVERNI_REGION, PICTONES, WARBAND,
+                                     HIDDEN)
+    from fs_bot.tools.player_fuzz import _board_digest
+    state = build_initial_state(SCENARIO_GREAT_REVOLT, seed=3)
+    state["executing_faction"] = ARVERNI
+    place_piece(state, ARVERNI_REGION, ARVERNI, WARBAND, 3,
+                piece_state=HIDDEN)
+    pre_digest = _board_digest(state)
+    pre_count = count_pieces(state, ARVERNI_REGION, ARVERNI, WARBAND)
+    # First move legal, second move to an illegal (non-coastal) endpoint.
+    bad_plan = {"details": {"card_id": 62, "event_params": {"moves": [
+        {"from_region": ARVERNI_REGION, "to_region": PICTONES,
+         "piece_type": WARBAND, "count": 1},
+        {"from_region": PICTONES, "to_region": "Treveri",
+         "piece_type": WARBAND, "count": 1},
+    ]}}}
+    res = _execute_event(state, ARVERNI, bad_plan, human=True)
+    assert res["executed"] is False
+    assert "not applicable" in res["reason"]
+    # The whole Event rolled back: no partial move, no modifier flag.
+    assert count_pieces(state, ARVERNI_REGION, ARVERNI, WARBAND) == pre_count
+    assert not (state.get("event_modifiers") or {}).get("card_62_war_fleet")
+    assert _board_digest(state) == pre_digest
+
+
+def test_card_62_moves_restricted_to_coastal_regions():
+    """Card 62 (War Fleet): moves are 'among Arverni Region, Pictones, and
+    Regions within 1 of Britannia' — any other endpoint must be rejected."""
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI,
+                                     ARVERNI_REGION, WARBAND, HIDDEN)
+    state = build_initial_state(SCENARIO_GREAT_REVOLT, seed=3)
+    state["executing_faction"] = ARVERNI
+    place_piece(state, ARVERNI_REGION, ARVERNI, WARBAND, 2,
+                piece_state=HIDDEN)
+    state["event_params"] = {"moves": [
+        {"from_region": ARVERNI_REGION, "to_region": "Sequani",
+         "piece_type": WARBAND, "count": 1}]}
+    with pytest.raises(ValueError):
+        execute_event(state, 62, shaded=False)
+
+
+def test_card_a35_a51_a69_reject_illegal_piece_types():
+    """A35/A51/A69: the accompanying placement is Warbands/Auxilia only. An
+    unvalidated piece_type of Ally would stack backing pieces with no
+    allied Tribe (tribe<->piece desync; found by the player_fuzz
+    structural oracle on A35, params piece_type='Ally')."""
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, ALLY,
+                                     GERMANS)
+    from fs_bot.state.state_schema import check_structural_integrity
+
+    for card, extra in (("A35", {}), ("A51", {}),
+                        ("A69", {"ally_faction": AEDUI})):
+        state = build_initial_state(SCENARIO_ARIOVISTUS, seed=5)
+        state["executing_faction"] = AEDUI
+        state["event_params"] = {"piece_type": ALLY, **extra}
+        with pytest.raises((ValueError, KeyError)):
+            execute_event(state, card, shaded=False)
+
+    # A35: the Treveri Ally is Gallic/Roman — a Germanic Ally is illegal.
+    state = build_initial_state(SCENARIO_ARIOVISTUS, seed=5)
+    state["executing_faction"] = GERMANS
+    state["event_params"] = {"ally_faction": GERMANS}
+    with pytest.raises(ValueError):
+        execute_event(state, "A35", shaded=False)

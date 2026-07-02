@@ -1526,3 +1526,58 @@ card-specific nested shapes) are exercised mostly through the derived +
 mutated modes on the 25 derivable cards; a per-card schema would deepen
 coverage of the other ~90 handlers' success paths (their failure paths are
 now well covered).
+
+---
+
+## PRODUCT SURFACE — CLI completed: execution, reactive play, save/resume/replay (July 2026)
+
+The CLI predated the executor: `app.py` ran `run_game(state, decision)`
+with the default ``execute=False`` — every CLI game, human or bot, decided
+but never moved a piece ("decision layer only" was stale truth). Completed
+in this pass:
+
+1. **Full execution wired.** The CLI now runs its own card loop via
+   `play_card(execute=True)`, displays each card's outcome including
+   execution failures/sub-action warnings, and pauses between cards.
+2. **Reactive play for humans** (`cli/reactive.py`): the decision-agent
+   hook now prompts human seats for Retreat (§3.2.4/§8.4.3), Loss order
+   (§3.2.4, piece by piece with a default-order escape), and §1.5.2
+   Agreements (Supply Line, Retreat-into-Control, Trade, Harassment...).
+   Previously human factions silently got NP defaults.
+3. **Validation feedback loop** (menus.prompt_action): every collected
+   human plan is dry-run via moves.validate_player_action; failures show
+   the reason and offer a re-plan; partial-effect plans show warnings and
+   ask for confirmation. EOF keeps the plan (the executor stays the final
+   validator), so scripted/piped input cannot hang.
+4. **Save / resume / replay** (`state/serialize.py`): exact JSON round-
+   trip of the state — tagged encoding for sets, tuples, non-str-keyed
+   dicts (capabilities), and the rng position (so a resumed game continues
+   byte-for-byte; CLAUDE.md determinism). `--save` autosaves after every
+   card and on interrupt/crash; `--load` resumes the snapshot; `--replay`
+   re-runs a game from its logged human decisions + reactive responses
+   (rebuilt from scenario+seed) and goes interactive when the log ends.
+   Every game now gets an explicit seed so it is always replayable.
+   Tested property: interrupt mid-game + resume produces a byte-identical
+   end state to the uninterrupted run.
+5. **Plan-builder completeness.** Rally can now place Citadels (§3.3.1
+   upgrade, Aedui/Arverni). SA collectors emit the executors' real plan
+   shapes for Suborn (§4.4.2, ≤3 pieces/1 Ally), Entreat (§4.3.1),
+   Rampage (§4.5.2), Intimidate (A4.6.2), and Enlist (§4.5.1 five
+   Germanic sub-commands); Trade needs no plan and Build/Scout recompute
+   faithful plans against the board. Event params for humans: the keys a
+   card's handler reads are extracted from its source (auto-tracks new
+   cards), the NP-derived "standard choices" are offered as a default
+   where a deriver exists, and each key gets a typed, skippable picker.
+
+Verification: 2027 tests (new: end-to-end CLI games via a scripted
+player — full bot game + replay equality, human game, interrupt/resume
+byte-equality, log-driven replay; collector unit tests; serialize
+round-trip incl. rng). Census and player_fuzz unchanged and
+hashseed-identical; canary in band.
+
+Known limits (documented, not defects): the generic event-param entry
+collector prompts a common field set (region/piece_type/count or
+from/to), so cards whose list entries need rarer fields (piece_state,
+leader_name, from_type) rely on the validation loop to reject and
+re-plan; a per-card param schema remains the deepening path for both the
+CLI and the fuzzer.

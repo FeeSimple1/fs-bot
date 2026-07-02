@@ -1575,9 +1575,50 @@ byte-equality, log-driven replay; collector unit tests; serialize
 round-trip incl. rng). Census and player_fuzz unchanged and
 hashseed-identical; canary in band.
 
-Known limits (documented, not defects): the generic event-param entry
-collector prompts a common field set (region/piece_type/count or
-from/to), so cards whose list entries need rarer fields (piece_state,
-leader_name, from_type) rely on the validation loop to reject and
-re-plan; a per-card param schema remains the deepening path for both the
-CLI and the fuzzer.
+Known limits at the time: the generic event-param entry collector only
+prompted a common field set — CLOSED by the per-card schemas below.
+
+---
+
+## PER-CARD EVENT-PARAM SCHEMAS (cards/param_schema.py, July 2026)
+
+Every card handler's ``event_params`` reads are now extracted from its own
+AST into a typed schema: scalar keys with kinds (region / faction / tribe
+/ count / direction / piece_type / piece_state / leader_name), plural
+lists of scalars (``list:tribe`` etc.), and ``entries`` lists carrying the
+exact per-entry fields the handler reads (``for m in params.get("moves"):
+m["from_region"] ... m.get("piece_state")``). Extraction is from source,
+so schemas track new/changed cards automatically;
+test_schema_covers_every_params_key_all_cards sweeps every handler to
+keep them complete. ``_OVERRIDES`` adds the card-legal value constraints
+(A35/A51/A69 piece types, card 26 placements, card 62's coastal region
+pool, card 71's colony name omitted — see below).
+
+Consumers:
+- **CLI**: a human Event now prompts every key and entry field with typed
+  pickers drawn from the shared kind vocabulary — including the rare
+  fields (piece_state, leader_name, from_type) the old heuristic
+  collector could not ask for — and only offers card-legal values where
+  a constraint is known.
+- **Fuzzer**: a new schema mode generates typed, complete params — the
+  success-path generator for the ~90 cards without an NP deriver (their
+  failure paths were already covered). The report now prints
+  ``events-ok`` (dry-run-executed player Events) to track success-path
+  coverage: ~98% of fuzzed player Event turns now execute.
+
+### Defects found immediately by schema-mode fuzzing (fixed + regressions)
+1. **Card 26 (Gobannitio) unshaded** — ``place_faction``/``place_type``
+   unvalidated: any faction/piece pair was placed at Gergovia and the
+   Tribe marked allied behind it (a Warband-backed "Ally" — tribe<->piece
+   desync). Now only a Roman Ally or an Aedui Ally/Citadel, per the card.
+2. **Card 71 (Colony)** — ``colony_tribe_name`` unvalidated: a name
+   matching an existing Tribe silently OVERWROTE that Tribe's allegiance
+   entry (fuzz case: "Lingones", stranding its Aedui Ally piece in
+   Mandubii). Existing names now raise; the schema omits the key so
+   humans/fuzzers use the safe per-Region default.
+
+### Status
+Sweeps: seeds 1-115 x 5 scenarios (575 games, ~4,900 fuzzed player
+turns per 100 games incl. Events), double-run, hard-findings=0,
+batch digests identical across PYTHONHASHSEED 0/7. Suite 2038 passing;
+census unchanged (illegal=0, hashseed-identical).

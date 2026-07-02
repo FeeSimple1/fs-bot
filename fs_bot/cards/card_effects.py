@@ -1267,8 +1267,20 @@ def execute_card_26(state, shaded=False):
                 remove_piece(state, region, fac, CITADEL)
                 clear_allied_tribe(state, region, fac, CITADEL)
         # Place Roman Ally or Aedui Ally or Citadel (despite Arverni-only)
+        # — those three placements ONLY (an unvalidated faction/type pair
+        # would ally the Tribe behind a non-Ally piece: tribe<->piece
+        # desync, found by the player_fuzz schema-mode structural oracle).
         place_faction = params.get("place_faction", ROMANS)
         place_type = params.get("place_type", ALLY)
+        if place_faction not in (ROMANS, AEDUI):
+            raise ValueError(
+                f"card 26: Gergovia placement must be Roman or Aedui, "
+                f"not {place_faction!r}")
+        if place_type not in (ALLY, CITADEL) or (
+                place_faction == ROMANS and place_type == CITADEL):
+            raise ValueError(
+                f"card 26: may place a Roman Ally or an Aedui "
+                f"Ally/Citadel, not {place_faction!r} {place_type!r}")
         if tribe_info and get_available(state, place_faction, place_type) > 0:
             place_piece(state, region, place_faction, place_type)
             # Either piece allies the Tribe — record allegiance with it.
@@ -2924,8 +2936,16 @@ def execute_card_71(state, shaded=False):
     # Place Ally
     if get_available(state, faction, ALLY) > 0:
         place_piece(state, region, faction, ALLY)
-        # The Colony becomes a tribe — track in tribes dict
+        # The Colony becomes a tribe — track in tribes dict. The name
+        # must be NEW: a name matching an existing Tribe would silently
+        # overwrite that Tribe's allegiance entry, stranding its backing
+        # Ally piece (tribe<->piece desync; found by the player_fuzz
+        # schema-mode structural oracle, colony_tribe_name="Lingones").
         colony_name = params.get("colony_tribe_name", f"Colony_{region}")
+        if colony_name in state.get("tribes", {}):
+            raise ValueError(
+                f"card 71: colony name {colony_name!r} already names a "
+                f"Tribe/Colony")
         state.setdefault("tribes", {})[colony_name] = {
             "status": None,
             "allied_faction": faction,

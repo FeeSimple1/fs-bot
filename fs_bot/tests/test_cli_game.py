@@ -295,3 +295,30 @@ def test_prompt_action_validation_feedback_loop():
     assert "replan-asked" in lines
     # Declined re-plan keeps the plan; the executor stays the validator.
     assert decision["action"] == ACTION_COMMAND
+
+
+def test_event_param_schema_prompts_rare_entry_fields():
+    """Card 62 (no NP deriver): the schema-driven prompt collects every
+    entry field the handler reads — including piece_state and leader_name
+    — and offers only the card's coastal Regions."""
+    from fs_bot.cli.human_plan import collect_player_action
+    from fs_bot.engine.game_engine import ACTION_EVENT
+    from fs_bot.cards.param_schema import region_pool
+    st = _mk_state(seed=3)
+    st["current_card"] = 62
+    out = io.StringIO()
+    # side=1 (Unshaded); add entry=y; six field picks (option 1 each);
+    # add another=n
+    pa = collect_player_action(
+        st, rc.ARVERNI, ACTION_EVENT,
+        _Script("1", "y", "1", "2", "1", "1", "1", "1", "n"), out)
+    moves = pa["details"]["event_params"]["moves"]
+    assert len(moves) == 1
+    m = moves[0]
+    assert set(m) >= {"from_region", "to_region", "piece_type", "count",
+                      "leader_name", "piece_state"}
+    pool = set(region_pool(st, "card62_coastal"))
+    assert m["from_region"] in pool and m["to_region"] in pool
+    # Only coastal Regions were offered for the region fields.
+    text = out.getvalue()
+    assert "Sequani" not in text.split("piece_type")[0]

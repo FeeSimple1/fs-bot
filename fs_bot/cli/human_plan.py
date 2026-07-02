@@ -567,104 +567,63 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
 # in menus.prompt_action lets the player re-plan).
 # --------------------------------------------------------------------- #
 
-import re as _re
-
-_PARAM_KEY_RE = _re.compile(r'params\.get\("([a-z_0-9]+)"')
-_LIST_KEY_RE = _re.compile(
-    r"(placement|removal|replacement|move|upgrade)s?$")
-
-
 def _card_param_keys(state, card_id):
-    """Ordered event_params keys the card's handler reads (from source)."""
-    import inspect
-    from fs_bot.cards import card_effects as ce
-    scenario = state.get("scenario")
-    handler = None
-    try:
-        if isinstance(card_id, str) and card_id.startswith("A"):
-            handler = ce._ARIOVISTUS_HANDLERS.get(card_id)
-        elif isinstance(card_id, int):
-            if (scenario in ARIOVISTUS_SCENARIOS
-                    and card_id in ce._ARIOVISTUS_TEXT_CHANGE_HANDLERS):
-                handler = ce._ARIOVISTUS_TEXT_CHANGE_HANDLERS[card_id]
-            else:
-                handler = ce._BASE_HANDLERS.get(card_id)
-        if handler is None:
-            return []
-        keys, seen = [], set()
-        for k in _PARAM_KEY_RE.findall(inspect.getsource(handler)):
-            if k not in seen:
-                seen.add(k)
-                keys.append(k)
-        return keys
-    except Exception:
-        return []
+    """Ordered event_params keys the card's handler reads (schema keys)."""
+    from fs_bot.cards.param_schema import card_param_schema
+    return list(card_param_schema(card_id, state.get("scenario")))
 
 
-def _prompt_event_param(state, key, stdin, stdout):
-    """Prompt a typed value for one event_params key; None to skip."""
-    from fs_bot.rules_consts import (SENATE_UP, SENATE_DOWN, ALLY, CITADEL,
-                                     FORT, LEADER)
-    regions = get_playable_regions(state["scenario"],
-                                   state.get("capabilities"))
-    k = key.lower()
+def _kind_options(state, kind, spec):
+    """(label, value) menu options for a schema kind."""
+    from fs_bot.cards.param_schema import kind_values
+    from fs_bot.rules_consts import SENATE_UP, SENATE_DOWN
+    vals = kind_values(state, kind, spec)
+    if kind == "direction":
+        return [("Uproar (up)", SENATE_UP), ("Adulation (down)",
+                                             SENATE_DOWN)]
+    if kind == "count":
+        return [(str(v), v) for v in vals]
+    return [((str(v) if v is not None else "(none)"), v) for v in vals]
+
+
+def _prompt_event_param(state, key, spec, stdin, stdout):
+    """Prompt a typed value for one event_params key per its schema spec;
+    None to skip the key entirely."""
+    kind = spec.get("kind", "value")
+    if kind == "omit":
+        return None
     skip = ("(skip)", "__skip__")
 
     def _pick(prompt, opts):
         v = prompt_choice(stdin, stdout, prompt, list(opts) + [skip])
         return None if v == "__skip__" else v
 
-    if "direction" in k:
-        return _pick(f"{key}:", [("Uproar (up)", SENATE_UP),
-                                 ("Adulation (down)", SENATE_DOWN)])
-    if "factions" in k:
+    if kind == "entries":
+        fields = spec.get("entry_fields") or {"region": "region"}
+        entries = []
+        while prompt_yes_no(stdin, stdout,
+                            f"Add a {key} entry?", default=not entries):
+            e = {}
+            for sub, sub_kind in fields.items():
+                e[sub] = prompt_choice(
+                    stdin, stdout, f"  {sub}:",
+                    _kind_options(state, sub_kind, spec))
+            entries.append(e)
+        return entries or None
+    if kind in ("regions", "factions") or kind.startswith("list:"):
+        item = kind[5:] if kind.startswith("list:") else kind[:-1]
         out = []
         while True:
-            v = _pick(f"{key} (add one):", [(f, f) for f in FACTIONS
-                                            if f not in out])
+            opts = [(label, v) for label, v in
+                    _kind_options(state, item, spec) if v not in out]
+            if not opts:
+                break
+            v = _pick(f"{key} (add one):", opts)
             if v is None:
                 break
             out.append(v)
         return out or None
-    if "faction" in k:
-        return _pick(f"{key}:", [(f, f) for f in FACTIONS])
-    if "tribe" in k or "city" in k or "colony" in k:
-        tribes = sorted(state.get("tribes", {}))
-        return _pick(f"{key}:", [(t, t) for t in tribes])
-    if ("count" in k or "to_remove" in k or k.startswith("legions_")
-            or "from_track" in k or "from_fallen" in k):
-        return _pick(f"{key}:", [(str(n), n) for n in range(9)])
-    if _LIST_KEY_RE.search(k):
-        entries = []
-        is_move = "move" in k
-        while prompt_yes_no(stdin, stdout,
-                            f"Add a {key} entry?", default=not entries):
-            e = {}
-            if is_move:
-                e["from_region"] = prompt_choice(
-                    stdin, stdout, "  from Region:",
-                    [(r, r) for r in regions])
-                e["to_region"] = prompt_choice(
-                    stdin, stdout, "  to Region:",
-                    [(r, r) for r in regions])
-            else:
-                e["region"] = prompt_choice(
-                    stdin, stdout, "  Region:", [(r, r) for r in regions])
-            e["piece_type"] = prompt_choice(
-                stdin, stdout, "  piece type:",
-                [(pt, pt) for pt in (WARBAND, AUXILIA, LEGION, ALLY,
-                                     CITADEL, FORT, LEADER)])
-            e["count"] = prompt_choice(
-                stdin, stdout, "  count:", [(str(n), n) for n in
-                                            range(1, 9)])
-            entries.append(e)
-        return entries or None
-    if "regions" in k:
-        picked = _pick_regions(stdin, stdout, f"{key}:", list(regions),
-                               at_least_one=False)
-        return picked or None
-    # Default: a single Region (the most common scalar param).
-    return _pick(f"{key}:", [(r, r) for r in regions])
+    return _pick(f"{key}:", _kind_options(state, kind, spec))
 
 
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
@@ -680,11 +639,12 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
         stdout.write(f"Standard choices for this Event: {derived}\n")
         if prompt_yes_no(stdin, stdout, "Use them?", default=True):
             return dict(derived)
-    keys = _card_param_keys(state, card_id)
+    from fs_bot.cards.param_schema import card_param_schema
+    schema = card_param_schema(card_id, state.get("scenario"))
     params = {}
-    for key in keys:
+    for key, spec in schema.items():
         try:
-            v = _prompt_event_param(state, key, stdin, stdout)
+            v = _prompt_event_param(state, key, spec, stdin, stdout)
         except EOFError:
             break
         if v is not None:

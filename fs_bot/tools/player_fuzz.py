@@ -38,8 +38,11 @@ printed batch digest must be identical across hashseeds.
 
 Player EVENT fuzzing: seated players also play Events (~50% of turns where
 the SoP allows) with fuzzed ``event_params``: NP-derived (well-formed),
-mutated-derived, or generated from scratch against the param-key inventory
-harvested from card_effects.py source. Every generated param set is dry-run
+mutated-derived, SCHEMA-generated (typed values for every key and entry
+field the handler reads, via cards.param_schema — the success-path
+generator for the ~90 cards without an NP deriver), or generated from
+scratch against the param-key inventory harvested from card_effects.py
+source (the failure-path generator). Every generated param set is dry-run
 in an isolated sim first with two extra oracles:
   event-crash — the handler raised outside the _EVENT_SAFE_ERRORS contract
                 ("report, do not crash"). Hard defect.
@@ -289,10 +292,20 @@ def _build_event_action(state, faction, frng, key_pool):
         derived = _derive_event_params(state, faction, card, shaded)
     except Exception:
         derived = None
-    if derived is not None and mode < 0.4:
+    if derived is not None and mode < 0.35:
         params = dict(derived)
-    elif derived is not None and mode < 0.75:
+    elif derived is not None and mode < 0.6:
         params = _mutate_params(derived, key_pool, pools, frng)
+    elif mode < 0.85:
+        # Schema mode: typed values for every key + entry field the
+        # handler reads — the success-path generator.
+        from fs_bot.cards.param_schema import generate_params
+        try:
+            params = generate_params(state, card, frng)
+        except Exception:
+            params = {}
+        if not params:
+            params = _scratch_params(key_pool, pools, frng)
     else:
         params = _scratch_params(key_pool, pools, frng)
     return {"command": "Event", "regions": [], "sa": "No SA",
@@ -346,6 +359,7 @@ def play_game(scenario, seed, *, reactive=True, events=True):
     findings = []
     human_turns = [0]
     event_turns = [0]
+    events_ok = [0]
     expected = {}   # (card, faction) -> dry-run outcome signature
 
     def _dry_run(state, faction, pa):
@@ -384,6 +398,8 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                         ("dirty-event", state.get("current_card"),
                          f"{faction} failed Event mutated the board: "
                          f"params={pa['details']['event_params']}"))
+                if info is not None and info.get("executed"):
+                    events_ok[0] += 1
                 if info is not None and (info.get("executed")
                                          or frng.random() < 0.3):
                     expected[(state.get("current_card"), faction)] =                         _sig(info)
@@ -425,6 +441,7 @@ def play_game(scenario, seed, *, reactive=True, events=True):
 
     return {"scenario": scenario, "seed": seed, "seats": seats,
             "human_turns": human_turns[0], "event_turns": event_turns[0],
+            "events_ok": events_ok[0],
             "findings": findings, "partial": partial,
             "digest": _digest(st, res)}
 
@@ -446,7 +463,7 @@ def main(argv=None) -> int:
     seeds = range(int(lo), int(hi or lo) + 1)
     scenarios = (args.scenario,) if args.scenario else ALL_SCENARIOS
 
-    games, turns, ev_turns, partial = 0, 0, 0, 0
+    games, turns, ev_turns, ev_ok, partial = 0, 0, 0, 0, 0
     by_kind = Counter()
     examples = []
     batch = hashlib.sha256()
@@ -457,6 +474,7 @@ def main(argv=None) -> int:
             games += 1
             turns += r["human_turns"]
             ev_turns += r["event_turns"]
+            ev_ok += r["events_ok"]
             partial += r["partial"]
             if not args.no_determinism:
                 r2 = play_game(sc, seed, reactive=not args.no_reactive,
@@ -473,7 +491,8 @@ def main(argv=None) -> int:
 
     hard = sum(by_kind.values())
     print(f"games={games}  human-turns={turns}  event-turns={ev_turns}  "
-          f"hard-findings={hard}  (soft: partial={partial})")
+          f"events-ok={ev_ok}  hard-findings={hard}  "
+          f"(soft: partial={partial})")
     print("findings: " + ("  ".join(
         f"{k}={n}" for k, n in sorted(by_kind.items())) or "none"))
     print(f"batch-digest={batch.hexdigest()[:16]}  "

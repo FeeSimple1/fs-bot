@@ -1314,16 +1314,20 @@ def _estimate_trade_resources(state, scenario):
     """
     import copy
     from fs_bot.commands.sa_trade import trade
-    non_players = state.get("non_player_factions", set())
     # Roman agreement (the +2 multiplier and the Subdued/Roman-Ally yields):
-    # NP Romans always agree (§8.6.3); player Romans by their victory tier.
-    romans_agree = ROMANS in non_players
-    if not romans_agree:
-        try:
-            romans_agree = calculate_victory_score(state, ROMANS) < 10
-        except Exception:
-            romans_agree = False
+    # assume the Romans agree. NP Romans always agree (§8.6.3); a player
+    # Rome's declaration is resolved live at execution, not forecast here.
+    # The alliance's designed default is cooperation, agreement is usually
+    # buy-able ("offer some of the added Resources" — §4.4.1), and the
+    # trigger only fires when the Aedui are poor — exactly when Rome has
+    # least reason to refuse. A wrong-optimistic estimate is recoverable
+    # (call off / lower yield at resolution); a wrong-pessimistic one
+    # silently skips Trades the table would allow. See QUESTIONS.md.
+    romans_agree = True
     sim = copy.deepcopy(state)
+    # Estimates must never consult a live decision agent (interactive and
+    # non-deterministic): strip it so trade() uses agreement defaults.
+    sim.pop("decision_agent", None)
     try:
         return trade(sim, roman_agreed=romans_agree).get("resources_gained", 0)
     except Exception:

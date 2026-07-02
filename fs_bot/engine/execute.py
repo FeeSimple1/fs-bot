@@ -3866,10 +3866,33 @@ def _execute_sa(state, faction, bot_action):
             "reason": "SA not yet wired (plan translation deferred)"}
 
 
+def _trade_roman_agreement(state):
+    """Resolve the Roman Trade-agreement declaration (§4.4.1) at SA time.
+
+    §4.4.1: the Romans declare agreement when the Trade resolves (they
+    declare "regardless" of Control). NP Romans always agree (§8.6.3). A
+    player Rome decides live: consult the decision-agent AGREEMENT hook
+    (same channel _region_allows_supply_line uses for Supply Lines); if
+    there is no agent or it defers, apply the alliance default — agree.
+    See QUESTIONS.md (Aedui Trade — Roman agreement).
+    """
+    if _ROMANS_F in state.get("non_player_factions", set()):
+        return True
+    from fs_bot.engine.agent import consult_agent, AGREEMENT
+    from fs_bot.rules_consts import AEDUI as _AED
+    resp = consult_agent(state, _ROMANS_F, {
+        "kind": AGREEMENT, "request_type": "trade_roman_agreement",
+        "requesting_faction": _AED, "context": {}})
+    if resp is not None:
+        return bool(resp)
+    return True
+
+
 def _execute_trade(state, faction):
     """Aedui Trade (§4.4.2) — yields Resources; no targets."""
     try:
-        res = _sa_trade(state)
+        res = _sa_trade(state,
+                        roman_agreed=_trade_roman_agreement(state))
     except _EXEC_ERRORS as exc:
         return {"executed": False, "sa": _SA_TRADE, "error": str(exc)}
     return {"executed": True, "sa": _SA_TRADE, "result": res}

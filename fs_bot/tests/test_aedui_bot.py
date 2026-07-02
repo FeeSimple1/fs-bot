@@ -731,31 +731,29 @@ class TestTrade:
         state = _make_state()
         _place_aedui_force(state, AEDUI_REGION, warbands=3)
         refresh_all_control(state)
-        # Mirror the function's Roman-agreement determination.
-        nps = state.get("non_player_factions", set())
-        romans_agree = ROMANS in nps
-        if not romans_agree:
-            try:
-                romans_agree = calculate_victory_score(state, ROMANS) < 10
-            except Exception:
-                romans_agree = False
+        # Mirror the function's Roman-agreement determination: the estimate
+        # always assumes agreement (NP Rome per §8.6.3; player Rome resolves
+        # live at execution — see QUESTIONS.md).
         expected = trade(copy.deepcopy(state),
-                         roman_agreed=romans_agree)["resources_gained"]
+                         roman_agreed=True)["resources_gained"]
         est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
         assert est == expected
 
-    def test_trade_estimate_lower_without_roman_agreement(self):
-        """Trade estimate lower when Romans don't agree (player, high score).
+    def test_trade_estimate_assumes_player_roman_agreement(self):
+        """Trade estimate assumes a player Rome agrees, at any victory score.
 
-        §4.4.1: without Roman agreement, only +1 per piece (not doubled).
+        The old heuristic assumed refusal at Roman victory score >= 10 and
+        halved the estimate. The estimate now always assumes agreement (the
+        alliance default; actual declaration resolves at execution), so the
+        yield is doubled regardless of Rome's score. See QUESTIONS.md.
         """
+        from fs_bot.engine.victory import calculate_victory_score
         state = _make_state(non_players={ARVERNI, BELGAE, AEDUI})
         # Romans are player faction — not in non_players
         _place_aedui_force(state, AEDUI_REGION, warbands=3,
                            ally_tribe=TRIBE_AEDUI, citadel=True)
         refresh_all_control(state)
-        # Give Romans a high victory score to refuse agreement
-        # Set many tribes as Roman Allies to push score above 12
+        # Give Romans a high victory score — must no longer matter
         count = 0
         for tribe_name, tribe_info in state["tribes"].items():
             if count >= 15:
@@ -763,9 +761,102 @@ class TestTrade:
             if tribe_info.get("allied_faction") is None:
                 tribe_info["allied_faction"] = ROMANS
                 count += 1
+        assert calculate_victory_score(state, ROMANS) >= 10
         est = _estimate_trade_resources(state, SCENARIO_PAX_GALLICA)
-        # 1 Ally + 1 Citadel = 2 base, no Roman agreement → 2
-        assert est == 2
+        # 1 Ally + 1 Citadel = 2 base, agreement assumed → at least 4
+        assert est >= 4
+
+    def test_trade_triggers_with_player_rome_at_high_score(self):
+        """Regression: Trade triggers when only Roman agreement clears >2.
+
+        Player Rome at victory score >= 10, Aedui poor (precondition met),
+        not 2nd Eligible: 1 Ally + 1 Citadel yields 2 un-doubled (old
+        heuristic: no trigger, fell through to Suborn) but >2 with the
+        agreement now assumed — so Trade must trigger (§8.6.3).
+        """
+        from fs_bot.engine.victory import calculate_victory_score
+        state = _make_state(non_players={ARVERNI, BELGAE, AEDUI})
+        state["resources"][AEDUI] = 4          # precondition: 0-9
+        state["is_second_eligible"] = False    # trigger must come from >2
+        _place_aedui_force(state, AEDUI_REGION, warbands=3,
+                           ally_tribe=TRIBE_AEDUI, citadel=True)
+        refresh_all_control(state)
+        count = 0
+        for tribe_name, tribe_info in state["tribes"].items():
+            if count >= 15:
+                break
+            if tribe_info.get("allied_faction") is None:
+                tribe_info["allied_faction"] = ROMANS
+                count += 1
+        assert calculate_victory_score(state, ROMANS) >= 10
+        sa, regions, details = _determine_trade_sa(
+            state, SCENARIO_PAX_GALLICA, battled=False)
+        assert sa == SA_ACTION_TRADE
+        assert details["trade_resources"] > 2
+
+    def test_executed_trade_np_rome_pays_agreed_rate(self):
+        """_execute_trade resolves NP Roman agreement — §8.6.3 (always agree).
+
+        Regression: the executor used to call trade() with the default
+        roman_agreed=False, paying the un-doubled rate even in all-bot games.
+        """
+        import copy
+        from fs_bot.commands.sa_trade import trade
+        from fs_bot.engine.execute import _execute_trade
+        state = _make_state(
+            non_players={ARVERNI, BELGAE, AEDUI, ROMANS})
+        _place_aedui_force(state, AEDUI_REGION, warbands=3,
+                           ally_tribe=TRIBE_AEDUI, citadel=True)
+        refresh_all_control(state)
+        expected = trade(copy.deepcopy(state),
+                         roman_agreed=True)["resources_gained"]
+        result = _execute_trade(state, AEDUI)
+        assert result["executed"] is True
+        assert result["result"]["resources_gained"] == expected
+
+    def test_executed_trade_player_rome_consults_agent(self):
+        """_execute_trade asks a player Rome via the AGREEMENT agent hook.
+
+        Agent refusal → un-doubled rate; no agent (or defer) → the alliance
+        default applies and the Romans are treated as agreeing.
+        """
+        import copy
+        from fs_bot.commands.sa_trade import trade
+        from fs_bot.engine.execute import _execute_trade
+
+        def _fresh():
+            st = _make_state(non_players={ARVERNI, BELGAE, AEDUI})
+            _place_aedui_force(st, AEDUI_REGION, warbands=3,
+                               ally_tribe=TRIBE_AEDUI, citadel=True)
+            refresh_all_control(st)
+            return st
+
+        # Player Rome refuses via the agent hook.
+        state = _fresh()
+        seen = []
+
+        def refuse(st, faction, request):
+            if (faction == ROMANS
+                    and request.get("request_type")
+                    == "trade_roman_agreement"):
+                seen.append(request)
+                return False
+            return None
+
+        state["decision_agent"] = refuse
+        base = trade(copy.deepcopy(state),
+                     roman_agreed=False)["resources_gained"]
+        result = _execute_trade(state, AEDUI)
+        assert seen, "agent was not consulted for Roman Trade agreement"
+        assert result["result"]["resources_gained"] == base
+
+        # No agent: default is agreement (doubled).
+        state2 = _fresh()
+        doubled = trade(copy.deepcopy(state2),
+                        roman_agreed=True)["resources_gained"]
+        result2 = _execute_trade(state2, AEDUI)
+        assert result2["result"]["resources_gained"] == doubled
+        assert doubled > base
 
 
 # ===================================================================

@@ -1178,10 +1178,9 @@ ineffective-event, and legal-decline (published IF-NONE fall-throughs). None are
 executor rejections of illegal moves.
 
 ### STILL OPEN (judgment calls, not bugs)
-- Aedui _estimate_trade_resources assumes a player Roman agrees to Trade only at
-  victory score < 10, ignoring the 10-12 die-roll tier — a conservative
-  estimate used only to test the ">2 Resources" Trade trigger; left as-is
-  because modelling a future die roll inside a yield ESTIMATE is itself dubious.
+- [RESOLVED July 2026] Aedui _estimate_trade_resources player-Roman agreement:
+  the estimate now assumes agreement (see the Aedui Trade Roman-agreement
+  section at the end of this file).
 - [RESOLVED June 2026] The soft wasteful-sa tier: re-derive after-Command SAs
   and decline cleanly ("if none, no SA"); plus the _check_rampage ally-only
   over-attachment fix. wasteful-sa 84 -> 0. (See the wasteful-sa cleanup
@@ -1272,11 +1271,11 @@ fall-throughs, which are correct behaviour, not bugs.
 - The wasteful-sa and ineffective-event tiers: cleared to 0.
 
 ### Genuinely OPEN (not defects)
-1. Aedui _estimate_trade_resources: when testing the ">2 Resources" Trade
-   trigger it assumes a *player* Roman agrees only at victory score < 10,
-   ignoring the 10-12 die-roll tier. A conservative estimate; modelling a
-   future die roll inside a yield estimate is itself questionable — left for a
-   ruling.
+1. [RESOLVED July 2026] Aedui _estimate_trade_resources player-Roman
+   agreement: the estimate now assumes agreement, and the executor resolves
+   the actual declaration (fixing a real §8.6.3 under-payment bug found in
+   the process). See the Aedui Trade Roman-agreement section at the end of
+   this file.
 2. March-planner approximations (Arverni V_MARCH_THREAT, German
    G_MARCH_THREAT): the Leader destination is chosen by piece count without the
    planner predicting reachability or the §8.7.1/A8.7.1 Harassment-loss limits.
@@ -1351,5 +1350,68 @@ deterministic across hashseeds; balance within band. Regressions:
 test_destinations_are_reachable_in_one_region, test_executor_max_steps_blocks_
 over_march.
 
-Only genuinely-open item remaining: the Aedui Trade-yield estimate (player-Roman
-10-12 tier), a judgment call the rules do not resolve.
+Only genuinely-open item remaining at the time: the Aedui Trade-yield estimate
+(player-Roman agreement) — resolved below (July 2026).
+
+---
+
+## RESOLVED — Aedui Trade: Roman agreement in the trigger estimate and at execution (§4.4.1 / §8.6.3, July 2026)
+
+**The ambiguity (real, but narrow).** The §8.6.3 A_TRADE trigger asks whether
+"Trade would add > 2 Resources," and the yield depends on Roman agreement
+(§4.4.1: doubles Aedui Ally/Citadel yields and switches on Subdued/Roman-Ally
+sources). The flowchart says only "Non-player Romans agree" — it is silent on
+a *player* Rome because at a physical table there is nothing to forecast: the
+humans running the bot resolve the declaration live. Any software forecast is
+therefore an approximation, not a rules reading. BGG search confirmed a player
+Rome may refuse (a real tactic against an Aedui close to winning) and turned
+up no designer ruling on bot forecasting — consistent with "resolved live."
+
+**Decision: assume agreement in the trigger estimate** (`romans_agree = True`
+in `_estimate_trade_resources`), replacing the old `victory_score(Rome) < 10`
+heuristic. Rationale:
+1. The old heuristic keyed on the wrong variable. A Rome refuses to deny an
+   Aedui who threatens to win — a function of *Aedui* standing, not Rome's.
+   Predicting refusal whenever Rome is comfortable has no basis; a
+   comfortable Rome has the least reason to starve its ally.
+2. Cost asymmetry favors optimism. The estimate gates only the ">2" trigger
+   arm; the trigger fires only when the Aedui are poor. Wrong-optimistic is
+   recoverable at resolution (call-off / reduced yield); wrong-pessimistic
+   silently skips Trades the table would allow.
+3. The alliance's designed default is cooperation (why NP Rome auto-agrees),
+   and agreement is usually buy-able ("offer some of the added Resources").
+The estimate also strips `decision_agent` from its throwaway sim, so a yield
+estimate can never interactively ping a live agent (determinism).
+
+**Real bug found while verifying the execution path:** `_execute_trade`
+called `trade(state)` with the default `roman_agreed=False` — every executed
+Trade paid the un-doubled rate and skipped Subdued/Roman-Ally yields, even in
+all-bot games where §8.6.3 says NP Romans always agree. The estimate
+predicted the doubled yield; execution paid half. FIXED:
+`_execute_trade` now resolves the declaration at SA time via
+`_trade_roman_agreement`: NP Rome → agree (§8.6.3); player Rome → consulted
+through the existing decision-agent AGREEMENT hook
+(`request_type="trade_roman_agreement"`, the same channel
+`_region_allows_supply_line` uses for Supply Lines); no agent / agent defers
+→ the alliance default, agree. Aedui bot Trade income roughly doubles in
+all-bot games.
+
+**Not modeled (documented approximation):** the player-Aedui right to call
+off a Trade after hearing declarations ("the Aedui may call off the Trade if
+unhappy"), and side-payment negotiation. For the NP Aedui, an agent-Rome
+refusal simply resolves at the un-doubled §4.4.1 rate; the flowchart gives
+the NP Aedui no call-off logic.
+
+**Regressions:** test_trade_triggers_with_player_rome_at_high_score (player
+Rome at victory score >= 10, Trade now triggers when agreement clears the >2
+bar), test_trade_estimate_assumes_player_roman_agreement,
+test_executed_trade_np_rome_pays_agreed_rate,
+test_executed_trade_player_rome_consults_agent (agent refusal → base rate;
+no agent → agreed rate).
+
+**Verification:** 2009 tests passing; census seeds 1-20 illegal=0 and
+byte-identical under PYTHONHASHSEED=0 and 7 (legal-decline 40 → 28, all
+remaining incidents published IF-NONE fall-throughs, none Aedui); balance
+canary within band — no rebaseline needed.
+
+No genuinely-open judgment calls remain.

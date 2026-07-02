@@ -1452,6 +1452,33 @@ def test_free_double_battle_a21():
     assert validate_state(st) == []
 
 
+def test_free_battle_tie_break_is_input_order_independent():
+    """_choose_free_battle must not break score ties by iteration order of
+    its ``allowed_regions`` argument (often a set — set order leaks
+    PYTHONHASHSEED into the choice; found by the player_fuzz cross-hashseed
+    oracle). Tied candidates resolve to the sorted-first Region."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import _choose_free_battle
+    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, GERMANS,
+        WARBAND, AUXILIA, BELGICA_REGIONS)
+
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=4)
+    for r in BELGICA_REGIONS:
+        _clear_region_mobiles(st, r)
+    rA, rB = sorted(BELGICA_REGIONS)[:2]
+    # Identical attacking force and identical defender mobiles: a dead tie.
+    for r in (rA, rB):
+        place_piece(st, r, GERMANS, WARBAND, 1)
+        place_piece(st, r, ROMANS, AUXILIA, 2)
+    refresh_all_control(st)
+    expect = _choose_free_battle(st, GERMANS, [rA, rB])
+    assert expect[0] == rA  # sorted-first on a tie
+    assert _choose_free_battle(st, GERMANS, [rB, rA]) == expect
+    assert _choose_free_battle(st, GERMANS, {rA, rB}) == expect
+
+
 def test_free_battle_faction_faithful_targeting_and_a28():
     """Slice 27: Belgic NP targets max Legion Losses; A28 runs a no-Retreat
     free Battle in/adjacent to Sequani."""

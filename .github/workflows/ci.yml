@@ -34,6 +34,22 @@ jobs:
           python -m fs_bot.tools.sync_check --scenario "The Great Revolt" --seeds 1-8
           python -m fs_bot.tools.sync_check --scenario "Ariovistus" --seeds 1-8
 
+  player-fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Random-legal player fuzz (mixed seats) + cross-hashseed determinism
+        run: |
+          PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-40 > fuzz0.txt
+          PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz --seeds 1-40 > fuzz7.txt
+          cat fuzz0.txt
+          diff fuzz0.txt fuzz7.txt
+
   balance-guardrail:
     runs-on: ubuntu-latest
     timeout-minutes: 30

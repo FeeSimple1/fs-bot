@@ -10,3 +10,4 @@ build/
 # Self-play batch outputs
 *.jsonl
 selfplay_results*.jsonl
+.coverage

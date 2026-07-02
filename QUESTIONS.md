@@ -1415,3 +1415,56 @@ remaining incidents published IF-NONE fall-throughs, none Aedui); balance
 canary within band — no rebaseline needed.
 
 No genuinely-open judgment calls remain.
+
+---
+
+## NEW INSTRUMENT — player-action fuzzer (fs_bot.tools.player_fuzz, July 2026)
+
+The error census fuzzes only BOT decisions; nothing exercised the
+human-facing action surface at volume. `player_fuzz` closes that: each game
+seats a random subset of factions as *players* (removed from
+`non_player_factions`, so player-vs-NP code paths — Trade Roman-agreement
+consult, German player-target priorities, the player-Rome Quarters default —
+genuinely run) driven by RandomPlanPolicy, with fully randomized reactive
+decisions (Retreat / Loss order / Agreements) through the decision-agent
+hook. Oracles per game: crash; structural integrity at every turn boundary
+and at game end; dry-run-vs-live execution divergence (the chosen plan is
+re-dry-run at decision time under a CLONED reactive agent with cloned rng,
+so live must match exactly); and replay determinism (double-run digest).
+All fuzz randomness derives from `random.Random(str)` (sha512), so batch
+digests must be identical across PYTHONHASHSEED values — that comparison is
+the cross-hashseed determinism oracle, now a CI job (seeds 1-40, HASHSEED
+0 vs 7, diff of full output).
+
+**Harness lesson (not an engine bug):** `moves.validate_player_action`
+strips the decision agent, so a dry-run can legitimately diverge from live
+execution wherever resolution consults an agreement (e.g. Recruit
+supply-line cost, Harassment) — table-accurate behaviour. The fuzzer's
+divergence oracle therefore dry-runs under a cloned agent, not a stripped
+one. First naive sweep "found" 3 divergences that were exactly this.
+
+**Real defect found and fixed:** `execute.py::_choose_free_battle` (the
+A21/A28/A57/Legiones free-Battle deriver) iterated its ``allowed_regions``
+argument — a set from `_free_battle_region_set` — and broke score ties by
+iteration order, leaking PYTHONHASHSEED into which Region/defender a
+Non-player attacks. Found by the cross-hashseed digest oracle on mixed
+games (Ariovistus seed 27, The Great Revolt seed 47 diverged between
+HASHSEED 0 and 7); invisible to the bot-only census at seeds 1-20 because
+no tie arose there. Fixed by iterating `sorted(allowed_regions)` (the
+repo's deterministic tie-break convention, cf. sa_trade card-39). This was
+precisely the class CLAUDE.md's determinism rule worries about: a set
+built/iterated in decision logic upstream of the choice.
+
+**Status:** 500 fuzzed games (5 scenarios x seeds 1-100), double-run,
+hashseed-identical, ZERO hard findings (crash=0 structural=0 divergence=0
+nondeterminism=0). Soft "partial" incidents (validated plans whose
+sub-actions partially fail under partial-execution semantics) are the
+random policy's own sloppiness, reported but not defects. Regressions:
+test_player_fuzz.py (shapes, determinism, clean smoke incl. the two
+formerly-diverging games), test_free_battle_tie_break_is_input_order_
+independent.
+
+**Not yet fuzzed:** player EVENT execution (RandomPlanPolicy builds Command
+plans only; card-specific event params need a per-card param fuzzer — the
+natural next extension, and the highest-value one given the card-audit
+gaps).

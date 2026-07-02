@@ -697,9 +697,14 @@ def _choose_free_battle(state, faction, allowed_regions):
 
     # Belgic NP: "Battle where most Losses forced on Legions; if none, no
     # play." Score each Region by predicted Roman Legion Losses.
+    # Iterate candidates in sorted order: ``allowed_regions`` is often a
+    # set (e.g. _free_battle_region_set), and the strict > comparisons
+    # break score ties by iteration order — set order would leak
+    # PYTHONHASHSEED into the choice (found by the player_fuzz cross-
+    # hashseed oracle; see QUESTIONS.md).
     if faction == BELGAE:
         best = None  # (region, defender, legion_losses)
-        for region in allowed_regions:
+        for region in sorted(allowed_regions):
             if not _attacker_has_force(state, region, faction):
                 continue
             ll = _predicted_legion_losses(state, region, faction)
@@ -709,7 +714,7 @@ def _choose_free_battle(state, faction, allowed_regions):
         return (best[0], best[1]) if best else (None, None)
 
     best = None  # (region, defender, enemy_mobile)
-    for region in allowed_regions:
+    for region in sorted(allowed_regions):
         if not _attacker_has_force(state, region, faction):
             continue
         defender = _rank_free_battle_defender(state, region, faction)

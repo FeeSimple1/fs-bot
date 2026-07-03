@@ -1314,10 +1314,24 @@ def run_winter_round(state, is_final=False,
     # default. Built HERE -- after the Germans Phase -- so piece counts are
     # current. Owner-confirmed reading: relocate to Provincia via Supply
     # Lines, then pay-all-affordable in §8.8.7 priority order.
-    if relocations is None and ROMANS in state.get("non_player_factions",
-                                                   set()):
-        from fs_bot.bots.roman_bot import build_np_winter_relocations
-        relocations = build_np_winter_relocations(state)
+    if relocations is None:
+        # Quarters relocation/payment is a ROMAN decision (§6.3.3/§8.8.7).
+        # A player Rome is consulted via the decision agent
+        # (kind "quarters_plan"; respond with a relocations dict); when it
+        # defers — or for NP Rome — the §8.8.7 plan applies. The old
+        # behaviour left a PLAYER Rome on roll-for-all, which is a choice
+        # no player would make (found in live human-seat play: winter
+        # attrition is the Great Revolt Roman loss condition).
+        if ROMANS not in state.get("non_player_factions", set()):
+            from fs_bot.engine.agent import consult_agent
+            resp = consult_agent(state, ROMANS, {
+                "kind": "quarters_plan",
+                "request_type": "quarters_plan"})
+            if isinstance(resp, dict):
+                relocations = resp
+        if relocations is None:
+            from fs_bot.bots.roman_bot import build_np_winter_relocations
+            relocations = build_np_winter_relocations(state)
     result["phases"]["quarters"] = quarters_phase(
         state, relocations=relocations
     )

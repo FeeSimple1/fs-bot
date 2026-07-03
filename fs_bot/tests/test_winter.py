@@ -778,3 +778,29 @@ class TestQuartersRomanPayOrRoll:
         roman_q = result["roman_quartering"]
         if MORINI in roman_q.get("rolls", {}):
             assert len(roman_q["rolls"][MORINI]["rolls"]) == 1
+
+
+def test_player_rome_quarters_defaults_to_np_plan_not_roll_for_all():
+    """§6.3.3: Quarters relocation/payment is Rome's decision. A player
+    Rome with no agent (or a deferring one) gets the §8.8.7 plan, not
+    roll-for-all (found in live human-seat play)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.engine.winter import run_winter_round
+    from fs_bot.board.pieces import count_pieces
+    import fs_bot.rules_consts as rc
+    import copy
+
+    def game(np_rome):
+        st = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=11)
+        st["non_player_factions"] = ({rc.ROMANS, rc.ARVERNI, rc.AEDUI,
+                                      rc.BELGAE} if np_rome
+                                     else {rc.ARVERNI, rc.AEDUI, rc.BELGAE})
+        st["resources"][rc.ROMANS] = 20
+        run_winter_round(st, is_final=False)
+        return sum(count_pieces(st, r, rc.ROMANS, rc.LEGION)
+                   for r in st["spaces"]) + st.get("winter_track_legions", 0)
+
+    # A deferring player Rome keeps exactly as many Legions as NP Rome —
+    # the same plan applied (roll-for-all would lose more on average;
+    # deterministic seed makes this exact).
+    assert game(np_rome=False) == game(np_rome=True)

@@ -1,0 +1,97 @@
+# Deep soak — thousands of games on a schedule, not per push.
+#
+# Three long-horizon oracles, each at ~10-25x the per-push CI depth:
+#   census-soak : bot-only legality (illegal / wasteful-sa /
+#                 ineffective-event must be zero) across 2,500 games,
+#                 byte-identical under two PYTHONHASHSEED values.
+#   fuzz-soak   : the player-facing surface (random-legal seats, fuzzed
+#                 events, transfers, reactive decisions) across 1,500
+#                 games, each double-run for replay determinism, again
+#                 hashseed-diffed.
+#   telemetry   : play_quality behavioural snapshot, uploaded as an
+#                 artifact for trend-watching (never fails the run).
+#
+# Runs weekly and on demand (Actions tab -> deep-soak -> Run workflow,
+# optionally overriding the seed ranges).
+name: deep-soak
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"     # Mondays 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      census_seeds:
+        description: "error_census seed range"
+        default: "1-500"
+      fuzz_seeds:
+        description: "player_fuzz seed range"
+        default: "1-300"
+
+jobs:
+  census-soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Bot-only census, two hashseeds, strict + determinism diff
+        run: |
+          SEEDS="${{ inputs.census_seeds || '1-500' }}"
+          PYTHONHASHSEED=0 python -m fs_bot.tools.error_census \
+            --seeds "$SEEDS" --strict > census0.txt
+          PYTHONHASHSEED=7 python -m fs_bot.tools.error_census \
+            --seeds "$SEEDS" --strict > census7.txt
+          cat census0.txt
+          diff census0.txt census7.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: census-soak
+          path: census*.txt
+
+  fuzz-soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Player-surface fuzz, two hashseeds, determinism diff
+        run: |
+          SEEDS="${{ inputs.fuzz_seeds || '1-300' }}"
+          PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz \
+            --seeds "$SEEDS" > fuzz0.txt
+          PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz \
+            --seeds "$SEEDS" > fuzz7.txt
+          cat fuzz0.txt
+          diff fuzz0.txt fuzz7.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fuzz-soak
+          path: fuzz*.txt
+
+  telemetry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Behavioural telemetry snapshot (informational)
+        run: |
+          python -m fs_bot.tools.play_quality --seeds 1-40 \
+            > telemetry.txt || true
+          cat telemetry.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: play-quality-telemetry
+          path: telemetry.txt

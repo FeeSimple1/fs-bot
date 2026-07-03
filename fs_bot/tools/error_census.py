@@ -150,6 +150,10 @@ def main(argv=None) -> int:
     ap.add_argument("--top", type=int, default=60)
     ap.add_argument("--illegal-only", action="store_true",
                     help="list only 'illegal' defects (hide wasteful/legal)")
+    ap.add_argument("--strict", action="store_true",
+                    help="exit nonzero if any defect-class incident exists "
+                         "(illegal, wasteful-sa, ineffective-event) — for "
+                         "CI soak gating; legal-decline never fails")
     args = ap.parse_args(argv)
 
     lo, _, hi = args.seeds.partition("-")
@@ -201,6 +205,11 @@ def main(argv=None) -> int:
                                    "msg": k[3], "n": n}
                                   for k, n in counts.most_common()]}, f,
                       indent=1)
+    if args.strict:
+        defects = (by_sev.get("illegal", 0) + by_sev.get("wasteful-sa", 0)
+                   + by_sev.get("ineffective-event", 0)
+                   + by_sev.get("other-refused", 0))
+        return min(defects, 250)
     return 0
 
 

@@ -1916,3 +1916,28 @@ lives in commands/transfer.py), A2.2 (cylinder colour swap).
 
 Verification: 2068 tests passing; census illegal=0 both hashseeds; fuzz
 hard-findings=0, hashseed-identical.
+
+
+---
+
+## DEEP-SOAK CI (July 2026)
+
+`.github/workflows/deep-soak.yml` — weekly (Mondays 09:00 UTC) and
+on-demand (Actions -> deep-soak -> Run workflow, seed ranges
+overridable):
+
+- **census-soak**: `error_census --strict` over seeds 1-500 (2,500
+  bot-only games) under PYTHONHASHSEED 0 and 7, full-output diff. The
+  new `--strict` flag exits nonzero on any defect-class incident
+  (illegal / wasteful-sa / ineffective-event / other-refused);
+  legal-decline never fails.
+- **fuzz-soak**: `player_fuzz` over seeds 1-300 (1,500 player-surface
+  games, each double-run for replay determinism) under both hashseeds,
+  full-output diff; the tool already exits nonzero on hard findings.
+- **telemetry**: `play_quality --seeds 1-40` snapshot uploaded as an
+  artifact for trend-watching (informational; never fails).
+
+Rationale: rare-path bugs surface at volume — the per-push CI runs
+~10-25x shallower. All three step bodies rehearsed locally; runtimes
+calibrated (~12s per 100 census games, ~30s per 100 fuzzed games) to
+fit well inside the 60-minute job timeouts.

@@ -1861,3 +1861,11 @@ Verification: 2063 tests passing (new: second-half reachability + seats,
 interlude structural integrity, O38 round-trip, card 40 caps); census 6
 legal-declines / illegal=0 both hashseeds; fuzz seeds 1-50 all scenarios
 hard-findings=0, hashseed-identical.
+
+**Hardening sweep of the new second half (post-5cf7df5):** fuzz seeds
+41-115 (375 more games incl. full two-act Gallic Wars) hard-findings=0;
+census seeds 21-40 illegal=0 (5 legal-declines); everything
+hashseed-identical — the first newly-opened territory to come up clean
+on its hardening pass. Balance ledger refreshed with current bot-only
+distributions (selfplay-strategy-notes.md July addendum); play_quality
+pinned into the suite (test_play_quality.py).

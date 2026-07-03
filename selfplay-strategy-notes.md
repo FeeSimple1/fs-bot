@@ -190,3 +190,61 @@ Post-fix, every faction wins somewhere in bot-only play. All per-faction
 strategy claims in the notes above predate this fix; treat them as historical.
 The sync invariant is now enforced by 15 dedicated tests including per-scenario
 full-game canaries, and the balance baseline was refreshed at this commit.
+
+
+---
+
+## Addendum (July 2026): bot-only balance after the fidelity campaign
+
+Every number above predates the July fidelity work and is superseded for
+bot-only play. Between June and this addendum the following
+deterministic rules fixes moved bot-only balance (none were tuning; each
+is documented in QUESTIONS.md with the rule citation):
+
+- Aedui Trade executes at the AGREED rate (the executor had paid the
+  un-doubled §4.4.1 yield forever) and the §8.6.6 NP Aedui subsidy is
+  wired — both strengthen the Aedui/Roman economy.
+- The Roman Quarters plans drive Winter (Q12), free-Battle tie-breaks
+  are deterministic, Suborn can no longer ally Dispersed Tribes, the
+  German A8.7.4 Rally+Settle turn is no longer wasted, and the §1.5.2
+  transfer machinery exists.
+- THE GALLIC WAR SECOND HALF EXISTS: the Interlude was unreachable
+  (is_final bug), so every prior Gallic War figure was actually an
+  Ariovistus figure.
+
+Bot-only win distributions, seeds 1-20 per scenario, main @ 5cf7df5
+(fs_bot.tools.play_quality — command mixes and resource telemetry in
+that tool's report):
+
+| Scenario | Wins (20 games) | cards/game avg |
+|---|---|---|
+| Pax Gallica? | Romans 16, Belgae 3, Aedui 1 | 30 |
+| The Great Revolt | Arverni 13, Belgae 5, Aedui 1, Romans 1 | 41 |
+| Reconquest of Gaul | Romans 8, Aedui 5, Belgae 4, Arverni 3 | 39 |
+| Ariovistus | Romans 9, Germans 6, Belgae 3, Aedui 2 | 36 |
+| The Gallic War | Arverni 8, Romans 8, Belgae 3, Aedui 1 | 51 (max 100) |
+
+Reading, with the design-vs-defect discipline:
+
+1. **Pax Gallica? flipped from Belgae-leaning to Roman-dominant
+   (16/20).** The June numbers were measured while the executed Trade
+   income was halved, Roman Winter was roll-for-all, and the Aedui
+   subsidy never fired. The current figure reflects the game as
+   published — whether the published bots make Pax Gallica?
+   Roman-favoured at this rate is a table-balance question the
+   Reference Documents do not answer. Not a defect; playtest-worthy.
+2. **The Great Revolt stays Arverni-decided (13/20)** but no longer
+   100%: outright off-map-Legion victories are now contested (Q12).
+3. **Reconquest is the most balanced scenario** (8/5/4/3), as its
+   symmetric setup suggests it should be.
+4. **The Gallic War is genuinely two acts**: Ariovistus-like first
+   halves flow into competitive second halves, and the German player's
+   Arverni role wins as often as Rome. Its games run up to 100 cards.
+5. **The Aedui remain the weakest seat everywhere** (1-5 wins per 20).
+   Their flowchart is faithful (pass-rate audits show destitution, not
+   malfunction); the seat's bot-only weakness matches the June finding
+   that keyword policies could not pilot them either. If any seat
+   deserves human-play validation against the published bots, it is
+   this one.
+
+Reproduce: `python -m fs_bot.tools.play_quality --seeds 1-20`.

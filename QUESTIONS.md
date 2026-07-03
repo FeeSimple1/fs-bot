@@ -1984,3 +1984,45 @@ Also fixed en route: the played observation that removing ANY Ally
 feeds Roman scoring (correct §7.2 behaviour post-zombie-fix) — recorded
 as Aedui strategy guidance, not a bug: prefer placement-denial over
 removal when Rome nears the threshold.
+
+
+---
+
+## PLAYTHROUGH VERDICT — the Aedui seat, played with skill (July 2026)
+
+Full game, Pax Gallica? seed 42, me (human) as Aedui vs three bots, via
+a turn-by-turn harness on the save/load layer. Result: Rome wins the
+2nd Victory Phase at exactly 16 (>15), with the played Aedui SECOND at
+margin +1 — ahead of every Gallic faction, one denial (a queued
+Pictones Suborn) and one card short of forcing the game long.
+
+**Engine findings (all fixed during play, commits 07c5ee7/ff8cf17 +
+subset-March):** Suborn tribe-allegiance validation; zombie "Allied"
+status; the unconsumed Pax Gallica 1st-Winter Special Rules (illegal
+Roman Winter-1 victories, Vercingetorix never entering); human
+subset March (§3.2.2).
+
+**Known remaining human-play gap:** one origin cannot March TWO groups
+to different destinations in one Command (§3.2.2 allows it; the plan
+shape keys groups by origin). Workaround: successive turns. Fix shape
+when wanted: per-column entries [(origin, destination, group), ...].
+
+**Seat verdict (played evidence, not telemetry):** the Aedui seat is
+strong in human hands. The engine that emerges: Trade snowballs with
+board position (march-to-control of subdued-tribe supply-line regions
+took a single Trade from 4 to 10), Convictolitavis (card 43 unshaded)
+doubles Suborn, and every Suborn ally placement is DOUBLE-duty in this
+scenario (+1 Aedui, -1 Rome — placement is denial). The bot Aedui
+plays the same verbs but never marches hidden Warbands INTO new
+subdued-tribe regions to extend Suborn/Trade reach — its flowchart
+Suborns only where it already stands (§8.6.3 as published). That, plus
+no faction coordinating denial, is why bot-only Rome still runs away
+(~15/20): the design appears to assume table diplomacy against the
+runaway leader, which three flowcharts cannot supply. Design
+observation, not an engine defect.
+
+**Aedui strategy notes for the human player:** never leave a lone Ally
+in an Arverni-controlled Region (Entreat removes it for 1 Resource);
+prefer placement-denial over Ally-removal while Rome is near the
+threshold (every removed Ally of ANY faction is +1 Roman Subdued);
+Raid is a free Command to carry a Suborn when the treasury is at 2.

@@ -2026,3 +2026,43 @@ in an Arverni-controlled Region (Entreat removes it for 1 Resource);
 prefer placement-denial over Ally-removal while Rome is near the
 threshold (every removed Ally of ANY faction is +1 Roman Subdued);
 Raid is a free Command to carry a Suborn when the treasury is at 2.
+
+
+---
+
+## SECOND PLAYTHROUGH — the Roman seat, The Great Revolt (July 2026)
+
+Full game, Great Revolt seed 42, me (human) as Rome vs three bots.
+Result: Belgae outright at Winter 2 (margin +6; Rome -7) — but the
+probe's finding is what happened on the way.
+
+**A played Rome broke the Arverni.** The 13/20 bot-only Arverni
+dominance evaporated against basic Roman discipline: never battle
+Vercingetorix's stack, hunt naked Allies with the Legion army early
+(Sequani: citadel+ally killed in one blow), then storm the emptied
+Gergovia with an AUXILIA column while the horde was north (both home
+Allies, then the citadel, then Seize-dispersal of the homeland).
+Arverni allies+citadels: 14 -> 5; their off-map-Legions condition froze
+at 4 of the needed >6 once the Legions bunkered in supply lines.
+
+**The two-runaway structure.** With every sword pointed at the Arverni
+— mine, and then Vercingetorix pointing his at the BELGAE in a genuinely
+impressive bot turn (his horde stormed Atrebates and Britannia when the
+Belgae became the leader) — the quiet faction compounded allies+control
+unopposed: 12 -> 15 -> 21. Rome's armies cannot reach Belgica in time
+from the south. Confirms the Aedui-game conclusion from the other side:
+Great Revolt bot-only is decided by whichever Gallic faction the table
+ignores; three flowcharts cannot cover two simultaneous runaways. The
+design assumes players redistribute pressure; that is diplomacy, not a
+bot defect.
+
+**Engine findings:** player-Rome Quarters fixed mid-game (commit
+14c9524 — roll-for-all was the seat's hidden loss condition; my two
+stranded Treveri Legions still died to a fair rule: consolidation
+errors are punished). Observation for later: a human Build SA executes
+the BOT's §8.8.1 plan (fort/subdue/ally placement is not the player's
+choice) — same class as the old Quarters gap, lower stakes; and the
+Aedui bot ended the game hoarding 37 Resources with no Suborn pressure
+on the runaway — its flowchart spends only on self-development,
+never on leader-denial. Both recorded as play-quality items, not
+defects.

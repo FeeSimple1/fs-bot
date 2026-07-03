@@ -3603,6 +3603,9 @@ def _execute_march(state, faction, bot_action):
     # that exact route instead of the executor's BFS shortest path, so the
     # group takes the Losses the planner accounted for and no others.
     forced_routes = plan.get("routes") or {}
+    # Optional subset groups per origin: {origin: {piece_type: count}}
+    # (§3.2.2 — a human player's March group is their own selection).
+    subset_groups = plan.get("groups") or {}
     # A3.4.2 / 3.3.2: non-Roman groups March exactly one adjacent Region (the
     # German planner sets max_steps=1). When set, an origin may only March to a
     # destination within that many Regions, never over-marching via BFS.
@@ -3618,7 +3621,9 @@ def _execute_march(state, faction, bot_action):
         if (isinstance(forced, list) and forced
                 and all(r in playable for r in forced)):
             try:
-                final = _march_with_harassment(state, faction, origin, forced)
+                final = _march_with_harassment(
+                    state, faction, origin, forced,
+                    group_cap=subset_groups.get(origin))
                 marched.append({"origin": origin, "final_region": final})
             except _EXEC_ERRORS as exc:
                 errors.append({"origin": origin, "error": str(exc)})
@@ -3641,7 +3646,9 @@ def _execute_march(state, faction, bot_action):
             deferred_origins.append(origin)
             continue
         try:
-            final = _march_with_harassment(state, faction, origin, best[2])
+            final = _march_with_harassment(
+                state, faction, origin, best[2],
+                group_cap=subset_groups.get(origin))
             marched.append({"origin": origin, "final_region": final})
         except _EXEC_ERRORS as exc:
             errors.append({"origin": origin, "error": str(exc)})
@@ -3682,10 +3689,16 @@ def _bfs_march_path(origin, dest, playable):
     return None
 
 
-def _march_with_harassment(state, faction, origin, path):
-    """March a faction's full mobile group origin -> ... -> path[-1], one step
+def _march_with_harassment(state, faction, origin, path, group_cap=None):
+    """March a faction's mobile group origin -> ... -> path[-1], one step
     at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
     enters and then leaves. Returns the final Region reached.
+
+    ``group_cap`` (optional, {piece_type: count} with LEADER truthy/falsy)
+    marches a SUBSET group selected at the origin — §3.2.2 lets a player
+    March "a group" of their choosing; bots march full groups by their
+    instructions. Found needed in live human-seat play: without it a
+    human could never split a stack.
     """
     # §3.2.2: marching pieces flip to Hidden as they March.
     _flip_origin_pieces(state, origin, faction)
@@ -3696,6 +3709,15 @@ def _march_with_harassment(state, faction, origin, path):
     # in <R>, need 15"), and applied Harassment to residents too. Pieces do not
     # join a March mid-route; Harassment only hits the marching group.
     group = _mobile_march_group(state, faction, origin)
+    if group_cap is not None:
+        from fs_bot.rules_consts import LEADER as _LDR
+        capped = {}
+        for pt, v in group.items():
+            if pt == _LDR:
+                capped[pt] = v if group_cap.get(_LDR) else None
+            else:
+                capped[pt] = min(int(group_cap.get(pt, 0) or 0), v or 0)
+        group = capped
     current = origin
     for i, nxt in enumerate(path):
         if not _group_has_pieces(group):

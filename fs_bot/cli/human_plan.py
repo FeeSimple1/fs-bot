@@ -169,7 +169,38 @@ def _collect_march(state, faction, stdin, stdout, single):
                                  dest_set, single=single)
     if not destinations:
         return None
-    return {"origins": origins, "destinations": destinations}
+    # §3.2.2: the marching group is the player's own selection — offer a
+    # subset per origin (all-mobile remains the default).
+    groups = {}
+    from fs_bot.board.pieces import get_leader_in_region
+    for o in origins:
+        cap = {}
+        partial = False
+        for pt in (LEGION, AUXILIA, WARBAND):
+            n = count_pieces(state, o, faction, pt)
+            if n <= 0:
+                continue
+            pick = prompt_choice(
+                stdin, stdout,
+                f"  March how many {pt}s from {o}? (of {n})",
+                [(f"all {n}", n)] + [(str(k), k) for k in range(n - 1, -1, -1)])
+            cap[pt] = pick
+            if pick < n:
+                partial = True
+        if get_leader_in_region(state, o, faction) is not None:
+            from fs_bot.rules_consts import LEADER
+            take = prompt_yes_no(stdin, stdout,
+                                 f"  March the Leader from {o}?",
+                                 default=True)
+            cap[LEADER] = take
+            if not take:
+                partial = True
+        if partial:
+            groups[o] = cap
+    plan = {"origins": origins, "destinations": destinations}
+    if groups:
+        plan["groups"] = groups
+    return plan
 
 
 def _collect_rally(state, faction, stdin, stdout, single):

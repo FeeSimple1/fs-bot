@@ -1006,3 +1006,32 @@ def test_march_group_with_scouted_warbands_moves_as_revealed():
     assert count_pieces(state, AEDUI_REGION, AEDUI, WARBAND) == 0
     # They March Revealed (Scouted marker removed at the origin flip).
     assert count_pieces_by_state(state, MANDUBII, AEDUI, WARBAND, REVEALED) == 5
+
+
+def test_human_subset_march_splits_stack():
+    """§3.2.2: a player Marches a group of their own selection — the
+    plan's ``groups`` cap marches a subset and leaves the rest (found
+    needed in live human-seat play; the executor previously always
+    marched the full mobile group)."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.engine.execute import execute_decision
+    import fs_bot.rules_consts as rc
+
+    st = setup_scenario(rc.SCENARIO_PAX_GALLICA, seed=3)
+    st["resources"][rc.AEDUI] = 10
+    place_piece(st, "Mandubii", rc.AEDUI, rc.WARBAND, 6,
+                piece_state=rc.HIDDEN)
+    refresh_all_control(st)
+    before = count_pieces(st, "Mandubii", rc.AEDUI, rc.WARBAND)
+    pa = {"command": "March", "regions": [], "sa": "No SA",
+          "sa_regions": [],
+          "details": {"origins": ["Mandubii"],
+                      "destinations": ["Carnutes"],
+                      "groups": {"Mandubii": {rc.WARBAND: 4}}}}
+    res = execute_decision(st, rc.AEDUI, {"player_action": pa})
+    assert res["executed"], res
+    assert count_pieces(st, "Carnutes", rc.AEDUI, rc.WARBAND) == 4
+    assert count_pieces(st, "Mandubii", rc.AEDUI,
+                        rc.WARBAND) == before - 4

@@ -6,7 +6,13 @@ The dispatcher execute_event() routes to the correct handler by card_id.
 
 Convention for player choices:
   state["executing_faction"] — the faction playing the Event
-  state["event_params"] — dict of card-specific choices set by the
+  Handlers follow §5.1.1 (Events never place pieces that are not
+Available — they remove rather than replace when the replacement is
+unavailable — and may not violate stacking unless their text says so)
+and §5.1.3 Partial Execution (carry out all the text that CAN be
+carried out: handlers skip inapplicable parts rather than aborting).
+
+state["event_params"] — dict of card-specific choices set by the
       caller (bot logic or CLI) before invoking execute_event().
 
 Source: Card Reference, A Card Reference

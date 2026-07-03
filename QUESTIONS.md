@@ -1869,3 +1869,50 @@ hashseed-identical — the first newly-opened territory to come up clean
 on its hardening pass. Balance ledger refreshed with current bot-only
 distributions (selfplay-strategy-notes.md July addendum); play_quality
 pinned into the suite (test_play_quality.py).
+
+
+---
+
+## RULES TRACEABILITY PASS — every numbered section accounted for (July 2026)
+
+New instrument `fs_bot.tools.rules_trace`: parses all numbered rule
+sections out of the Reference Document chapters (261 sections, base
+Chapters 1-8 + Ariovistus A1-A8) and counts citations of each across the
+source. `test_rules_trace.py` gates the result: every section must be
+cited in code or allow-listed as not-applicable WITH A REASON — new
+sections or citations lost to refactors fail the suite.
+
+Census result: 248/261 cited before the pass; 13 flagged and triaged:
+
+**Genuine behavioral gap found and fixed — §8.3.3 (Using Capabilities):**
+"Non-players use Capabilities that apply to a limited number of Regions
+in the FIRST Regions that apply." Card 39 shaded (Trade is maximum 1
+Region) picked the BEST-VALUE Region even for a Non-player Aedui. NP
+Aedui now Trade the first applicable Region in standard map order; a
+player Aedui keeps the highest-yield choice (players choose freely).
+Deliberate deterministic change (fuzz digests moved; canary in band).
+
+**Implemented but uncited (citations added at the implementing sites):**
+- §5.1.1 Events vs Rules (never place unavailable pieces / remove rather
+  than replace / stacking) — enforced across handlers; cited in
+  card_effects' module docstring.
+- §5.1.3 Partial Execution — honoured INSIDE handlers (skip what cannot
+  apply); reconciled explicitly with the transactional Event layer: a
+  raise is reserved for invalid parameters or a wholly inapplicable
+  Event, and the CLI validation loop means the plan that finally
+  executes satisfies §5.1.3.
+- A6.4.1 Ariovistus Roman earnings — the "less Settlements" term lives
+  in calculate_victory_score (A7.2); cited at harvest_phase.
+- A5.1.1 / A5.4 — structurally inert for the game-run Arverni (outside
+  the SoP; no path grants them Entreat/Devastate); cited at
+  get_sop_factions.
+- A3.1 — chapeau; specifics carried by the cited A3.4.x sections.
+
+**Not applicable (allow-listed with reasons in rules_trace.py):**
+3.1.1 (physical pawns), 8.1.3 (how to read the flowchart sheets),
+A1.0 (introduction), A1.4.1 (Available Forces display layout),
+A1.5.1 (three-player seating; the related 4-Resource transfer cap note
+lives in commands/transfer.py), A2.2 (cylinder colour swap).
+
+Verification: 2068 tests passing; census illegal=0 both hashseeds; fuzz
+hard-findings=0, hashseed-identical.

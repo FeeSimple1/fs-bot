@@ -103,10 +103,23 @@ def trade(state, agreements=None, roman_agreed=False):
 
     # Card 39 (River Commerce) shaded: "Trade is maximum 1 Region."
     if is_capability_active(state, 39, _ESh) and len(supply_line_regions) > 1:
-        def _aedui_value(r):
-            ap = state["spaces"][r].get("pieces", {}).get(AEDUI, {})
-            return ap.get(ALLY, 0) + ap.get(CITADEL, 0)
-        supply_line_regions = {max(sorted(supply_line_regions), key=_aedui_value)}
+        if AEDUI in state.get("non_player_factions", set()):
+            # §8.3.3: Non-players apply limited-Region Capabilities "in
+            # the first Regions that apply" — the first applicable Region
+            # in the standard map order, not the best-value one (found by
+            # the rules-traceability pass).
+            for r in get_playable_regions(scenario,
+                                          state.get("capabilities")):
+                if r in supply_line_regions:
+                    supply_line_regions = {r}
+                    break
+        else:
+            # A player Aedui chooses; proxy: the highest-yield Region.
+            def _aedui_value(r):
+                ap = state["spaces"][r].get("pieces", {}).get(AEDUI, {})
+                return ap.get(ALLY, 0) + ap.get(CITADEL, 0)
+            supply_line_regions = {
+                max(sorted(supply_line_regions), key=_aedui_value)}
 
     total = 0
 

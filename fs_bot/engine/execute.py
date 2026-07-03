@@ -3156,7 +3156,11 @@ def _execute_event(state, faction, bot_action, *, human=False):
     prev_faction = state.get("executing_faction")
     state["executing_faction"] = faction
     # TRANSACTIONAL: "report, do not crash" means a failed Event did not
-    # happen — but a handler that mutates mid-loop and then raises (e.g. a
+    # happen. (§5.1.3 Partial Execution is honoured INSIDE handlers — they
+    # carry out whatever parts apply and skip the rest; a raise is reserved
+    # for invalid parameters or a wholly inapplicable Event, and the CLI
+    # validation loop means the plan that finally executes satisfies
+    # §5.1.3.) — but a handler that mutates mid-loop and then raises (e.g. a
     # per-move/per-placement list where a later entry is illegal) would
     # otherwise leave a half-applied Event behind executed=False. Snapshot
     # the state and roll back on the safe-error path. (Found by the

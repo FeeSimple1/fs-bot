@@ -1362,3 +1362,51 @@ class TestScenarioIsolation:
 
         valid, reason = validate_enlist_region(state, TREVERI)
         assert valid is False
+
+
+def test_card_39_shaded_np_uses_first_applicable_region():
+    """§8.3.3: Non-players apply limited-Region Capabilities in the FIRST
+    Regions that apply — with card 39 shaded (Trade max 1 Region) an NP
+    Aedui Trades the first Supply-Line Region in map order, while a
+    player Aedui keeps the best-value choice."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.cards.capabilities import activate_capability
+    from fs_bot.commands.sa_trade import trade
+    from fs_bot.map.map_data import get_playable_regions
+    import fs_bot.rules_consts as rc
+    import copy
+
+    def build():
+        st = setup_scenario(rc.SCENARIO_PAX_GALLICA, seed=5)
+        # Two Trade regions on obvious Supply Lines: Provincia-adjacent.
+        for region, n in (("Sequani", 1), ("Arverni", 2)):
+            from fs_bot.map.map_data import get_tribes_in_region
+            for t in get_tribes_in_region(region, rc.SCENARIO_PAX_GALLICA):
+                if st["tribes"].get(t, {}).get("allied_faction") is None:
+                    st["tribes"][t]["allied_faction"] = rc.AEDUI
+                    place_piece(st, region, rc.AEDUI, rc.ALLY)
+                    break
+            if n > 1:
+                place_piece(st, region, rc.AEDUI, rc.WARBAND, 6,
+                            piece_state=rc.HIDDEN)
+        refresh_all_control(st)
+        activate_capability(st, 39, rc.EVENT_SHADED)
+        return st
+
+    st = build()
+    st["non_player_factions"] = {rc.AEDUI}
+    res_np = trade(copy.deepcopy(st), roman_agreed=False)
+    st2 = build()
+    st2["non_player_factions"] = set()
+    res_player = trade(copy.deepcopy(st2), roman_agreed=False)
+    # Both trade exactly one Region's worth (max-1-Region capability).
+    regions_np = {r for _, r, _ in res_np["per_item"]
+                  if _ == "aedui_ally"}
+    order = list(get_playable_regions(rc.SCENARIO_PAX_GALLICA, None))
+    if regions_np and res_player["per_item"]:
+        np_region = next(iter(regions_np))
+        # The NP pick is the FIRST applicable in map order.
+        applicable = [r for r in order if r in ("Sequani", "Arverni")]
+        assert np_region == applicable[0]

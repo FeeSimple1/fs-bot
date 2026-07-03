@@ -97,7 +97,10 @@ def _borders_cisalpina_or_provincia(region, scenario):
 def _region_allows_supply_line(state, region, faction, agreements=None):
     """Check if a region can be part of a Supply Line.
 
-    Per §3.2.1: Each region in the chain must have No Control OR be under
+    Per §3.2.1 (and A3.1's general note that Ariovistus Germanic
+    Commands can cost or add to German Resources — the per-Command
+    A3.4.x citations carry the specifics): each region in the chain
+    must have No Control OR be under
     Control of a faction that agrees. Germans never agree (§3.4.5).
     In Ariovistus: Arverni never agree (A1.5.2).
 

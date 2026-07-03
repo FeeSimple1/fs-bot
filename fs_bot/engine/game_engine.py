@@ -85,6 +85,13 @@ def get_sop_factions(state):
     Base game: Romans, Arverni, Aedui, Belgae (Germans are §6.2 NP).
     Ariovistus: Romans, Germans, Aedui, Belgae (Arverni are A6.2 NP).
 
+    A5.1.1: Eligibility/Ineligibility Event effects have no impact on
+    the Ariovistus Arverni — they act only via the Arverni Phase
+    (A2.3.9), never through this Sequence of Play, so a stray
+    eligibility entry for them is structurally inert. A5.4: free
+    Special Abilities likewise cannot reach the game-run Arverni
+    (no code path grants them Entreat or Devastate).
+
     Args:
         state: Game state dict.
 

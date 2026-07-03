@@ -633,6 +633,10 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
 def harvest_phase(state):
     """Execute the Harvest Phase — §6.4 / A6.4.
 
+    A6.4.1: Ariovistus Roman earnings equal the Roman victory score,
+    which A7.2 defines as Subdued + Dispersed + Roman Allies MINUS
+    Settlements — the subtraction lives in calculate_victory_score.
+
     Add Resources to each faction, capped at MAX_RESOURCES (45).
 
     Returns:

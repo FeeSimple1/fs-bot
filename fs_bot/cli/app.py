@@ -408,6 +408,16 @@ def main(argv=None, stdin=None, stdout=None):
         while state["current_card"] is not None:
             card_result = play_card(state, decision, execute=True)
             results.append(card_result)
+            # Gallic War Interlude seat swap (A2.1): the German player
+            # takes on the Arverni role for the second half.
+            if (state.get("interlude_completed")
+                    and "Germans" in faction_modes):
+                faction_modes["Arverni"] = faction_modes.pop("Germans")
+                if "Germans" in humans:
+                    humans.remove("Germans")
+                    humans.append("Arverni")
+                stdout.write("\n*** Interlude: the German player now "
+                             "plays the Arverni (A2.1). ***\n")
             display_card_result(card_result, stdout)
             if args.save:
                 serialize.save_game(state, args.save, meta=meta,

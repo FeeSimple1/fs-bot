@@ -73,15 +73,14 @@ def validate_suborn_region(state, region):
                 "Region must have a Hidden Aedui Warband for Suborn")
 
     # Ariovistus Diviciacus proximity — A4.4, A4.1.2
-    scenario = state["scenario"]
-    if scenario in ARIOVISTUS_SCENARIOS:
-        leader_region = find_leader(state, AEDUI)
-        if leader_region is not None:
-            # Must be within 1 of Diviciacus
-            if region != leader_region and not is_adjacent(region, leader_region):
-                return (False,
-                        "Region must be within 1 of Diviciacus for Suborn "
-                        "in Ariovistus")
+    # Keyed on the PIECE, not the scenario (A4.1.2 / card O38).
+    leader_region = find_leader(state, AEDUI)
+    if leader_region is not None:
+        # Must be within 1 of Diviciacus
+        if region != leader_region and not is_adjacent(region, leader_region):
+            return (False,
+                    "Region must be within 1 of Diviciacus for Suborn "
+                    "in Ariovistus")
 
     return (True, "")
 

@@ -786,3 +786,100 @@ class TestBritanniaNonPlayerAbility:
         place_piece(state, PROVINCIA, ROMANS, LEGION, 1,
                     from_legions_track=True)
         assert _np_should_conduct_britannia(state) is True
+
+
+class TestSecondHalfPlays:
+    """The Gallic War second half must actually happen (A2.1) — before the
+    play_quality telemetry pass, is_final=True at the 3rd Winter declared a
+    margins winner and the Interlude was unreachable: every Gallic War game
+    was byte-identical to Ariovistus."""
+
+    def _drive(self, seed):
+        import contextlib as _ctx
+        import io as _io
+        from collections import Counter
+        from fs_bot.state.setup import setup_scenario
+        from fs_bot.engine.game_engine import (run_game, ACTION_EVENT,
+                                               get_sop_factions)
+        from fs_bot.bots.bot_dispatch import dispatch_bot_turn
+        from fs_bot.cli.dispatcher import _translate_bot_action
+        st = setup_scenario(SCENARIO_GALLIC_WAR, seed=seed)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        acts = Counter()
+
+        def dfunc(state, faction, options, position):
+            state["current_card_id"] = state.get("current_card")
+            state["is_second_eligible"] = (position == "2nd_eligible")
+            state["can_play_event"] = (ACTION_EVENT in options)
+            ba = dispatch_bot_turn(state, faction)
+            acts[("2nd" if state.get("interlude_completed") else "1st",
+                  faction)] += 1
+            return {"action": _translate_bot_action(ba, options),
+                    "bot_action": ba}
+
+        with _ctx.redirect_stdout(_io.StringIO()):
+            res = run_game(st, decision_func=dfunc, execute=True)
+        return st, res, acts
+
+    def test_interlude_reachable_and_second_half_seats_arverni(self):
+        # Seed 1: no outright winner by the 3rd Victory Phase.
+        st, res, acts = self._drive(1)
+        assert st.get("interlude_completed") is True
+        assert res["winter_count"] > 3
+        second = {f for (ph, f), n in acts.items() if ph == "2nd" and n}
+        assert ARVERNI in second           # the German player's new role
+        assert GERMANS not in second       # Germans revert to game-run
+        assert st["scenario"] == "Pax Gallica?"
+        assert ARVERNI in st["non_player_factions"]
+        assert GERMANS not in st["non_player_factions"]
+
+    def test_second_half_structurally_clean(self):
+        from fs_bot.state.state_schema import (validate_state,
+                                               check_structural_integrity)
+        st, res, acts = self._drive(1)
+        assert validate_state(st) == []
+        assert check_structural_integrity(st) == []
+
+
+class TestInterludeStructuralIntegrity:
+    def test_interlude_preserves_tribe_piece_sync(self):
+        """The Interlude's force adjustments (Citadel downgrades, Ally
+        removals, Gergovia/Bibracte resets, Britannia entry) must keep
+        tribes<->pieces in sync — they predate the Q13 discipline and
+        stranded allegiances/pieces (player_fuzz structural catch,
+        Gallic War seed 73)."""
+        from fs_bot.state.state_schema import check_structural_integrity
+        for decision in (True, False):
+            state = fresh_gallic_war()
+            assert check_structural_integrity(state) == []
+            run_interlude(state, britannia_decision=decision)
+            assert check_structural_integrity(state) == [], decision
+
+
+class TestCardO38:
+    def test_o38_returns_diviciacus_from_removed_pool(self):
+        from fs_bot.cards import card_effects as ce
+        from fs_bot.board.pieces import find_leader
+        state = fresh_gallic_war()
+        run_interlude(state, britannia_decision=False)
+        assert state["removed_pieces"]["Aedui"]["Leader"] == 1
+        state["executing_faction"] = AEDUI
+        state["event_params"] = {"region": AEDUI_REGION}
+        ce.execute_event(state, "O38", shaded=False)
+        assert find_leader(state, AEDUI) == AEDUI_REGION
+        assert state["diviciacus_in_play"] is True
+        assert state["removed_pieces"]["Aedui"]["Leader"] == 0
+        # A second placement is impossible.
+        import pytest as _pytest
+        with _pytest.raises(ValueError):
+            ce.execute_event(state, "O38", shaded=False)
+
+    def test_o38_shaded_is_card_38_capability(self):
+        from fs_bot.cards import card_effects as ce
+        from fs_bot.cards.capabilities import is_capability_active
+        from fs_bot.rules_consts import EVENT_SHADED
+        state = fresh_gallic_war()
+        run_interlude(state, britannia_decision=False)
+        state["executing_faction"] = ROMANS
+        ce.execute_event(state, "O38", shaded=True)
+        assert is_capability_active(state, 38, EVENT_SHADED)

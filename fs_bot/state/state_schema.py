@@ -187,6 +187,12 @@ def validate_state(state):
     errors = []
     scenario = state["scenario"]
     caps = CAPS_ARIOVISTUS if scenario in ARIOVISTUS_SCENARIOS else CAPS_BASE
+    if state.get("scenario_phase") == "second_half":
+        # Gallic War second half (A2.1): German inventory and the Aedui
+        # Diviciacus Leader remain Ariovistus components (see
+        # board.pieces._second_half_caps).
+        from fs_bot.board.pieces import _second_half_caps
+        caps = _second_half_caps(caps, state)
 
     for faction in FACTIONS:
         faction_caps = caps.get(faction, {})

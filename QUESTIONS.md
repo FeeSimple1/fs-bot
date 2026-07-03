@@ -1778,3 +1778,86 @@ persistence.
 
 Verification: 2057 tests passing; census illegal=0 both hashseeds (26
 legal-declines); fuzz seeds 1-20 hard-findings=0, hashseed-identical.
+
+
+---
+
+## PLAY QUALITY PASS — telemetry instrument + two major fidelity finds (July 2026)
+
+New instrument `fs_bot.tools.play_quality`: per-faction command/SA mix,
+no-effect turns, pass and event rates, resource dynamics (at-zero /
+at-cap), win distributions and game lengths across bot-only games. The
+census guarantees legality; this measures whether a legal bot is
+BEHAVING like the published flowcharts.
+
+### Find 1 — German Rally+Settle turns wasted (A8.7.4)
+The Germans' "Rally and Settle" is ONE combined node: they take it "if
+doing EITHER would place a Germanic Ally, a Settlement, or at least four
+Warbands". The executor's wasteful-sa rule ("command produced no legal
+effect -> skip the SA") cancelled the Settle whenever the Rally itself
+placed nothing — the Germans wasted their whole turn ~10 times per 20
+games. Fixed with a scoped exemption (`_sa_survives_empty_command`);
+census incidents fell 26 -> 6. Telemetry now counts a no-effect TURN
+only when no SA salvaged it.
+
+### Find 2 — The Gallic War second half never happened (A2.1)
+`is_final` treated the first half's 3rd Winter as the game's last:
+victory_phase declared a margins winner, and the Interlude — fully
+implemented — was UNREACHABLE. Every Gallic War game was byte-identical
+to Ariovistus. Chain of fixes to make the second half real:
+1. `is_final=False` for pre-Interlude Gallic War Winters (outright
+   victory still ends the first half, per "If the game does not end by
+   the 3rd Victory Phase").
+2. `_count_winter_cards_in_game` survives the Interlude's deck reset
+   (winter_count-based), so the second half's LAST Winter is final;
+   run_game's total_cards_played likewise (len(results)).
+3. **Card O38** (2nd-Ed Diviciacus, A2.1 Deck) implemented: card data,
+   handler (unshaded returns Diviciacus FROM the removed pool; shaded =
+   base card 38's capability so the existing Rome<->Aedui transfer ban
+   applies), NP deriver (§8.3.2-style placement), schema/dispatch for
+   the "O38" id. remove_piece now tracks Diviciacus in removed_pieces
+   at EVERY removal site (conservation exact; O38 returns him).
+4. **Scenario switch**: the second half IS Pax Gallica? — the Interlude
+   now sets state["scenario"] accordingly, which makes every rules gate
+   (SoP factions, game-run Germans §3.4/§6.2, base Retreat rules, base
+   card texts, Winter phases) apply the base game automatically.
+   Diviciacus proximity gates (Trade/Suborn/Aedui Ambush, A4.1.2) are
+   keyed on the PIECE, not the scenario, so O38 keeps his rules alive;
+   piece caps use Ariovistus totals for the German inventory and the
+   Diviciacus Leader (`_second_half_caps`); A6.5.1's no-shift Senate is
+   keyed on its flag; Britannia's Tribe entries are backfilled.
+5. **Seat swap** (A2.1 "the Germanic player takes on the role of the
+   Arverni"): the Interlude swaps non_player_factions membership; the
+   CLI remaps a human German seat to Arverni mid-game; the fuzz harness
+   does the same.
+6. **Interlude Q13 repairs** — the force adjustments predated the sync
+   discipline and desynced tribes from pieces (player_fuzz structural
+   catches, seeds 30/73): Citadel->Ally replacements now keep the CITY
+   tribe allied (they used to ally a random second tribe with the bogus
+   status "Allied"); every Ally/Citadel removal (faction loops,
+   circumvallation, Gergovia/Bibracte resets, Cisalpina relocation)
+   pairs with clear_allied_tribe; Gergovia/Bibracte/Britannia Ally
+   placements name their city Tribe explicitly.
+7. **Card 40 (Alpine Tribes) unshaded** hardened while fuzzing the new
+   second half: "3 Warbands, 2 Auxilia, or 1 Ally" — piece types now
+   validated and per-Region caps enforced (a fuzzed Citadel placement
+   used to strand a backing piece).
+8. Fuzz oracle: dry-run signatures are keyed by (card, faction,
+   OCCURRENCE) — the two-deck Gallic War repeats card ids across halves.
+
+### Balance observations (recorded, not tuned)
+Win rates, 20 seeds/scenario, current main: Pax Gallica Romans 16/20;
+Great Revolt Arverni 13/20; Reconquest 8/5/4/3 (R/Ae/B/Ar); Ariovistus
+9/7/2/2 (R/G/Ae/B); Gallic War now two-act with second-half winners
+across Romans/Belgae/Aedui/Arverni. Romans never Seize in base
+scenarios — faithful: §8.8.5 Seize is the LAST fall-through and the
+post-Q12 Romans always find a better Command. Aedui Ariovistus pass
+rates (~9%) are faithful destitution (all Pass turns sampled at 0
+Resources with 0-2 Warbands on map). Whether these distributions match
+the published design's table balance is a playtest question, not a bot
+defect.
+
+Verification: 2063 tests passing (new: second-half reachability + seats,
+interlude structural integrity, O38 round-trip, card 40 caps); census 6
+legal-declines / illegal=0 both hashseeds; fuzz seeds 1-50 all scenarios
+hard-findings=0, hashseed-identical.

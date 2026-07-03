@@ -42,11 +42,28 @@ class PieceError(Exception):
     pass
 
 
+def _second_half_caps(caps, state):
+    """Gallic War second half (A2.1): the scenario id switched to
+    Pax Gallica?, but two Ariovistus component sets stay in circulation —
+    the German inventory (Leader + 30 Warbands, partly in the removed
+    pool) and the Aedui Diviciacus Leader (removed at the Interlude; card
+    O38 may return him). Use the Ariovistus caps for those."""
+    if state.get("scenario_phase") != "second_half":
+        return caps
+    from fs_bot.rules_consts import GERMANS, AEDUI, LEADER
+    merged = dict(caps)
+    merged[GERMANS] = CAPS_ARIOVISTUS[GERMANS]
+    aedui = dict(merged.get(AEDUI, {}))
+    aedui[LEADER] = CAPS_ARIOVISTUS[AEDUI].get(LEADER, 1)
+    merged[AEDUI] = aedui
+    return merged
+
+
 def _get_caps(state):
     """Get the piece caps dict for the current scenario."""
     if state["scenario"] in ARIOVISTUS_SCENARIOS:
         return CAPS_ARIOVISTUS
-    return CAPS_BASE
+    return _second_half_caps(CAPS_BASE, state)
 
 
 def _get_faction_cap(state, faction, piece_type):
@@ -427,10 +444,15 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
         if f_pieces.get(LEADER) is None:
             raise PieceError(f"No {faction} Leader in {region}")
         leader_name = f_pieces[LEADER]
-        # Diviciacus: removed from play, not to Available — A1.4
+        # Diviciacus: removed from play, not to Available — A1.4. Track
+        # him in the removed pool so conservation stays exact and card
+        # O38 can return him ("It may return by Event").
         if leader_name == DIVICIACUS:
             f_pieces[LEADER] = None
-            # Do NOT add to available — removed from play
+            rp = state.setdefault("removed_pieces", {}).setdefault(
+                faction, {})
+            rp[LEADER] = rp.get(LEADER, 0) + 1
+            state["diviciacus_in_play"] = False
             return
         f_pieces[LEADER] = None
         if to_available:

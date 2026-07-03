@@ -238,7 +238,8 @@ def execute_decision(state, faction, decision):
         else:
             result = handler(state, faction, bot_action)
         if not before:
-            if command == _CMD_EVENT or _command_executed(result):
+            if (command == _CMD_EVENT or _command_executed(result)
+                    or _sa_survives_empty_command(faction, command, sa)):
                 sa_result = _execute_sa(state, faction, bot_action)
             else:
                 result = dict(result)
@@ -252,6 +253,20 @@ def execute_decision(state, faction, decision):
     # Pass / None / unknown
     return {"executed": False, "command": command,
             "reason": "no executable command"}
+
+
+def _sa_survives_empty_command(faction, command, sa):
+    """A8.7.4: the German 'Rally and Settle' is ONE combined node — the
+    Germans take it "if doing EITHER would place a Germanic Ally, a
+    Settlement, or at least four Germanic Warbands" — so the Settle SA
+    executes even when the Rally itself placed nothing. Everywhere else
+    the flowcharts' IF-NONE means an SA must not ride a no-effect Command
+    (the wasteful-sa rule). Found by play_quality telemetry: the skip was
+    wasting the Germans' whole turn ~10 times per 20 games.
+    """
+    from fs_bot.rules_consts import GERMANS as _G
+    return (faction == _G and command == _CMD_RALLY
+            and sa == _SA_SETTLE)
 
 
 def _execute_bot_command(state, faction, bot_action):
@@ -274,7 +289,8 @@ def _execute_bot_command(state, faction, bot_action):
         sa_result = _execute_sa(state, faction, bot_action)
     result = h(state, faction, bot_action)
     if not before:
-        if _command_executed(result):
+        if (_command_executed(result)
+                or _sa_survives_empty_command(faction, cmd, sa)):
             sa_result = _execute_sa(state, faction, bot_action)
         else:
             result = dict(result)
@@ -5478,7 +5494,19 @@ def _derive_card_A40(state, faction, shaded):
     return {"placements": placements} if placements else None
 
 
+def _derive_o38_region(state, faction, shaded):
+    """O38 unshaded: NP places Diviciacus with the most Aedui pieces
+    (mirrors the §8.3.2 Leader-placement instruction)."""
+    if shaded:
+        return None
+    from fs_bot.rules_consts import AEDUI
+    from fs_bot.bots.bot_common import get_leader_placement_region
+    region = get_leader_placement_region(state, AEDUI)
+    return {"region": region} if region else None
+
+
 _EVENT_PARAM_DERIVERS = {
+    "O38": _derive_o38_region,
     1: _derive_senate_direction,
     2: _derive_card_2,
     "A58": _derive_card_A58,

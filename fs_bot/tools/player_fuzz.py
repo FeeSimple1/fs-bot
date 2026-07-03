@@ -99,10 +99,8 @@ def make_random_reactive(seats, rng):
         (exercises the engine's fill-in default for unlisted pieces).
     AGREEMENT: coin flip (exercises both branches of every negotiation).
     """
-    seatset = set(seats)
-
     def reactive(state, faction, request):
-        if faction not in seatset:
+        if faction not in seats:
             return None
         kind = request.get("kind")
         if kind == RETREAT:
@@ -323,12 +321,15 @@ def _compare_dry_vs_live(res, seats, expected):
     if res is None:
         return divergences, partial
     seatset = set(seats)
+    walk_seen = Counter()
     for cr in res.get("card_results", ()):
         tr = cr.get("turn_result") or {}
         for faction, rec in (tr.get("actions_taken") or {}).items():
             if faction not in seatset:
                 continue
-            key = (cr.get("card"), faction)
+            k = (cr.get("card"), faction)
+            key = k + (walk_seen[k],)
+            walk_seen[k] += 1
             if key not in expected:
                 continue
             live = _sig(rec.get("execution"))
@@ -361,7 +362,11 @@ def play_game(scenario, seed, *, reactive=True, events=True):
     human_turns = [0]
     event_turns = [0]
     events_ok = [0]
-    expected = {}   # (card, faction) -> dry-run outcome signature
+    # (card, faction, occurrence) -> dry-run outcome signature. The
+    # occurrence index matters: The Gallic War plays TWO decks (A2.1),
+    # so the same card id can come up in both halves.
+    expected = {}
+    seen_keys = Counter()
 
     def _inject_transfer(pa, faction):
         """Occasionally ride a §1.5.2 Resource gift on the plan."""
@@ -400,6 +405,13 @@ def play_game(scenario, seed, *, reactive=True, events=True):
     def decision_func(state, faction, options, position):
         for e in check_structural_integrity(state)[:3]:
             findings.append(("structural", state.get("current_card"), e))
+        # Gallic War Interlude seat swap (A2.1): a seated German player
+        # takes on the Arverni role for the second half.
+        if (state.get("interlude_completed")
+                and rc.GERMANS in policies):
+            policies[rc.ARVERNI] = policies.pop(rc.GERMANS)
+            seats[:] = [rc.ARVERNI if f == rc.GERMANS else f
+                        for f in seats]
         if faction in policies:
             human_turns[0] += 1
             dec = None
@@ -416,7 +428,9 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                     events_ok[0] += 1
                 if info is not None and (info.get("executed")
                                          or frng.random() < 0.3):
-                    expected[(state.get("current_card"), faction)] =                         _sig(info)
+                    k = (state.get("current_card"), faction)
+                    expected[k + (seen_keys[k],)] = _sig(info)
+                    seen_keys[k] += 1
                     event_turns[0] += 1
                     dec = {"action": ACTION_EVENT, "player_action": pa}
             if dec is None:
@@ -431,7 +445,9 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                             ("dirty-command", state.get("current_card"),
                              f"{faction} failed Command mutated the board"))
                     if info is not None:
-                        expected[(state.get("current_card"), faction)] =                             _sig(info)
+                        k = (state.get("current_card"), faction)
+                        expected[k + (seen_keys[k],)] = _sig(info)
+                        seen_keys[k] += 1
             return dec
         state["current_card_id"] = state.get("current_card")
         state["is_second_eligible"] = (position == "2nd_eligible")

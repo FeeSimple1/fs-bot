@@ -1734,24 +1734,40 @@ def execute_card_40(state, shaded=False):
     scenario = state["scenario"]
     adj_cisalpina = get_adjacent(CISALPINA, scenario)
     if not shaded:
-        # Place pieces in each Region adjacent to Cisalpina
+        # Place pieces in each Region adjacent to Cisalpina — "up to any
+        # 3 Warbands, 2 Auxilia, or 1 Ally" per Region: those THREE piece
+        # types only, with per-Region caps (a fuzzed Citadel placement
+        # left a backing piece with no allied Tribe; player_fuzz catch).
         placements = params.get("placements", [])
+        placed_in = {}
         for p in placements:
             region = p["region"]
             piece_type = p["piece_type"]
             cnt = p.get("count", 1)
             pfac = p.get("faction", faction)
+            if piece_type not in (WARBAND, AUXILIA, ALLY):
+                raise ValueError(
+                    f"card 40: may place Warbands, Auxilia, or an Ally, "
+                    f"not {piece_type!r}")
             if region not in adj_cisalpina:
+                continue
+            cap = {WARBAND: 3, AUXILIA: 2, ALLY: 1}[piece_type]
+            used = placed_in.setdefault(region, {}).get(piece_type, 0)
+            cnt = min(cnt, cap - used)
+            if cnt <= 0:
                 continue
             if piece_type == ALLY:
                 tribe = p.get("tribe")
                 if _tribe_region(state, tribe) == region:
                     _ally_tribe(state, tribe, pfac)
+                    placed_in[region][ALLY] = used + 1
             else:
                 avail = get_available(state, pfac, piece_type)
                 to_place = min(cnt, avail)
                 if to_place > 0:
-                    place_piece(state, region, pfac, piece_type, count=to_place)
+                    place_piece(state, region, pfac, piece_type,
+                                count=to_place)
+                    placed_in[region][piece_type] = used + to_place
         # Gain +4 Resources
         if faction:
             _cap_resources(state, faction, 4)
@@ -4472,6 +4488,47 @@ def execute_card_A69(state, shaded=False):
             state["event_modifiers"]["card_A69_ambush"] = True
             state["event_modifiers"]["card_A69_loss_per_warband"] = to_place
 
+def execute_card_O38(state, shaded=False):
+    """Card O38: Diviciacus (2nd Ed) — The Gallic War second half's
+    replacement for base card 38 (A2.1 Deck).
+
+    Unshaded ("Caesar's druid"): Place the Diviciacus piece in any Region;
+    the Ariovistus Diviciacus Leader rules apply (A1.4). The Interlude
+    removed Diviciacus from play — this is the Event that may return him.
+    Shaded ("Pro-Roman sidelined", CAPABILITY): Romans and Aedui may not
+    transfer Resources to one another — identical to base 38 shaded, so it
+    activates the SAME capability id (38) and every existing consumer
+    (commands/transfer.py) applies unchanged.
+
+    Source: A Card Reference, card O38
+    """
+    from fs_bot.rules_consts import DIVICIACUS, LEADER
+    if not shaded:
+        if state.get("diviciacus_in_play"):
+            raise ValueError("card O38: Diviciacus is already in play")
+        params = state.get("event_params", {})
+        region = params.get("region")
+        if not region:
+            raise ValueError("card O38: requires event_params['region']")
+        # Diviciacus returns FROM the removed pool (the Interlude put him
+        # there: "It may return by Event") — keep conservation exact.
+        rp = state.setdefault("removed_pieces", {}).setdefault(AEDUI, {})
+        if rp.get(LEADER, 0) < 1:
+            raise ValueError(
+                "card O38: the Diviciacus piece is not in the removed "
+                "pool")
+        # Route removed -> Available -> map so place_piece's accounting
+        # stays exact (the transactional Event layer rolls back cleanly
+        # if the placement is refused).
+        rp[LEADER] -= 1
+        avail = state["available"].setdefault(AEDUI, {})
+        avail[LEADER] = avail.get(LEADER, 0) + 1
+        place_piece(state, region, AEDUI, LEADER, leader_name=DIVICIACUS)
+        state["diviciacus_in_play"] = True
+    else:
+        activate_capability(state, 38, EVENT_SHADED)
+
+
 def execute_card_A70(state, shaded=False):
     """Card A70: Nervii — No Belgae Retreat / CAPABILITY.
 
@@ -4685,7 +4742,7 @@ _ARIOVISTUS_HANDLERS = {
     "A63": execute_card_A63, "A64": execute_card_A64,
     "A65": execute_card_A65, "A66": execute_card_A66,
     "A67": execute_card_A67, "A69": execute_card_A69,
-    "A70": execute_card_A70,
+    "A70": execute_card_A70, "O38": execute_card_O38,
 }
 
 # 2nd Edition text-change handlers for Ariovistus scenarios
@@ -4717,8 +4774,9 @@ def execute_event(state, card_id, shaded=False):
     scenario = state.get("scenario")
     is_ariovistus = scenario in ARIOVISTUS_SCENARIOS if scenario else False
 
-    # A-prefix cards (Ariovistus-only)
-    if isinstance(card_id, str) and card_id.startswith("A"):
+    # String card ids: A-prefix (Ariovistus-only) and O38 (The Gallic War
+    # second half's 2nd-Ed Diviciacus replacement).
+    if isinstance(card_id, str):
         if card_id in _ARIOVISTUS_HANDLERS:
             return _ARIOVISTUS_HANDLERS[card_id](state, shaded)
         raise KeyError(f"Unknown Ariovistus card: {card_id!r}")

@@ -94,6 +94,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, count_pieces,
+    clear_allied_tribe,
     count_pieces_by_state, get_available, get_leader_in_region,
     find_leader, PieceError,
 )
@@ -313,6 +314,9 @@ def _step0_circumvallation(state):
                 n = count_pieces(state, region, faction, pt)
                 if n > 0:
                     remove_piece(state, region, faction, pt, n)
+                    if pt in (ALLY, CITADEL):
+                        for _ in range(n):
+                            clear_allied_tribe(state, region, faction, pt)
             # Forts (skip the permanent Provincia Fort)
             n_fort = count_pieces(state, region, faction, FORT)
             if n_fort > 0:
@@ -452,7 +456,7 @@ def _adjust_german_forces(state):
                 remove_piece(
                     state, region, GERMANS, SETTLEMENT, n_set,
                 )
-                state["tribes"][subdued_tribe]["status"] = "Allied"
+                state["tribes"][subdued_tribe]["status"] = None
                 state["tribes"][subdued_tribe]["allied_faction"] = GERMANS
                 place_piece(state, region, GERMANS, ALLY, 1)
                 result["settlements_replaced_with_ally"].append(region)
@@ -519,15 +523,7 @@ def _adjust_german_forces(state):
         take = min(n, need_allies - allies_removed)
         for _ in range(take):
             remove_piece(state, region, GERMANS, ALLY)
-            # Also un-ally a tribe in this region attached to GERMANS
-            from fs_bot.map.map_data import get_tribes_in_region
-            tribes = get_tribes_in_region(region, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") == GERMANS:
-                    ti["status"] = None
-                    ti["allied_faction"] = None
-                    break
+            clear_allied_tribe(state, region, GERMANS, ALLY)
         allies_removed += take
     result["allies_to_available"] = allies_removed
 
@@ -582,13 +578,7 @@ def _adjust_belgae_forces(state):
         take = min(n, need_allies - allies_removed)
         for _ in range(take):
             remove_piece(state, region, BELGAE, ALLY)
-            tribes = get_tribes_in_region(region, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") == BELGAE:
-                    ti["status"] = None
-                    ti["allied_faction"] = None
-                    break
+            clear_allied_tribe(state, region, BELGAE, ALLY)
         allies_removed += take
     result["allies_to_available"] = allies_removed
 
@@ -663,8 +653,13 @@ def _adjust_aedui_forces(state):
         )
         if leader_name == DIVICIACUS:
             # remove_piece for DIVICIACUS does NOT add to Available,
-            # but does set the leader slot to None.
+            # but does set the leader slot to None. Track him in the
+            # removed pool: "Remove Diviciacus piece from play. (It may
+            # return by Event.)" — card O38 returns him FROM here, and
+            # the conservation identity (map+available+removed = cap)
+            # needs him accounted for in the second half.
             remove_piece(state, aedui_leader_region, AEDUI, LEADER)
+            # (remove_piece tracks Diviciacus in removed_pieces itself.)
             state["diviciacus_in_play"] = False
             result["diviciacus_removed"] = True
 
@@ -682,17 +677,11 @@ def _adjust_aedui_forces(state):
         target = citadel_pick_order[0]
         remove_piece(state, target, AEDUI, CITADEL)
         if get_available(state, AEDUI, ALLY) > 0:
+            # The CITY TRIBE stays allied — only the piece downgrades.
             place_piece(state, target, AEDUI, ALLY, 1)
-            # Allied tribe attachment: pick the first subdued tribe.
-            tribes = get_tribes_in_region(target, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") is None:
-                    ti["status"] = "Allied"
-                    ti["allied_faction"] = AEDUI
-                    break
             result["citadel_replaced_region"] = target
         else:
+            clear_allied_tribe(state, target, AEDUI, CITADEL)
             result["citadel_removed_region"] = target
 
     # Remove >= 1/2 of on-map Aedui Allies (not Citadels) and 1/2 of
@@ -720,13 +709,7 @@ def _adjust_aedui_forces(state):
         take = min(n, need_allies - allies_removed)
         for _ in range(take):
             remove_piece(state, region, AEDUI, ALLY)
-            tribes = get_tribes_in_region(region, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") == AEDUI:
-                    ti["status"] = None
-                    ti["allied_faction"] = None
-                    break
+            clear_allied_tribe(state, region, AEDUI, ALLY)
         allies_removed += take
     result["allies_to_available"] = allies_removed
 
@@ -760,6 +743,9 @@ def _adjust_aedui_forces(state):
                     remove_piece(
                         state, AEDUI_REGION, faction, pt, n,
                     )
+                    if pt in (ALLY, CITADEL):
+                        for _ in range(n):
+                            clear_allied_tribe(state, AEDUI_REGION, faction, pt)
             n_fort = count_pieces(state, AEDUI_REGION, faction, FORT)
             if n_fort > 0:
                 remove_piece(state, AEDUI_REGION, faction, FORT, n_fort)
@@ -851,16 +837,12 @@ def _adjust_arverni_forces(state):
             continue
         remove_piece(state, region, ARVERNI, CITADEL, 1)
         if get_available(state, ARVERNI, ALLY) > 0:
+            # "Replace ... with an Ally": the CITY TRIBE stays allied —
+            # only the backing piece downgrades (Q13 sync).
             place_piece(state, region, ARVERNI, ALLY, 1)
-            tribes = get_tribes_in_region(region, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") is None:
-                    ti["status"] = "Allied"
-                    ti["allied_faction"] = ARVERNI
-                    break
             result["citadels_replaced"].append(region)
         else:
+            clear_allied_tribe(state, region, ARVERNI, CITADEL)
             result["citadels_removed"].append(region)
         to_replace += 1
 
@@ -926,13 +908,7 @@ def _adjust_arverni_forces(state):
         take = min(n, need_allies - allies_removed)
         for _ in range(take):
             remove_piece(state, region, ARVERNI, ALLY)
-            tribes = get_tribes_in_region(region, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") == ARVERNI:
-                    ti["status"] = None
-                    ti["allied_faction"] = None
-                    break
+            clear_allied_tribe(state, region, ARVERNI, ALLY)
         allies_removed += take
     result["allies_to_available"] = allies_removed
 
@@ -984,6 +960,9 @@ def _adjust_arverni_forces(state):
                     remove_piece(
                         state, ARVERNI_REGION, faction, pt, n,
                     )
+                    if pt in (ALLY, CITADEL):
+                        for _ in range(n):
+                            clear_allied_tribe(state, ARVERNI_REGION, faction, pt)
             n_fort = count_pieces(state, ARVERNI_REGION, faction, FORT)
             if n_fort > 0:
                 remove_piece(
@@ -1000,16 +979,12 @@ def _adjust_arverni_forces(state):
             ) is not None:
                 remove_piece(state, ARVERNI_REGION, faction, LEADER)
         if get_available(state, ARVERNI, ALLY) > 0:
+            from fs_bot.rules_consts import TRIBE_ARVERNI
             place_piece(state, ARVERNI_REGION, ARVERNI, ALLY, 1)
-            tribes = get_tribes_in_region(
-                ARVERNI_REGION, state["scenario"],
-            )
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") is None:
-                    ti["status"] = "Allied"
-                    ti["allied_faction"] = ARVERNI
-                    break
+            ti = state["tribes"].setdefault(
+                TRIBE_ARVERNI, {"status": None, "allied_faction": None})
+            ti["status"] = None
+            ti["allied_faction"] = ARVERNI
             result["gergovia_replaced"] = True
 
     # 5. Place Arverni Warbands in Arverni Region until >= 3.
@@ -1095,13 +1070,7 @@ def _adjust_roman_forces(state):
         take = min(n, need_allies - allies_removed)
         for _ in range(take):
             remove_piece(state, region, ROMANS, ALLY)
-            tribes = get_tribes_in_region(region, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") == ROMANS:
-                    ti["status"] = None
-                    ti["allied_faction"] = None
-                    break
+            clear_allied_tribe(state, region, ROMANS, ALLY)
         allies_removed += take
     result["allies_to_available"] = allies_removed
 
@@ -1212,17 +1181,12 @@ def _cisalpina_relocation(state):
             n = count_pieces(state, CISALPINA, faction, pt)
             if n > 0:
                 remove_piece(state, CISALPINA, faction, pt, n)
-                if pt == ALLY:
-                    from fs_bot.map.map_data import get_tribes_in_region
-                    tribes = get_tribes_in_region(
-                        CISALPINA, state["scenario"],
-                    )
-                    for t in tribes:
-                        ti = state["tribes"].get(t)
-                        if ti and ti.get("allied_faction") == faction:
-                            ti["status"] = None
-                            ti["allied_faction"] = None
-                            break
+                # Clear ONE tribe per removed Ally/Citadel piece (the old
+                # loop cleared a single tribe regardless of n and ignored
+                # Citadels — stranded allegiances; player_fuzz catch).
+                if pt in (ALLY, CITADEL):
+                    for _ in range(n):
+                        clear_allied_tribe(state, CISALPINA, faction, pt)
                 removed_here += n
         # Legions -> back to track
         n_leg = count_pieces(state, CISALPINA, faction, LEGION)
@@ -1438,17 +1402,16 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
         # Decline / unable: no change to Roman forces; place 1 Belgic
         # Ally + 2 Belgic Warbands (and Belgic Control) in Britannia.
         from fs_bot.rules_consts import TRIBE_CATUVELLAUNI
-        # Find a subdued tribe in Britannia to ally
-        from fs_bot.map.map_data import get_tribes_in_region
-        tribes = get_tribes_in_region(BRITANNIA, state["scenario"])
+        # Britannia re-enters play here: its Tribe is absent from the
+        # Ariovistus tribes dict (and invisible to get_tribes_in_region
+        # before the scenario switch) — create and ally it explicitly.
         if get_available(state, BELGAE, ALLY) > 0:
             place_piece(state, BRITANNIA, BELGAE, ALLY, 1)
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") is None:
-                    ti["status"] = "Allied"
-                    ti["allied_faction"] = BELGAE
-                    break
+            ti = state["tribes"].setdefault(
+                TRIBE_CATUVELLAUNI,
+                {"status": None, "allied_faction": None})
+            ti["status"] = None
+            ti["allied_faction"] = BELGAE
         avail_wb = get_available(state, BELGAE, WARBAND)
         place_wb = min(2, avail_wb)
         if place_wb > 0:
@@ -1835,7 +1798,39 @@ def run_interlude(state, *, britannia_decision=None,
     # 10. Deck rebuild
     result["step10_deck"] = _build_pax_gallica_deck_for_interlude(state)
 
-    # 11. State flags
+    # 11. State flags — the second half IS Pax Gallica? (A2.1: "the
+    # outcome of the war's first half sets the beginning of the second,
+    # Pax Gallica?"). Switching the scenario id makes every rules gate
+    # (SoP factions, game-run Germans §3.4/§6.2, base Retreat rules,
+    # base card texts, Winter phases) apply the base game automatically.
+    # Diviciacus is the one carried-over exception: his A4.x gates are
+    # keyed on the piece itself, so card O38 can return him with his
+    # Ariovistus Leader rules intact. Without this switch the second
+    # half kept SEATING THE GERMANS and the Arverni never acted (found
+    # by play_quality telemetry: zero Arverni turns after the Interlude).
+    from fs_bot.rules_consts import SCENARIO_PAX_GALLICA
+    state["scenario"] = SCENARIO_PAX_GALLICA
+    # Britannia (re)enters play: the Ariovistus tribes dict was built
+    # without its Tribe(s) — backfill any base-map Tribe entry missing
+    # from the first half as Subdued.
+    from fs_bot.state.state_schema import build_initial_state
+    _base_tribes = build_initial_state(SCENARIO_PAX_GALLICA,
+                                       seed=0)["tribes"]
+    for _tribe in _base_tribes:
+        state["tribes"].setdefault(
+            _tribe, {"status": None, "allied_faction": None})
+    # Seat swap (A2.1): "The Germanic player of the first half takes on
+    # the role of the Arverni for the second." The Arverni inherit the
+    # German seat's player/NP status; the Germans revert to game-run
+    # (§3.4/§6.2) and leave the seat set entirely.
+    nps = state.get("non_player_factions")
+    if nps is not None:
+        if GERMANS in nps:
+            nps.discard(GERMANS)
+            nps.add(ARVERNI)
+        else:
+            # A human German seat becomes a human Arverni seat.
+            nps.discard(ARVERNI)
     state["interlude_completed"] = True
     state["scenario_phase"] = "second_half"
 

@@ -466,5 +466,8 @@ class TestCardEffectStubs:
         base_count = sum(1 for i in ids if isinstance(i, int))
         a_count = sum(1 for i in ids if isinstance(i, str))
         assert base_count == 72
-        assert a_count == len([k for k in CARD_NAMES_ARIOVISTUS
-                               if isinstance(k, str) and k.startswith("A")])
+        # A-prefix cards plus O38 (The Gallic War second half's 2nd-Ed
+        # Diviciacus replacement, A2.1).
+        assert a_count == 1 + len([k for k in CARD_NAMES_ARIOVISTUS
+                                   if isinstance(k, str)
+                                   and k.startswith("A")])

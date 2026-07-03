@@ -369,6 +369,15 @@ for i in range(1, 6):
 # Public API
 # ---------------------------------------------------------------------------
 
+# O38 "Diviciacus" — 2nd-Edition replacement for base card 38, used by The
+# Gallic War second half (A2.1 Deck: "Use O38 instead of 38 Diviciacus").
+# Unshaded places the Diviciacus piece (A Card Reference O38); shaded is the
+# same Capability as base 38 shaded.
+_o38_order, _o38_syms = _parse_faction_line("Ae Ro Ar Be".split())
+_ARIOVISTUS_SPECIFIC_CARDS["O38"] = CardData(
+    "O38", "Diviciacus", _o38_order, _o38_syms, is_capability=True)
+
+
 def get_card(card_id, scenario=None):
     """Look up card metadata by card_id.
 

@@ -603,6 +603,18 @@ def resolve_winter_card(state, britannia_decision=None,
     """
     total_winters = _count_winter_cards_in_game(state)
     is_final = (state["winter_count"] + 1 >= total_winters)
+    from fs_bot.rules_consts import SCENARIO_GALLIC_WAR
+    if (state["scenario"] == SCENARIO_GALLIC_WAR
+            and not state.get("interlude_completed", False)):
+        # A2.1 (The Gallic War): the first half's 3rd Victory Phase does
+        # NOT end the game on victory margins — "If the game does not end
+        # by the 3rd Victory Phase", the Interlude resets the board and
+        # the second half (Pax Gallica?-style deck) continues. Outright
+        # victory still ends the first half inside victory_phase. Without
+        # this, is_final=True at the 3rd Winter declared a margins winner
+        # and the Interlude was UNREACHABLE — every Gallic War game was
+        # byte-identical to Ariovistus (found by play_quality telemetry).
+        is_final = False
 
     winter_result = run_winter_round(
         state, is_final=is_final,
@@ -628,7 +640,15 @@ def _count_winter_cards_in_game(state):
     for card_id in state["deck"]:
         if is_winter_card(card_id):
             count += 1
-    return count
+    # The Gallic War Interlude rebuilds the deck and clears played_cards,
+    # losing the first half's Winters from the count above. winter_count
+    # tracks every Winter actually resolved and survives the reset — take
+    # the larger base so the second half's LAST Winter (not its second)
+    # is final (A2.1).
+    played_winters = sum(1 for c in state["played_cards"]
+                         if is_winter_card(c))
+    return count - played_winters + max(played_winters,
+                                        state.get("winter_count", 0))
 
 
 # ============================================================================
@@ -709,6 +729,8 @@ def run_game(state, decision_func, *, execute=False):
     return {
         "card_results": results,
         "game_over": True,
-        "total_cards_played": len(state["played_cards"]),
+        # len(results), not len(played_cards): the Gallic War Interlude
+        # rebuilds the deck and clears played_cards mid-game.
+        "total_cards_played": len(results),
         "winter_count": state["winter_count"],
     }

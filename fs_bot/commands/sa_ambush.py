@@ -131,17 +131,16 @@ def _check_leader_proximity(state, region, faction):
         # But in Ariovistus with Diviciacus: A4.4 restricts to within 1
         # of Diviciacus. If Diviciacus removed, revert to original rules
         # (no leader needed per §4.4.3).
-        if scenario in ARIOVISTUS_SCENARIOS:
-            from fs_bot.rules_consts import DIVICIACUS
-            leader_region = find_leader(state, AEDUI)
-            if leader_region is not None:
-                # Must be within 1 of Diviciacus — A4.4, A4.1.2
-                if region == leader_region or is_adjacent(region, leader_region):
-                    return (True, "")
-                return (False,
-                        f"Region must be within 1 of Diviciacus for "
-                        f"Aedui Ambush in Ariovistus")
-            # Diviciacus not on map — revert to base rules (no leader needed)
+        # Keyed on the PIECE, not the scenario (A4.1.2 / card O38).
+        leader_region = find_leader(state, AEDUI)
+        if leader_region is not None:
+            # Must be within 1 of Diviciacus — A4.4, A4.1.2
+            if region == leader_region or is_adjacent(region, leader_region):
+                return (True, "")
+            return (False,
+                    "Region must be within 1 of Diviciacus for "
+                    "Aedui Ambush")
+        # Diviciacus not on map — revert to base rules (no leader needed)
         return (True, "")
 
     elif faction == BELGAE:

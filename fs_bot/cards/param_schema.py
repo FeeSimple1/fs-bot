@@ -151,7 +151,7 @@ def _entry_reads(body_nodes, var):
 def _schema_uncached(card_id, ario):
     handler = None
     from fs_bot.cards import card_effects as ce
-    if isinstance(card_id, str) and card_id.startswith("A"):
+    if isinstance(card_id, str):
         handler = ce._ARIOVISTUS_HANDLERS.get(card_id)
     elif isinstance(card_id, int):
         if ario and card_id in ce._ARIOVISTUS_TEXT_CHANGE_HANDLERS:
@@ -249,6 +249,8 @@ _OVERRIDES = {
     # Card 22 Hostages unshaded: "remove or replace ... Warbands or
     # Auxilia" — entry piece_type takes those two only.
     22: {"replacements": {"values": (WARBAND, AUXILIA)}},
+    # Card 40 Alpine Tribes unshaded: "3 Warbands, 2 Auxilia, or 1 Ally".
+    40: {"placements": {"values": (WARBAND, AUXILIA, ALLY)}},
 }
 
 

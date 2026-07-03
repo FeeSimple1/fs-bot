@@ -1941,3 +1941,46 @@ Rationale: rare-path bugs surface at volume — the per-push CI runs
 ~10-25x shallower. All three step bodies rehearsed locally; runtimes
 calibrated (~12s per 100 census games, ~30s per 100 fuzzed games) to
 fit well inside the 60-minute job timeouts.
+
+
+---
+
+## HUMAN-SEAT PLAYTHROUGH FINDINGS (July 2026) — three engine bugs
+
+Played the Aedui seat live against the bots (Pax Gallica?, seed 42) via
+a turn-by-turn harness on the save/load layer. Three real bugs in as
+many hours of play:
+
+1. **Suborn remove_ally trusted the plan's tribe name** — naming a tribe
+   not allied to the target faction removed the enemy piece while
+   un-allying the NAMED tribe (my own). Silent desync that
+   validate_player_action cannot catch (the plan executes); only the
+   structural oracle sees it. Validator now requires the named tribe to
+   be the target's allied tribe in-region; unnamed removals pair via
+   clear_allied_tribe. (Commit 07c5ee7.)
+2. **Setup wrote the legacy tribe status "Allied"** — removal paths
+   cleared allied_faction but left the status, creating zombie tribes:
+   never Subdued again, invisible to §7.2 Roman scoring, Suborn, and
+   the CLI. Setup now writes status None; every allegiance-clearing
+   path normalizes the legacy value. (Commit 07c5ee7.)
+3. **Pax Gallica's 1st-Winter Special Rules were dead state** — setup
+   stored them (skip Victory Phase, skip Germans Phase, 3 Winter-Track
+   Legions to Belgica at Harvest, Senate set to Intrigue, Vercingetorix
+   in the Spring box) and NOTHING consumed them. Consequences: Rome —
+   opening above the >15 threshold — won at the first Victory Phase the
+   rules say to SKIP (min game length was 6 cards; a large share of the
+   16/20 Roman wins were illegal victories), and Vercingetorix never
+   entered the scenario at all (spring_box_leaders had no consumer).
+   run_winter_round now consumes the specials once (victory/Germans
+   skips, Belgica Legions with a documented NP default of the
+   piece-heaviest Belgica Region, Senate forced to Intrigue,
+   Vercingetorix placed per §8.3.2); the Gallic War Interlude sets the
+   same specials for its second half's first Winter (A2.1 Quarters-box
+   marker). Post-fix Pax Gallica: min game length 23 cards (was 6);
+   Rome still wins 15/20 but at later Winters — the remaining tilt is a
+   design observation, not an engine defect.
+
+Also fixed en route: the played observation that removing ANY Ally
+feeds Roman scoring (correct §7.2 behaviour post-zombie-fix) — recorded
+as Aedui strategy guidance, not a bug: prefer placement-denial over
+removal when Rome nears the threshold.

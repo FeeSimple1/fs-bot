@@ -486,9 +486,12 @@ class TestScenarioIsolation:
             state = setup_scenario(scen, seed=42)
             leader_on_map = find_leader(state, ARVERNI)
             avail = get_available(state, ARVERNI, LEADER)
-            # Either on map or in available (for Pax Gallica where he's
-            # in the "Spring box" which we track as available until placed)
-            assert leader_on_map is not None or avail == 1, \
+            # On map, in Available, or in the Winter-track Spring box
+            # (Pax Gallica: "Vercingetorix in Spring box" — the 1st-Winter
+            # Spring special places him).
+            in_spring = "Vercingetorix" in (
+                state.get("spring_box_leaders") or [])
+            assert leader_on_map is not None or avail == 1 or in_spring, \
                 f"No Arverni leader found in {scen}"
 
     def test_ariovistus_has_settlements_available(self):

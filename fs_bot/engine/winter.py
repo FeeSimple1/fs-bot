@@ -700,7 +700,8 @@ def _add_resources(state, faction, amount):
 # PHASE 5: SENATE PHASE (§6.5, A6.5)
 # ============================================================================
 
-def senate_phase(state, first_senate_after_interlude=False):
+def senate_phase(state, first_senate_after_interlude=False,
+                 force_position=None):
     """Execute the Senate Phase — §6.5 / A6.5.
 
     Shift Senate marker, move Legions from Fallen to track and place
@@ -723,10 +724,17 @@ def senate_phase(state, first_senate_after_interlude=False):
         "auxilia_placed": 0,
     }
 
-    # §6.5.1 Senate Marker shift
-    result["marker_shift"] = _senate_marker_shift(
-        state, first_senate_after_interlude
-    )
+    # §6.5.1 Senate Marker shift — or the 1st-Winter special: "instead
+    # of shifting the Senate, put its marker at Intrigue (not Firm)".
+    if force_position is not None:
+        state.setdefault("senate", {})["position"] = force_position
+        state["senate"]["firm"] = False
+        result["marker_shift"] = {"shifted": False,
+                                  "forced": force_position}
+    else:
+        result["marker_shift"] = _senate_marker_shift(
+            state, first_senate_after_interlude
+        )
 
     # §6.5.2 Legions
     legions_result = _senate_legions(state)
@@ -1239,11 +1247,20 @@ def run_winter_round(state, is_final=False,
     """
     scenario = state["scenario"]
     state["winter_count"] = state.get("winter_count", 0) + 1
+    # 1st-Winter Special Rules (scenario sheet "Winter Track Setup" /
+    # A2.1 Interlude): stored at setup, consumed ONCE by the next Winter
+    # Round. These were written by setup and never read — every Pax
+    # Gallica game ran its first Victory Phase (Rome, opening above the
+    # >15 threshold, won at Winter 1 in most games) and Vercingetorix
+    # never left the Spring box. Found by live human-seat play.
+    fws = state.pop("first_winter_special", None) or {}
 
     result = {
         "winter_count": state["winter_count"],
         "phases": {},
     }
+    if fws:
+        result["first_winter_special"] = dict(fws)
 
     # Consume the pending first-Winter-after-Interlude flags.
     consume_first_senate = False
@@ -1256,7 +1273,12 @@ def run_winter_round(state, is_final=False,
     )
 
     # Phase 1: Victory
-    victory_result = victory_phase(state, is_final=is_final)
+    if fws.get("skip_victory_phase"):
+        victory_result = {"game_over": False, "winner": None,
+                          "rankings": None,
+                          "skipped": "1st Winter special rule"}
+    else:
+        victory_result = victory_phase(state, is_final=is_final)
     result["phases"]["victory"] = victory_result
     if victory_result["game_over"]:
         return result
@@ -1279,7 +1301,11 @@ def run_winter_round(state, is_final=False,
 
     # Phase 2: Germans Phase (base game only)
     if scenario in BASE_SCENARIOS:
-        result["phases"]["germans"] = germans_phase(state)
+        if fws.get("skip_germans_phase"):
+            result["phases"]["germans"] = {"skipped":
+                                           "1st Winter special rule"}
+        else:
+            result["phases"]["germans"] = germans_phase(state)
 
     # Phase 3: Quarters
     # Q12 (QUESTIONS.md): when the Romans are Non-player and no explicit
@@ -1319,6 +1345,25 @@ def run_winter_round(state, is_final=False,
                 state.get("winter_track_legions", 0),
         }
 
+    n_bel = fws.get("harvest_place_legions_in_belgica", 0)
+    if n_bel:
+        # "At the start of that Harvest Phase, the Romans place the
+        # three Legions from the Winter Track into any Belgica
+        # Region(s)." NP default (documented): all into the Belgica
+        # Region with the most Roman pieces (sorted-first on ties).
+        from fs_bot.rules_consts import BELGICA_REGIONS
+        from fs_bot.board.pieces import count_pieces as _cp
+        k = min(n_bel, state.get("winter_track_legions", 0))
+        if k > 0:
+            dest = max(sorted(BELGICA_REGIONS),
+                       key=lambda r: _cp(state, r, ROMANS, LEGION)
+                       + _cp(state, r, ROMANS, AUXILIA))
+            pieces = state["spaces"][dest]["pieces"].setdefault(ROMANS, {})
+            pieces[LEGION] = pieces.get(LEGION, 0) + k
+            state["winter_track_legions"] -= k
+            refresh_all_control(state)
+            result["phases"]["harvest_belgica_legions"] = {
+                "region": dest, "legions": k}
     result["phases"]["harvest"] = harvest_phase(state)
     # §8.6.6 NP Aedui subsidy — Quarters/Harvest are §1.5.2 transfer
     # windows and Roman Resources drop paying Quarters costs.
@@ -1331,11 +1376,30 @@ def run_winter_round(state, is_final=False,
     result["phases"]["senate"] = senate_phase(
         state,
         first_senate_after_interlude=consume_first_senate,
+        force_position=(INTRIGUE if fws.get("senate_set_to_intrigue")
+                        else None),
     )
     if consume_first_senate:
         state["first_senate_after_interlude_pending"] = False
 
     # Phase 6: Spring
     result["phases"]["spring"] = spring_phase(state)
+    if fws.get("place_vercingetorix_in_spring"):
+        # "Beginning that Spring Phase, the Arverni may at any time place
+        # Vercingetorix from the Spring box into any Region (symbol up)."
+        # NP default (documented): place immediately, with the most
+        # Arverni pieces (§8.3.2).
+        sb = state.setdefault("spring_box_leaders", [])
+        from fs_bot.board.pieces import find_leader, place_piece as _pp
+        if VERCINGETORIX in sb and find_leader(state, ARVERNI) is None:
+            from fs_bot.bots.bot_common import get_leader_placement_region
+            dest = get_leader_placement_region(state, ARVERNI)
+            if dest:
+                avail = state["available"].setdefault(ARVERNI, {})
+                avail[LEADER] = avail.get(LEADER, 0) + 1
+                _pp(state, dest, ARVERNI, LEADER,
+                    leader_name=VERCINGETORIX)
+                sb.remove(VERCINGETORIX)
+                result["phases"]["vercingetorix_placed"] = {"region": dest}
 
     return result

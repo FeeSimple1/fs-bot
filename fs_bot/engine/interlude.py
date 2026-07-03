@@ -1831,6 +1831,16 @@ def run_interlude(state, *, britannia_decision=None,
         else:
             # A human German seat becomes a human Arverni seat.
             nps.discard(ARVERNI)
+    # The second half's next Winter Round follows the Pax Gallica?
+    # 1st-Winter pattern (A2.1 "Put the Winter marker in the Quarters
+    # box"): skip that Victory Phase and Germans Phase, and Vercingetorix
+    # may enter from the Spring box (the A2.1 Harvest/Senate variants are
+    # carried by the first_*_after_interlude flags).
+    state["first_winter_special"] = {
+        "skip_victory_phase": True,
+        "skip_germans_phase": True,
+        "place_vercingetorix_in_spring": True,
+    }
     state["interlude_completed"] = True
     state["scenario_phase"] = "second_half"
 

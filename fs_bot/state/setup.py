@@ -380,6 +380,11 @@ def _setup_pax_gallica(state):
     _build_base_deck(state, 70, [2, 5, 8, 11, 14])
 
     # --- 1st Winter special rules stored in state ---
+    # "Winter Track Setup: ... Vercingetorix in Spring box" — move him
+    # from Available into the Spring box; the 1st-Winter Spring special
+    # (consumed by run_winter_round) brings him onto the map.
+    state["available"][ARVERNI][LEADER] -= 1
+    state["spring_box_leaders"].append(VERCINGETORIX)
     state["first_winter_special"] = {
         "skip_victory_phase": True,
         "skip_germans_phase": True,

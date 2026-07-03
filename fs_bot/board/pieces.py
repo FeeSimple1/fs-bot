@@ -755,26 +755,28 @@ def clear_allied_tribe(state, region, faction, removed_piece_type):
         candidates.append((tribe, tribe in TRIBE_TO_CITY))
     if not candidates:
         return None
+    def _clear(tribe):
+        tribes[tribe]["allied_faction"] = None
+        # Normalize the legacy setup status so the tribe is truly
+        # Subdued again (status holds Dispersed markers only).
+        if tribes[tribe].get("status") == "Allied":
+            tribes[tribe]["status"] = None
+        return tribe
+
     if removed_piece_type == CITADEL:
         # Citadels sit only at Cities — clear the city tribe if allied.
         for tribe, is_city in candidates:
             if is_city:
-                tribes[tribe]["allied_faction"] = None
-                return tribe
-        tribe = candidates[0][0]
-        tribes[tribe]["allied_faction"] = None
-        return tribe
+                return _clear(tribe)
+        return _clear(candidates[0][0])
     # ALLY removal: if the faction still has a CITADEL piece here, the city
     # tribe is represented by that Citadel — keep it allied and clear a
     # non-city tribe instead.
     citadel_remains = count_pieces(state, region, faction, CITADEL) > 0
     for tribe, is_city in candidates:
         if not (is_city and citadel_remains):
-            tribes[tribe]["allied_faction"] = None
-            return tribe
-    tribe = candidates[0][0]
-    tribes[tribe]["allied_faction"] = None
-    return tribe
+            return _clear(tribe)
+    return _clear(candidates[0][0])
 
 
 # ============================================================================

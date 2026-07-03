@@ -1410,3 +1410,42 @@ def test_card_39_shaded_np_uses_first_applicable_region():
         # The NP pick is the FIRST applicable in map order.
         applicable = [r for r in order if r in ("Sequani", "Arverni")]
         assert np_region == applicable[0]
+
+
+def test_suborn_remove_ally_validates_tribe_allegiance():
+    """§4.4.2: removing an enemy Ally must not desync tribes<->pieces —
+    a plan naming the WRONG tribe (e.g. the remover's own) used to remove
+    the enemy piece while un-allying the named tribe. Found live in
+    human-seat play (Pax Gallica seed 42)."""
+    import pytest as _pytest
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.board.pieces import place_piece, count_pieces
+    from fs_bot.board.control import refresh_all_control
+    from fs_bot.commands.sa_suborn import suborn
+    from fs_bot.commands.common import CommandError
+    from fs_bot.state.state_schema import check_structural_integrity
+    import fs_bot.rules_consts as rc
+
+    st = setup_scenario(rc.SCENARIO_PAX_GALLICA, seed=42)
+    st["resources"][rc.AEDUI] = 10
+    region = "Mandubii"
+    # My ally at the Mandubii tribe, next to the setup Arverni ally.
+    st["tribes"]["Mandubii"]["allied_faction"] = rc.AEDUI
+    place_piece(st, region, rc.AEDUI, rc.ALLY)
+    place_piece(st, region, rc.AEDUI, rc.WARBAND, 2, piece_state=rc.HIDDEN)
+    refresh_all_control(st)
+    assert check_structural_integrity(st) == []
+
+    # Naming MY tribe while removing an ARVERNI ally must be rejected.
+    with _pytest.raises(CommandError):
+        suborn(st, region, [{"action": "remove", "faction": rc.ARVERNI,
+                             "piece_type": rc.ALLY, "tribe": "Mandubii"}])
+    assert check_structural_integrity(st) == []
+
+    # With no tribe named, the pairing helper picks the right one.
+    before = count_pieces(st, region, rc.ARVERNI, rc.ALLY)
+    suborn(st, region, [{"action": "remove", "faction": rc.ARVERNI,
+                         "piece_type": rc.ALLY}])
+    assert count_pieces(st, region, rc.ARVERNI, rc.ALLY) == before - 1
+    assert check_structural_integrity(st) == []
+    assert st["tribes"]["Mandubii"]["allied_faction"] == rc.AEDUI

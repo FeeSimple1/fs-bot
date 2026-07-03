@@ -39,6 +39,7 @@ from fs_bot.rules_consts import (
     ARIOVISTUS_SCENARIOS,
     # Tribe restrictions
     TRIBE_FACTION_RESTRICTION,
+    TRIBE_TO_REGION,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region, find_leader,
@@ -170,11 +171,18 @@ def suborn(state, region, operations):
                          piece_state=piece_state)
             result["removed"].append((faction, piece_type, 1))
 
-            # If removing an Ally, update tribe status
+            # If removing an Ally, update tribe status — with the
+            # validated tribe when named, else via the deterministic
+            # piece<->tribe pairing helper.
             if piece_type == ALLY:
                 tribe = op.get("tribe")
                 if tribe:
                     state["tribes"][tribe]["allied_faction"] = None
+                    if state["tribes"][tribe].get("status") == "Allied":
+                        state["tribes"][tribe]["status"] = None
+                else:
+                    from fs_bot.board.pieces import clear_allied_tribe
+                    clear_allied_tribe(state, region, faction, ALLY)
 
         elif action == "place":
             if piece_type == ALLY:
@@ -217,6 +225,23 @@ def _validate_suborn_operation(state, region, op):
                 raise CommandError(
                     f"No {faction} Ally in {region} to remove"
                 )
+            # The named tribe must BE the target faction's allied tribe
+            # here — the executor pairs the piece removal with that
+            # tribe's allegiance, so trusting a wrong name (e.g. one of
+            # the REMOVER's own tribes) silently desyncs tribes from
+            # pieces. Found live in human-seat play.
+            tribe = op.get("tribe")
+            if tribe is not None:
+                ti = state.get("tribes", {}).get(tribe, {})
+                if ti.get("allied_faction") != faction:
+                    raise CommandError(
+                        f"Tribe {tribe} is not a {faction} Ally"
+                    )
+                treg = ti.get("region") or TRIBE_TO_REGION.get(tribe)
+                if treg != region:
+                    raise CommandError(
+                        f"Tribe {tribe} is not in {region}"
+                    )
         else:
             if piece_state:
                 avail = count_pieces_by_state(

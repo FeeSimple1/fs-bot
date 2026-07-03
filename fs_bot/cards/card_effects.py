@@ -208,6 +208,8 @@ def _unally_tribe(state, tribe, to_available=True):
     info["allied_faction"] = None
     if info.get("status") == ALLIED:
         info["status"] = None
+    if info.get("status") == ALLIED:
+        info["status"] = None
     refresh_all_control(state)
     return faction
 

@@ -76,8 +76,16 @@ from fs_bot.board.control import refresh_all_control
 
 
 def _set_tribe_allied(state, tribe, faction):
-    """Set a tribe as allied to a faction."""
-    state["tribes"][tribe]["status"] = ALLIED
+    """Set a tribe as allied to a faction.
+
+    Allegiance lives in ``allied_faction`` alone; ``status`` stays None
+    (the Rally/Suborn convention — status holds Dispersed/Gathering
+    markers only). The legacy value ``"Allied"`` left zombie tribes
+    behind once the ally was removed: allied_faction None but status
+    "Allied" — not Subdued for Roman victory counting (§7.2), invisible
+    to Suborn and the CLI. Found live in human-seat play.
+    """
+    state["tribes"][tribe]["status"] = None
     state["tribes"][tribe]["allied_faction"] = faction
 
 

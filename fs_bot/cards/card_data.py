@@ -369,8 +369,10 @@ for i in range(1, 6):
 # Public API
 # ---------------------------------------------------------------------------
 
-# O38 "Diviciacus" — 2nd-Edition replacement for base card 38, used by The
-# Gallic War second half (A2.1 Deck: "Use O38 instead of 38 Diviciacus").
+# O38 "Diviciacus" — 2nd-Edition replacement for base card 38, the OPTIONAL
+# "Diviciacus Leader Option" for base-game scenarios (A Setup). NOT the Gallic
+# War second-half substitute — that is A38 Vergobret (A2.1 Deck; BGG thread
+# 3701651).
 # Unshaded places the Diviciacus piece (A Card Reference O38); shaded is the
 # same Capability as base 38 shaded.
 _o38_order, _o38_syms = _parse_faction_line("Ae Ro Ar Be".split())
@@ -402,6 +404,11 @@ def get_card(card_id, scenario=None):
     # Try Ariovistus cards directly (for A-prefix lookups without scenario)
     if card_id in _ARIOVISTUS_SPECIFIC_CARDS:
         return _ARIOVISTUS_SPECIFIC_CARDS[card_id]
+    # A-deck cards reachable in base scenarios: The Gallic War second half
+    # runs under Pax Gallica? with A38 (Vergobret) substituted for base 38
+    # (A2.1 Interlude Deck; BGG thread 3701651).
+    if card_id in _ARIOVISTUS_DECK_CARDS:
+        return _ARIOVISTUS_DECK_CARDS[card_id]
     raise KeyError(f"Unknown card_id: {card_id!r}")
 
 

@@ -98,6 +98,17 @@ def trade(state, agreements=None, roman_agreed=False):
             if r == leader_region or is_adjacent(r, leader_region)
         }
 
+    # Card A38 (Vergobret) shaded CAPABILITY: "If no Diviciacus, Suborn and
+    # Trade only within 1 Region of Bibracte." (With Diviciacus on map the
+    # card restricts only Suborn; the A4.1.2 within-1-of-Diviciacus filter
+    # above already applies to Trade.) Source: A Card Reference, card A38.
+    if leader_region is None and is_capability_active(state, "A38", _ESh):
+        from fs_bot.rules_consts import AEDUI_REGION
+        supply_line_regions = {
+            r for r in supply_line_regions
+            if r == AEDUI_REGION or is_adjacent(r, AEDUI_REGION)
+        }
+
     if not supply_line_regions:
         return result
 

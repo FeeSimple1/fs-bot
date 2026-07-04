@@ -20,7 +20,7 @@ The procedure follows the order in the scenario document exactly:
   8. Victory marker swap and recalculation
   9. Lingering Events preserved (Capabilities, Gallia Togata, Colony,
      Abatis)
- 10. Deck rebuild per Pax Gallica? composition (with O38 Diviciacus
+ 10. Deck rebuild per Pax Gallica? composition (with A38 Vergobret
      substitution and in-effect Capabilities held out)
  11. Set scenario_phase = "second_half", interlude_completed = True
  12. Mark first-Winter-Round-after-Interlude special rules pending

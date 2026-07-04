@@ -1211,7 +1211,15 @@ MARKER_CISALPINA_CONTROL_BOX = "Cisalpina Control box"  # A2.1
 # Diviciacus for the Pax Gallica?-style second-half deck. The expansion
 # version is card O38 (Diviciacus 2nd Ed); card A38 (Vergobret) is the
 # different Aedui-first replacement. See QUESTIONS.md for the ambiguity.
-INTERLUDE_DIVICIACUS_CARD = "O38"
+# A2.1 Interlude Deck: "Use the Ariovistus expansion version of Diviciacus,
+# card A38." Per the BGG ruling (thread 3701651), this literally means card
+# A38 (Vergobret) — the expansion's replacement for the base card-38 slot.
+# O38 (the Diviciacus-Leader card) is only the OPTIONAL variant for base-game
+# scenarios (A Setup, "Diviciacus Leader Option"); it is NOT in the second-
+# half deck. The Interlude's "(It may return by Event.)" note is therefore a
+# dangling editing leftover: nothing in the second-half deck can return the
+# Diviciacus piece.
+INTERLUDE_DIVICIACUS_CARD = "A38"
 
 
 # ============================================================================

@@ -83,6 +83,24 @@ def validate_suborn_region(state, region):
                     "Region must be within 1 of Diviciacus for Suborn "
                     "in Ariovistus")
 
+    # Card A38 (Vergobret) shaded CAPABILITY: "Suborn only at Diviciacus.
+    # If no Diviciacus, Suborn and Trade only within 1 Region of Bibracte."
+    # Source: A Card Reference, card A38. Reachable in the Gallic War
+    # second half (A2.1 Deck substitutes A38 for base 38).
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_SHADED, AEDUI_REGION
+    if is_capability_active(state, "A38", EVENT_SHADED):
+        if leader_region is not None:
+            if region != leader_region:
+                return (False,
+                        "Card A38 shaded: Suborn only at Diviciacus")
+        else:
+            if (region != AEDUI_REGION
+                    and not is_adjacent(region, AEDUI_REGION)):
+                return (False,
+                        "Card A38 shaded: no Diviciacus — Suborn only "
+                        "within 1 Region of Bibracte")
+
     return (True, "")
 
 

@@ -72,7 +72,7 @@ adjacent, insufficient-Hidden, and multi-Battle filtering.
 
 ---
 
-## [RESOLVED] Gallic War Interlude — Diviciacus card identifier (A38 vs O38)
+## [OVERTURNED — see the July 2026 BGG-ruling section at end of file] Gallic War Interlude — Diviciacus card identifier (A38 vs O38)
 
 **Context:** A Scenario: The Gallic War, Interlude > Deck step: "Use the
 Ariovistus expansion version of Diviciacus, card A38." But in the A Card
@@ -2172,4 +2172,46 @@ Arverni) does not exist against bots.
   are played.
 
 Verification: 2084 tests pass; strict census seeds 1-20 exit 0
+illegal=0, hashseed 0/7 byte-identical.
+
+
+## OVERTURNED-AND-FIXED — Interlude deck card: A38 Vergobret, not O38 (BGG ruling, July 2026)
+
+The earlier "[RESOLVED] Diviciacus card identifier (A38 vs O38)" entry
+concluded the Interlude's "Use the Ariovistus expansion version of
+Diviciacus, card A38" was a typo for O38. **A BGG ruling says otherwise**
+(thread 3701651, answer by Niko / Ze_German_Guy, May): O38 is only the
+OPTIONAL Diviciacus-Leader variant for base-game scenarios; "if you are
+playing an expansion scenario, including the second half of Gallic War,
+you will use A38." The sentence parses as "the expansion's version of
+[the card-38 slot, base-named] Diviciacus" = A38 Vergobret — not "the
+expansion card that features Diviciacus."
+
+The old entry's strongest argument — the Interlude Aedui step's
+"Remove Diviciacus piece from play. (It may return by Event.)" — is
+therefore a dangling editing leftover: nothing in the ruled second-half
+deck can return the piece. (Worth a follow-up post; if a future ruling
+revives a return path, revisit.) A side effect of the ruling: Vergobret's
+shaded "If no Diviciacus..." fallback clause now has an obvious home —
+the second half, where Diviciacus is always gone.
+
+**Changes:**
+- `INTERLUDE_DIVICIACUS_CARD = "A38"` (rules_consts, with citation).
+- `get_card` falls through to the Ariovistus deck cards for string ids
+  under base scenarios (A38 must resolve during the Pax Gallica? second
+  half).
+- **A38 shaded implemented** (it was inert — the 11th such capability
+  found, and the ruling makes it live in Gallic War second halves):
+  Suborn only at Diviciacus; if no Diviciacus, Suborn AND Trade only
+  within 1 Region of Bibracte (sa_suborn validation + sa_trade
+  supply-region filter; with Diviciacus on map the card restricts only
+  Suborn — A4.1.2's within-1 filter already covers Trade).
+- O38 and its handler remain (the optional base-game variant card);
+  comments updated to stop calling it the second-half substitute.
+- Tests: interlude deck asserts A38 present / O38 absent / base 38
+  absent; get_card("A38", Pax Gallica?) resolves; 3 A38-shaded
+  restriction tests (Suborn at-Diviciacus, Suborn/Trade
+  within-1-of-Bibracte).
+
+Verification: 2088 tests pass; strict census seeds 1-20 exit 0,
 illegal=0, hashseed 0/7 byte-identical.

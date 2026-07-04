@@ -1449,3 +1449,58 @@ def test_suborn_remove_ally_validates_tribe_allegiance():
     assert count_pieces(st, region, rc.ARVERNI, rc.ALLY) == before - 1
     assert check_structural_integrity(st) == []
     assert st["tribes"]["Mandubii"]["allied_faction"] == rc.AEDUI
+
+
+class TestCardA38VergobretShaded:
+    """Card A38 (Vergobret) shaded CAPABILITY: "Suborn only at Diviciacus.
+    If no Diviciacus, Suborn and Trade only within 1 Region of Bibracte."
+    Reachable in the Gallic War second half, where A2.1 substitutes A38 for
+    base card 38 (BGG thread 3701651)."""
+
+    def _activate(self, state):
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import EVENT_SHADED
+        activate_capability(state, "A38", EVENT_SHADED)
+
+    def test_suborn_only_at_diviciacus(self):
+        state = make_state(scenario=SCENARIO_ARIOVISTUS)
+        place_leader(state, AEDUI_REGION, AEDUI, DIVICIACUS)
+        # Hidden Aedui warbands both at and adjacent to Diviciacus
+        place_piece(state, AEDUI_REGION, AEDUI, WARBAND, 1)
+        place_piece(state, SEQUANI, AEDUI, WARBAND, 1)
+        # Without the capability: within-1 is enough (A4.1.2)
+        ok, _ = validate_suborn_region(state, SEQUANI)
+        assert ok
+        self._activate(state)
+        ok, why = validate_suborn_region(state, SEQUANI)
+        assert not ok and "A38" in why
+        ok, _ = validate_suborn_region(state, AEDUI_REGION)
+        assert ok
+
+    def test_suborn_no_diviciacus_within_one_of_bibracte(self):
+        from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT
+        state = make_state(scenario=SCENARIO_GREAT_REVOLT)
+        self._activate(state)
+        place_piece(state, SEQUANI, AEDUI, WARBAND, 1)
+        place_piece(state, TREVERI, AEDUI, WARBAND, 1)
+        # SEQUANI adjacent to the Aedui Region (Bibracte) — allowed
+        ok, _ = validate_suborn_region(state, SEQUANI)
+        assert ok
+        # TREVERI is not within 1 of Bibracte — rejected
+        ok, why = validate_suborn_region(state, TREVERI)
+        assert not ok and "Bibracte" in why
+
+    def test_trade_no_diviciacus_within_one_of_bibracte(self):
+        from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT
+        state = make_state(scenario=SCENARIO_GREAT_REVOLT)
+        self._activate(state)
+        setup_roman_control(state, PROVINCIA, legions=2)
+        place_piece(state, SEQUANI, AEDUI, ALLY)
+        set_tribe_allied(state, TRIBE_SEQUANI, AEDUI)
+        place_piece(state, TREVERI, AEDUI, ALLY)
+        set_tribe_allied(state, TRIBE_TREVERI, AEDUI)
+        give_resources(state, AEDUI, 0)
+        result = trade(state, roman_agreed=False)
+        item_regions = [item[1] for item in result["per_item"]]
+        assert SEQUANI in item_regions
+        assert TREVERI not in item_regions

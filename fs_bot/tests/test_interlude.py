@@ -606,12 +606,22 @@ class TestDeckRebuild:
         assert len(state["deck"]) <= 75
         assert len(state["deck"]) > 0
 
-    def test_diviciacus_card_uses_o38(self):
+    def test_diviciacus_card_slot_uses_a38_vergobret(self):
+        # A2.1 Deck + BGG thread 3701651 ruling: the second half substitutes
+        # A38 (Vergobret) for base 38; O38 is only the optional base-game
+        # Diviciacus Leader variant and is NOT in the second-half deck.
         state = fresh_gallic_war()
         run_interlude(state, britannia_decision=False)
-        # 38 base Diviciacus must be absent, replaced by INTERLUDE_DIVICIACUS_CARD
         assert 38 not in state["deck"]
         assert INTERLUDE_DIVICIACUS_CARD in state["deck"]
+        assert INTERLUDE_DIVICIACUS_CARD == "A38"
+        assert "O38" not in state["deck"]
+
+    def test_a38_resolves_under_base_scenario(self):
+        from fs_bot.cards.card_data import get_card
+        from fs_bot.rules_consts import SCENARIO_PAX_GALLICA
+        c = get_card("A38", SCENARIO_PAX_GALLICA)
+        assert c.title == "Vergobret"
 
     def test_active_capability_excluded(self):
         state = fresh_gallic_war()

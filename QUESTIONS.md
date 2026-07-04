@@ -2066,3 +2066,59 @@ Aedui bot ended the game hoarding 37 Resources with no Suborn pressure
 on the runaway — its flowchart spends only on self-development,
 never on leader-denial. Both recorded as play-quality items, not
 defects.
+
+## Playthrough verdict 3 — Germans, Ariovistus (July 2026)
+
+Seat: Germans (player) vs NP Rome/Aedui/Belgae, Ariovistus scenario,
+seed 42, /tmp harness (save/queue snapshots at card boundaries).
+**Result: German win at Winter 3** — score 7 (>6): Ubii + Sugambri
+under Germanic control plus Settlements under control at Treveri,
+Nervii, Morini, Sequani, Aedui. Rankings: Germans 1st, Rome 2nd
+(margin -2), Aedui, Belgae.
+
+**The German seat plays like a race with a wrecking crew loose.**
+Settle is a dual-purpose engine (each Settlement is +1 toward >6 AND
+-1 to the Roman score), and March+Settle in one command — Settle
+validating control AFTER the March resolves — is the seat's core
+tempo move; the engine handles it correctly. Settlements are
+battle-removable last-priority pieces, so a thin settlement empire
+invites eviction: Rome, the Belgae (Sabis), and the Arverni Phases
+destroyed three of my Settlements mid-game and the seesaw at
+Morini/Nervii flipped five times. The Arverni-as-environment design
+(no victory tracked, Phase-driven hordes of 12-14 Warbands) reads
+correctly: they conquered Provincia and Cisalpina and kept Rome to
+13-15 without any bot "trying" to win. NP-turn-denial matters: taking
+a limited command as 2nd actor to lock Rome out of a card was
+repeatedly correct.
+
+**Bot behaviours verified legal, worth knowing:** (1) NP Belgae
+Enlist placed a German Ally at Menapii — A4.5.1 restrictions (4-piece
+cap, no Ariovistus region) are enforced in sa_enlist.py; in Ariovistus
+an NP Belgae Enlist can genuinely build the German player's board.
+(2) Solo-Caesar attrition: Caesar alone in Ubii Battled every card for
+1 Loss (Leaders cause 1 Loss each, §3.3.4 NOTE), grinding warband,
+warband, then Ally (loss order correct) and creating a 1v1 control tie
+in a Germania region. Legal and nasty — a caution for German players
+who strip the homeland.
+
+**Engine findings fixed this session:**
+- **A33 shaded "Motivation" capability was activated but never
+  consumed** — bought it in-game, it did nothing. Now implemented in
+  battle/losses.py: defending Germans suffer half Losses whether or
+  not Retreating (halving applies once, never quartered) and inflict
+  +1 Counterattack Loss (applied only when Germans are the
+  counterattacking defender). 5 regression tests.
+- **Human March could not express per-origin destinations**: the CLI
+  pooled destinations (bot threat-march shape) and *excluded any
+  destination that was also an origin*, so chained marches (A->B
+  while B->C) were impossible and multi-origin groups routed to the
+  nearest pooled destination — in-game this sent Ariovistus to
+  Sequani when ordered to Treveri (fortuitously won the game, still
+  wrong). _collect_march now prompts one destination per origin and
+  emits exact plan["routes"] (already honored by the executor);
+  adjacency prompts sorted for hashseed determinism. Regression test
+  covers the chained case.
+
+Verification: 2077 tests pass; strict census seeds 1-20 exit 0,
+illegal=0, hashseed 0/7 byte-identical; player_fuzz seeds 1-12
+hard-findings=0.

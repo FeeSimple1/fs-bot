@@ -95,6 +95,48 @@ class TestHumanPlanCollection:
         assert "player_action" in decision
         assert decision["player_action"]["command"] == "Rally"
 
+    def test_march_routes_chained_origins(self):
+        # Per-origin destination prompts emit exact routes, including a
+        # chained march (A -> B while B -> C) that the pooled-destination
+        # shape could not express.
+        import fs_bot.rules_consts as rc
+        from fs_bot.map.map_data import get_adjacent
+        from fs_bot.cli.human_plan import _collect_march
+        from fs_bot.board.pieces import place_piece
+        st = setup_scenario(rc.SCENARIO_ARIOVISTUS, seed=5)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        st["resources"][rc.GERMANS] = 20
+        a, b = rc.UBII, rc.TREVERI
+        place_piece(st, a, rc.GERMANS, "Warband", count=3)
+        place_piece(st, b, rc.GERMANS, "Warband", count=3)
+        origins = [r for r in _regions_with_pieces(st, rc.GERMANS)]
+        ia = origins.index(a) + 1
+        rem = [r for r in origins if r != a]          # menu renumbers
+        ib = rem.index(b) + 1
+        done = (len(origins) - 2) + 1                 # remaining + "(done)"
+        adj_a = sorted(get_adjacent(a, st["scenario"]))
+        adj_b = sorted(get_adjacent(b, st["scenario"]))
+        da = adj_a.index(b) + 1                       # Ubii -> Treveri
+        c = [r for r in adj_b if r != a][0]           # Treveri -> not-Ubii
+        db = adj_b.index(c) + 1
+        # pick origins a, b, done; dest per origin; all pieces, no partials.
+        seq = [str(ia), str(ib), str(done), str(da), str(db)]
+        # group prompts: for each origin, one count prompt per present piece
+        # type ("all") + leader y/n where present.
+        for o in (a, b):
+            for pt in ("Legion", "Auxilia", "Warband"):
+                if count_pieces(st, o, rc.GERMANS, pt) > 0:
+                    seq.append("1")  # "all N"
+            from fs_bot.board.pieces import get_leader_in_region
+            if get_leader_in_region(st, o, rc.GERMANS) is not None:
+                seq.append("y")
+        stdin, stdout = _io(seq)
+        plan = _collect_march(st, rc.GERMANS, stdin, stdout, single=False)
+        assert plan is not None
+        assert plan["routes"][a] == [b]
+        assert plan["routes"][b] == [c]
+        assert b in plan["destinations"]  # an origin can be a destination
+
     def test_pass_returns_no_plan(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
         from fs_bot.engine.game_engine import ACTION_PASS

@@ -1476,6 +1476,78 @@ def test_auxilia_only_attack_excludes_legions():
     assert aux_only == 2
 
 
+class TestCardA33MotivationCapability:
+    """A33 shaded CAPABILITY "Motivation": Defending Germans suffer 1/2
+    Losses whether or not Retreating and inflict +1 Counterattack Loss.
+    Source: A Card Reference, card A33."""
+
+    def _setup(self):
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, BELGAE,
+                                         WARBAND)
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=11)
+        region = "Nervii"
+        for f in (GERMANS, BELGAE):
+            c = count_pieces(st, region, f, WARBAND)
+            if c:
+                remove_piece(st, region, f, WARBAND, count=c)
+        place_piece(st, region, BELGAE, WARBAND, count=4)   # attacker
+        place_piece(st, region, GERMANS, WARBAND, count=4)  # defender
+        return st, region
+
+    def test_defending_germans_half_losses(self):
+        from fs_bot.battle.losses import calculate_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import GERMANS, BELGAE, EVENT_SHADED
+        st, region = self._setup()
+        base = calculate_losses(st, region, BELGAE, GERMANS)
+        assert base == 2  # 4 Warbands x 1/2
+        activate_capability(st, "A33", EVENT_SHADED)
+        assert calculate_losses(st, region, BELGAE, GERMANS) == 1  # halved
+
+    def test_halving_does_not_stack_with_retreat(self):
+        from fs_bot.battle.losses import calculate_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import GERMANS, BELGAE, EVENT_SHADED
+        st, region = self._setup()
+        activate_capability(st, "A33", EVENT_SHADED)
+        # "whether or not Retreating" — halve once, never quarter.
+        assert calculate_losses(st, region, BELGAE, GERMANS,
+                                is_retreat=True) == 1
+
+    def test_german_counterattack_plus_one(self):
+        from fs_bot.battle.losses import calculate_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import GERMANS, BELGAE, EVENT_SHADED
+        st, region = self._setup()
+        base = calculate_losses(st, region, GERMANS, BELGAE,
+                                is_counterattack=True)
+        assert base == 2  # 4 Warbands x 1/2
+        activate_capability(st, "A33", EVENT_SHADED)
+        assert calculate_losses(st, region, GERMANS, BELGAE,
+                                is_counterattack=True) == base + 1
+
+    def test_no_bonus_for_non_german_counterattack(self):
+        from fs_bot.battle.losses import calculate_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import GERMANS, BELGAE, EVENT_SHADED
+        st, region = self._setup()
+        base = calculate_losses(st, region, BELGAE, GERMANS,
+                                is_counterattack=True)
+        activate_capability(st, "A33", EVENT_SHADED)
+        assert calculate_losses(st, region, BELGAE, GERMANS,
+                                is_counterattack=True) == base
+
+    def test_german_attack_losses_unchanged(self):
+        from fs_bot.battle.losses import calculate_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import GERMANS, BELGAE, EVENT_SHADED
+        st, region = self._setup()
+        base = calculate_losses(st, region, GERMANS, BELGAE)
+        activate_capability(st, "A33", EVENT_SHADED)
+        # Motivation is defensive only: German ATTACK losses unchanged.
+        assert calculate_losses(st, region, GERMANS, BELGAE) == base
+
+
 class TestCard30ShadedLegionWarbands:
     """Card 30 (Vercingetorix's Elite) shaded: in any Battle with their Leader,
     2 Arverni Warbands take & inflict Losses as if Legions."""

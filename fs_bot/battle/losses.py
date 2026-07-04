@@ -45,6 +45,16 @@ from fs_bot.board.pieces import (
 # LOSSES STEP (a) — CALCULATE LOSSES COUNT
 # ============================================================================
 
+
+def _a33_motivation_active(state):
+    """A33 shaded CAPABILITY "Motivation" (Ariovistus): "Defending Germans
+    suffer 1/2 Losses whether or not Retreating and inflict +1 Counterattack
+    Loss." Source: A Card Reference, card A33.
+    """
+    from fs_bot.rules_consts import EVENT_SHADED
+    from fs_bot.cards.capabilities import is_capability_active
+    return is_capability_active(state, "A33", EVENT_SHADED)
+
 def calculate_losses(state, region, attacking_faction, defending_faction,
                      *, is_retreat=False, is_counterattack=False,
                      double_auxilia=False, allied_factions=(),
@@ -179,6 +189,10 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         elif not has_fort_or_citadel:
             total *= 2
 
+    # A33 shaded CAPABILITY "Motivation": "Defending Germans suffer 1/2
+    # Losses whether or not Retreating and inflict +1 Counterattack Loss."
+    _motivation = _a33_motivation_active(state)
+
     # Halving: Defender's Fort, Citadel, or Retreat — §3.2.4, §3.3.4
     # "The above sum is cut in half for Defenders who are either Retreating
     # or have a Citadel or Fort."
@@ -193,8 +207,20 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         # that Battle, even after the Citadel is removed"
         # This is handled by the caller tracking citadel_at_start.
 
-        if is_retreat or has_fort or has_citadel:
+        # Motivation halves defending Germans' Losses "whether or not
+        # Retreating"; halving applies once (never quartered).
+        motivated_defender = _motivation and defending_faction == GERMANS
+
+        if is_retreat or has_fort or has_citadel or motivated_defender:
             total = total / 2
+    else:
+        # Motivation: the German Counterattack (Germans firing back, i.e.
+        # attacking_faction == GERMANS here) inflicts +1 Loss. Applied after
+        # any Ariovistus doubling, as a flat rider, and only when a
+        # Counterattack actually occurs with at least one Loss-capable step
+        # (callers skip the Counterattack entirely when no Germans survive).
+        if _motivation and enemy_faction == GERMANS:
+            total += 1
 
     # Round down — §3.2.4: "round any fractions down"
     return int(total)

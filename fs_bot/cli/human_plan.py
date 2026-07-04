@@ -159,14 +159,22 @@ def _collect_march(state, faction, stdin, stdout, single):
                             origins_c, single=single)
     if not origins:
         return None
-    dest_set = []
+    # One destination per origin, chosen explicitly (other origins are
+    # valid destinations — chained marches like A->B while B->C are legal).
+    # Emitted as exact routes so the executor marches each group precisely
+    # where told instead of pooling destinations by nearest path.
+    destinations = []
+    routes = {}
     for o in origins:
-        for a in get_adjacent(o, state["scenario"]):
-            if a not in dest_set and a not in origins:
-                dest_set.append(a)
-    destinations = _pick_regions(stdin, stdout,
-                                 "March INTO which adjacent Region(s)?",
-                                 dest_set, single=single)
+        adj = sorted(get_adjacent(o, state["scenario"]))
+        if not adj:
+            continue
+        d = prompt_choice(stdin, stdout,
+                          f"  March the {o} group INTO which Region?",
+                          [(a, a) for a in adj])
+        routes[o] = [d]
+        if d not in destinations:
+            destinations.append(d)
     if not destinations:
         return None
     # §3.2.2: the marching group is the player's own selection — offer a
@@ -197,7 +205,8 @@ def _collect_march(state, faction, stdin, stdout, single):
                 partial = True
         if partial:
             groups[o] = cap
-    plan = {"origins": origins, "destinations": destinations}
+    plan = {"origins": origins, "destinations": destinations,
+            "routes": routes}
     if groups:
         plan["groups"] = groups
     return plan

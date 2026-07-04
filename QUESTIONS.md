@@ -118,9 +118,16 @@ expedition iff they hold those pieces on the map: >= 6 Legions, >= 1 Auxilia,
 **Implementation:** `_np_should_conduct_britannia` already checked the Legion
 (>= 6) and Auxilia (>= 1) minimums; added the missing Roman-Leader-on-map check
 (the scenario lists "plus the Roman Leader ... from the map to Britannia").
-Added `TestBritanniaNonPlayerAbility` (2 tests). NOTE: should A8.8.9 ever be
-supplied with additional criteria (e.g. a resource or score threshold), this
-"if able" check would be extended accordingly.
+Added `TestBritanniaNonPlayerAbility` (2 tests).
+
+**DESIGNER-CONFIRMED (July 2026, BGG thread 3732430):** Volko Ruhnke:
+the "A8.8.9" reference "is spurious, rather than any rules section
+having gone missing. The page 17 rule appears complete and
+self-contained: Non-player Romans choose to do the Britannia
+Expedition if they can by the page 17 Rule" — a drafted NP-Roman rule
+was folded into page 17 and the dangling reference never removed. No
+additional criteria exist; the engine's "if able" reading is exactly
+the rule. The earlier NOTE about future extension is closed.
 
 **Files:** `fs_bot/engine/interlude.py` — `_np_should_conduct_britannia`;
 `fs_bot/tests/test_interlude.py`.

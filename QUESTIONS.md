@@ -2122,3 +2122,54 @@ who strip the homeland.
 Verification: 2077 tests pass; strict census seeds 1-20 exit 0,
 illegal=0, hashseed 0/7 byte-identical; player_fuzz seeds 1-12
 hard-findings=0.
+
+## Playthrough verdict 4 — Belgae, The Great Revolt (July 2026)
+
+Seat: Belgae (player) vs NP Rome/Arverni/Aedui, Great Revolt, seed 7.
+**Result: Arverni win at Winter 2** (margin 2); Belgae 2nd at -2
+(peaked 14 of the >15 needed). An honest loss with a clear shape.
+
+**The Belgae game is a corner economy under a sky of meteors.** Card
+55 shaded (Conspirator — free Rally, any-piece as-if-Control; inert
+before this session, implemented during it) powered 5 -> 14 through
+pure ally-farming: every tribe allied is simultaneously +1 Belgae and
+-1 Rome (one fewer Subdued). Rampage is the seat's quiet weapon —
+no-Counterattack attrition stripped Roman Auxilia and Arverni
+Warbands turn after turn. Enlist worked as designed both ways:
+Germans died cheaply chipping Rome at Treveri, and the §7.2 rule that
+Belgic victory counts GERMANIC Control and Allies was confirmed
+working (the Germans' own Winter rally added to my score).
+
+**Why it was lost.** NP Caesar twice erased my forward allies with
+doomstack battles (thin garrisons are properly punished), but the
+decisive event was bot-vs-bot: Vercingetorix hoarded 28 Resources,
+rallied a 31-Warband horde at Carnutes, and killed SIX LEGIONS in two
+cards (fallen=6, off-map 8>6) while holding allies+citadels 12>8 —
+both Arverni conditions met as Winter arrived. From Belgica I could
+reach exactly one Arverni ally to strip. Fourth data point for the
+two-runaway thesis: the player can farm their corner perfectly and
+still lose to whichever runaway the table cannot reach. As designed,
+arguably — the Belgae's diplomatic lever (pointing Rome at the
+Arverni) does not exist against bots.
+
+**Engine findings this playthrough:**
+- **Rally-plan crash**: ally/citadel entries given as plain region
+  strings raised TypeError in _execute_rally (warbands already
+  tolerated strings). Now coerced uniformly; malformed tribes fall
+  through to captured CommandErrors. Regression test added.
+- **Capability audit (the big one)**: prompted by A33, a sweep for
+  activate_capability IDs never consumed found TEN inert base-game
+  capabilities: 8 (Baggage Trains), 10 (Ballistae), 12 (Titus
+  Labienus), 13 (Balearic Slingers), 15 (Legio X), 27 (Massed Gallic
+  Archers), 43 (Convictolitavis), 55 (Commius), 59 (Germanic Horse),
+  63 (Winter Campaign). (25, A22, A31, A38, A63 are fine — wired via
+  event_modifiers.) **Card 55 implemented both sides this session**
+  (rally cost/control for Belgae; Recruit as-if-Control and +1
+  virtual Ally in Belgica for Rome, incl. the from-zero Auxilia Tip),
+  6 touch points, 6 regression tests. **Follow-up arc: implement the
+  remaining nine** — each touches battle/march/raid/besiege/suborn/
+  quarters internals; none currently do anything when their events
+  are played.
+
+Verification: 2084 tests pass; strict census seeds 1-20 exit 0
+illegal=0, hashseed 0/7 byte-identical.

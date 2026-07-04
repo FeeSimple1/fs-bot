@@ -63,6 +63,8 @@ from fs_bot.board.pieces import (
     get_leader_in_region, PieceError,
 )
 from fs_bot.board.control import refresh_all_control, is_controlled_by
+from fs_bot.rules_consts import TRIBE_TO_REGION as rc_TRIBE_TO_REGION
+from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, MANDUBII, NERVII, MORINI
 from fs_bot.commands.rally import (
     recruit_in_region,
     rally_in_region,
@@ -1342,3 +1344,122 @@ class TestEdgeCases:
             rally_in_region(
                 state, ARVERNI_REGION, GERMANS, "place_ally",
                 tribe=TRIBE_ARVERNI)
+
+
+class TestCard55CommiusCapability:
+    """Card 55 Commius CAPABILITY. Unshaded: Belgica Regions for Roman
+    Recruit count as Roman Controlled and +1 Roman Ally. Shaded: Belgic
+    Rally costs 0 and treats any Region with Belgic pieces as Belgic
+    Controlled. Source: Card Reference, card 55 + Tip."""
+
+    def _act(self, state, side):
+        from fs_bot.cards.capabilities import activate_capability
+        activate_capability(state, 55, side)
+
+    def test_shaded_rally_cost_zero(self):
+        from fs_bot.rules_consts import EVENT_SHADED
+        state = make_state(SCENARIO_GREAT_REVOLT)
+        # Outside Belgica normally costs 2 for Belgae
+        assert rally_cost(state, MANDUBII, BELGAE) == 2
+        self._act(state, EVENT_SHADED)
+        assert rally_cost(state, MANDUBII, BELGAE) == 0
+
+    def test_shaded_ally_without_control(self):
+        from fs_bot.rules_consts import EVENT_SHADED
+        state = make_state(SCENARIO_GREAT_REVOLT)
+        give_resources(state, BELGAE, 10)
+        region = NERVII
+        # a lone Belgic warband, region NOT Belgic-controlled
+        place_piece(state, region, ROMANS, AUXILIA, 4)
+        place_piece(state, region, BELGAE, WARBAND, 1)
+        refresh_all_control(state)
+        assert not is_controlled_by(state, region, BELGAE)
+        tribes = [t for t, ti in state["tribes"].items()
+                  if ti.get("allied_faction") is None
+                  and ti.get("status") is None
+                  and rc_TRIBE_TO_REGION.get(t) == region]
+        assert tribes
+        with pytest.raises(CommandError):
+            rally_in_region(state, region, BELGAE, "place_ally",
+                            tribe=tribes[0])
+        self._act(state, EVENT_SHADED)
+        res = rally_in_region(state, region, BELGAE, "place_ally",
+                              tribe=tribes[0])
+        assert res["tribe_allied"] == tribes[0]
+
+    def test_shaded_no_effect_for_other_factions(self):
+        from fs_bot.rules_consts import EVENT_SHADED
+        state = make_state(SCENARIO_GREAT_REVOLT)
+        self._act(state, EVENT_SHADED)
+        assert rally_cost(state, MANDUBII, ARVERNI) == 1
+
+    def test_unshaded_recruit_ally_in_belgica_no_pieces(self):
+        from fs_bot.rules_consts import EVENT_UNSHADED
+        from fs_bot.commands.rally import (recruit_in_region,
+                                           validate_recruit_region)
+        state = make_state(SCENARIO_GREAT_REVOLT)
+        give_resources(state, ROMANS, 20)
+        region = MORINI
+        # Strip Romans entirely from the region
+        for pt in (AUXILIA, LEGION, FORT, ALLY):
+            c = count_pieces(state, region, ROMANS, pt)
+            if c:
+                remove_piece(state, region, ROMANS, pt, count=c)
+        refresh_all_control(state)
+        ok, _ = validate_recruit_region(state, region)
+        assert not ok
+        self._act(state, EVENT_UNSHADED)
+        ok, why = validate_recruit_region(state, region)
+        assert ok, why
+        tribes = [t for t, ti in state["tribes"].items()
+                  if ti.get("allied_faction") is None
+                  and ti.get("status") is None
+                  and rc_TRIBE_TO_REGION.get(t) == region]
+        assert tribes
+        res = recruit_in_region(state, region, "place_ally",
+                                tribe=tribes[0])
+        assert res["tribe_allied"] == tribes[0]
+
+    def test_unshaded_auxilia_cap_plus_one_in_belgica(self):
+        from fs_bot.rules_consts import EVENT_UNSHADED
+        from fs_bot.commands.rally import _count_recruit_auxilia_cap
+        state = make_state(SCENARIO_GREAT_REVOLT)
+        region = MORINI
+        for pt in (AUXILIA, LEGION, FORT, ALLY):
+            c = count_pieces(state, region, ROMANS, pt)
+            if c:
+                remove_piece(state, region, ROMANS, pt, count=c)
+        base = _count_recruit_auxilia_cap(state, region)
+        self._act(state, EVENT_UNSHADED)
+        assert _count_recruit_auxilia_cap(state, region) == base + 1
+
+    def test_unshaded_no_effect_outside_belgica(self):
+        from fs_bot.rules_consts import EVENT_UNSHADED
+        from fs_bot.commands.rally import _count_recruit_auxilia_cap
+        state = make_state(SCENARIO_GREAT_REVOLT)
+        region = MANDUBII
+        base = _count_recruit_auxilia_cap(state, region)
+        self._act(state, EVENT_UNSHADED)
+        assert _count_recruit_auxilia_cap(state, region) == base
+
+
+class TestRallyPlanStringEntries:
+    """execute_decision rally_plan: ally/citadel entries given as plain
+    region strings must not crash the executor (captured CommandError or
+    coerced), matching the warbands list's tolerance."""
+
+    def test_ally_string_entry_no_crash(self):
+        from fs_bot.engine.execute import execute_decision
+        state = make_state(SCENARIO_GREAT_REVOLT)
+        state["non_player_factions"] = set()
+        give_resources(state, BELGAE, 10)
+        action = {"action": "command", "player_action": {
+            "command": "Rally", "regions": [], "sa": "No SA",
+            "sa_regions": [], "details": {"rally_plan": {
+                "citadels": ["Morini"], "allies": ["Morini"],
+                "warbands": ["Morini"],
+                "settlements_before": [], "settlements_after": []}}}}
+        res = execute_decision(state, BELGAE, action)
+        # warbands leg succeeds; string ally/citadel legs -> captured errors
+        assert res["executed"] is True
+        assert all(isinstance(e, dict) for e in res.get("errors", []))

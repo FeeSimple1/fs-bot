@@ -227,6 +227,31 @@ def recruit_cost(state, region, faction=ROMANS, agreements=None):
     return RECRUIT_COST
 
 
+def _commius_shaded_rally_control(state, region, faction):
+    """Card 55 shaded CAPABILITY "Conspirator": "Belgic Rally costs 0 and
+    treats any Region with Belgic pieces as Belgic Controlled." Rally-scoped
+    as-if-Control when the Belgae have any piece in the Region.
+    Source: Card Reference, card 55 + Tip.
+    """
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_SHADED
+    return (faction == BELGAE
+            and is_capability_active(state, 55, EVENT_SHADED)
+            and count_pieces(state, region, BELGAE) > 0)
+
+
+def _commius_unshaded_recruit(state, region):
+    """Card 55 unshaded CAPABILITY "Atrebatian friend": "Belgica Regions
+    for Roman Recruit count as Roman Controlled and +1 Roman Ally." Recruit-
+    scoped: as-if-Control in Belgica (even with no Roman pieces) and one
+    virtual Ally for the Auxilia cap. Source: Card Reference, card 55 + Tip.
+    """
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_UNSHADED, BELGICA
+    return (is_capability_active(state, 55, EVENT_UNSHADED)
+            and get_region_group(region) == BELGICA)
+
+
 def rally_cost(state, region, faction):
     """Calculate the Resource cost for Rally in a region.
 
@@ -258,6 +283,11 @@ def rally_cost(state, region, faction):
         return GERMAN_RALLY_COST_OUTSIDE_GERMANIA_NO_SETTLEMENT
 
     if faction == BELGAE:
+        # Card 55 shaded: "Belgic Rally costs 0"
+        from fs_bot.cards.capabilities import is_capability_active
+        from fs_bot.rules_consts import EVENT_SHADED
+        if is_capability_active(state, 55, EVENT_SHADED):
+            return 0
         region_group = get_region_group(region)
         from fs_bot.rules_consts import BELGICA
         if region_group != BELGICA:
@@ -340,7 +370,8 @@ def validate_recruit_region(state, region):
     has_roman_fort = count_pieces(state, region, ROMANS, FORT) > 0
 
     if not (has_roman_control or has_roman_leader
-            or has_roman_ally or has_roman_fort):
+            or has_roman_ally or has_roman_fort
+            or _commius_unshaded_recruit(state, region)):
         return False, "Region has no Roman Control, Leader, Ally, or Fort"
 
     return True, None
@@ -390,7 +421,8 @@ def validate_rally_region(state, region, faction):
 
     # Must have effect: faction's Control, Ally, Citadel, Leader,
     # or Rally symbol — §3.3.1
-    has_control = is_controlled_by(state, region, faction)
+    has_control = (is_controlled_by(state, region, faction)
+                   or _commius_shaded_rally_control(state, region, faction))
     has_ally = count_pieces(state, region, faction, ALLY) > 0
     has_citadel = count_pieces(state, region, faction, CITADEL) > 0
 
@@ -442,6 +474,11 @@ def _count_recruit_auxilia_cap(state, region):
     forts = count_pieces(state, region, ROMANS, FORT)
 
     cap = allies + leader_count + forts
+
+    # Card 55 unshaded: Belgica counts "+1 Roman Ally" for Recruit — the
+    # Tip allows one more Auxilia than normal, even from a base of none.
+    if _commius_unshaded_recruit(state, region):
+        cap += 1
 
     # Home Region bonus: +1 in Provincia — §3.2.1
     if region in ROMAN_HOME_REGIONS:
@@ -558,7 +595,8 @@ def recruit_in_region(state, region, action, *, tribe=None, free=False,
     if action == "place_ally":
         # §3.2.1: If under Roman Control, or if Caesar is there, place
         # one Available Roman Ally at a Subdued Tribe
-        has_roman_control = is_controlled_by(state, region, ROMANS)
+        has_roman_control = (is_controlled_by(state, region, ROMANS)
+                             or _commius_unshaded_recruit(state, region))
         from fs_bot.rules_consts import CAESAR
         has_caesar = (get_leader_in_region(state, region, ROMANS) == CAESAR)
 
@@ -602,7 +640,8 @@ def recruit_in_region(state, region, action, *, tribe=None, free=False,
         has_ally = count_pieces(state, region, ROMANS, ALLY) > 0
         has_fort = count_pieces(state, region, ROMANS, FORT) > 0
 
-        if not (has_leader or has_ally or has_fort):
+        if not (has_leader or has_ally or has_fort
+                or _commius_unshaded_recruit(state, region)):
             raise CommandError(
                 "Place Auxilia requires Roman Leader, Ally, or Fort in region"
             )
@@ -761,7 +800,9 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
         # §3.3.1: If faction Controls the region, place one Ally at
         # a Subdued Tribe.
         # Vercingetorix exception: Arverni may place Ally without Control
-        has_control = is_controlled_by(state, region, faction)
+        has_control = (is_controlled_by(state, region, faction)
+                       or _commius_shaded_rally_control(state, region,
+                                                        faction))
 
         # Vercingetorix exception — §3.3.1
         has_vercingetorix = False

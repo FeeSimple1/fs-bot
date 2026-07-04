@@ -3340,10 +3340,23 @@ def _execute_rally(state, faction, bot_action):
             errors.append({"region": region, "action": action,
                            "error": str(exc)})
 
+    def _entry_parts(entry):
+        # Tolerate a plain region string (human/CLI shorthand, same as the
+        # warbands list): tribe=None lets rally_in_region validate/choose.
+        if isinstance(entry, str):
+            return entry, None
+        if isinstance(entry, dict):
+            return entry.get("region"), entry.get("tribe")
+        return None, None
+
     for entry in plan.get("citadels", []) or []:
-        _do(entry["region"], "place_citadel", entry.get("tribe"))
+        region, tribe = _entry_parts(entry)
+        if region is not None:
+            _do(region, "place_citadel", tribe)
     for entry in plan.get("allies", []) or []:
-        _do(entry["region"], "place_ally", entry.get("tribe"))
+        region, tribe = _entry_parts(entry)
+        if region is not None:
+            _do(region, "place_ally", tribe)
     for entry in plan.get("warbands", []) or []:
         region = entry if isinstance(entry, str) else entry.get("region")
         if region is not None:

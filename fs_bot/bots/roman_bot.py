@@ -46,9 +46,11 @@ from fs_bot.rules_consts import (
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
     find_leader, get_available, count_on_map,
+    move_piece, remove_piece,
 )
 from fs_bot.board.control import (
     is_controlled_by, get_controlled_regions, calculate_control,
+    refresh_all_control,
 )
 from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
@@ -730,16 +732,81 @@ def node_r_march(state):
     # Determine SA: Scout during March or Build after — §8.8.1
     sa = SA_ACTION_BUILD
 
+    # §8.8.1 (errata): per-origin subset groups — Leader + all Legions +
+    # at least 1 Auxilia + the most Auxilia able to leave without losing
+    # Roman Control or adding enemy Control beyond the mandatory departure.
+    groups = {}
+    for o in origins:
+        g = _march_group_8_8_1(state, o)
+        if g is not None:
+            groups[o] = g
+
+    details = {
+        "origins": origins,
+        "destinations": selected_dests,
+        "dest_count": dest_count,
+    }
+    if groups:
+        details["groups"] = groups
+
     return _make_action(
         ACTION_MARCH,
         regions=[d[0] for d in selected_dests],
         sa=sa,
-        details={
-            "origins": origins,
-            "destinations": selected_dests,
-            "dest_count": dest_count,
-        },
+        details=details,
     )
+
+
+def _march_group_8_8_1(state, origin):
+    """Per-origin Roman threat-March group — §8.8.1 (errata 15Nov2018).
+
+    "The Romans will March out with their Leader; with as many Legions as
+    able; and with at least one Auxilia per origin (if any there), plus
+    with the most Auxilia there that are able to leave without losing
+    Roman Control or adding enemy Control (not already caused by
+    departure of other Roman pieces)."
+
+    Returns a {piece_type: count / LEADER: bool} group_cap dict for the
+    executor's subset-March, or None (march everything) when the region
+    holds no Roman mobile pieces.
+    """
+    leader = get_leader_in_region(state, origin, ROMANS) is not None
+    legions = count_pieces(state, origin, ROMANS, LEGION)
+    aux_total = count_pieces(state, origin, ROMANS, AUXILIA)
+    if not leader and legions == 0 and aux_total == 0:
+        return None
+
+    own_total = count_pieces(state, origin, ROMANS)
+    other_counts = [count_pieces(state, origin, f)
+                    for f in FACTIONS if f != ROMANS]
+    others_sum = sum(other_counts)
+    mandatory = (1 if leader else 0) + legions + (1 if aux_total else 0)
+
+    # Board state in the origin after the MANDATORY departures.
+    own_after0 = own_total - mandatory
+    roman_ctrl0 = own_after0 > others_sum
+    enemy_ctrl0 = any(c > (own_after0 + others_sum - c) for c in other_counts)
+
+    remaining_aux = aux_total - (1 if aux_total else 0)
+    if remaining_aux <= 0:
+        extra = 0
+    elif roman_ctrl0:
+        # Keep Roman Control: own_after must stay > others_sum.
+        extra = max(0, min(remaining_aux, own_after0 - others_sum - 1))
+    elif not enemy_ctrl0 and other_counts:
+        # Roman Control already lost (or never held) by the mandatory
+        # departure — exempt. Still must not ADD enemy Control:
+        # for every f, need own_after >= 2*count_f - others_sum.
+        need = max(0, max(2 * c - others_sum for c in other_counts))
+        extra = max(0, min(remaining_aux, own_after0 - need))
+    else:
+        # Enemy Control already present/added — no further constraint.
+        extra = remaining_aux
+
+    group = {LEGION: legions, AUXILIA: (1 if aux_total else 0) + extra}
+    if leader:
+        group[LEADER] = True
+    return group
 
 
 def _select_march_origins(state, threat_regions, destinations, scenario):
@@ -1231,6 +1298,189 @@ def node_r_build(state, *, exclude_regions=None):
     return build_plan
 
 
+def _scout_guaranteed_supply_regions(state):
+    """Regions holding Roman pieces that have a GUARANTEED Supply Line —
+    §8.8.1 SCOUT: chains needing no hostile agreement (No Control, Roman
+    Control, or non-player Aedui Control; §8.6.2 NP Aedui always agree).
+    """
+    from fs_bot.commands.rally import has_supply_line
+    agreements = {ROMANS: True}
+    if AEDUI in state.get("non_player_factions", set()):
+        agreements[AEDUI] = True
+    playable = get_playable_regions(state["scenario"],
+                                    state.get("capabilities"))
+    out = set()
+    for r in playable:
+        if count_pieces(state, r, ROMANS) > 0 and has_supply_line(
+                state, r, ROMANS, agreements):
+            out.add(r)
+    return out
+
+
+def _scout_move_ok(sim, src, count, caesar_region, guaranteed_before):
+    """Would moving ``count`` Auxilia out of ``src`` break the §8.8.1 SCOUT
+    global constraints? (errata 15Nov2018 text)
+
+    - move only Auxilia exceeding Legions in the Region;
+    - keep at least 4 with Caesar for all of this Scout;
+    - keep Roman Control; add no enemy Control;
+    - lose no (guaranteed) Supply Line from any Region with Roman pieces.
+    """
+    import copy as _copy
+    aux = count_pieces(sim, src, ROMANS, AUXILIA)
+    legions = count_pieces(sim, src, ROMANS, LEGION)
+    if count > aux - legions:                     # errata cap
+        return False
+    if src == caesar_region and aux - count < 4:  # keep 4 with Caesar
+        return False
+    own = count_pieces(sim, src, ROMANS)
+    other_counts = [count_pieces(sim, src, f) for f in FACTIONS
+                    if f != ROMANS]
+    others_sum = sum(other_counts)
+    own_after = own - count
+    if own > others_sum and not (own_after > others_sum):
+        return False                              # would lose Roman Control
+    if not any(c > own + others_sum - c for c in other_counts):
+        if any(c > own_after + others_sum - c for c in other_counts):
+            return False                          # would add enemy Control
+    # Supply: simulate and compare guaranteed-supply coverage.
+    probe = _copy.deepcopy(sim)
+    remove_piece(probe, src, ROMANS, AUXILIA, count=count)
+    if not guaranteed_before <= _scout_guaranteed_supply_regions(probe):
+        return False
+    return True
+
+
+def _scout_emit_move(sim, moves, src, dst, count):
+    """Apply src->dst Auxilia move(s) on the sim and record concrete
+    executor-schema entries (split by piece state; Revealed first)."""
+    remaining = count
+    for ps in (REVEALED, HIDDEN):
+        n = min(remaining,
+                count_pieces_by_state(sim, src, ROMANS, AUXILIA, ps))
+        if n <= 0:
+            continue
+        move_piece(sim, src, dst, ROMANS, AUXILIA, count=n, piece_state=ps)
+        moves.append({"from_region": src, "to_region": dst,
+                      "count": n, "piece_state": ps})
+        remaining -= n
+
+
+def _scout_auxilia_moves(state):
+    """Concrete §8.8.1 SCOUT Auxilia moves (errata 15Nov2018), in the
+    instruction's order: (1) end with 4+ Auxilia in Caesar's Region;
+    (2) add guaranteed Supply Lines by breaking Arverni/Belgae/player-
+    Aedui/Germanic Control adjacent to movable Auxilia; (3) join Auxilia
+    not yet with Legions to the most Legions reachable, in equal number
+    by Region. All moves obey the global constraints via _scout_move_ok.
+    """
+    import copy as _copy
+    from fs_bot.rules_consts import BRITANNIA
+    sim = _copy.deepcopy(state)
+    sim.pop("decision_agent", None)
+    scenario = sim["scenario"]
+    playable = sorted(get_playable_regions(scenario,
+                                           sim.get("capabilities")))
+    caesar_region = _caesar_region(sim)
+    non_players = sim.get("non_player_factions", set())
+    moves = []
+
+    def movable(src):
+        aux = count_pieces(sim, src, ROMANS, AUXILIA)
+        m = aux - count_pieces(sim, src, ROMANS, LEGION)
+        if src == caesar_region:
+            m = min(m, aux - 4)
+        return max(0, m)
+
+    # ---- (1) Caesar escort to 4 ----
+    if caesar_region and caesar_region != BRITANNIA:
+        deficit = 4 - count_pieces(sim, caesar_region, ROMANS, AUXILIA)
+        if deficit > 0:
+            sources = sorted(
+                (r for r in get_adjacent(caesar_region, scenario)
+                 if r in playable and r != BRITANNIA and movable(r) > 0),
+                key=lambda r: (-movable(r), r))
+            for src in sources:
+                if deficit <= 0:
+                    break
+                take = min(deficit, movable(src))
+                while take > 0 and not _scout_move_ok(
+                        sim, src, take, caesar_region,
+                        _scout_guaranteed_supply_regions(sim)):
+                    take -= 1
+                if take > 0:
+                    _scout_emit_move(sim, moves, src, caesar_region, take)
+                    deficit -= take
+
+    # ---- (2) add guaranteed Supply Lines by breaking enemy Control ----
+    hostile = [ARVERNI, BELGAE, GERMANS]
+    if AEDUI not in non_players:
+        hostile.append(AEDUI)   # "player Aedui"
+    while True:
+        before = _scout_guaranteed_supply_regions(sim)
+        best = None  # (gain, src, dst, need)
+        for src in playable:
+            if src == BRITANNIA or movable(src) <= 0:
+                continue
+            for dst in sorted(get_adjacent(src, scenario)):
+                if dst not in playable or dst == BRITANNIA:
+                    continue
+                ctrl = sim["spaces"][dst].get("control")
+                if ctrl not in hostile:
+                    continue
+                c_ctrl = count_pieces(sim, dst, ctrl)
+                rest = sum(count_pieces(sim, dst, f) for f in FACTIONS
+                           if f != ctrl)
+                need = c_ctrl - rest    # pieces to end the ctrl > rest
+                if need <= 0 or need > movable(src):
+                    continue
+                if not _scout_move_ok(sim, src, need, caesar_region, before):
+                    continue
+                probe = _copy.deepcopy(sim)
+                move_piece(probe, src, dst, ROMANS, AUXILIA, count=need)
+                refresh_all_control(probe)
+                gain = len(_scout_guaranteed_supply_regions(probe)
+                           - before)
+                if gain > 0 and (best is None or gain > best[0]):
+                    best = (gain, src, dst, need)
+        if best is None:
+            break
+        _, src, dst, need = best
+        _scout_emit_move(sim, moves, src, dst, need)
+        refresh_all_control(sim)
+
+    # ---- (3) join Auxilia not yet with Legions to the most Legions,
+    #          in equal number by Region ----
+    guaranteed = _scout_guaranteed_supply_regions(sim)
+    legion_regions = sorted(
+        (r for r in playable
+         if count_pieces(sim, r, ROMANS, LEGION) > 0),
+        key=lambda r: (-count_pieces(sim, r, ROMANS, LEGION), r))
+    for dst in legion_regions:
+        if dst == BRITANNIA:
+            continue
+        capacity = (count_pieces(sim, dst, ROMANS, LEGION)
+                    - count_pieces(sim, dst, ROMANS, AUXILIA))
+        if capacity <= 0:
+            continue
+        for src in sorted(get_adjacent(dst, scenario)):
+            if capacity <= 0:
+                break
+            if (src not in playable or src == BRITANNIA
+                    or count_pieces(sim, src, ROMANS, LEGION) > 0):
+                continue
+            take = min(capacity, movable(src))
+            while take > 0 and not _scout_move_ok(
+                    sim, src, take, caesar_region, guaranteed):
+                take -= 1
+            if take > 0:
+                _scout_emit_move(sim, moves, src, dst, take)
+                refresh_all_control(sim)
+                capacity -= take
+
+    return moves
+
+
 def node_r_scout(state):
     """R_SCOUT: Scout per Command.
 
@@ -1248,21 +1498,10 @@ def node_r_scout(state):
     scenario = state["scenario"]
 
     scout_plan = {
-        "auxilia_moves": [],
+        "auxilia_moves": _scout_auxilia_moves(state),
         "scout_targets": [],
     }
-
-    # Step 1: Ensure 4 Auxilia with Caesar — §8.8.1
     caesar_region = _caesar_region(state)
-    if caesar_region:
-        auxilia_with_caesar = count_pieces(
-            state, caesar_region, ROMANS, AUXILIA)
-        if auxilia_with_caesar < 4:
-            scout_plan["auxilia_moves"].append({
-                "to": caesar_region,
-                "needed": 4 - auxilia_with_caesar,
-                "reason": "Caesar escort",
-            })
 
     # Step 2: Scout targets — Hidden first, then Revealed.
     # §4.2.2: Reveal only in Regions within 1 of Caesar (or the Successor's

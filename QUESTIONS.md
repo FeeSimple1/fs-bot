@@ -2282,3 +2282,38 @@ tags so the traceability pass reads post-errata text.
 
 Verification: 2095 tests pass; strict census seeds 1-15 exit 0
 illegal=0, hashseed 0/7 byte-identical; rules_trace UNACCOUNTED=0.
+
+## §8.8.1 PLANNER STEPS IMPLEMENTED — March groups + Scout moves (July 2026)
+
+The two errata-recorded deferred items are now real:
+
+**Roman threat-March per-origin groups** (`_march_group_8_8_1`): Leader
++ all Legions + at least 1 Auxilia, plus the most Auxilia able to leave
+without losing Roman Control or adding enemy Control beyond what the
+mandatory departures already cause (errata'd 8.8.1 bullet 1). Emitted
+as plan["groups"]; the executor's existing subset-March applies them.
+Ends the "Rome marches everything out" era — origins keep garrisons.
+
+**Scout Auxilia moves** (`_scout_auxilia_moves`): concrete, executor-
+schema moves for all three SCOUT bullets under the global constraints
+(only Auxilia exceeding Legions per Region — the errata insertion;
+keep 4 with Caesar throughout; keep Roman Control; add no enemy
+Control; lose no guaranteed Supply Line): (1) escort to 4 with Caesar,
+(2) break Arverni/Belgae/player-Aedui/Germanic Control adjacent to
+movable Auxilia where it adds guaranteed Supply Lines to the most
+Roman-piece Regions (greedy, deterministic), (3) join Auxilia to the
+most Legions in equal number by Region. "Guaranteed" treats NP Aedui
+Control as agreeing (§8.6.2). The Scout executor already executed any
+concrete from/to moves the planner produced; the old escort-intention
+dicts are gone.
+
+**Balance effect (canary rebaselined deliberately):** NP Rome is much
+stronger — Pax Gallica 20-seed sweep now Rome-dominant (garrisoned
+origins stop the rally-behind exploit every Gallic bot enjoyed), and
+Gallic War first halves end in Roman wins more often (interlude tests
+repointed to seed 7). This is rule-cited behavior replacing a known
+approximation, not tuning: the flowchart's Rome was always supposed
+to garrison. 8 new planner tests.
+
+Verification: 2103 tests pass; strict census seeds 1-15 exit 0
+illegal=0, hashseed 0/7 byte-identical; canary rebaselined and green.

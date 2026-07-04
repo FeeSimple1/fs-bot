@@ -15,7 +15,7 @@ from fs_bot.rules_consts import (
     SCENARIO_GREAT_REVOLT, SCENARIO_GALLIC_WAR,
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     CAESAR, AMBIORIX, ARIOVISTUS_LEADER, SUCCESSOR,
-    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII,
+    MORINI, NERVII, ATREBATES, PROVINCIA, MANDUBII, TREVERI,
     AEDUI_REGION, ARVERNI_REGION, SUGAMBRI, SEQUANI,
     CARNUTES, BITURIGES,
     TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI, TRIBE_HELVII,
@@ -47,6 +47,53 @@ from fs_bot.bots.roman_bot import (
 from fs_bot.bots.bot_dispatch import (
     dispatch_bot_turn, BotDispatchError,
 )
+
+
+def _clear_region(state, region):
+    """Remove all factions' pieces from a region for a clean test board."""
+    from fs_bot.rules_consts import (FACTIONS, WARBAND, AUXILIA, LEGION,
+                                     ALLY, CITADEL, FORT, LEADER,
+                                     HIDDEN, REVEALED, SCOUTED)
+    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
+                                     remove_piece, clear_allied_tribe,
+                                     get_leader_in_region)
+    for f in FACTIONS:
+        for pt in (ALLY, CITADEL):
+            while count_pieces(state, region, f, pt) > 0:
+                remove_piece(state, region, f, pt)
+                clear_allied_tribe(state, region, f, pt)
+        for pt in (WARBAND, AUXILIA):
+            for ps in (HIDDEN, REVEALED, SCOUTED):
+                c = count_pieces_by_state(state, region, f, pt, ps)
+                if c:
+                    remove_piece(state, region, f, pt, count=c,
+                                 piece_state=ps)
+        c = count_pieces(state, region, f, LEGION)
+        if c:
+            remove_piece(state, region, f, LEGION, count=c)
+        for pt in (FORT,):
+            c = count_pieces(state, region, f, pt)
+            if c:
+                remove_piece(state, region, f, pt, count=c)
+        if get_leader_in_region(state, region, f) is not None:
+            remove_piece(state, region, f, LEADER)
+    from fs_bot.board.control import refresh_all_control
+    refresh_all_control(state)
+
+
+def set_tribe_allied_helper(state, region, faction):
+    """Ally the first subdued tribe of a region to faction (test helper)."""
+    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.rules_consts import ALLY
+    for t in get_tribes_in_region(region, state["scenario"]):
+        ti = state["tribes"].get(t, {})
+        if ti.get("allied_faction") is None and ti.get("status") is None:
+            ti["allied_faction"] = faction
+            ti["status"] = None
+            place_piece(state, region, faction, ALLY)
+            return t
+    return None
 
 
 def _make_state(scenario=SCENARIO_PAX_GALLICA, seed=42, non_players=None):
@@ -930,3 +977,139 @@ class TestBotDispatch:
         state["can_play_event"] = False
         result = dispatch_bot_turn(state, AEDUI)
         assert "command" in result
+
+
+class TestMarchGroup881:
+    """§8.8.1 (errata 15Nov2018) per-origin March groups: Leader + all
+    Legions + at least 1 Auxilia + the most Auxilia able to leave without
+    losing Roman Control or adding enemy Control beyond what the mandatory
+    departures already cause."""
+
+    def test_keeps_control_with_leftover_auxilia(self):
+        from fs_bot.bots.roman_bot import _march_group_8_8_1
+        state = _make_state()
+        r = MANDUBII
+        _clear_region(state, r)
+        place_piece(state, r, ROMANS, LEADER, leader_name=CAESAR)
+        place_piece(state, r, ROMANS, LEGION, 2, from_legions_track=True)
+        place_piece(state, r, ROMANS, AUXILIA, 5)
+        place_piece(state, r, BELGAE, WARBAND, 3)
+        g = _march_group_8_8_1(state, r)
+        # Mandatory: Caesar + 2 Legions + 1 Auxilia -> 4 Roman pieces left
+        # (4 > 3 keeps Control); any extra Auxilia would tie/lose it.
+        assert g[LEADER] is True
+        assert g[LEGION] == 2
+        assert g[AUXILIA] == 1
+
+    def test_no_enemies_leaves_one_auxilia(self):
+        from fs_bot.bots.roman_bot import _march_group_8_8_1
+        state = _make_state()
+        r = MANDUBII
+        _clear_region(state, r)
+        place_piece(state, r, ROMANS, AUXILIA, 4)
+        g = _march_group_8_8_1(state, r)
+        # Control with no enemies just needs 1 piece: 3 of 4 may go.
+        assert g[AUXILIA] == 3
+
+    def test_control_already_lost_frees_auxilia(self):
+        from fs_bot.bots.roman_bot import _march_group_8_8_1
+        state = _make_state()
+        r = MANDUBII
+        _clear_region(state, r)
+        # 2 Legions + 2 Auxilia vs 3 Belgae warbands: after the mandatory
+        # departure (2L + 1x) Rome has 1 piece vs 3 — Control is already
+        # lost AND Belgae control (3 > 1) is already added: the last
+        # Auxilia is free to March too.
+        place_piece(state, r, ROMANS, LEGION, 2, from_legions_track=True)
+        place_piece(state, r, ROMANS, AUXILIA, 2)
+        place_piece(state, r, BELGAE, WARBAND, 3)
+        g = _march_group_8_8_1(state, r)
+        assert g[LEGION] == 2
+        assert g[AUXILIA] == 2
+
+    def test_does_not_add_enemy_control(self):
+        from fs_bot.bots.roman_bot import _march_group_8_8_1
+        state = _make_state()
+        r = MANDUBII
+        _clear_region(state, r)
+        # 6 Auxilia + fort vs 4 Belgae: Rome does not control (7 > 4 it
+        # does...) — craft no-control: 3 Auxilia + 4 Belgae + 2 Aedui:
+        # nobody controls (4 vs 5). Mandatory: 1 Auxilia leaves -> own 2
+        # (fortless). Extra may leave only while Belgae don't take
+        # control: need own_after >= 2*4 - 6 = 2 -> 0 extra.
+        place_piece(state, r, ROMANS, AUXILIA, 3)
+        place_piece(state, r, BELGAE, WARBAND, 4)
+        place_piece(state, r, AEDUI, WARBAND, 2)
+        g = _march_group_8_8_1(state, r)
+        assert g[AUXILIA] == 1
+
+    def test_node_r_march_attaches_groups(self):
+        state = _make_state()
+        _clear_region(state, MANDUBII)
+        place_piece(state, MANDUBII, ROMANS, LEADER, leader_name=CAESAR)
+        place_piece(state, MANDUBII, ROMANS, LEGION, 4,
+                    from_legions_track=True)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 4)
+        # threat: enemy ally in Caesar's region
+        place_piece(state, MANDUBII, BELGAE, WARBAND, 1)
+        set_tribe_allied_helper(state, MANDUBII, BELGAE)
+        result = node_r_march(state)
+        det = result.get("details", {})
+        if det.get("origins"):
+            assert "groups" in det
+            for o, g in det["groups"].items():
+                assert LEGION in g and AUXILIA in g
+
+
+class TestScoutAuxiliaMoves881:
+    """§8.8.1 SCOUT (errata): concrete Auxilia moves — escort to 4 with
+    Caesar, join Legions in equal number, only Auxilia exceeding Legions
+    move, keep 4 with Caesar throughout."""
+
+    def _fresh(self):
+        state = _make_state()
+        for r in (MANDUBII, ATREBATES, TREVERI):
+            _clear_region(state, r)
+        return state
+
+    def test_escort_and_join_legions(self):
+        from fs_bot.bots.roman_bot import _scout_auxilia_moves
+        state = self._fresh()
+        place_piece(state, MANDUBII, ROMANS, LEADER, leader_name=CAESAR)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 2)
+        place_piece(state, ATREBATES, ROMANS, AUXILIA, 6)
+        place_piece(state, TREVERI, ROMANS, LEGION, 3,
+                    from_legions_track=True)
+        moves = _scout_auxilia_moves(state)
+        to_caesar = sum(m["count"] for m in moves
+                        if m["to_region"] == MANDUBII)
+        to_legions = sum(m["count"] for m in moves
+                         if m["to_region"] == TREVERI)
+        assert to_caesar == 2       # ends with exactly 4 on Caesar
+        assert to_legions == 3      # equal number with 3 Legions
+
+    def test_only_auxilia_exceeding_legions_move(self):
+        from fs_bot.bots.roman_bot import _scout_auxilia_moves
+        state = self._fresh()
+        place_piece(state, MANDUBII, ROMANS, LEADER, leader_name=CAESAR)
+        # Caesar short of escort; adjacent source has 3 aux but 2 legions:
+        # only 1 exceeds and may move (errata cap).
+        place_piece(state, ATREBATES, ROMANS, AUXILIA, 3)
+        place_piece(state, ATREBATES, ROMANS, LEGION, 2,
+                    from_legions_track=True)
+        moves = _scout_auxilia_moves(state)
+        out_of_atrebates = sum(m["count"] for m in moves
+                               if m["from_region"] == ATREBATES)
+        assert out_of_atrebates <= 1
+
+    def test_caesar_region_never_drops_below_four(self):
+        from fs_bot.bots.roman_bot import _scout_auxilia_moves
+        state = self._fresh()
+        place_piece(state, MANDUBII, ROMANS, LEADER, leader_name=CAESAR)
+        place_piece(state, MANDUBII, ROMANS, AUXILIA, 5)
+        place_piece(state, TREVERI, ROMANS, LEGION, 4,
+                    from_legions_track=True)
+        moves = _scout_auxilia_moves(state)
+        out_of_caesar = sum(m["count"] for m in moves
+                            if m["from_region"] == MANDUBII)
+        assert out_of_caesar <= 1   # 5 -> never below 4

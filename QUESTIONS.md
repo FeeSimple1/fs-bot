@@ -2215,3 +2215,70 @@ the second half, where Diviciacus is always gone.
 
 Verification: 2088 tests pass; strict census seeds 1-20 exit 0,
 illegal=0, hashseed 0/7 byte-identical.
+
+## OFFICIAL ERRATA AUDIT — BGG thread 2072553 (Volko-maintained), July 2026
+
+The user supplied the designer's errata/clarification thread for
+Ariovistus (last updated 15Nov2018). Every item audited against the
+engine; transcriptions annotated in place with [ERRATA 15Nov2018]
+tags so the traceability pass reads post-errata text.
+
+### Already conformant (verified, no change)
+- Correction 1 (Ariovistus doubling includes his own +1 Loss): both
+  loss calculators double the full total incl. the Leader component.
+- Correction 2 (Roman flowchart 2nd diamond No): transcription and
+  bot already correct.
+- Correction 3 (delete "or is outnumbered", A8.7.1 + 8.5.1): neither
+  bot ever implemented an outnumbered gate — only the two conditions
+  the errata keeps (guaranteed-losses, no Loss on the leader).
+  Transcriptions annotated.
+- BrentS follow-up (German Raid gains nothing in Devastated, A3.4.3
+  via 3.3.3): the shared Raid validation already enforces it (the
+  errata was about the player-aid omission).
+- Clarification 2 (A5.1.1 stacking list non-exhaustive): no engine
+  impact — stacking is enforced per-card, not from that list.
+
+### Bugs found and FIXED
+- **Correction 4 — Arverni Phase ran BEFORE the card's activations**
+  (pre-errata A2.3.9 wording; A6.2 "after regular Faction activations"
+  was always correct). Moved to after the SoP in play_card. This
+  legitimately changed all-bot trajectories: Gallic War seed 1 now
+  ends in a first-half Roman win at Winter 3; the interlude/telemetry
+  tests moved to seed 4.
+- **A33 "Motivation" halving was missing from the REAL battle path.**
+  The earlier fix patched battle/losses.calculate_losses (estimates +
+  Counterattack) but resolve_battle computes Attack losses via
+  battle/resolve._calculate_attack_losses — a second, parallel
+  calculator. The half-losses clause now lives in both; regression
+  test covers the real path. (Lesson recorded: any Battle modifier
+  must be wired into BOTH calculators.)
+- **A31 shaded "Stalwart" was inert** (named enemy Leaders do not
+  double Losses to Germans): Caesar's x2-Legions and Ambiorix's
+  x1-Warbands rates now revert to normal against German defenders
+  under the capability, in both calculators.
+- **Card A64 Abatis had placement only — zero battle/march effect.**
+  Implemented per card text + Clarification 1: owner-defending Abatis
+  halves Losses like a Fort, negates all Losses caused by Auxilia,
+  and blocks Ariovistus doubling (acts as a Fort); Roman March treats
+  an Abatis Region as Devastated (cost doubling, any owner's marker);
+  A31 unshaded cancel-benefits flag voids a GERMAN defender's Abatis,
+  A31 shaded voids an enemy Abatis against German attackers
+  (Clarification 1's German Phalanx interaction). 7 regression tests.
+  NOT yet modeled: the marker absorbing a Loss and being removed on a
+  1-3 roll like a Fort piece (Clarification 1 sentence 1) — the loss-
+  resolution engine treats only pieces as loss-eligible; documented
+  simplification, defender is never worse off (the marker persists).
+
+### Corrected rule text recorded, implementation deferred (planner-quality)
+- Correction 5a (8.8.1 March: "most Auxilia able to leave without
+  LOSING Roman Control or adding enemy Control"): the Roman threat-
+  March executor still marches all mobile forces; per-group Auxilia
+  leave-behind remains the known deferred item. The errata fixes what
+  the leave-behind should preserve when it is built.
+- Correction 5b (8.8.1 SCOUT: "Move Auxilia only exceeding Legions by
+  Region and..."): the Scout planner implements the Caesar-escort move
+  only; the Supply-Line and join-Legions Auxilia moves (now with the
+  exceeding-Legions cap) remain unimplemented planner steps.
+
+Verification: 2095 tests pass; strict census seeds 1-15 exit 0
+illegal=0, hashseed 0/7 byte-identical; rules_trace UNACCOUNTED=0.

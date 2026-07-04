@@ -1715,3 +1715,132 @@ class TestPredictBattle:
         pred = predict_battle(st, region, ROMANS, ARVERNI)
         assert pred["attacker_leader_lost"] is False
         assert roman_battle_is_favorable(st, region, ARVERNI) is True
+
+
+class TestErrataThreadImplementations:
+    """Official errata/clarifications (BGG thread 2072553): Abatis battle
+    effects, A31 shaded 'Stalwart' leader clause, A33 Motivation applied in
+    the real attack-loss path, Roman March Abatis-as-Devastation."""
+
+    def _abatis_setup(self):
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, GERMANS, BELGAE,
+                                         ROMANS, WARBAND, AUXILIA, LEGION,
+                                         MARKER_ABATIS, TREVERI)
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=9)
+        r = TREVERI
+        for f in (GERMANS, BELGAE, ROMANS):
+            for pt in (WARBAND, AUXILIA, LEGION):
+                c = count_pieces(st, r, f, pt)
+                if c:
+                    remove_piece(st, r, f, pt, count=c)
+        return st, r
+
+    def test_abatis_halves_and_negates_auxilia(self):
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.rules_consts import (BELGAE, ROMANS, WARBAND, AUXILIA,
+                                         LEGION, MARKER_ABATIS)
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        st, r = self._abatis_setup()
+        place_piece(st, r, BELGAE, WARBAND, count=4)   # defender
+        place_piece(st, r, ROMANS, LEGION, count=2,
+                    from_legions_track=True)
+        place_piece(st, r, ROMANS, AUXILIA, count=4)
+        base = _calculate_attack_losses(st, r, ROMANS, BELGAE, **kw)
+        assert base == 4  # 2 legions + 4 aux/2
+        st.setdefault("markers", {}).setdefault(r, {})[MARKER_ABATIS] = BELGAE
+        # Auxilia negated (2 legions only) then halved as a Fort -> 1
+        assert _calculate_attack_losses(st, r, ROMANS, BELGAE, **kw) == 1
+
+    def test_abatis_blocks_ariovistus_doubling(self):
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.rules_consts import (GERMANS, BELGAE, WARBAND,
+                                         MARKER_ABATIS, ARIOVISTUS_LEADER,
+                                         LEADER)
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        st, r = self._abatis_setup()
+        place_piece(st, r, GERMANS, WARBAND, count=4)
+        place_piece(st, r, GERMANS, LEADER, leader_name=ARIOVISTUS_LEADER)
+        place_piece(st, r, BELGAE, WARBAND, count=4)
+        base = _calculate_attack_losses(st, r, GERMANS, BELGAE, **kw)
+        assert base == 6  # (4*0.5 + 1) * 2
+        st.setdefault("markers", {}).setdefault(r, {})[MARKER_ABATIS] = BELGAE
+        # Acts as Fort: no doubling, then halved -> (2+1)/2 -> 1
+        assert _calculate_attack_losses(st, r, GERMANS, BELGAE, **kw) == 1
+
+    def test_a31_shaded_cancels_enemy_abatis_vs_german_attacker(self):
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import (GERMANS, BELGAE, WARBAND,
+                                         MARKER_ABATIS, EVENT_SHADED)
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        st, r = self._abatis_setup()
+        place_piece(st, r, GERMANS, WARBAND, count=4)
+        place_piece(st, r, BELGAE, WARBAND, count=4)
+        st.setdefault("markers", {}).setdefault(r, {})[MARKER_ABATIS] = BELGAE
+        assert _calculate_attack_losses(st, r, GERMANS, BELGAE, **kw) == 1
+        activate_capability(st, "A31", EVENT_SHADED)
+        # Stalwart cancels the Event effect harming German attackers
+        assert _calculate_attack_losses(st, r, GERMANS, BELGAE, **kw) == 2
+
+    def test_a31_unshaded_flag_cancels_german_abatis(self):
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.rules_consts import (GERMANS, BELGAE, WARBAND,
+                                         MARKER_ABATIS)
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        st, r = self._abatis_setup()
+        place_piece(st, r, GERMANS, WARBAND, count=4)   # defender
+        place_piece(st, r, BELGAE, WARBAND, count=6)
+        st.setdefault("markers", {}).setdefault(r, {})[MARKER_ABATIS] = GERMANS
+        assert _calculate_attack_losses(st, r, BELGAE, GERMANS, **kw) == 1
+        st.setdefault("event_modifiers", {})[
+            "card_A31_cancel_german_benefits"] = True
+        assert _calculate_attack_losses(st, r, BELGAE, GERMANS, **kw) == 3
+
+    def test_a31_shaded_no_caesar_double_vs_germans(self):
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import (GERMANS, ROMANS, WARBAND, LEGION,
+                                         LEADER, CAESAR, EVENT_SHADED)
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        st, r = self._abatis_setup()
+        place_piece(st, r, GERMANS, WARBAND, count=8)   # defender
+        place_piece(st, r, ROMANS, LEGION, count=3,
+                    from_legions_track=True)
+        place_piece(st, r, ROMANS, LEADER, leader_name=CAESAR)
+        assert _calculate_attack_losses(st, r, ROMANS, GERMANS, **kw) == 7
+        activate_capability(st, "A31", EVENT_SHADED)
+        # Caesar x2 suppressed vs Germans: 3 legions + leader 1 = 4
+        assert _calculate_attack_losses(st, r, ROMANS, GERMANS, **kw) == 4
+
+    def test_a33_motivation_halves_in_real_attack_path(self):
+        # The prior A33 fix covered calculate_losses (estimates/counter);
+        # the errata audit found _calculate_attack_losses (real battles)
+        # unpatched. Cover the real path.
+        from fs_bot.battle.resolve import _calculate_attack_losses
+        from fs_bot.cards.capabilities import activate_capability
+        from fs_bot.rules_consts import (GERMANS, BELGAE, WARBAND,
+                                         EVENT_SHADED)
+        kw = dict(is_retreat=False, had_citadel_at_start=False,
+                  had_fort_at_start=False)
+        st, r = self._abatis_setup()
+        place_piece(st, r, GERMANS, WARBAND, count=4)   # defender
+        place_piece(st, r, BELGAE, WARBAND, count=8)
+        assert _calculate_attack_losses(st, r, BELGAE, GERMANS, **kw) == 4
+        activate_capability(st, "A33", EVENT_SHADED)
+        assert _calculate_attack_losses(st, r, BELGAE, GERMANS, **kw) == 2
+
+    def test_roman_march_treats_abatis_as_devastation(self):
+        from fs_bot.commands.march import march_cost
+        from fs_bot.rules_consts import (ROMANS, BELGAE, MARKER_ABATIS,
+                                         TREVERI)
+        st, r = self._abatis_setup()
+        base_ro = march_cost(st, r, ROMANS)
+        base_be = march_cost(st, r, BELGAE)
+        st.setdefault("markers", {}).setdefault(r, {})[MARKER_ABATIS] = BELGAE
+        assert march_cost(st, r, ROMANS) == base_ro * 2   # Romans: doubled
+        assert march_cost(st, r, BELGAE) == base_be       # others: unchanged

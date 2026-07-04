@@ -121,12 +121,21 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         enemy_leader == CAESAR
         and not is_counterattack
     )
+    # A31 shaded CAPABILITY "Stalwart": named enemy Leaders do not double
+    # Losses to Germans.
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_SHADED as _ESH
+    _a31_stalwart = (defending_faction == GERMANS
+                     and is_capability_active(state, "A31", _ESH))
+    if _a31_stalwart:
+        caesar_attacking = False
 
     # Ambiorix × 1 Warbands only when Ambiorix is the ATTACKER
     # — §3.3.4: "when Ambiorix (yellow, Belgic Leader) is Attacking"
     ambiorix_attacking = (
         enemy_leader == AMBIORIX
         and not is_counterattack
+        and not _a31_stalwart
     )
 
     # Ariovistus doubles total losses — A3.2.4, A3.4.4
@@ -178,9 +187,12 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     if ariovistus_in_battle and not state.get("event_modifiers", {}).get(
             "card_A31_no_ario_double"):
         defender_pieces = space.get("pieces", {}).get(defending_faction, {})
+        _m2 = state.get("markers", {}).get(region, {})
+        from fs_bot.rules_consts import MARKER_ABATIS as _MAB
         has_fort_or_citadel = (
             defender_pieces.get(FORT, 0) > 0
             or defender_pieces.get(CITADEL, 0) > 0
+            or _m2.get(_MAB) == defending_faction  # A64: acts as a Fort
         )
         if is_counterattack:
             # "An Attacker, even with a Fort or Citadel, fighting Ariovistus
@@ -192,6 +204,26 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # A33 shaded CAPABILITY "Motivation": "Defending Germans suffer 1/2
     # Losses whether or not Retreating and inflict +1 Counterattack Loss."
     _motivation = _a33_motivation_active(state)
+
+    # Card A64 Abatis: defender-owned marker acts as a Fort and negates all
+    # Losses caused by Auxilia (attack step only — "When you defend"). A31
+    # interactions per BGG errata thread 2072553 clarification 1.
+    _abatis = False
+    if not is_counterattack:
+        from fs_bot.rules_consts import MARKER_ABATIS
+        _m = state.get("markers", {}).get(region, {})
+        _abatis = _m.get(MARKER_ABATIS) == defending_faction
+        if _abatis:
+            if (defending_faction == GERMANS and state.get(
+                    "event_modifiers", {}).get(
+                        "card_A31_cancel_german_benefits")):
+                _abatis = False
+            elif (enemy_faction == GERMANS
+                    and is_capability_active(state, "A31", _ESH)):
+                _abatis = False
+        if _abatis:
+            # recompute component B without the negated Auxilia
+            total -= enemy_auxilia * aux_factor
 
     # Halving: Defender's Fort, Citadel, or Retreat — §3.2.4, §3.3.4
     # "The above sum is cut in half for Defenders who are either Retreating
@@ -211,7 +243,8 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         # Retreating"; halving applies once (never quartered).
         motivated_defender = _motivation and defending_faction == GERMANS
 
-        if is_retreat or has_fort or has_citadel or motivated_defender:
+        if (is_retreat or has_fort or has_citadel or motivated_defender
+                or _abatis):
             total = total / 2
     else:
         # Motivation: the German Counterattack (Germans firing back, i.e.

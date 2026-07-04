@@ -101,6 +101,13 @@ def march_cost(state, region, faction):
     if _is_devastated(state, region):
         return base * 2
 
+    # Card A64 Abatis: "Roman March treats Abatis as Devastation" — any
+    # Faction's Abatis marker in the origin doubles the ROMAN March cost.
+    if faction == ROMANS:
+        from fs_bot.rules_consts import MARKER_ABATIS
+        if MARKER_ABATIS in state.get("markers", {}).get(region, {}):
+            return base * 2
+
     return base
 
 

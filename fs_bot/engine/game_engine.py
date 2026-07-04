@@ -503,16 +503,9 @@ def resolve_card_turn(state, decision_func, *, execute=False):
     frost = is_frost(state)
     result["frost"] = frost
 
-    # Step 2: Arverni Phase — A2.3.9
-    # If Ariovistus and card has carnyx trigger, check At War.
-    # If At War, run Arverni Phase BEFORE normal SoP.
-    if scenario in ARIOVISTUS_SCENARIOS:
-        card_id = state["current_card"]
-        if card_has_carnyx_trigger(card_id, scenario):
-            is_at_war, triggering = check_arverni_at_war(state)
-            if is_at_war:
-                arverni_result = run_arverni_phase(state, is_frost=frost)
-                result["arverni_phase"] = arverni_result
+    # (The Arverni Phase on carnyx cards runs AFTER the regular Faction
+    # activations — A6.2 and the A2.3.9 errata ("before" -> "after", BGG
+    # errata thread 2072553 correction 4). See below, after Step 6.)
 
     # Steps 3-5: Faction play — §2.3.2, §2.3.3, §2.3.4
     eligible = get_eligible_factions(state)
@@ -576,6 +569,17 @@ def resolve_card_turn(state, decision_func, *, execute=False):
                 if execute:
                     _maybe_execute(state, faction, decision, actions_taken)
                 break
+
+    # Arverni Phase — A6.2 / A2.3.9 (as corrected by errata): on a card
+    # bearing the carnyx symbol, Arverni Forces "if At War" act AFTER the
+    # regular Faction activations on that card.
+    if scenario in ARIOVISTUS_SCENARIOS:
+        card_id = state["current_card"]
+        if card_has_carnyx_trigger(card_id, scenario):
+            is_at_war, triggering = check_arverni_at_war(state)
+            if is_at_war:
+                arverni_result = run_arverni_phase(state, is_frost=frost)
+                result["arverni_phase"] = arverni_result
 
     # Step 6: Adjust eligibility — §2.3.6
     result["actions_taken"] = actions_taken

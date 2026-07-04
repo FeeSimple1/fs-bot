@@ -449,6 +449,14 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     return result
 
 
+def _abatis_defends(state, region, defending_faction):
+    """Card A64: True when the defending Faction owns the Abatis marker in
+    this Region ("When you defend, Abatis acts as a Fort for you")."""
+    from fs_bot.rules_consts import MARKER_ABATIS
+    m = state.get("markers", {}).get(region, {})
+    return m.get(MARKER_ABATIS) == defending_faction
+
+
 def _calculate_attack_losses(state, region, attacking_faction,
                              defending_faction, *, is_retreat,
                              had_citadel_at_start, had_fort_at_start,
@@ -490,13 +498,41 @@ def _calculate_attack_losses(state, region, attacking_faction,
 
     scenario = state["scenario"]
 
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_SHADED as _ESH, GERMANS as _GE
+
     # Leader modifiers
     caesar_attacking = (enemy_leader == CAESAR)
     ambiorix_attacking = (enemy_leader == AMBIORIX)
+    # A31 shaded CAPABILITY "Stalwart": "named enemy Leaders do not double
+    # Losses to Germans" — Caesar's x2 Legions and Ambiorix's x1 Warbands
+    # revert to normal rates against a German defender.
+    if (defending_faction == _GE
+            and is_capability_active(state, "A31", _ESH)):
+        caesar_attacking = False
+        ambiorix_attacking = False
     ariovistus_in_battle = (
         enemy_leader == ARIOVISTUS_LEADER
         and scenario in ARIOVISTUS_SCENARIOS
     )
+
+    # Card A64 Abatis: "When you defend, Abatis acts as a Fort for you and
+    # negates all Losses caused by Auxilia." Effects apply to the marker
+    # OWNER defending in the marker's Region. A31 interactions (BGG errata
+    # thread 2072553 clarification 1): the unshaded cancel-benefits flag
+    # voids a GERMAN defender's Abatis; the shaded capability (cancels
+    # effects harming Germans) voids an enemy Abatis against GERMAN
+    # attackers.
+    _abatis_active = _abatis_defends(state, region, defending_faction)
+    if _abatis_active:
+        if (defending_faction == _GE and state.get(
+                "event_modifiers", {}).get("card_A31_cancel_german_benefits")):
+            _abatis_active = False
+        elif (attacking_faction == _GE
+                and is_capability_active(state, "A31", _ESH)):
+            _abatis_active = False
+    if _abatis_active:
+        enemy_auxilia = 0  # negates all Losses caused by Auxilia
 
     # Component A
     if caesar_attacking:
@@ -521,14 +557,22 @@ def _calculate_attack_losses(state, region, attacking_faction,
         _wb_factor = 1.0 if warband_full_loss else 0.5
         total += _legion_wb * (1.0 - _wb_factor)
 
-    # Ariovistus doubling — A3.2.4
+    # Ariovistus doubling — A3.2.4 (an Abatis "acts as a Fort" for the
+    # defender, so it also blocks the doubling — card A64)
     if ariovistus_in_battle and not state.get("event_modifiers", {}).get(
             "card_A31_no_ario_double"):
-        if not (had_fort_at_start or had_citadel_at_start):
+        if not (had_fort_at_start or had_citadel_at_start or _abatis_active):
             total *= 2
 
+    # A33 shaded CAPABILITY "Motivation": "Defending Germans suffer 1/2
+    # Losses whether or not Retreating" — halving applies once, never
+    # quartered. Source: A Card Reference, card A33.
+    _motivated = (defending_faction == _GE
+                  and is_capability_active(state, "A33", _ESH))
+
     # Halving — use original state
-    if is_retreat or had_citadel_at_start or had_fort_at_start:
+    if (is_retreat or had_citadel_at_start or had_fort_at_start
+            or _abatis_active or _motivated):
         total = total / 2
 
     return int(total)

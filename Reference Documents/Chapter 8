@@ -251,8 +251,8 @@ into account any Special Ability such as Ambush, and so on:
 condition above (he is with a non-German enemy that has at
 least four pieces, an Ally, Citadel, or a Legion). If he does but
 nevertheless will not Battle (because he could not guarantee
-enough enemy Losses, would suffer a Loss himself, or is
-outnumbered—see below), the Belgae do not Battle at all, but
+enough enemy Losses, or would suffer a Loss himself [ERRATA 15Nov2018, BGG thread 2072553]—the
+parenthetical "or is outnumbered" is deleted), the Belgae do not Battle at all, but
 instead March per below.
 • Next, check whether the first Battle Region will result in Ambush
 and, if not, whether Rampage will precede Battle, or whether
@@ -818,7 +818,7 @@ two Legions and at least four Auxilia—the Romans instead March
 • The Romans will March out with their Leader; with as many
 Legions as able; and with at least one Auxilia per origin (if any
 there), plus with the most Auxilia there that are able to leave
-without Roman Control or adding enemy Control (not already
+without losing [ERRATA 15Nov2018, BGG thread 2072553] Roman Control or adding enemy Control (not already
 caused by departure of other Roman pieces).
 • First, the Romans will March out of one Region that met the
 “Battle or March under Threat” condition above (Caesar or
@@ -898,6 +898,7 @@ SCOUT: If the Romans did not Besiege or Build, they
 Scout if doing so would have any effect (Auxilia would
 move, or any Warbands would be Revealed or have a
 Scouted marker placed on them, 4.2.2). Move Auxilia
+only exceeding Legions by Region and [ERRATA 15Nov2018, BGG thread 2072553]
 only so as to keep Roman Control, add no enemy Control, and lose
 no Supply Line from any Region that has Roman pieces.
 • First, move Auxilia to end with at least four Auxilia in Caesar’s

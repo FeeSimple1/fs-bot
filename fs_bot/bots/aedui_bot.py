@@ -1370,9 +1370,11 @@ def _determine_suborn_sa(state, scenario):
     non_players = state.get("non_player_factions", set())
     capabilities = state.get("capabilities", {})
 
-    # Check Convictolitavis unshaded — allows 2 regions
+    # Check Convictolitavis unshaded — allows 2 regions (card 43)
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_UNSHADED
     max_regions = 1
-    if capabilities.get("convictolitavis_unshaded", False):
+    if is_capability_active(state, 43, EVENT_UNSHADED):
         max_regions = 2
 
     suborn_plan = []

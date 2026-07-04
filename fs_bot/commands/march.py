@@ -97,9 +97,25 @@ def march_cost(state, region, faction):
         # Gallic factions
         base = GALLIC_MARCH_COST
 
+    from fs_bot.cards.capabilities import (is_capability_active,
+                                            get_capability_owner)
+    from fs_bot.rules_consts import EVENT_UNSHADED, EVENT_SHADED
+
+    # Card 8 unshaded (Baggage Trains): "Your March costs 0 Resources"
+    # — the owning Faction only.
+    if (is_capability_active(state, 8, EVENT_UNSHADED)
+            and get_capability_owner(state, 8) == faction):
+        return 0
+
+    cost = base
     # Double if Devastated — §3.2.2, §3.3.2
     if _is_devastated(state, region):
-        return base * 2
+        cost = base * 2
+        # Card 43 shaded: Aedui Command costs doubled (stacks: 2 -> 4).
+        if faction == AEDUI and is_capability_active(state, 43,
+                                                     EVENT_SHADED):
+            cost *= 2
+        return cost
 
     # Card A64 Abatis: "Roman March treats Abatis as Devastation" — any
     # Faction's Abatis marker in the origin doubles the ROMAN March cost.
@@ -107,6 +123,11 @@ def march_cost(state, region, faction):
         from fs_bot.rules_consts import MARKER_ABATIS
         if MARKER_ABATIS in state.get("markers", {}).get(region, {}):
             return base * 2
+
+    # Card 43 shaded (Convictolitavis): "Resource costs of Aedui
+    # Commands are doubled."
+    if faction == AEDUI and is_capability_active(state, 43, EVENT_SHADED):
+        return base * 2
 
     return base
 

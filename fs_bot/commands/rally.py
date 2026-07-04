@@ -222,6 +222,12 @@ def recruit_cost(state, region, faction=ROMANS, agreements=None):
     Returns:
         Integer Resource cost.
     """
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_SHADED as _ES13
+    # Card 13 shaded: "Recruit only where Supply Line, paying 2
+    # Resources per Region" — the Supply-Line discount is gone.
+    if is_capability_active(state, 13, _ES13):
+        return RECRUIT_COST
     if has_supply_line(state, region, faction, agreements):
         return 0
     return RECRUIT_COST
@@ -303,6 +309,13 @@ def rally_cost(state, region, faction):
         if is_devastated and has_vercingetorix:
             return ARVERNI_RALLY_DEVASTATED_WITH_VERCINGETORIX
 
+    # Card 43 shaded (Convictolitavis): Aedui Command costs doubled.
+    if faction == AEDUI:
+        from fs_bot.cards.capabilities import is_capability_active
+        from fs_bot.rules_consts import EVENT_SHADED
+        if is_capability_active(state, 43, EVENT_SHADED):
+            return RALLY_COST * 2
+
     return RALLY_COST
 
 
@@ -362,6 +375,13 @@ def validate_recruit_region(state, region):
         if _is_intimidated(state, region):
             if get_leader_in_region(state, region, ROMANS) is None:
                 return False, "Region is Intimidated and has no Roman Leader"
+
+    # Card 13 shaded: "Recruit only where Supply Line".
+    from fs_bot.cards.capabilities import is_capability_active as _ica13
+    from fs_bot.rules_consts import EVENT_SHADED as _ES13b
+    if _ica13(state, 13, _ES13b):
+        if not has_supply_line(state, region, ROMANS):
+            return False, "Card 13 shaded: Recruit only where Supply Line"
 
     # Must have Roman Control OR Roman Leader/Ally/Fort — §3.2.1
     has_roman_control = is_controlled_by(state, region, ROMANS)

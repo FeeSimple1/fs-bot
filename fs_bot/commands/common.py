@@ -4,7 +4,8 @@ Provides the base CommandError exception and shared helper functions
 used by rally, march, raid, and seize modules.
 """
 
-from fs_bot.rules_consts import MARKER_DEVASTATED, MARKER_INTIMIDATED
+from fs_bot.rules_consts import (MARKER_DEVASTATED, MARKER_INTIMIDATED,
+                                 ROMANS)
 from fs_bot.board.pieces import find_leader, get_leader_in_region
 from fs_bot.map.map_data import is_adjacent
 
@@ -53,6 +54,14 @@ def check_leader_proximity(state, region, faction, named_leader, sa_name):
     Returns:
         (True, "") if valid, (False, reason) if not.
     """
+    # Card 12 unshaded (Titus Labienus): "Roman Special Abilities may
+    # select Regions regardless of where the Roman leader is located."
+    if faction == ROMANS:
+        from fs_bot.cards.capabilities import is_capability_active
+        from fs_bot.rules_consts import EVENT_UNSHADED
+        if is_capability_active(state, 12, EVENT_UNSHADED):
+            return (True, "")
+
     leader_region = find_leader(state, faction)
     if leader_region is None:
         return (False, f"{faction} leader not on map — cannot {sa_name}")

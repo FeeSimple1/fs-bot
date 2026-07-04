@@ -4097,9 +4097,20 @@ def _execute_suborn(state, faction, bot_action):
     from fs_bot.rules_consts import AEDUI as _AEDUI, ALLY as _ALLY,         WARBAND as _WARBAND, AUXILIA as _AUXILIA
     plan = _sa_detail(bot_action, "suborn_plan") or []
 
+    # §4.4.2 Suborn selects one Region; card 43 unshaded (Convictolitavis)
+    # expands it: "Suborn is maximum 2 Regions."
+    from fs_bot.cards.capabilities import is_capability_active as _ica43
+    from fs_bot.rules_consts import EVENT_UNSHADED as _EU43
+    _max_r = 2 if _ica43(state, 43, _EU43) else 1
+
     done, errors = [], []
     for sp in plan:
         region = sp.get("region")
+        if len(done) >= _max_r:
+            errors.append({"region": region,
+                           "error": "Suborn is maximum %d Region(s) "
+                                    "(§4.4.2 / card 43)" % _max_r})
+            continue
         ops = []
         for a in sp.get("actions", []) or []:
             act = a.get("action")
@@ -4149,6 +4160,31 @@ def _execute_build(state, faction, bot_action):
     except Exception as exc:  # bot helper failure must not crash the turn
         return {"executed": False, "sa": _SA_BUILD,
                 "reason": f"build plan unavailable: {exc!r}"}
+
+    # Card 12 shaded: "Build and Scout Reveal are maximum 1 Region."
+    # §8.3.3: non-players apply limited-Region Capabilities in the FIRST
+    # Regions that apply — trim the plan to its first Region overall.
+    from fs_bot.cards.capabilities import is_capability_active as _ica12
+    from fs_bot.rules_consts import EVENT_SHADED as _ES12
+    if _ica12(state, 12, _ES12):
+        _first = None
+        for _k in ("forts", "subdue", "allies"):
+            for _e in plan.get(_k, []) or []:
+                _r = _e if isinstance(_e, str) else _e.get("region")
+                if _r is not None:
+                    _first = _r
+                    break
+            if _first is not None:
+                break
+        if _first is not None:
+            plan = {
+                "forts": [r for r in (plan.get("forts") or [])
+                          if r == _first],
+                "subdue": [e for e in (plan.get("subdue") or [])
+                           if e.get("region") == _first],
+                "allies": [e for e in (plan.get("allies") or [])
+                           if e.get("region") == _first],
+            }
 
     done, errors = [], []
     for region in plan.get("forts", []) or []:
@@ -4570,7 +4606,16 @@ def _execute_scout(state, faction, bot_action):
         except _EXEC_ERRORS as exc:
             errors.append({"action": "move", "error": str(exc)})
 
-    for tgt in plan.get("scout_targets", []) or []:
+    # Card 12 shaded: "Build and Scout Reveal are maximum 1 Region" —
+    # Reveal in the first target Region only (§8.3.3 for non-players).
+    from fs_bot.cards.capabilities import is_capability_active as _ica12s
+    from fs_bot.rules_consts import EVENT_SHADED as _ES12s
+    _targets = plan.get("scout_targets", []) or []
+    if _ica12s(state, 12, _ES12s) and _targets:
+        _first_r = _targets[0].get("region")
+        _targets = [t for t in _targets if t.get("region") == _first_r]
+
+    for tgt in _targets:
         region = tgt.get("region")
         enemy = tgt.get("enemy")
         want = tgt.get("hidden", 0)  # Hidden enemy Warbands to Reveal

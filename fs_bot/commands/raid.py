@@ -140,6 +140,14 @@ def validate_raid_steal_target(state, region, faction, target_faction):
     if target_pieces < 1:
         return False, f"{target_faction} has no pieces in {region}"
 
+    # Card 8 shaded: the owner "steal[s] Resources despite Citadels or
+    # Forts" — skip both checks for the owning Faction.
+    from fs_bot.cards.capabilities import (is_capability_active as _ica8,
+                                           get_capability_owner as _gco8)
+    from fs_bot.rules_consts import EVENT_SHADED as _ES8
+    if _ica8(state, 8, _ES8) and _gco8(state, 8) == faction:
+        return True, None
+
     # Must NOT have Citadel — §3.3.3
     target_citadels = count_pieces(state, region, target_faction, CITADEL)
     if target_citadels > 0:
@@ -223,8 +231,18 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
     # Validate action count
     if not raid_actions or len(raid_actions) < 1:
         raise CommandError("Must specify at least 1 Raid action")
-    if len(raid_actions) > 2:
-        raise CommandError("Maximum 2 Warbands can Raid per Region (§3.3.3)")
+    from fs_bot.cards.capabilities import (is_capability_active,
+                                            get_capability_owner)
+    from fs_bot.rules_consts import EVENT_SHADED as _ESH8
+    _c8 = (is_capability_active(state, 8, _ESH8)
+           and get_capability_owner(state, 8) == faction)
+    # Card 8 shaded (Baggage Trains): "Your Raids may use 3 Warbands
+    # per Region ..."
+    _raid_max = 3 if _c8 else 2
+    if len(raid_actions) > _raid_max:
+        raise CommandError(
+            f"Maximum {_raid_max} Warbands can Raid per Region (§3.3.3"
+            + (", card 8 shaded)" if _c8 else ")"))
 
     # Check enough Hidden Warbands
     hidden_warbands = count_pieces_by_state(

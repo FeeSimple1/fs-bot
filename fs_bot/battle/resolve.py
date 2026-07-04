@@ -318,10 +318,17 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     # Calculate Attack Losses
     # For halving: use the original Fort/Citadel state (before Besiege)
     # — §4.2.3: "even after the Citadel is removed"
+    # Card 10 unshaded: "Besiege cancels Citadel's halving of Losses."
+    _c10_citadel = had_citadel_at_start
+    if besiege_target is not None:
+        from fs_bot.cards.capabilities import is_capability_active as _ica
+        from fs_bot.rules_consts import EVENT_UNSHADED as _EUN
+        if _ica(state, 10, _EUN):
+            _c10_citadel = False
     attack_losses = _calculate_attack_losses(
         state, region, attacking_faction, defending_faction,
         is_retreat=defender_retreats,
-        had_citadel_at_start=had_citadel_at_start,
+        had_citadel_at_start=_c10_citadel,
         had_fort_at_start=had_fort_at_start,
         double_auxilia=double_auxilia,
         allied_factions=allied_factions,
@@ -536,7 +543,12 @@ def _calculate_attack_losses(state, region, attacking_faction,
 
     # Component A
     if caesar_attacking:
-        component_a = enemy_legions * 2
+        # Card 15 shaded: "Caesar attacking in Battle doubles Loss
+        # inflicted by 1 Legion only (not by all Legions)."
+        if is_capability_active(state, 15, _ESH) and enemy_legions > 0:
+            component_a = enemy_legions + 1
+        else:
+            component_a = enemy_legions * 2
     elif ambiorix_attacking:
         component_a = enemy_warbands * 1
     else:
@@ -570,12 +582,35 @@ def _calculate_attack_losses(state, region, attacking_faction,
     _motivated = (defending_faction == _GE
                   and is_capability_active(state, "A33", _ESH))
 
+    # Card 27 unshaded: "Arverni Battle each Region inflicts 1 fewer
+    # Defender Loss (before any halving)" — Arverni attack step only.
+    from fs_bot.rules_consts import (ARVERNI as _ARV, ROMANS as _RO,
+                                     EVENT_UNSHADED as _EUN2,
+                                     LEGION as _LG2)
+    if (attacking_faction == _ARV
+            and is_capability_active(state, 27, _EUN2)):
+        total = max(0.0, total - 1)
+
     # Halving — use original state
     if (is_retreat or had_citadel_at_start or had_fort_at_start
             or _abatis_active or _motivated):
         total = total / 2
 
-    return int(total)
+    total = int(total)
+
+    # Card 15 unshaded: "In Battles that have Roman Leader and Legion,
+    # final Losses against Romans -1 and final Losses that Romans
+    # inflict +2" (Tip: fully calculate first, then subtract or add).
+    if is_capability_active(state, 15, _EUN2):
+        _ro_leader = get_leader_in_region(state, region, _RO) is not None
+        _ro_legion = count_pieces(state, region, _RO, _LG2) > 0
+        if _ro_leader and _ro_legion:
+            if attacking_faction == _RO:
+                total += 2
+            if defending_faction == _RO:
+                total = max(0, total - 1)
+
+    return total
 
 
 def _count_all_flippable(faction_pieces, piece_type):

@@ -15,6 +15,7 @@ Reference:
 import math
 
 from fs_bot.rules_consts import (
+    EVENT_UNSHADED,
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS,
@@ -151,7 +152,11 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # Component A: Legions or Warbands
     if caesar_attacking:
         # §3.2.4: "two per Legion instead of just one per Legion"
-        component_a = enemy_legions * 2
+        # Card 15 shaded: Caesar doubles the Loss of 1 Legion only.
+        if is_capability_active(state, 15, _ESH) and enemy_legions > 0:
+            component_a = enemy_legions + 1
+        else:
+            component_a = enemy_legions * 2
     elif ambiorix_attacking:
         # §3.3.4: "one for each Belgic Warband, not just ½"
         component_a = enemy_warbands * 1
@@ -243,6 +248,12 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         # Retreating"; halving applies once (never quartered).
         motivated_defender = _motivation and defending_faction == GERMANS
 
+        # Card 27 unshaded: Arverni attack inflicts 1 fewer Defender
+        # Loss before any halving.
+        if (enemy_faction == ARVERNI
+                and is_capability_active(state, 27, EVENT_UNSHADED)):
+            total = max(0.0, total - 1)
+
         if (is_retreat or has_fort or has_citadel or motivated_defender
                 or _abatis):
             total = total / 2
@@ -256,7 +267,19 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
             total += 1
 
     # Round down — §3.2.4: "round any fractions down"
-    return int(total)
+    total = int(total)
+
+    # Card 15 unshaded: Battles with Roman Leader AND Legion — final
+    # Losses Romans inflict +2; final Losses against Romans -1.
+    if is_capability_active(state, 15, EVENT_UNSHADED):
+        if (get_leader_in_region(state, region, ROMANS) is not None
+                and count_pieces(state, region, ROMANS, LEGION) > 0):
+            if enemy_faction == ROMANS:
+                total += 2
+            if defending_faction == ROMANS:
+                total = max(0, total - 1)
+
+    return total
 
 
 def _count_all_flippable(faction_pieces, piece_type):
@@ -407,6 +430,13 @@ def resolve_losses(state, region, faction, num_losses, *,
                 threshold = DIVICIACUS_LOSS_ROLL_THRESHOLD
             else:
                 threshold = LOSS_ROLL_THRESHOLD
+                # Card 10 unshaded: "Battle rolls remove Forts on 1-2
+                # not 1-3" — Roman Forts are more defensible.
+                if piece_type == FORT:
+                    from fs_bot.cards.capabilities import (
+                        is_capability_active as _ica10)
+                    if _ica10(state, 10, EVENT_UNSHADED):
+                        threshold = 2
 
             if roll <= threshold:
                 # Remove the piece

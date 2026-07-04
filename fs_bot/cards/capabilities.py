@@ -7,6 +7,9 @@ capabilities). Track which side (shaded/unshaded) is active.
 
 State storage: state["capabilities"] is a dict:
     {card_id: EVENT_SHADED or EVENT_UNSHADED}
+Owner-scoped capabilities ("Take this card" / "Place near a Faction" —
+cards 8, 10 shaded, 59 shaded, 63 shaded) additionally record the owning
+Faction in state["capability_owners"]: {card_id: faction}.
 
 Source: §5.3, §5.1.2, Card Reference, A Card Reference
 """
@@ -45,6 +48,17 @@ def activate_capability(state, card_id, shaded_or_unshaded):
     state["capabilities"][card_id] = shaded_or_unshaded
 
 
+def set_capability_owner(state, card_id, faction):
+    """Record the Faction that holds an owner-scoped capability card
+    ("Take this card ..." / "Place this card near a ... Faction")."""
+    state.setdefault("capability_owners", {})[card_id] = faction
+
+
+def get_capability_owner(state, card_id):
+    """The Faction holding an owner-scoped capability card, or None."""
+    return state.get("capability_owners", {}).get(card_id)
+
+
 def deactivate_capability(state, card_id):
     """Remove a capability from play.
 
@@ -60,6 +74,7 @@ def deactivate_capability(state, card_id):
         or None if the capability was not active.
     """
     _ensure_capabilities(state)
+    state.get("capability_owners", {}).pop(card_id, None)
     return state["capabilities"].pop(card_id, None)
 
 

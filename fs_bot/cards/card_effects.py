@@ -586,6 +586,10 @@ def execute_card_8(state, shaded=False):
     """
     side = EVENT_UNSHADED if not shaded else EVENT_SHADED
     activate_capability(state, 8, side)
+    # "Take this card" (both sides): owner-scoped to the executing Faction.
+    from fs_bot.cards.capabilities import set_capability_owner
+    if state.get("executing_faction"):
+        set_capability_owner(state, 8, state["executing_faction"])
 
 def execute_card_9(state, shaded=False):
     """Card 9: Mons Cevenna — Free March + Command near Provincia.
@@ -619,6 +623,18 @@ def execute_card_10(state, shaded=False):
     """
     side = EVENT_UNSHADED if not shaded else EVENT_SHADED
     activate_capability(state, 10, side)
+    if shaded:
+        # Shaded is owner-scoped ("take this card" / "place near a
+        # Gallic Faction"): event_params["faction"] chooses; default is
+        # the executing Faction when Gallic (the NP reading).
+        from fs_bot.cards.capabilities import set_capability_owner
+        from fs_bot.rules_consts import GALLIC_FACTIONS
+        owner = (state.get("event_params", {}) or {}).get("faction")
+        ex = state.get("executing_faction")
+        if owner is None and ex in GALLIC_FACTIONS:
+            owner = ex
+        if owner is not None:
+            set_capability_owner(state, 10, owner)
 
 def execute_card_11(state, shaded=False):
     """Card 11: Numidians — Place Auxilia + Battle / Remove Auxilia.
@@ -2454,6 +2470,18 @@ def execute_card_59(state, shaded=False):
     """
     side = EVENT_UNSHADED if not shaded else EVENT_SHADED
     activate_capability(state, 59, side)
+    if shaded:
+        # Shaded is owner-scoped ("take this card" / "place near a
+        # Gallic Faction"): event_params["faction"] chooses; default is
+        # the executing Faction when Gallic (the NP reading).
+        from fs_bot.cards.capabilities import set_capability_owner
+        from fs_bot.rules_consts import GALLIC_FACTIONS
+        owner = (state.get("event_params", {}) or {}).get("faction")
+        ex = state.get("executing_faction")
+        if owner is None and ex in GALLIC_FACTIONS:
+            owner = ex
+        if owner is not None:
+            set_capability_owner(state, 59, owner)
 
 def execute_card_60(state, shaded=False):
     """Card 60: Indutiomarus — Remove Belgic pieces / Place Belgic+German.
@@ -2627,6 +2655,18 @@ def execute_card_63(state, shaded=False):
     """
     side = EVENT_UNSHADED if not shaded else EVENT_SHADED
     activate_capability(state, 63, side)
+    if shaded:
+        # Shaded is owner-scoped ("take this card" / "place near a
+        # Gallic Faction"): event_params["faction"] chooses; default is
+        # the executing Faction when Gallic (the NP reading).
+        from fs_bot.cards.capabilities import set_capability_owner
+        from fs_bot.rules_consts import GALLIC_FACTIONS
+        owner = (state.get("event_params", {}) or {}).get("faction")
+        ex = state.get("executing_faction")
+        if owner is None and ex in GALLIC_FACTIONS:
+            owner = ex
+        if owner is not None:
+            set_capability_owner(state, 63, owner)
 
 def execute_card_64(state, shaded=False):
     """Card 64: Correus — Replace Belgic pieces / Remove+Rally Belgae.

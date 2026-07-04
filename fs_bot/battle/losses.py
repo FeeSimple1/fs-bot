@@ -170,6 +170,12 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # double_auxilia (e.g. A17 'double Losses by Auxilia'): Auxilia cause
     # 1 Loss each instead of 1/2.
     aux_factor = 1.0 if double_auxilia else 0.5
+    # Card 59 unshaded (Germanic Horse): Roman Auxilia inflict 1 Loss each
+    # in the flagged Region this Battle Command (attack and counterattack).
+    if (enemy_faction == ROMANS
+            and state.get("event_modifiers", {}).get(
+                "card59_unshaded_region") == region):
+        aux_factor = 1.0
     component_b = leader_value + enemy_auxilia * aux_factor
 
     total = component_a + component_b
@@ -253,6 +259,15 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         if (enemy_faction == ARVERNI
                 and is_capability_active(state, 27, EVENT_UNSHADED)):
             total = max(0.0, total - 1)
+
+        # Card 59 shaded: the owner doubles the enemy's Losses in the
+        # flagged Region unless the Defender has Fort/Citadel.
+        if (state.get("event_modifiers", {}).get(
+                "card59_shaded_region") == region
+                and not (has_fort or has_citadel)):
+            from fs_bot.cards.capabilities import get_capability_owner
+            if get_capability_owner(state, 59) == enemy_faction:
+                total *= 2
 
         if (is_retreat or has_fort or has_citadel or motivated_defender
                 or _abatis):

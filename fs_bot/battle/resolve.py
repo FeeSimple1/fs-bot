@@ -506,7 +506,8 @@ def _calculate_attack_losses(state, region, attacking_faction,
     scenario = state["scenario"]
 
     from fs_bot.cards.capabilities import is_capability_active
-    from fs_bot.rules_consts import EVENT_SHADED as _ESH, GERMANS as _GE
+    from fs_bot.rules_consts import (EVENT_SHADED as _ESH, GERMANS as _GE,
+                                     ROMANS as _RO59)
 
     # Leader modifiers
     caesar_attacking = (enemy_leader == CAESAR)
@@ -558,6 +559,12 @@ def _calculate_attack_losses(state, region, attacking_faction,
     # Component B
     leader_value = 1 if enemy_leader is not None else 0
     aux_factor = 1.0 if double_auxilia else 0.5
+    # Card 59 unshaded: Roman Auxilia inflict 1 Loss each in the flagged
+    # Region this Battle Command.
+    if (attacking_faction == _RO59
+            and state.get("event_modifiers", {}).get(
+                "card59_unshaded_region") == region):
+        aux_factor = 1.0
     component_b = leader_value + enemy_auxilia * aux_factor
 
     total = component_a + component_b
@@ -590,6 +597,15 @@ def _calculate_attack_losses(state, region, attacking_faction,
     if (attacking_faction == _ARV
             and is_capability_active(state, 27, _EUN2)):
         total = max(0.0, total - 1)
+
+    # Card 59 shaded: the owner doubles enemy Losses in the flagged
+    # Region unless the Defender has Fort/Citadel (at-start state).
+    if (state.get("event_modifiers", {}).get(
+            "card59_shaded_region") == region
+            and not (had_fort_at_start or had_citadel_at_start)):
+        from fs_bot.cards.capabilities import get_capability_owner
+        if get_capability_owner(state, 59) == attacking_faction:
+            total *= 2
 
     # Halving — use original state
     if (is_retreat or had_citadel_at_start or had_fort_at_start

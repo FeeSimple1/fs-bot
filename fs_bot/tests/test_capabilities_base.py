@@ -254,3 +254,122 @@ class TestCapabilityOwnership:
         assert get_capability_owner(st, 8) == BELGAE
         deactivate_capability(st, 8)
         assert get_capability_owner(st, 8) is None
+
+
+class TestCard59GermanicHorse:
+    def test_unshaded_roman_auxilia_full_loss_in_flagged_region(self):
+        from fs_bot.battle.losses import calculate_losses
+        st = _state()
+        r = TREVERI
+        _clear(st, r)
+        place_piece(st, r, ROMANS, AUXILIA, 4)
+        place_piece(st, r, BELGAE, WARBAND, 6)
+        base = calculate_losses(st, r, ROMANS, BELGAE)
+        assert base == 2      # 4 aux * 0.5
+        st.setdefault("event_modifiers", {})[
+            "card59_unshaded_region"] = r
+        assert calculate_losses(st, r, ROMANS, BELGAE) == 4  # 1 each
+
+    def test_shaded_owner_doubles_unless_fort(self):
+        from fs_bot.battle.losses import calculate_losses
+        st = _state()
+        r = TREVERI
+        _clear(st, r)
+        place_piece(st, r, BELGAE, WARBAND, 4)
+        place_piece(st, r, ROMANS, AUXILIA, 3)
+        activate_capability(st, 59, EVENT_SHADED)
+        set_capability_owner(st, 59, BELGAE)
+        base = calculate_losses(st, r, BELGAE, ROMANS)
+        st.setdefault("event_modifiers", {})["card59_shaded_region"] = r
+        assert calculate_losses(st, r, BELGAE, ROMANS) == base * 2
+        place_piece(st, r, ROMANS, FORT, 1)
+        # Fort: no doubling, and the fort halves instead.
+        assert calculate_losses(st, r, BELGAE, ROMANS) == base // 2
+
+
+class TestCard13BalearicSlingersUnshaded:
+    def test_prefire_strips_attacker_before_battle(self):
+        from fs_bot.engine.execute import _execute_battle
+        st = _state()
+        r = TREVERI
+        _clear(st, r)
+        place_piece(st, r, BELGAE, WARBAND, 4)   # attacker
+        place_piece(st, r, ROMANS, AUXILIA, 4)   # defender with 4 aux
+        refresh_all_control(st)
+        activate_capability(st, 13, EVENT_UNSHADED)
+        st["non_player_factions"] = {ROMANS, BELGAE, ARVERNI, AEDUI}
+        res = _execute_battle(st, BELGAE, {
+            "sa": None, "sa_regions": [],
+            "details": {"battle_plan": [{"region": r, "target": ROMANS}]}})
+        # Pre-fire: 4 aux -> 2 Belgae warbands dead BEFORE the battle;
+        # attack then computed from 2 warbands (1 loss on Rome).
+        assert count_pieces(st, r, BELGAE, WARBAND) <= 2
+
+
+class TestCard27ShadedAbsorption:
+    def test_six_arverni_attacking_forces_extra_loss(self):
+        from fs_bot.engine.execute import _execute_battle
+        st = _state()
+        r = MANDUBII
+        _clear(st, r)
+        place_piece(st, r, ARVERNI, WARBAND, 6)
+        place_piece(st, r, AEDUI, WARBAND, 4)
+        refresh_all_control(st)
+        activate_capability(st, 27, EVENT_SHADED)
+        st["non_player_factions"] = {ROMANS, BELGAE, ARVERNI, AEDUI}
+        before = count_pieces(st, r, AEDUI, WARBAND)
+        _execute_battle(st, ARVERNI, {
+            "sa": None, "sa_regions": [],
+            "details": {"battle_plan": [{"region": r, "target": AEDUI}]}})
+        # 6*0.5=3 battle losses + 1 pre-absorbed = all 4 gone.
+        assert count_pieces(st, r, AEDUI, WARBAND) == 0
+
+
+class TestCard10ShadedAmbushRemoval:
+    def test_owner_ambush_removes_citadel(self):
+        from fs_bot.engine.execute import _execute_battle
+        from fs_bot.rules_consts import HIDDEN
+        st = _state()
+        r = MANDUBII
+        _clear(st, r)
+        place_piece(st, r, BELGAE, WARBAND, 6, piece_state=HIDDEN)
+        place_piece(st, r, AEDUI, WARBAND, 1, piece_state=HIDDEN)
+        place_piece(st, r, AEDUI, CITADEL, 1)
+        refresh_all_control(st)
+        activate_capability(st, 10, EVENT_SHADED)
+        set_capability_owner(st, 10, BELGAE)
+        st["non_player_factions"] = {ROMANS, BELGAE, ARVERNI, AEDUI}
+        _execute_battle(st, BELGAE, {
+            "sa": "Ambush", "sa_regions": [r],
+            "details": {"battle_plan": [{"region": r, "target": AEDUI}]}})
+        assert count_pieces(st, r, AEDUI, CITADEL) == 0
+
+
+class TestCard63WinterCampaign:
+    def test_unshaded_quarters_free_outside_devastation(self):
+        from fs_bot.engine.winter import _quarters_roman_pay_or_roll
+        st = _state()
+        r = TREVERI
+        _clear(st, r)
+        place_piece(st, r, ROMANS, AUXILIA, 2)
+        st["resources"][ROMANS] = 10
+        activate_capability(st, 63, EVENT_UNSHADED)
+        res = _quarters_roman_pay_or_roll(
+            st, {r: {"pay": 2, "roll": 0}})
+        assert res["total_cost"] == 0
+        assert st["resources"][ROMANS] == 10
+
+    def test_shaded_np_owner_acts_after_harvest(self):
+        # Owner recorded + capability active -> run_winter_round records a
+        # winter_campaign phase (executed or a clean flowchart decline).
+        from fs_bot.state.setup import setup_scenario
+        from fs_bot.engine.winter import run_winter_round
+        from fs_bot.engine.game_engine import get_sop_factions
+        from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT as _GR
+        st = setup_scenario(_GR, seed=6)
+        st["non_player_factions"] = set(get_sop_factions(st))
+        activate_capability(st, 63, EVENT_SHADED)
+        set_capability_owner(st, 63, BELGAE)
+        res = run_winter_round(st)
+        wc = res.get("phases", {}).get("winter_campaign")
+        assert wc is not None and wc["owner"] == BELGAE

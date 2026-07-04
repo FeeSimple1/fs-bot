@@ -571,6 +571,13 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
             # A63 Winter Campaign: Romans pay Quarters only in Devastated
             # Regions — elsewhere pieces Quarter at no cost.
             base_cost = 0
+        else:
+            # Base card 63 unshaded (Winter Campaign): same rule.
+            from fs_bot.cards.capabilities import (
+                is_capability_active as _ica63)
+            from fs_bot.rules_consts import EVENT_UNSHADED as _EU63
+            if _ica63(state, 63, _EU63):
+                base_cost = 0
 
         # Apply decisions or default to rolling
         decisions = quartering_decisions.get(region, {})
@@ -1379,6 +1386,37 @@ def run_winter_round(state, is_final=False,
             result["phases"]["harvest_belgica_legions"] = {
                 "region": dest, "legions": k}
     result["phases"]["harvest"] = harvest_phase(state)
+
+    # Card 63 shaded (Winter Campaign): "Place this card near a Gallic
+    # Faction. After each Harvest, it may do any 2 Commands and/or Special
+    # Abilities (paying costs)." NP reading: the owner's flowchart Command
+    # with its Special Ability (= the two actions), costs paid normally. A
+    # player owner is consulted via the decision agent (kind
+    # "winter_campaign"); None/defer falls back to the NP path.
+    from fs_bot.cards.capabilities import (is_capability_active as _i63,
+                                           get_capability_owner as _g63)
+    from fs_bot.rules_consts import EVENT_SHADED as _ES63
+    if _i63(state, 63, _ES63):
+        _owner = _g63(state, 63)
+        if _owner is not None:
+            from fs_bot.engine.execute import _resolve_free_command
+            _agent = state.get("decision_agent")
+            _plan = None
+            if _agent is not None and _owner not in state.get(
+                    "non_player_factions", set()):
+                try:
+                    _plan = _agent(state, _owner,
+                                   {"kind": "winter_campaign"})
+                except Exception:
+                    _plan = None
+            if _plan is None:
+                _r63 = _resolve_free_command(state, _owner)
+            else:
+                from fs_bot.engine.execute import execute_decision
+                _r63 = execute_decision(state, _owner,
+                                        {"player_action": _plan})
+            result["phases"]["winter_campaign"] = {
+                "owner": _owner, "result": _r63}
     # §8.6.6 NP Aedui subsidy — Quarters/Harvest are §1.5.2 transfer
     # windows and Roman Resources drop paying Quarters costs.
     from fs_bot.engine.execute import maybe_np_aedui_subsidy

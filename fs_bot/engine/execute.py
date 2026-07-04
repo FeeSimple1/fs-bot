@@ -3405,6 +3405,43 @@ def _execute_battle(state, faction, bot_action):
     sa_regions = {r for r in (bot_action.get("sa_regions") or [])
                   if isinstance(r, str)}
 
+    from fs_bot.cards.capabilities import (
+        is_capability_active as _ica_b, get_capability_owner as _gco_b)
+    from fs_bot.rules_consts import (EVENT_UNSHADED as _EU_B,
+                                     EVENT_SHADED as _ES_B,
+                                     ROMANS as _RO_B, AUXILIA as _AUX_B)
+    _plan_regions = [e.get("region") for e in battle_plan
+                     if e.get("region") is not None]
+
+    # Card 13 unshaded (Balearic Slingers): on an ENEMY Battle Command the
+    # Romans choose 1 Region — Auxilia there first inflict 1/2 Loss each on
+    # the attacker, then the Battle resolves. NP choice: most Roman Auxilia.
+    _c13_region = None
+    if (faction != _RO_B and _ica_b(state, 13, _EU_B) and _plan_regions):
+        _cands = [(count_pieces(state, r, _RO_B, _AUX_B), r)
+                  for r in sorted(set(_plan_regions))]
+        _cands = [c for c in _cands if c[0] > 0]
+        if _cands:
+            _c13_region = max(_cands)[1]
+
+    # Card 59 unshaded (Germanic Horse): Romans may inflict 1 Loss per
+    # Auxilia (not 1/2) in 1 Region per Battle Command — attack AND
+    # counterattack (Tip). NP choice: the Region with most Roman Auxilia.
+    if _ica_b(state, 59, _EU_B) and _plan_regions:
+        _cands = [(count_pieces(state, r, _RO_B, _AUX_B), r)
+                  for r in sorted(set(_plan_regions))]
+        _cands = [c for c in _cands if c[0] > 0]
+        if _cands:
+            state.setdefault("event_modifiers", {})[
+                "card59_unshaded_region"] = max(_cands)[1]
+
+    # Card 59 shaded: the owning Gallic Faction doubles the enemy's Losses
+    # in 1 Region per Battle Command unless the Defender has Fort/Citadel.
+    if (_ica_b(state, 59, _ES_B) and _gco_b(state, 59) == faction
+            and _plan_regions):
+        state.setdefault("event_modifiers", {})[
+            "card59_shaded_region"] = sorted(set(_plan_regions))[0]
+
     battles = []
     errors = []
     for entry in battle_plan:
@@ -3434,6 +3471,39 @@ def _execute_battle(state, faction, bot_action):
             if options:
                 besiege_target = options[0]  # Citadel > Ally > Settlement
 
+        # Card 13 unshaded pre-fire: Roman Auxilia inflict 1/2 each on the
+        # attacker BEFORE the Battle resolves in the chosen Region.
+        if _c13_region == region:
+            from fs_bot.battle.losses import resolve_losses as _rl13
+            _aux = count_pieces(state, region, _RO_B, _AUX_B)
+            _pre = int(_aux * 0.5)
+            if _pre > 0:
+                _rl13(state, region, faction, _pre)
+            _c13_region = None  # once per Command
+
+        # Card 27 shaded (Massed Gallic Archers): at the start of Battles
+        # with 6+ Arverni Warbands, the other side first absorbs 1 extra
+        # Loss (attacking or defending — card Tip).
+        from fs_bot.rules_consts import (ARVERNI as _ARV_B,
+                                         WARBAND as _WB_B)
+        if _ica_b(state, 27, _ES_B):
+            from fs_bot.battle.losses import resolve_losses as _rl27
+            if (faction == _ARV_B
+                    and count_pieces(state, region, _ARV_B, _WB_B) >= 6
+                    and count_pieces(state, region, defender) > 0):
+                _rl27(state, region, defender, 1)
+            elif (defender == _ARV_B
+                    and count_pieces(state, region, _ARV_B, _WB_B) >= 6
+                    and count_pieces(state, region, faction) > 0):
+                _rl27(state, region, faction, 1)
+            # If the absorption emptied the defender, skip the battle.
+            if count_pieces(state, region, defender) <= 0:
+                battles.append({"region": region, "defender": defender,
+                                "is_ambush": is_ambush,
+                                "besiege": besiege_target,
+                                "result": {"card27_wiped": True}})
+                continue
+
         try:
             if no_retreat:
                 retreat_decl, retreat_region = (False, None)
@@ -3456,10 +3526,29 @@ def _execute_battle(state, faction, bot_action):
             errors.append({"region": region, "defender": defender,
                            "error": str(exc)})
             continue
+        # Card 10 shaded (Ballistae): the owning Gallic Faction "after
+        # Ambush may remove defending Fort or Citadel" — NP: always,
+        # Citadel first (higher value; Q13 tribe sync applied).
+        if (is_ambush and _ica_b(state, 10, _ES_B)
+                and _gco_b(state, 10) == faction):
+            from fs_bot.rules_consts import (CITADEL as _CIT10,
+                                             FORT as _F10)
+            from fs_bot.board.pieces import (
+                clear_allied_tribe as _cat10, remove_piece as _rp10)
+            if count_pieces(state, region, defender, _CIT10) > 0:
+                _rp10(state, region, defender, _CIT10)
+                _cat10(state, region, defender, _CIT10)
+            elif count_pieces(state, region, defender, _F10) > 0:
+                _rp10(state, region, defender, _F10)
+
         battles.append({"region": region, "defender": defender,
                         "is_ambush": is_ambush,
                         "besiege": besiege_target,
                         "result": res})
+
+    # Clear the per-Command card 59 region flags.
+    for _k59 in ("card59_unshaded_region", "card59_shaded_region"):
+        state.get("event_modifiers", {}).pop(_k59, None)
 
     return {
         "executed": len(battles) > 0,
@@ -3520,6 +3609,15 @@ def _execute_recruit(state, faction, bot_action):
             if _get_avail(state, _ROMANS_F, _ALLY_C) < 1:
                 superseded.append({"region": region, "tribe": tribe})
                 continue
+        # Budget pre-check — "Place all Allies/Auxilia ABLE": entries the
+        # Romans can no longer afford (e.g. card 13 shaded removed the
+        # Supply-Line discount mid-plan) are skipped as unaffordable, not
+        # errors — the rule's own 'able' qualifier, not a refused proposal.
+        from fs_bot.commands.rally import recruit_cost as _rcost
+        if state["resources"].get(_ROMANS_F, 0) < _rcost(state, region):
+            superseded.append({"region": region, "action": action,
+                               "reason": "unaffordable"})
+            continue
         try:
             res = recruit_in_region(state, region, action, tribe=tribe)
             placed.append({"region": region, "action": action,

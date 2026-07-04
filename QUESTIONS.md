@@ -2317,3 +2317,65 @@ to garrison. 8 new planner tests.
 
 Verification: 2103 tests pass; strict census seeds 1-15 exit 0
 illegal=0, hashseed 0/7 byte-identical; canary rebaselined and green.
+
+## CAPABILITY ARC COMPLETE — all nine inert base-game capabilities implemented (July 2026)
+
+The audit's backlog (cards 8, 10, 12, 13, 15, 27, 43, 59, 63) is done;
+with 55, A33, and A38-shaded from earlier this week, every capability
+in both games now has a consumer. New schema: owner-scoped
+capabilities ("Take this card" / "Place near a Gallic Faction") record
+their holder in state["capability_owners"] (set/get_capability_owner;
+Shifting Loyalties' deactivate clears it).
+
+Per card (text: Card Reference; each with regression tests):
+- **8 Baggage Trains**: owner March costs 0; owner Raids 3 Warbands
+  per Region and steal despite Citadel/Fort.
+- **10 Ballistae**: unshaded — Besiege cancels Citadel halving, Battle
+  rolls remove Forts on 1-2 not 1-3; shaded — owner's Ambush then
+  removes defending Citadel (first) or Fort, Q13 tribe sync applied.
+- **12 Titus Labienus**: unshaded — Roman SAs ignore leader proximity
+  (check_leader_proximity gate); shaded — Build and Scout Reveal
+  trimmed to 1 Region (§8.3.3 first-Region for NP plans).
+- **13 Balearic Slingers**: unshaded — on an enemy Battle Command the
+  Romans pre-fire Auxilia (1/2 each) on the attacker in 1 Region (NP
+  choice: most Auxilia; fires before the Battle resolves); shaded —
+  Recruit only where Supply Line, always 2 Resources.
+- **15 Legio X**: unshaded — with Roman Leader AND Legion: final
+  Losses Romans inflict +2, against Romans -1 (post-rounding, both
+  calculators, per the card Tip); shaded — Caesar doubles ONE Legion.
+- **27 Massed Gallic Archers**: unshaded — Arverni attack inflicts 1
+  fewer before halving (attack step only, per Tip); shaded — with 6+
+  Arverni Warbands the other side absorbs 1 Loss at Battle start
+  (attacking or defending; a wiped defender skips the Battle).
+- **43 Convictolitavis**: unshaded — Suborn max 2 Regions (the base
+  1-Region cap was previously UNENFORCED in the executor — now both
+  are); shaded — Aedui Command costs double (March/Rally). Also fixed
+  the Aedui bot's dead 'convictolitavis_unshaded' key.
+- **59 Germanic Horse**: unshaded — Roman Auxilia inflict 1 each in 1
+  Region per Battle Command (attack and counterattack, per Tip; NP
+  picks most-Auxilia Region); shaded — the Gallic owner doubles enemy
+  Losses in 1 Region per own Battle Command unless Defender has
+  Fort/Citadel. Per-Command region flags in event_modifiers, cleared
+  after the Command.
+- **63 Winter Campaign**: unshaded — Roman Quarters cost 0 outside
+  Devastated Regions (shares the A63 rule); shaded — after each
+  Harvest the Gallic owner takes its flowchart Command + SA ("any 2
+  Commands and/or SAs", paying costs; player owner consulted via
+  decision agent kind "winter_campaign", NP fallback).
+
+**Also fixed en route**: Roman Recruit is now budget-aware (entries
+the Romans cannot afford are skipped as "unaffordable" per the rule's
+own 'all able' qualifier — census had flagged 4 illegal
+Recruit-overruns when card 13 shaded removed the Supply discount).
+
+**Balance**: canary rebaselined (second deliberate rebaseline this
+week): Great Revolt spread out (Ro 4 / Ae 4 / Be 9 / Ar 3); Pax
+Gallica and Reconquest stay Rome-heavy post-§8.8.1.
+
+NP approximations documented: NP region/owner choices for 10/13/59/63
+default to self/most-value/first-region as noted per card; player
+hooks exist where a choice is interactive (63 shaded).
+
+Verification: 2125 tests pass (22 new capability tests); strict census
+seeds 1-15 exit 0 illegal=0, hashseed 0/7 byte-identical; player_fuzz
+seeds 1-8 hard-findings=0; canary green post-rebaseline.

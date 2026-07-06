@@ -51,6 +51,15 @@ The per-command `details` shapes (battle_plan, raid_plan, rally_plan,
 recruit_plan, March origins/destinations, disperse_regions, and Event
 `card_id`/`text_preference`/`event_params`) are exactly what
 `fs_bot/cli/human_plan.py` builds for the interactive CLI — use it as the
+reference. March plans additionally accept exact per-origin `routes`
+({origin: [region, ...]}), per-origin subset `groups`
+({origin: {piece_type: count, "Leader": bool}}), and §3.3.2
+`extra_groups` ([{origin, route, group}] — further groups from the
+post-departure remainder of an origin). The Roman Build and Scout
+Special Abilities accept player plans (`build_plan`
+{forts, subdue, allies} and `scout_plan` {auxilia_moves,
+scout_targets}); without one, the bots' flowchart plans run instead.
+Optional `transfers` ([{to, amount}], §1.5.2) ride any action. Use it as the
 reference, or call the `moves` helpers below.
 
 ## 2. Reactive decisions — `state["decision_agent"]`

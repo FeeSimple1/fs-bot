@@ -212,6 +212,14 @@ def _estimate_battle_losses(state, region, attacker, defender, scenario):
 
     losses_suffered = int(counter_raw)
 
+    # Card 27 shaded: 6+ Arverni Warbands force 1 extra absorbed Loss on
+    # the other side at Battle start (estimate term; executor applies it).
+    from fs_bot.bots.bot_common import card27_shaded_absorption
+    losses_suffered += card27_shaded_absorption(state, region, attacker,
+                                                defender)
+    losses_inflicted += card27_shaded_absorption(state, region, defender,
+                                                 attacker)
+
     return (losses_inflicted, losses_suffered)
 
 

@@ -3399,6 +3399,19 @@ def _execute_battle(state, faction, bot_action):
     force_retreat = bool(details.get("force_retreat"))
     allied_factions = tuple(details.get("allied_factions") or ())
     warband_full_loss = bool(details.get("warband_full_loss"))
+
+    # A31 German Phalanx vs one-shot Event battle benefits (BGG thread
+    # 2079436: one-shot effects like a Germans-executed Sabis no-retreat
+    # count as "Event effects"). Unshaded cancels benefits TO German
+    # attackers (their event-granted no_retreat / warband_full_loss);
+    # shaded cancels effects HARMING German defenders (a no_retreat
+    # pinned on them) — handled per battle below.
+    from fs_bot.rules_consts import GERMANS as _GE_A31
+    if (faction == _GE_A31
+            and state.get("event_modifiers", {}).get(
+                "card_A31_cancel_german_benefits")):
+        no_retreat = False
+        warband_full_loss = False
     sa = bot_action.get("sa")
     # sa_regions are string Region names for Ambush/Besiege; other SAs
     # (e.g. Intimidate) carry dict plans we ignore here, so filter to strings.
@@ -3504,8 +3517,19 @@ def _execute_battle(state, faction, bot_action):
                                 "result": {"card27_wiped": True}})
                 continue
 
+        # A31 shaded: "Event effects harming Germans in Battle are
+        # cancelled" — an event's no-retreat does not bind a German
+        # defender (BGG thread 2079436 reading).
+        _no_retreat_here = no_retreat
+        if (no_retreat and defender == _GE_A31):
+            from fs_bot.cards.capabilities import (
+                is_capability_active as _ica31s)
+            from fs_bot.rules_consts import EVENT_SHADED as _ES31s
+            if _ica31s(state, "A31", _ES31s):
+                _no_retreat_here = False
+
         try:
-            if no_retreat:
+            if _no_retreat_here:
                 retreat_decl, retreat_region = (False, None)
             elif force_retreat:
                 _d, _dest = _decide_defender_retreat(

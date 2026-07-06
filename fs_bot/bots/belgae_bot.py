@@ -335,6 +335,10 @@ def _estimate_battle_losses(state, region, scenario, enemy):
     if our_fort > 0 or our_citadel > 0:
         counter_raw = counter_raw / 2
     losses_suffered = int(counter_raw)
+    # Card 27 shaded: 6+ Arverni Warbands force 1 extra absorbed Loss.
+    from fs_bot.bots.bot_common import card27_shaded_absorption
+    losses_suffered += card27_shaded_absorption(state, region, BELGAE,
+                                                enemy)
 
     return (losses_inflicted, losses_suffered)
 

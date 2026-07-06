@@ -2421,3 +2421,52 @@ Abatis point into the official errata):
 Verification: 2129 tests pass; strict census seeds 1-12 exit 0
 illegal=0, hashseed 0/7 byte-identical; canary within band (no
 rebaseline needed).
+
+## USER RULINGS + FINAL HOMEWORK — the open-questions list closed (July 2026)
+
+The project owner ruled on the four remaining askable questions:
+
+1. **"(It may return by Event.)" points at nothing** — RULED (owner).
+   The Interlude parenthetical is an editing leftover; under the A38
+   deck ruling nothing in the second half returns the Diviciacus
+   piece. No engine change (already the behavior); question closed.
+2. **A31 vs one-shot Event battle benefits** — delegated to engine
+   judgment. Implemented per the BGG 2079436 reading: with A31
+   unshaded standing, a GERMAN attacker's event-granted no_retreat /
+   warband_full_loss are cancelled; with A31 shaded, an event's
+   no-retreat does not bind a GERMAN defender. (One-shots resolved
+   before A31 arrives are inherently untouchable — effects are not
+   retroactive.)
+3. **Card 42 "Roman-Aedui Supply Lines"** — RULED: the Tip's
+   hypothesis reading is final (chains of No Control / Roman / Aedui
+   Control only). Already implemented; closed.
+4. **A8.7.1 "at victory" for Aedui/Belgae** — RULED: the margin >= 1
+   inference from §7.3's defined term is final. Already implemented;
+   closed.
+
+**Checkable homework, done:**
+- **NP event instructions for cards 10/13/59/63 audited**: Aedui
+  per-card says "Use shaded text" for Baggage Trains / Ballistae /
+  Germanic Horse / Winter Campaign (owner = executing Gallic faction
+  — matches the implemented default); Ballistae is "No Arverni" and
+  "No Belgae"; Balearic/Legio X/Labienus carry the Roman-player
+  conditional gates already encoded in bot_instructions.py. Defaults
+  verified conformant; no changes needed.
+- **Abatis loss absorption implemented** (errata Clarification 1
+  sentence 1): the marker absorbs Losses in the Fort tier when its
+  owner defends — die roll per Loss, removed on 1-3, auto-removed
+  under Ambush (Caesar-counterattack exception honored); attacker-side
+  losses never use it. resolve_losses gains abatis_defender, set only
+  by the Attack-step call. The last documented Abatis simplification
+  is closed.
+- **Card 27 shaded in bot estimates**: card27_shaded_absorption
+  (bot_common) adds the +1 absorbed Loss to the German/Aedui/Belgae
+  estimators' go/no-go math when facing 6+ Arverni Warbands.
+
+With these, the QUESTIONS.md open list is EMPTY except the three
+permanent physical-table porting decisions (Trade forecasting, Trade
+call-off/side-payments, §4.1 SA interrupts), each documented where
+decided. 4 new tests.
+
+Verification: 2133 tests pass; strict census seeds 1-12 exit 0
+illegal=0, hashseed 0/7 byte-identical; canary within band.

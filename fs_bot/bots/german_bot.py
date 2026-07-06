@@ -250,6 +250,10 @@ def _estimate_battle_losses(state, region, enemy):
 
     # Germans have no Fort/Citadel — no halving on the German side.
     losses_suffered = int(counter_raw)
+    # Card 27 shaded: 6+ Arverni Warbands force 1 extra absorbed Loss.
+    from fs_bot.bots.bot_common import card27_shaded_absorption
+    losses_suffered += card27_shaded_absorption(state, region, GERMANS,
+                                                enemy)
     return (losses_inflicted, losses_suffered)
 
 

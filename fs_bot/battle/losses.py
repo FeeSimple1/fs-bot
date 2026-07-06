@@ -337,7 +337,7 @@ def card30_arverni_legion_warbands(state, region, faction):
 def resolve_losses(state, region, faction, num_losses, *,
                    is_retreat=False, is_ambush=False,
                    caesar_counterattacks=False,
-                   loss_order=None):
+                   loss_order=None, abatis_defender=False):
     """Resolve Losses for a faction, removing pieces one by one.
 
     The owner chooses which pieces to lose (for a bot, this will be
@@ -396,6 +396,17 @@ def resolve_losses(state, region, faction, num_losses, *,
     arverni_legions_alive = card30_arverni_legion_warbands(state, region, faction)
     card30_active = arverni_legions_alive > 0
 
+    # Card A64 Abatis + errata-thread Clarification 1: "the Abatis marker
+    # absorbs Losses and can thereby be removed in the same way as a Fort
+    # when defending." Same last-priority tier as Forts; NP default spends
+    # the marker before real hard pieces. Only the Attack step's defender
+    # qualifies ("When you defend") — abatis_defender is set by that call.
+    from fs_bot.rules_consts import MARKER_ABATIS as _MAB_RL
+    _abatis_available = (
+        abatis_defender
+        and state.get("markers", {}).get(region, {}).get(_MAB_RL)
+        == faction)
+
     remaining = num_losses
     while remaining > 0:
         # Build the priority list of pieces to take losses
@@ -403,6 +414,29 @@ def resolve_losses(state, region, faction, num_losses, *,
             state, region, faction, is_retreat=is_retreat,
             loss_order=loss_order,
         )
+
+        _hard_tier = (ALLY, CITADEL, FORT)
+        if _abatis_available and (
+                not piece_order or piece_order[0][0] in _hard_tier
+                or is_retreat):
+            # The marker absorbs like a Fort: a die roll per assigned
+            # Loss (1-3 removes it); Ambush auto-removes (§4.3.3
+            # semantics for hard targets) unless Caesar counterattacks.
+            if not is_ambush or caesar_counterattacks:
+                roll = state["rng"].randint(DIE_MIN, DIE_MAX)
+                removed = roll <= LOSS_ROLL_THRESHOLD
+                result["rolls"].append(("Abatis", roll, removed))
+            else:
+                removed = True
+            remaining -= 1
+            if removed:
+                state["markers"][region].pop(_MAB_RL, None)
+                _abatis_available = False
+                result["removed"].append(("Abatis", 1))
+                result["losses_taken"] += 1
+            else:
+                result["losses_absorbed"] += 1
+            continue
 
         if not piece_order:
             # No more pieces to remove — stop

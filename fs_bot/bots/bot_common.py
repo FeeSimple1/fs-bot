@@ -1240,3 +1240,21 @@ def prevalidate_rally_plan(state, faction, rally_plan, *, resources=None):
     out["warbands"] = kept
 
     return out
+
+
+def card27_shaded_absorption(state, region, own_faction, enemy):
+    """Card 27 shaded (Massed Gallic Archers): 'At start of Battles with
+    6 or more Arverni Warbands, the other side first must absorb 1 extra
+    Loss.' Returns the extra Losses OWN_FACTION should expect to suffer
+    in a Battle against ENEMY here (for bot go/no-go estimates; the
+    executor applies the actual absorption).
+    """
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import (ARVERNI, WARBAND, EVENT_SHADED)
+    if not is_capability_active(state, 27, EVENT_SHADED):
+        return 0
+    from fs_bot.board.pieces import count_pieces
+    if (enemy == ARVERNI and own_faction != ARVERNI
+            and count_pieces(state, region, ARVERNI, WARBAND) >= 6):
+        return 1
+    return 0

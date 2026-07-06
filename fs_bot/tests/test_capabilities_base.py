@@ -445,3 +445,79 @@ class TestA31QandA:
                 not in st["event_modifiers"])
         assert ("card_A22_no_intimidate_romans"
                 not in st["event_modifiers"])
+
+
+class TestRulingsHomework:
+    """User rulings (July 2026) + the checkable follow-ups: Abatis loss
+    absorption, A31 vs one-shot event benefits, card 27 estimate term."""
+
+    def test_abatis_absorbs_and_rolls_off_like_fort(self):
+        from fs_bot.battle.losses import resolve_losses
+        from fs_bot.rules_consts import MARKER_ABATIS, SCENARIO_ARIOVISTUS
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=2)
+        r = TREVERI
+        _clear(st, r)
+        place_piece(st, r, GERMANS, WARBAND, 1)
+        st.setdefault("markers", {}).setdefault(r, {})[
+            MARKER_ABATIS] = GERMANS
+
+        class _Roll:
+            def __init__(self, vals): self.vals = list(vals)
+            def randint(self, a, b): return self.vals.pop(0)
+
+        # 2 losses: warband dies first (soft), then the marker takes a
+        # roll — 4 = survives, loss absorbed, marker stays.
+        st["rng"] = _Roll([4])
+        res = resolve_losses(st, r, GERMANS, 2, abatis_defender=True)
+        assert st["markers"][r].get(MARKER_ABATIS) == GERMANS
+        assert res["losses_absorbed"] == 1
+        # Next battle: roll 2 removes the marker.
+        st["rng"] = _Roll([2])
+        res = resolve_losses(st, r, GERMANS, 1, abatis_defender=True)
+        assert MARKER_ABATIS not in st["markers"][r]
+        assert ("Abatis", 1) in res["removed"]
+
+    def test_abatis_does_not_absorb_for_attacker(self):
+        from fs_bot.battle.losses import resolve_losses
+        from fs_bot.rules_consts import MARKER_ABATIS, SCENARIO_ARIOVISTUS
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=2)
+        r = TREVERI
+        _clear(st, r)
+        place_piece(st, r, GERMANS, WARBAND, 1)
+        st.setdefault("markers", {}).setdefault(r, {})[
+            MARKER_ABATIS] = GERMANS
+        res = resolve_losses(st, r, GERMANS, 2)   # counterattack path
+        assert st["markers"][r].get(MARKER_ABATIS) == GERMANS
+
+    def test_a31_unshaded_strips_german_event_battle_benefits(self):
+        from fs_bot.engine.execute import _execute_battle
+        from fs_bot.rules_consts import SCENARIO_ARIOVISTUS
+        st = build_initial_state(SCENARIO_ARIOVISTUS, seed=2)
+        r = TREVERI
+        _clear(st, r)
+        place_piece(st, r, GERMANS, WARBAND, 4)
+        place_piece(st, r, BELGAE, WARBAND, 4)
+        refresh_all_control(st)
+        st["non_player_factions"] = {ROMANS, BELGAE, ARVERNI, AEDUI,
+                                     GERMANS}
+        st.setdefault("event_modifiers", {})[
+            "card_A31_cancel_german_benefits"] = True
+        res = _execute_battle(st, GERMANS, {
+            "sa": None, "sa_regions": [],
+            "details": {"battle_plan": [{"region": r, "target": BELGAE}],
+                        "warband_full_loss": True, "no_retreat": True}})
+        # warband_full_loss cancelled: 4*0.5 = 2 Belgae losses, not 4.
+        assert count_pieces(st, r, BELGAE, WARBAND) >= 2
+
+    def test_card27_estimate_term(self):
+        from fs_bot.bots.bot_common import card27_shaded_absorption
+        st = _state()
+        r = MANDUBII
+        _clear(st, r)
+        place_piece(st, r, ARVERNI, WARBAND, 6)
+        assert card27_shaded_absorption(st, r, BELGAE, ARVERNI) == 0
+        activate_capability(st, 27, EVENT_SHADED)
+        assert card27_shaded_absorption(st, r, BELGAE, ARVERNI) == 1
+        assert card27_shaded_absorption(st, r, ARVERNI, BELGAE) == 0
+        remove_piece(st, r, ARVERNI, WARBAND, count=1)
+        assert card27_shaded_absorption(st, r, BELGAE, ARVERNI) == 0

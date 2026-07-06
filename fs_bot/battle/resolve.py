@@ -365,6 +365,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         is_ambush=ambush_auto_remove,
         caesar_counterattacks=caesar_counterattack_allowed,
         loss_order=attack_loss_order,
+        abatis_defender=True,  # card A64: marker absorbs when defending
     )
     if auto_legion_removed or ally_first_removed:
         attack_result = dict(attack_result)

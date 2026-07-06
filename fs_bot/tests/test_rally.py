@@ -795,9 +795,14 @@ class TestGallicRallyWarbands:
         give_resources(state, ARVERNI, 10)
 
         available = get_available(state, ARVERNI, WARBAND)
-        result = rally_in_region(
-            state, PICTONES, ARVERNI, "place_warbands")
-        assert result["pieces_placed"][WARBAND] == available
+        if available > 0:
+            result = rally_in_region(
+                state, PICTONES, ARVERNI, "place_warbands")
+            assert result["pieces_placed"][WARBAND] == available
+        # Pool now empty: a further selection is a no-effect Rally and is
+        # refused before payment (§3.3.1 '(to have effect)').
+        with pytest.raises(CommandError, match="no Warbands"):
+            rally_in_region(state, PICTONES, ARVERNI, "place_warbands")
 
     def test_no_ally_or_citadel_rejected_non_home(self):
         """Rejected if no Ally/Citadel in non-home region — §3.3.1."""
@@ -1306,8 +1311,11 @@ class TestEdgeCases:
             state, MORINI, "place_ally", tribe=TRIBE_MENAPII)
         assert result["tribe_allied"] == TRIBE_MENAPII
 
-    def test_rally_cost_deducted_even_zero_warbands(self):
-        """Cost is deducted even if 0 warbands placed (pool empty)."""
+    def test_rally_zero_warbands_refused_before_payment(self):
+        """§3.3.1 '(to have effect)': a Rally selection that would place
+        zero Warbands (pool empty) is refused BEFORE payment — found via
+        the Arverni playthrough, where a maxed pool made Rally charge
+        Resources for nothing."""
         state = make_state()
         # Use up all Belgae warbands (25)
         for region in [MORINI, NERVII, ATREBATES, TREVERI, CARNUTES]:
@@ -1318,10 +1326,10 @@ class TestEdgeCases:
         refresh_all_control(state)
         give_resources(state, BELGAE, 10)
 
-        result = rally_in_region(
-            state, MANDUBII, BELGAE, "place_warbands")
-        assert result["cost"] == BELGAE_RALLY_OUTSIDE_BELGICA
-        assert result["pieces_placed"][WARBAND] == 0
+        res0 = state["resources"][BELGAE]
+        with pytest.raises(CommandError, match="no Warbands"):
+            rally_in_region(state, MANDUBII, BELGAE, "place_warbands")
+        assert state["resources"][BELGAE] == res0  # nothing charged
 
     def test_german_ally_not_at_bibracte(self):
         """Germans cannot place Ally at Aedui [Bibracte] — §3.4.1."""

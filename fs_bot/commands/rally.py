@@ -944,6 +944,15 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
         available = get_available(state, faction, WARBAND)
         to_place = min(cap, available)
 
+        # Found via play: an empty Available pool (or zero cap) made the
+        # Rally charge Resources while placing nothing. A no-effect
+        # selection is refused before payment, like other no-effect cases.
+        if to_place <= 0:
+            raise CommandError(
+                f"Rally would place no Warbands in {region} "
+                f"(cap {cap}, available {available})"
+            )
+
         # Deduct cost
         if not free and cost > 0:
             if state["resources"].get(faction, 0) < cost:

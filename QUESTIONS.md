@@ -2502,3 +2502,48 @@ one per origin).
 
 Design questions owed by the owner (parked, per instruction): Pax
 Gallica?/Reconquest Roman dominance; Aedui seat strength.
+
+## Playthrough verdict 5 — Arverni, The Great Revolt, vs the POST-FIX bots (July 2026)
+
+Seat: Arverni (the last unplayed faction) vs NP Rome/Aedui/Belgae,
+Great Revolt, seed 11 — the first human game against the
+capability-era, §8.8.1-garrisoning Rome. **Result: Roman win at
+Winter 1, margin 1.** Arverni 2nd at -4.
+
+**The strengthened Rome is a different animal.** The moment
+Vercingetorix's 14-Warband horde marched adjacent, the 8-Legion army
+executed a textbook §8.8.1 threat-evacuation to Caesar (leaving the
+1-Auxilia garrison), then subdue-farmed GERMANIA — Suebi North/South,
+Sugambri, Ubii — rocketing 13 -> 18 in six cards. The old bot lost
+this position; the new one refused every engagement and won on the
+subdued-tribes ledger. A human Arverni cannot force battles on an
+opponent with superior movement discipline: my one Ambush (2 Legions
++ Fort at Treveri) killed a single Auxilia — the Fort's §4.3.3
+exception let both Legions roll-save (verified legal, dice 4-6 x3;
+the rules' own PLAY NOTE warns of exactly this).
+
+**The Oppida counter-play worked and then didn't.** Card 28 dragged
+Rome 18 -> 15 in one action (every Gallic Ally at a Subdued City is
+-1 Rome), demonstrating the real anti-Rome lever in the endgame. The
+NP Aedui then battled the fresh Allies before Winter, re-subduing 2
+tribes — Rome back to 17, game over. Corollary to the two-runaway
+thesis: the post-fix Rome doesn't even need to be ignored; the other
+bots actively feed it (every Gallic-on-Gallic Ally kill is +1 Rome).
+This sharpens the Pax-Gallica?/Reconquest dominance data the owner is
+weighing — in bot-only Great Revolt the Gauls' mutual predation is
+Rome's best asset. (Design question parked with the owner.)
+
+**Engine findings fixed this session:**
+- **Card 28 Oppida validation**: the handler allied ANY tribe named in
+  params — now requires a City Tribe, Subdued status, an Available
+  Ally disc, and non-Roman control.
+- **No-effect Rally charged Resources**: with the Warband pool empty
+  (all 35 Arverni deployed), rally_in_region took the Region cost and
+  placed nothing. §3.3.1's "(to have effect)" qualifier now refuses
+  the selection before payment; the two tests codifying pay-for-
+  nothing were rewritten (one had asserted it as intended behavior).
+- **March-hides semantics verified** (§3.3.2 "flip Revealed Warbands
+  to Hidden") with a clean repro after the ambush anomaly suggested
+  otherwise — engine correct; the anomaly was the Fort roll-saves.
+
+Verification: 2135 tests pass; census seeds 1-20 strict illegal=0.

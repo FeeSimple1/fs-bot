@@ -1364,15 +1364,29 @@ def execute_card_28(state, shaded=False):
         CITY_TO_TRIBE, TRIBE_TO_REGION,
     )
     params = state.get("event_params", {})
-    # Place Gallic Allies at Subdued Cities without Roman Control
+    # Place Gallic Allies at Subdued Cities without Roman Control.
+    # Validation hardened (found via play: the handler accepted ANY
+    # tribe): must be a CITY tribe, currently Subdued, an Ally must be
+    # Available, and the Region must not be Roman-controlled.
+    from fs_bot.board.pieces import get_available as _gav28
+    _city_tribes = set(CITY_TO_TRIBE.values())
     ally_placements = params.get("ally_placements", [])
     for placement in ally_placements:
         tribe = placement["tribe"]
         faction = placement["faction"]
         region = TRIBE_TO_REGION.get(tribe)
-        if region and faction in GALLIC_FACTIONS:
-            if not is_controlled_by(state, region, ROMANS):
-                _ally_tribe(state, tribe, faction)
+        if region is None or faction not in GALLIC_FACTIONS:
+            continue
+        if tribe not in _city_tribes:
+            continue  # "at Subdued Cities" — City Tribes only
+        t_info = state.get("tribes", {}).get(tribe, {})
+        if (t_info.get("allied_faction") is not None
+                or t_info.get("status") is not None):
+            continue  # not Subdued
+        if _gav28(state, faction, ALLY) < 1:
+            continue  # no Available Ally disc
+        if not is_controlled_by(state, region, ROMANS):
+            _ally_tribe(state, tribe, faction)
     # Replace Gallic Allies at Cities with Citadels of same Faction
     citadel_upgrades = params.get("citadel_upgrades", [])
     for city in citadel_upgrades:

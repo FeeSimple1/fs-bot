@@ -248,3 +248,46 @@ Reading, with the design-vs-defect discipline:
    this one.
 
 Reproduce: `python -m fs_bot.tools.play_quality --seeds 1-20`.
+
+---
+
+## July 2026 addendum 2 — the capability-era, §8.8.1 bots
+
+Everything below reflects the engine after: all 12 formerly-inert
+capabilities implemented; the official errata audit (Arverni Phase
+AFTER activations; Abatis; A31/A33 battle wiring); the §8.8.1 Roman
+March groups (garrisoned origins) and Scout Auxilia moves; and the
+designer/owner rulings closing the open-questions ledger.
+
+20-seed canary distributions (balance_baseline.json):
+
+| Scenario | Winners | Notes |
+|---|---|---|
+| Pax Gallica? | Romans 16, Belgae 2, Arverni 2 | unchanged Roman-dominant |
+| Reconquest of Gaul | Romans 14, Aedui 4, Arverni 1, Belgae 1 | Rome up from 8/20 |
+| The Great Revolt | Belgae 9, Romans 4, Aedui 4, Arverni 3 | Arverni collapsed from 13/20 |
+
+Reading:
+
+1. **The §8.8.1 leave-behind broke the Arverni's Great Revolt
+   dominance** (13/20 -> 3/20): garrisoned Roman origins deny the
+   rally-behind-the-army loop, and threat-evacuations deny the
+   Legion-kill battles their victory needs. The Belgae inherit the
+   scenario (9/20). Confirmed from the human seat (verdict 5): a
+   skilled human Arverni also could not force engagements — Roman win
+   at Winter 1.
+2. **Reconquest moved from most-balanced to Roman-heavy** (14/20).
+   Same mechanism: Rome no longer bleeds control while marching.
+3. **Pax Gallica? stays ~16/20 Roman.** Consistent across three
+   engine generations now.
+4. **Aedui unchanged as the weakest bot seat** (0-4 per 20), though
+   the human-seat Aedui verdict (playthrough 1) showed the SEAT is
+   strong in human hands — the gap is flowchart passivity, not
+   position.
+
+DESIGN QUESTIONS PARKED WITH THE OWNER (their explicit instruction):
+whether Pax Gallica?/Reconquest Roman dominance and Aedui bot
+passivity warrant house-rule tuning. Everything above is
+rules-faithful behavior; the instruments can only certify fidelity,
+not fun. The five human playthroughs (Aedui, Rome, Germans, Belgae,
+Arverni — every seat) are the qualitative record.

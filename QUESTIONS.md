@@ -2470,3 +2470,35 @@ decided. 4 new tests.
 
 Verification: 2133 tests pass; strict census seeds 1-12 exit 0
 illegal=0, hashseed 0/7 byte-identical; canary within band.
+
+## CONTINUOUS-RUN BATCH — validation sweep + human Build/Scout SA (July 2026)
+
+Standing instruction from the owner: keep rolling, batch notes, stop
+only for adjudication. This batch:
+
+**Validation after the capability/errata week**: play_quality
+telemetry (6 seeds x 4 scenarios) healthy — no-effect turns ~zero,
+SAs firing, Great Revolt spread Ro2/Be2/Ae2. Deep census seeds 1-60
+strict: ONE new illegal class found at depth (seeds 21-40) and fixed
+— bot Recruit planned place_auxilia entries whose Leader/Ally/Fort
+prerequisite vanished by execution (Build resolves first, §8.8.4);
+now presence-prechecked and skipped as "no longer able", matching the
+budget pre-check pattern. Census 1-60 now illegal=0, hashseed 0/7
+byte-identical; fuzz seeds 20-30 hard-findings=0.
+
+**Human-seat SA gap closed (the old Quarters class)**: a human
+Roman's Build and Scout SAs executed the BOT's recomputed plan.
+_execute_build/_execute_scout now honor player-supplied
+details['build_plan'] / details['scout_plan']; CLI collectors added
+(_collect_build: per-Region fort/subdue/ally choice with tribe
+prompts; _collect_scout: Auxilia moves + Reveal targets within 1 of
+Caesar/same-Region Successor). Bots unchanged (fall back to
+flowchart plans). 2 executor-override tests.
+
+The known human-seat plan gaps are now closed (Quarters, March
+groups/routes, Build, Scout). Remaining CLI polish only: multi-group
+March from one origin (§3.2.2 allows several groups; the CLI takes
+one per origin).
+
+Design questions owed by the owner (parked, per instruction): Pax
+Gallica?/Reconquest Roman dominance; Aedui seat strength.

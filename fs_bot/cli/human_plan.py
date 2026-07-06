@@ -30,7 +30,8 @@ from fs_bot.engine.game_engine import (
     ACTION_COMMAND, ACTION_COMMAND_SA, ACTION_LIMITED_COMMAND,
     ACTION_EVENT, ACTION_PASS,
 )
-from fs_bot.map.map_data import get_playable_regions, get_adjacent
+from fs_bot.map.map_data import (get_playable_regions, get_adjacent,
+                                 is_adjacent)
 from fs_bot.board.pieces import count_pieces, get_leader_in_region
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
 
@@ -538,7 +539,119 @@ def _collect_enlist(state, faction, stdin, stdout):
     return [region], {"enlist": ed}
 
 
+def _collect_build(state, faction, stdin, stdout, single):
+    """Roman Build SA (§4.2.1) — player picks per-Region actions."""
+    from fs_bot.commands.sa_build import validate_build_region
+    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.rules_consts import ROMANS, FORT
+    cands = [r for r in _regions_with_pieces(state, ROMANS)
+             if validate_build_region(state, r)[0]]
+    if not cands:
+        return None
+    picked = _pick_regions(stdin, stdout, "Build in which Region(s)?",
+                           cands, single=single)
+    plan = {"forts": [], "subdue": [], "allies": []}
+    for r in picked:
+        opts = []
+        if count_pieces(state, r, ROMANS, FORT) == 0:
+            opts.append(("place a Fort", "fort"))
+        enemy_allied = [t for t, ti in state["tribes"].items()
+                        if ti.get("allied_faction") not in (None, ROMANS)
+                        and _tribe_in_region(state, t, r)]
+        if enemy_allied:
+            opts.append(("Subdue an enemy Ally", "subdue"))
+        subdued = [t for t, ti in state["tribes"].items()
+                   if ti.get("allied_faction") is None
+                   and ti.get("status") is None
+                   and _tribe_in_region(state, t, r)]
+        if subdued:
+            opts.append(("place a Roman Ally", "ally"))
+        if not opts:
+            continue
+        act = prompt_choice(stdin, stdout, f"  Build action in {r}?", opts)
+        if act == "fort":
+            plan["forts"].append(r)
+        elif act == "subdue":
+            t = prompt_choice(stdin, stdout, f"  Subdue which Tribe in {r}?",
+                              [(x, x) for x in enemy_allied])
+            plan["subdue"].append({"region": r, "tribe": t})
+        elif act == "ally":
+            t = prompt_choice(stdin, stdout, f"  Ally which Tribe in {r}?",
+                              [(x, x) for x in subdued])
+            plan["allies"].append({"region": r, "tribe": t})
+    if not (plan["forts"] or plan["subdue"] or plan["allies"]):
+        return None
+    return {"build_plan": plan}
+
+
+def _tribe_in_region(state, tribe, region):
+    from fs_bot.rules_consts import TRIBE_TO_REGION
+    return TRIBE_TO_REGION.get(tribe) == region
+
+
+def _collect_scout(state, faction, stdin, stdout, single):
+    """Roman Scout SA (§4.2.2) — player moves Auxilia, then Reveals."""
+    from fs_bot.rules_consts import (ROMANS, AUXILIA, WARBAND, HIDDEN,
+                                     REVEALED, BRITANNIA, CAESAR, FACTIONS)
+    from fs_bot.board.pieces import (count_pieces_by_state,
+                                     get_leader_in_region, find_leader)
+    moves = []
+    sources = [r for r in _regions_with_pieces(state, ROMANS)
+               if count_pieces(state, r, ROMANS, AUXILIA) > 0
+               and r != BRITANNIA]
+    while sources:
+        if not prompt_yes_no(stdin, stdout, "Move Auxilia?", default=False):
+            break
+        src = prompt_choice(stdin, stdout, "Move Auxilia FROM:",
+                            [(r, r) for r in sources])
+        dests = [d for d in sorted(get_adjacent(src, state["scenario"]))
+                 if d != BRITANNIA]
+        dst = prompt_choice(stdin, stdout, "  INTO which Region?",
+                            [(d, d) for d in dests])
+        avail = count_pieces(state, src, ROMANS, AUXILIA)
+        n = prompt_choice(stdin, stdout, f"  How many? (of {avail})",
+                          [(str(k), k) for k in range(1, avail + 1)])
+        for ps in (REVEALED, HIDDEN):
+            c = min(n, count_pieces_by_state(state, src, ROMANS,
+                                             AUXILIA, ps))
+            if c > 0:
+                moves.append({"from_region": src, "to_region": dst,
+                              "count": c, "piece_state": ps})
+                n -= c
+        sources = [r for r in _regions_with_pieces(state, ROMANS)
+                   if count_pieces(state, r, ROMANS, AUXILIA) > 0
+                   and r != BRITANNIA]
+    # Reveal targets — within 1 of Caesar (same Region as Successor),
+    # needs a Hidden Roman Auxilia there (§4.2.2).
+    targets = []
+    caesar_region = find_leader(state, ROMANS)
+    if caesar_region is not None:
+        named = get_leader_in_region(state, caesar_region, ROMANS) == CAESAR
+        for r in sorted(_regions_with_pieces(state, ROMANS)):
+            if count_pieces_by_state(state, r, ROMANS, AUXILIA, HIDDEN) == 0:
+                continue
+            in_range = (r == caesar_region
+                        or (named and is_adjacent(r, caesar_region)))
+            if not in_range:
+                continue
+            for enemy in FACTIONS:
+                if enemy == ROMANS:
+                    continue
+                hid = count_pieces_by_state(state, r, enemy, WARBAND, HIDDEN)
+                if hid > 0 and prompt_yes_no(
+                        stdin, stdout,
+                        f"Reveal {enemy} Warbands in {r}?", default=True):
+                    targets.append({"region": r, "enemy": enemy,
+                                    "hidden": hid})
+    if not moves and not targets:
+        return None
+    return {"scout_plan": {"auxilia_moves": moves,
+                           "scout_targets": targets}}
+
+
 _SA_COLLECTORS = {
+    "Build": _collect_build,
+    "Scout": _collect_scout,
     "Suborn": _collect_suborn,
     "Entreat": _collect_entreat,
     "Rampage": _collect_rampage,

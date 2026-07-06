@@ -143,3 +143,50 @@ class TestHumanPlanCollection:
         action = collect_player_action(st, AEDUI, ACTION_PASS,
                                        io.StringIO(), io.StringIO())
         assert action is None
+
+    def test_player_build_plan_overrides_bot(self):
+        # The executor must honor a player-supplied build_plan instead of
+        # recomputing node_r_build (the old Quarters-class gap).
+        import fs_bot.rules_consts as rc
+        from fs_bot.engine.execute import _execute_build
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        st = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=3)
+        st["non_player_factions"] = set()
+        from fs_bot.board.pieces import find_leader
+        from fs_bot.map.map_data import get_adjacent
+        caesar = find_leader(st, rc.ROMANS)          # Provincia (has Fort)
+        r = sorted(get_adjacent(caesar, st["scenario"]))[0]
+        # Roman Ally makes the region Build-eligible (§4.2.1) regardless
+        # of Supply Lines; tribe record kept in sync.
+        for t, ti in st["tribes"].items():
+            if (ti.get("allied_faction") is None and ti.get("status") is None
+                    and rc.TRIBE_TO_REGION.get(t) == r):
+                ti["allied_faction"] = rc.ROMANS
+                place_piece(st, r, rc.ROMANS, rc.ALLY)
+                break
+        refresh_all_control(st)
+        forts0 = count_pieces(st, r, rc.ROMANS, rc.FORT)
+        res = _execute_build(st, rc.ROMANS, {
+            "sa": "Build", "details": {"build_plan": {
+                "forts": [r], "subdue": [], "allies": []}}})
+        assert res["executed"], res
+        assert count_pieces(st, r, rc.ROMANS, rc.FORT) == forts0 + 1
+        assert ("fort", r) in res["actions"]
+
+    def test_player_scout_plan_overrides_bot(self):
+        import fs_bot.rules_consts as rc
+        from fs_bot.engine.execute import _execute_scout
+        from fs_bot.board.pieces import place_piece, count_pieces
+        st = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=3)
+        st["non_player_factions"] = set()
+        a, b = rc.MANDUBII, rc.ATREBATES
+        place_piece(st, a, rc.ROMANS, rc.AUXILIA, 3)
+        n0 = count_pieces(st, b, rc.ROMANS, rc.AUXILIA)
+        res = _execute_scout(st, rc.ROMANS, {
+            "sa": "Scout", "details": {"scout_plan": {
+                "auxilia_moves": [{"from_region": a, "to_region": b,
+                                   "count": 2, "piece_state": "Hidden"}],
+                "scout_targets": []}}})
+        assert res["executed"], res
+        assert count_pieces(st, b, rc.ROMANS, rc.AUXILIA) == n0 + 2

@@ -3642,6 +3642,22 @@ def _execute_recruit(state, faction, bot_action):
             superseded.append({"region": region, "action": action,
                                "reason": "unaffordable"})
             continue
+        # Presence pre-check for Auxilia — §3.2.1 requires a Roman
+        # Leader, Ally, or Fort there (or card 55's Belgica carve-out);
+        # the Build SA resolves first and the plan may be stale.
+        if action == "place_auxilia":
+            from fs_bot.rules_consts import (FORT as _F_R, ALLY as _AL_R)
+            from fs_bot.board.pieces import (
+                get_leader_in_region as _glr_r)
+            from fs_bot.commands.rally import (
+                _commius_unshaded_recruit as _c55_r)
+            if not (_glr_r(state, region, _ROMANS_F) is not None
+                    or count_pieces(state, region, _ROMANS_F, _AL_R) > 0
+                    or count_pieces(state, region, _ROMANS_F, _F_R) > 0
+                    or _c55_r(state, region)):
+                superseded.append({"region": region, "action": action,
+                                   "reason": "no Leader/Ally/Fort"})
+                continue
         try:
             res = recruit_in_region(state, region, action, tribe=tribe)
             placed.append({"region": region, "action": action,
@@ -4276,12 +4292,16 @@ def _execute_build(state, faction, bot_action):
     Forts, then Subdue (target_faction derived from the tribe's current
     Allied faction — a lookup, not a choice), then place Allies.
     """
-    from fs_bot.bots.roman_bot import node_r_build
-    try:
-        plan = node_r_build(state)
-    except Exception as exc:  # bot helper failure must not crash the turn
-        return {"executed": False, "sa": _SA_BUILD,
-                "reason": f"build plan unavailable: {exc!r}"}
+    # A player-supplied plan (CLI collector) takes precedence — the SA is
+    # the PLAYER'S choice (§4.2.1); bots recompute via their flowchart.
+    plan = _sa_detail(bot_action, "build_plan")
+    if plan is None:
+        from fs_bot.bots.roman_bot import node_r_build
+        try:
+            plan = node_r_build(state)
+        except Exception as exc:  # bot helper failure must not crash the turn
+            return {"executed": False, "sa": _SA_BUILD,
+                    "reason": f"build plan unavailable: {exc!r}"}
 
     # Card 12 shaded: "Build and Scout Reveal are maximum 1 Region."
     # §8.3.3: non-players apply limited-Region Capabilities in the FIRST
@@ -4708,13 +4728,17 @@ def _execute_scout(state, faction, bot_action):
     recompute it against the current board and execute: move Auxilia, then
     Reveal — each flipped Hidden Auxilia Reveals up to 2 enemy Warbands.
     """
-    from fs_bot.bots.roman_bot import node_r_scout
     from fs_bot.rules_consts import ROMANS, AUXILIA, HIDDEN
-    try:
-        plan = node_r_scout(state)
-    except Exception as exc:
-        return {"executed": False, "sa": _SA_SCOUT,
-                "reason": f"scout plan unavailable: {exc!r}"}
+    # A player-supplied plan takes precedence (§4.2.2 is the player's
+    # choice of moves and Reveal targets); bots recompute via flowchart.
+    plan = _sa_detail(bot_action, "scout_plan")
+    if plan is None:
+        from fs_bot.bots.roman_bot import node_r_scout
+        try:
+            plan = node_r_scout(state)
+        except Exception as exc:
+            return {"executed": False, "sa": _SA_SCOUT,
+                    "reason": f"scout plan unavailable: {exc!r}"}
 
     done, errors = [], []
     # Only execute Auxilia moves that carry a concrete from/to (scout_move

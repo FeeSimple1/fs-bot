@@ -3804,6 +3804,25 @@ def _execute_march(state, faction, bot_action):
         except _EXEC_ERRORS as exc:
             errors.append({"origin": origin, "error": str(exc)})
 
+    # §3.3.2 "Pieces within a Region may make up multiple groups": a
+    # player plan may carry extra_groups = [{origin, route, group}] for
+    # additional groups from already-marched origins. Each group is
+    # selected from the pieces still in the origin (the earlier group
+    # already departed, so no piece Marches twice).
+    for eg in (plan.get("extra_groups") or []):
+        _o = eg.get("origin")
+        _route = eg.get("route") or []
+        if not _o or not _route or not all(r in playable for r in _route):
+            errors.append({"origin": _o, "error": "bad extra group"})
+            continue
+        try:
+            final = _march_with_harassment(
+                state, faction, _o, _route, group_cap=eg.get("group"))
+            marched.append({"origin": _o, "final_region": final,
+                            "extra_group": True})
+        except _EXEC_ERRORS as exc:
+            errors.append({"origin": _o, "error": str(exc)})
+
     return {
         "executed": len(marched) > 0,
         "command": _CMD_MARCH,

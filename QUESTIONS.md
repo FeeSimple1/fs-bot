@@ -2547,3 +2547,25 @@ Rome's best asset. (Design question parked with the owner.)
   otherwise — engine correct; the anomaly was the Fort roll-saves.
 
 Verification: 2135 tests pass; census seeds 1-20 strict illegal=0.
+
+## CONTINUOUS-RUN BATCH 2 — notes refresh, fuzz coverage, multi-group March (July 2026)
+
+- **selfplay-strategy-notes**: capability-era addendum with the new
+  canary distributions and the §8.8.1 balance analysis (Arverni Great
+  Revolt dominance broken 13/20 -> 3/20; Reconquest now Rome-heavy;
+  design questions parked with the owner).
+- **Fuzzer**: player Build/Scout plans and March routes now fuzzed
+  (_maybe_attach_sa_plans — valid and deliberately-invalid entries;
+  non-adjacent Scout moves must refuse cleanly). 100 games clean,
+  digests hashseed-identical.
+- **Multi-group March from one origin implemented** (§3.3.2 "Pieces
+  within a Region may make up multiple groups") — the last documented
+  CLI-polish gap. plan["extra_groups"] = [{origin, route, group}]
+  executes additional groups from the post-departure remainder (no
+  piece Marches twice by construction); the CLI offers one extra
+  group per origin. Executor + CLI + split-destination test.
+
+The known-gaps list for human play is now EMPTY.
+
+Verification: 2136 tests pass; census seeds 1-20 strict illegal=0,
+hashseed-identical; canary within band; fuzz seeds 1-20 clean.

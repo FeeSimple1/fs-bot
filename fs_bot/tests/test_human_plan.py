@@ -190,3 +190,31 @@ class TestHumanPlanCollection:
                 "scout_targets": []}}})
         assert res["executed"], res
         assert count_pieces(st, b, rc.ROMANS, rc.AUXILIA) == n0 + 2
+
+    def test_march_extra_group_splits_one_origin(self):
+        # §3.3.2: two groups from one origin to different destinations.
+        import fs_bot.rules_consts as rc
+        from fs_bot.engine.execute import execute_decision
+        from fs_bot.board.pieces import place_piece, count_pieces
+        from fs_bot.board.control import refresh_all_control
+        st = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=5)
+        st["non_player_factions"] = set()
+        st["resources"][rc.BELGAE] = 10
+        o = rc.MORINI
+        place_piece(st, o, rc.BELGAE, rc.WARBAND, 6)
+        refresh_all_control(st)
+        n_atr = count_pieces(st, rc.ATREBATES, rc.BELGAE, rc.WARBAND)
+        n_ner = count_pieces(st, rc.NERVII, rc.BELGAE, rc.WARBAND)
+        res = execute_decision(st, rc.BELGAE, {"player_action": {
+            "command": "March", "regions": [], "sa": "No SA",
+            "sa_regions": [], "details": {
+                "origins": [o], "destinations": [rc.ATREBATES],
+                "routes": {o: [rc.ATREBATES]},
+                "groups": {o: {"Warband": 3}},
+                "extra_groups": [{"origin": o, "route": [rc.NERVII],
+                                  "group": {"Warband": 2}}]}}})
+        assert res["executed"], res
+        assert (count_pieces(st, rc.ATREBATES, rc.BELGAE, rc.WARBAND)
+                == n_atr + 3)
+        assert (count_pieces(st, rc.NERVII, rc.BELGAE, rc.WARBAND)
+                == n_ner + 2)

@@ -210,6 +210,42 @@ def _collect_march(state, faction, stdin, stdout, single):
             "routes": routes}
     if groups:
         plan["groups"] = groups
+
+    # §3.3.2: multiple groups may leave one origin. Offer one extra
+    # group per origin that still has mobile pieces after the first.
+    extra = []
+    for o in origins:
+        if o not in groups:
+            continue  # first group takes everything — nothing remains
+        remaining = {pt: count_pieces(state, o, faction, pt)
+                     - int(groups[o].get(pt, 0) or 0)
+                     for pt in (LEGION, AUXILIA, WARBAND)}
+        if not any(v > 0 for v in remaining.values()):
+            continue
+        if not prompt_yes_no(stdin, stdout,
+                             f"March a SECOND group from {o}?",
+                             default=False):
+            continue
+        adj = sorted(get_adjacent(o, state["scenario"]))
+        d2 = prompt_choice(stdin, stdout,
+                           f"  Second group from {o} INTO which Region?",
+                           [(a, a) for a in adj])
+        g2 = {}
+        for pt, avail in remaining.items():
+            if avail <= 0:
+                continue
+            pick = prompt_choice(
+                stdin, stdout,
+                f"  Second group: how many {pt}s? (of {avail})",
+                [(str(k), k) for k in range(avail, -1, -1)])
+            if pick:
+                g2[pt] = pick
+        if g2:
+            extra.append({"origin": o, "route": [d2], "group": g2})
+            if d2 not in destinations:
+                destinations.append(d2)
+    if extra:
+        plan["extra_groups"] = extra
     return plan
 
 

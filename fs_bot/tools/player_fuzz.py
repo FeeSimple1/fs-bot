@@ -368,6 +368,53 @@ def play_game(scenario, seed, *, reactive=True, events=True):
     expected = {}
     seen_keys = Counter()
 
+    def _maybe_attach_sa_plans(state, faction, pa, frng):
+        """Fuzz the player-plan executor paths added for human seats:
+        Roman Build/Scout plans (sometimes deliberately invalid) and
+        March per-origin routes. Invalid entries must be refused cleanly
+        (the dirty-command oracle checks failed plans mutate nothing)."""
+        import fs_bot.rules_consts as _rc
+        from fs_bot.map.map_data import (get_playable_regions as _gpr,
+                                         get_adjacent as _gadj)
+        det = pa.setdefault("details", {})
+        playable = sorted(_gpr(state["scenario"], state.get("capabilities")))
+        if not playable:
+            return
+        def _r():
+            return frng.choice(playable)
+        if pa.get("sa") == "Build" and frng.random() < 0.6:
+            tribes = sorted(state.get("tribes", {}))
+            det["build_plan"] = {
+                "forts": [_r()] if frng.random() < 0.7 else [],
+                "subdue": ([{"region": _r(),
+                             "tribe": frng.choice(tribes)}]
+                           if tribes and frng.random() < 0.5 else []),
+                "allies": ([{"region": _r(),
+                             "tribe": frng.choice(tribes)}]
+                           if tribes and frng.random() < 0.5 else []),
+            }
+        elif pa.get("sa") == "Scout" and frng.random() < 0.6:
+            src = _r()
+            adj = sorted(_gadj(src, state["scenario"]))
+            dst = (frng.choice(adj) if adj and frng.random() < 0.8
+                   else _r())  # sometimes non-adjacent (must refuse)
+            det["scout_plan"] = {
+                "auxilia_moves": [{"from_region": src, "to_region": dst,
+                                   "count": frng.randint(1, 3),
+                                   "piece_state": frng.choice(
+                                       [_rc.HIDDEN, _rc.REVEALED])}],
+                "scout_targets": [],
+            }
+        if (pa.get("command") == "March" and frng.random() < 0.3):
+            origins = (det.get("origins") or [])
+            routes = {}
+            for o in origins:
+                adj = sorted(_gadj(o, state["scenario"]))
+                if adj:
+                    routes[o] = [frng.choice(adj)]
+            if routes:
+                det["routes"] = routes
+
     def _inject_transfer(pa, faction):
         """Occasionally ride a §1.5.2 Resource gift on the plan."""
         if frng.random() < 0.12:
@@ -439,6 +486,7 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                 pa = (dec or {}).get("player_action")
                 if pa is not None:
                     _inject_transfer(pa, faction)
+                    _maybe_attach_sa_plans(state, faction, pa, frng)
                     info, dirty = _dry_run(state, faction, pa)
                     if dirty:
                         findings.append(

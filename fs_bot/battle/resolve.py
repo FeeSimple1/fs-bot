@@ -587,7 +587,12 @@ def _calculate_attack_losses(state, region, attacking_faction,
     # Losses whether or not Retreating" — halving applies once, never
     # quartered. Source: A Card Reference, card A33.
     _motivated = (defending_faction == _GE
-                  and is_capability_active(state, "A33", _ESH))
+                  and is_capability_active(state, "A33", _ESH)
+                  # A31 unshaded cancels Event effects benefitting
+                  # Germans in Battle (capabilities included — BGG
+                  # thread 2079436).
+                  and not state.get("event_modifiers", {}).get(
+                      "card_A31_cancel_german_benefits"))
 
     # Card 27 unshaded: "Arverni Battle each Region inflicts 1 fewer
     # Defender Loss (before any halving)" — Arverni attack step only.

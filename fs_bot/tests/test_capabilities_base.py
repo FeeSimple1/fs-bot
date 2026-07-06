@@ -373,3 +373,75 @@ class TestCard63WinterCampaign:
         res = run_winter_round(st)
         wc = res.get("phases", {}).get("winter_campaign")
         assert wc is not None and wc["owner"] == BELGAE
+
+
+class TestA31QandA:
+    """BGG thread 2079436 (Niko + Volko): A31 unshaded IS a capability;
+    capabilities count as 'Event effects', so A31 unshaded cancels A33
+    Motivation; companion event_modifiers are cleared when a capability
+    is removed (card 50) or replaced by its other side (§5.1.2)."""
+
+    def _ario_state(self):
+        from fs_bot.rules_consts import SCENARIO_ARIOVISTUS
+        return build_initial_state(SCENARIO_ARIOVISTUS, seed=3)
+
+    def test_a31_unshaded_registered_and_removable(self):
+        from fs_bot.cards.card_effects import execute_card_A31
+        from fs_bot.cards.capabilities import (is_capability_active,
+                                               deactivate_capability)
+        st = self._ario_state()
+        st["executing_faction"] = GERMANS
+        execute_card_A31(st, shaded=False)
+        assert is_capability_active(st, "A31", EVENT_UNSHADED)
+        assert st["event_modifiers"]["card_A31_no_ario_double"]
+        deactivate_capability(st, "A31")   # card 50 Shifting Loyalties
+        assert not is_capability_active(st, "A31")
+        assert "card_A31_no_ario_double" not in st["event_modifiers"]
+        assert ("card_A31_cancel_german_benefits"
+                not in st["event_modifiers"])
+
+    def test_dueling_replace_clears_unshaded_modifiers(self):
+        from fs_bot.cards.card_effects import execute_card_A31
+        from fs_bot.cards.capabilities import is_capability_active
+        st = self._ario_state()
+        st["executing_faction"] = GERMANS
+        execute_card_A31(st, shaded=False)
+        execute_card_A31(st, shaded=True)   # §5.1.2 Dueling Events
+        assert is_capability_active(st, "A31", EVENT_SHADED)
+        assert "card_A31_no_ario_double" not in st["event_modifiers"]
+
+    def test_a31_unshaded_cancels_a33_motivation(self):
+        from fs_bot.battle.losses import calculate_losses
+        from fs_bot.rules_consts import TREVERI as _T
+        st = self._ario_state()
+        r = _T
+        _clear(st, r)
+        place_piece(st, r, GERMANS, WARBAND, 4)   # defender
+        place_piece(st, r, BELGAE, WARBAND, 8)
+        activate_capability(st, "A33", EVENT_SHADED)
+        assert calculate_losses(st, r, BELGAE, GERMANS) == 2   # halved
+        counter0 = calculate_losses(st, r, GERMANS, BELGAE,
+                                    is_counterattack=True)
+        st.setdefault("event_modifiers", {})[
+            "card_A31_cancel_german_benefits"] = True
+        assert calculate_losses(st, r, BELGAE, GERMANS) == 4   # no halving
+        assert calculate_losses(st, r, GERMANS, BELGAE,
+                                is_counterattack=True) == counter0 - 1
+
+    def test_a63_a22_unshaded_registered_and_removable(self):
+        from fs_bot.cards.card_effects import (execute_card_A63,
+                                               execute_card_A22)
+        from fs_bot.cards.capabilities import (is_capability_active,
+                                               deactivate_capability)
+        st = self._ario_state()
+        st["executing_faction"] = ROMANS
+        execute_card_A63(st, shaded=False)
+        execute_card_A22(st, shaded=False)
+        assert is_capability_active(st, "A63", EVENT_UNSHADED)
+        assert is_capability_active(st, "A22", EVENT_UNSHADED)
+        deactivate_capability(st, "A63")
+        deactivate_capability(st, "A22")
+        assert ("card_A63_quarters_devastated_only"
+                not in st["event_modifiers"])
+        assert ("card_A22_no_intimidate_romans"
+                not in st["event_modifiers"])

@@ -2386,3 +2386,38 @@ hooks exist where a choice is interactive (63 shaded).
 Verification: 2125 tests pass (22 new capability tests); strict census
 seeds 1-15 exit 0 illegal=0, hashseed 0/7 byte-identical; player_fuzz
 seeds 1-8 hard-findings=0; canary green post-rebaseline.
+
+## A31 Q&A APPLIED — designer/expert ruling on "Event effects" scope (July 2026)
+
+BGG thread 2079436 (Ralph Graham's questions; answers by Niko /
+Ze_German_Guy, confirmed in part by Volko Ruhnke, who folded the
+Abatis point into the official errata):
+
+1. **"Event effects" includes capabilities** (and one-shot event
+   effects like a Germans-executed Sabis no-retreat, which in this
+   engine resolve within their own card and cannot be standing targets).
+   Applied: **A31 unshaded now cancels A33 Motivation** (half-losses
+   AND the +1 Counterattack Loss) — reversing this ledger's earlier
+   "no additional modeled referent" conclusion a second time (first
+   Abatis via the errata thread, now A33 via the capability reading).
+   Standing German-benefit battle effects cancelled by A31 unshaded
+   are now: Ariovistus doubling (card text), German-owned Abatis
+   (errata clarification), A33 Motivation (this Q&A).
+2. **A31 unshaded IS a capability** ("Why do you think it is not?").
+   It was wired as bare event_modifiers — invisible to card 50
+   Shifting Loyalties and to the Interlude's capability bookkeeping.
+   Now registered via activate_capability. Same class fixed for A63
+   unshaded and A22 unshaded (the CAPABILITY banner covers both
+   sides; the C/L/S letters in the card headers are NP instruction
+   symbols — Carnyx/Laurels/Swords — not side-type markers, per the
+   Card Reference legend).
+3. **New bug class found and fixed: companion-modifier leak.**
+   Dual-wired capabilities (capability entry + event_modifiers) left
+   their modifiers in effect forever after card 50 removal or a
+   §5.1.2 Dueling-Events side replacement. capabilities.py now keeps
+   a _CAPABILITY_MODIFIERS registry (A31/A63/A22 unshaded) cleared on
+   deactivate AND on side replacement. 4 regression tests.
+
+Verification: 2129 tests pass; strict census seeds 1-12 exit 0
+illegal=0, hashseed 0/7 byte-identical; canary within band (no
+rebaseline needed).

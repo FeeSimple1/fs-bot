@@ -51,9 +51,17 @@ def _a33_motivation_active(state):
     """A33 shaded CAPABILITY "Motivation" (Ariovistus): "Defending Germans
     suffer 1/2 Losses whether or not Retreating and inflict +1 Counterattack
     Loss." Source: A Card Reference, card A33.
+
+    A31 unshaded ("Event effects benefitting Germans in Battle are
+    cancelled") suppresses it: capabilities count as Event effects —
+    designer Q&A, BGG thread 2079436 (and errata-thread Abatis
+    clarification: marker/card text = "Event effects").
     """
     from fs_bot.rules_consts import EVENT_SHADED
     from fs_bot.cards.capabilities import is_capability_active
+    if state.get("event_modifiers", {}).get(
+            "card_A31_cancel_german_benefits"):
+        return False
     return is_capability_active(state, "A33", EVENT_SHADED)
 
 def calculate_losses(state, region, attacking_faction, defending_faction,

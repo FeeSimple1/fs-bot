@@ -3272,6 +3272,9 @@ def execute_card_A22(state, shaded=False):
     if not shaded:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A22_no_intimidate_romans"] = True
+        # CAPABILITY banner covers both sides (BGG thread 2079436, the
+        # A31 precedent) — register so Shifting Loyalties can remove it.
+        activate_capability(state, "A22", EVENT_UNSHADED)
     else:
         activate_capability(state, "A22", EVENT_SHADED)
 
@@ -3653,6 +3656,10 @@ def execute_card_A31(state, shaded=False):
         # completeness; its concrete effect is the no-double below.
         state["event_modifiers"]["card_A31_cancel_german_benefits"] = True
         state["event_modifiers"]["card_A31_no_ario_double"] = True
+        # BGG thread 2079436 (Q&A): the unshaded side IS a Capability —
+        # register it so Shifting Loyalties can remove it (the companion
+        # modifiers above are cleared by deactivate/replace).
+        activate_capability(state, "A31", EVENT_UNSHADED)
     else:
         activate_capability(state, "A31", EVENT_SHADED)
 
@@ -4361,6 +4368,9 @@ def execute_card_A63(state, shaded=False):
     if not shaded:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A63_quarters_devastated_only"] = True
+        # Same class as A31: the unshaded side is a Capability — register
+        # it (companion modifier cleared on removal/replacement).
+        activate_capability(state, "A63", EVENT_UNSHADED)
     else:
         activate_capability(state, "A63", EVENT_SHADED)
 

@@ -21,6 +21,26 @@ from fs_bot.rules_consts import (
 )
 
 
+# Companion event_modifiers set by capability handlers, keyed by
+# (card_id, side). Cleared when the capability is removed (card 50
+# Shifting Loyalties) or replaced by its other side (§5.1.2 Dueling
+# Events) — previously these leaked and stayed in effect forever.
+_CAPABILITY_MODIFIERS = {
+    ("A31", EVENT_UNSHADED): ("card_A31_no_ario_double",
+                              "card_A31_cancel_german_benefits"),
+    ("A63", EVENT_UNSHADED): ("card_A63_quarters_devastated_only",),
+    ("A22", EVENT_UNSHADED): ("card_A22_no_intimidate_romans",),
+}
+
+
+def _clear_companion_modifiers(state, card_id, side):
+    mods = state.get("event_modifiers")
+    if not mods:
+        return
+    for key in _CAPABILITY_MODIFIERS.get((card_id, side), ()):
+        mods.pop(key, None)
+
+
 def _ensure_capabilities(state):
     """Ensure state has a capabilities dict."""
     if "capabilities" not in state:
@@ -45,6 +65,11 @@ def activate_capability(state, card_id, shaded_or_unshaded):
             f"got {shaded_or_unshaded!r}"
         )
     _ensure_capabilities(state)
+    # §5.1.2 Dueling Events: replacing the other side clears that side's
+    # companion modifiers.
+    prev = state["capabilities"].get(card_id)
+    if prev is not None and prev != shaded_or_unshaded:
+        _clear_companion_modifiers(state, card_id, prev)
     state["capabilities"][card_id] = shaded_or_unshaded
 
 
@@ -75,7 +100,10 @@ def deactivate_capability(state, card_id):
     """
     _ensure_capabilities(state)
     state.get("capability_owners", {}).pop(card_id, None)
-    return state["capabilities"].pop(card_id, None)
+    side = state["capabilities"].pop(card_id, None)
+    if side is not None:
+        _clear_companion_modifiers(state, card_id, side)
+    return side
 
 
 def is_capability_active(state, card_id, shaded_or_unshaded=None):

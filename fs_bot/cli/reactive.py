@@ -1,9 +1,9 @@
-"""CLI reactive-decision agent — prompts a human for the choices forced on
+"""CLI reactive-decision agent -- prompts a human for the choices forced on
 them during ANOTHER action's resolution (engine/agent.py request kinds):
 
-  RETREAT    — the defender's Retreat choice (§3.2.4/§8.4.3)
-  LOSS_ORDER — which pieces absorb Battle Losses, in what order (§3.2.4)
-  AGREEMENT  — inter-Faction agreements (§1.5.2): Supply Line, Retreat into
+  RETREAT    -- the defender's Retreat choice (Sec.3.2.4/Sec.8.4.3)
+  LOSS_ORDER -- which pieces absorb Battle Losses, in what order (Sec.3.2.4)
+  AGREEMENT  -- inter-Faction agreements (Sec.1.5.2): Supply Line, Retreat into
                your Control, Quarters, Harassment, Trade
 
 Installed as state["decision_agent"] for games with any human seat. Returns
@@ -35,9 +35,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
                 if ctx.get("rampage"):
                     stdout.write(
                         f"\n{faction}: {request.get('attacker')} Rampages "
-                        f"in {request.get('region')} — "
+                        f"in {request.get('region')} -- "
                         f"{ctx.get('num_pieces')} of your piece(s) must "
-                        f"Retreat or be removed (§4.5.2).\n")
+                        f"Retreat or be removed (Sec.4.5.2).\n")
                     opts = [("Remove them", "stay")]
                     opts += [(f"Retreat them to {r}", r) for r in legal]
                     pick = prompt_choice(stdin, stdout,
@@ -86,7 +86,7 @@ def make_cli_reactive(human_factions, stdin, stdout):
                 where = f" in {ctx['region']}" if ctx.get("region") else ""
                 if rt == "harassment":
                     # An opt-in, not a favour: your Hidden Warbands may
-                    # Harass the moving/foraging group (§3.2.2).
+                    # Harass the moving/foraging group (Sec.3.2.2).
                     return prompt_yes_no(
                         stdin, stdout,
                         f"\n{faction}: your {ctx.get('hidden_warbands')} "
@@ -96,7 +96,7 @@ def make_cli_reactive(human_factions, stdin, stdout):
                         default=False)
                 return prompt_yes_no(
                     stdin, stdout,
-                    f"\n{faction}: {rf} asks your agreement — {rt}{where}. "
+                    f"\n{faction}: {rf} asks your agreement -- {rt}{where}. "
                     f"Agree?", default=True)
         except EOFError:
             return None

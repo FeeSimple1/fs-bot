@@ -17,7 +17,7 @@ Responsibilities:
 Scenario isolation per CLAUDE.md:
   - In Ariovistus scenarios, Arverni is game-run (A6.2) and CANNOT be
     human or bot. Germans CAN be either.
-  - In base scenarios, Germans are game-run (§6.2) and CANNOT be human
+  - In base scenarios, Germans are game-run (Sec.6.2) and CANNOT be human
     or bot. Arverni CAN be either.
 """
 
@@ -53,16 +53,16 @@ def get_assignable_factions(scenario):
     """Return the factions that may be assigned human/bot in a scenario.
 
     Excludes game-run factions:
-      - Base scenarios: Germans excluded (§6.2 game-run)
+      - Base scenarios: Germans excluded (Sec.6.2 game-run)
       - Ariovistus scenarios: Arverni excluded (A6.2 game-run)
 
     Returns:
         Tuple of faction constants in SoP order.
     """
     if scenario in ARIOVISTUS_SCENARIOS:
-        # Romans, Germans, Aedui, Belgae — A2.0
+        # Romans, Germans, Aedui, Belgae -- A2.0
         return (ROMANS, GERMANS, AEDUI, BELGAE)
-    # Base: Romans, Arverni, Aedui, Belgae — §2.3
+    # Base: Romans, Arverni, Aedui, Belgae -- Sec.2.3
     return (ROMANS, ARVERNI, AEDUI, BELGAE)
 
 
@@ -142,7 +142,7 @@ def display_card_result(card_result, stdout):
     else:
         turn = card_result.get("turn_result", {})
         if turn.get("frost"):
-            stdout.write("  Frost applies (§2.3.8)\n")
+            stdout.write("  Frost applies (Sec.2.3.8)\n")
         if turn.get("arverni_phase"):
             stdout.write("  Arverni Phase ran (A2.3.9)\n")
         actions = turn.get("actions_taken", {})
@@ -179,7 +179,7 @@ def _parse_args(argv):
     p = argparse.ArgumentParser(
         prog="fs_bot",
         description=(
-            "Falling Sky bot engine — interactive CLI with full rules "
+            "Falling Sky bot engine -- interactive CLI with full rules "
             "execution, save/resume, and replay."
         ),
     )
@@ -290,7 +290,7 @@ def main(argv=None, stdin=None, stdout=None):
                 return 2
             state = setup_scenario(scenario, seed=seed)
     else:
-        # Determine faction_modes — preset from --bots if scenario known
+        # Determine faction_modes -- preset from --bots if scenario known
         preset_modes = None
         if args.scenario is not None and args.bots is not None:
             assignable = get_assignable_factions(args.scenario)
@@ -355,7 +355,7 @@ def main(argv=None, stdin=None, stdout=None):
                 if e.get("player_action") is not None:
                     d["player_action"] = e["player_action"]
                 return d
-            stdout.write("[replay] log desynced from game — going "
+            stdout.write("[replay] log desynced from game -- going "
                          "interactive\n")
             replay_decisions.clear()
             replay_reactive.clear()
@@ -428,7 +428,7 @@ def main(argv=None, stdin=None, stdout=None):
     except (KeyboardInterrupt, EOFError):
         if args.save:
             serialize.save_game(state, args.save, meta=meta, log=live_log)
-            stdout.write(f"\nInterrupted — game saved to {args.save} "
+            stdout.write(f"\nInterrupted -- game saved to {args.save} "
                          f"(resume with --load).\n")
         else:
             stdout.write("\nInterrupted.\n")

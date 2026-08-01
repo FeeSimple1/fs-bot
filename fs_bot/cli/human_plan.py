@@ -1,4 +1,4 @@
-"""Human player plan collection — Phase 6 (mixed human/bot games).
+"""Human player plan collection -- Phase 6 (mixed human/bot games).
 
 After a human picks an action TYPE (menus.prompt_action), this module collects
 the concrete plan (which Command, Regions, targets, Special Activity, Event
@@ -8,7 +8,7 @@ same machinery used for bot turns, so a human turn resolves identically.
 
 Design: present ONLY legal choices (a Region must hold the acting Faction's
 pieces, a Battle needs an enemy present, etc.). This is the human-side analogue
-of the "no illegal moves" hard-block in menus.prompt_action — the executors and
+of the "no illegal moves" hard-block in menus.prompt_action -- the executors and
 mechanic functions remain the final validators.
 
 The plan shapes mirror what each command executor consumes (engine/execute.py):
@@ -161,7 +161,7 @@ def _collect_march(state, faction, stdin, stdout, single):
     if not origins:
         return None
     # One destination per origin, chosen explicitly (other origins are
-    # valid destinations — chained marches like A->B while B->C are legal).
+    # valid destinations -- chained marches like A->B while B->C are legal).
     # Emitted as exact routes so the executor marches each group precisely
     # where told instead of pooling destinations by nearest path.
     destinations = []
@@ -178,7 +178,7 @@ def _collect_march(state, faction, stdin, stdout, single):
             destinations.append(d)
     if not destinations:
         return None
-    # §3.2.2: the marching group is the player's own selection — offer a
+    # Sec.3.2.2: the marching group is the player's own selection -- offer a
     # subset per origin (all-mobile remains the default).
     groups = {}
     from fs_bot.board.pieces import get_leader_in_region
@@ -211,12 +211,12 @@ def _collect_march(state, faction, stdin, stdout, single):
     if groups:
         plan["groups"] = groups
 
-    # §3.3.2: multiple groups may leave one origin. Offer one extra
+    # Sec.3.3.2: multiple groups may leave one origin. Offer one extra
     # group per origin that still has mobile pieces after the first.
     extra = []
     for o in origins:
         if o not in groups:
-            continue  # first group takes everything — nothing remains
+            continue  # first group takes everything -- nothing remains
         remaining = {pt: count_pieces(state, o, faction, pt)
                      - int(groups[o].get(pt, 0) or 0)
                      for pt in (LEGION, AUXILIA, WARBAND)}
@@ -324,8 +324,8 @@ def _collect_seize(state, faction, stdin, stdout, single):
 
 
 def _citadel_upgrade_tribes(state, region, faction):
-    """City Tribes in ``region`` holding ``faction``'s Ally — Citadel
-    upgrade candidates (§3.3.1, Aedui/Arverni only)."""
+    """City Tribes in ``region`` holding ``faction``'s Ally -- Citadel
+    upgrade candidates (Sec.3.3.1, Aedui/Arverni only)."""
     from fs_bot.rules_consts import TRIBE_TO_CITY
     if faction not in (AEDUI, ARVERNI):
         return []
@@ -350,15 +350,15 @@ def _enemy_ally_tribes(state, region, faction):
 
 
 # --------------------------------------------------------------------- #
-# Special Activity plan collectors — one per SA whose executor needs a
+# Special Activity plan collectors -- one per SA whose executor needs a
 # concrete plan (engine/execute.py shapes). SAs absent here either need
-# no plan (Trade; Build/Scout recompute §8.8-faithful plans against the
+# no plan (Trade; Build/Scout recompute Sec.8.8-faithful plans against the
 # board) or only Region names (Devastate, Settle), which the generic
 # picker in _collect_command covers.
 # --------------------------------------------------------------------- #
 
 def _collect_suborn(state, faction, stdin, stdout):
-    """Aedui Suborn (§4.4.2): up to 3 pieces in one Region, max 1 Ally."""
+    """Aedui Suborn (Sec.4.4.2): up to 3 pieces in one Region, max 1 Ally."""
     regions = _regions_with_pieces(state, faction)
     if not regions:
         return None, None
@@ -417,7 +417,7 @@ def _collect_suborn(state, faction, stdin, stdout):
 
 
 def _collect_entreat(state, faction, stdin, stdout):
-    """Arverni Entreat (§4.3.1): replace/remove enemy Allies or pieces in
+    """Arverni Entreat (Sec.4.3.1): replace/remove enemy Allies or pieces in
     Arverni-Controlled Regions (1 Resource each)."""
     entries = []
     while True:
@@ -464,7 +464,7 @@ def _collect_entreat(state, faction, stdin, stdout):
 
 
 def _collect_rampage(state, faction, stdin, stdout):
-    """Belgic Rampage (§4.5.2): Regions with Hidden Belgic Warbands and an
+    """Belgic Rampage (Sec.4.5.2): Regions with Hidden Belgic Warbands and an
     enemy; each entry names the target Faction."""
     from fs_bot.rules_consts import HIDDEN
     from fs_bot.board.pieces import count_pieces_by_state
@@ -527,7 +527,7 @@ def _collect_intimidate(state, faction, stdin, stdout):
 
 
 def _collect_enlist(state, faction, stdin, stdout):
-    """Belgic Enlist (§4.5.1): one free Germanic sub-Command."""
+    """Belgic Enlist (Sec.4.5.1): one free Germanic sub-Command."""
     sub = prompt_choice(stdin, stdout, "Enlist the Germans to:",
                         [("Battle", "german_battle"),
                          ("March", "german_march"),
@@ -576,7 +576,7 @@ def _collect_enlist(state, faction, stdin, stdout):
 
 
 def _collect_build(state, faction, stdin, stdout, single):
-    """Roman Build SA (§4.2.1) — player picks per-Region actions."""
+    """Roman Build SA (Sec.4.2.1) -- player picks per-Region actions."""
     from fs_bot.commands.sa_build import validate_build_region
     from fs_bot.map.map_data import get_tribes_in_region
     from fs_bot.rules_consts import ROMANS, FORT
@@ -626,7 +626,7 @@ def _tribe_in_region(state, tribe, region):
 
 
 def _collect_scout(state, faction, stdin, stdout, single):
-    """Roman Scout SA (§4.2.2) — player moves Auxilia, then Reveals."""
+    """Roman Scout SA (Sec.4.2.2) -- player moves Auxilia, then Reveals."""
     from fs_bot.rules_consts import (ROMANS, AUXILIA, WARBAND, HIDDEN,
                                      REVEALED, BRITANNIA, CAESAR, FACTIONS)
     from fs_bot.board.pieces import (count_pieces_by_state,
@@ -657,8 +657,8 @@ def _collect_scout(state, faction, stdin, stdout, single):
         sources = [r for r in _regions_with_pieces(state, ROMANS)
                    if count_pieces(state, r, ROMANS, AUXILIA) > 0
                    and r != BRITANNIA]
-    # Reveal targets — within 1 of Caesar (same Region as Successor),
-    # needs a Hidden Roman Auxilia there (§4.2.2).
+    # Reveal targets -- within 1 of Caesar (same Region as Successor),
+    # needs a Hidden Roman Auxilia there (Sec.4.2.2).
     targets = []
     caesar_region = find_leader(state, ROMANS)
     if caesar_region is not None:
@@ -731,7 +731,7 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
             if collector is not None:
                 sa_regions, extra = collector(state, faction, stdin, stdout)
                 if sa_regions is None:
-                    stdout.write(f"  (no legal {sa} plan — Command only)\n")
+                    stdout.write(f"  (no legal {sa} plan -- Command only)\n")
                     return action
                 action["sa"] = sa
                 action["sa_regions"] = sa_regions
@@ -749,8 +749,8 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
 
 
 # --------------------------------------------------------------------- #
-# Event parameter collection — the human analogue of the NP derivers
-# (§8.2.3). Keys a card's handler reads from event_params are extracted
+# Event parameter collection -- the human analogue of the NP derivers
+# (Sec.8.2.3). Keys a card's handler reads from event_params are extracted
 # from its source, then prompted with typed pickers; every key may be
 # skipped (the executor reports 'not applicable' and the validation loop
 # in menus.prompt_action lets the player re-plan).
@@ -842,7 +842,7 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
 
 
 def _maybe_collect_transfer(state, faction, action, stdin, stdout):
-    """Offer a §1.5.2 Resource gift riding this Command/Event execution.
+    """Offer a Sec.1.5.2 Resource gift riding this Command/Event execution.
     Menu-driven (first option "No") so scripted input declines naturally;
     one grouped gift per action (documented simplification)."""
     from fs_bot.rules_consts import BASE_SCENARIOS
@@ -858,7 +858,7 @@ def _maybe_collect_transfer(state, faction, action, stdin, stdout):
     try:
         to = prompt_choice(
             stdin, stdout,
-            "Transfer Resources with this action (§1.5.2)?",
+            "Transfer Resources with this action (Sec.1.5.2)?",
             [("No", None)] + [(f"Give Resources to {f}", f)
                               for f in others])
         if to is None:

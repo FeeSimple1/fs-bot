@@ -161,6 +161,11 @@ def prompt_action(state, faction, options, position, stdin, stdout):
         f"{card_title}."
     )
     stdout.write(header + "\n")
+    # Show the card's printed text so Event is an informed choice.
+    from fs_bot.cards.card_text import format_card_text
+    card_txt = format_card_text(card_id, indent="  | ")
+    if card_txt:
+        stdout.write(card_txt + "\n")
 
     choices = [
         (ACTION_LABELS.get(opt, opt), opt) for opt in options

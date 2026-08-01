@@ -158,6 +158,15 @@ def display_card_result(card_result, stdout):
                 stdout.write(f"  {f}: {action}\n")
             ex = info.get("execution")
             if isinstance(ex, dict):
+                # An Event play names the side used and shows that text.
+                if "shaded" in ex and ex.get("card_id") is not None:
+                    side = "shaded" if ex.get("shaded") else "unshaded"
+                    stdout.write(f"      played the {side.upper()} text of "
+                                 f"card {ex['card_id']}\n")
+                    from fs_bot.cards.card_text import format_card_text
+                    txt = format_card_text(ex["card_id"], indent="      | ")
+                    if txt:
+                        stdout.write(txt + "\n")
                 if not ex.get("executed"):
                     why = ex.get("reason") or "no effect"
                     stdout.write(f"      (did not execute: {why})\n")
@@ -344,7 +353,23 @@ def main(argv=None, stdin=None, stdout=None):
         faction_modes, stdin=stdin, stdout=stdout, pause=pause,
     )
 
+    from fs_bot.cli.display import snapshot_state, format_state_delta
+    last_human_snap = [None]
+
     def decision(state_, faction, options, position):
+        # Before each HUMAN prompt: show everything that changed on the
+        # board since their previous decision (their own action's results
+        # plus every bot action and phase in between).
+        if faction_modes.get(faction) == "human":
+            snap = snapshot_state(state_)
+            if last_human_snap[0] is not None:
+                delta = format_state_delta(last_human_snap[0], snap)
+                if delta:
+                    stdout.write("\n--- Changes since your last decision "
+                                 "---\n")
+                    for line in delta:
+                        stdout.write(line + "\n")
+            last_human_snap[0] = snap
         if faction_modes.get(faction) == "human" and replay_decisions:
             e = replay_decisions[0]
             if (e.get("faction") == faction

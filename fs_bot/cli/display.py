@@ -523,3 +523,95 @@ def format_victory_state(state):
         )
     lines.append(SEP_HEAVY)
     return "\n".join(lines)
+
+
+# ============================================================================
+# STATE SNAPSHOTS + DELTAS — "what changed since my last decision"
+# ============================================================================
+
+def snapshot_state(state):
+    """Light snapshot of the visible board for human-facing diffs."""
+    from fs_bot.rules_consts import (FACTIONS, WARBAND, AUXILIA, LEGION,
+                                     ALLY, CITADEL, FORT, SETTLEMENT)
+    from fs_bot.board.pieces import count_pieces, get_leader_in_region
+    pieces = {}
+    leaders = {}
+    for region in state.get("spaces", {}):
+        for f in FACTIONS:
+            for pt in (WARBAND, AUXILIA, LEGION, ALLY, CITADEL, FORT,
+                       SETTLEMENT):
+                n = count_pieces(state, region, f, pt)
+                if n:
+                    pieces[(region, f, pt)] = n
+            ldr = get_leader_in_region(state, region, f)
+            if ldr:
+                leaders[(region, f)] = ldr
+    tribes = {t: (ti.get("allied_faction"), ti.get("status"))
+              for t, ti in state.get("tribes", {}).items()}
+    return {
+        "resources": dict(state.get("resources", {})),
+        "pieces": pieces,
+        "leaders": leaders,
+        "tribes": tribes,
+        "senate": dict(state.get("senate") or {}),
+        "fallen": state.get("fallen_legions", 0),
+        "capabilities": dict(state.get("capabilities", {})),
+    }
+
+
+def _tribe_label(alleg):
+    faction, status = alleg
+    if faction:
+        return f"{faction} Ally"
+    if status:
+        return str(status)
+    return "Subdued"
+
+
+def format_state_delta(before, after):
+    """Human-readable lines describing what changed between snapshots."""
+    lines = []
+    # Resources
+    for f, v in after["resources"].items():
+        b = before["resources"].get(f, 0)
+        if v != b:
+            lines.append(f"  {f} Resources: {b} -> {v}")
+    # Pieces per region
+    keys = set(before["pieces"]) | set(after["pieces"])
+    per_region = {}
+    for k in sorted(keys):
+        region, f, pt = k
+        d = after["pieces"].get(k, 0) - before["pieces"].get(k, 0)
+        if d:
+            per_region.setdefault(region, []).append(
+                f"{f} {'+' if d > 0 else ''}{d} {pt}")
+    for region in sorted(per_region):
+        lines.append(f"  {region}: " + ", ".join(per_region[region]))
+    # Leaders moved
+    b_l, a_l = before["leaders"], after["leaders"]
+    for k in sorted(set(b_l) | set(a_l)):
+        if b_l.get(k) != a_l.get(k):
+            region, f = k
+            if k not in a_l:
+                lines.append(f"  {region}: {b_l[k]} left")
+            else:
+                lines.append(f"  {region}: {a_l[k]} arrived")
+    # Tribes
+    for t in sorted(set(before["tribes"]) | set(after["tribes"])):
+        b = before["tribes"].get(t, (None, None))
+        a = after["tribes"].get(t, (None, None))
+        if b != a:
+            lines.append(f"  {t}: {_tribe_label(b)} -> {_tribe_label(a)}")
+    # Senate / fallen / capabilities
+    if before["senate"] != after["senate"]:
+        lines.append(f"  Senate: {before['senate'].get('position')} -> "
+                     f"{after['senate'].get('position')}")
+    if before["fallen"] != after["fallen"]:
+        lines.append(f"  Fallen Legions: {before['fallen']} -> "
+                     f"{after['fallen']}")
+    for cid in set(after["capabilities"]) - set(before["capabilities"]):
+        lines.append(f"  New Capability in effect: card {cid} "
+                     f"({after['capabilities'][cid]})")
+    for cid in set(before["capabilities"]) - set(after["capabilities"]):
+        lines.append(f"  Capability removed: card {cid}")
+    return lines

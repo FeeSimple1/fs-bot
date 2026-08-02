@@ -369,6 +369,9 @@ def main(argv=None, stdin=None, stdout=None):
                                  "---\n")
                     for line in delta:
                         stdout.write(line + "\n")
+                    # The board changed since it was last drawn — show a
+                    # CURRENT region table so the prompt is never stale.
+                    stdout.write("\n" + format_region_table(state_) + "\n")
             last_human_snap[0] = snap
         if faction_modes.get(faction) == "human" and replay_decisions:
             e = replay_decisions[0]

@@ -316,8 +316,8 @@ def format_region_table(state):
     lines.append(SEP)
     # Column widths chosen so the Roman cell (which carries Caesar,
     # Legions, Auxilia, and Forts together) fits.
-    w_rom = 18
-    w_other = 14
+    w_rom = 21
+    w_other = 17
     header = (
         f"{'Region':<14}{'Ctrl':<6}"
         f"{'Romans':<{w_rom}}{'Arverni':<{w_other}}{'Aedui':<{w_other}}"

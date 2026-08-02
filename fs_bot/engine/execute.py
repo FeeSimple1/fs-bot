@@ -535,7 +535,31 @@ def _region_restricted_free_command(state, faction, allowed_regions,
     return None
 
 
-def _resolve_free_rally(state, faction, allowed_regions=None):
+def _plan_region_order(bot_action):
+    """Distinct Regions of a Rally/Recruit plan, in the plan's own priority
+    order (Citadels, then Allies, then Warbands for a Rally plan)."""
+    d = (bot_action.get("details") or {})
+
+    def reg_of(e):
+        return e if isinstance(e, str) else e.get("region")
+
+    rp = d.get("rally_plan")
+    if isinstance(rp, dict):
+        seq = ((rp.get("citadels") or []) + (rp.get("allies") or [])
+               + (rp.get("warbands") or []))
+    else:
+        seq = d.get("recruit_plan") or []
+    seen, order = set(), []
+    for e in seq:
+        r = reg_of(e)
+        if r and r not in seen:
+            seen.add(r)
+            order.append(r)
+    return order
+
+
+def _resolve_free_rally(state, faction, allowed_regions=None,
+                        max_regions=None):
     """Execute a *free* Rally (Recruit for the Romans) for ``faction`` using
     that Faction's own Rally node — node_a/v/b/g_rally, or node_r_recruit. The
     node returns a Rally/Recruit action with its plan; we execute it through
@@ -570,6 +594,16 @@ def _resolve_free_rally(state, faction, allowed_regions=None):
         if bot_action is None:
             return {"executed": False, "command": cmd,
                     "reason": "no Rally action in the allowed Region(s)"}
+    if max_regions is not None:
+        # Card-imposed Region cap (e.g. 34 Acco: "in any 3 Regions") — keep
+        # the plan's top-priority Regions, drop the rest.
+        order = _plan_region_order(bot_action)
+        if len(order) > max_regions:
+            bot_action = _constrain_bot_action(
+                bot_action, set(order[:max_regions]))
+            if bot_action is None:
+                return {"executed": False, "command": cmd,
+                        "reason": "no Rally action within the Region cap"}
     res = _execute_bot_command(state, faction, bot_action)
     return res if res is not None else {"executed": False, "command": cmd,
                                         "reason": "Rally not executable"}
@@ -999,6 +1033,9 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card70_march_battle(
             state, mods.get("card_70_target_regions"),
             mods.get("card_70_legion_limit", 4)))
+    if mods.get("card_72_march_and_enemy_battle"):
+        results.extend(_resolve_card72_march_enemy_battle(state, faction))
+
     if mods.get("card_72_hidden_march_battle"):
         results.extend(_resolve_card72_hidden_march_battle(state, faction))
     if mods.get("card_58_german_march_battle"):
@@ -1037,7 +1074,9 @@ def _resolve_free_actions(state, faction):
         results.extend(_resolve_card35_roman(state, faction))
     if mods.get("card_34_free_rally"):
         results.append({"free_action": "free_rally", "flag": "card_34",
-                        "result": _resolve_free_rally(state, faction)})
+                        "result": _resolve_free_rally(
+                            state, faction,
+                            max_regions=mods.get("card_34_rally_regions", 3))})
     if mods.get("card_26_arverni_rally"):
         results.extend(_resolve_card26_arverni_rally(state))
     if mods.get("card_64_belgae_rally"):
@@ -1081,11 +1120,14 @@ def _resolve_free_actions(state, faction):
         results.append({"free_action": "german_ambush", "flag": "card_51",
                         "ambushes": _faction_ambush_sweep(state, _G)})
     if mods.get("card_44a_free_command"):
-        # NOTE: card 44 (Ariovistus) shaded says "in Regions placed"; the
-        # region restriction is a documented refinement (see QUESTIONS.md) —
-        # the chooser is faithful but board-wide here.
+        # Card 44 (Ariovistus) shaded: the free Command is "in Regions
+        # placed" — constrain the chooser to the Regions the handler
+        # recorded (board-wide only if it recorded none, e.g. no placement).
+        placed = mods.get("card_44a_command_regions") or []
         results.append({"free_action": "free_command", "flag": "card_44a",
-                        "result": _resolve_free_command(state, faction)})
+                        "result": _resolve_free_command(
+                            state, faction,
+                            allowed_regions=set(placed) if placed else None)})
     if mods.get("card_A29_german_raid"):
         results.extend(_resolve_card_A29_raid(state))
     if mods.get("card_A34_use_german_pieces"):
@@ -1911,18 +1953,23 @@ def _resolve_card35_roman(state, faction):
     """Card 35 Gallic Shouts (unshaded): "Romans may look at the next 2
     facedown cards and either execute a free Limited Command or be Eligible."
 
+    The beneficiary is the ROMANS regardless of who executed the Event (the
+    card's Tip contemplates another Faction executing it *for* the Romans).
     The peek lets the Romans pick the better option. We model the choice by
     outcome: take the free Limited Command if it does something; otherwise take
-    the alternative and remain Eligible (the peek is the information that drives
-    this either/or — it has no board effect of its own)."""
-    from fs_bot.rules_consts import ELIGIBLE
-    res = _resolve_free_command(state, faction, limited=True)
+    the alternative and be Eligible (the peek is the information that drives
+    this either/or — it has no board effect of its own). "Be Eligible" is
+    recorded in state["stay_eligible"] so the Sec.2.3.6 reset cannot clobber
+    it when the Romans themselves executed the Event."""
+    from fs_bot.rules_consts import ELIGIBLE, ROMANS
+    res = _resolve_free_command(state, ROMANS, limited=True)
     if res.get("executed"):
         return [{"free_action": "free_command", "flag": "card_35",
-                 "result": res}]
-    state.setdefault("eligibility", {})[faction] = ELIGIBLE
+                 "faction": ROMANS, "result": res}]
+    state.setdefault("eligibility", {})[ROMANS] = ELIGIBLE
+    state.setdefault("stay_eligible", []).append(ROMANS)
     return [{"free_action": "stay_eligible", "flag": "card_35",
-             "executed": True, "faction": faction,
+             "executed": True, "faction": ROMANS,
              "note": "no effective Limited Command; chose to be Eligible"}]
 
 
@@ -2411,6 +2458,84 @@ def _resolve_card58_german_ambush(state):
     return [{"free_action": "ambush", "flag": "card_58_german_march_battle",
              "region": R, "defender": ROMANS, "warbands_gathered": total,
              "warbands_marched": marched, "result": res}]
+
+
+def _resolve_card72_march_enemy_battle(state, faction):
+    """Card 72 Impetuosity (unshaded): "Free March into 1 Region from any
+    adjacent. Either Arverni or Belgae in that Region free Battle against
+    you." Tip: the March must include a move from at least one adjacent
+    Region; the free Battle does not include Ambush.
+
+    NP guidance (Roman event instruction 8.2.3/8.8.3): play only where the
+    March results in the Battle. Destination: the Region where, after
+    Marching in the largest adjacent mobile group, the acting Faction's
+    force most outweighs the resident Arverni/Belgae Warbands (take the
+    bait on the best defensive terms). If both Arverni and Belgae are
+    present, the one with more Warbands Battles (the card does not say who
+    chooses — logged in QUESTIONS.md)."""
+    from fs_bot.rules_consts import (ARVERNI, BELGAE, WARBAND, AUXILIA,
+                                     LEGION)
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.battle.resolve import resolve_battle
+    scen = state["scenario"]
+    playable = set(get_playable_regions(scen, state.get("capabilities")))
+    baiters = [f for f in (ARVERNI, BELGAE) if f != faction]
+
+    def force(R, f):
+        return (count_pieces(state, R, f, LEGION)
+                + count_pieces(state, R, f, AUXILIA)
+                + count_pieces(state, R, f, WARBAND))
+
+    best = None  # (score, B, S, enemy)
+    for B in sorted(playable):
+        enemies = [(count_pieces(state, B, e, WARBAND), e) for e in baiters
+                   if count_pieces(state, B, e, WARBAND) > 0]
+        if not enemies:
+            continue
+        enemy = max(enemies)[1]
+        srcs = [a for a in sorted(get_adjacent(B, scen)) if a in playable
+                and _group_has_pieces(_mobile_march_group(state, faction, a))]
+        if not srcs:
+            continue
+        S = max(srcs, key=lambda a: sum(
+            count_pieces(state, a, faction, pt)
+            for pt in (LEGION, AUXILIA, WARBAND)))
+        incoming = sum(count_pieces(state, S, faction, pt)
+                       for pt in (LEGION, AUXILIA, WARBAND))
+        score = (force(B, faction) + incoming
+                 - max(e[0] for e in enemies))
+        if best is None or score > best[0]:
+            best = (score, B, S, enemy)
+
+    if best is None:
+        return [{"free_action": "march_enemy_battle", "flag": "card_72",
+                 "executed": False,
+                 "reason": "no adjacent March reaching Arverni/Belgae "
+                           "Warbands"}]
+    _sc, B, S, enemy = best
+    out = []
+    try:
+        final = _march_with_harassment(state, faction, S, [B])
+        out.append({"free_action": "march", "flag": "card_72",
+                    "source": S, "dest": B, "final_region": final})
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "march", "flag": "card_72",
+                 "executed": False, "reason": repr(exc)}]
+    if final != B or count_pieces(state, B, faction) <= 0:
+        out.append({"free_action": "battle", "flag": "card_72",
+                    "executed": False,
+                    "reason": "March did not end in the target Region"})
+        return out
+    try:
+        res = resolve_battle(state, B, enemy, faction)
+        out.append({"free_action": "battle", "flag": "card_72",
+                    "attacker": enemy, "defender": faction, "region": B,
+                    "result": res})
+    except _EXEC_ERRORS as exc:
+        out.append({"free_action": "battle", "flag": "card_72",
+                    "executed": False, "reason": repr(exc)})
+    return out
 
 
 def _resolve_card72_hidden_march_battle(state, faction):

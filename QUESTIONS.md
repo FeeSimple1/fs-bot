@@ -2592,3 +2592,62 @@ Everything else in the audited transcript reconciled: Baggage Trains
 charged 0 for a two-origin March; every score movement explained
 (the -1 Rome was Veneti+Volcae allied vs Sequani subdued); the
 mystery Mandubii Auxilia loss was the Arverni Entreat.
+
+## KNOCK-ON AUDIT — every persistent/timed card effect swept (Aug 2026)
+
+The owner asked for a systematic hunt for more bugs of the class the
+playtests kept surfacing: card effects that set state and never apply.
+Method: diff of every event_modifiers key's set-sites vs read-sites,
+then every timed card wording ("through next card", "Stay Eligible",
+"in N Regions", "in Regions placed") checked against its executor.
+
+FIVE genuine defects found and fixed (tests in test_knock_on_audit.py):
+
+1. THE MIRROR of the forced-ineligibility bug: "Executing Faction
+   Eligible" (6/14 shaded), "Stay Eligible" (46 shaded), and the
+   "or be Eligible" choice (35 unshaded) were set mid-card and then
+   clobbered by the same Sec.2.3.6 reset (the executor HAD acted, so
+   the base rule benched them). Fix: state["stay_eligible"], consumed
+   by adjust_eligibility after the reset; an explicit "Ineligible"
+   clause on the same Faction wins any conflict.
+2. Card 35 unshaded benefited the EXECUTING Faction; the text and Tip
+   make the Romans the beneficiary whoever executes it. Fixed.
+3. Card 34 Acco unshaded: "in any 3 Regions" — the free Rally ran the
+   Faction's full uncapped Rally plan (illegal over-grant). Fixed: the
+   plan is trimmed to its 3 top-priority Regions.
+4. Card 44 (Ariovistus) shaded: "in Regions placed" was recorded but
+   the free-Command chooser ran board-wide (was a documented
+   deviation; the constraint machinery now exists, so it's wired).
+5. Card 72 Impetuosity UNSHADED (free March + Arverni/Belgae free
+   Battle against the marcher) was set and consumed nowhere — the
+   Roman bot's event instruction plays that side, so Rome could
+   "play" the event as a silent no-op turn (the Forced Marches class).
+   Implemented: March per best defensive terms; the resident enemy
+   with more Warbands Battles the marcher; no Ambush per the Tip.
+
+Rulings/judgment calls logged (owner may override):
+- 72 unshaded, both Arverni AND Belgae present: card doesn't say who
+  chooses the battler; the one with more Warbands attacks.
+- 34 "as if with Control": NP Rally nodes only propose rules-legal
+  placements, so the bot UNDER-uses the permissive grant (never
+  places an Ally without Control). Legal, but weaker than a human.
+- 52 shaded "may add 2 Special Abilities": flowchart has no rule for
+  a second SA; the bot adds the one SA it selects (documented).
+- 57 unshaded "any free Special Ability there": open-ended SA choice
+  still a documented follow-up; March + conditional +4 executed.
+- A28 combined multi-Faction Loss math still a documented follow-up;
+  the no-Retreat free Battle itself executes.
+
+Everything else in the truly-inert flag list verified VESTIGIAL —
+the effect is implemented via explicit executor args and the flag is
+just a breadcrumb: 6 (scout/battle/double-Auxilia), 11a, 16 (handler
+rolls and removes), 25, 35 shaded (no-Battles enforced via
+exclude_commands), 36 both sides (kwargs to resolve_battle /
+ambush-sweep-then-march), 45, 51 (free Command is textually
+unrestricted), 54 (no_retreat in battle details), 58, 67/A67
+(resolver hardcodes Nervii/Treveri + Command restriction + flip
+Hidden), A17, A69.
+
+Canary rebaselined (fourth deliberate rebaseline — eligibility
+timing legitimately shifted all-bot trajectories). 2160 tests pass;
+census seeds strict illegal=0, byte-identical hashseed 0 vs 7.

@@ -520,6 +520,9 @@ def execute_card_6(state, shaded=False):
         executing = state.get("executing_faction")
         if executing and executing != ROMANS:
             state["eligibility"][executing] = ELIGIBLE
+            # "Executing Faction Eligible" survives the Sec.2.3.6 reset
+            # (else clobbered — the mirror of forced_ineligible).
+            state.setdefault("stay_eligible", []).append(executing)
 
 def execute_card_7(state, shaded=False):
     """Card 7: Alaudae — Place Legion+Auxilia / remove to track.
@@ -746,6 +749,8 @@ def execute_card_14(state, shaded=False):
         executing = state.get("executing_faction")
         if executing and executing != ROMANS:
             state["eligibility"][executing] = ELIGIBLE
+            # Survives the Sec.2.3.6 reset (mirror of forced_ineligible).
+            state.setdefault("stay_eligible", []).append(executing)
 
 def execute_card_15(state, shaded=False):
     """Card 15: Legio X — CAPABILITY.
@@ -2046,6 +2051,8 @@ def execute_card_46(state, shaded=False):
         state["event_modifiers"]["card_46_free_command"] = True
         if faction:
             state["eligibility"][faction] = ELIGIBLE
+            # "Stay Eligible" survives the Sec.2.3.6 reset.
+            state.setdefault("stay_eligible", []).append(faction)
 
 def execute_card_47(state, shaded=False):
     """Card 47: Chieftains' Council — Multi-faction peek and action.

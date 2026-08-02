@@ -398,6 +398,20 @@ def adjust_eligibility(state, actions_taken):
             forced[faction] -= 1
             if forced[faction] <= 0:
                 del forced[faction]
+    # The mirror clause: several Events keep the *executing* Faction
+    # Eligible despite having executed the Event ("Executing Faction
+    # Eligible" on 6/14 shaded, "Stay Eligible" on 46 shaded, the
+    # "or be Eligible" choice on 35 unshaded). The plain reset clobbered
+    # these exactly as it clobbered "Ineligible through next card".
+    # An explicit "Ineligible" clause on the same Faction wins the
+    # conflict (the specific penalty beats the general retention).
+    stay = state.pop("stay_eligible", None)
+    if stay:
+        from fs_bot.rules_consts import ELIGIBLE
+        still_forced = state.get("forced_ineligible") or {}
+        for faction in stay:
+            if faction not in still_forced:
+                state["eligibility"][faction] = ELIGIBLE
 
 
 def _adjust_eligibility_base(state, actions_taken):

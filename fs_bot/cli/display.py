@@ -498,7 +498,7 @@ def format_victory_state(state):
     scenario = state["scenario"]
     lines = []
     lines.append(SEP_HEAVY)
-    lines.append("VICTORY STATE")
+    lines.append("VICTORY (checked each Winter; margin >= +1 wins)")
     lines.append(SEP)
     for faction in FACTIONS:
         try:

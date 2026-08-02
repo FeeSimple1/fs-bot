@@ -370,8 +370,11 @@ def main(argv=None, stdin=None, stdout=None):
                     for line in delta:
                         stdout.write(line + "\n")
                     # The board changed since it was last drawn — show a
-                    # CURRENT region table so the prompt is never stale.
-                    stdout.write("\n" + format_region_table(state_) + "\n")
+                    # CURRENT victory/resource summary and region table so
+                    # the prompt is never stale.
+                    stdout.write("\n" + format_victory_state(state_) + "\n")
+                    stdout.write(format_state_summary(state_) + "\n")
+                    stdout.write(format_region_table(state_) + "\n")
             last_human_snap[0] = snap
         if faction_modes.get(faction) == "human" and replay_decisions:
             e = replay_decisions[0]
@@ -421,6 +424,7 @@ def main(argv=None, stdin=None, stdout=None):
         state["decision_agent"] = agent
 
     # Initial display
+    stdout.write(format_victory_state(state) + "\n")
     stdout.write(format_state_summary(state) + "\n")
     stdout.write(format_region_table(state) + "\n")
     stdout.flush()

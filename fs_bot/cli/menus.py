@@ -101,12 +101,18 @@ def prompt_choice(stdin, stdout, prompt, choices):
         try:
             idx = int(line)
         except ValueError:
-            stdout.write(f"Please enter 1-{n} (got {line!r})\n")
-            continue
-        if idx < 1 or idx > n:
-            stdout.write(f"Please enter 1-{n} (got {idx})\n")
-            continue
-        return choices[idx - 1][1]
+            idx = None
+        if idx is not None and 1 <= idx <= n:
+            return choices[idx - 1][1]
+        # Not a menu index — accept input matching exactly ONE option
+        # LABEL (playtester papercut: typing the value '0' at a count
+        # menu whose option was labeled '0'). Index numbers always win;
+        # label matching only applies to non-index input.
+        label_hits = [v for (lbl, v) in choices
+                      if lbl.strip().lower() == line.lower()]
+        if len(label_hits) == 1:
+            return label_hits[0]
+        stdout.write(f"Please enter 1-{n} (got {line!r})\n")
 
 
 def prompt_yes_no(stdin, stdout, prompt, default=None):

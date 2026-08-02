@@ -126,13 +126,13 @@ def prompt_yes_no(stdin, stdout, prompt, default=None):
     Returns:
         bool.
     """
-    suffix = ""
+    b = ", b=board" if _BOARD_HOOK[0] else ""
     if default is True:
-        suffix = " [Y/n]: "
+        suffix = f" [Y/n{b}]: "
     elif default is False:
-        suffix = " [y/N]: "
+        suffix = f" [y/N{b}]: "
     else:
-        suffix = " [y/n]: "
+        suffix = f" [y/n{b}]: "
     while True:
         line = _read_line(stdin, prompt + suffix, stdout)
         if line is None:

@@ -357,7 +357,7 @@ def _enemy_ally_tribes(state, region, faction):
 # picker in _collect_command covers.
 # --------------------------------------------------------------------- #
 
-def _collect_suborn(state, faction, stdin, stdout):
+def _collect_suborn(state, faction, stdin, stdout, *, pending=None):
     """Aedui Suborn (Sec.4.4.2): up to 3 pieces in one Region, max 1 Ally."""
     regions = _regions_with_pieces(state, faction)
     if not regions:
@@ -416,7 +416,7 @@ def _collect_suborn(state, faction, stdin, stdout):
                                        "actions": actions}]}
 
 
-def _collect_entreat(state, faction, stdin, stdout):
+def _collect_entreat(state, faction, stdin, stdout, *, pending=None):
     """Arverni Entreat (Sec.4.3.1): replace/remove enemy Allies or pieces in
     Arverni-Controlled Regions (1 Resource each)."""
     entries = []
@@ -463,7 +463,7 @@ def _collect_entreat(state, faction, stdin, stdout):
     return entries, None      # plan rides in sa_regions
 
 
-def _collect_rampage(state, faction, stdin, stdout):
+def _collect_rampage(state, faction, stdin, stdout, *, pending=None):
     """Belgic Rampage (Sec.4.5.2): Regions with Hidden Belgic Warbands and an
     enemy; each entry names the target Faction."""
     from fs_bot.rules_consts import HIDDEN
@@ -487,7 +487,7 @@ def _collect_rampage(state, faction, stdin, stdout):
     return entries, None      # plan rides in sa_regions
 
 
-def _collect_intimidate(state, faction, stdin, stdout):
+def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
     """German Intimidate (A4.6.2): flip Hidden Warbands to remove that many
     pieces of ONE Faction per Region (1-2 per Region)."""
     from fs_bot.rules_consts import HIDDEN, ALLY
@@ -526,7 +526,7 @@ def _collect_intimidate(state, faction, stdin, stdout):
     return picked, {"intimidate_plan": plan}
 
 
-def _collect_enlist(state, faction, stdin, stdout):
+def _collect_enlist(state, faction, stdin, stdout, *, pending=None):
     """Belgic Enlist (Sec.4.5.1): one free Germanic sub-Command."""
     sub = prompt_choice(stdin, stdout, "Enlist the Germans to:",
                         [("Battle", "german_battle"),
@@ -575,7 +575,7 @@ def _collect_enlist(state, faction, stdin, stdout):
     return [region], {"enlist": ed}
 
 
-def _collect_build(state, faction, stdin, stdout):
+def _collect_build(state, faction, stdin, stdout, *, pending=None):
     """Roman Build SA (Sec.4.2.1) -- returns (sa_regions, extra)."""
     single = False
     from fs_bot.commands.sa_build import validate_build_region
@@ -583,6 +583,21 @@ def _collect_build(state, faction, stdin, stdout):
     from fs_bot.rules_consts import ROMANS, FORT
     cands = [r for r in _regions_with_pieces(state, ROMANS)
              if validate_build_region(state, r)[0]]
+    # Sec.4.1: the SA may resolve AFTER the Command — a March's
+    # destinations become Build-eligible once the group arrives, so
+    # offer them too (the executor validates against the post-March
+    # board; the plan preview rejects anything still illegal).
+    if pending is not None and pending.get("command") == "March":
+        det = pending.get("details") or {}
+        dests = list(det.get("destinations") or [])
+        for eg in det.get("extra_groups") or []:
+            dests.extend(eg.get("route") or [])
+        for routes in (det.get("routes") or {}).values():
+            dests.extend(routes)
+        for d in dests:
+            d = d[0] if isinstance(d, (list, tuple)) else d
+            if d not in cands:
+                cands.append(d)
     if not cands:
         return None, None
     picked = _pick_regions(stdin, stdout, "Build in which Region(s)?",
@@ -628,7 +643,7 @@ def _tribe_in_region(state, tribe, region):
     return TRIBE_TO_REGION.get(tribe) == region
 
 
-def _collect_scout(state, faction, stdin, stdout):
+def _collect_scout(state, faction, stdin, stdout, *, pending=None):
     """Roman Scout SA (Sec.4.2.2) -- player moves Auxilia, then Reveals."""
     from fs_bot.rules_consts import (ROMANS, AUXILIA, WARBAND, HIDDEN,
                                      REVEALED, BRITANNIA, CAESAR, FACTIONS)
@@ -734,7 +749,8 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
                                [(s, s) for s in sas])
             collector = _SA_COLLECTORS.get(sa)
             if collector is not None:
-                sa_regions, extra = collector(state, faction, stdin, stdout)
+                sa_regions, extra = collector(state, faction, stdin, stdout,
+                                              pending=action)
                 if sa_regions is None:
                     stdout.write(f"  (no legal {sa} plan -- Command only)\n")
                     return action

@@ -234,7 +234,10 @@ class TestHumanPlanCollection:
         st["non_player_factions"] = set()
         for name, fn in _SA_COLLECTORS.items():
             sig = inspect.signature(fn)
-            assert len(sig.parameters) == 4, (name, sig)
+            params = list(sig.parameters.values())
+            assert len(params) == 5, (name, sig)
+            assert params[4].name == "pending", (name, sig)
+            assert params[4].default is None, (name, sig)
         # Drive Build end-to-end: pick 1st region, done, fort action.
         from fs_bot.board.pieces import find_leader
         from fs_bot.map.map_data import get_adjacent
@@ -258,3 +261,25 @@ class TestHumanPlanCollection:
         stdin = _io.StringIO("n\n" * 6)
         result = _SA_COLLECTORS["Scout"](st, rc.ROMANS, stdin, out)
         assert isinstance(result, tuple) and len(result) == 2
+
+    def test_build_offers_march_destination(self):
+        # Sec.4.1 after-Command SA: a March's destination must appear in
+        # the Build region menu even though it has no Roman pieces yet
+        # (found live: Build-at-Sequani after marching there was
+        # unofferable).
+        import io as _io
+        import fs_bot.rules_consts as rc
+        from fs_bot.cli.human_plan import _collect_build
+        st = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=3)
+        st["non_player_factions"] = set()
+        pending = {"command": "March", "details": {
+            "origins": [rc.MANDUBII], "destinations": [rc.SEQUANI],
+            "routes": {rc.MANDUBII: [rc.SEQUANI]},
+            "groups": {rc.MANDUBII: {"Legion": 3, "Auxilia": 2}}}}
+        stdin = _io.StringIO()   # we only need the menu text
+        out = _io.StringIO()
+        try:
+            _collect_build(st, rc.ROMANS, stdin, out, pending=pending)
+        except EOFError:
+            pass
+        assert rc.SEQUANI in out.getvalue()

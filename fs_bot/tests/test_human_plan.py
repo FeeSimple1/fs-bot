@@ -218,3 +218,43 @@ class TestHumanPlanCollection:
                 == n_atr + 3)
         assert (count_pieces(st, rc.NERVII, rc.BELGAE, rc.WARBAND)
                 == n_ner + 2)
+
+    def test_sa_collector_contract_build_scout(self):
+        # Regression: Build/Scout collectors crashed live with
+        # "_collect_build() missing 1 required positional argument" —
+        # every _SA_COLLECTORS entry must accept (state, faction, stdin,
+        # stdout) and return a (sa_regions, extra) tuple.
+        import io as _io
+        import inspect
+        import fs_bot.rules_consts as rc
+        from fs_bot.cli.human_plan import _SA_COLLECTORS
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.board.control import refresh_all_control
+        st = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=3)
+        st["non_player_factions"] = set()
+        for name, fn in _SA_COLLECTORS.items():
+            sig = inspect.signature(fn)
+            assert len(sig.parameters) == 4, (name, sig)
+        # Drive Build end-to-end: pick 1st region, done, fort action.
+        from fs_bot.board.pieces import find_leader
+        from fs_bot.map.map_data import get_adjacent
+        caesar = find_leader(st, rc.ROMANS)
+        r = sorted(get_adjacent(caesar, st["scenario"]))[0]
+        for t, ti in st["tribes"].items():
+            if (ti.get("allied_faction") is None and ti.get("status") is None
+                    and rc.TRIBE_TO_REGION.get(t) == r):
+                ti["allied_faction"] = rc.ROMANS
+                place_piece(st, r, rc.ROMANS, rc.ALLY)
+                break
+        refresh_all_control(st)
+        stdin = _io.StringIO("1\n" * 8)
+        out = _io.StringIO()
+        result = _SA_COLLECTORS["Build"](st, rc.ROMANS, stdin, out)
+        assert isinstance(result, tuple) and len(result) == 2
+        sa_regions, extra = result
+        if sa_regions is not None:
+            assert isinstance(extra, dict) and "build_plan" in extra
+        # Scout with no moves/targets must return the (None, None) shape.
+        stdin = _io.StringIO("n\n" * 6)
+        result = _SA_COLLECTORS["Scout"](st, rc.ROMANS, stdin, out)
+        assert isinstance(result, tuple) and len(result) == 2

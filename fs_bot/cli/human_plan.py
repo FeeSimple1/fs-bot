@@ -575,17 +575,20 @@ def _collect_enlist(state, faction, stdin, stdout):
     return [region], {"enlist": ed}
 
 
-def _collect_build(state, faction, stdin, stdout, single):
-    """Roman Build SA (Sec.4.2.1) -- player picks per-Region actions."""
+def _collect_build(state, faction, stdin, stdout):
+    """Roman Build SA (Sec.4.2.1) -- returns (sa_regions, extra)."""
+    single = False
     from fs_bot.commands.sa_build import validate_build_region
     from fs_bot.map.map_data import get_tribes_in_region
     from fs_bot.rules_consts import ROMANS, FORT
     cands = [r for r in _regions_with_pieces(state, ROMANS)
              if validate_build_region(state, r)[0]]
     if not cands:
-        return None
+        return None, None
     picked = _pick_regions(stdin, stdout, "Build in which Region(s)?",
                            cands, single=single)
+    if not picked:
+        return None, None
     plan = {"forts": [], "subdue": [], "allies": []}
     for r in picked:
         opts = []
@@ -616,8 +619,8 @@ def _collect_build(state, faction, stdin, stdout, single):
                               [(x, x) for x in subdued])
             plan["allies"].append({"region": r, "tribe": t})
     if not (plan["forts"] or plan["subdue"] or plan["allies"]):
-        return None
-    return {"build_plan": plan}
+        return None, None
+    return picked, {"build_plan": plan}
 
 
 def _tribe_in_region(state, tribe, region):
@@ -625,7 +628,7 @@ def _tribe_in_region(state, tribe, region):
     return TRIBE_TO_REGION.get(tribe) == region
 
 
-def _collect_scout(state, faction, stdin, stdout, single):
+def _collect_scout(state, faction, stdin, stdout):
     """Roman Scout SA (Sec.4.2.2) -- player moves Auxilia, then Reveals."""
     from fs_bot.rules_consts import (ROMANS, AUXILIA, WARBAND, HIDDEN,
                                      REVEALED, BRITANNIA, CAESAR, FACTIONS)
@@ -680,9 +683,11 @@ def _collect_scout(state, faction, stdin, stdout, single):
                     targets.append({"region": r, "enemy": enemy,
                                     "hidden": hid})
     if not moves and not targets:
-        return None
-    return {"scout_plan": {"auxilia_moves": moves,
-                           "scout_targets": targets}}
+        return None, None
+    regions = sorted({m["from_region"] for m in moves}
+                     | {t["region"] for t in targets})
+    return regions, {"scout_plan": {"auxilia_moves": moves,
+                                    "scout_targets": targets}}
 
 
 _SA_COLLECTORS = {

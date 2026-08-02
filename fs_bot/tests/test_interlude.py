@@ -832,10 +832,10 @@ class TestSecondHalfPlays:
         return st, res, acts
 
     def test_interlude_reachable_and_second_half_seats_arverni(self):
-        # Seed 7: no outright winner by the 3rd Victory Phase. (Earlier
-        # seeds now end in first-half wins under the errata'd Arverni
-        # Phase timing and the §8.8.1 Roman March groups / Scout moves.)
-        st, res, acts = self._drive(7)
+        # Seed 11: no outright winner by the 3rd Victory Phase. (The
+        # seed migrates whenever rules fixes shift all-bot trajectories
+        # — most recently the 'Ineligible through next card' class.)
+        st, res, acts = self._drive(11)
         assert st.get("interlude_completed") is True
         assert res["winter_count"] > 3
         second = {f for (ph, f), n in acts.items() if ph == "2nd" and n}
@@ -848,7 +848,7 @@ class TestSecondHalfPlays:
     def test_second_half_structurally_clean(self):
         from fs_bot.state.state_schema import (validate_state,
                                                check_structural_integrity)
-        st, res, acts = self._drive(7)
+        st, res, acts = self._drive(11)
         assert validate_state(st) == []
         assert check_structural_integrity(st) == []
 

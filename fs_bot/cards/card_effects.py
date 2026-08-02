@@ -514,6 +514,9 @@ def execute_card_6(state, shaded=False):
                 break
         # Romans Ineligible, Executing Faction Eligible
         state["eligibility"][ROMANS] = INELIGIBLE
+        # "Ineligible through NEXT card" — persistent flag,
+        # consumed by adjust_eligibility (else clobbered).
+        state.setdefault("forced_ineligible", {})[ROMANS] = 1
         executing = state.get("executing_faction")
         if executing and executing != ROMANS:
             state["eligibility"][executing] = ELIGIBLE
@@ -736,6 +739,9 @@ def execute_card_14(state, shaded=False):
             move_piece(state, leader_region, PROVINCIA, ROMANS, LEADER)
         # Romans Ineligible through next card
         state["eligibility"][ROMANS] = INELIGIBLE
+        # "Ineligible through NEXT card" — persistent flag,
+        # consumed by adjust_eligibility (else clobbered).
+        state.setdefault("forced_ineligible", {})[ROMANS] = 1
         # Executing Faction stays Eligible
         executing = state.get("executing_faction")
         if executing and executing != ROMANS:
@@ -910,6 +916,9 @@ def execute_card_18(state, shaded=False):
         if legion_near:
             _cap_resources(state, ROMANS, -6)
             state["eligibility"][ROMANS] = INELIGIBLE
+            # "Ineligible through NEXT card" — persistent flag,
+            # consumed by adjust_eligibility (else clobbered).
+            state.setdefault("forced_ineligible", {})[ROMANS] = 1
 
 def execute_card_19(state, shaded=False):
     """Card 19: Lucterius — Remove Warbands or place Auxilia / Place Leader.
@@ -1175,6 +1184,9 @@ def execute_card_23(state, shaded=False):
                 remove_piece(state, target, ROMANS, LEGION,
                              to_fallen=True)
                 state["eligibility"][ROMANS] = INELIGIBLE
+                # "Ineligible through NEXT card" — persistent flag,
+                # consumed by adjust_eligibility (else clobbered).
+                state.setdefault("forced_ineligible", {})[ROMANS] = 1
 
 def execute_card_24(state, shaded=False):
     """Card 24: Sappers — Resource loss / Remove Legions+Auxilia.
@@ -2025,6 +2037,8 @@ def execute_card_46(state, shaded=False):
             if fac in GALLIC_FACTIONS:
                 _cap_resources(state, fac, -3)
                 state["eligibility"][fac] = INELIGIBLE
+                # "Ineligible through NEXT card" — persistent.
+                state.setdefault("forced_ineligible", {})[fac] = 1
     else:
         # Free Command for a Gallic Faction + Stay Eligible
         faction = state.get("executing_faction")
@@ -3142,6 +3156,9 @@ def execute_card_A17(state, shaded=False):
                                      piece_state=ps)
                         break
         state["eligibility"][ROMANS] = INELIGIBLE
+        # "Ineligible through NEXT card" — persistent flag,
+        # consumed by adjust_eligibility (else clobbered).
+        state.setdefault("forced_ineligible", {})[ROMANS] = 1
 
 def execute_card_A18(state, shaded=False):
     """Card A18: Rhenus Bridge — Remove Germans / Roman resource drain.
@@ -3196,6 +3213,9 @@ def execute_card_A18(state, shaded=False):
         if has_legion_near:
             _cap_resources(state, ROMANS, -6)
             state["eligibility"][ROMANS] = INELIGIBLE
+            # "Ineligible through NEXT card" — persistent flag,
+            # consumed by adjust_eligibility (else clobbered).
+            state.setdefault("forced_ineligible", {})[ROMANS] = 1
 
 def execute_card_A19(state, shaded=False):
     """Card A19: Gaius Valerius Procillus — Replace Allies / March Romans.

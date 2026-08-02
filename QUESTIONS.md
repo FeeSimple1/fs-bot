@@ -2569,3 +2569,26 @@ The known-gaps list for human play is now EMPTY.
 
 Verification: 2136 tests pass; census seeds 1-20 strict illegal=0,
 hashseed-identical; canary within band; fuzz seeds 1-20 clean.
+
+## TRANSCRIPT-AUDIT FIND — "Ineligible through next card" clobbered (July 2026)
+
+A live playtest transcript audit (the owner pasted a full two-card
+sequence and asked for a correctness check) found that card 18 Rhenus
+Bridge shaded docked Rome -6 Resources correctly but Rome was offered
+the very next card — the event set eligibility[ROMANS]=INELIGIBLE and
+the Sec.2.3.6 end-of-card reset ("did not act -> Eligible") clobbered
+it. SEVEN cards share the wording and the bug: 6, 14, 18, 23, 46
+(per-Gallic-faction), A17, A18. (A19/A23's plain "Ineligible" is
+current-card-only and was correct.)
+
+Fix: state["forced_ineligible"] = {faction: remaining_cards}, set by
+the seven handlers, applied and decremented by adjust_eligibility
+AFTER the base reset. Test drives the full clobber sequence. All-bot
+trajectories legitimately shifted (Rome genuinely benched for a card
+now): interlude/telemetry seeds repointed to 11, canary rebaselined
+(third deliberate rebaseline; The Great Revolt remains contested).
+
+Everything else in the audited transcript reconciled: Baggage Trains
+charged 0 for a two-origin March; every score movement explained
+(the -1 Rome was Veneti+Volcae allied vs Sequani subdued); the
+mystery Mandubii Auxilia loss was the Arverni Entreat.

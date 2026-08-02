@@ -635,3 +635,31 @@ class TestOwnerScopedCapabilityMatrix:
             assert "faction" in sch, cid
             assert set(sch["faction"]["values"]) == {ARVERNI, AEDUI,
                                                      BELGAE}
+
+
+class TestIneligibleThroughNextCard:
+    """Cards 6/14/18/23/46/A17/A18: 'Ineligible through next card' must
+    survive the Sec.2.3.6 end-of-card reset (found via live transcript
+    audit: Rhenus Bridge docked Rome -6 but Rome acted the next card)."""
+
+    def test_forced_ineligibility_survives_reset(self):
+        from fs_bot.engine.game_engine import adjust_eligibility
+        from fs_bot.rules_consts import (ELIGIBLE, INELIGIBLE, ROMANS,
+                                         LEGION, TREVERI)
+        from fs_bot.cards.card_effects import execute_card_18
+        st = _state()
+        st["eligibility"] = {f: ELIGIBLE for f in
+                             (ROMANS, ARVERNI, AEDUI, BELGAE)}
+        place_piece(st, TREVERI, ROMANS, LEGION, 1,
+                    from_legions_track=True)   # legion adjacent Germania
+        st["resources"][ROMANS] = 20
+        execute_card_18(st, shaded=True)
+        assert st["resources"][ROMANS] == 14
+        # End of the card 18 turn: Rome took no action -> base reset
+        # would clobber; the persistent flag must hold.
+        adjust_eligibility(st, {})
+        assert st["eligibility"][ROMANS] == INELIGIBLE
+        assert "Romans" not in st.get("forced_ineligible", {})
+        # End of the NEXT card: normal rules resume.
+        adjust_eligibility(st, {})
+        assert st["eligibility"][ROMANS] == ELIGIBLE

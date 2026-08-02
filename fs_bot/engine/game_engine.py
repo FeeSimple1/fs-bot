@@ -382,6 +382,25 @@ def execute_pass(state, faction):
 # ============================================================================
 
 def adjust_eligibility(state, actions_taken):
+    """Sec.2.3.6 adjustment + event-imposed persistence: several Events
+    make a Faction "Ineligible through next card" (6, 14, 18, 23, 46,
+    A17, A18). The plain reset clobbered that when the Faction had not
+    acted (found via a live playtest transcript audit: Rhenus Bridge
+    docked Rome 6 Resources but Rome was offered the very next card).
+    state["forced_ineligible"] = {faction: remaining_cards}.
+    """
+    _adjust_eligibility_base(state, actions_taken)
+    forced = state.get("forced_ineligible")
+    if forced:
+        from fs_bot.rules_consts import INELIGIBLE
+        for faction in list(forced):
+            state["eligibility"][faction] = INELIGIBLE
+            forced[faction] -= 1
+            if forced[faction] <= 0:
+                del forced[faction]
+
+
+def _adjust_eligibility_base(state, actions_taken):
     """Adjust eligibility after 1st and 2nd Eligible complete — §2.3.6.
 
     Rules:

@@ -254,6 +254,12 @@ def format_state_summary(state):
 def _region_pieces_summary(state, region, faction, scenario):
     """One-cell summary of a faction's pieces in a region."""
     parts = []
+    # Allied Tribe discs FIRST — they are victory points and battle
+    # targets; omitting them made enemy Allies invisible in play.
+    from fs_bot.rules_consts import ALLY as _ALLY_D
+    allies = count_pieces(state, region, faction, _ALLY_D)
+    if allies:
+        parts.append(f"Al:{allies}")
     # Leader — show only "L" + suffix (full names like Caesar/Ambiorix/Boduognatus
     # are too wide for the table). The leader's identity is on the card
     # and in the faction-detail views.
@@ -305,7 +311,7 @@ def format_region_table(state):
     playable = get_playable_regions(scenario)
     lines = []
     lines.append(SEP_HEAVY)
-    lines.append("REGIONS  (L=Leader Lg=Legion A=Aux W=Warband "
+    lines.append("REGIONS  (Al=Ally L=Leader Lg=Legion A=Aux W=Warband "
                  "F=Fort C=Citadel S=Settlement)")
     lines.append(SEP)
     # Column widths chosen so the Roman cell (which carries Caesar,

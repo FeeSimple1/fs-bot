@@ -47,6 +47,23 @@ def _read_line(stdin, prompt, stdout):
     return line.rstrip("\r\n")
 
 
+_BOARD_HOOK = [None]
+
+
+def set_board_hook(fn):
+    """Register a callable that prints the current board. When set,
+    typing 'b' at ANY prompt reprints the board and re-asks."""
+    _BOARD_HOOK[0] = fn
+
+
+def _maybe_board(line, stdout):
+    if line and line.strip().lower() in ("b", "board") and _BOARD_HOOK[0]:
+        _BOARD_HOOK[0]()
+        stdout.flush()
+        return True
+    return False
+
+
 def prompt_choice(stdin, stdout, prompt, choices):
     """Show a numeric menu and return the value for the chosen option.
 
@@ -72,10 +89,12 @@ def prompt_choice(stdin, stdout, prompt, choices):
 
     n = len(choices)
     while True:
-        line = _read_line(stdin, f"Enter 1-{n}: ", stdout)
+        line = _read_line(stdin, f"Enter 1-{n} ('b'=board): ", stdout)
         if line is None:
             raise EOFError("stdin closed during prompt_choice")
         line = line.strip()
+        if _maybe_board(line, stdout):
+            continue
         if not line:
             stdout.write(f"Please enter 1-{n}\n")
             continue
@@ -113,6 +132,8 @@ def prompt_yes_no(stdin, stdout, prompt, default=None):
         if line is None:
             raise EOFError("stdin closed during prompt_yes_no")
         line = line.strip().lower()
+        if _maybe_board(line, stdout):
+            continue
         if not line:
             if default is not None:
                 return default

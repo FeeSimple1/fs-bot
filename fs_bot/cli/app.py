@@ -422,6 +422,13 @@ def main(argv=None, stdin=None, stdout=None):
 
         state["decision_agent"] = agent
 
+    # 'b' at any prompt reprints the live board.
+    from fs_bot.cli.menus import set_board_hook
+    set_board_hook(lambda: stdout.write(
+        "\n" + format_victory_state(state) + "\n"
+        + format_state_summary(state) + "\n"
+        + format_region_table(state) + "\n"))
+
     # Initial display
     stdout.write(format_victory_state(state) + "\n")
     stdout.write(format_state_summary(state) + "\n")

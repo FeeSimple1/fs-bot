@@ -94,6 +94,38 @@ def make_cli_reactive(human_factions, stdin, stdout):
                         f"{'Vercingetorix ' if ctx.get('vercingetorix') else ''}"
                         f"group{where} (1 Loss per 3). Harass?",
                         default=False)
+                if rt == "retreat_into_control":
+                    # Sec.3.2.4: a Defender may Retreat into an adjacent
+                    # Region only if its controller agrees.
+                    frm = ctx.get("from_region")
+                    frm_txt = f" defeated in {frm}" if frm else ""
+                    return prompt_yes_no(
+                        stdin, stdout,
+                        f"\n{faction}: {rf} pieces{frm_txt} want to "
+                        f"RETREAT into {ctx.get('region')}, which you "
+                        f"Control (Sec.3.2.4). Agreeing lets their "
+                        f"survivors enter your Region; refusing may "
+                        f"leave them nowhere to run. Agree?",
+                        default=False)
+                if rt == "supply_line":
+                    # Sec.3.2.1: chains need each controller's agreement.
+                    return prompt_yes_no(
+                        stdin, stdout,
+                        f"\n{faction}: {rf} asks to trace a SUPPLY LINE "
+                        f"through {ctx.get('region')}, which you Control "
+                        f"(Sec.3.2.1). Agreeing gives them cheaper "
+                        f"Recruit/Quarters through your Region this "
+                        f"action. Agree?", default=True)
+                if rt == "trade_roman_agreement":
+                    # Sec.4.4.1: Roman agreement doubles Aedui Trade
+                    # yields (the Aedui often share the proceeds).
+                    return prompt_yes_no(
+                        stdin, stdout,
+                        f"\n{faction}: the Aedui ask your blessing for "
+                        f"TRADE (Sec.4.4.1). Agreeing doubles their "
+                        f"yield from Allies/Citadels on Supply Lines; "
+                        f"refusing halves it (a way to starve an Aedui "
+                        f"about to win). Agree?", default=True)
                 return prompt_yes_no(
                     stdin, stdout,
                     f"\n{faction}: {rf} asks your agreement -- {rt}{where}. "

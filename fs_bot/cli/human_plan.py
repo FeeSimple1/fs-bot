@@ -877,13 +877,16 @@ def _maybe_collect_transfer(state, faction, action, stdin, stdout):
     if not others:
         return action
     try:
-        to = prompt_choice(
-            stdin, stdout,
-            "Transfer Resources with this action (Sec.1.5.2)?",
-            [("No", None)] + [(f"Give Resources to {f}", f)
-                              for f in others])
-        if to is None:
+        # Sec.1.5.2 allows a voluntary gift with any Command/Event. It is
+        # rarely wanted, so it's a one-keystroke skip (Enter = No), not a
+        # menu (playtester friction finding).
+        if not prompt_yes_no(stdin, stdout,
+                             "Give Resources to another Faction with this "
+                             "action (Sec.1.5.2)?", default=False):
             return action
+        to = prompt_choice(
+            stdin, stdout, "Give Resources to whom?",
+            [(f, f) for f in others])
         amt = prompt_choice(
             stdin, stdout, f"Give how many to {to}?",
             [(str(n), n) for n in range(1, min(stock, 12) + 1)])

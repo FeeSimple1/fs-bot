@@ -421,6 +421,9 @@ def main(argv=None, stdin=None, stdout=None):
     stdout.write(format_state_summary(state) + "\n")
     stdout.write(format_region_table(state) + "\n")
     stdout.flush()
+    # Baseline for the changes-diff: without this, the FIRST human prompt
+    # had no reference and bot actions earlier on card 1 were invisible.
+    last_human_snap[0] = snapshot_state(state)
 
     # Run the game card by card with full rules execution, displaying and
     # autosaving after every card.

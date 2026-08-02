@@ -323,8 +323,9 @@ def format_region_table(state):
         f"{'Romans':<{w_rom}}{'Arverni':<{w_other}}{'Aedui':<{w_other}}"
         f"{'Belgae':<{w_other}}"
     )
-    if scenario in ARIOVISTUS_SCENARIOS:
-        header += f"{'Germans':<{w_other}}"
+    # Germans field pieces in BASE games too (Germanic Phase forces) —
+    # they were invisible without a column.
+    header += f"{'Germans':<{w_other}}"
     lines.append(header)
     lines.append("-" * len(header))
     for region in ALL_REGIONS:
@@ -338,8 +339,7 @@ def format_region_table(state):
         row += f"{_region_pieces_summary(state, region, ARVERNI, scenario):<{w_other}}"
         row += f"{_region_pieces_summary(state, region, AEDUI, scenario):<{w_other}}"
         row += f"{_region_pieces_summary(state, region, BELGAE, scenario):<{w_other}}"
-        if scenario in ARIOVISTUS_SCENARIOS:
-            row += f"{_region_pieces_summary(state, region, GERMANS, scenario):<{w_other}}"
+        row += f"{_region_pieces_summary(state, region, GERMANS, scenario):<{w_other}}"
         lines.append(row)
     lines.append(SEP_HEAVY)
     return "\n".join(lines)

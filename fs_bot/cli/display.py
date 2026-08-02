@@ -227,7 +227,7 @@ def format_state_summary(state):
     lines.append(SEP)
     lines.append(
         f"{'Faction':<10}{'Resources':>10}{'Eligibility':>14}"
-        f"{'Allies':>9}{'Citadels':>10}"
+        f"{'Allies*':>9}{'Citadels':>10}"
     )
     lines.append("-" * 53)
     # Show all factions that have resources or eligibility relevant
@@ -249,6 +249,8 @@ def format_state_summary(state):
     lines.append(f"Legions track: {_format_legions_track_inline(state)}")
     lines.append(f"  Fallen: {state.get('fallen_legions', 0)}   "
                  f"Removed by Event: {state.get('removed_legions', 0)}")
+    lines.append("  (*Allies = Allied Tribes, INCLUDING those upgraded "
+                 "to Citadels)")
     lines.append(f"Capabilities:  {_format_capabilities(state)}")
     lines.append(SEP_HEAVY)
     return "\n".join(lines)
@@ -324,7 +326,7 @@ def format_region_table(state):
     # Column widths chosen so the Roman cell (which carries Caesar,
     # Legions, Auxilia, and Forts together) fits.
     w_rom = 21
-    w_other = 17
+    w_other = 21
     header = (
         f"{'Region':<14}{'Ctrl':<6}"
         f"{'Romans':<{w_rom}}{'Arverni':<{w_other}}{'Aedui':<{w_other}}"

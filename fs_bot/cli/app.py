@@ -369,12 +369,11 @@ def main(argv=None, stdin=None, stdout=None):
                                  "---\n")
                     for line in delta:
                         stdout.write(line + "\n")
-                    # The board changed since it was last drawn — show a
-                    # CURRENT victory/resource summary and region table so
-                    # the prompt is never stale.
+                    # Changes-only by request: the digest above is the
+                    # complete list of board changes since the player's
+                    # last decision; the full table prints once per card.
+                    # Victory line stays (it is the number being played to).
                     stdout.write("\n" + format_victory_state(state_) + "\n")
-                    stdout.write(format_state_summary(state_) + "\n")
-                    stdout.write(format_region_table(state_) + "\n")
             last_human_snap[0] = snap
         if faction_modes.get(faction) == "human" and replay_decisions:
             e = replay_decisions[0]

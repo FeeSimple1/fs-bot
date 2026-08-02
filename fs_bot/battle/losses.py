@@ -281,6 +281,16 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
                 or _abatis):
             total = total / 2
     else:
+        # Card 59 shaded (Tips): the owner ALSO doubles when defending —
+        # their Counterattack in the flagged Region — unless they defend
+        # with a Citadel.
+        if (state.get("event_modifiers", {}).get(
+                "card59_shaded_region") == region):
+            from fs_bot.cards.capabilities import get_capability_owner
+            if (get_capability_owner(state, 59) == enemy_faction
+                    and enemy_pieces.get(CITADEL, 0) == 0):
+                total *= 2
+
         # Motivation: the German Counterattack (Germans firing back, i.e.
         # attacking_faction == GERMANS here) inflicts +1 Loss. Applied after
         # any Ariovistus doubling, as a flat rider, and only when a

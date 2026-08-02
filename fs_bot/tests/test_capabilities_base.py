@@ -521,3 +521,46 @@ class TestRulingsHomework:
         assert card27_shaded_absorption(st, r, ARVERNI, BELGAE) == 0
         remove_piece(st, r, ARVERNI, WARBAND, count=1)
         assert card27_shaded_absorption(st, r, BELGAE, ARVERNI) == 0
+
+
+class TestCard59DefendingSide:
+    """Card 59 shaded Tips: the owner doubles Losses 'both when ...
+    attacking and when defending', except when defending with a
+    Citadel."""
+
+    def test_counterattack_doubles_in_flagged_region(self):
+        from fs_bot.battle.losses import calculate_losses
+        st = _state()
+        r = TREVERI
+        _clear(st, r)
+        place_piece(st, r, BELGAE, WARBAND, 4)   # owner, defending
+        place_piece(st, r, ROMANS, AUXILIA, 4)   # attacker
+        activate_capability(st, 59, EVENT_SHADED)
+        set_capability_owner(st, 59, BELGAE)
+        base = calculate_losses(st, r, BELGAE, ROMANS,
+                                is_counterattack=True)
+        st.setdefault("event_modifiers", {})["card59_shaded_region"] = r
+        assert calculate_losses(st, r, BELGAE, ROMANS,
+                                is_counterattack=True) == base * 2
+
+    def test_own_citadel_blocks_defensive_doubling(self):
+        from fs_bot.battle.losses import calculate_losses
+        st = _state()
+        r = MANDUBII
+        _clear(st, r)
+        place_piece(st, r, ARVERNI, WARBAND, 4)
+        place_piece(st, r, ARVERNI, CITADEL, 1)
+        place_piece(st, r, ROMANS, AUXILIA, 4)
+        activate_capability(st, 59, EVENT_SHADED)
+        set_capability_owner(st, 59, ARVERNI)
+        st.setdefault("event_modifiers", {})["card59_shaded_region"] = r
+        base_no_flag = None
+        st2 = _state()  # independent baseline without flag
+        _clear(st2, r)
+        place_piece(st2, r, ARVERNI, WARBAND, 4)
+        place_piece(st2, r, ARVERNI, CITADEL, 1)
+        place_piece(st2, r, ROMANS, AUXILIA, 4)
+        base_no_flag = calculate_losses(st2, r, ARVERNI, ROMANS,
+                                        is_counterattack=True)
+        assert calculate_losses(st, r, ARVERNI, ROMANS,
+                                is_counterattack=True) == base_no_flag

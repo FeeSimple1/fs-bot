@@ -166,10 +166,17 @@ def _format_capabilities(state):
     caps = state.get("capabilities") or {}
     if not caps:
         return "(none)"
+    from fs_bot.rules_consts import (CARD_NAMES_BASE,
+                                     CARD_NAMES_ARIOVISTUS)
+    CARD_TITLES = {**CARD_NAMES_BASE, **CARD_NAMES_ARIOVISTUS}
+    owners = state.get("capability_owners") or {}
     parts = []
     for card_id, side in caps.items():
         side_short = "shaded" if side == EVENT_SHADED else "unshaded"
-        parts.append(f"#{card_id} ({side_short})")
+        title = CARD_TITLES.get(card_id, "")
+        name = f" {title}" if title else ""
+        holder = f", held by {owners[card_id]}" if card_id in owners else ""
+        parts.append(f"#{card_id}{name} ({side_short}{holder})")
     return ", ".join(parts)
 
 

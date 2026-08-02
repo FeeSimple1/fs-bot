@@ -3449,11 +3449,27 @@ def _execute_battle(state, faction, bot_action):
                 "card59_unshaded_region"] = max(_cands)[1]
 
     # Card 59 shaded: the owning Gallic Faction doubles the enemy's Losses
-    # in 1 Region per Battle Command unless the Defender has Fort/Citadel.
-    if (_ica_b(state, 59, _ES_B) and _gco_b(state, 59) == faction
-            and _plan_regions):
-        state.setdefault("event_modifiers", {})[
-            "card59_shaded_region"] = sorted(set(_plan_regions))[0]
+    # in 1 Region per Battle Command — when attacking AND when defending
+    # (card Tips) — unless blocked by Fort/Citadel per the Tips.
+    if _ica_b(state, 59, _ES_B) and _plan_regions:
+        _owner59 = _gco_b(state, 59)
+        if _owner59 == faction:
+            state.setdefault("event_modifiers", {})[
+                "card59_shaded_region"] = sorted(set(_plan_regions))[0]
+        elif _owner59 is not None:
+            # The owner is DEFENDING in this command: their counterattack
+            # doubles in 1 Region (NP choice: most owner pieces).
+            _def_regions = sorted({
+                e.get("region") for e in battle_plan
+                if e.get("region") is not None
+                and (e.get("target") == _owner59
+                     or _owner59 in (e.get("targets") or []))})
+            if _def_regions:
+                _best = max(_def_regions,
+                            key=lambda r: (count_pieces(state, r, _owner59),
+                                           r))
+                state.setdefault("event_modifiers", {})[
+                    "card59_shaded_region"] = _best
 
     battles = []
     errors = []

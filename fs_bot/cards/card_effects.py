@@ -1539,9 +1539,11 @@ def execute_card_32(state, shaded=False):
         if from_region == BRITANNIA or to_region == BRITANNIA:
             continue
         if piece_type == LEADER:
-            leader_name = m.get("leader_name")
+            # move_piece relocates the Leader piece (identity travels with
+            # it) — latent TypeError surfaced by the first-ever derived
+            # Leader relocation (card 32 NP deriver).
             move_piece(state, from_region, to_region, faction, LEADER,
-                       count=1, leader_name=leader_name)
+                       count=1)
         else:
             piece_state = m.get("piece_state")
             move_piece(state, from_region, to_region, faction, piece_type,
@@ -2654,9 +2656,11 @@ def execute_card_62(state, shaded=False):
         piece_type = m["piece_type"]
         cnt = m.get("count", 1)
         if piece_type == LEADER:
-            leader_name = m.get("leader_name")
+            # move_piece relocates the Leader piece (identity travels with
+            # it) — latent TypeError surfaced by the first-ever derived
+            # Leader relocation (card 32 NP deriver).
             move_piece(state, from_region, to_region, faction, LEADER,
-                       count=1, leader_name=leader_name)
+                       count=1)
         else:
             ps = m.get("piece_state")
             move_piece(state, from_region, to_region, faction, piece_type,

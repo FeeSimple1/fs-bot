@@ -5770,6 +5770,65 @@ def _derive_o38_region(state, faction, shaded):
     return {"region": region} if region else None
 
 
+def _derive_card_32(state, faction=None, shaded=False):
+    """Card 32 Forced Marches, NP relocation (found live as a bot no-op:
+    the event executed with no moves derived, wasting the bot's turn).
+
+    Arverni instruction: "move only per 8.7.6" — reuse the V_MARCH_SPREAD
+    planner's moves as the free relocation. Other NP factions' cards say
+    "No <Faction>" (event_eval routes them to the flowchart), so an empty
+    derivation there is correct.
+    """
+    import copy as _copy
+    from fs_bot.rules_consts import (ARVERNI as _AR32, WARBAND as _WB32,
+                                     LEADER as _LD32)
+    faction = faction or state.get("executing_faction")
+    if faction != _AR32:
+        return {}
+    try:
+        from fs_bot.bots.arverni_bot import node_v_march_spread
+        sim = _copy.deepcopy(state)
+        sim.pop("decision_agent", None)
+        plan = (node_v_march_spread(sim).get("details") or {}).get(
+            "march_plan") or {}
+        moves = plan_expand_march_moves(_copy.deepcopy(state), _AR32, plan)
+    except Exception:
+        return {}
+    out = []
+    for mv in moves:
+        dest = (mv.get("path") or [None])[-1]
+        if dest is None:
+            continue
+        grp = mv.get("group") or {}
+        wb = int(grp.get(_WB32) or mv.get("warbands") or 0)
+        if wb > 0:
+            # Split by piece state — the handler moves one state at a
+            # time (census caught a Hidden-only over-count when the
+            # stack was mixed Hidden/Revealed).
+            from fs_bot.rules_consts import (HIDDEN as _H32,
+                                             REVEALED as _R32,
+                                             SCOUTED as _S32)
+            from fs_bot.board.pieces import (
+                count_pieces_by_state as _cps32)
+            remaining = wb
+            for ps in (_H32, _R32, _S32):
+                if remaining <= 0:
+                    break
+                have = _cps32(state, mv["origin"], _AR32, _WB32, ps)
+                take = min(remaining, have)
+                if take > 0:
+                    out.append({"piece_type": _WB32,
+                                "from_region": mv["origin"],
+                                "to_region": dest, "count": take,
+                                "piece_state": ps})
+                    remaining -= take
+        if mv.get("leader"):
+            out.append({"piece_type": _LD32,
+                        "from_region": mv["origin"], "to_region": dest,
+                        "leader_name": grp.get(_LD32)})
+    return {"moves": out} if out else {}
+
+
 _EVENT_PARAM_DERIVERS = {
     "O38": _derive_o38_region,
     1: _derive_senate_direction,
@@ -5793,6 +5852,7 @@ _EVENT_PARAM_DERIVERS = {
     28: _derive_card_28,
     41: _derive_card_41,
     23: _derive_card_23,
+    32: _derive_card_32,
     42: _derive_card_42,
     58: _derive_card_58,
     68: _derive_card_68,

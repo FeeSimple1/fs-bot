@@ -316,7 +316,7 @@ def test_event_param_schema_prompts_rare_entry_fields():
     assert len(moves) == 1
     m = moves[0]
     assert set(m) >= {"from_region", "to_region", "piece_type", "count",
-                      "leader_name", "piece_state"}
+                      "piece_state"}
     pool = set(region_pool(st, "card62_coastal"))
     assert m["from_region"] in pool and m["to_region"] in pool
     # Only coastal Regions were offered for the region fields.

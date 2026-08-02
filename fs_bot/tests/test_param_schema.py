@@ -31,7 +31,7 @@ def test_entries_schema_includes_rare_fields():
     assert moves["kind"] == "entries"
     assert set(moves["entry_fields"]) >= {"from_region", "to_region",
                                           "piece_type", "count",
-                                          "leader_name", "piece_state"}
+                                          "piece_state"}
     assert moves["entry_fields"]["piece_state"] == "piece_state"
     assert moves["region_pool"] == "card62_coastal"
     st = setup_scenario(BASE, seed=1)

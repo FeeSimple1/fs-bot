@@ -219,6 +219,12 @@ def _schema_uncached(card_id, ario):
     for key, spec in (_OVERRIDES.get(card_id) or {}).items():
         if key in schema:
             schema[key].update(spec)
+        elif spec.get("kind") != "omit":
+            # An override may INTRODUCE a param the AST scan missed
+            # (e.g. handlers reading params via chained .get calls).
+            entry = {"kind": spec.get("kind") or infer_kind(key)}
+            entry.update(spec)
+            schema[key] = entry
     return schema
 
 
@@ -251,6 +257,12 @@ _OVERRIDES = {
     22: {"replacements": {"values": (WARBAND, AUXILIA)}},
     # Card 40 Alpine Tribes unshaded: "3 Warbands, 2 Auxilia, or 1 Ally".
     40: {"placements": {"values": (WARBAND, AUXILIA, ALLY)}},
+    # Cards 10/63 shaded: "Place this card near a Gallic Faction" — the
+    # player CHOOSES the receiving Faction (may gift it). Handlers read
+    # event_params["faction"]; default (no param) = executing Gallic
+    # Faction.
+    10: {"faction": {"values": ("Arverni", "Aedui", "Belgae")}},
+    63: {"faction": {"values": ("Arverni", "Aedui", "Belgae")}},
 }
 
 

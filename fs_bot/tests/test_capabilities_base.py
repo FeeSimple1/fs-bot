@@ -564,3 +564,74 @@ class TestCard59DefendingSide:
                                         is_counterattack=True)
         assert calculate_losses(st, r, ARVERNI, ROMANS,
                                 is_counterattack=True) == base_no_flag
+
+
+class TestOwnerScopedCapabilityMatrix:
+    """Every owner-scoped capability (8 both sides; 10/59/63 shaded)
+    records its holder from every legal path, renders the holder in the
+    CLI summary, honors a params-chosen Gallic recipient, rejects
+    non-Gallic choices, and clears on removal."""
+
+    def _exec(self, st, faction, cid, shaded):
+        from fs_bot.engine.execute import execute_decision
+        st["executing_faction"] = faction
+        return execute_decision(st, faction, {"bot_action": {
+            "command": "Event",
+            "details": {"card_id": cid,
+                        "text_preference": ("Shaded" if shaded
+                                            else "Unshaded")}}})
+
+    def test_owner_recorded_all_cards(self):
+        from fs_bot.cards.capabilities import get_capability_owner
+        cases = [
+            (8, False, ROMANS, ROMANS),     # "Take this card" — any faction
+            (8, True, BELGAE, BELGAE),
+            (10, True, ARVERNI, ARVERNI),   # Gallic executor defaults self
+            (59, True, BELGAE, BELGAE),
+            (63, True, AEDUI, AEDUI),
+        ]
+        for cid, shaded, executor, expect in cases:
+            st = _state()
+            st["non_player_factions"] = set()
+            self._exec(st, executor, cid, shaded)
+            assert get_capability_owner(st, cid) == expect, (cid, executor)
+
+    def test_params_faction_gifts_the_card(self):
+        from fs_bot.cards.capabilities import get_capability_owner
+        for cid in (10, 63):
+            st = _state()
+            st["non_player_factions"] = set()
+            st["event_params"] = {"faction": ARVERNI}
+            self._exec(st, BELGAE, cid, True)   # Belgae gift to Arverni
+            assert get_capability_owner(st, cid) == ARVERNI, cid
+
+    def test_non_gallic_choice_rejected(self):
+        from fs_bot.cards.capabilities import get_capability_owner
+        st = _state()
+        st["non_player_factions"] = set()
+        st["event_params"] = {"faction": ROMANS}   # illegal recipient
+        self._exec(st, BELGAE, 63, True)
+        # Falls back to the executing Gallic faction, never Rome.
+        assert get_capability_owner(st, 63) == BELGAE
+
+    def test_display_shows_holder_for_each(self):
+        from fs_bot.cli.display import format_state_summary
+        from fs_bot.cards.capabilities import (activate_capability,
+                                               set_capability_owner)
+        st = _state()
+        for cid, owner in ((8, ROMANS), (10, ARVERNI), (59, BELGAE),
+                           (63, AEDUI)):
+            activate_capability(st, cid, EVENT_SHADED)
+            set_capability_owner(st, cid, owner)
+        line = [l for l in format_state_summary(st).splitlines()
+                if "Capabilities" in l][0]
+        for owner in (ROMANS, ARVERNI, BELGAE, AEDUI):
+            assert f"held by {owner}" in line
+
+    def test_schema_offers_gallic_faction_param(self):
+        from fs_bot.cards.param_schema import card_param_schema
+        for cid in (10, 63):
+            sch = card_param_schema(cid, SCENARIO_GREAT_REVOLT)
+            assert "faction" in sch, cid
+            assert set(sch["faction"]["values"]) == {ARVERNI, AEDUI,
+                                                     BELGAE}

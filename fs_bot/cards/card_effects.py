@@ -630,6 +630,8 @@ def execute_card_10(state, shaded=False):
         from fs_bot.cards.capabilities import set_capability_owner
         from fs_bot.rules_consts import GALLIC_FACTIONS
         owner = (state.get("event_params", {}) or {}).get("faction")
+        if owner is not None and owner not in GALLIC_FACTIONS:
+            owner = None  # "a Gallic Faction" — invalid choice ignored
         ex = state.get("executing_faction")
         if owner is None and ex in GALLIC_FACTIONS:
             owner = ex
@@ -2491,6 +2493,8 @@ def execute_card_59(state, shaded=False):
         from fs_bot.cards.capabilities import set_capability_owner
         from fs_bot.rules_consts import GALLIC_FACTIONS
         owner = (state.get("event_params", {}) or {}).get("faction")
+        if owner is not None and owner not in GALLIC_FACTIONS:
+            owner = None  # "a Gallic Faction" — invalid choice ignored
         ex = state.get("executing_faction")
         if owner is None and ex in GALLIC_FACTIONS:
             owner = ex
@@ -2676,6 +2680,8 @@ def execute_card_63(state, shaded=False):
         from fs_bot.cards.capabilities import set_capability_owner
         from fs_bot.rules_consts import GALLIC_FACTIONS
         owner = (state.get("event_params", {}) or {}).get("faction")
+        if owner is not None and owner not in GALLIC_FACTIONS:
+            owner = None  # "a Gallic Faction" — invalid choice ignored
         ex = state.get("executing_faction")
         if owner is None and ex in GALLIC_FACTIONS:
             owner = ex

@@ -905,9 +905,11 @@ def collect_player_action(state, faction, engine_action, stdin, stdout):
         return None
     if engine_action == ACTION_EVENT:
         card_id = state.get("current_card")
-        side = prompt_choice(stdin, stdout, "Play which side of the Event?",
-                             [("Unshaded", EVENT_UNSHADED),
-                              ("Shaded", EVENT_SHADED)])
+        side = prompt_choice(
+            stdin, stdout, "Play which side of the Event?",
+            [("Unshaded  (the FIRST text on the card)", EVENT_UNSHADED),
+             ("Shaded    (the SECOND text, after CAPABILITY if shown)",
+              EVENT_SHADED)])
         details = {"card_id": card_id, "text_preference": side}
         params = _collect_event_params(
             state, faction, card_id, side == EVENT_SHADED, stdin, stdout)

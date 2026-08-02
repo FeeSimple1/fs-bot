@@ -70,4 +70,25 @@ def format_card_text(card_id, indent="  "):
     txt = get_card_text(card_id)
     if not txt:
         return ""
-    return "\n".join(indent + l for l in txt.splitlines())
+    lines = txt.splitlines()
+    out = [indent + lines[0]]           # title line
+    out.append(indent + "[UNSHADED side:]")
+    labeled_shaded = False
+    for l in lines[1:]:
+        stripped = l.strip()
+        if stripped == "CAPABILITY" and not labeled_shaded:
+            out.append(indent + "CAPABILITY  [SHADED side:]")
+            labeled_shaded = True
+            continue
+        if (stripped.startswith(("Tip.", "Tips.")) and not labeled_shaded):
+            # No CAPABILITY marker: the shaded text was the later
+            # paragraph; note it before the Tips rather than guessing
+            # the paragraph split.
+            out.append(indent + "[The FIRST text above is the UNSHADED "
+                                "side; the SECOND is the SHADED side.]")
+            labeled_shaded = True
+        out.append(indent + l)
+    if not labeled_shaded:
+        out.append(indent + "[The FIRST text above is the UNSHADED side; "
+                            "the SECOND is the SHADED side.]")
+    return "\n".join(out)

@@ -2471,8 +2471,11 @@ def _resolve_card72_march_enemy_battle(state, faction):
     Marching in the largest adjacent mobile group, the acting Faction's
     force most outweighs the resident Arverni/Belgae Warbands (take the
     bait on the best defensive terms). If both Arverni and Belgae are
-    present, the one with more Warbands Battles (the card does not say who
-    chooses — logged in QUESTIONS.md)."""
+    present, the EXECUTING Faction chooses which Battles it (Sec.5.1:
+    the executing Faction makes all selections the text allows); a
+    Non-player selects to benefit itself (8.3.1) — the candidate with
+    the fewest attacking Warbands — breaking ties by equal-chance die
+    roll (8.3.4)."""
     from fs_bot.rules_consts import (ARVERNI, BELGAE, WARBAND, AUXILIA,
                                      LEGION)
     from fs_bot.board.pieces import count_pieces
@@ -2493,7 +2496,11 @@ def _resolve_card72_march_enemy_battle(state, faction):
                    if count_pieces(state, B, e, WARBAND) > 0]
         if not enemies:
             continue
-        enemy = max(enemies)[1]
+        # Sec.5.1/8.3.1: the executor picks its battler to benefit itself —
+        # fewest attacking Warbands; equal candidates by die roll (8.3.4).
+        low = min(e[0] for e in enemies)
+        lows = sorted(nm for c, nm in enemies if c == low)
+        enemy = lows[0] if len(lows) == 1 else state["rng"].choice(lows)
         srcs = [a for a in sorted(get_adjacent(B, scen)) if a in playable
                 and _group_has_pieces(_mobile_march_group(state, faction, a))]
         if not srcs:
@@ -2503,8 +2510,7 @@ def _resolve_card72_march_enemy_battle(state, faction):
             for pt in (LEGION, AUXILIA, WARBAND)))
         incoming = sum(count_pieces(state, S, faction, pt)
                        for pt in (LEGION, AUXILIA, WARBAND))
-        score = (force(B, faction) + incoming
-                 - max(e[0] for e in enemies))
+        score = (force(B, faction) + incoming - low)
         if best is None or score > best[0]:
             best = (score, B, S, enemy)
 

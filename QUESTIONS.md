@@ -2651,3 +2651,47 @@ Hidden), A17, A69.
 Canary rebaselined (fourth deliberate rebaseline — eligibility
 timing legitimately shifted all-bot trajectories). 2160 tests pass;
 census seeds strict illegal=0, byte-identical hashseed 0 vs 7.
+
+## KNOCK-ON AUDIT FOLLOW-UP — rulings checked against the source docs
+
+The owner asked whether the five "judgment calls" above were already
+answered in the rules/reference documents. Four were. Dispositions:
+
+1. Card 72 chooser: ANSWERED — Sec.5.1 "the executing Faction makes
+   all selections allowed for in implementing the text", and for a
+   Non-player 8.3.1 "select ... target Factions to benefit themselves
+   first", ties by equal-chance die roll (8.3.4). The original
+   "more Warbands attacks" ruling was WRONG (executor-hostile).
+   FIXED: the executor picks the candidate with the fewest attacking
+   Warbands, ties by die roll. Regression test pins the both-present
+   case.
+2. Card 34 "as if with Control": the tip defines the grant; 8.3.1
+   ("select Event spaces so the text places the MOST ... Allies")
+   means a faithful NP would exploit it. Our Rally-node reuse
+   under-places (never an Ally without Control) — reclassified from
+   open question to NP-fidelity backlog item with citation.
+3. Card 52 second SA: ANSWERED — 8.2.3 "for free Commands and
+   Special Abilities, follow their flowcharts"; the flowchart yields
+   exactly one SA and prescribes no second pass. Current single-SA
+   behavior is the rules-correct NP resolution, not a house ruling.
+4. Card 57 "any free Special Ability": choice procedure ANSWERED by
+   the same 8.2.3 (follow the flowchart, scoped to Britannia); what
+   remains is engineering (a standalone SA-only chooser), not a
+   ruling.
+5. A28 agreements: ANSWERED in the A8 chapter — A8.8.8 Non-player
+   Romans NEVER agree to use of their Auxilia; A8.6.6 Non-players
+   agree to use of their Warbands only where the executing Faction
+   has pieces that will also be in the Battle. These now spec the
+   combined-Loss follow-up. The multi-Faction Loss math itself is
+   still the open engineering item.
+
+NEW QUESTION FOR THE OWNER (transcription check, like the A38/
+Vergobret case): our Chapter A8 transcription reads "A8.6.6
+Non-Player AEDUI Agreements. For the unshaded Ariovistus Event
+Admagetobriga, Non-player BELGAE agree to use of their Warbands
+only where..." — header names the Aedui, body names the Belgae.
+Please check the printed rulebook: is the body a typo for Aedui, does
+the printed A8.6.6 really state the Belgae policy, and is there a
+separate parallel rule for the other Faction? Until answered, the
+planned A28 implementation will apply the conditional-agreement rule
+to BOTH Non-player Aedui and Belgae (Romans never agree per A8.8.8).

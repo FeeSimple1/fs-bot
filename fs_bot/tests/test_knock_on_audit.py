@@ -216,6 +216,35 @@ class TestCard72Unshaded:
         assert fa, "card 72 unshaded produced no free action"
         assert validate_state(st) == []
 
+    def test_both_present_executor_picks_weaker_battler(self):
+        """Sec.5.1: the executing Faction makes the selection; a
+        Non-player selects to benefit itself (8.3.1) — with both Arverni
+        and Belgae present, the one with FEWER Warbands attacks."""
+        from fs_bot.board.pieces import (count_pieces, remove_piece,
+                                         place_piece)
+        from fs_bot.map.map_data import get_playable_regions, get_adjacent
+        from fs_bot.rules_consts import WARBAND, AUXILIA
+        st = _np_state(233)
+        regions = list(get_playable_regions(st["scenario"],
+                                            st.get("capabilities")))
+        # Strip all Arverni/Belgae Warbands, then build oneboth-present bait.
+        for r in regions:
+            for f in (ARVERNI, BELGAE):
+                n = count_pieces(st, r, f, WARBAND)
+                if n:
+                    remove_piece(st, r, f, WARBAND, count=n)
+        B = next(r for r in regions
+                 if any(a in regions for a in
+                        get_adjacent(r, st["scenario"])))
+        S = next(a for a in get_adjacent(B, st["scenario"]) if a in regions)
+        place_piece(st, B, ARVERNI, WARBAND, count=4)
+        place_piece(st, B, BELGAE, WARBAND, count=1)
+        place_piece(st, S, ROMANS, AUXILIA, count=4)
+        out = _resolve_card72_march_enemy_battle(st, ROMANS)
+        battles = [o for o in out if o.get("free_action") == "battle"
+                   and "result" in o]
+        assert battles and battles[0]["attacker"] == BELGAE, out
+
     def test_no_target_reports_cleanly(self):
         """With no Arverni/Belgae Warbands anywhere, the resolver reports
         an ineffective action instead of crashing or half-executing."""

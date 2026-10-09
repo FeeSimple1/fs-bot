@@ -1,0 +1,42 @@
+name: Replay hash check
+on:
+  push:
+    branches: [audit/hash-verification-20261009]
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PYTHONHASHSEED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Capture exact end states
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          import fs_bot.rules_consts as rc
+          from fs_bot.tools import run_batch
+          from fs_bot.state.serialize import encode
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'hash-check'
+          root.mkdir()
+          for name, scenario in [('ariovistus', rc.SCENARIO_ARIOVISTUS), ('gallic-war', rc.SCENARIO_GALLIC_WAR)]:
+              def capture(state):
+                  snapshot = encode(state)
+                  (root / (name + '-state.json')).write_text(json.dumps(snapshot, sort_keys=True, indent=2))
+                  return snapshot
+              run_batch.encode = capture
+              record = run_batch.play_one((scenario, 55))
+              assert record['completed'] and not record['errors']
+              (root / (name + '-record.json')).write_text(json.dumps(record, sort_keys=True, indent=2))
+              print(name, record['final_state_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: seed55-hash-check
+          path: ${{ runner.temp }}/hash-check
+          retention-days: 7

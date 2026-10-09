@@ -1,0 +1,26 @@
+name: Outcome audit
+
+on:
+  push:
+    branches: [audit/outcome-fixes-20261009]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive audited source
+        run: |
+          git archive --format=tar.gz --output=source.tar.gz HEAD
+          git rev-parse HEAD > source-commit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: outcome-audit-source
+          path: |
+            source.tar.gz
+            source-commit.txt
+          retention-days: 7

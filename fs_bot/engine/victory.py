@@ -474,9 +474,10 @@ def calculate_victory_margin(state, faction):
 def check_any_victory(state):
     """Check if any eligible faction meets its victory condition.
 
-    Returns the winning faction, or None. If multiple factions win
-    simultaneously, ties are broken per §7.1 / A7.1:
-    - Non-players first, then tiebreak order.
+    Returns the winning faction, or None. Any Non-player passing its
+    victory check defeats the players (§7.1). Otherwise the player with
+    the highest victory margin wins; faction order breaks only equal
+    margins (§7.1 / A7.1).
 
     Args:
         state: Game state dict.
@@ -484,7 +485,6 @@ def check_any_victory(state):
     Returns:
         Winning faction constant, or None.
     """
-    scenario = state["scenario"]
     victory_factions = _get_victory_factions(state)
 
     winners = []
@@ -498,9 +498,20 @@ def check_any_victory(state):
     if len(winners) == 1:
         return winners[0]
 
-    # Break ties per §7.1 / A7.1
-    # Non-players first, then tiebreak order
-    return _break_tie(state, winners)
+    # §7.1: any Non-player passing its victory check defeats all players,
+    # even a player with a larger margin. Preserve that priority before
+    # comparing player margins.
+    non_players = state.get("non_player_factions", set())
+    np_winners = [f for f in winners if f in non_players]
+    if np_winners:
+        return _break_tie(state, np_winners)
+
+    # Passing the threshold is not itself a tie: §7.1 awards first place
+    # to the highest victory margin. Only equal margins use faction order.
+    margins = {f: calculate_victory_margin(state, f) for f in winners}
+    highest = max(margins.values())
+    tied = [f for f in winners if margins[f] == highest]
+    return _break_tie(state, tied)
 
 
 def _break_tie(state, tied_factions):

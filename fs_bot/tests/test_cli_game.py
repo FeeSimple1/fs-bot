@@ -168,7 +168,7 @@ def test_event_param_derived_default_accepted():
     st["current_card"] = 1
     out = io.StringIO()
     pa = collect_player_action(st, rc.ROMANS, ACTION_EVENT,
-                               _Script("1", "y"), out)
+                               _Script("1", "y", "n"), out)
     assert pa["details"]["card_id"] == 1
     assert pa["details"]["event_params"]["senate_direction"] == rc.SENATE_DOWN
     assert "Standard choices" in out.getvalue()
@@ -182,7 +182,7 @@ def test_event_param_prompted_when_derived_declined():
     st["current_card"] = 1
     # unshaded; decline derived; pick option 2 = Adulation (down)
     pa = collect_player_action(st, rc.ROMANS, ACTION_EVENT,
-                               _Script("1", "n", "2"), io.StringIO())
+                               _Script("1", "n", "2", "n"), io.StringIO())
     assert pa["details"]["event_params"]["senate_direction"] == rc.SENATE_DOWN
 
 
@@ -311,7 +311,7 @@ def test_event_param_schema_prompts_rare_entry_fields():
     # add another=n
     pa = collect_player_action(
         st, rc.ARVERNI, ACTION_EVENT,
-        _Script("1", "y", "1", "2", "1", "1", "1", "1", "n"), out)
+        _Script("1", "y", "1", "2", "1", "1", "1", "1", "n", "n"), out)
     moves = pa["details"]["event_params"]["moves"]
     assert len(moves) == 1
     m = moves[0]

@@ -35,7 +35,7 @@ class TestHumanPlanCollection:
         regions = _regions_with_pieces(st, AEDUI)
         region = regions[0]
         # Rally(1); pick first Region(1); (done) if >1 Region; Warbands(1).
-        seq = ["1", "1"] + ([str(len(regions))] if len(regions) > 1 else []) + ["1"]
+        seq = ["1", "1"] + ([str(len(regions))] if len(regions) > 1 else []) + ["1", "n"]
         stdin, stdout = _io(seq)
         action = collect_player_action(st, AEDUI, ACTION_COMMAND, stdin, stdout)
         assert action["command"] == "Rally"
@@ -61,7 +61,7 @@ class TestHumanPlanCollection:
         seq = ["3", str(pick_idx)]
         if len(rom_regions) > 1:
             seq.append(str(len(rom_regions)))
-        seq.append("y")
+        seq.extend(["y", "n"])  # Disperse; decline a Resource gift.
         stdin, stdout = _io(seq)
         action = collect_player_action(st, ROMANS, ACTION_COMMAND, stdin, stdout)
         assert action["command"] == "Seize"
@@ -74,7 +74,7 @@ class TestHumanPlanCollection:
 
     def test_event_side_choice(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
-        stdin, stdout = _io(["2"])  # Shaded = option 2
+        stdin, stdout = _io(["2", "n"])  # Shaded; decline a Resource gift.
         action = collect_player_action(st, AEDUI, ACTION_EVENT, stdin, stdout)
         assert action["command"] == "Event"
         assert action["details"]["text_preference"] == EVENT_SHADED
@@ -88,7 +88,7 @@ class TestHumanPlanCollection:
         options = [ACTION_COMMAND, ACTION_EVENT]
         regions = _regions_with_pieces(st, AEDUI)
         # Action=Command(1); Rally(1); first Region(1); (done) if >1; Warbands(1).
-        seq = ["1", "1", "1"] + ([str(len(regions))] if len(regions) > 1 else []) + ["1"]
+        seq = ["1", "1", "1"] + ([str(len(regions))] if len(regions) > 1 else []) + ["1", "n"]
         stdin, stdout = _io(seq)
         decision = prompt_action(st, AEDUI, options, "1st_eligible", stdin, stdout)
         assert decision["action"] == ACTION_COMMAND
@@ -153,18 +153,11 @@ class TestHumanPlanCollection:
         from fs_bot.board.control import refresh_all_control
         st = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=3)
         st["non_player_factions"] = set()
-        from fs_bot.board.pieces import find_leader
-        from fs_bot.map.map_data import get_adjacent
-        caesar = find_leader(st, rc.ROMANS)          # Provincia (has Fort)
-        r = sorted(get_adjacent(caesar, st["scenario"]))[0]
-        # Roman Ally makes the region Build-eligible (§4.2.1) regardless
-        # of Supply Lines; tribe record kept in sync.
-        for t, ti in st["tribes"].items():
-            if (ti.get("allied_faction") is None and ti.get("status") is None
-                    and rc.TRIBE_TO_REGION.get(t) == r):
-                ti["allied_faction"] = rc.ROMANS
-                place_piece(st, r, rc.ROMANS, rc.ALLY)
-                break
+        # Sequani borders Cisalpina and is adjacent to Caesar in Provincia.
+        # Add enough Romans to cancel hostile Control and open a Supply Line.
+        # Aedui (the old fixture) had no subdued tribe for its attempted Ally.
+        r = rc.SEQUANI
+        place_piece(st, r, rc.ROMANS, rc.AUXILIA, 4)
         refresh_all_control(st)
         forts0 = count_pieces(st, r, rc.ROMANS, rc.FORT)
         res = _execute_build(st, rc.ROMANS, {

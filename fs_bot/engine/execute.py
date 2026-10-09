@@ -155,6 +155,46 @@ def _sa_runs_before_command(command, sa):
 
 
 def execute_decision(state, faction, decision):
+    """Execute a decision, rolling back a human turn that executes no Command.
+
+    In particular an SA-before-Command may finance/enable the Command, but
+    cannot survive on its own if that Command turns out to be impossible
+    (§4.1). Preserve the live agent separately from the board snapshot.
+    """
+    action = decision.get("player_action") if not decision.get("bot_action") else None
+    if action is None:
+        return _execute_decision(state, faction, decision)
+    from fs_bot.engine.action_validation import validate_human_structure
+    error = validate_human_structure(state, faction, action)
+    if error:
+        return {"executed": False, "command": action.get("command"),
+                "reason": error, "errors": [{"error": error}]}
+    from copy import deepcopy
+    agent = state.get("decision_agent")
+    card_turn = state.get("_card_turn")
+    snapshot = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    try:
+        result = _execute_decision(state, faction, decision)
+    except BaseException:
+        state.clear()
+        state.update(snapshot)
+        if agent is not None:
+            state["decision_agent"] = agent
+        if card_turn is not None:
+            state["_card_turn"] = card_turn
+        raise
+    if not result.get("executed"):
+        state.clear()
+        state.update(snapshot)
+        if agent is not None:
+            state["decision_agent"] = agent
+        if card_turn is not None:
+            state["_card_turn"] = card_turn
+        result["rolled_back"] = True
+    return result
+
+
+def _execute_decision(state, faction, decision):
     """Apply a recorded SoP decision to the board, if supported.
 
     Args:
@@ -228,8 +268,25 @@ def execute_decision(state, faction, decision):
         # and so change that Battle's outcome (§8.7.1 / A8.7.1 / §4.x). Run
         # those first; all other standalone SAs run after the Command. Battle-
         # modifying SAs (Ambush/Besiege) are applied inside _execute_battle.
-        before = _sa_runs_before_command(command, sa)
+        # §4.1: human ordering is explicit; only bots use flowchart timing.
+        timing = (bot_action.get("sa_timing", "after") if is_human else
+                  ("before" if _sa_runs_before_command(command, sa) else "after"))
+        before = timing == "before"
         sa_result = None
+        if timing == "during" and sa not in _BATTLE_MODIFYING_SAS:
+            parts = (bot_action.get("details") or {}).get("command_parts") or []
+            if len(parts) != 2:
+                return {"executed": False, "command": command,
+                        "reason": "Interrupted Command needs two portions"}
+            first = handler(state, faction, parts[0])
+            sa_result = _execute_sa(state, faction, bot_action)
+            second = handler(state, faction, parts[1])
+            result = {"executed": _command_executed(first) or _command_executed(second),
+                      "command": command, "command_parts": [first, second],
+                      "errors": (first.get("errors") or []) + (second.get("errors") or []),
+                      "sa_execution": sa_result, "sa_timing": "during"}
+            _apply_end_of_action_capabilities(state)
+            return _attach_transfers(result)
         if before:
             sa_result = _execute_sa(state, faction, bot_action)
         if command == _CMD_EVENT:
@@ -3298,6 +3355,7 @@ def _execute_event(state, faction, bot_action, *, human=False):
     # player_fuzz dirty-event oracle on card 62; the class is generic.)
     import copy as _copy
     _agent = state.pop("decision_agent", None)   # shared, never copied
+    _card_turn = state.get("_card_turn")
     snapshot = _copy.deepcopy(state)
     if _agent is not None:
         state["decision_agent"] = _agent
@@ -3310,6 +3368,8 @@ def _execute_event(state, faction, bot_action, *, human=False):
         # event_params/executing_faction to their pre-call values).
         state.clear()
         state.update(snapshot)
+        if _card_turn is not None:
+            state["_card_turn"] = _card_turn
         state["event_params"] = prev_params
         state["executing_faction"] = prev_faction
         if _agent is not None:
@@ -3624,12 +3684,23 @@ def _execute_battle(state, faction, bot_action):
             continue
 
         is_ambush = (sa == _SA_AMBUSH and region in sa_regions)
+        if is_ambush:
+            from fs_bot.commands.sa_ambush import validate_ambush_region
+            valid, reason = validate_ambush_region(state, region, faction, defender)
+            if not valid:
+                errors.append({"region": region, "sa": sa, "error": reason})
+                is_ambush = False
 
         besiege_target = None
         if sa == _SA_BESIEGE and region in sa_regions:
-            options = get_besiege_targets(state, region, defender)
-            if options:
-                besiege_target = options[0]  # Citadel > Ally > Settlement
+            from fs_bot.commands.sa_besiege import validate_besiege_region
+            valid, reason = validate_besiege_region(state, region, defender)
+            if valid:
+                options = get_besiege_targets(state, region, defender)
+                if options:
+                    besiege_target = options[0]  # Citadel > Ally > Settlement
+            else:
+                errors.append({"region": region, "sa": sa, "error": reason})
 
         # Card 13 unshaded pre-fire: Roman Auxilia inflict 1/2 each on the
         # attacker BEFORE the Battle resolves in the chosen Region.
@@ -3725,6 +3796,8 @@ def _execute_battle(state, faction, bot_action):
         "executed": len(battles) > 0,
         "command": _CMD_BATTLE,
         "battles_resolved": [(b["region"], b["defender"]) for b in battles],
+        "battle_sa_executed": any(b.get("is_ambush") or b.get("besiege") is not None
+                                  for b in battles if not b.get("result", {}).get("card27_wiped")),
         "count": len(battles),
         "errors": errors,
     }
@@ -4184,7 +4257,9 @@ def _execute_sa(state, faction, bot_action):
         return _execute_suborn(state, faction, bot_action)
     if sa == _SA_BUILD:
         result = _execute_build(state, faction, bot_action)
-        if faction == _ROMANS_F and not result.get("actions"):
+        if (faction == _ROMANS_F and not result.get("actions")
+                and faction in state.get("non_player_factions", set())
+                and _sa_detail(bot_action, "build_plan") is None):
             # R_BUILD "If no Build: R_SCOUT" — Scout after Command instead
             # (roman_bot_flowchart §8.8.1). Recompute against the current
             # (post-Command) board, exactly like the Build it replaces.
@@ -4325,6 +4400,10 @@ def _execute_settle(state, faction, bot_action):
     placed, errors = [], []
     for region in regions:
         try:
+            from fs_bot.commands.sa_settle import validate_settle_region
+            valid, reason = validate_settle_region(state, region)
+            if not valid:
+                raise CommandError(reason)
             _sa_settle(state, region)
             placed.append(region)
         except _EXEC_ERRORS as exc:
@@ -4340,6 +4419,10 @@ def _execute_devastate(state, faction, bot_action):
     done, errors = [], []
     for region in regions:
         try:
+            from fs_bot.commands.sa_devastate import validate_devastate_region
+            valid, reason = validate_devastate_region(state, region)
+            if not valid:
+                raise CommandError(reason)
             _sa_devastate(state, region)
             done.append(region)
         except _EXEC_ERRORS as exc:
@@ -4378,6 +4461,10 @@ def _execute_intimidate(state, faction, bot_action):
     for (region, tgt) in order:
         removals = groups[(region, tgt)][:2]  # A4.6.2: flip 1-2 Warbands
         try:
+            from fs_bot.commands.sa_intimidate import validate_intimidate_region
+            valid, reason = validate_intimidate_region(state, region)
+            if not valid:
+                raise CommandError(reason)
             _sa_intimidate(state, region, len(removals), tgt, removals)
             done.append({"region": region, "target": tgt,
                          "count": len(removals)})
@@ -4440,6 +4527,10 @@ def _execute_suborn(state, faction, bot_action):
         if not ops:
             continue
         try:
+            from fs_bot.commands.sa_suborn import validate_suborn_region
+            valid, reason = validate_suborn_region(state, region)
+            if not valid:
+                raise CommandError(reason)
             _sa_suborn(state, region, ops)
             done.append(region)
         except _EXEC_ERRORS as exc:
@@ -4495,8 +4586,22 @@ def _execute_build(state, faction, bot_action):
             }
 
     done, errors = [], []
+    from fs_bot.commands.sa_build import validate_build_region
+    from fs_bot.engine.action_validation import command_parts, command_regions
+    seized = {r for part in command_parts(bot_action)
+              if part.get("command") == _CMD_SEIZE
+              for r in command_regions(part)}
+
+    def validate_region(region, *, ally_action=False):
+        valid, reason = validate_build_region(state, region)
+        if not valid:
+            raise CommandError(reason)
+        if ally_action and region in seized:
+            raise CommandError("Build cannot place/subdue Allies in a Seize Region (§4.2.1)")
+
     for region in plan.get("forts", []) or []:
         try:
+            validate_region(region)
             _sa_build_fort(state, region)
             done.append(("fort", region))
         except _EXEC_ERRORS as exc:
@@ -4508,6 +4613,7 @@ def _execute_build(state, faction, bot_action):
         if target is None:
             continue
         try:
+            validate_region(region, ally_action=True)
             _sa_build_subdue(state, region, tribe, target)
             done.append(("subdue", region, tribe))
         except _EXEC_ERRORS as exc:
@@ -4516,6 +4622,7 @@ def _execute_build(state, faction, bot_action):
     for entry in plan.get("allies", []) or []:
         region, tribe = entry.get("region"), entry.get("tribe")
         try:
+            validate_region(region, ally_action=True)
             _sa_build_ally(state, region, tribe)
             done.append(("ally", region, tribe))
         except _EXEC_ERRORS as exc:
@@ -4698,6 +4805,14 @@ def _execute_rampage(state, faction, bot_action):
         target = entry.get("target")
         if region is None or target is None:
             continue
+        from fs_bot.commands.sa_rampage import (validate_rampage_region,
+                                                validate_rampage_target)
+        valid, reason = validate_rampage_region(state, region)
+        if valid:
+            valid, reason = validate_rampage_target(state, region, target)
+        if not valid:
+            errors.append({"region": region, "target": target, "error": reason})
+            continue
         hidden_belgic = _count_state(state, region, BELGAE, WARBAND, HIDDEN)
         if hidden_belgic <= 0:
             continue
@@ -4873,10 +4988,14 @@ def _execute_entreat(state, faction, bot_action):
         region = a.get("region")
         tgt = a.get("target_faction")
         try:
+            from fs_bot.commands.sa_entreat import validate_entreat_region
+            valid, reason = validate_entreat_region(state, region)
+            if not valid:
+                raise CommandError(reason)
             if act in ("replace_ally", "remove_ally"):
                 _sa_entreat_ally(state, region, tgt, a.get("tribe"))
             elif act in ("replace_piece", "remove_piece"):
-                _sa_entreat_piece(state, region, tgt, a.get("target_type"),
+                _sa_entreat_piece(state, region, tgt, a.get("target_type", a.get("piece_type")),
                                   a.get("target_state"))
             else:
                 continue
@@ -4975,6 +5094,14 @@ def _execute_enlist(state, faction, bot_action):
     scenario = state["scenario"]
     t = ed.get("type")
     try:
+        from fs_bot.commands.sa_enlist import validate_enlist_region
+        from fs_bot.engine.game_engine import is_frost
+        if t in ("german_march", "german_march_hide") and is_frost(state):
+            raise CommandError("No Enlist March during Frost (§4.5.1)")
+        region = ed.get("origin") if t == "german_march" else ed.get("region")
+        valid, reason = validate_enlist_region(state, region)
+        if not valid:
+            raise CommandError(reason)
         if t == "german_battle":
             region, target = ed.get("region"), ed.get("target")
             decl, rr = _decide_defender_retreat(

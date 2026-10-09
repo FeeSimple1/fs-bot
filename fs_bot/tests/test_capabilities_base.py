@@ -328,10 +328,12 @@ class TestCard27ShadedAbsorption:
 class TestCard10ShadedAmbushRemoval:
     def test_owner_ambush_removes_citadel(self):
         from fs_bot.engine.execute import _execute_battle
-        from fs_bot.rules_consts import HIDDEN
+        from fs_bot.rules_consts import HIDDEN, AMBIORIX
         st = _state()
         r = MANDUBII
         _clear(st, r)
+        # §4.5.3: Belgic Ambush requires its Leader in range.
+        place_piece(st, r, BELGAE, LEADER, leader_name=AMBIORIX)
         place_piece(st, r, BELGAE, WARBAND, 6, piece_state=HIDDEN)
         place_piece(st, r, AEDUI, WARBAND, 1, piece_state=HIDDEN)
         place_piece(st, r, AEDUI, CITADEL, 1)

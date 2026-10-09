@@ -119,8 +119,8 @@ def _pick_regions(stdin, stdout, prompt, candidates, *, at_least_one=True,
     return chosen
 
 
-def _collect_battle(state, faction, stdin, stdout, single):
-    regions = _battle_regions(state, faction)
+def _collect_battle(state, faction, stdin, stdout, single, *, excluded=()):
+    regions = [r for r in _battle_regions(state, faction) if r not in excluded]
     if not regions:
         return None
     picked = _pick_regions(stdin, stdout, "Battle in which Region(s)?",
@@ -134,9 +134,9 @@ def _collect_battle(state, faction, stdin, stdout, single):
     return {"battle_plan": plan} if plan else None
 
 
-def _collect_raid(state, faction, stdin, stdout, single):
+def _collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
     regions = [r for r in _regions_with_pieces(state, faction)
-               if count_pieces(state, r, faction, WARBAND) > 0]
+               if r not in excluded and count_pieces(state, r, faction, WARBAND) > 0]
     if not regions:
         return None
     picked = _pick_regions(stdin, stdout, "Raid in which Region(s)?",
@@ -151,9 +151,9 @@ def _collect_raid(state, faction, stdin, stdout, single):
     return {"raid_plan": plan} if plan else None
 
 
-def _collect_march(state, faction, stdin, stdout, single):
+def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
     origins_c = [r for r in _regions_with_pieces(state, faction)
-                 if _mobile_count(state, r, faction) > 0]
+                 if r not in excluded and _mobile_count(state, r, faction) > 0]
     if not origins_c:
         return None
     origins = _pick_regions(stdin, stdout, "March OUT of which Region(s)?",
@@ -249,8 +249,8 @@ def _collect_march(state, faction, stdin, stdout, single):
     return plan
 
 
-def _collect_rally(state, faction, stdin, stdout, single):
-    regions = _regions_with_pieces(state, faction)
+def _collect_rally(state, faction, stdin, stdout, single, *, excluded=()):
+    regions = [r for r in _regions_with_pieces(state, faction) if r not in excluded]
     if not regions:
         return None
     picked = _pick_regions(stdin, stdout, "Rally in which Region(s)?",
@@ -283,9 +283,9 @@ def _collect_rally(state, faction, stdin, stdout, single):
                            "warbands": warbands}}
 
 
-def _collect_recruit(state, faction, stdin, stdout, single):
+def _collect_recruit(state, faction, stdin, stdout, single, *, excluded=()):
     regions = get_playable_regions(state["scenario"], state.get("capabilities"))
-    cand = [r for r in regions if count_pieces(state, r, ROMANS) > 0]
+    cand = [r for r in regions if r not in excluded and count_pieces(state, r, ROMANS) > 0]
     if not cand:
         return None
     picked = _pick_regions(stdin, stdout, "Recruit in which Region(s)?",
@@ -306,10 +306,10 @@ def _collect_recruit(state, faction, stdin, stdout, single):
     return {"recruit_plan": plan} if plan else None
 
 
-def _collect_seize(state, faction, stdin, stdout, single):
+def _collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
     from fs_bot.commands.seize import get_dispersible_tribes
     regions = get_playable_regions(state["scenario"], state.get("capabilities"))
-    cand = [r for r in regions if count_pieces(state, r, ROMANS) > 0]
+    cand = [r for r in regions if r not in excluded and count_pieces(state, r, ROMANS) > 0]
     if not cand:
         return None
     picked = _pick_regions(stdin, stdout, "Seize in which Region(s)?",
@@ -596,7 +596,10 @@ def _collect_build(state, faction, stdin, stdout, *, pending=None):
             dests.extend(routes)
         for d in dests:
             d = d[0] if isinstance(d, (list, tuple)) else d
-            if d not in cands:
+            from fs_bot.commands.common import check_leader_proximity
+            from fs_bot.rules_consts import CAESAR
+            if d not in cands and check_leader_proximity(
+                    state, d, ROMANS, CAESAR, "Build")[0]:
                 cands.append(d)
     if not cands:
         return None, None
@@ -723,49 +726,149 @@ _COMMAND_COLLECTORS = {
 }
 
 
-def _collect_command(state, faction, engine_action, stdin, stdout):
-    scenario = state["scenario"]
-    single = engine_action == ACTION_LIMITED_COMMAND
-    commands = _FACTION_COMMANDS.get(faction, ())
-    cmd = prompt_choice(stdin, stdout, "Which Command?",
-                        [(c, c) for c in commands])
+def _collect_command_plan(state, faction, cmd, stdin, stdout, single=False,
+                          *, excluded=()):
     collector = _COMMAND_COLLECTORS.get(cmd)
-    details = (collector(state, faction, stdin, stdout, single)
+    details = (collector(state, faction, stdin, stdout, single, excluded=excluded)
                if collector else None)
     if details is None:
         return None
-
     action = {"command": cmd, "regions": [], "sa": _SA_NONE,
               "sa_regions": [], "details": {}}
     if cmd == "Seize":
         action["regions"] = details.pop("_regions", [])
     action["details"] = details
+    return action
 
+
+def _planning_copy(state):
+    from copy import deepcopy
+    return deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+
+
+def _preview_command(state, faction, action):
+    """Plan later choices on a copy; never spend Resources or RNG on live state."""
+    from fs_bot.engine.execute import execute_decision
+    sim = _planning_copy(state)
+    execute_decision(sim, faction, {"player_action": action})
+    return sim
+
+
+def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
+                     standalone=False, before_state=None):
+    from fs_bot.engine.action_validation import compatible_sa
+    sas = [s for s in _faction_special_abilities(faction, state["scenario"])
+           if (action.get("command") is None or compatible_sa(action["command"], s))
+           and (not standalone or s not in ("Ambush", "Besiege"))]
+    if not sas:
+        return action
+    if sa is None:
+        sa = prompt_choice(stdin, stdout, "Which Special Activity?",
+                           [(s, s) for s in sas])
+    if sa in ("Ambush", "Besiege") and before_state is not None:
+        # These SAs modify the coming Battle; an unmodified preview must not
+        # remove their targets or attackers from the selection menu.
+        state = before_state
+    collector = _SA_COLLECTORS.get(sa)
+    if collector is not None:
+        sa_regions, extra = collector(state, faction, stdin, stdout,
+                                      pending=action)
+        if sa_regions is None:
+            stdout.write(f"  (no legal {sa} plan -- Command only)\n")
+            return action
+        action["sa_regions"] = sa_regions
+        if extra:
+            action["details"].update(extra)
+    else:
+        cand = _regions_with_pieces(state, faction)
+        if sa in ("Ambush", "Besiege"):
+            from fs_bot.commands.sa_ambush import validate_ambush_region
+            from fs_bot.commands.sa_besiege import validate_besiege_region
+            battle_plan = (action.get("details") or {}).get("battle_plan")
+            targets = ({e["region"]: [e["target"]] for e in battle_plan}
+                       if battle_plan else
+                       {r: _enemies_in_region(state, r, faction) for r in cand})
+            cand = [r for r in cand if any(
+                (validate_ambush_region(state, r, faction, enemy)[0]
+                 if sa == "Ambush" else validate_besiege_region(state, r, enemy)[0])
+                for enemy in targets.get(r, []))]
+        if sa == "Devastate":
+            from fs_bot.commands.sa_devastate import validate_devastate_region
+            cand = [r for r in cand if validate_devastate_region(state, r)[0]]
+        if cand:
+            action["sa_regions"] = _pick_regions(
+                stdin, stdout, f"{sa} in which Region(s)? (optional)",
+                cand, at_least_one=False, single=(sa == "Ambush" and faction == AEDUI))
+    action["sa"] = sa
+    return action
+
+
+def _collect_command(state, faction, engine_action, stdin, stdout):
+    from copy import deepcopy
+    from fs_bot.engine.action_validation import compatible_sa, command_regions
+    from fs_bot.engine.game_engine import is_frost
+    from fs_bot.engine.execute import _execute_sa
+    single = engine_action == ACTION_LIMITED_COMMAND
+    commands = [c for c in _FACTION_COMMANDS.get(faction, ())
+                if c != "March" or not is_frost(state)]
+    choices = [(c, c) for c in commands]
     if engine_action == ACTION_COMMAND_SA:
-        sas = _faction_special_abilities(faction, scenario)
-        if sas and prompt_yes_no(stdin, stdout,
-                                 "Add a Special Activity?", default=False):
-            sa = prompt_choice(stdin, stdout, "Which Special Activity?",
-                               [(s, s) for s in sas])
-            collector = _SA_COLLECTORS.get(sa)
-            if collector is not None:
-                sa_regions, extra = collector(state, faction, stdin, stdout,
-                                              pending=action)
-                if sa_regions is None:
-                    stdout.write(f"  (no legal {sa} plan -- Command only)\n")
-                    return action
-                action["sa"] = sa
-                action["sa_regions"] = sa_regions
-                if extra:
-                    action["details"].update(extra)
-            else:
-                action["sa"] = sa
-                cand = _regions_with_pieces(state, faction)
-                if cand:
-                    action["sa_regions"] = _pick_regions(
-                        stdin, stdout,
-                        f"{sa} in which Region(s)? (optional)",
-                        cand, at_least_one=False)
+        choices.extend([
+            ("Special Activity first, then Command", "sa_first"),
+            ("Command, Special Activity, then continue Command", "sa_during"),
+        ])
+        stdout.write("Choose a Command for Command-first timing, or an order below.\n")
+    cmd = prompt_choice(stdin, stdout, "Which Command?", choices)
+    if cmd == "sa_first":
+        action = {"command": None, "regions": [], "sa": _SA_NONE,
+                  "sa_regions": [], "details": {}, "sa_timing": "before"}
+        action = _collect_sa_plan(state, faction, action, stdin, stdout)
+        legal = [c for c in commands if compatible_sa(c, action["sa"])]
+        cmd = prompt_choice(stdin, stdout, "Which accompanying Command?",
+                            [(c, c) for c in legal])
+        action["command"] = cmd
+        sim = _planning_copy(state)
+        _execute_sa(sim, faction, action)
+        command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
+        if command is None:
+            return None
+        action["regions"] = command["regions"]
+        action["details"].update(command["details"])
+        return action
+    if cmd == "sa_during":
+        # These Commands resolve independently one selected Region at a time.
+        # March groups and Battle-wide capabilities need a shared resolution
+        # context; offer their before/after paths rather than reset that context.
+        legal = [c for c in commands if c not in ("March", "Battle")]
+        cmd = prompt_choice(stdin, stdout, "Which Command to interrupt?",
+                            [(c, c) for c in legal])
+        stdout.write("Select the Regions to resolve BEFORE the Special Activity.\n")
+        first = _collect_command_plan(state, faction, cmd, stdin, stdout)
+        if first is None:
+            return None
+        sim = _preview_command(state, faction, first)
+        action = deepcopy(first)
+        action = _collect_sa_plan(sim, faction, action, stdin, stdout,
+                                  standalone=True)
+        _execute_sa(sim, faction, action)
+        stdout.write("Continue the same Command in additional Regions.\n")
+        second = _collect_command_plan(sim, faction, cmd, stdin, stdout,
+                                       excluded=command_regions(first))
+        if second is None:
+            action["sa_timing"] = "after"
+            return action
+        action["sa_timing"] = "during"
+        action["details"]["command_parts"] = [first, second]
+        return action
+    action = _collect_command_plan(state, faction, cmd, stdin, stdout, single)
+    if action is None:
+        return None
+    if engine_action == ACTION_COMMAND_SA:
+        if prompt_yes_no(stdin, stdout, "Add a Special Activity?", default=False):
+            sim = _preview_command(state, faction, action)
+            action = _collect_sa_plan(sim, faction, action, stdin, stdout,
+                                      before_state=state)
+            action["sa_timing"] = "after"
     return action
 
 
@@ -853,10 +956,7 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     schema = card_param_schema(card_id, state.get("scenario"))
     params = {}
     for key, spec in schema.items():
-        try:
-            v = _prompt_event_param(state, key, spec, stdin, stdout)
-        except EOFError:
-            break
+        v = _prompt_event_param(state, key, spec, stdin, stdout)
         if v is not None:
             params[key] = v
     return params
@@ -876,24 +976,16 @@ def _maybe_collect_transfer(state, faction, action, stdin, stdout):
                        and f == GERMANS)]
     if not others:
         return action
-    try:
-        # Sec.1.5.2 allows a voluntary gift with any Command/Event. It is
-        # rarely wanted, so it's a one-keystroke skip (Enter = No), not a
-        # menu (playtester friction finding).
-        if not prompt_yes_no(stdin, stdout,
-                             "Give Resources to another Faction with this "
-                             "action (Sec.1.5.2)?", default=False):
-            return action
-        to = prompt_choice(
-            stdin, stdout, "Give Resources to whom?",
-            [(f, f) for f in others])
-        amt = prompt_choice(
-            stdin, stdout, f"Give how many to {to}?",
-            [(str(n), n) for n in range(1, min(stock, 12) + 1)])
-        action.setdefault("details", {})["transfers"] = [
-            {"to": to, "amount": amt}]
-    except EOFError:
-        pass
+    # Blank means no gift; closed input means the turn is still pending.
+    if not prompt_yes_no(stdin, stdout,
+                         "Give Resources to another Faction with this "
+                         "action (Sec.1.5.2)?", default=False):
+        return action
+    to = prompt_choice(stdin, stdout, "Give Resources to whom?",
+                       [(f, f) for f in others])
+    amt = prompt_choice(stdin, stdout, f"Give how many to {to}?",
+                        [(str(n), n) for n in range(1, min(stock, 12) + 1)])
+    action.setdefault("details", {})["transfers"] = [{"to": to, "amount": amt}]
     return action
 
 

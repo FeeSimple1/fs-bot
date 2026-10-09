@@ -55,12 +55,20 @@ def validate_player_action(state, faction, player_action):
     string if it raised. The copy drops any live ``decision_agent`` so dry-run
     validation never re-enters the agent.
     """
-    sim = copy.deepcopy(state)
-    sim.pop("decision_agent", None)
+    sim = copy.deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
     try:
         res = execute_decision(sim, faction, {"player_action": player_action})
     except Exception as exc:  # never raise out of a validation probe
         return (False, repr(exc))
+    # The Command can succeed while its SA is refused; expose those errors
+    # to the CLI's existing re-plan prompt rather than silently drop the SA.
+    sa = res.get("sa_execution") or {}
+    if sa.get("errors") or (sa.get("executed") is False and not sa.get("declined_no_effect")):
+        res = dict(res)
+        res["errors"] = list(res.get("errors") or []) + list(sa.get("errors") or [])
+        if not sa.get("errors"):
+            res["errors"].append({"error": sa.get("reason") or sa.get("error")
+                                 or "Special Activity had no legal effect"})
     return (bool(res.get("executed")), res)
 
 
@@ -68,8 +76,7 @@ def preview_player_action(state, faction, player_action):
     """Like validate_player_action, but also returns the resulting state copy so
     a driver can inspect the board the action WOULD produce. Returns
     ``(ok, info, resulting_state)``."""
-    sim = copy.deepcopy(state)
-    sim.pop("decision_agent", None)
+    sim = copy.deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
     try:
         res = execute_decision(sim, faction, {"player_action": player_action})
         return (bool(res.get("executed")), res, sim)

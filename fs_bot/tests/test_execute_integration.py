@@ -438,6 +438,10 @@ class TestStandaloneSAs:
 
     def test_devastate_places_marker(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
+        from fs_bot.board.pieces import move_piece
+        from fs_bot.rules_consts import LEADER
+        # §4.3.2: controlled Region must also be within Leader range.
+        move_piece(st, find_leader(st, ARVERNI), ARVERNI_REGION, ARVERNI, LEADER)
         res = _execute_sa(st, ARVERNI, {"sa": "Devastate",
                                         "sa_regions": [ARVERNI_REGION],
                                         "details": {}})
@@ -665,6 +669,9 @@ class TestAgreementsAndRampage:
 
     def test_rampage_removes_target_pieces(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        from fs_bot.board.pieces import move_piece
+        from fs_bot.rules_consts import LEADER
+        move_piece(st, find_leader(st, BELGAE), MORINI, BELGAE, LEADER)
         place_piece(st, MORINI, BELGAE, WARBAND, 2, piece_state=HIDDEN)
         place_piece(st, MORINI, ROMANS, AUXILIA, 2, piece_state=REVEALED)
         refresh_all_control(st)
@@ -681,6 +688,9 @@ class TestAgreementsAndRampage:
         # piece (preserved on the board) rather than removing it.
         from fs_bot.board.pieces import count_on_map
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=5)
+        from fs_bot.board.pieces import move_piece
+        from fs_bot.rules_consts import LEADER
+        move_piece(st, find_leader(st, BELGAE), MORINI, BELGAE, LEADER)
         place_piece(st, MORINI, BELGAE, WARBAND, 1, piece_state=HIDDEN)
         place_piece(st, MORINI, ROMANS, AUXILIA, 1, piece_state=REVEALED)
         nb = get_adjacent(MORINI)[0]
@@ -817,7 +827,9 @@ class TestEnlist:
 
     def test_enlist_german_rally_places_warbands(self):
         st = setup_scenario(SCENARIO_ARIOVISTUS, seed=3)
-        lr = find_leader(st, GERMANS)
+        # A4.5.1 forbids Enlist in Ariovistus's Region. Sugambri is in
+        # range of the Belgic Leader and permits German Rally without him.
+        lr = SUGAMBRI
         place_piece(st, lr, GERMANS, WARBAND, 1, piece_state=HIDDEN)
         refresh_all_control(st)
         before = count_pieces(st, lr, GERMANS, WARBAND)
@@ -4037,6 +4049,12 @@ def test_rampage_target_choice_consults_player():
     def fresh():
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=6)
         region = "Nervii"
+        from fs_bot.board.pieces import remove_piece, move_piece
+        from fs_bot.rules_consts import FORT, LEADER
+        # §4.5.2: a target with a Fort cannot be Rampaged. This scenario
+        # starts with a Roman Fort in Nervii; remove it for this choice test.
+        remove_piece(st, region, ROMANS, FORT)
+        move_piece(st, find_leader(st, BELGAE), region, BELGAE, LEADER)
         place_piece(st, region, BELGAE, WARBAND, 3, piece_state=HIDDEN)
         place_piece(st, region, ROMANS, AUXILIA, 2)
         # A friendly stack next door so a Retreat destination exists.

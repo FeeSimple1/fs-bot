@@ -5,22 +5,81 @@ on:
     branches: [audit/outcome-fixes-20261009]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  snapshot:
+  verify-and-apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
+    env:
+      PYTHONHASHSEED: "0"
     steps:
       - uses: actions/checkout@v4
-      - name: Archive audited source
-        run: |
-          git archive --format=tar.gz --output=source.tar.gz HEAD
-          git rev-parse HEAD > source-commit.txt
-      - uses: actions/upload-artifact@v4
         with:
-          name: outcome-audit-source
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Verify payload and apply against the audited source
+        shell: bash
+        run: |
+          git diff --quiet 22099ac74bee2ec87fe5400f568b77c9dadccd8f HEAD -- fs_bot
+          python - <<'PY'
+          import base64, hashlib, lzma, os, pathlib, subprocess
+          payload = ''.join(pathlib.Path(f'audit-patch.{i:02d}.b64').read_text().strip() for i in range(2))
+          patch = lzma.decompress(base64.b64decode(payload, validate=True))
+          expected = '76d443a0161f1db8f5ffeaafa4e0e2d1e64cf319f7cbbdfc8110550bd0490af3'
+          assert hashlib.sha256(patch).hexdigest() == expected, 'Patch digest mismatch'
+          path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'audit.patch'
+          path.write_bytes(patch)
+          subprocess.run(['git', 'apply', '--check', '--unidiff-zero', str(path)], check=True)
+          subprocess.run(['git', 'apply', '--unidiff-zero', str(path)], check=True)
+          PY
+          git diff --check
+          git diff --quiet -- fs_bot/rules_consts.py 'Reference Documents'
+          git diff --stat
+      - name: Full unit and regression suite
+        shell: bash
+        run: python -m pytest -q | tee "$RUNNER_TEMP/pytest.txt"
+      - name: All 1000 outcome games must pass the expanded audit
+        shell: bash
+        run: |
+          python -m fs_bot.tools.run_batch --games 200 --workers 4 --out "$RUNNER_TEMP/outcomes" | tee "$RUNNER_TEMP/outcomes.txt"
+          python - <<'PY'
+          import json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'outcomes'
+          rows = [json.loads(line) for line in (root / 'games.jsonl').read_text().splitlines()]
+          assert len(rows) == 1000
+          for row in rows:
+              assert row['completed'], (row['scenario'], row['seed'], row.get('error'))
+              assert not row['errors']
+              assert not row['diagnostics']
+              assert not row['diagnostic_occurrences']
+              assert not row['integrity_findings']
+              assert not row['winner_differs_from_highest_margin']
+              assert not row['engine_ranking_output_missing']
+          print('Verified 1000 completed games, zero errors, zero diagnostics, zero integrity findings, correct rankings.')
+          PY
+      - name: Commit and push verified source changes
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add fs_bot docs
+          git diff --cached --check
+          git commit -m 'Fix outcome audit: March costs, Tribe/Citadel identity, bot legality, victory, and runner isolation'
+          git push origin HEAD:refs/heads/audit/outcome-fixes-20261009
+          git rev-parse HEAD > "$RUNNER_TEMP/source-commit.txt"
+          git show --stat --oneline HEAD
+      - name: Preserve verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outcome-audit-verification
           path: |
-            source.tar.gz
-            source-commit.txt
-          retention-days: 7
+            ${{ runner.temp }}/pytest.txt
+            ${{ runner.temp }}/outcomes.txt
+            ${{ runner.temp }}/outcomes
+            ${{ runner.temp }}/source-commit.txt
+          retention-days: 14

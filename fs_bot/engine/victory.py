@@ -77,10 +77,8 @@ def _count_allies_and_citadels(state, faction):
     Returns:
         Integer total.
     """
-    allies = 0
-    for tribe_info in state["tribes"].values():
-        if tribe_info.get("allied_faction") == faction:
-            allies += 1
+    from fs_bot.board.pieces import count_allied_discs
+    allies = count_allied_discs(state, faction)
 
     citadels = count_on_map(state, faction, CITADEL)
     return allies + citadels
@@ -504,7 +502,10 @@ def check_any_victory(state):
     non_players = state.get("non_player_factions", set())
     np_winners = [f for f in winners if f in non_players]
     if np_winners:
-        return _break_tie(state, np_winners)
+        # §8.9 Non-player Victory: highest-margin Non-player takes Gaul;
+        # §7.1 faction precedence is a tiebreak, not a replacement for scores.
+        # This also gives zero-player outcome studies the same NP ranking.
+        winners = np_winners
 
     # Passing the threshold is not itself a tie: §7.1 awards first place
     # to the highest victory margin. Only equal margins use faction order.

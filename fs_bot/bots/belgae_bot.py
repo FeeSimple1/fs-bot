@@ -1357,6 +1357,10 @@ def node_b_march(state):
     if not has_any_march:
         return node_b_raid(state)
 
+    from fs_bot.engine.execute import march_plan_has_effect
+    if not march_plan_has_effect(state, BELGAE, march_plan):
+        return node_b_raid(state)
+
     # SA: Enlist after March — §8.5.5
     sa = SA_ACTION_NONE
     sa_regions = []
@@ -1415,16 +1419,8 @@ def _check_ambush(state, battle_plan, scenario):
     region = first_battle["region"]
     enemy = first_battle["target"]
 
-    # §4.5.3 / §4.3.3: Region must be within 1 of Ambiorix or Successor
-    if not _is_within_one_of_ambiorix(state, region, scenario):
-        return []
-
-    # §4.5.3 eligibility: more Hidden Belgae Warbands than Hidden enemy
-    hidden_belgae = count_pieces_by_state(
-        state, region, BELGAE, WARBAND, HIDDEN)
-    hidden_enemy = count_pieces_by_state(
-        state, region, enemy, WARBAND, HIDDEN)
-    if hidden_belgae <= hidden_enemy:
+    from fs_bot.commands.sa_ambush import validate_ambush_region
+    if not validate_ambush_region(state, region, BELGAE, enemy)[0]:
         return []
 
     # Check if Ambush is needed in 1st Battle — §8.5.1
@@ -1449,23 +1445,10 @@ def _check_ambush(state, battle_plan, scenario):
     if not should_ambush_first:
         return []
 
-    # If Ambushed in 1st Battle, Ambush in all others where eligible — §8.5.1
-    # "each other Battle possible" — filter by §4.5.3 eligibility
-    ambush_regions = [region]
-    for bp in battle_plan[1:]:
-        bp_region = bp["region"]
-        bp_enemy = bp["target"]
-        # §4.5.3: within 1 of Ambiorix + more Hidden Belgae than Hidden enemy
-        if not _is_within_one_of_ambiorix(state, bp_region, scenario):
-            continue
-        bp_hidden_belgae = count_pieces_by_state(
-            state, bp_region, BELGAE, WARBAND, HIDDEN)
-        bp_hidden_enemy = count_pieces_by_state(
-            state, bp_region, bp_enemy, WARBAND, HIDDEN)
-        if bp_hidden_belgae > bp_hidden_enemy:
-            ambush_regions.append(bp_region)
-
-    return ambush_regions
+    # "Each other Battle possible" still has its own Hidden/leader checks.
+    return [bp["region"] for bp in battle_plan
+            if validate_ambush_region(state, bp["region"], BELGAE,
+                                      bp["target"])[0]]
 
 
 def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None):
@@ -1631,6 +1614,13 @@ def _check_enlist_after_command(state, scenario):
     """
     playable = get_playable_regions(scenario, state.get("capabilities"))
     non_players = state.get("non_player_factions", set())
+    from fs_bot.commands.sa_enlist import validate_enlist_region
+    from fs_bot.commands.rally import (validate_rally_region,
+        _find_subdued_tribe_for_ally, _german_warband_cap, _get_home_regions)
+    from fs_bot.engine.game_engine import is_frost
+    playable = [region for region in playable
+                if validate_enlist_region(state, region)[0]]
+    can_march = not is_frost(state)
 
     # Step 1: Battle — §8.5.1
     # §8.5.1 Step 1: "Versus a. player b. other Non-player" — prefer a player
@@ -1675,7 +1665,7 @@ def _check_enlist_after_command(state, scenario):
     # §8.5.1 Step 2(1): "to ... Control: a. Player's b. Non-player's" — prefer
     # a player-Controlled destination before any Non-player-Controlled one.
     for prefer_player in (True, False):
-        for origin in march_origin_groups:
+        for origin in (march_origin_groups if can_march else []):
             if origin not in playable:
                 continue
             # §4.5.1: origin must be within 1 of Ambiorix
@@ -1706,7 +1696,7 @@ def _check_enlist_after_command(state, scenario):
                         }
 
     # (2) In place with 2+ Revealed/Scouted to Hide — §8.5.1
-    for region in playable:
+    for region in (playable if can_march else []):
         # §4.5.1: Must be within 1 of Ambiorix
         if not _is_within_one_of_ambiorix(state, region, scenario):
             continue
@@ -1727,48 +1717,34 @@ def _check_enlist_after_command(state, scenario):
     avail_german_allies = get_available(state, GERMANS, ALLY)
     avail_german_wb = get_available(state, GERMANS, WARBAND)
 
-    # (1) Place Ally
+    # (1) Place an Ally only at an eligible Subdued Tribe under Control.
     if avail_german_allies > 0:
         for region in playable:
-            # §4.5.1: Must be within 1 of Ambiorix
-            if not _is_within_one_of_ambiorix(state, region, scenario):
+            if not validate_rally_region(state, region, GERMANS)[0]:
                 continue
-            if count_pieces(state, region, GERMANS) == 0:
+            if not is_controlled_by(state, region, GERMANS):
                 continue
-            tribes = get_tribes_in_region(region, scenario)
-            for tribe in tribes:
-                tribe_info = state["tribes"].get(tribe, {})
-                if tribe_info.get("allied_faction") is None:
-                    return {
-                        "type": "german_rally",
-                        "region": region,
-                        "place": "ally",
-                        "tribe": tribe,
-                        "regions": [region],
-                    }
+            tribes = _find_subdued_tribe_for_ally(state, region, GERMANS)
+            if tribes:
+                return {"type": "german_rally", "region": region,
+                        "place": "ally", "tribe": tribes[0], "regions": [region]}
 
-    # (2) Place most Warbands
+    # (2) Most Warbands actually placeable, not merely a Controlled region.
+    candidates = []
     if avail_german_wb > 0:
         for region in playable:
-            # §4.5.1: Must be within 1 of Ambiorix
-            if not _is_within_one_of_ambiorix(state, region, scenario):
+            if not validate_rally_region(state, region, GERMANS)[0]:
                 continue
-            has_base = False
-            tribes = get_tribes_in_region(region, scenario)
-            for tribe in tribes:
-                tribe_info = state["tribes"].get(tribe, {})
-                if tribe_info.get("allied_faction") == GERMANS:
-                    has_base = True
-                    break
-            if is_controlled_by(state, region, GERMANS):
-                has_base = True
-            if has_base:
-                return {
-                    "type": "german_rally",
-                    "region": region,
-                    "place": "warbands",
-                    "regions": [region],
-                }
+            cap = _german_warband_cap(state, region)
+            if region in _get_home_regions(GERMANS, scenario):
+                cap = max(cap, 1)
+            if cap:
+                candidates.append((min(cap, avail_german_wb), region))
+    if candidates:
+        most = max(n for n, _ in candidates)
+        region = random_select(state, [region for n, region in candidates if n == most])
+        return {"type": "german_rally", "region": region,
+                "place": "warbands", "regions": [region]}
 
     # Step 4: Raid — §8.5.1
     # "take 1-2 Resources from player"
@@ -2045,8 +2021,12 @@ def execute_belgae_turn(state):
     b1_result, threat_regions = node_b1(state)
 
     if b1_result == "Yes":
-        # Try Battle, may redirect to March (threat)
-        return node_b_battle(state)
+        # §8.5.1 IF NONE includes zero Resources and Frost: proceed to B2.
+        action = node_b_battle(state)
+        from fs_bot.engine.execute import march_plan_has_effect
+        if (action.get("command") != ACTION_MARCH or
+                march_plan_has_effect(state, BELGAE, action.get("details") or {})):
+            return action
 
     # B2: Belgae 1st on upcoming but not current, and roll 1-4?
     b2_result = node_b2(state)

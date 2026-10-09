@@ -214,7 +214,8 @@ class TestArverniVictoryScore:
         set_tribe_allied(state, TRIBE_CADURCI, ARVERNI)
         place_piece(state, ARVERNI_REGION, ARVERNI, CITADEL)
         scores = calculate_victory_score(state, ARVERNI)
-        assert scores["allies_citadels"] == 3
+        # The Citadel replaces the Gergovia Ally; Cadurci is the other Ally.
+        assert scores["allies_citadels"] == 2
 
     def test_ariovistus_raises(self):
         """Arverni don't track in Ariovistus — A7.0."""
@@ -243,7 +244,8 @@ class TestAeduiVictoryScore:
         set_tribe_allied(state, TRIBE_SEQUANI, AEDUI)
         place_piece(state, AEDUI_REGION, AEDUI, CITADEL)
         score = calculate_victory_score(state, AEDUI)
-        assert score == 3
+        # Bibracte is a Citadel, not both a Citadel and an Allied disc.
+        assert score == 2
 
 
 # ============================================================================

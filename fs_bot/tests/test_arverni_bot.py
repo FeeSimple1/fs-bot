@@ -850,6 +850,7 @@ class TestNodeVMarchMass:
     def test_march_mass_toward_legion(self):
         """V_MARCH_MASS marches toward a region with a Legion."""
         state = _make_state()
+        state["resources"][ARVERNI] = 1  # Pay the normal origin cost (§3.3.2).
         _place_arverni_force(state, ARVERNI_REGION, leader=True, warbands=15)
         _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
         result = node_v_march_mass(state)

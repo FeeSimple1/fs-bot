@@ -330,6 +330,9 @@ def _arverni_phase_rally(state, at_war_regions):
             tribe_info = state["tribes"].get(tribe, {})
             if tribe_info.get("allied_faction") != ARVERNI:
                 continue
+            from fs_bot.board.pieces import tribe_has_ally_disc
+            if not tribe_has_ally_disc(state, region, tribe, ARVERNI):
+                continue
             # Must be an actual Ally piece (a City with a Citadel is also
             # marked Allied but has no Ally to replace) — A6.2.1.
             if count_pieces(state, region, ARVERNI, ALLY) < 1:
@@ -350,7 +353,7 @@ def _arverni_phase_rally(state, at_war_regions):
             continue
         if count_pieces(state, region, ARVERNI, ALLY) < 1:
             continue
-        if count_pieces(state, region, ARVERNI, CITADEL) >= 1:
+        if not tribe_has_ally_disc(state, region, tribe, ARVERNI):
             continue  # City already Citadel-backed — no Ally to upgrade
         # Remove Ally, place Citadel
         remove_piece(state, region, ARVERNI, ALLY)

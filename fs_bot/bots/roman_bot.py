@@ -646,11 +646,14 @@ def _determine_battle_sa(state, battle_plan, scenario):
     Returns:
         (sa_action, sa_regions) tuple.
     """
+    from fs_bot.commands.sa_besiege import validate_besiege_region
+    eligible = [bp for bp in battle_plan if bp.get("targets") and
+                validate_besiege_region(state, bp["region"], bp["targets"][0])[0]]
     besiege_regions = []
-    for bp in battle_plan:
+    for bp in eligible:
         region = bp["region"]
         needs_besiege = False
-        for enemy in bp["targets"]:
+        for enemy in bp["targets"][:1]:
             estimated_losses = _estimate_roman_losses_inflicted(
                 state, region, enemy, scenario)
 
@@ -676,7 +679,7 @@ def _determine_battle_sa(state, battle_plan, scenario):
 
     if besiege_regions:
         # If Besiege anywhere, do it everywhere possible — §8.8.1
-        all_regions = [bp["region"] for bp in battle_plan]
+        all_regions = [bp["region"] for bp in eligible]
         return (SA_ACTION_BESIEGE, all_regions)
 
     # No Besiege → Scout after Battle
@@ -748,6 +751,10 @@ def node_r_march(state):
     }
     if groups:
         details["groups"] = groups
+
+    from fs_bot.engine.execute import march_plan_has_effect
+    if not march_plan_has_effect(state, ROMANS, details):
+        return node_r_recruit(state)
 
     return _make_action(
         ACTION_MARCH,
@@ -1240,6 +1247,9 @@ def node_r_build(state, *, exclude_regions=None):
             if allied_to and allied_to != ROMANS:
                 # §4.2.1: Subdue removes "a disc, not a Citadel" — skip a
                 # tribe allied via Citadel (no Ally disc to remove).
+                from fs_bot.board.pieces import tribe_has_ally_disc
+                if not tribe_has_ally_disc(state, region, tribe, allied_to):
+                    continue
                 used = ally_discs_used.get((region, allied_to), 0)
                 if count_pieces(state, region, allied_to, ALLY) - used < 1:
                     continue
@@ -1253,11 +1263,15 @@ def node_r_build(state, *, exclude_regions=None):
                                           -margin, -is_player))
 
     subdue_candidates.sort(key=lambda x: (x[3], x[4]))
+    tribe_action_regions = set()
     for region, tribe, _, _, _ in subdue_candidates:
+        if region in tribe_action_regions:
+            continue
         # Subdue costs the same as placing an Ally — §4.2.1
         if not _can_spend(BUILD_COST_PER_ALLY):
             break
         build_plan["subdue"].append({"region": region, "tribe": tribe})
+        tribe_action_regions.add(region)
         _spend(BUILD_COST_PER_ALLY)
 
     # (3) Place Roman Allies
@@ -1287,11 +1301,14 @@ def node_r_build(state, *, exclude_regions=None):
 
     placed = 0
     for region, tribe in ally_candidates:
+        if region in tribe_action_regions:
+            continue
         if placed >= avail_allies:
             break
         if not _can_spend(BUILD_COST_PER_ALLY):
             break
         build_plan["allies"].append({"region": region, "tribe": tribe})
+        tribe_action_regions.add(region)
         _spend(BUILD_COST_PER_ALLY)
         placed += 1
 

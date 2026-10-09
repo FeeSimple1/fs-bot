@@ -40,7 +40,7 @@ from fs_bot.rules_consts import (
     ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    place_piece, remove_piece, get_available, count_pieces,
+    place_piece, remove_piece, get_available, count_pieces, tribe_has_ally_disc,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.map.map_data import get_tribes_in_region, get_tribe_data
@@ -181,6 +181,12 @@ def build_subdue(state, region, tribe, target_faction):
             f"Tribe {tribe} is not allied to {target_faction}"
         )
 
+    # Build removes a disc, never a Citadel. Check the selected Tribe, not
+    # merely the Region's disc pool; another Tribe may own that disc.
+    if not tribe_has_ally_disc(state, region, tribe, target_faction):
+        raise CommandError(f"Build cannot subdue {tribe}: no Allied disc "
+                           "at that Tribe (a Citadel is not a disc, §4.2.1)")
+
     # Check Resources
     resources = state["resources"].get(ROMANS, 0)
     if resources < BUILD_COST_PER_ALLY:
@@ -243,7 +249,8 @@ def build_place_ally(state, region, tribe):
 
     # Check tribe is Subdued (no Allied disc)
     tribe_info = state["tribes"].get(tribe, {})
-    if tribe_info.get("allied_faction") is not None:
+    if (tribe_info.get("allied_faction") is not None
+            or tribe_info.get("status") is not None):
         raise CommandError(f"Tribe {tribe} is not Subdued")
 
     # Check stacking restriction — §1.4.2

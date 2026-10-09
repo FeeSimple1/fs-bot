@@ -26,7 +26,6 @@ import argparse
 import contextlib
 import io
 import json
-import re
 from collections import Counter
 
 import fs_bot.rules_consts as rc
@@ -41,12 +40,10 @@ ALL_SCENARIOS = (rc.SCENARIO_PAX_GALLICA, rc.SCENARIO_GREAT_REVOLT,
 
 
 def _norm(msg):
-    """Collapse region/tribe/number specifics so identical defect classes
-    aggregate together."""
-    s = str(msg)
-    s = re.sub(r"'[^']*'", "'*'", s)
-    s = re.sub(r"\d+", "N", s)
-    return s
+    """Extract a cause without erasing quoted keys, messages, or numbers."""
+    if isinstance(msg, dict):
+        return str(msg.get("error", msg.get("reason", msg)))
+    return str(msg)
 
 
 def play_game(scenario, seed):
@@ -65,48 +62,56 @@ def play_game(scenario, seed):
     return res
 
 
-def census_result(res, counts, examples, scenario, seed):
+def census_result(res, counts, examples, scenario, seed, occurrences=None):
+    """Aggregate returned cards; optionally retain every raw diagnostic.
+
+    Crashed cards that never returned are outside this function's coverage;
+    the batch runner records that limitation and the crash separately.
+    """
     for cr in res["card_results"]:
         tr = cr.get("turn_result") or {}
         for faction, rec in (tr.get("actions_taken") or {}).items():
             ex = rec.get("execution")
             ba = rec.get("bot_action") or {}
-            if not isinstance(ex, dict):
-                continue
-            _walk(ex, faction, ba.get("command"), ba.get("sa"),
-                  counts, examples, scenario, seed, cr.get("card"))
+            if isinstance(ex, dict):
+                _walk(ex, faction, ba.get("command"), ba.get("sa"),
+                      counts, examples, scenario, seed, cr.get("card"), occurrences)
 
 
-def _walk(ex, faction, cmd, sa, counts, examples, scenario, seed, card):
-    for e in ex.get("errors") or []:
-        key = (faction, cmd, "command-error", _norm(e))
+def _walk(ex, faction, cmd, sa, counts, examples, scenario, seed, card,
+          occurrences=None):
+    def record(command, kind, raw):
+        message = _norm(raw)
+        key = (faction, command, kind, message)
         counts[key] += 1
-        examples.setdefault(key, (scenario, seed, card, str(e)))
+        examples.setdefault(key, (scenario, seed, card, str(raw)))
+        if occurrences is not None:
+            occurrences.append(dict(scenario=scenario, seed=seed, card=card,
+                                    faction=faction, command=command, kind=kind,
+                                    severity=_severity(kind, message),
+                                    message=message, raw=raw))
+
+    for error in ex.get("errors") or []:
+        record(cmd, "command-error", error)
+    if ex.get("error"):
+        record(cmd, "command-error", ex["error"])
     if ex.get("executed") is False and ex.get("reason"):
-        key = (faction, cmd, "command-refused", _norm(ex["reason"]))
-        counts[key] += 1
-        examples.setdefault(key, (scenario, seed, card, str(ex["reason"])))
+        record(cmd, "command-refused", ex["reason"])
     if ex.get("sa_skipped"):
-        key = (faction, cmd, "sa-skipped", _norm(ex["sa_skipped"]))
-        counts[key] += 1
-        examples.setdefault(key, (scenario, seed, card, str(ex["sa_skipped"])))
+        record(cmd, "sa-skipped", ex["sa_skipped"])
     sx = ex.get("sa_execution")
     if isinstance(sx, dict):
-        for e in sx.get("errors") or []:
-            key = (faction, f"{cmd}+{sa}", "sa-error", _norm(e))
-            counts[key] += 1
-            examples.setdefault(key, (scenario, seed, card, str(e)))
-        if sx.get("executed") is False:
-            if sx.get("declined_no_effect"):
-                # The flowchart's own "If none ... no Special Ability"
-                # outcome (e.g. R_BUILD/R_SCOUT) — a legal decline, not a
-                # refused proposal.
-                return
+        # A flowchart fallback may have changed the SA; record what ran.
+        actual_sa = sx.get("sa") or sa
+        command = f"{cmd}+{actual_sa}"
+        for error in sx.get("errors") or []:
+            record(command, "sa-error", error)
+        if sx.get("error"):
+            record(command, "sa-error", sx["error"])
+        if sx.get("executed") is False and not sx.get("declined_no_effect"):
             why = sx.get("reason") or ("no effect" if not sx.get("actions")
                                        and not sx.get("regions") else "?")
-            key = (faction, f"{cmd}+{sa}", "sa-no-effect", _norm(why))
-            counts[key] += 1
-            examples.setdefault(key, (scenario, seed, card, str(why)))
+            record(command, "sa-no-effect", why)
 
 
 _SEVERITY_ORDER = ("illegal", "wasteful-sa", "ineffective-event",

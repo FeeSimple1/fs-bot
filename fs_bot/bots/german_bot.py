@@ -1539,6 +1539,10 @@ def node_g_march_expand(state):
     if not has_any_march:
         return node_g_rally(state)
 
+    from fs_bot.engine.execute import march_plan_has_effect
+    if not march_plan_has_effect(state, GERMANS, march_plan):
+        return node_g_rally(state)
+
     sa, sa_regions, sa_details = _determine_intimidate_or_settle_after_march(
         state, march_plan)
 
@@ -1678,7 +1682,9 @@ def _select_intimidate_targets(state, region, max_count, exclude_faction=None):
         # A8.7.1 / G_INTIMIDATE: before a Battle, do not Intimidate-remove the
         # Battle's own defender — those pieces are "removed in Battle". Removing
         # them here can leave the Battle with no target ('defender not present').
-        return faction == exclude_faction
+        return (faction == exclude_faction or
+                (faction == ROMANS and state.get("event_modifiers", {}).get(
+                    "card_A22_no_intimidate_romans")))
 
     # Tier 1 — Player Allies (Roman, Aedui, Belgae)
     for faction in (ROMANS, AEDUI, BELGAE):
@@ -2164,13 +2170,18 @@ def execute_german_turn(state):
 
     # G1: Battle or March under Threat?
     g1_result, _threats = node_g1(state)
+    from fs_bot.engine.execute import march_plan_has_effect
     if g1_result == "Yes":
-        return node_g_battle(state)
-
-    # G1b: Enemy at victory and Ariovistus has 12+ Warbands?
-    g1b_result = node_g1b(state)
-    if g1b_result == "Yes":
-        return node_g_march_threat(state)
+        action = node_g_battle(state)
+        if (action.get("command") != ACTION_MARCH or
+                march_plan_has_effect(state, GERMANS, action.get("details") or {})):
+            return action
+    elif node_g1b(state) == "Yes":
+        action = node_g_march_threat(state)
+        if (action.get("command") != ACTION_MARCH or
+                march_plan_has_effect(state, GERMANS, action.get("details") or {})):
+            return action
+    # A8.7.1 IF NONE (including zero Resources/Frost): proceed to G2.
 
     # G2: Pass?
     g2_result = node_g2(state)

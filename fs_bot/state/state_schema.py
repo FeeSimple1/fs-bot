@@ -336,6 +336,18 @@ def check_structural_integrity(state):
             errors.append(
                 f"{region}: {total_fort} Forts (max 1 per Region)")
 
+    # A Citadel occupies its Region's City, not an arbitrary allied Tribe.
+    from fs_bot.rules_consts import TRIBE_TO_CITY
+    for region, space in spaces.items():
+        cities = [t for t in TRIBE_TO_CITY if TRIBE_TO_REGION.get(t) == region
+                  and t in state.get("tribes", {})]
+        for fac in FACTIONS:
+            if space.get("pieces", {}).get(fac, {}).get(CITADEL, 0):
+                if not any(state["tribes"][t].get("allied_faction") == fac
+                           for t in cities):
+                    errors.append(f"{region}/{fac}: Citadel has no matching "
+                                  "allied City Tribe")
+
     # 2. Tribe allegiance <-> backing Ally/Citadel pieces, per Region/Faction.
     allied_by_region = {}  # (region, faction) -> count of allied tribes
     for tribe, info in (state.get("tribes") or {}).items():

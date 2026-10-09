@@ -507,10 +507,9 @@ def _is_within_one_of_vercingetorix(state, region, scenario):
     Returns:
         True if the region is eligible per Vercingetorix proximity.
     """
-    verc_region = _vercingetorix_region(state)
-    if verc_region is None:
-        return False
-    return _distance_to_region(region, verc_region, scenario, max_dist=2) <= 1
+    from fs_bot.commands.common import check_leader_proximity
+    return check_leader_proximity(
+        state, region, ARVERNI, VERCINGETORIX, "Arverni Special Ability")[0]
 
 
 # ============================================================================
@@ -1092,9 +1091,8 @@ def node_v_march_spread(state):
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
-    # NOTE: No Frost check here — §8.7.4 does not mention Frost.
-    # Frost is a fallback condition only on V_MARCH_MASS (§8.7.6:
-    # "If none or Frost or no Leader → V_RAID").
+    # §8.7.4 allows this March only if it is not Frost. The shared IF NONE
+    # preflight below checks Frost, available groups, and origin costs.
 
     march_plan = {
         "spread_destinations": [],
@@ -1187,8 +1185,8 @@ def node_v_march_spread(state):
     # leave-behind (or has no reachable destination) also falls through —
     # the executor would refuse it ("nothing marchable").
     if has_any_march:
-        from fs_bot.engine.execute import plan_expand_march_moves
-        if not plan_expand_march_moves(state, ARVERNI, march_plan):
+        from fs_bot.engine.execute import march_plan_has_effect
+        if not march_plan_has_effect(state, ARVERNI, march_plan):
             has_any_march = False
 
     if not has_any_march:
@@ -1330,8 +1328,8 @@ def node_v_march_mass(state):
     # 8.7.5" — §8.7.6. The executor's own dry-run is the test, so a Leader
     # pinned by the Control-keeping leave-behind or an unreachable
     # destination falls through instead of yielding a refused Command.
-    from fs_bot.engine.execute import plan_expand_march_moves
-    if not plan_expand_march_moves(state, ARVERNI, march_plan):
+    from fs_bot.engine.execute import march_plan_has_effect
+    if not march_plan_has_effect(state, ARVERNI, march_plan):
         return node_v_raid(state)
 
     # SA: Devastate or Entreat after March — §8.7.6
@@ -1375,16 +1373,8 @@ def _check_ambush(state, battle_plan, scenario):
     region = first_battle["region"]
     enemy = first_battle["target"]
 
-    # §4.3.3 eligibility: more Hidden Arverni than Hidden Defenders
-    hidden_arverni = count_pieces_by_state(
-        state, region, ARVERNI, WARBAND, HIDDEN)
-    hidden_enemy = count_pieces_by_state(
-        state, region, enemy, WARBAND, HIDDEN)
-    if hidden_arverni <= hidden_enemy:
-        return []
-
-    # §4.3.3 eligibility: within one Region of Vercingetorix
-    if not _is_within_one_of_vercingetorix(state, region, scenario):
+    from fs_bot.commands.sa_ambush import validate_ambush_region
+    if not validate_ambush_region(state, region, ARVERNI, enemy)[0]:
         return []
 
     # Check if Ambush is needed in 1st Battle — §8.7.1
@@ -1420,8 +1410,10 @@ def _check_ambush(state, battle_plan, scenario):
     if not should_ambush_first:
         return []
 
-    # If Ambushed in 1st Battle, Ambush in all others — §8.7.1
-    return [bp["region"] for bp in battle_plan]
+    # "Each other Battle possible" still has its own Hidden/leader checks.
+    return [bp["region"] for bp in battle_plan
+            if validate_ambush_region(state, bp["region"], ARVERNI,
+                                      bp["target"])[0]]
 
 
 def _check_devastate(state, scenario):
@@ -1639,9 +1631,11 @@ def _check_entreat(state, scenario):
     # Command is paid). Truncate the priority-ordered list to the budget so
     # the planner never proposes an Entreat the executor must refuse for
     # lack of Resources. If the budget is 0, "If none ... no Special Ability."
+    selected = {}
+    for action in entreat_actions:
+        selected.setdefault(action["region"], action)
     budget = state["resources"].get(ARVERNI, 0)
-    if len(entreat_actions) > budget:
-        entreat_actions = entreat_actions[:budget]
+    entreat_actions = list(selected.values())[:budget]
 
     return entreat_actions
 
@@ -1851,8 +1845,12 @@ def execute_arverni_turn(state):
     v1_result, threat_regions = node_v1(state)
 
     if v1_result == "Yes":
-        # Try Battle, may redirect to March (threat)
-        return node_v_battle(state)
+        # §8.7.1 IF NONE: an unaffordable/unavailable threat March goes to V2.
+        action = node_v_battle(state)
+        from fs_bot.engine.execute import march_plan_has_effect
+        if (action.get("command") != ACTION_MARCH or
+                march_plan_has_effect(state, ARVERNI, action.get("details") or {})):
+            return action
 
     # V2: Can play Event by SoP?
     v2_result = node_v2(state)

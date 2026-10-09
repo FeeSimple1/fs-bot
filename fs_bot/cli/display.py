@@ -140,10 +140,8 @@ def _eligibility_label(state, faction):
 
 def _faction_total_allies_citadels(state, faction):
     """Return (allies, citadels) on the map for a faction."""
-    allies = sum(
-        1 for t in state["tribes"].values()
-        if t.get("allied_faction") == faction
-    )
+    from fs_bot.board.pieces import count_allied_discs
+    allies = count_allied_discs(state, faction)
     citadels = 0
     for region in state["spaces"]:
         citadels += count_pieces(state, region, faction, CITADEL)

@@ -12,9 +12,8 @@ def test_play_quality_telemetry_smoke():
     no-effect turn), and the Gallic War reaches its second half."""
     stats = defaultdict(_new_scenario_stats)
     play_game(rc.SCENARIO_PAX_GALLICA, 1, stats)
-    # Seed 11 reaches the second half under current rules behaviour
-    # (seed migrates with rules fixes; last: forced-ineligibility class).
-    res = play_game(rc.SCENARIO_GALLIC_WAR, 11, stats)
+    # Seed 4 reaches the second half after the outcome-audit rules fixes.
+    res = play_game(rc.SCENARIO_GALLIC_WAR, 4, stats)
 
     sc = stats[rc.SCENARIO_PAX_GALLICA]
     assert sc["games"] == 1

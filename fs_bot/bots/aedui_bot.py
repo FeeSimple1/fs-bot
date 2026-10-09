@@ -1126,7 +1126,8 @@ def node_a_march(state):
                      or march_plan["control_destination"] is not None
                      or march_plan.get("diviciacus_destination") is not None)
 
-    if not has_any_march:
+    from fs_bot.engine.execute import march_plan_has_effect
+    if not has_any_march or not march_plan_has_effect(state, AEDUI, march_plan):
         return node_a_raid(state)
 
     # Check Britannia restriction for SA — §4.1.3
@@ -1188,15 +1189,8 @@ def _check_ambush(state, battle_plan, scenario):
         region = bp["region"]
         enemy = bp["target"]
 
-        # Check Hidden Aedui > Hidden enemy — Ambush eligibility
-        hidden_aedui = count_pieces_by_state(
-            state, region, AEDUI, WARBAND, HIDDEN)
-        hidden_enemy = count_pieces_by_state(
-            state, region, enemy, WARBAND, HIDDEN)
-        if enemy == ROMANS:
-            hidden_enemy += count_pieces_by_state(
-                state, region, enemy, AUXILIA, HIDDEN)
-        if hidden_aedui <= hidden_enemy:
+        from fs_bot.commands.sa_ambush import validate_ambush_region
+        if not validate_ambush_region(state, region, AEDUI, enemy)[0]:
             continue
 
         should_ambush = False
@@ -1408,6 +1402,11 @@ def _determine_suborn_sa(state, scenario):
     for region in playable:
         if regions_used >= max_regions:
             break
+
+        # Includes Diviciacus/Successor proximity and shaded A38 (A4.4.2).
+        from fs_bot.commands.sa_suborn import validate_suborn_region
+        if not validate_suborn_region(state, region)[0]:
+            continue
 
         # Need Hidden Aedui Warband to Suborn — §4.4.2
         hidden_aedui = count_pieces_by_state(

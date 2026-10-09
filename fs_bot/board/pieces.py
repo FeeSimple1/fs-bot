@@ -721,6 +721,38 @@ def find_leader(state, faction):
     return None
 
 
+def tribe_has_ally_disc(state, region, tribe, faction):
+    """Whether this allied Tribe is backed by a disc, not its City's Citadel.
+
+    A Region-level Ally count cannot identify an individual Tribe when a
+    City Citadel and another Tribe's Ally coexist (§1.4.2 / §4.2.1).
+    """
+    from fs_bot.rules_consts import TRIBE_TO_CITY, TRIBE_TO_REGION, FACTIONS
+    info = state.get("tribes", {}).get(tribe, {})
+    if (info.get("region") or TRIBE_TO_REGION.get(tribe)) != region:
+        return False
+    if info.get("allied_faction") != faction:
+        return False
+    if tribe in TRIBE_TO_CITY and any(
+            count_pieces(state, region, f, CITADEL) for f in FACTIONS):
+        return False
+    return count_pieces(state, region, faction, ALLY) > 0
+
+
+def count_allied_discs(state, faction):
+    """Count allied Tribe records backed by discs rather than City Citadels.
+
+    A City remains allied when its disc is replaced by a Citadel (§1.4.2).
+    Adding every allied record to every Citadel therefore double-counts it.
+    """
+    from fs_bot.rules_consts import TRIBE_TO_CITY, TRIBE_TO_REGION
+    return sum(1 for tribe, info in state.get("tribes", {}).items()
+               if info.get("allied_faction") == faction and not
+               (tribe in TRIBE_TO_CITY and count_pieces(
+                   state, info.get("region") or TRIBE_TO_REGION[tribe],
+                   faction, CITADEL)))
+
+
 def clear_allied_tribe(state, region, faction, removed_piece_type):
     """Clear the tribes-dict entry matching an ALLY/CITADEL piece removal.
 

@@ -92,6 +92,7 @@ _SA_BUILD = "Build"
 _SA_RAMPAGE = "Rampage"
 _SA_ENTREAT = "Entreat"
 _SA_SCOUT = "Scout"
+from fs_bot.rules_consts import ARVERNI as _ARVERNI_F
 from fs_bot.rules_consts import ROMANS as _ROMANS_F
 from fs_bot.rules_consts import AEDUI as _AEDUI_F
 from fs_bot.rules_consts import GERMANS as _GERMANS_F
@@ -101,7 +102,7 @@ SA_ACTION_NONE_LABEL = "No SA"
 # SAs handled inside Battle resolution, not as standalone post-command SAs.
 _BATTLE_MODIFYING_SAS = {_SA_AMBUSH, _SA_BESIEGE}
 # Standalone SAs that resolve BEFORE the Battle they accompany.
-_BEFORE_BATTLE_SAS = {_SA_INTIMIDATE, _SA_DEVASTATE, _SA_ENTREAT}
+_BEFORE_BATTLE_SAS = {_SA_INTIMIDATE, _SA_DEVASTATE, _SA_ENTREAT, _SA_RAMPAGE}
 
 
 
@@ -263,6 +264,13 @@ def _execute_decision(state, faction, decision):
     handler = _COMMAND_HANDLERS.get(command)
     if handler is not None:
         sa = bot_action.get("sa")
+        from fs_bot.bots.arverni_bot import MARCH_THREAT
+        plan = (bot_action.get("details") or {}).get("march_plan") or {}
+        if (not is_human and faction == _ARVERNI_F and command == _CMD_MARCH
+                and plan.get("type") == MARCH_THREAT):
+            result = _execute_arverni_threat_march(state, faction, bot_action)
+            _apply_end_of_action_capabilities(state)
+            return _attach_transfers(result)
         # Some SAs resolve BEFORE the Command they accompany: Intimidate,
         # Devastate, and Entreat before a Battle remove/replace enemy pieces
         # and so change that Battle's outcome (§8.7.1 / A8.7.1 / §4.x). Run
@@ -344,7 +352,8 @@ def _execute_bot_command(state, faction, bot_action):
     sa_result = None
     if before:
         sa_result = _execute_sa(state, faction, bot_action)
-    result = h(state, faction, bot_action)
+    result = (_execute_march(state, faction, bot_action, free=True)
+              if cmd == _CMD_MARCH else h(state, faction, bot_action))
     if not before:
         if (_command_executed(result)
                 or _sa_survives_empty_command(faction, cmd, sa)):
@@ -482,14 +491,13 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     if faction not in nps:
         return {"executed": False, "command": None,
                 "reason": "free Command actor is not a bot Faction"}
-    prev_event = state.get("can_play_event")
-    state["can_play_event"] = False  # force a Command, not an Event
+    planning_state = dict(state)
+    planning_state["can_play_event"] = False  # force a Command, not an Event
+    planning_state["_planning_free_command"] = True
     try:
-        bot_action = dispatch_bot_turn(state, faction)
+        bot_action = dispatch_bot_turn(planning_state, faction)
     except Exception as exc:  # BotDispatchError for game-run Factions, etc.
-        state["can_play_event"] = prev_event
         return {"executed": False, "command": None, "reason": repr(exc)}
-    state["can_play_event"] = prev_event
     cmd = bot_action.get("command")
     if cmd in (None, _CMD_EVENT):
         return {"executed": False, "command": cmd,
@@ -578,7 +586,9 @@ def _region_restricted_free_command(state, faction, allowed_regions,
             # §8.3.4 tie-breaks; isolating the copy keeps the real RNG stream
             # deterministic (only the executed Command advances it). The plan
             # is region/target strings, valid to execute on the real state.
-            action = node(copy.deepcopy(state))
+            sim = copy.deepcopy(state)
+            sim["_planning_free_command"] = True
+            action = node(sim)
         except Exception:
             continue  # a node mis-fires out of its flowchart context — skip
         if not isinstance(action, dict):
@@ -3925,131 +3935,163 @@ def _group_has_pieces(group):
     return False
 
 
-def _execute_march(state, faction, bot_action):
-    """Execute a March Command — threat-March case only (§8.5.1/A8.7.1 etc.).
-
-    SCOPE: Only the execution-complete "threat" March shape is wired here —
-    a plan carrying flat ``origins`` and ``destinations`` lists, whose
-    flowchart instruction is to "March all mobile Forces out of each origin
-    Region." For each origin we move its entire mobile group one step into an
-    adjacent planned destination (chosen with the rules' §8.3.4 random tie-
-    break when several are adjacent). march_group enforces adjacency, crossing
-    stops, and cost.
-
-    DEFERRED (returns executed=False with a reason, never guesses):
-      - The "expand/mass/spread" March nodes, whose plans use different,
-        decision-level keys (control_destinations, spread_destinations,
-        leader_or_group_destination, ...) and imply leave-behind choices.
-      - Multi-step routing to non-adjacent destinations.
-      - Mid-March Harassment (§3.2.2-3) and per-group leave-behind to retain
-        Control. These need bot-side plan enrichment, a separate workstream.
-    """
+def _collect_march_moves(state, faction, bot_action):
+    """Normalize threat and expansion plans to groups and adjacent routes."""
     details = bot_action.get("details") or {}
-    # Threat-March plans live either nested under "march_plan" (Belgae/German/
-    # Arverni) or flat in details (Roman node_r_march). Accept both.
     plan = details.get("march_plan") or details
-    origins = plan.get("origins")
-    destinations = plan.get("destinations")
-
+    origins, destinations = plan.get("origins"), plan.get("destinations")
     if not (isinstance(origins, list) and isinstance(destinations, list)
             and origins and destinations):
-        # Not the flat threat shape — try the expand/mass/spread/control shape,
-        # which carries leader/spread/control destinations instead.
-        return _execute_expand_march(state, faction, plan)
+        moves = plan_expand_march_moves(state, faction, plan)
+        return moves, []
 
-    # Normalize destinations to Region-name strings. The Roman bot emits
-    # (region, target_faction) tuples; the others emit plain strings.
     destinations = [d[0] if isinstance(d, (list, tuple)) else d
                     for d in destinations]
     origins = [o[0] if isinstance(o, (list, tuple)) else o for o in origins]
-
-    origin_set = set(origins)
-    dest_pool = [d for d in destinations if d not in origin_set]
-
-    scenario = state["scenario"]
-    playable = set(get_playable_regions(scenario, state.get("capabilities")))
-
-    # A planner may supply an explicit route per origin (e.g. the §8.7.1
-    # Vercingetorix March's Harassment-minimizing path). When present, march
-    # that exact route instead of the executor's BFS shortest path, so the
-    # group takes the Losses the planner accounted for and no others.
-    forced_routes = plan.get("routes") or {}
-    # Optional subset groups per origin: {origin: {piece_type: count}}
-    # (§3.2.2 — a human player's March group is their own selection).
-    subset_groups = plan.get("groups") or {}
-    # A3.4.2 / 3.3.2: non-Roman groups March exactly one adjacent Region (the
-    # German planner sets max_steps=1). When set, an origin may only March to a
-    # destination within that many Regions, never over-marching via BFS.
+    dest_pool = [d for d in destinations if d not in set(origins)]
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    routes, groups = plan.get("routes") or {}, plan.get("groups") or {}
     max_steps = plan.get("max_steps")
-
-    marched = []
-    errors = []
-    deferred_origins = []
-    for origin in origins:
+    moves, deferred = [], []
+    for origin in dict.fromkeys(origins):
         if not _group_has_pieces(_mobile_march_group(state, faction, origin)):
             continue
-        forced = forced_routes.get(origin)
-        if (isinstance(forced, list) and forced
-                and all(r in playable for r in forced)):
-            try:
-                final = _march_with_harassment(
-                    state, faction, origin, forced,
-                    group_cap=subset_groups.get(origin))
-                marched.append({"origin": origin, "final_region": final})
-            except _EXEC_ERRORS as exc:
-                errors.append({"origin": origin, "error": str(exc)})
+        path = routes.get(origin)
+        if not path:
+            best = None
+            for dest in dest_pool:
+                route = _bfs_march_path(origin, dest, playable)
+                if not route or (max_steps is not None and len(route) > max_steps):
+                    continue
+                if (best is None or len(route) < len(best[1]) or
+                        (len(route) == len(best[1]) and
+                         random_select(state, [best[0], dest]) == dest)):
+                    best = (dest, route)
+            path = best[1] if best else None
+        if not path:
+            deferred.append(origin)
             continue
-        # Choose the nearest reachable planned destination; BFS the path.
-        best = None  # (path_len, dest, path)
-        for d in dest_pool:
-            path = _bfs_march_path(origin, d, playable)
-            if path is None:
+        moves.append({"origin": origin, "path": path,
+                      "group": groups.get(origin)})
+    for extra in plan.get("extra_groups") or []:
+        moves.append({"origin": extra.get("origin"),
+                      "path": extra.get("route") or [],
+                      "group": extra.get("group"), "extra_group": True})
+    return moves, deferred
+
+
+def _select_affordable_march_moves(state, faction, moves, *, free=False):
+    """Select origins in plan priority order without moving or spending."""
+    from fs_bot.commands.march import march_cost
+    from fs_bot.map.map_data import get_adjacency_type
+    from fs_bot.rules_consts import LEADER
+    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    selected, costs, deferred, errors = [], {}, [], []
+    budget = state["resources"].get(faction, 0)
+    for move in moves:
+        origin, path = move.get("origin"), move.get("path") or []
+        if (origin not in playable or not path or
+                any(dest not in playable or get_adjacency_type(src, dest) is None
+                    for src, dest in zip([origin] + path, path))):
+            errors.append({"origin": origin, "error": "invalid March route"})
+            continue
+        available = _mobile_march_group(state, faction, origin)
+        cap = move.get("group")
+        if cap is not None:
+            available = {pt: (value if cap.get(pt) else None) if pt == LEADER
+                         else min(value or 0, int(cap.get(pt, 0) or 0))
+                         for pt, value in available.items()}
+        if not _group_has_pieces(available):
+            continue
+        if origin not in costs:
+            cost = 0 if free else march_cost(state, origin, faction)
+            if cost > budget:
+                deferred.append(origin)
                 continue
-            if max_steps is not None and len(path) > max_steps:
-                continue  # would over-march this group (A3.4.2)
-            if best is None or len(path) < best[0]:
-                best = (len(path), d, path)
-            elif len(path) == best[0]:
-                # §8.3.4 random tie-break among equidistant destinations.
-                if random_select(state, [best[1], d]) == d:
-                    best = (len(path), d, path)
-        if best is None:
-            deferred_origins.append(origin)
-            continue
+            costs[origin] = cost
+            budget -= cost
+        selected.append(move)
+    return selected, costs, deferred, errors
+
+
+def march_plan_has_effect(state, faction, plan):
+    """Check the flowchart's IF NONE without moving pieces or advancing RNG.
+
+    Origin billing is shared with execution; resource-short bots must take
+    their specified fallback rather than spend a turn on an empty March.
+    Event-granted free Commands ignore the Resource budget (§3.1.2).
+    """
+    from copy import deepcopy
+    from fs_bot.bots.bot_common import is_frost_active
+    free = state.get("_planning_free_command", False)
+    if not free and is_frost_active(state):
+        return False
+    sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    moves, _ = _collect_march_moves(sim, faction, {"details": plan})
+    selected, _, _, _ = _select_affordable_march_moves(sim, faction, moves, free=free)
+    return bool(selected)
+
+
+def _execute_march(state, faction, bot_action, *, free=False, before_move=None):
+    """Pay once per selected origin; movement-only helpers remain free."""
+    moves, deferred = _collect_march_moves(state, faction, bot_action)
+    result = _execute_march_moves(state, faction, moves, free=free,
+                                  before_move=before_move)
+    result["deferred_origins"] = deferred + result["deferred_origins"]
+    return result
+
+
+def _execute_march_moves(state, faction, moves, *, free=False, before_move=None):
+    """Bill origins once, before moving; a threat-March SA runs after payment.
+
+    Only affordable origins with an actual mobile group and adjacent route
+    are selected. Multiple groups/steps never incur additional origin fees.
+    Free Event Commands and base-game German movement remain free.
+    """
+    selected, costs, deferred, errors = _select_affordable_march_moves(
+        state, faction, moves, free=free)
+    total_cost = sum(costs.values())
+    if total_cost:
+        state["resources"][faction] -= total_cost
+    sa_result = before_move() if selected and before_move is not None else None
+    marched = []
+    for move in selected:
+        origin = move["origin"]
         try:
-            final = _march_with_harassment(
-                state, faction, origin, best[2],
-                group_cap=subset_groups.get(origin))
-            marched.append({"origin": origin, "final_region": final})
+            final = _march_with_harassment(state, faction, origin, move["path"],
+                                           group_cap=move.get("group"))
+            if final != origin:
+                entry = {k: v for k, v in move.items() if k not in ("path", "group")}
+                entry["final_region"] = final
+                marched.append(entry)
         except _EXEC_ERRORS as exc:
             errors.append({"origin": origin, "error": str(exc)})
+    result = {"executed": bool(marched), "command": _CMD_MARCH,
+              "marches": marched, "deferred_origins": list(dict.fromkeys(deferred)),
+              "errors": errors, "total_cost": total_cost, "origin_costs": costs}
+    if not marched:
+        result["reason"] = "nothing marchable within available Resources or legal routes"
+    if sa_result is not None:
+        result["sa_execution"] = sa_result
+        result["sa_timing"] = "during-before-movement"
+    return result
 
-    # §3.3.2 "Pieces within a Region may make up multiple groups": a
-    # player plan may carry extra_groups = [{origin, route, group}] for
-    # additional groups from already-marched origins. Each group is
-    # selected from the pieces still in the origin (the earlier group
-    # already departed, so no piece Marches twice).
-    for eg in (plan.get("extra_groups") or []):
-        _o = eg.get("origin")
-        _route = eg.get("route") or []
-        if not _o or not _route or not all(r in playable for r in _route):
-            errors.append({"origin": _o, "error": "bad extra group"})
-            continue
-        try:
-            final = _march_with_harassment(
-                state, faction, _o, _route, group_cap=eg.get("group"))
-            marched.append({"origin": _o, "final_region": final,
-                            "extra_group": True})
-        except _EXEC_ERRORS as exc:
-            errors.append({"origin": _o, "error": str(exc)})
 
-    return {
-        "executed": len(marched) > 0,
-        "command": _CMD_MARCH,
-        "marches": marched,
-        "deferred_origins": deferred_origins,
-        "errors": errors,
-    }
+def _execute_arverni_threat_march(state, faction, bot_action):
+    """§8.7.1: pay March, try Devastate/Entreat, move; otherwise try SA after."""
+    from fs_bot.rules_consts import BRITANNIA
+    details = bot_action.get("details") or {}
+    plan = details.get("march_plan") or details
+    crosses_britannia = (BRITANNIA in (plan.get("origins") or []) or
+                         BRITANNIA in (plan.get("destinations") or []))
+    callback = (None if crosses_britannia else
+                lambda: _execute_arverni_live_sa(state, faction, bot_action))
+    result = _execute_march(state, faction, bot_action, before_move=callback)
+    if (callback is not None and result["executed"] and
+            not (result.get("sa_execution") or {}).get("executed")):
+        result["sa_execution"] = callback()
+        result["sa_timing"] = "after"
+    return result
 
 
 def _bfs_march_path(origin, dest, playable):
@@ -4114,8 +4156,8 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None):
             break
         res = march_group(state, faction, current, [nxt], group)
         current = res.get("final_region", nxt)
-        if current != nxt:
-            break  # a crossing stop halted the group early
+        if current != nxt or res.get("stopped_reason"):
+            break  # stop in the crossing destination; do not continue/harass
         # Intermediate Region (entered then about to be left) -> Harassment
         # against the carried group only; survivors continue.
         if i < len(path) - 1:
@@ -4206,11 +4248,15 @@ def _execute_sa(state, faction, bot_action):
 
     if sa == _SA_TRADE:
         return _execute_trade(state, faction)
-    if sa == _SA_SETTLE:
-        return _execute_settle(state, faction, bot_action)
+    if (sa in (_SA_DEVASTATE, _SA_ENTREAT)
+            and faction == _ARVERNI_F
+            and faction in state.get("non_player_factions", set())):
+        # Re-evaluate the flowchart at its prescribed SA timing, not against
+        # a board/resources snapshot predating the accompanying Command.
+        return _execute_arverni_live_sa(state, faction, bot_action)
     if sa == _SA_DEVASTATE:
         return _execute_devastate(state, faction, bot_action)
-    if (sa == _SA_INTIMIDATE
+    if (sa in (_SA_INTIMIDATE, _SA_SETTLE)
             and faction == _GERMANS_F
             and bot_action.get("command") in (_CMD_MARCH, _CMD_RAID)
             and faction in state.get("non_player_factions", set())):
@@ -4251,6 +4297,8 @@ def _execute_sa(state, faction, bot_action):
                 "declined_no_effect": True, "rederived_at_sa_time": True,
                 "reason": "no Intimidate or Settle at SA time (A8.7.1 "
                           "evaluated after the Command; if none, no SA)"}
+    if sa == _SA_SETTLE:
+        return _execute_settle(state, faction, bot_action)
     if sa == _SA_INTIMIDATE:
         return _execute_intimidate(state, faction, bot_action)
     if sa == _SA_SUBORN:
@@ -4303,35 +4351,49 @@ def _execute_sa(state, faction, bot_action):
     if sa == _SA_SCOUT:
         return _execute_scout(state, faction, bot_action)
     if sa == _SA_ENLIST:
-        result = _execute_enlist(state, faction, bot_action)
-        if (not result.get("executed")
-                and faction in state.get("non_player_factions", set())):
-            # B_ENLIST as a standalone SA (after any Command, incl. Battle):
-            # the decision-time sub-command can be stale by the time the SA
-            # resolves (the Command itself moved/revealed pieces and Control).
-            # Re-derive the free Germanic sub-Command per §8.5.1 against the
-            # current board; the flowchart's "If none: no Special Ability"
-            # applies when nothing is found. (The in-Battle Enlist that absorbs
-            # Losses is a separate mechanism carried under the Ambush/Rampage
-            # SA, not here, so re-deriving the standalone Enlist is safe.)
+        if faction in state.get("non_player_factions", set()):
+            # The entire free sub-Command is chosen AFTER the main Command
+            # (§8.5.1); validating an old selection after moving the Leader
+            # wastes the turn and can miss a different legal free Command.
             from fs_bot.bots.belgae_bot import _check_enlist_after_command
             fresh = _check_enlist_after_command(state, state["scenario"])
-            if fresh:
-                rederived = dict(bot_action)
-                rederived["sa_regions"] = fresh.get("regions", [])
-                d = dict(bot_action.get("details") or {})
-                d["enlist"] = fresh
-                rederived["details"] = d
-                retry = _execute_enlist(state, faction, rederived)
-                if retry.get("executed"):
-                    retry["rederived_at_sa_time"] = True
-                    return retry
-            result = dict(result)
-            result["declined_no_effect"] = True
-        return result
+            if fresh is None:
+                return {"executed": False, "sa": sa, "declined_no_effect": True,
+                        "rederived_at_sa_time": True, "reason": "no legal Enlist (if none)"}
+            rederived = dict(bot_action)
+            rederived["details"] = dict(bot_action.get("details") or {})
+            rederived["details"]["enlist"] = fresh
+            rederived["sa_regions"] = fresh.get("regions", [])
+            result = _execute_enlist(state, faction, rederived)
+            result["rederived_at_sa_time"] = True
+            return result
+        return _execute_enlist(state, faction, bot_action)
 
     return {"executed": False, "sa": sa,
             "reason": f"unrecognized Special Activity label: {sa!r}"}
+
+
+def _execute_arverni_live_sa(state, faction, bot_action):
+    """§8.7.1 Devastate -> Entreat -> no SA, evaluated on the live board."""
+    from fs_bot.bots.arverni_bot import _check_devastate, _check_entreat
+    fresh = dict(bot_action)
+    regions = _check_devastate(state, state["scenario"])
+    if regions:
+        fresh["sa_regions"] = regions
+        result = _execute_devastate(state, faction, fresh)
+    else:
+        plan = _check_entreat(state, state["scenario"])
+        if not plan:
+            return {"executed": False, "sa": bot_action.get("sa"),
+                    "declined_no_effect": True, "rederived_at_sa_time": True,
+                    "reason": "no legal Devastate or Entreat at SA time (if none)"}
+        fresh["sa_regions"] = plan
+        # Remove stale nested plans that would override the new candidates.
+        fresh["details"] = dict(bot_action.get("details") or {})
+        fresh["details"].pop("entreat_plan", None)
+        result = _execute_entreat(state, faction, fresh)
+    result["rederived_at_sa_time"] = True
+    return result
 
 
 def _trade_roman_agreement(state):
@@ -4555,7 +4617,11 @@ def _execute_build(state, faction, bot_action):
     if plan is None:
         from fs_bot.bots.roman_bot import node_r_build
         try:
-            plan = node_r_build(state)
+            from fs_bot.engine.action_validation import command_parts, command_regions
+            seized = {r for part in command_parts(bot_action)
+                      if part.get("command") == _CMD_SEIZE
+                      for r in command_regions(part)}
+            plan = node_r_build(state, exclude_regions=seized)
         except Exception as exc:  # bot helper failure must not crash the turn
             return {"executed": False, "sa": _SA_BUILD,
                     "reason": f"build plan unavailable: {exc!r}"}
@@ -4592,12 +4658,16 @@ def _execute_build(state, faction, bot_action):
               if part.get("command") == _CMD_SEIZE
               for r in command_regions(part)}
 
+    tribe_action_regions = set()
+
     def validate_region(region, *, ally_action=False):
         valid, reason = validate_build_region(state, region)
         if not valid:
             raise CommandError(reason)
         if ally_action and region in seized:
             raise CommandError("Build cannot place/subdue Allies in a Seize Region (§4.2.1)")
+        if ally_action and region in tribe_action_regions:
+            raise CommandError("Build may place or subdue only one Ally per Region (§4.2.1)")
 
     for region in plan.get("forts", []) or []:
         try:
@@ -4615,6 +4685,7 @@ def _execute_build(state, faction, bot_action):
         try:
             validate_region(region, ally_action=True)
             _sa_build_subdue(state, region, tribe, target)
+            tribe_action_regions.add(region)
             done.append(("subdue", region, tribe))
         except _EXEC_ERRORS as exc:
             errors.append({"action": "subdue", "region": region,
@@ -4624,6 +4695,7 @@ def _execute_build(state, faction, bot_action):
         try:
             validate_region(region, ally_action=True)
             _sa_build_ally(state, region, tribe)
+            tribe_action_regions.add(region)
             done.append(("ally", region, tribe))
         except _EXEC_ERRORS as exc:
             errors.append({"action": "ally", "region": region,
@@ -4827,6 +4899,11 @@ def _execute_rampage(state, faction, bot_action):
             continue
 
         n = min(2, hidden_belgic, len(pool))
+        if (bot_action.get("command") == _CMD_BATTLE and
+                faction in state.get("non_player_factions", set())):
+            n = min(n, max(0, count_pieces(state, region, target) - 1))
+        if n == 0:
+            continue
         dest = _best_retreat_destination(state, region, target)
         force_remove = (scenario in ARIOVISTUS_SCENARIOS and target == ARVERNI)
         # §4.5.2: the TARGET chooses remove or Retreat (A4.5 forces
@@ -6240,39 +6317,11 @@ def plan_expand_march_moves(state, faction, plan):
     return moves
 
 
-def _execute_expand_march(state, faction, plan):
-    """Execute an "expand/mass/spread/control" March (§8.6.5/§8.7.4-6/A8.7.5).
-
-    Two parts, both with a Control-preserving leave-behind:
-      1. Move the Faction LEADER's group toward its Leader destination
-         (preferred) or a control/spread destination.
-      2. Move spare Warbands from each other origin toward a control/spread
-         destination to add Control, leaving one Warband and enough to keep
-         the origin's Control.
-    The moves themselves come from plan_expand_march_moves (also used by the
-    bot planners' IF-NONE checks). Returns the standard March result dict.
-    """
-    moves = plan_expand_march_moves(state, faction, plan)
-
-    marches, errors = [], []
-    for mv in moves:
-        try:
-            _flip_origin_pieces(state, mv["origin"], faction)
-            final = _march_group_fixed(state, faction, mv["origin"],
-                                       mv["path"], mv["group"])
-            marches.append({"origin": mv["origin"], "final_region": final,
-                            "leader": mv["leader"],
-                            "warbands": mv["warbands"]})
-        except _EXEC_ERRORS as exc:
-            errors.append({"origin": mv["origin"], "error": str(exc)})
-
-    if not marches:
-        return {"executed": False, "command": _CMD_MARCH,
-                "reason": "expand/mass march: nothing marchable (leader/"
-                          "warbands pinned by Control or no reachable dest)",
-                "errors": errors}
-    return {"executed": True, "command": _CMD_MARCH, "marches": marches,
-            "deferred_origins": [], "errors": errors}
+def _execute_expand_march(state, faction, plan, *, free=False):
+    """Expand/mass/spread March uses the same origin billing as threat March."""
+    return _execute_march_moves(state, faction,
+                                plan_expand_march_moves(state, faction, plan),
+                                free=free)
 
 
 def _march_group_fixed(state, faction, origin, path, group):

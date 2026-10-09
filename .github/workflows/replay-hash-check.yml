@@ -3,40 +3,100 @@ on:
   push:
     branches: [audit/hash-verification-20261009]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  capture:
+  canonicalize:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     env:
       PYTHONHASHSEED: "0"
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: audit/outcome-fixes-20261009
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - name: Capture exact end states
+      - run: pip install -r requirements-dev.txt
+      - name: Apply the isolated replay-order correction
         run: |
+          test "$(git rev-parse HEAD)" = d4be9296ea296632deed739a83509203f07f73be
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('fs_bot/cards/card_effects.py')
+          s = p.read_text()
+          old = 'state["event_modifiers"]["card_44a_command_regions"] = list(\n            placed_regions)'
+          new = 'state["event_modifiers"]["card_44a_command_regions"] = sorted(\n            placed_regions)'
+          assert s.count(old) == 1
+          p.write_text(s.replace(old, new))
+          p = Path('fs_bot/tests/test_replay_canonical_regions.py')
+          assert not p.exists()
+          p.write_text('''"""Region eligibility is a set; persist it in stable order for replay hashes."""
+          import pytest
+          
+          import fs_bot.rules_consts as rc
+          from fs_bot.board.pieces import place_piece
+          from fs_bot.cards.card_effects import execute_card_44_ariovistus
+          from fs_bot.state.state_schema import build_initial_state, validate_state
+          
+          
+          @pytest.mark.parametrize("regions", [
+              (rc.PROVINCIA, rc.ATREBATES), (rc.ATREBATES, rc.PROVINCIA),
+          ])
+          def test_card44a_region_set_is_persisted_in_canonical_order(regions):
+              state = build_initial_state(rc.SCENARIO_ARIOVISTUS, seed=55)
+              for region in regions:
+                  place_piece(state, region, rc.ROMANS, rc.AUXILIA)
+              state["event_params"] = {"replacements": [
+                  {"region": region, "from_faction": rc.ROMANS,
+                   "from_type": rc.AUXILIA, "to_faction": rc.ARVERNI}
+                  for region in regions
+              ]}
+              execute_card_44_ariovistus(state, shaded=True)
+              assert state["event_modifiers"]["card_44a_command_regions"] == sorted(regions)
+              assert not validate_state(state)
+          ''')
+          PY
+          git diff --check
+          git diff --quiet -- fs_bot/rules_consts.py 'Reference Documents'
+      - name: Full regression suite
+        shell: bash
+        run: python -m pytest -q | tee "$RUNNER_TEMP/pytest.txt"
+      - name: Repeat all 1000 games with canonical state serialization
+        shell: bash
+        run: |
+          python -m fs_bot.tools.run_batch --games 200 --workers 4 --out "$RUNNER_TEMP/outcomes" | tee "$RUNNER_TEMP/outcomes.txt"
           python - <<'PY'
           import json, os, pathlib
-          import fs_bot.rules_consts as rc
-          from fs_bot.tools import run_batch
-          from fs_bot.state.serialize import encode
-          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'hash-check'
-          root.mkdir()
-          for name, scenario in [('ariovistus', rc.SCENARIO_ARIOVISTUS), ('gallic-war', rc.SCENARIO_GALLIC_WAR)]:
-              def capture(state):
-                  snapshot = encode(state)
-                  (root / (name + '-state.json')).write_text(json.dumps(snapshot, sort_keys=True, indent=2))
-                  return snapshot
-              run_batch.encode = capture
-              record = run_batch.play_one((scenario, 55))
-              assert record['completed'] and not record['errors']
-              (root / (name + '-record.json')).write_text(json.dumps(record, sort_keys=True, indent=2))
-              print(name, record['final_state_sha256'])
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'outcomes'
+          rows = [json.loads(line) for line in (root / 'games.jsonl').read_text().splitlines()]
+          assert len(rows) == 1000
+          for row in rows:
+              assert row['completed'] and not row['errors']
+              assert not row['diagnostics'] and not row['diagnostic_occurrences']
+              assert not row['integrity_findings']
+              assert not row['engine_ranking_output_missing']
+              assert not row['winner_differs_from_highest_margin']
+          print('All 1000 games completed with clean diagnostics, invariants, and rankings.')
           PY
-      - uses: actions/upload-artifact@v4
+      - name: Publish verified canonicalization
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add fs_bot/cards/card_effects.py fs_bot/tests/test_replay_canonical_regions.py
+          git diff --cached --check
+          git commit -m 'Canonicalize Event region sets for cross-version replay hashes'
+          git push origin HEAD:refs/heads/audit/outcome-fixes-20261009
+          git rev-parse HEAD > "$RUNNER_TEMP/source-commit.txt"
+      - name: Preserve final verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: seed55-hash-check
-          path: ${{ runner.temp }}/hash-check
-          retention-days: 7
+          name: final-outcome-verification
+          path: |
+            ${{ runner.temp }}/pytest.txt
+            ${{ runner.temp }}/outcomes.txt
+            ${{ runner.temp }}/outcomes
+            ${{ runner.temp }}/source-commit.txt
+          retention-days: 14

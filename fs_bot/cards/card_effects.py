@@ -4777,7 +4777,7 @@ def execute_card_44_ariovistus(state, shaded=False):
                 placed_regions.add(region)
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_44a_free_command"] = True
-        state["event_modifiers"]["card_44a_command_regions"] = list(
+        state["event_modifiers"]["card_44a_command_regions"] = sorted(
             placed_regions)
 
 def execute_card_54_ariovistus(state, shaded=False):

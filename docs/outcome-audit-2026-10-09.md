@@ -104,6 +104,17 @@ These repairs target the reported planning/execution disagreements; they are
 not a claim that every possible Event, interaction, or remaining Enlist mechanic
 has been independently verified against the published rules.
 
+## Cross-version replay ordering
+
+An independent Python 3.10 run matched all 1,000 Python 3.13 outcome records
+apart from two full-state hashes (Ariovistus and Gallic War seed 55). Direct
+snapshot comparison isolated both differences to the ordering of
+`event_modifiers.card_44a_command_regions`: the same two Regions were stored
+as `list(placed_regions)` from a set. Board, Resources and RNG states matched.
+The Event now stores `sorted(placed_regions)`; the consumer already treats it
+as a set, so this changes no legal choices or gameplay. Two regressions require
+the same canonical order regardless of replacement order.
+
 ## Diagnostic and runner repairs
 
 The maintained runner is `fs_bot.tools.run_batch`:
@@ -128,7 +139,8 @@ Metadata includes both the Git revision and a SHA-256 source digest.
 
 ## Validation
 
-Local full suite: **2,507 passing tests**, including **56 new regression cases**.
+Full suite: **2,509 passing tests**, including **58 new regression cases**,
+verified locally on Python 3.13.5 and independently on GitHub on Python 3.10.22.
 The added cases cover cost selection, free movement, multi-group/multi-origin
 billing, Baggage Trains, preflight immutability, zero-Resource fallbacks, Build
 identity and atomic rejection, Citadel/City invariants, correct scoring, shared
@@ -164,3 +176,16 @@ these are retained, not reclassified as hard failures or erased. Twenty-five
 independently replayed study cases matched
 winner, length, rankings, diagnostics and final-state hash exactly. CI also
 repeats the mixed-seat and cross-hash-seed checks.
+
+A further 100 held-out all-bot games (seeds 201–220 in all five scenarios)
+completed without diagnostics, integrity findings, or ranking discrepancies.
+
+After the canonical-order fix, all 1,000 independently generated GitHub records
+match the local records exactly apart from wall-clock execution time, including
+all final-state hashes. Both environments tested Python source digest
+`f6b24aeb024b15b41eff8c181f89ef0b96621fb4737f4d8bd60ab3cbcee79e67`.
+GitHub verification run `37997267484` passed the full suite and the complete
+study before committing the tested source as
+`00c0a0515043f3656a2aa489250f0ecf314e6450`. Runner metadata correctly records
+the pre-commit checkout as dirty; the source digest identifies the exact tested
+contents independently of that checkout revision.

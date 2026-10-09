@@ -22,6 +22,7 @@ Scenario isolation per CLAUDE.md:
 """
 
 import argparse
+import copy
 import random as _random
 import sys
 from collections import deque
@@ -119,7 +120,7 @@ def setup_wizard(stdin, stdout, *, preset_scenario=None,
 # CARD RESULT DISPLAY
 # ============================================================================
 
-def display_card_result(card_result, stdout):
+def display_card_result(card_result, stdout, scenario=None):
     """Print what happened on a card.
 
     Reports: card id, turn type (event/winter), passes, actions taken,
@@ -164,7 +165,8 @@ def display_card_result(card_result, stdout):
                     stdout.write(f"      played the {side.upper()} text of "
                                  f"card {ex['card_id']}\n")
                     from fs_bot.cards.card_text import format_card_text
-                    txt = format_card_text(ex["card_id"], indent="      | ")
+                    txt = format_card_text(ex["card_id"], indent="      | ",
+                                           scenario=scenario)
                     if txt:
                         stdout.write(txt + "\n")
                 if not ex.get("executed"):
@@ -282,12 +284,13 @@ def main(argv=None, stdin=None, stdout=None):
         return 2
 
     log = []
+    meta = {}
     if args.load or args.replay:
         # Scenario / seed / seats come from the save file.
         state, meta, log = serialize.load_game(args.load or args.replay)
         scenario = meta.get("scenario") or state.get("scenario")
         seed = meta.get("seed")
-        faction_modes = meta.get("faction_modes") or {}
+        faction_modes = dict(meta.get("faction_modes") or {})
         if not faction_modes:
             assignable = get_assignable_factions(scenario)
             faction_modes = {
@@ -297,7 +300,12 @@ def main(argv=None, stdin=None, stdout=None):
             if seed is None:
                 stdout.write("Save has no seed; cannot --replay.\n")
                 return 2
+            faction_modes = dict(meta.get("initial_faction_modes")
+                                 or faction_modes)
             state = setup_scenario(scenario, seed=seed)
+        elif state.get("interlude_completed") and GERMANS in faction_modes:
+            # Older snapshots saved the original seats after the Interlude.
+            faction_modes[ARVERNI] = faction_modes.pop(GERMANS)
     else:
         # Determine faction_modes -- preset from --bots if scenario known
         preset_modes = None
@@ -327,8 +335,12 @@ def main(argv=None, stdin=None, stdout=None):
                 else _random.randrange(2 ** 31))
         state = setup_scenario(scenario, seed=seed)
 
-    meta = {"scenario": scenario, "seed": seed,
-            "faction_modes": dict(faction_modes)}
+    initial_modes = dict(meta.get("initial_faction_modes") or faction_modes)
+    if state.get("interlude_completed") and GERMANS not in initial_modes:
+        initial_modes[GERMANS] = initial_modes.pop(ARVERNI, "bot")
+    meta.update({"scenario": scenario, "seed": seed,
+                 "initial_faction_modes": initial_modes,
+                 "faction_modes": dict(faction_modes)})
     # Non-player factions = bots (the engine uses this for tiebreak;
     # bot_dispatch requires it).
     state["non_player_factions"] = {
@@ -353,28 +365,14 @@ def main(argv=None, stdin=None, stdout=None):
         faction_modes, stdin=stdin, stdout=stdout, pause=pause,
     )
 
-    from fs_bot.cli.display import snapshot_state, format_state_delta
-    last_human_snap = [None]
+    from fs_bot.cli.display import HumanTurnDisplay, format_board
+    saved_snapshots = (serialize.decode(meta.get("human_snapshots", {}))
+                       if args.load else {})
+    view = HumanTurnDisplay(stdout, snapshots=saved_snapshots)
 
     def decision(state_, faction, options, position):
-        # Before each HUMAN prompt: show everything that changed on the
-        # board since their previous decision (their own action's results
-        # plus every bot action and phase in between).
         if faction_modes.get(faction) == "human":
-            snap = snapshot_state(state_)
-            if last_human_snap[0] is not None:
-                delta = format_state_delta(last_human_snap[0], snap)
-                if delta:
-                    stdout.write("\n--- Changes since your last decision "
-                                 "---\n")
-                    for line in delta:
-                        stdout.write(line + "\n")
-                    # Changes-only by request: the digest above is the
-                    # complete list of board changes since the player's
-                    # last decision; the full table prints once per card.
-                    # Victory line stays (it is the number being played to).
-                    stdout.write("\n" + format_victory_state(state_) + "\n")
-            last_human_snap[0] = snap
+            view.before_decision(state_, faction, show_context=False)
         if faction_modes.get(faction) == "human" and replay_decisions:
             e = replay_decisions[0]
             if (e.get("faction") == faction
@@ -400,10 +398,12 @@ def main(argv=None, stdin=None, stdout=None):
 
     # Reactive agent (Retreat / Loss order / Agreements) for human seats,
     # wrapped the same way.
+    cli_agent = make_cli_reactive(humans, stdin, stdout)
     if humans:
-        cli_agent = make_cli_reactive(humans, stdin, stdout)
 
         def agent(state_, faction, request):
+            if faction in humans:
+                view.before_decision(state_, faction)
             if faction in humans and replay_reactive:
                 e = replay_reactive[0]
                 if (e.get("faction") == faction
@@ -422,21 +422,41 @@ def main(argv=None, stdin=None, stdout=None):
 
         state["decision_agent"] = agent
 
+    def transaction_checkpoint():
+        return (len(live_log), list(replay_decisions), list(replay_reactive),
+                copy.deepcopy(view.snapshots))
+
+    def transaction_restore(checkpoint):
+        log_length, decisions, reactions, snapshots = checkpoint
+        del live_log[log_length:]
+        replay_decisions.clear()
+        replay_decisions.extend(decisions)
+        replay_reactive.clear()
+        replay_reactive.extend(reactions)
+        view.snapshots.clear()
+        view.snapshots.update(snapshots)
+
+    decision.transaction_checkpoint = transaction_checkpoint
+    decision.transaction_restore = transaction_restore
+
+    def decision_rejected(state_, faction, result):
+        reason = result.get("reason") or "the Command had no legal effect"
+        stdout.write(f"\n{faction}: {reason}. Your turn is still pending; "
+                     "choose again.\n")
+        for error in result.get("errors") or []:
+            stdout.write(f"  {error}\n")
+        stdout.flush()
+
+    decision.decision_rejected = decision_rejected
+
+    def save_snapshot():
+        meta["faction_modes"] = dict(faction_modes)
+        meta["human_snapshots"] = serialize.encode(view.snapshots)
+        serialize.save_game(state, args.save, meta=meta, log=live_log)
+
     # 'b' at any prompt reprints the live board.
     from fs_bot.cli.menus import set_board_hook
-    set_board_hook(lambda: stdout.write(
-        "\n" + format_victory_state(state) + "\n"
-        + format_state_summary(state) + "\n"
-        + format_region_table(state) + "\n"))
-
-    # Initial display
-    stdout.write(format_victory_state(state) + "\n")
-    stdout.write(format_state_summary(state) + "\n")
-    stdout.write(format_region_table(state) + "\n")
-    stdout.flush()
-    # Baseline for the changes-diff: without this, the FIRST human prompt
-    # had no reference and bot actions earlier on card 1 were invisible.
-    last_human_snap[0] = snapshot_state(state)
+    set_board_hook(lambda: stdout.write("\n" + format_board(state) + "\n"))
 
     # Run the game card by card with full rules execution, displaying and
     # autosaving after every card.
@@ -445,30 +465,37 @@ def main(argv=None, stdin=None, stdout=None):
     try:
         if not resumed:
             start_game(state)
+        view.remember(state, humans)
+        stdout.write(format_board(state) + "\n")
+        stdout.flush()
         results = []
         while state["current_card"] is not None:
+            card_scenario = state["scenario"]
             card_result = play_card(state, decision, execute=True)
             results.append(card_result)
             # Gallic War Interlude seat swap (A2.1): the German player
             # takes on the Arverni role for the second half.
             if (state.get("interlude_completed")
-                    and "Germans" in faction_modes):
-                faction_modes["Arverni"] = faction_modes.pop("Germans")
-                if "Germans" in humans:
-                    humans.remove("Germans")
-                    humans.append("Arverni")
+                    and GERMANS in faction_modes):
+                faction_modes[ARVERNI] = faction_modes.pop(GERMANS)
+                if GERMANS in humans:
+                    humans.remove(GERMANS)
+                    humans.append(ARVERNI)
+                    if GERMANS in view.snapshots:
+                        view.snapshots[ARVERNI] = view.snapshots.pop(GERMANS)
+                cli_agent = make_cli_reactive(humans, stdin, stdout)
+                meta["faction_modes"] = dict(faction_modes)
                 stdout.write("\n*** Interlude: the German player now "
                              "plays the Arverni (A2.1). ***\n")
-            display_card_result(card_result, stdout)
+            display_card_result(card_result, stdout, scenario=card_scenario)
             if args.save:
-                serialize.save_game(state, args.save, meta=meta,
-                                    log=live_log)
+                save_snapshot()
             if card_result["game_over"]:
                 break
             maybe_pause(base_decision)
     except (KeyboardInterrupt, EOFError):
         if args.save:
-            serialize.save_game(state, args.save, meta=meta, log=live_log)
+            save_snapshot()
             stdout.write(f"\nInterrupted -- game saved to {args.save} "
                          f"(resume with --load).\n")
         else:
@@ -476,10 +503,12 @@ def main(argv=None, stdin=None, stdout=None):
         return 0
     except Exception as exc:
         if args.save:
-            serialize.save_game(state, args.save, meta=meta, log=live_log)
+            save_snapshot()
         stdout.write(f"\nGame stopped with exception: {type(exc).__name__}: "
                      f"{exc}\n")
         return 1
+    finally:
+        set_board_hook(None)
 
     stdout.write("\n" + format_state_summary(state) + "\n")
     stdout.write(format_victory_state(state) + "\n")

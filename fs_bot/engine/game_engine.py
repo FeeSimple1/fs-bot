@@ -21,6 +21,9 @@ Reference:
   A2.3.9      Arverni Activation (carnyx trigger)
 """
 
+import copy
+from contextlib import contextmanager
+
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -456,6 +459,15 @@ def _adjust_eligibility_base(state, actions_taken):
 # CARD TURN RESOLUTION — §2.3
 # ============================================================================
 
+class ActionRejected(ValueError):
+    """A human Command plan was missing, invalid, or had no legal effect."""
+
+    def __init__(self, result):
+        self.result = result
+        super().__init__(result.get("reason") or result.get("error")
+                         or "The chosen action produced no legal effect.")
+
+
 def _maybe_execute(state, faction, decision, actions_taken):
     """Apply a recorded non-Pass decision to the board (opt-in).
 
@@ -466,6 +478,12 @@ def _maybe_execute(state, faction, decision, actions_taken):
     from fs_bot.engine.execute import execute_decision, \
         maybe_np_aedui_subsidy
     exec_result = execute_decision(state, faction, decision)
+    if (not decision.get("bot_action")
+            and decision.get("action") in (ACTION_COMMAND, ACTION_COMMAND_SA,
+                                            ACTION_LIMITED_COMMAND)
+            and isinstance(exec_result, dict)
+            and not exec_result.get("executed")):
+        raise ActionRejected(exec_result)
     # §8.6.6: the NP Aedui subsidy fires "at each instant" Roman
     # Resources drop below 2 — checked after every executed action.
     subsidy = maybe_np_aedui_subsidy(state)
@@ -483,141 +501,128 @@ def _maybe_execute(state, faction, decision, actions_taken):
         if rec.get("action") == ACTION_COMMAND_SA and isinstance(exec_result,
                                                                  dict):
             sx = exec_result.get("sa_execution")
-            sa_did_nothing = (
+            sa_did_nothing = not exec_result.get("battle_sa_executed") and (
                 exec_result.get("sa_skipped")
-                or (isinstance(sx, dict) and not sx.get("executed")))
+                or not isinstance(sx, dict)
+                or not sx.get("executed"))
             if sa_did_nothing:
                 rec["action"] = ACTION_COMMAND
                 rec["declared_action"] = ACTION_COMMAND_SA
     return exec_result
 
 
-def resolve_card_turn(state, decision_func, *, execute=False):
-    """Orchestrate one full Event card turn — §2.3.
+@contextmanager
+def _action_transaction(state, decision_func):
+    """Keep an interrupted action/phase from leaving half-applied effects.
 
-    Steps per §2.3:
-    1. Check Frost (§2.3.8)
-    2. If Ariovistus and card has carnyx trigger: check At War,
-       run Arverni Phase if needed BEFORE normal SoP (A2.3.9)
-    3. Determine 1st and 2nd Eligible
-    4. Execute 1st Eligible's decision (with cascading passes)
-    5. Execute 2nd Eligible's decision (with cascading passes)
-    6. Adjust eligibility
-    7. Return result dict
-
-    The decision_func callback is called when a faction needs to choose.
-    It receives (state, faction, options, position) where position is
-    "1st_eligible" or "2nd_eligible", and must return a dict with at
-    least {"action": action_string}.
-
-    For Phase 4b, the actual command/event execution is NOT performed
-    here — the engine records what was decided, and execution is
-    delegated to the caller or future phases.
-
-    Args:
-        state: Game state dict. Modified in place.
-        decision_func: Callable(state, faction, options, position) → dict
-            Must return {"action": str, ...}.
-
-    Returns:
-        Dict with turn results including frost, arverni_phase,
-        actions_taken, etc.
+    Completed faction actions are durable; an interrupted action is retried
+    from its original board and RNG position. Frontends may attach matching
+    checkpoint/restore hooks for their decision logs and input queues.
     """
-    scenario = state["scenario"]
-    result = {
-        "card": state["current_card"],
-        "frost": False,
-        "arverni_phase": None,
-        "actions_taken": {},
-        "passes": [],
-    }
+    checkpoint = copy.deepcopy({k: v for k, v in state.items()
+                                if k != "decision_agent"})
+    agent = state.get("decision_agent")
+    had_agent = "decision_agent" in state
+    save_frontend = getattr(decision_func, "transaction_checkpoint", None)
+    restore_frontend = getattr(decision_func, "transaction_restore", None)
+    frontend_checkpoint = save_frontend() if save_frontend else None
+    try:
+        yield
+    except BaseException:
+        state.clear()
+        state.update(checkpoint)
+        if had_agent:
+            state["decision_agent"] = agent
+        if restore_frontend:
+            restore_frontend(frontend_checkpoint)
+        raise
 
-    # Step 1: Frost — §2.3.8
-    frost = is_frost(state)
-    result["frost"] = frost
 
-    # (The Arverni Phase on carnyx cards runs AFTER the regular Faction
-    # activations — A6.2 and the A2.3.9 errata ("before" -> "after", BGG
-    # errata thread 2072553 correction 4). See below, after Step 6.)
+def resolve_card_turn(state, decision_func, *, execute=False,
+                      _save_result=False):
+    """Resolve an Event card, resuming after its last completed action.
 
-    # Steps 3-5: Faction play — §2.3.2, §2.3.3, §2.3.4
-    eligible = get_eligible_factions(state)
-    actions_taken = {}
-    first_action = None
+    ``_card_turn`` is serialized with the board: it records the faction
+    cursor, completed actions and the first action's effective type. Thus a
+    human prompt can halt and reload without re-executing earlier factions.
+    Each action and the final mandatory phase are transactional, including
+    human reactive decisions inside their resolution.
+    """
+    turn = state.get("_card_turn")
+    if turn is None or turn["card"] != state["current_card"]:
+        turn = {
+            "card": state["current_card"],
+            "frost": is_frost(state),
+            "arverni_phase": None,
+            "eligible": list(get_faction_order(state)),
+            "idx": 0,
+            "first_action": None,
+            "actions_taken": {},
+            "passes": [],
+            "factions_done": False,
+        }
+        state["_card_turn"] = turn
 
-    # --- 1st Eligible (with cascading passes) ---
-    first_options = get_first_eligible_options()
-    idx = 0
-    while idx < len(eligible):
-        faction = eligible[idx]
-        decision = decision_func(state, faction, first_options,
-                                 "1st_eligible")
-        action = decision["action"]
+    while not turn["factions_done"] and turn["idx"] < len(turn["eligible"]):
+        faction = turn["eligible"][turn["idx"]]
+        # Events can make a later faction Ineligible immediately (§5.0),
+        # even though it was Eligible when this card began.
+        if state["eligibility"].get(faction) != ELIGIBLE:
+            turn["idx"] += 1
+            continue
+        first = turn["first_action"] is None
+        options = (get_first_eligible_options() if first else
+                   get_second_eligible_options(turn["first_action"]))
+        position = "1st_eligible" if first else "2nd_eligible"
+        try:
+            with _action_transaction(state, decision_func):
+                decision = decision_func(state, faction, options, position)
+                action = decision["action"]
+                if action == ACTION_PASS:
+                    pass_result = execute_pass(state, faction)
+                    turn["actions_taken"][faction] = {
+                        "action": ACTION_PASS, **pass_result,
+                    }
+                    turn["passes"].append(faction)
+                else:
+                    turn["actions_taken"][faction] = decision
+                    if execute:
+                        _maybe_execute(state, faction, decision,
+                                       turn["actions_taken"])
+                    if first:
+                        turn["first_action"] = decision["action"]
+                    else:
+                        turn["factions_done"] = True
+                turn["idx"] += 1
+        except ActionRejected as exc:
+            # Interactive frontends can explain the failed plan and offer
+            # the same faction a fresh choice; batch/API callers get an
+            # explicit error and keep their original board and input queue.
+            reject = getattr(decision_func, "decision_rejected", None)
+            if reject is None:
+                raise
+            turn = state["_card_turn"]
+            reject(state, faction, exc.result)
 
-        if action == ACTION_PASS:
-            pass_result = execute_pass(state, faction)
-            actions_taken[faction] = {
-                "action": ACTION_PASS, **pass_result,
+
+    # Even an all-Pass card (or one with no Eligible factions) has its
+    # mandatory post-activation Arverni Phase, per A6.2/A2.3.9 errata.
+    with _action_transaction(state, decision_func):
+        if state["scenario"] in ARIOVISTUS_SCENARIOS:
+            if card_has_carnyx_trigger(turn["card"], state["scenario"]):
+                is_at_war, _triggering = check_arverni_at_war(state)
+                if is_at_war:
+                    turn["arverni_phase"] = run_arverni_phase(
+                        state, is_frost=turn["frost"])
+        adjust_eligibility(state, turn["actions_taken"])
+        result = {key: turn[key] for key in (
+            "card", "frost", "arverni_phase", "actions_taken", "passes")}
+        if _save_result:
+            state["_resolved_card"] = {
+                "card": turn["card"], "type": "event",
+                "game_over": False, "turn_result": result,
             }
-            result["passes"].append(faction)
-            idx += 1
-            continue  # Next eligible becomes new 1st — §2.3.3
-        else:
-            # 1st Eligible chose to act
-            actions_taken[faction] = decision
-            if execute:
-                _maybe_execute(state, faction, decision, actions_taken)
-            # Use the EFFECTIVE action (an empty Command+SA records as
-            # Command only — see _maybe_execute) for the 2nd Eligible's
-            # options per §2.3.4.
-            first_action = decision.get("action", action)
-            # Remove this faction from the eligible pool for 2nd slot
-            idx += 1
-            break
-    else:
-        # All eligible factions passed — §2.3.3
-        result["actions_taken"] = actions_taken
-        adjust_eligibility(state, actions_taken)
-        return result
-
-    # --- 2nd Eligible (with cascading passes) ---
-    if first_action is not None:
-        second_options = get_second_eligible_options(first_action)
-        while idx < len(eligible):
-            faction = eligible[idx]
-            decision = decision_func(state, faction, second_options,
-                                     "2nd_eligible")
-            action = decision["action"]
-
-            if action == ACTION_PASS:
-                pass_result = execute_pass(state, faction)
-                actions_taken[faction] = {
-                    "action": ACTION_PASS, **pass_result,
-                }
-                result["passes"].append(faction)
-                idx += 1
-                continue  # Next eligible becomes new 2nd — §2.3.3
-            else:
-                actions_taken[faction] = decision
-                if execute:
-                    _maybe_execute(state, faction, decision, actions_taken)
-                break
-
-    # Arverni Phase — A6.2 / A2.3.9 (as corrected by errata): on a card
-    # bearing the carnyx symbol, Arverni Forces "if At War" act AFTER the
-    # regular Faction activations on that card.
-    if scenario in ARIOVISTUS_SCENARIOS:
-        card_id = state["current_card"]
-        if card_has_carnyx_trigger(card_id, scenario):
-            is_at_war, triggering = check_arverni_at_war(state)
-            if is_at_war:
-                arverni_result = run_arverni_phase(state, is_frost=frost)
-                result["arverni_phase"] = arverni_result
-
-    # Step 6: Adjust eligibility — §2.3.6
-    result["actions_taken"] = actions_taken
-    adjust_eligibility(state, actions_taken)
-
+        state.pop("_card_turn", None)
     return result
 
 
@@ -715,33 +720,44 @@ def play_card(state, decision_func, *, execute=False):
         Dict with card result. Includes "game_over" if the game ended.
     """
     card_id = state["current_card"]
-    result = {"card": card_id, "game_over": False}
-
-    if is_winter_card(card_id):
-        winter_result = resolve_winter_card(state)
-        result["type"] = "winter"
-        result["winter_result"] = winter_result
-
-        # Check if game ended during Winter — §2.4.1, §6.1
-        wr = winter_result.get("winter_result", {})
-        phases = wr.get("phases", {})
-        victory = phases.get("victory", {})
-        if victory.get("game_over", False):
-            result["game_over"] = True
-            result["winner"] = victory.get("winner")
-            result["final_ranking"] = victory.get("final_ranking")
-            return result
+    completed = state.get("_resolved_card")
+    if completed and completed["card"] == card_id:
+        result = completed
+    elif is_winter_card(card_id):
+        # Winter contains reactive human choices too; an interrupted
+        # phase must restart from the pre-Winter board and RNG position.
+        with _action_transaction(state, decision_func):
+            winter_result = resolve_winter_card(state)
+            result = {"card": card_id, "game_over": False,
+                      "type": "winter", "winter_result": winter_result}
+            wr = winter_result.get("winter_result", {})
+            victory = wr.get("phases", {}).get("victory", {})
+            if victory.get("game_over", False):
+                result.update(game_over=True, winner=victory.get("winner"),
+                              final_ranking=victory.get("final_ranking"))
+            # The Interlude rebuilds the deck and clears current_card.
+            # Keep this completed Winter addressable until the first card
+            # of the new half has actually been drawn (also after reload).
+            if state["current_card"] is None:
+                state["current_card"] = card_id
+            state["_resolved_card"] = result
     else:
-        turn_result = resolve_card_turn(state, decision_func, execute=execute)
-        result["type"] = "event"
-        result["turn_result"] = turn_result
+        resolve_card_turn(state, decision_func, execute=execute,
+                          _save_result=True)
+        result = state["_resolved_card"]
 
-    # Advance to next card — §2.3.7
-    next_card = advance_to_next_card(state)
-    if next_card is None:
-        result["game_over"] = True
-    result["next_card"] = next_card
+    if result["game_over"]:
+        return result
 
+    # Retain the completed result until advancing succeeds. An interrupt
+    # between resolution and drawing must not repeat the completed card.
+    with _action_transaction(state, decision_func):
+        next_card = advance_to_next_card(state)
+        if next_card is None:
+            result["game_over"] = True
+        result["next_card"] = next_card
+        if next_card is not None:
+            state.pop("_resolved_card", None)
     return result
 
 

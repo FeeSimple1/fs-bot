@@ -23,7 +23,9 @@ decision + reactive-response log (see cli/app.py) used by --replay.
 """
 
 import json
+import os
 import random
+import tempfile
 
 SAVE_VERSION = 1
 
@@ -80,8 +82,21 @@ def save_game(state, path, *, meta=None, log=None):
                "meta": meta or {},
                "log": log or [],
                "state": encode(to_save)}
-    with open(path, "w") as fh:
-        json.dump(payload, fh, separators=(",", ":"), sort_keys=True)
+    # Replace only a completely written save. A serialization/I/O failure
+    # must leave the preceding autosave available for recovery.
+    body = json.dumps(payload, separators=(",", ":"))
+    parent = os.path.dirname(os.path.abspath(path))
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", dir=parent,
+                                         prefix=".fsbot-save-",
+                                         delete=False) as fh:
+            temporary = fh.name
+            fh.write(body)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None and os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def load_game(path):

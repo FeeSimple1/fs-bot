@@ -46,6 +46,20 @@ You are about to PLAY one faction against the built-in bots.
 
 5. Repeat step 3-4 until `*** GAME OVER` prints.
 
+To inspect the saved board without advancing play:
+
+    python -m fs_bot.tools.llm_seat board
+
+The board includes current/upcoming card text, piece states, Tribes,
+markers, and available forces. A halted turn preserves completed actions
+on the current card; running `play` again with no queued decision does not
+repeat earlier bot actions. Invalid Command plans remain pending so you
+can correct the queue and try again.
+
+Human plans may set `sa_timing` to `"before"` or `"after"` to control the
+Special Activity's order. See **AGENT_INTERFACE.md** for interrupted
+Rally/Recruit/Raid/Seize plans and Battle-modifying Special Activities.
+
 ## Where to find the plan formats
 
 - **AGENT_INTERFACE.md** — the full `player_action` schema: every

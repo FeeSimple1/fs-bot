@@ -24,22 +24,20 @@ nothing. Override by editing reactive_policy() below if desired.
 
 import argparse
 import copy
-import io
 import json
 import os
 import sys
 
 import fs_bot.rules_consts as rc
 from fs_bot.state.setup import setup_scenario
-from fs_bot.state.serialize import save_game, load_game
+from fs_bot.state.serialize import save_game, load_game, encode, decode
 from fs_bot.engine.game_engine import (start_game, play_card, ACTION_EVENT,
-                                       get_sop_factions)
+                                       get_sop_factions, ActionRejected)
 from fs_bot.bots.bot_dispatch import dispatch_bot_turn
 from fs_bot.cli.dispatcher import _translate_bot_action
+from fs_bot.cli.display import HumanTurnDisplay, format_board
 from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT
-from fs_bot.engine.victory import calculate_victory_score, VictoryError
-from fs_bot.board.pieces import count_pieces, get_leader_in_region
-from fs_bot.cards.card_data import get_card
+from fs_bot.board.pieces import count_pieces
 
 
 def reactive_policy(seat):
@@ -70,60 +68,12 @@ def reactive_policy(seat):
     return reactive
 
 
-def render_board(state, scenario, options=None, position=None):
-    out = []
-    out.append(f"card={state['current_card']} next={state['next_card']} "
-               f"winters={state['winter_count']}")
-    try:
-        c = get_card(state["current_card"], scenario)
-        out.append(f"  [{c.title}] "
-                   f"order={'>'.join(f[:2] for f in c.faction_order)}")
-    except Exception:
-        pass
-    res = state["resources"]
-    out.append("res:   " + "  ".join(
-        f"{f[:2]}={res.get(f, 0)}" for f in rc.FACTIONS
-        if f in res))
-    scores = []
-    for f in rc.FACTIONS:
-        try:
-            scores.append(f"{f[:2]}={calculate_victory_score(state, f)}")
-        except (VictoryError, Exception):
-            pass
-    out.append("score: " + "  ".join(scores))
-    out.append(f"senate: {state.get('senate')}  "
-               f"track={state.get('legions_track')} "
-               f"fallen={state.get('fallen_legions', 0)}")
-    for r in sorted(state["spaces"]):
-        sp = state["spaces"][r]
-        bits = []
-        for f in rc.FACTIONS:
-            t = []
-            for pt, tag in ((rc.WARBAND, "w"), (rc.AUXILIA, "x"),
-                            (rc.LEGION, "L"), (rc.ALLY, "A"),
-                            (rc.CITADEL, "C"), (rc.FORT, "F"),
-                            (rc.SETTLEMENT, "S")):
-                n = count_pieces(state, r, f, pt)
-                if n:
-                    t.append(f"{n}{tag}")
-            if get_leader_in_region(state, r, f):
-                t.append("Ldr")
-            if t:
-                bits.append(f"{f[:2]}:{'+'.join(t)}")
-        ctrl = (sp.get("control") or "")[:2]
-        subdued = [t_ for t_, ti in state["tribes"].items()
-                   if ti.get("allied_faction") is None
-                   and ti.get("status") is None
-                   and rc.TRIBE_TO_REGION.get(t_) == r]
-        out.append(f"  {r:12s} [{ctrl:2s}] {'  '.join(bits)}"
-                   + (f"  subdued:{','.join(subdued)}" if subdued else ""))
-    markers = state.get("markers") or {}
-    marked = {r: m for r, m in markers.items() if m}
-    if marked:
-        out.append(f"markers: {json.dumps(marked, default=str)}")
+def render_board(state, scenario=None, options=None, position=None):
+    """Full live board; scenario always comes from the current game state."""
+    out = format_board(state)
     if options:
-        out.append(f"YOUR TURN ({position}): options={options}")
-    return "\n".join(out)
+        out += f"\nYOUR TURN ({position}): options={options}"
+    return out
 
 
 class _Halt(Exception):
@@ -138,9 +88,12 @@ def cmd_init(args):
         raise SystemExit(f"seat {args.seat!r} not in {sorted(factions)}")
     st["non_player_factions"] = factions - {args.seat}
     start_game(st)
+    display = HumanTurnDisplay(sys.stdout)
+    display.remember(st, [args.seat])
     save_game(st, os.path.join(args.dir, "save.json"),
               meta={"scenario": args.scenario, "seed": args.seed,
-                    "seat": args.seat})
+                    "seat": args.seat,
+                    "human_snapshots": encode(display.snapshots)})
     json.dump([], open(os.path.join(args.dir, "queue.json"), "w"))
     print(f"initialised {args.scenario!r} seed={args.seed} "
           f"seat={args.seat}; first card: {st['current_card']}")
@@ -151,27 +104,42 @@ def cmd_play(args):
     save_path = os.path.join(args.dir, "save.json")
     queue_path = os.path.join(args.dir, "queue.json")
     state, meta, _log = load_game(save_path)
-    scenario, seat = meta["scenario"], meta["seat"]
+    seat = meta["seat"]
     state["decision_agent"] = reactive_policy(seat)
     queue = (json.load(open(queue_path))
              if os.path.exists(queue_path) else [])
     halted = {}
+    display = HumanTurnDisplay(
+        sys.stdout, snapshots=decode(meta.get("human_snapshots") or {}))
 
-    def dfunc(st, faction, options, position):
-        # Gallic War Interlude seat swap (A2.1): German seat -> Arverni.
+    def sync_seat():
         nonlocal seat
-        if st.get("interlude_completed") and seat == rc.GERMANS:
+        if state.get("interlude_completed") and seat == rc.GERMANS:
+            old = seat
             seat = rc.ARVERNI
             meta["seat"] = seat
-            st["non_player_factions"] = (
-                set(get_sop_factions(st)) - {seat})
-            st["decision_agent"] = reactive_policy(seat)
+            state["non_player_factions"] = set(get_sop_factions(state)) - {seat}
+            state["decision_agent"] = reactive_policy(seat)
+            if old in display.snapshots:
+                display.snapshots[seat] = display.snapshots.pop(old)
+        display.remember(state, [seat])
+
+    def persist():
+        meta["human_snapshots"] = encode(display.snapshots)
+        save_game(state, save_path, meta=meta)
+        with open(queue_path, "w") as fh:
+            json.dump(queue, fh)
+
+    sync_seat()
+
+    def dfunc(st, faction, options, position):
         if faction == seat:
             if queue:
+                display.before_decision(st, faction)
                 dec = queue.pop(0)
                 print(f">>> applying: {json.dumps(dec)[:110]}")
                 return dec
-            halted["board"] = render_board(st, scenario, options, position)
+            halted.update(options=options, position=position)
             raise _Halt()
         st["current_card_id"] = st.get("current_card")
         st["is_second_eligible"] = (position == "2nd_eligible")
@@ -183,15 +151,36 @@ def cmd_play(args):
               f"{'+' + sa if sa not in (None, 'No SA') else ''}")
         return {"action": act, "bot_action": ba}
 
+    def checkpoint():
+        return copy.deepcopy(queue), copy.deepcopy(display.snapshots)
+
+    def restore(token):
+        queue[:] = token[0]
+        display.snapshots.clear()
+        display.snapshots.update(token[1])
+
+    dfunc.transaction_checkpoint = checkpoint
+    dfunc.transaction_restore = restore
+
     while state["current_card"] is not None:
         try:
             cr = play_card(state, dfunc, execute=True)
         except _Halt:
-            save_game(state, save_path, meta=meta)
-            json.dump(queue, open(queue_path, "w"))
+            display.before_decision(state, seat)
             print("=" * 60)
-            print(halted["board"])
+            print(render_board(state, options=halted["options"],
+                               position=halted["position"]))
+            persist()
             return
+        except ActionRejected as exc:
+            persist()
+            print(f"Decision rejected: {exc} Edit queue.json and run play again.")
+            return
+        except (KeyboardInterrupt, EOFError):
+            persist()
+            print("Interrupted; completed actions saved. Run play to resume.")
+            return
+        sync_seat()
         if cr.get("type") == "winter":
             print(f"  ~~~ WINTER {state['winter_count']} ~~~")
             wr = (cr.get("winter_result") or {}).get("winter_result") or {}
@@ -199,15 +188,19 @@ def cmd_play(args):
             if v.get("game_over"):
                 print(f"*** GAME OVER: winner={v.get('winner')} "
                       f"rankings={v.get('rankings')}")
-                save_game(state, save_path, meta=meta)
+                persist()
                 return
         if cr.get("game_over"):
             print("*** GAME OVER (deck exhausted or outright win)")
-            save_game(state, save_path, meta=meta)
+            persist()
             return
-        save_game(state, save_path, meta=meta)
-        json.dump(queue, open(queue_path, "w"))
+        persist()
     print("*** deck exhausted")
+
+
+def cmd_board(args):
+    state, _meta, _log = load_game(os.path.join(args.dir, "save.json"))
+    print(render_board(state))
 
 
 def main(argv=None):
@@ -228,6 +221,10 @@ def main(argv=None):
     pp = sub.add_parser("play")
     pp.add_argument("--dir", default="llm_play")
     pp.set_defaults(func=cmd_play)
+    pb = sub.add_parser("board", aliases=["b"],
+                       help="show all card information and the live board")
+    pb.add_argument("--dir", default="llm_play")
+    pb.set_defaults(func=cmd_board)
     args = p.parse_args(argv)
     args.func(args)
 

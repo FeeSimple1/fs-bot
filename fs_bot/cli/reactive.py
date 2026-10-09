@@ -7,8 +7,8 @@ them during ANOTHER action's resolution (engine/agent.py request kinds):
                your Control, Quarters, Harassment, Trade
 
 Installed as state["decision_agent"] for games with any human seat. Returns
-None (defer to the engine's defaults) for bot factions, on EOF (piped or
-scripted input that ends early), and for unknown request kinds.
+None (defer to the engine's defaults) for bot factions and unknown request
+kinds. Input exhaustion interrupts the action so it can be saved and resumed.
 """
 
 from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT
@@ -131,7 +131,7 @@ def make_cli_reactive(human_factions, stdin, stdout):
                     f"\n{faction}: {rf} asks your agreement -- {rt}{where}. "
                     f"Agree?", default=True)
         except EOFError:
-            return None
+            raise
         return None
 
     return agent

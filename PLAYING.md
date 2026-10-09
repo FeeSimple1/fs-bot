@@ -42,11 +42,30 @@ skip the wizard; `--seed N` makes the deck deterministic; see
 Each Event card shows the initiative order. When it is your turn the
 CLI walks you through menus: pick Command / Command + Special
 Ability / Event / Pass (as eligibility allows), then the regions and
-pieces involved. Every plan is validated by the rules engine — an
-illegal choice is refused with the rule reason and you simply pick
-again, so you can explore freely without breaking the game. You will
+pieces involved. With Command + Special Ability, the Command menu also
+offers **Special Activity first, then Command**. You can instead choose
+the Command first and add its Special Activity afterward. The interrupt
+option allows Rally, Recruit, Raid, or Seize in some Regions, then the
+Special Activity, then the rest of that Command in other Regions.
+Ambush and Besiege resolve within their accompanying Battle.
+
+Before your decisions, the display shows the current and upcoming card
+texts and changes since your previous decision. Type **`b`** or **`board`**
+at a menu or yes/no prompt to inspect the full board, including piece
+states, Tribes, markers, available forces, and active capabilities.
+
+Every plan is checked by the rules engine. A Command with no legal effect
+leaves your turn pending so you can choose again; a partly legal plan
+shows which portions would have no effect before you confirm it. You will
 also be consulted for in-battle decisions on other factions' turns:
 Retreats, loss order, Supply-Line and Trade agreements, harassment.
+
+When saving is enabled, Ctrl-C also saves between decisions on the same
+card. Completed faction actions stay completed. If interrupted while
+resolving an action or Winter phase, that unfinished action or phase is
+restored to its starting board and random-number state and retried on
+resume. Gallic War saves retain both the current seats and the original
+seats needed for replay after the Interlude.
 
 ## The rules
 

@@ -4,6 +4,8 @@ The fuzzer is the acceptance instrument for the human-facing action space:
 random-legal players in random seats, randomized reactive decisions, with
 crash / structural / dry-vs-live divergence / replay-determinism oracles.
 """
+import pytest
+
 import fs_bot.rules_consts as rc
 from fs_bot.tools.player_fuzz import (play_game, make_random_reactive,
                                       _pick_seats, _sig)
@@ -70,3 +72,61 @@ def test_fuzzed_games_clean_and_replay_deterministic():
         r2 = play_game(scenario, seed)
         assert r2["digest"] == r1["digest"], (scenario, seed)
         assert r2["findings"] == []
+
+
+@pytest.mark.parametrize("different_live_result", [False, True])
+def test_rejected_plans_replan_boundedly_without_hiding_divergence(
+        monkeypatch, different_live_result):
+    """Refusals do not spend a turn; unmatched live refusals remain defects."""
+    from fs_bot.engine import game_engine as ge
+    from fs_bot.tools import player_fuzz as fuzz
+
+    monkeypatch.setattr(fuzz, "_pick_seats", lambda *_: [rc.ROMANS])
+    # A consistently invalid policy exercises the rejection loop and its
+    # bounded fallback. Romans cannot Raid, so this is refused unchanged.
+    monkeypatch.setattr(
+        fuzz.RandomPlanPolicy, "plan_turn",
+        lambda *_: {"action": ge.ACTION_COMMAND, "player_action": {
+            "command": "Raid", "regions": [], "details": {}}})
+    observed = []
+
+    def one_card(state, decision_func, *, execute):
+        state["current_card"] = state["current_card_id"] = 1
+        state["next_card"] = 2
+        for faction in ge.get_sop_factions(state):
+            state["eligibility"][faction] = (
+                rc.ELIGIBLE if faction == rc.ROMANS else rc.INELIGIBLE)
+        before = state["resources"][rc.ROMANS]
+        turn = ge.resolve_card_turn(state, decision_func, execute=execute)
+        observed.append((before, state["resources"][rc.ROMANS], turn))
+        return {"total_cards_played": 1, "winter_count": 0,
+                "card_results": [{"card": 1, "turn_result": turn}]}
+
+    monkeypatch.setattr(fuzz, "run_game", one_card)
+    if different_live_result:
+        original = ge._maybe_execute
+
+        def divergent_execution(*args, **kwargs):
+            try:
+                return original(*args, **kwargs)
+            except ge.ActionRejected as exc:
+                # Change only LIVE resolution; dry-run still reports its
+                # original refusal. The fuzzer must retain this finding.
+                exc.result["reason"] = "unexpected live-only refusal"
+                raise
+
+        monkeypatch.setattr(ge, "_maybe_execute", divergent_execution)
+
+    result = fuzz.play_game(rc.SCENARIO_PAX_GALLICA, 1, events=False)
+
+    assert result["rejected"] == fuzz._MAX_REJECTED_PLANS
+    assert result["human_turns"] == fuzz._MAX_REJECTED_PLANS + 1
+    before, after, turn = observed[0]
+    assert after == before + 2  # Exactly one accepted Pass, no failed costs.
+    assert turn["passes"] == [rc.ROMANS]
+    assert turn["actions_taken"][rc.ROMANS]["action"] == ge.ACTION_PASS
+    if different_live_result:
+        assert len(result["findings"]) == fuzz._MAX_REJECTED_PLANS
+        assert all(f[0] == "divergence" for f in result["findings"])
+    else:
+        assert result["findings"] == []

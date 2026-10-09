@@ -23,6 +23,9 @@ Oracles, per game:
                    (Sub-action errors present in BOTH dry-run and live are
                    the random policy's own sloppiness — partial-execution
                    semantics, reported as the soft "partial" count.)
+                   Rejected Commands are compared at the rejection callback
+                   and replanned without consuming a turn. Matching dry/live
+                   refusals are policy mistakes, not engine crashes.
                    The dry-run installs a CLONE of the reactive agent with a
                    cloned rng state — moves.validate_player_action's own
                    agent-stripped dry-run would legitimately diverge wherever
@@ -71,7 +74,9 @@ import re
 
 import fs_bot.rules_consts as rc
 from fs_bot.state.setup import setup_scenario
-from fs_bot.engine.game_engine import run_game, ACTION_EVENT, get_sop_factions
+from fs_bot.engine.game_engine import (
+    run_game, ACTION_EVENT, ACTION_PASS, get_sop_factions,
+)
 from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT
 from fs_bot.bots.bot_dispatch import dispatch_bot_turn
 from fs_bot.cli.dispatcher import _translate_bot_action
@@ -81,6 +86,9 @@ from fs_bot.state.state_schema import check_structural_integrity
 ALL_SCENARIOS = (rc.SCENARIO_PAX_GALLICA, rc.SCENARIO_GREAT_REVOLT,
                  rc.SCENARIO_RECONQUEST, rc.SCENARIO_ARIOVISTUS,
                  rc.SCENARIO_GALLIC_WAR)
+
+# Deliberately malformed plans must not trap a fuzzed game in a replan loop.
+_MAX_REJECTED_PLANS = 8
 
 
 def _pick_seats(factions, rng):
@@ -367,6 +375,8 @@ def play_game(scenario, seed, *, reactive=True, events=True):
     # so the same card id can come up in both halves.
     expected = {}
     seen_keys = Counter()
+    attempt_boards = {}
+    rejected = Counter()
 
     def _maybe_attach_sa_plans(state, faction, pa, frng):
         """Fuzz the player-plan executor paths added for human seats:
@@ -426,9 +436,8 @@ def play_game(scenario, seed, *, reactive=True, events=True):
     def _dry_run(state, faction, pa):
         """Execute ``pa`` on an isolated sim under IDENTICAL reactive
         decisions (cloned fuzz rng). Returns (info, dirty) where dirty is
-        True when a FAILED action mutated the persistent board. Plans
-        carrying §1.5.2 transfers skip the dirty check: a successful gift
-        legitimately stands even when the action itself fizzles."""
+        True when a FAILED action mutated the persistent board. Human
+        rejection rolls back the complete plan, including any transfers."""
         from fs_bot.engine.execute import execute_decision
         sim = copy.deepcopy(state)
         sim.pop("decision_agent", None)
@@ -445,7 +454,6 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                              state.get("current_card"), repr(exc)))
             return None, False
         dirty = (not info.get("executed")
-                 and not (pa.get("details") or {}).get("transfers")
                  and _board_digest(sim) != pre)
         return info, dirty
 
@@ -461,7 +469,13 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                         for f in seats]
         if faction in policies:
             human_turns[0] += 1
+            k = (state.get("current_card"), faction)
+            key = k + (seen_keys[k],)
+            if rejected[key] >= _MAX_REJECTED_PLANS:
+                seen_keys[k] += 1
+                return {"action": ACTION_PASS}
             dec = None
+            info = None
             if events and ACTION_EVENT in options and frng.random() < 0.5:
                 pa = _build_event_action(state, faction, frng, key_pool)
                 _inject_transfer(pa, faction)
@@ -475,9 +489,6 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                     events_ok[0] += 1
                 if info is not None and (info.get("executed")
                                          or frng.random() < 0.3):
-                    k = (state.get("current_card"), faction)
-                    expected[k + (seen_keys[k],)] = _sig(info)
-                    seen_keys[k] += 1
                     event_turns[0] += 1
                     dec = {"action": ACTION_EVENT, "player_action": pa}
             if dec is None:
@@ -492,10 +503,14 @@ def play_game(scenario, seed, *, reactive=True, events=True):
                         findings.append(
                             ("dirty-command", state.get("current_card"),
                              f"{faction} failed Command mutated the board"))
-                    if info is not None:
-                        k = (state.get("current_card"), faction)
-                        expected[k + (seen_keys[k],)] = _sig(info)
-                        seen_keys[k] += 1
+            # Count completed decisions, including Pass, so repeated card
+            # IDs after the Gallic War Interlude match the result walk.
+            # The rejection callback undoes this increment for a retry.
+            if (dec or {}).get("player_action") is not None:
+                if info is not None:
+                    expected[key] = _sig(info)
+                attempt_boards[key] = _board_digest(state)
+            seen_keys[k] += 1
             return dec
         state["current_card_id"] = state.get("current_card")
         state["is_second_eligible"] = (position == "2nd_eligible")
@@ -503,6 +518,30 @@ def play_game(scenario, seed, *, reactive=True, events=True):
         ba = dispatch_bot_turn(state, faction)
         return {"action": _translate_bot_action(ba, options),
                 "bot_action": ba}
+
+    def decision_rejected(state, faction, result):
+        """Check the refused live attempt, then let the policy replan.
+
+        A validated plan can become invalid after fuzzed transfers or SA
+        parameters are injected. The final dry-run detects this, but we
+        still submit it to exercise live refusal and rollback. Never hide a
+        dry/live mismatch merely because the engine correctly rejected it.
+        """
+        k = (state.get("current_card"), faction)
+        key = k + (seen_keys[k] - 1,)
+        want = expected.pop(key, None)
+        live = _sig(result)
+        if want != live:
+            findings.append(("divergence", k[0],
+                             f"{faction}: rejected dry-run {want} != live {live}"))
+        before = attempt_boards.pop(key, None)
+        if before != _board_digest(state):
+            findings.append(("dirty-command", k[0],
+                             f"{faction} rejected Command mutated the board"))
+        rejected[key] += 1
+        seen_keys[k] -= 1
+
+    decision_func.decision_rejected = decision_rejected
 
     res, crash = None, None
     with contextlib.redirect_stdout(io.StringIO()):
@@ -521,6 +560,7 @@ def play_game(scenario, seed, *, reactive=True, events=True):
     return {"scenario": scenario, "seed": seed, "seats": seats,
             "human_turns": human_turns[0], "event_turns": event_turns[0],
             "events_ok": events_ok[0],
+            "rejected": sum(rejected.values()),
             "findings": findings, "partial": partial,
             "digest": _digest(st, res)}
 

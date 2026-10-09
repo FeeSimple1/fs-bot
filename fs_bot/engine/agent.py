@@ -64,13 +64,15 @@ def consult_agent(state, faction, request):
     """Consult the per-game decision agent for ``faction``'s reactive decision.
 
     Returns the agent's response, or ``None`` to mean "no agent / agent
-    deferred — use the default NP/bot logic." Never raises: an agent error
-    defers to the default.
+    deferred — use the default NP/bot logic." An agent error defers to the
+    default, but EOF means the human stopped responding and must pause play.
     """
     agent = state.get("decision_agent")
     if agent is None:
         return None
     try:
         return agent(state, faction, request)
+    except EOFError:
+        raise
     except Exception:
         return None

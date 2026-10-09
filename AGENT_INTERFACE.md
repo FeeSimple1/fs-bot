@@ -62,6 +62,25 @@ scout_targets}); without one, the bots' flowchart plans run instead.
 Optional `transfers` ([{to, amount}], §1.5.2) ride any action. Use it as the
 reference, or call the `moves` helpers below.
 
+Human plans may set `sa_timing` to `"before"` or `"after"` (default).
+This controls resolution, independently of the timing required by the bot
+flowcharts. Ambush and Besiege are Battle modifiers and resolve within the
+Battle. For Rally, Recruit, Raid, or Seize, `sa_timing: "during"` accepts
+`details.command_parts: [first_plan, second_plan]`: two plans for the same
+Command, selecting different Regions, with the accompanying Special
+Activity between them. March and Battle currently support before/after
+timing; their Command-wide movement and Battle bookkeeping is not split.
+
+The Sequence-of-Play engine persists progress through the current card in
+the state. An interruption rolls back only the unfinished action or phase,
+including its RNG changes. Frontends with external queues/logs can attach
+`transaction_checkpoint()` and `transaction_restore(token)` attributes to
+their `decision_func` to keep those synchronized with rollback.
+An invalid human Command raises `ActionRejected` without consuming the
+turn; interactive frontends can provide
+`decision_func.decision_rejected(state, faction, result)` to explain the
+failure and retry the same turn.
+
 ## 2. Reactive decisions — `state["decision_agent"]`
 
 Set `state["decision_agent"] = agent`, a callable:

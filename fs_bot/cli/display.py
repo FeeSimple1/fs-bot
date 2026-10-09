@@ -16,6 +16,8 @@ Reference:
   A2.3.9 At War
 """
 
+import copy
+
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -45,12 +47,12 @@ from fs_bot.rules_consts import (
     # Markers
     MARKER_AT_WAR,
     # Events
-    EVENT_SHADED, EVENT_UNSHADED,
+    EVENT_SHADED, EVENT_UNSHADED, WINTER_CARD,
 )
 from fs_bot.cards.card_data import (
     get_card, get_np_symbols, get_faction_order, card_has_carnyx_trigger,
 )
-from fs_bot.board.pieces import count_pieces, get_available
+from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available
 from fs_bot.map.map_data import (
     get_playable_regions, get_tribes_in_region,
 )
@@ -84,7 +86,7 @@ _CONTROL_SHORT = {
 # CARD DISPLAY
 # ============================================================================
 
-def format_card(card_id, scenario):
+def format_card(card_id, scenario, *, include_text=False):
     """Render a card as a multi-line summary.
 
     Shows: card number, title, faction order, NP instruction symbols
@@ -100,6 +102,8 @@ def format_card(card_id, scenario):
     """
     if card_id is None:
         return "Card: (none)"
+    if card_id == WINTER_CARD:
+        return f"Card: {WINTER_CARD} — resolve the Winter Round (Sec 6.0)"
     try:
         card = get_card(card_id, scenario)
     except KeyError:
@@ -117,6 +121,11 @@ def format_card(card_id, scenario):
         lines.append("  Arverni carnyx trigger (A2.3.9): check At War")
     if card.is_capability:
         lines.append("  Capability card (Sec 5.3)")
+    if include_text:
+        from fs_bot.cards.card_text import format_card_text
+        printed = format_card_text(card_id, indent="  | ", scenario=scenario)
+        if printed:
+            lines.append(printed)
     return "\n".join(lines)
 
 
@@ -206,11 +215,13 @@ def format_state_summary(state):
 
     # Cards
     lines.append("Current card:")
-    for ln in format_card(state.get("current_card"), scenario).splitlines():
+    for ln in format_card(state.get("current_card"), scenario,
+                          include_text=True).splitlines():
         lines.append("  " + ln)
     lines.append("")
     lines.append("Upcoming card:")
-    for ln in format_card(state.get("next_card"), scenario).splitlines():
+    for ln in format_card(state.get("next_card"), scenario,
+                          include_text=True).splitlines():
         lines.append("  " + ln)
 
     # Markers
@@ -252,6 +263,20 @@ def format_state_summary(state):
     lines.append("  (*Allies = Allied Tribes, INCLUDING those upgraded "
                  "to Citadels)")
     lines.append(f"Capabilities:  {_format_capabilities(state)}")
+    lines.append(f"Cards remaining in deck: {len(state.get('deck', []))}")
+    lines.append("Played cards: " + ", ".join(
+        str(c) for c in state.get("played_cards", [])))
+    if state.get("forced_ineligible"):
+        lines.append("Ineligible through next card: "
+                     + _visible_value(state["forced_ineligible"]))
+    if state.get("stay_eligible"):
+        lines.append("Remain Eligible: "
+                     + _visible_value(state["stay_eligible"]))
+    if state.get("winter_track_legions") or state.get("spring_box_leaders"):
+        lines.append(f"Winter track Legions: "
+                     f"{state.get('winter_track_legions', 0)}; "
+                     f"Spring box Leaders: "
+                     f"{_visible_value(state.get('spring_box_leaders', []))}")
     lines.append(SEP_HEAVY)
     return "\n".join(lines)
 
@@ -269,16 +294,12 @@ def _region_pieces_summary(state, region, faction, scenario):
     allies = count_pieces(state, region, faction, _ALLY_D)
     if allies:
         parts.append(f"Al:{allies}")
-    # Leader — show only "L" + suffix (full names like Caesar/Ambiorix/Boduognatus
-    # are too wide for the table). The leader's identity is on the card
-    # and in the faction-detail views.
+    # Full names distinguish Leaders from Successors in the board view.
     leader = state["spaces"].get(region, {}).get("pieces", {}).get(
         faction, {}
     ).get(LEADER)
     if leader is not None:
-        # Use first 3 chars of leader name for ID hint
-        leader_tag = str(leader)[:3]
-        parts.append(f"L({leader_tag})")
+        parts.append(f"L({leader})")
     # Legions (Romans)
     if faction == ROMANS:
         legs = count_pieces(state, region, faction, LEGION)
@@ -286,14 +307,16 @@ def _region_pieces_summary(state, region, faction, scenario):
             parts.append(f"Lg:{legs}")
         aux = count_pieces(state, region, faction, AUXILIA)
         if aux:
-            parts.append(f"A:{aux}")
+            parts.append(_flippable_summary(state, region, faction, AUXILIA,
+                                            "A", aux))
         forts = count_pieces(state, region, faction, FORT)
         if forts:
             parts.append(f"F:{forts}")
     else:
         wb = count_pieces(state, region, faction, WARBAND)
         if wb:
-            parts.append(f"W:{wb}")
+            parts.append(_flippable_summary(state, region, faction, WARBAND,
+                                            "W", wb))
     cit = count_pieces(state, region, faction, CITADEL)
     if cit:
         parts.append(f"C:{cit}")
@@ -302,6 +325,12 @@ def _region_pieces_summary(state, region, faction, scenario):
         if st:
             parts.append(f"S:{st}")
     return ",".join(parts) if parts else "-"
+
+
+def _flippable_summary(state, region, faction, piece_type, tag, total):
+    counts = [count_pieces_by_state(state, region, faction, piece_type, ps)
+              for ps in (HIDDEN, REVEALED, SCOUTED)]
+    return f"{tag}:{total}[H{counts[0]}/R{counts[1]}/S{counts[2]}]"
 
 
 def format_region_table(state):
@@ -317,16 +346,21 @@ def format_region_table(state):
         Multi-line string.
     """
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario)
+    playable = get_playable_regions(scenario, state.get("capabilities"))
     lines = []
     lines.append(SEP_HEAVY)
     lines.append("REGIONS  (Al=Ally L=Leader Lg=Legion A=Aux W=Warband "
                  "F=Fort C=Citadel S=Settlement)")
+    lines.append("  Mobile piece states: H=Hidden / R=Revealed / S=Scouted")
     lines.append(SEP)
     # Column widths chosen so the Roman cell (which carries Caesar,
     # Legions, Auxilia, and Forts together) fits.
-    w_rom = 21
-    w_other = 21
+    cells = {(region, f): _region_pieces_summary(state, region, f, scenario)
+             for region in playable for f in FACTIONS}
+    w_rom = max(21, max((len(cells[(r, ROMANS)]) + 2 for r in playable),
+                        default=0))
+    w_other = max(21, max((len(cell) + 2 for (r, f), cell in cells.items()
+                           if f != ROMANS), default=0))
     header = (
         f"{'Region':<14}{'Ctrl':<6}"
         f"{'Romans':<{w_rom}}{'Arverni':<{w_other}}{'Aedui':<{w_other}}"
@@ -368,6 +402,8 @@ def _tribe_status_label(tribe_info):
         return "Dispersed"
     if status in (MARKER_DISPERSED_GATHERING, DISPERSED_GATHERING):
         return "Dispersed-Gathering"
+    if status:
+        return str(status)
     return "Subdued"
 
 
@@ -380,7 +416,7 @@ def format_tribes_table(state):
         Multi-line string.
     """
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario)
+    playable = get_playable_regions(scenario, state.get("capabilities"))
     lines = []
     lines.append(SEP_HEAVY)
     lines.append("TRIBES")
@@ -390,7 +426,10 @@ def format_tribes_table(state):
     for region in ALL_REGIONS:
         if region not in playable:
             continue
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = list(get_tribes_in_region(region, scenario))
+        # Colony Events can create a new tribal circle in a Region.
+        tribes += [t for t, info in state.get("tribes", {}).items()
+                   if info.get("region") == region and t not in tribes]
         for tribe in tribes:
             info = state["tribes"].get(tribe, {})
             lines.append(
@@ -544,12 +583,92 @@ def format_victory_state(state):
 # STATE SNAPSHOTS + DELTAS — "what changed since my last decision"
 # ============================================================================
 
+# Public tracks and persistent effects, shared by the board and its delta.
+_PUBLIC_FIELDS = (
+    ("available", "Available pieces"),
+    ("removed_pieces", "Removed pieces"),
+    ("eligibility", "Eligibility"),
+    ("forced_ineligible", "Forced Ineligible"),
+    ("stay_eligible", "Remain Eligible"),
+    ("legions_track", "Legions track"),
+    ("removed_legions", "Removed Legions"),
+    ("winter_track_legions", "Winter track Legions"),
+    ("spring_box_leaders", "Spring box Leaders"),
+    ("capability_owners", "Capability holders"),
+    ("markers", "Markers"),
+    ("event_modifiers", "Event effects"),
+    ("at_war", "Arverni At War"),
+    ("diviciacus_in_play", "Diviciacus in play"),
+    ("scenario_phase", "Scenario phase"),
+)
+
+
+def _visible_value(value):
+    """Stable readable representation, including nested marker groups."""
+    if value is None:
+        return "(none)"
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, dict):
+        return ", ".join(f"{k}: {_visible_value(v)}"
+                         for k, v in sorted(value.items(),
+                                            key=lambda item: str(item[0]))) \
+            or "(none)"
+    if isinstance(value, (list, tuple, set, frozenset)):
+        ordered = sorted(value, key=str) if isinstance(value, (set, frozenset)) \
+            else value
+        return ", ".join(_visible_value(v) for v in ordered) or "(none)"
+    return str(value)
+
+
+def format_decision_context(state):
+    """Public current/upcoming cards and tracks before a human decision."""
+    return format_state_summary(state) + "\n" + format_victory_state(state)
+
+
+def format_board(state):
+    """Complete inspectable board, used by the CLI's b/board command."""
+    parts = [format_decision_context(state), format_region_table(state),
+             format_tribes_table(state), "AVAILABLE PIECES"]
+    for faction in FACTIONS:
+        parts.append(f"  {faction}: "
+                     f"{_visible_value(state.get('available', {}).get(faction))}")
+    # Markers can be keyed by Region, Tribe, or an Event-specific group.
+    parts.append("MARKERS / ONGOING EFFECTS")
+    parts.append("  " + _visible_value(state.get("markers", {})))
+    for key in ("event_modifiers", "removed_pieces"):
+        if state.get(key):
+            title = dict(_PUBLIC_FIELDS)[key]
+            parts.append(f"  {title}: {_visible_value(state[key])}")
+    for region, space in state.get("spaces", {}).items():
+        extra = {k: v for k, v in space.items()
+                 if k not in ("pieces", "control") and v}
+        if extra:
+            parts.append(f"  {region}: {_visible_value(extra)}")
+    if state.get("capabilities"):
+        from fs_bot.cards.card_text import format_card_text
+        parts.append("ACTIVE CAPABILITY CARD TEXT")
+        for card_id in sorted(state["capabilities"], key=str):
+            parts.append(f"  Card {card_id}: "
+                         f"{state['capabilities'][card_id]}")
+            printed = format_card_text(card_id, indent="  | ",
+                                       scenario=state["scenario"])
+            if printed:
+                parts.append(printed)
+    return "\n".join(parts)
+
+
 def snapshot_state(state):
-    """Light snapshot of the visible board for human-facing diffs."""
+    """Detached snapshot of visible board elements, safe to serialize.
+
+    Card movement is shown in format_decision_context; private future deck
+    order, RNG and transient bot bookkeeping are deliberately excluded.
+    """
     from fs_bot.rules_consts import (FACTIONS, WARBAND, AUXILIA, LEGION,
                                      ALLY, CITADEL, FORT, SETTLEMENT)
     from fs_bot.board.pieces import count_pieces, get_leader_in_region
     pieces = {}
+    piece_states = {}
     leaders = {}
     for region in state.get("spaces", {}):
         for f in FACTIONS:
@@ -558,20 +677,37 @@ def snapshot_state(state):
                 n = count_pieces(state, region, f, pt)
                 if n:
                     pieces[(region, f, pt)] = n
+                if pt in (WARBAND, AUXILIA):
+                    for ps in (HIDDEN, REVEALED, SCOUTED):
+                        count = count_pieces_by_state(state, region, f, pt, ps)
+                        if count:
+                            piece_states[(region, f, pt, ps)] = count
             ldr = get_leader_in_region(state, region, f)
             if ldr:
                 leaders[(region, f)] = ldr
     tribes = {t: (ti.get("allied_faction"), ti.get("status"))
               for t, ti in state.get("tribes", {}).items()}
-    return {
+    snapshot = {
         "resources": dict(state.get("resources", {})),
         "pieces": pieces,
+        "piece_states": piece_states,
         "leaders": leaders,
         "tribes": tribes,
+        "controls": {r: space.get("control", NO_CONTROL)
+                     for r, space in state.get("spaces", {}).items()},
+        "space_effects": {
+            r: copy.deepcopy({k: v for k, v in space.items()
+                              if k not in ("pieces", "control") and v})
+            for r, space in state.get("spaces", {}).items()
+            if any(v for k, v in space.items()
+                   if k not in ("pieces", "control"))},
         "senate": dict(state.get("senate") or {}),
         "fallen": state.get("fallen_legions", 0),
         "capabilities": dict(state.get("capabilities", {})),
     }
+    for field, _label in _PUBLIC_FIELDS:
+        snapshot[field] = copy.deepcopy(state.get(field))
+    return snapshot
 
 
 def _tribe_label(alleg):
@@ -587,21 +723,35 @@ def format_state_delta(before, after):
     """Human-readable lines describing what changed between snapshots."""
     lines = []
     # Resources
-    for f, v in after["resources"].items():
-        b = before["resources"].get(f, 0)
-        if v != b:
-            lines.append(f"  {f} Resources: {b} -> {v}")
+    for f in sorted(set(before["resources"]) | set(after["resources"])):
+        b = before["resources"].get(f)
+        a = after["resources"].get(f)
+        if a != b:
+            lines.append(f"  {f} Resources: {_visible_value(b)} -> "
+                         f"{_visible_value(a)}")
     # Pieces per region
     keys = set(before["pieces"]) | set(after["pieces"])
     per_region = {}
     for k in sorted(keys):
         region, f, pt = k
+        # State-specific counts below also describe flips that leave totals
+        # unchanged. Avoid printing mobile-piece losses twice.
+        if pt in (WARBAND, AUXILIA) and "piece_states" in before:
+            continue
         d = after["pieces"].get(k, 0) - before["pieces"].get(k, 0)
         if d:
             per_region.setdefault(region, []).append(
                 f"{f} {'+' if d > 0 else ''}{d} {pt}")
     for region in sorted(per_region):
         lines.append(f"  {region}: " + ", ".join(per_region[region]))
+    if "piece_states" in before:
+        old_states = before["piece_states"]
+        new_states = after.get("piece_states", {})
+        for key in sorted(set(old_states) | set(new_states)):
+            b, a = old_states.get(key, 0), new_states.get(key, 0)
+            if a != b:
+                region, faction, pt, ps = key
+                lines.append(f"  {region}: {faction} {ps} {pt}: {b} -> {a}")
     # Leaders moved
     b_l, a_l = before["leaders"], after["leaders"]
     for k in sorted(set(b_l) | set(a_l)):
@@ -615,18 +765,72 @@ def format_state_delta(before, after):
     for t in sorted(set(before["tribes"]) | set(after["tribes"])):
         b = before["tribes"].get(t, (None, None))
         a = after["tribes"].get(t, (None, None))
-        if b != a:
+        if t not in before["tribes"]:
+            lines.append(f"  {t}: new Tribe ({_tribe_label(a)})")
+        elif t not in after["tribes"]:
+            lines.append(f"  {t}: Tribe removed")
+        elif b != a:
             lines.append(f"  {t}: {_tribe_label(b)} -> {_tribe_label(a)}")
     # Senate / fallen / capabilities
     if before["senate"] != after["senate"]:
-        lines.append(f"  Senate: {before['senate'].get('position')} -> "
-                     f"{after['senate'].get('position')}")
+        lines.append(f"  Senate: {_visible_value(before['senate'])} -> "
+                     f"{_visible_value(after['senate'])}")
     if before["fallen"] != after["fallen"]:
         lines.append(f"  Fallen Legions: {before['fallen']} -> "
                      f"{after['fallen']}")
-    for cid in set(after["capabilities"]) - set(before["capabilities"]):
-        lines.append(f"  New Capability in effect: card {cid} "
-                     f"({after['capabilities'][cid]})")
-    for cid in set(before["capabilities"]) - set(after["capabilities"]):
-        lines.append(f"  Capability removed: card {cid}")
+    for cid in sorted(set(after["capabilities"]) | set(before["capabilities"]),
+                      key=str):
+        b, a = before["capabilities"].get(cid), after["capabilities"].get(cid)
+        if b != a:
+            lines.append(f"  Capability card {cid}: "
+                         f"{_visible_value(b)} -> {_visible_value(a)}")
+    for key, title in (("controls", "Control"),
+                       ("space_effects", "Region effects")) + _PUBLIC_FIELDS:
+        b, a = before.get(key), after.get(key)
+        if b == a:
+            continue
+        if isinstance(a, dict) or isinstance(b, dict):
+            b, a = b or {}, a or {}
+            for entry in sorted(set(b) | set(a), key=str):
+                if b.get(entry) != a.get(entry):
+                    lines.append(f"  {title} ({entry}): "
+                                 f"{_visible_value(b.get(entry))} -> "
+                                 f"{_visible_value(a.get(entry))}")
+        else:
+            lines.append(f"  {title}: {_visible_value(b)} -> "
+                         f"{_visible_value(a)}")
     return lines
+
+
+class HumanTurnDisplay:
+    """Independent, serializable change baselines for human seats.
+
+    Store ``serialize.encode(display.snapshots)`` in save metadata and pass
+    its decoded value to the constructor on resume. The caller can checkpoint
+    and restore ``snapshots`` with its decision transaction.
+    """
+
+    def __init__(self, stdout, snapshots=None):
+        self.stdout = stdout
+        self.snapshots = copy.deepcopy(snapshots or {})
+
+    def remember(self, state, factions):
+        """Initialize missing seats without overwriting saved baselines."""
+        snap = snapshot_state(state)
+        for faction in factions:
+            if faction not in self.snapshots:
+                self.snapshots[faction] = copy.deepcopy(snap)
+
+    def before_decision(self, state, faction, *, show_context=True):
+        snap = snapshot_state(state)
+        previous = self.snapshots.get(faction)
+        if previous is not None:
+            delta = format_state_delta(previous, snap)
+            self.stdout.write(f"\n--- {faction}: changes since your last "
+                              "decision ---\n")
+            self.stdout.write("\n".join(delta) + "\n" if delta
+                              else "  No board changes.\n")
+        if show_context:
+            self.stdout.write("\n" + format_decision_context(state) + "\n")
+        self.stdout.flush()
+        self.snapshots[faction] = snap

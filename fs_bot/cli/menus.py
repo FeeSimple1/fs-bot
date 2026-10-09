@@ -187,12 +187,9 @@ def prompt_action(state, faction, options, position, stdin, stdout):
         f"\nYou are {faction}, the {pos_label} on card {card_id}"
         f"{card_title}."
     )
+    from fs_bot.cli.display import format_decision_context
+    stdout.write("\n" + format_decision_context(state) + "\n")
     stdout.write(header + "\n")
-    # Show the card's printed text so Event is an informed choice.
-    from fs_bot.cards.card_text import format_card_text
-    card_txt = format_card_text(card_id, indent="  | ")
-    if card_txt:
-        stdout.write(card_txt + "\n")
 
     choices = [
         (ACTION_LABELS.get(opt, opt), opt) for opt in options
@@ -201,21 +198,15 @@ def prompt_action(state, faction, options, position, stdin, stdout):
     decision = {"action": chosen}
     if chosen != ACTION_PASS:
         # Collect the concrete plan so the engine can execute the human turn.
-        # If input ends before the plan is complete (piped/scripted input),
-        # fall back to the action type alone — execute_decision then reports
-        # "no executable plan" rather than crashing the turn.
+        # EOF must propagate so the engine can roll back an unfinished turn
+        # and the CLI can save a decision that is still pending.
         from fs_bot.cli.human_plan import collect_player_action
-        try:
-            player_action = collect_player_action(
-                state, faction, chosen, stdin, stdout)
-        except EOFError:
-            player_action = None
+        player_action = collect_player_action(
+            state, faction, chosen, stdin, stdout)
         # Validation feedback loop: dry-run the plan on a copy before
         # committing it. On failure, show why and offer a re-plan; on
         # partial success (some sub-actions would have no effect), show
-        # the warnings and let the player confirm or re-plan. EOF (piped
-        # or scripted input) keeps the current plan - the executor stays
-        # the final validator.
+        # the warnings and let the player confirm or re-plan.
         from fs_bot.engine.moves import validate_player_action
         while player_action is not None:
             ok, info = validate_player_action(state, faction, player_action)
@@ -223,28 +214,25 @@ def prompt_action(state, faction, options, position, stdin, stdout):
                 else []
             if ok and not errors:
                 break
-            try:
-                if ok:
-                    stdout.write("Warning - these parts would have no "
-                                 "effect:\n")
-                    for e in errors[:5]:
-                        stdout.write(f"  - {e}\n")
-                    if not prompt_yes_no(stdin, stdout,
-                                         "Re-plan this turn?",
-                                         default=False):
-                        break
-                else:
-                    why = (info.get("reason") if isinstance(info, dict)
-                           else info) or "no legal effect"
-                    stdout.write(f"That plan won't execute: {why}\n")
-                    if not prompt_yes_no(stdin, stdout,
-                                         "Re-plan this turn?",
-                                         default=True):
-                        break
-                player_action = collect_player_action(
-                    state, faction, chosen, stdin, stdout)
-            except EOFError:
-                break
+            if ok:
+                stdout.write("Warning - these parts would have no "
+                             "effect:\n")
+                for e in errors[:5]:
+                    stdout.write(f"  - {e}\n")
+                if not prompt_yes_no(stdin, stdout,
+                                     "Re-plan this turn?",
+                                     default=False):
+                    break
+            else:
+                why = (info.get("reason") if isinstance(info, dict)
+                       else info) or "no legal effect"
+                stdout.write(f"That plan won't execute: {why}\n")
+                if not prompt_yes_no(stdin, stdout,
+                                     "Re-plan this turn?",
+                                     default=True):
+                    break
+            player_action = collect_player_action(
+                state, faction, chosen, stdin, stdout)
         if player_action is not None:
             decision["player_action"] = player_action
     return decision

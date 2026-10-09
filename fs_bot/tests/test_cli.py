@@ -18,7 +18,7 @@ import pytest
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
+    FACTIONS, SECOND_ELIGIBLE,
     SCENARIO_PAX_GALLICA, SCENARIO_RECONQUEST, SCENARIO_GREAT_REVOLT,
     SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, ALL_SCENARIOS,
@@ -247,11 +247,11 @@ class TestPromptAction:
     def test_rejects_illegal_index(self):
         state = self._state()
         opts = [ACTION_COMMAND, ACTION_PASS]
-        # "99" rejected, "1" accepted
-        stdin = io.StringIO("99\n1\n")
+        # "99" rejected, "2" accepted. Pass needs no follow-up plan.
+        stdin = io.StringIO("99\n2\n")
         stdout = io.StringIO()
         d = prompt_action(state, AEDUI, opts, "1st_eligible", stdin, stdout)
-        assert d["action"] == ACTION_COMMAND
+        assert d["action"] == ACTION_PASS
         assert "Please enter 1-2" in stdout.getvalue()
 
     def test_rejects_non_numeric(self):
@@ -266,10 +266,12 @@ class TestPromptAction:
         state = self._state()
         opts = get_second_eligible_options(ACTION_COMMAND)
         # Options are [LIMITED_COMMAND, PASS]
-        stdin = io.StringIO("1\n")
+        stdin = io.StringIO("2\n")
         stdout = io.StringIO()
         d = prompt_action(state, AEDUI, opts, "2nd_eligible", stdin, stdout)
-        assert d["action"] == ACTION_LIMITED_COMMAND
+        assert d["action"] == ACTION_PASS
+        assert SECOND_ELIGIBLE in stdout.getvalue()
+        assert ACTION_LABELS[ACTION_LIMITED_COMMAND] in stdout.getvalue()
 
 
 # ============================================================================
@@ -288,12 +290,12 @@ class TestDispatcher:
     def test_human_reads_stdin(self):
         state = self._state()
         fm = {BELGAE: "human"}
-        stdin = io.StringIO("1\n")  # pick option 1
+        opts = get_first_eligible_options()
+        stdin = io.StringIO(f"{opts.index(ACTION_PASS) + 1}\n")
         stdout = io.StringIO()
         df = make_decision_func(fm, stdin=stdin, stdout=stdout, pause=False)
-        opts = get_first_eligible_options()
         d = df(state, BELGAE, opts, "1st_eligible")
-        assert d["action"] == opts[0]
+        assert d["action"] == ACTION_PASS
 
     def test_bot_returns_engine_action(self):
         state = self._state()

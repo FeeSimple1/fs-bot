@@ -28,7 +28,7 @@ import textwrap
 from functools import lru_cache
 
 from fs_bot.rules_consts import (
-    ARIOVISTUS_SCENARIOS, FACTIONS, GALLIC_FACTIONS, GERMANS, ROMANS, AEDUI,
+    ARIOVISTUS_SCENARIOS, FACTIONS, GALLIC_FACTIONS, GERMANS, ROMANS, AEDUI, BELGAE,
     WARBAND, AUXILIA, LEGION, ALLY, CITADEL, FORT, LEADER,
     HIDDEN, REVEALED, SCOUTED,
     SENATE_UP, SENATE_DOWN,
@@ -244,6 +244,7 @@ _OVERRIDES = {
     "A28": {"battle_plan": {"kind": "entries", "entry_fields": {
         "region": "region", "target_faction": "faction",
         "allied_factions": "factions"}}},
+    "A34": {"faction": {"kind": "faction", "values": (ROMANS, AEDUI, BELGAE, GERMANS)}},
     54: {"region": {"kind": "region"},
          "march": {"kind": "value", "values": (True, False)},
          "origin_region": {"kind": "region"},

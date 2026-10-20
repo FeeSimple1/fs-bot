@@ -1752,10 +1752,17 @@ passes implemented nearly all of it without updating the ledger. Verified
 item by item against current code, with tests added where coverage was
 missing:
 
-- **A34 unshaded** — IMPLEMENTED (`execute._resolve_card_A34_german_pieces`:
-  borrowed-German free Battles in up to 3 Regions, never against the
-  acting Faction; free March permitted via the same layer). New test:
-  test_card_A34_unshaded_borrowed_german_battles.
+- **A34 Divination** — Corrected in the October 2026 audit. The earlier
+  claim that the Battle-only resolver also supported March was incorrect.
+  A chosen non-German player now selects a complete free German March or
+  Battle in/from at most three Regions, with no Special Ability. The chooser
+  and physical acting Faction are separate: ownership, Leader identity,
+  movement distance, Control, and piece pools remain German. Invalid plans
+  reject the complete Event without mutation. Non-player beneficiaries use
+  their own Command priorities under §8.2.3; the Roman/Aedui Swords instruction
+  declines selecting the Event, not a Command another player grants (§8.2.1).
+  Shaded text selects Germans or Belgae and preserves their eligibility through
+  the §2.3.6 reset. Tests: `test_divination.py`, `test_divination_np.py`.
 - **A70 shaded** — IMPLEMENTED (end-of-action Nervii-Subdued hook in
   execute.py + Rally-at-Nervii +2 Warbands in rally.py); already tested.
 - **A53 unshaded** — IMPLEMENTED incl. the granted +1 Special Activity

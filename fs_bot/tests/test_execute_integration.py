@@ -3982,15 +3982,20 @@ def test_cardA34_unshaded_germans_battle_acting_factions_rivals():
     place_piece(st, region, ROMANS, AUXILIA, count=2)    # rival to hit
     refresh_all_control(st)
     before = count_pieces(st, region, ROMANS, AUXILIA)
+    st["non_player_factions"] = set()
+    st["decision_agent"] = lambda board, faction, request: (
+        {"command": "Battle", "sa": "No SA", "details": {
+            "battle_plan": [{"region": region, "target": ROMANS}]}}
+        if request["kind"] == "free_action" else None)
     res = _execute_event(st, AEDUI, {"command": "Event", "sa": "No SA",
         "sa_regions": [], "details": {"card_id": "A34",
-                                      "text_preference": EVENT_UNSHADED}})
+                                      "text_preference": EVENT_UNSHADED}}, human=True)
     fa = [f for f in (res.get("free_actions") or [])
           if f.get("flag") == "card_A34"]
-    assert fa and any(f.get("defender") == ROMANS for f in fa)
+    assert fa and fa[0]["result"]["battles_resolved"][0][1] == ROMANS
     # Germans hit the Roman rival; the acting Aedui were not the target.
     assert count_pieces(st, region, ROMANS, AUXILIA) < before
-    assert all(f.get("defender") != AEDUI for f in fa)
+    assert all(b[1] != AEDUI for f in fa for b in f["result"]["battles_resolved"])
 
 
 def test_harassment_opt_in_consults_player_faction():
@@ -4167,6 +4172,10 @@ def test_card_A34_unshaded_borrowed_german_battles():
     place_piece(st, "Sequani", GERMANS, WARBAND, 6, piece_state=HIDDEN)
     place_piece(st, "Sequani", ROMANS, AUXILIA, 2)
     refresh_all_control(st)
+    st["decision_agent"] = lambda board, faction, request: (
+        {"command": "Battle", "sa": "No SA", "details": {
+            "battle_plan": [{"region": "Sequani", "target": ROMANS}]}}
+        if request["kind"] == "free_action" else None)
     res = _execute_event(st, BELGAE, {
         "command": "Event", "sa": "No SA", "sa_regions": [],
         "details": {"card_id": "A34",
@@ -4175,8 +4184,9 @@ def test_card_A34_unshaded_borrowed_german_battles():
     battles = [f for f in (res.get("free_actions") or [])
                if f.get("flag") == "card_A34"]
     assert battles, res.get("free_actions")
-    assert all(f.get("defender") != BELGAE for f in battles)
-    assert len(battles) <= 3
+    resolved = battles[0]["result"]["battles_resolved"]
+    assert all(b[1] != BELGAE for b in resolved)
+    assert len(resolved) <= 3
 
 
 def test_card_A53_unshaded_grants_recruit_march_and_sa():

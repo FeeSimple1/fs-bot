@@ -3,6 +3,8 @@
 An agent returns a complete ordinary action, ``{'decline': True}``, or
 ``{'use_default': True}``. Validation simulates on an isolated board and RNG;
 neither malformed plans nor out-of-scope choices can partially apply an Event.
+An engine-owned ``acting_faction`` may name a different physical force from
+the consulted chooser (A34); response data cannot override that grant.
 """
 from contextlib import contextmanager
 from copy import deepcopy
@@ -88,6 +90,8 @@ def _result_error(result):
 def execute_free_action_plan(state, faction, request, action):
     """Execute a validated concrete plan, retaining its human SA timing."""
     from fs_bot.engine import execute as ex
+    # The request is an engine-owned grant. Responses cannot change its actor.
+    faction = request.get('acting_faction', faction)
     with free_action_scope(state, faction), rally_event_scope(
             state, faction, as_if_control=request.get('as_if_control', False),
             allow_devastated=request.get('allow_devastated', False),
@@ -123,6 +127,7 @@ def _validate_plan(state, faction, request, action):
     from fs_bot.cli.human_plan import _faction_special_abilities
     from fs_bot.engine.action_validation import command_regions, command_parts, compatible_sa
     from fs_bot.map.map_data import get_playable_regions_for_state
+    faction = request.get('acting_faction', faction)
     standalone = request.get('request_type') == 'event_sa'
     cmd, sa = action.get('command'), action.get('sa', 'No SA')
     if standalone:
@@ -151,11 +156,23 @@ def _validate_plan(state, faction, request, action):
             return 'Both portions must use the same Command.'
     selected = []
     for part in parts:
+        if cmd == 'Battle':
+            entries = (part.get('details') or {}).get('battle_plan') or []
+            battle_regions = [entry.get('region') for entry in entries]
+            if len(battle_regions) != len(set(battle_regions)):
+                return 'Select each Battle Region only once.'
         selected.extend(command_regions(part))
         if cmd == 'March':
             details = part.get('details') or {}
             plan = details.get('march_plan') or details
             selected.extend(e.get('origin') for e in plan.get('extra_groups') or [])
+            # Expansion plans may implicitly select the Leader's origin.
+            # Scope the moves the executor will actually make, not only the
+            # caller's declared origin list; derive on a copy for RNG safety.
+            from fs_bot.engine.execute import _collect_march_moves
+            planning = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
+            moves, _ = _collect_march_moves(planning, faction, part)
+            selected.extend(move['origin'] for move in moves)
     if len(parts) > 1 and len(selected) != len(set(selected)):
         return 'Select each Command Region only once.'
     playable = set(get_playable_regions_for_state(state, faction))

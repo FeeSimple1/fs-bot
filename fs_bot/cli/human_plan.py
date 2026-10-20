@@ -1171,6 +1171,9 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     if card_id == "A28":
         from fs_bot.cards.admagetobriga import collect_battle_plan
         return collect_battle_plan(state, faction, stdin, stdout)
+    if card_id == "A34":
+        from fs_bot.cards.divination import collect_beneficiary
+        return collect_beneficiary(state, faction, shaded, stdin, stdout)
     from fs_bot.engine.execute import _derive_event_params
     derived = None
     try:

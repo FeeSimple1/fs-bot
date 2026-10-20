@@ -10,16 +10,20 @@ from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_COMMAND_SA
 
 def collect_free_action(state, faction, request, stdin, stdout):
     """Collect and dry-run a full plan without changing the live board/RNG."""
+    actor = request.get("acting_faction", faction)
+    message = f"{faction}: Event grants a free action."
+    if actor != faction:
+        message = f"{faction}: choose a free action using {actor} pieces."
     while True:
         choice = prompt_choice(
-            stdin, stdout, f"{faction}: Event grants a free action.",
+            stdin, stdout, message,
             [("Plan the action", "plan"),
              ("Use bot default", "default"), ("Decline", "decline")])
         if choice != "plan":
             return {"use_default" if choice == "default" else "decline": True}
         planning = _planning_copy(state)
-        with free_action_scope(planning, faction), rally_event_scope(
-                planning, faction,
+        with free_action_scope(planning, actor), rally_event_scope(
+                planning, actor,
                 as_if_control=request.get("as_if_control", False),
                 allow_devastated=request.get("allow_devastated", False),
                 regions=request.get("allowed_regions")):
@@ -27,12 +31,12 @@ def collect_free_action(state, faction, request, stdin, stdout):
                 action = {"command": None, "regions": [], "sa": "No SA",
                           "sa_regions": [], "details": {}}
                 action = _collect_sa_plan(
-                    planning, faction, action, stdin, stdout, standalone=True,
+                    planning, actor, action, stdin, stdout, standalone=True,
                     allowed_sas=request.get("allowed_sas"),
                     allowed_regions=request.get("allowed_regions"))
             else:
                 action = _collect_command(
-                    planning, faction,
+                    planning, actor,
                     ACTION_COMMAND_SA if request.get("with_sa") else ACTION_COMMAND,
                     stdin, stdout, allowed_commands=request.get("allowed_commands"),
                     allowed_regions=request.get("allowed_regions"),

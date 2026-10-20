@@ -3836,15 +3836,24 @@ def execute_card_A34(state, shaded=False):
 
     Source: A Card Reference, card A34
     """
+    params = state.get("event_params") or {}
+    faction = params.get("faction", state.get("executing_faction"))
+    allowed = (GERMANS, BELGAE) if shaded else (ROMANS, AEDUI, BELGAE)
+    if faction not in allowed:
+        raise ValueError("Choose an eligible Divination beneficiary")
+    # §8.2.3: an NP executor chooses itself for optional Event benefits.
+    executor = state.get("executing_faction")
+    if executor in state.get("non_player_factions", set()) and faction != executor:
+        raise ValueError("A Non-player selects only itself for Divination benefits")
     state.setdefault("event_modifiers", {})
+    state["event_modifiers"]["card_A34_faction"] = faction
     if not shaded:
         state["event_modifiers"]["card_A34_use_german_pieces"] = True
         state["event_modifiers"]["card_A34_regions_limit"] = 3
     else:
-        faction = state.get("executing_faction")
         state["event_modifiers"]["card_A34_free_command"] = True
-        if faction in (GERMANS, BELGAE):
-            state["eligibility"][faction] = ELIGIBLE
+        state["eligibility"][faction] = ELIGIBLE
+        state.setdefault("stay_eligible", []).append(faction)
 
 def execute_card_A35(state, shaded=False):
     """Card A35: Nasua & Cimberius — Place at Treveri / German placement.

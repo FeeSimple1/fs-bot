@@ -300,7 +300,8 @@ def _rank_battle_targets(state, region, scenario):
 # R_MARCH destination helpers
 # ============================================================================
 
-def _rank_march_destinations(state, scenario):
+def _rank_march_destinations(state, scenario, *, allowed_regions=None,
+                             acting_faction=ROMANS):
     """Rank destination regions for Roman March per §8.8.1.
 
     Destinations must have enemy Allies or Citadels.  Tiers evaluated in
@@ -325,6 +326,10 @@ def _rank_march_destinations(state, scenario):
     from fs_bot.commands.rally import has_supply_line
 
     playable = get_playable_regions_for_state(state, ROMANS)
+    # A34 keeps Roman objectives but commands a German force with its own
+    # reach and defenses. Filter reach before priority tiers choose targets.
+    if allowed_regions is not None:
+        playable = [r for r in playable if r in allowed_regions]
     non_players = state.get("non_player_factions", set())
 
     # Build candidate list with all relevant metadata
@@ -349,20 +354,21 @@ def _rank_march_destinations(state, scenario):
             # (b) Fewest Losses to enemy Battle: the Losses the enemy would
             # inflict on the Romans there (Battle loss formula, §3.2.4).
             from fs_bot.battle.losses import calculate_losses
-            enemy_battle_losses = calculate_losses(
+            enemy_battle_losses = (calculate_losses(
                 state, region, attacking_faction=enemy,
-                defending_faction=ROMANS)
+                defending_faction=acting_faction) if enemy != acting_faction else 0)
             # (c) Most Allies/Citadels of this enemy in the region
             local_ac = ally_count + citadel_count
             # (d) Ending in a Supply Line — real §3.2.1 check (has_supply_line).
             in_supply = 1 if has_supply_line(state, region) else 0
             # (e) Least Harassment — fewest enemy Hidden Warbands
             enemy_hidden_wb = 0
-            for f in FACTIONS:
-                if f == ROMANS:
-                    continue
-                enemy_hidden_wb += count_pieces_by_state(
-                    state, region, f, WARBAND, HIDDEN)
+            if acting_faction != GERMANS:  # German March is not Harassed (§3.4.2).
+                for f in FACTIONS:
+                    if f == acting_faction:
+                        continue
+                    enemy_hidden_wb += count_pieces_by_state(
+                        state, region, f, WARBAND, HIDDEN)
 
             all_candidates.append({
                 "region": region,

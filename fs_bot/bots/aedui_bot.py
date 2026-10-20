@@ -990,7 +990,8 @@ def node_a_march(state):
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
     # IF NONE or Frost — §8.6.5
-    if is_frost_active(state):
+    from fs_bot.commands.common import is_free_action
+    if is_frost_active(state) and not is_free_action(state, AEDUI):
         return node_a_raid(state)
 
     march_plan = {

@@ -1438,7 +1438,8 @@ def node_g_march_expand(state):
     resources = state.get("resources", {}).get(GERMANS, 0)
 
     # IF NONE (or Frost): Rally per A8.7.4 instead — A8.7.5
-    if resources <= 0 or is_frost_active(state):
+    from fs_bot.commands.common import is_free_action
+    if not is_free_action(state, GERMANS) and (resources <= 0 or is_frost_active(state)):
         return node_g_rally(state)
 
     march_plan = {

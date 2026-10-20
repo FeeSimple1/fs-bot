@@ -4049,7 +4049,8 @@ def march_plan_has_effect(state, faction, plan):
     """
     from copy import deepcopy
     from fs_bot.bots.bot_common import is_frost_active
-    free = state.get("_planning_free_command", False)
+    from fs_bot.commands.common import is_free_action
+    free = state.get("_planning_free_command", False) or is_free_action(state, faction)
     if not free and is_frost_active(state):
         return False
     sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})

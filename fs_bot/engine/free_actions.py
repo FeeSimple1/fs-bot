@@ -58,6 +58,12 @@ def _sa_regions(action):
     enlist = merged.get('enlist') or {}
     if enlist.get('region') is not None:
         regions.append(enlist['region'])
+    # Borrowed forces may affect several Regions; a free German March
+    # selects its origin. Its destination may lie outside the SA Region
+    # (§4.5.1 / §5.4), so do not treat that destination as selected.
+    regions.extend(enlist.get('regions') or [])
+    if enlist.get('origin') is not None:
+        regions.append(enlist['origin'])
     return regions
 
 

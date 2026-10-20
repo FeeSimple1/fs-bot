@@ -1279,7 +1279,8 @@ def node_v_march_mass(state):
     verc_region = _vercingetorix_region(state)
 
     # IF NONE: no Leader or Frost — §8.7.6
-    if verc_region is None or is_frost_active(state):
+    from fs_bot.commands.common import is_free_action
+    if verc_region is None or (is_frost_active(state) and not is_free_action(state, ARVERNI)):
         return node_v_raid(state)
 
     march_plan = {

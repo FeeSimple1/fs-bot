@@ -1215,7 +1215,8 @@ def node_b_march(state):
     resources = state.get("resources", {}).get(BELGAE, 0)
 
     # IF NONE: 0 Resources or Frost — §8.5.5
-    if resources <= 0 or is_frost_active(state):
+    from fs_bot.commands.common import is_free_action
+    if not is_free_action(state, BELGAE) and (resources <= 0 or is_frost_active(state)):
         return node_b_raid(state)
 
     march_plan = {

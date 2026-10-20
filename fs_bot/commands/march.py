@@ -82,6 +82,9 @@ def march_cost(state, region, faction):
     Returns:
         Integer Resource cost.
     """
+    from fs_bot.commands.common import is_free_action
+    if is_free_action(state, faction):
+        return 0
     scenario = state["scenario"]
 
     if faction == GERMANS:

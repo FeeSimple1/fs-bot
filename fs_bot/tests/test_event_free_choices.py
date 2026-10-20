@@ -195,3 +195,37 @@ def test_event_scoped_trade_does_not_collect_outside_region(monkeypatch):
     result = sa_trade.trade(st, roman_agreed=False, allowed_regions={rc.BRITANNIA})
     assert result['resources_gained'] == 1
     assert result['per_item'] == [('aedui_ally', rc.BRITANNIA, 1)]
+
+
+@pytest.mark.parametrize('enlist', [
+    {'type': 'borrow_warbands', 'regions': [rc.MORINI, rc.NERVII]},
+    {'type': 'german_march', 'origin': rc.NERVII, 'destination': rc.MORINI},
+])
+def test_restricted_free_sa_checks_enlist_regions_and_origin(enlist):
+    st = state()
+    request = {'request_type': 'event_sa', 'allowed_regions': [rc.MORINI],
+               'allowed_sas': ['Enlist'], 'with_sa': True}
+    action = {'command': None, 'sa': 'Enlist', 'sa_regions': [],
+              'details': {'enlist': enlist}}
+    before = deepcopy(st['spaces']); rng = st['rng'].getstate()
+    error = validate_free_action_response(st, rc.BELGAE, request, action)
+    assert error == 'Special Ability plan leaves the Regions granted by this Event.'
+    assert st['spaces'] == before and st['rng'].getstate() == rng
+
+
+def test_restricted_free_enlist_march_can_leave_selected_region():
+    st = state()
+    place_piece(st, rc.MORINI, rc.BELGAE, rc.LEADER, leader_name=rc.AMBIORIX)
+    place_piece(st, rc.MORINI, rc.GERMANS, rc.WARBAND, 2)
+    request = {'request_type': 'event_sa', 'allowed_regions': [rc.MORINI],
+               'allowed_sas': ['Enlist'], 'with_sa': True}
+    action = {'command': None, 'sa': 'Enlist', 'sa_regions': [],
+              'details': {'enlist': {'type': 'german_march',
+                          'origin': rc.MORINI, 'destination': rc.NERVII}}}
+    assert validate_free_action_response(st, rc.BELGAE, request, action) is None
+    # Validation did not execute the movement on the live board.
+    assert count_pieces(st, rc.MORINI, rc.GERMANS, rc.WARBAND) == 2
+    result = execute_free_action_plan(st, rc.BELGAE, request, action)
+    assert result['executed']
+    assert count_pieces(st, rc.MORINI, rc.GERMANS, rc.WARBAND) == 0
+    assert count_pieces(st, rc.NERVII, rc.GERMANS, rc.WARBAND) == 2

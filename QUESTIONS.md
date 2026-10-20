@@ -2768,3 +2768,34 @@ implements the recommended Second Edition card set. Both printed versions
 are source-defined, so an eventual selector should consistently govern
 card text, effect execution, previews, bot targeting, persistent capabilities,
 saves and Interlude. No edition behavior was changed in this review.
+
+---
+
+## [OPEN] A53 Frumentum — unused player-specified allocation
+
+**Clear rules implemented:** A Card Reference A53 (lines 238–243) says:
+"Aedui specify an amount of their Resources. Romans then spend them as
+desired on Recruit + March + 1 Special Ability (any order, no effect on
+Eligibility)." A8.6.6 says: "For Frumentum, Transfer half of the Aedui's total
+Resources to Non-player Romans only (none to player Romans)."
+Section 1.5.2 permits Resource transfers during either faction's Event and
+makes agreements binding during that action; it specifies no automatic
+return of a transfer.
+
+**Narrow unresolved point:** the player-facing text does not say whether an
+amount specified but not spent remains Aedui-owned, becomes a Roman transfer,
+or must be returned. The explicit NP "Transfer" wording supports Roman
+retention for that case, but does not expressly settle the disposition for
+two players. No default negotiation or permanent gift should be invented
+from "as desired" alone.
+
+**Legacy behavior preserved pending clarification:** deduct the specified
+amount from Aedui, reserve it for the three paid Roman actions, and retain
+unused funds with Romans (normal Resource cap applies). This is the previous
+engine's transfer disposition, explicitly labeled `legacy_roman_retention`
+in the result; it is not a new ruling. The corrections to the amount,
+actual costs, human choices, distinct actions, ordering and eligibility do
+not depend on resolving this narrower policy.
+
+**Question:** when human Aedui allocate Resources under A53, who owns any
+portion that the Romans do not spend during the Event?

@@ -63,6 +63,14 @@ SEP = "-" * 78
 SEP_HEAVY = "=" * 78
 
 
+def _display_resources(state):
+    resources = dict(state.get("resources", {}))
+    budget = state.get("_frumentum_budget")
+    if budget:
+        resources[ROMANS] = budget["reserved_treasury"]
+    return resources
+
+
 # Faction display short codes for tables
 _FACTION_SHORT = {
     ROMANS: "Rom",
@@ -246,7 +254,7 @@ def format_state_summary(state):
     lines.append("-" * 53)
     # Show all factions that have resources or eligibility relevant
     for faction in FACTIONS:
-        res = state["resources"].get(faction)
+        res = _display_resources(state).get(faction)
         if res is None and faction == GERMANS and scenario in BASE_SCENARIOS:
             # Germans don't have resources in base — §1.8
             continue
@@ -256,6 +264,13 @@ def format_state_summary(state):
         lines.append(
             f"{faction:<10}{res_str:>10}{elig:>14}{allies:>9}{citadels:>10}"
         )
+
+    budget = state.get("_frumentum_budget")
+    if budget:
+        remaining = (state["resources"][ROMANS] if budget.get("paying")
+                     else budget["remaining"])
+        lines.append(f"Frumentum: {remaining} of {budget['allocated']} Aedui Resources remain; "
+                     f"Roman own treasury {budget['reserved_treasury']} is reserved.")
 
     # Senate / Legions
     lines.append(SEP)
@@ -692,7 +707,7 @@ def snapshot_state(state):
     tribes = {t: (ti.get("allied_faction"), ti.get("status"))
               for t, ti in state.get("tribes", {}).items()}
     snapshot = {
-        "resources": dict(state.get("resources", {})),
+        "resources": _display_resources(state),
         "pieces": pieces,
         "piece_states": piece_states,
         "leaders": leaders,

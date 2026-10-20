@@ -119,6 +119,62 @@ def test_invalid_paid_winter_plan_keeps_pending_id_board_rng_and_input():
     assert encode(board_copy(state)) == before
 
 
+def test_frumentum_pending_resume_preserves_allocation_action_order_and_input():
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.engine.frumentum import resolve_frumentum
+    st = setup_scenario(rc.SCENARIO_ARIOVISTUS, seed=17)
+    meta = {'seat': rc.ROMANS, 'scenario': st['scenario'], 'seed': 17}
+    session = SeatSession(st, meta, [], HumanTurnDisplay(io.StringIO()))
+    def agent(board, faction, request):
+        if request['kind'] == 'frumentum_amount':
+            return {'amount': 4}
+        return session.reactive(board, faction, request)
+    st['decision_agent'] = agent
+    march = {'command': 'March', 'sa': 'No SA', 'details': {
+        'origins': [rc.PROVINCIA], 'destinations': [rc.SEQUANI],
+        'routes': {rc.PROVINCIA: [rc.SEQUANI]},
+        'groups': {rc.PROVINCIA: {rc.AUXILIA: 1, rc.LEADER: False}}}}
+    session.import_inbox([{'response': march}])
+    before = encode(board_copy(st))
+    origin_before = count_pieces(st, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA)
+    own_before, donor_before = st['resources'][rc.ROMANS], st['resources'][rc.AEDUI]
+    with pytest.raises(DecisionPending):
+        with _action_transaction(st, _driver(session)):
+            resolve_frumentum(st)
+    assert encode(board_copy(st)) == before
+    assert len(session.data['journal']) == 1
+    pending = session.data['pending']
+    request = decode(pending['request'])
+    assert request['remaining_resources'] == 2
+    assert request['remaining_actions'] == ['Recruit', 'Special Ability']
+    session.import_inbox({'decision_id': pending['id'], 'response': {'decline': True}})
+    with _action_transaction(st, _driver(session)):
+        resolve_frumentum(st)
+    session.finish()
+    assert count_pieces(st, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA) == origin_before - 1
+    assert st['resources'][rc.AEDUI] == donor_before - 4
+    assert st['resources'][rc.ROMANS] == own_before + 2
+    assert len(session.log) == 2
+    assert not session.data['queue'] and not session.data['journal']
+
+
+def test_invalid_frumentum_response_preserves_pending_input_and_rng():
+    session = _session()
+    response = {'command': 'March', 'sa': 'No SA', 'details': {
+        'origins': [rc.PROVINCIA], 'destinations': [rc.SEQUANI],
+        'routes': {rc.PROVINCIA: [rc.SEQUANI]}}}
+    session.import_inbox([{'response': response}])
+    before = encode(board_copy(session.state))
+    with pytest.raises(DecisionPending):
+        with _action_transaction(session.state, _driver(session)):
+            session.ask(session.state, rc.ROMANS, {'kind': 'frumentum_action',
+                'remaining_actions': ['Recruit', 'March', 'Special Ability'],
+                'remaining_resources': 0})
+    assert session.data['queue'] == [{'response': response}]
+    assert session.error
+    assert encode(board_copy(session.state)) == before
+
+
 @pytest.mark.parametrize("req", [
     {"kind": RETREAT, "legal_regions": []},
     {"kind": LOSS_ORDER, "pieces": [(rc.LEGION, None)]},

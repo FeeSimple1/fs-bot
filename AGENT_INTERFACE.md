@@ -100,6 +100,8 @@ may control any subset of Factions and decision kinds. Request kinds
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add a third `physical_owner` field; hard pieces still roll |
 | `AGREEMENT` | `request_type, requesting_faction, context` | `bool` (agree?) — `request_type` in {`retreat_into_control`, `supply_line`, ...} |
 | `free_action` | `request_type, allowed_commands, allowed_regions, max_regions, with_sa, free`; standalone SAs use `allowed_sas` | full action plan, `{"decline":true}`, or `{"use_default":true}` |
+| `frumentum_amount` | A53; `available_resources` (Aedui) | `{"amount": integer}`, `{"decline":true}` (zero), or explicit default |
+| `frumentum_action` | A53; `remaining_actions, remaining_resources, reserved_roman_resources` | one Recruit/March plan or standalone Build/Scout plan, `{"skip": action_name}`, finish with `{"decline":true}`, or explicit default |
 
 Free-action requests describe an Event's scope. `event_command` and
 `event_rally` select a Command; `event_sa` selects only an SA. Optional
@@ -110,6 +112,16 @@ isolated board and RNG and returns an error string or `None`. The terminal
 prompts **Plan the action / Use bot default / Decline**, keeps normal
 before/during/after SA ordering, and offers a new plan after a failed check.
 EOF interrupts and preserves the pending decision.
+
+Frumentum uses **normal paid costs** and only the specified Aedui allocation.
+Romans choose the order of Recruit, March, and one Special Ability; each may
+be used at most once. After each action, the next request shows the updated
+board and remaining allowance. The Roman personal treasury is reserved.
+NP Aedui supply half their Resources only to NP Romans (A8.6.6), and none to
+human Romans. Unused transferred funds retain the legacy Roman disposition;
+the narrower player-text ambiguity is recorded in `QUESTIONS.md`.
+`engine.frumentum.validate_response` validates both request kinds without
+spending live resources or RNG or consuming any human reaction.
 
 ```python
 def reactive(state, faction, request):

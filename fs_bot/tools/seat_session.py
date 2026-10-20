@@ -78,6 +78,10 @@ def validate_response(state, request, response):
         if error:
             raise ValueError(error)
         return response
+    if kind in ("frumentum_amount", "frumentum_action"):
+        from fs_bot.engine.frumentum import validate_response as validate_frumentum
+        validate_frumentum(state, request, response)
+        return response
     if kind == "quarters_plan":
         if not isinstance(response, dict):
             raise ValueError("Quarters requires a relocation/payment object.")

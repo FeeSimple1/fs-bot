@@ -47,7 +47,12 @@ class MenuPlayer:
                 self.region_pick += 1
                 return options[(self.region_pick - 1) % len(options)][0] + '\n'
             else:
-                preferred = ['gain 1 Resource', '(done)',
+                # Exercise the explicit delegation menu for reactive Event
+                # grants. Blindly choosing the first paid Frumentum action
+                # can repeat an unaffordable March forever; ordinary turns
+                # above still make actual human Seize/Raid plans.
+                preferred = ['Use bot default for the next action',
+                             'Use bot default', 'gain 1 Resource', '(done)',
                              'No Retreat (take Losses in place)',
                              '(default order for the rest)']
             reply = next((labels[x] for x in preferred if x in labels), options[0][0])

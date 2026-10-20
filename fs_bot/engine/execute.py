@@ -1579,31 +1579,9 @@ def _resolve_card_A37_move(state, faction):
 
 
 def _resolve_card_A53_frumentum(state):
-    """Card A53 Frumentum (unshaded): the Aedui lend Resources and the Romans
-    spend them on a free Recruit + March + Special Activity. We transfer a
-    modest amount of Aedui Resources to the Romans (an NP "specified amount"),
-    then run a free Roman Recruit and a free Roman March."""
-    from fs_bot.rules_consts import AEDUI, ROMANS
-    from fs_bot.cards.card_effects import _cap_resources
-    out = []
-    lend = min(state["resources"].get(AEDUI, 0), 6)
-    if lend > 0:
-        _cap_resources(state, AEDUI, -lend)
-        _cap_resources(state, ROMANS, lend)
-        out.append({"free_action": "resource_transfer", "flag": "card_A53",
-                    "from": AEDUI, "to": ROMANS, "amount": lend})
-    # Roman free Recruit (node_r_recruit via the free-Rally layer) + free March.
-    out.append({"free_action": "free_recruit", "flag": "card_A53",
-                "result": _resolve_free_rally(state, ROMANS)})
-    out.append({"free_action": "free_march", "flag": "card_A53",
-                "result": _resolve_free_march(state, ROMANS)})
-    # ...+ 1 free Special Activity. The Roman NP's default SA is Build (both
-    # node_r_recruit and node_r_march select Build, §8.8.1/§8.8.4); run it free.
-    sa_res = _execute_sa(state, ROMANS, {"sa": _SA_BUILD, "sa_regions": [],
-                                         "details": {}})
-    out.append({"free_action": "free_sa", "flag": "card_A53", "sa": _SA_BUILD,
-                "result": sa_res})
-    return out
+    """A53's paid Aedui allocation and any-order Roman action sequence."""
+    from fs_bot.engine.frumentum import resolve_frumentum
+    return resolve_frumentum(state)
 
 
 def _resolve_card67_arduenna(state, faction):
@@ -4059,7 +4037,7 @@ def march_plan_has_effect(state, faction, plan):
     from fs_bot.bots.bot_common import is_frost_active
     from fs_bot.commands.common import is_free_action
     free = state.get("_planning_free_command", False) or is_free_action(state, faction)
-    if not free and is_frost_active(state):
+    if not free and not state.get("_planning_event_command") and is_frost_active(state):
         return False
     sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
     moves, _ = _collect_march_moves(sim, faction, {"details": plan})

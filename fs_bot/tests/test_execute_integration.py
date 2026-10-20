@@ -3290,9 +3290,8 @@ def test_card_A5_evicts_non_romans_from_cisalpina():
     assert validate_state(st) == []
 
 
-def test_cards_A37_A53_special_free_actions():
-    """Slice 61: A37 unshaded (place Ally + move Leader/Warbands there); A53
-    (Aedui lend Resources, Romans free Recruit + March)."""
+def test_cards_A37_A53_special_event_actions():
+    """A37 movement and A53's distinct paid Roman actions preserve the board."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.state.state_schema import validate_state
     from fs_bot.engine.game_engine import get_sop_factions
@@ -3314,9 +3313,10 @@ def test_cards_A37_A53_special_free_actions():
     r2 = _execute_event(st2, ROMANS, {"command": "Event", "sa": "No SA",
         "sa_regions": [], "details": {"card_id": "A53", "text_preference": EVENT_UNSHADED}})
     fa = [f for f in (r2.get("free_actions") or []) if f.get("flag") == "card_A53"]
-    kinds = {f["free_action"] for f in fa}
-    assert {"resource_transfer", "free_recruit", "free_march"} <= kinds
-    assert st2["resources"][AEDUI] < ar   # Aedui lent Resources
+    assert len(fa) == 1 and fa[0]['event_action'] == 'frumentum'
+    assert fa[0]['allocated'] == ar // 2
+    assert fa[0]['spent'] <= fa[0]['allocated']
+    assert st2["resources"][AEDUI] == ar - ar // 2
     assert validate_state(st2) == []
 
 
@@ -4180,8 +4180,7 @@ def test_card_A34_unshaded_borrowed_german_battles():
 
 
 def test_card_A53_unshaded_grants_recruit_march_and_sa():
-    """A53 unshaded (Frumentum): Aedui lend Resources; the Romans get a
-    free Recruit + March + 1 Special Activity."""
+    """A53 uses A8.6.6 funding and paid Commands, including the normal SA."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.engine.execute import _execute_event
     from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, ROMANS,
@@ -4194,8 +4193,9 @@ def test_card_A53_unshaded_grants_recruit_march_and_sa():
         "details": {"card_id": "A53",
                     "text_preference": EVENT_UNSHADED}}, human=False)
     assert res["executed"], res
-    kinds = [f.get("free_action") for f in (res.get("free_actions") or [])
-             if f.get("flag") == "card_A53"]
-    assert "resource_transfer" in kinds
-    assert "free_recruit" in kinds and "free_march" in kinds
-    assert "free_sa" in kinds     # the granted +1 Special Activity
+    grant = next(f for f in res['free_actions'] if f.get('flag') == 'card_A53')
+    assert grant['allocated'] == 6
+    assert {entry['action'] for entry in grant['actions']} == {
+        'Recruit', 'March', 'Special Ability'}
+    assert grant['spent'] == sum(entry['spent'] for entry in grant['actions'])
+    assert grant['spent'] > 0

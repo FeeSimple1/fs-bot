@@ -150,6 +150,20 @@ def _validate_turn(state):
     turn = state.get("_card_turn")
     if turn is not None:
         _mapping(turn, "state._card_turn")
+        from fs_bot.engine.game_engine import (
+            ACTION_PASS, ACTION_EVENT, ACTION_COMMAND, ACTION_COMMAND_SA,
+            ACTION_LIMITED_COMMAND,
+        )
+        actions = (ACTION_PASS, ACTION_EVENT, ACTION_COMMAND, ACTION_COMMAND_SA,
+                   ACTION_LIMITED_COMMAND)
+        _require(all(key in turn for key in ("card", "frost", "arverni_phase",
+                     "eligible", "idx", "first_action", "actions_taken", "passes",
+                     "factions_done")), "Pending turn is missing required fields")
+        _require(type(turn["frost"]) is bool, "Pending turn Frost status is invalid")
+        _require(turn["arverni_phase"] is None or isinstance(turn["arverni_phase"], dict),
+                 "Pending turn Arverni Phase result is invalid")
+        _require(turn["first_action"] in (None, ACTION_EVENT, ACTION_COMMAND, ACTION_COMMAND_SA),
+                 "Pending turn first action is invalid")
         _require(turn.get("card") == state["current_card"],
                  "Pending turn does not match the current card")
         for name in ("eligible", "passes"):
@@ -161,6 +175,9 @@ def _validate_turn(state):
         _require(turn["idx"] <= len(turn["eligible"]),
                  "Pending turn cursor is outside its faction order")
         _mapping(turn.get("actions_taken"), "Pending turn actions")
+        for faction, action in turn["actions_taken"].items():
+            _require(faction in rc.FACTIONS and isinstance(action, dict)
+                     and action.get("action") in actions, "Pending turn action is invalid")
         _require(type(turn.get("factions_done")) is bool,
                  "Pending turn completion status is invalid")
     resolved = state.get("_resolved_card")
@@ -170,6 +187,10 @@ def _validate_turn(state):
                  "Resolved card does not match the current card")
         _require(type(resolved.get("game_over")) is bool,
                  "Resolved card completion status is invalid")
+        _require(resolved.get("type") in ("event", "winter"),
+                 "Resolved card type is invalid")
+        key = "turn_result" if resolved["type"] == "event" else "winter_result"
+        _mapping(resolved.get(key), f"Resolved card {key}")
 
 
 def _validate_metadata(state, meta, log):

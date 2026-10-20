@@ -116,3 +116,20 @@ def test_partial_states_remain_supported_by_low_level_loader(tmp_path):
     assert serialize.load_game(path)[0] == {'example': {'__set__': 'literal key'}}
     with pytest.raises(serialize.SaveFileError):
         serialize.load_game(path, validate=True)
+
+
+@pytest.mark.parametrize('missing', ['first_action', 'frost', 'arverni_phase',
+                                    'actions_taken', 'eligible', 'passes'])
+def test_pending_turn_requires_every_field_consumed_on_resume(tmp_path, missing):
+    from fs_bot.engine.game_engine import start_game, play_card
+    state = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=1)
+    start_game(state)
+    def pause(*args):
+        raise EOFError()
+    with pytest.raises(EOFError):
+        play_card(state, pause, execute=True)
+    state['_card_turn'].pop(missing)
+    path = tmp_path / 'pending.json'
+    serialize.save_game(state, path)
+    with pytest.raises(serialize.SaveFileError, match='Pending turn'):
+        serialize.load_game(path, validate=True)

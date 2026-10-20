@@ -193,3 +193,44 @@ def test_cli_campaign_rejects_unaffordable_march_then_allows_decline():
     assert 'Cannot use this plan:' in out.getvalue()
     assert count_pieces(st, rc.CARNUTES, rc.AEDUI, rc.WARBAND) == 3
     assert st['resources'][rc.AEDUI] == 0
+
+
+@pytest.mark.parametrize('remaining', [1, 2])
+def test_np_last_campaign_command_does_not_depend_on_ungranted_settle(remaining):
+    from fs_bot.engine.winter_campaign import _bot_plan, _execute_plan
+    state = _state(rc.GERMANS, rc.SCENARIO_ARIOVISTUS)
+    state['non_player_factions'] = {rc.GERMANS}
+    # Override an ambient grant's opposite allowance at the new budget.
+    state['_command_with_sa'] = remaining == 1
+    place_piece(state, rc.SUGAMBRI, rc.GERMANS, rc.LEADER,
+                leader_name=rc.ARIOVISTUS_LEADER)
+    place_piece(state, rc.MORINI, rc.GERMANS, rc.WARBAND, 5)
+    # German Control permits Settle, but no German Ally permits Rally here.
+    for tribe in (rc.TRIBE_MENAPII, rc.TRIBE_MORINI):
+        place_piece(state, rc.MORINI, rc.BELGAE, rc.ALLY)
+        state['tribes'][tribe]['allied_faction'] = rc.BELGAE
+    plan = _bot_plan(state, rc.GERMANS, remaining)
+    assert plan['command'] == rc.CMD_RALLY
+    assert validate_plan(state, rc.GERMANS, plan, remaining) == remaining
+    assert bool(plan['details']['rally_plan']['settlements_before']) is (remaining == 2)
+    result = _execute_plan(state, rc.GERMANS, plan, uses_bot=True)
+    assert result['executed'] and not result['errors']
+    assert count_pieces(state, rc.MORINI, rc.GERMANS, rc.SETTLEMENT) == (remaining == 2)
+    assert count_pieces(state, rc.MORINI, rc.GERMANS, rc.WARBAND) == (7 if remaining == 2 else 5)
+    assert state['resources'][rc.GERMANS] == (7 if remaining == 2 else 10)
+    assert state['_command_with_sa'] is (remaining == 1)
+
+
+def test_campaign_bot_planning_excludes_live_agent_and_sets_budget_before_dispatch(monkeypatch):
+    from fs_bot.engine.winter_campaign import _bot_plan
+    state = _state()
+    agent = lambda *_: pytest.fail('planning consulted live player')
+    state['decision_agent'] = agent
+    def dispatch(planning, faction):
+        assert 'decision_agent' not in planning
+        assert planning['_command_with_sa'] is False
+        assert planning['resources'][faction] == 10
+        return {'command': 'Pass'}
+    monkeypatch.setattr('fs_bot.bots.bot_dispatch.dispatch_bot_turn', dispatch)
+    assert _bot_plan(state, rc.ARVERNI, 1) == {'decline': True}
+    assert state['decision_agent'] is agent

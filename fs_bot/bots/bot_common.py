@@ -207,13 +207,23 @@ def mons_cevenna_cannot_affect_theatre(state, faction):
     Their other Commands need pieces there. Static pieces are retained as
     potential Rally/SA bases. Also retain Belgic cases with German Warbands
     that could be used through the card's SA-first Enlist allowance.
-    Roman Build and the Arverni home Rally need separate analysis, so this
-    deliberately does not declare those factions' Events ineffective.
+    With no Roman mobile force, their scoped full flowchart must still
+    provide a follow-on Command (including a possible Build); a terminal
+    Pass makes the whole Event ineffective. Preserve Arverni home Rally.
     """
     from fs_bot.rules_consts import PROVINCIA, SEQUANI, ARVERNI_REGION
+    theatre = (PROVINCIA, SEQUANI, ARVERNI_REGION)
+    if faction == ROMANS:
+        if any(count_pieces(state, region, ROMANS, piece)
+               for region in theatre for piece in MOBILE_PIECES):
+            return False
+        from fs_bot.engine.execute import _free_command_planning_state
+        from fs_bot.bots.roman_bot import execute_roman_turn, ACTION_PASS
+        planning = _free_command_planning_state(
+            state, ROMANS, theatre, with_sa=True)
+        return execute_roman_turn(planning).get("command") == ACTION_PASS
     if faction not in (GERMANS, AEDUI, BELGAE):
         return False
-    theatre = (PROVINCIA, SEQUANI, ARVERNI_REGION)
     if any(count_pieces(state, r, faction) for r in theatre):
         return False
     if faction == BELGAE and any(count_pieces(state, r, GERMANS, WARBAND)
@@ -232,6 +242,24 @@ def sabis_has_qualifying_battle(state, faction):
     from fs_bot.rules_consts import BELGICA_REGIONS
     region, _ = _choose_free_battle(state, faction, set(BELGICA_REGIONS))
     return region is not None
+
+
+def aedui_cannot_reach_arduenna(state):
+    """Arduenna is ineffective with no Aedui presence or adjacent mobile force.
+
+    Cards 67/A67 grant March into Nervii/Treveri and a non-March Command
+    there. Aedui March is one Region (§3.3.2), and neither target is their
+    Home Rally Region. Retain any static presence: it can enable Rally.
+    """
+    from fs_bot.rules_consts import NERVII, TREVERI
+    from fs_bot.map.map_data import get_adjacent_for_state
+    targets = (NERVII, TREVERI)
+    if any(count_pieces(state, region, AEDUI) for region in targets):
+        return False
+    origins = {origin for target in targets
+               for origin in get_adjacent_for_state(state, target, AEDUI)}
+    return not any(count_pieces(state, origin, AEDUI, piece)
+                   for origin in origins for piece in MOBILE_PIECES)
 
 
 def should_decline_event(state, card_id, faction):
@@ -281,6 +309,8 @@ def should_decline_event(state, card_id, faction):
     if card_id == 9 and mons_cevenna_cannot_affect_theatre(state, faction):
         return True
     if card_id == "A57" and not sabis_has_qualifying_battle(state, faction):
+        return True
+    if card_id in (67, "A67") and faction == AEDUI and aedui_cannot_reach_arduenna(state):
         return True
 
     # Ineffective Event — §8.1.1 (no effect, or merely Revealing own pieces).

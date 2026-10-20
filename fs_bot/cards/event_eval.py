@@ -999,6 +999,13 @@ def is_event_effective(state, card_id, shaded=False):
         # Unknown card — assume effective to be safe
         return True
 
+    if card_id == 52 and shaded:
+        # Assembly's entire shaded effect belongs to Carnutes's controller.
+        # No controller means no beneficiary, not an executable free grant.
+        from fs_bot.rules_consts import CARNUTES
+        from fs_bot.board.control import is_controlled_by
+        return any(is_controlled_by(state, CARNUTES, f) for f in FACTIONS)
+
     # If the card has free commands/battles/marches, it's almost always
     # effective (something can be done). The only exception would be if
     # no pieces exist at all, which is extremely rare.

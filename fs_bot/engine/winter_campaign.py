@@ -47,6 +47,11 @@ def _bot_plan(state, faction, remaining):
     # the real seat's player rules and paid Command costs.
     planning["non_player_factions"] = set(state.get("non_player_factions", ())) | {faction}
     planning.pop("_planning_free_command", None)
+    planning.pop("decision_agent", None)
+    # Card 63/A63 grants only two actions total. Apply the remaining budget
+    # before planning, so a last Command cannot depend on an ungranted SA
+    # (for example Settle establishing the Ally/Settlement needed to Rally).
+    planning["_command_with_sa"] = remaining > 1
     plan = dispatch_bot_turn(planning, faction)
     if plan.get("command") in (None, "None", "Pass", "Event"):
         return {"decline": True}

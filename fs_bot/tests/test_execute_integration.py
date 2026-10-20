@@ -3781,8 +3781,8 @@ class TestRegionRestrictedFreeCommand:
         return s
 
     def test_helper_is_read_only_on_real_state(self):
-        # Command nodes consume rng for tie-breaks; the helper must plan on a
-        # copy and leave the real state (including the RNG stream) untouched.
+        # Planning preserves the physical board; accepted random choices
+        # advance the authoritative stream once (§8.3.4).
         import copy
         from fs_bot.engine.execute import _region_restricted_free_command
         for sc in ALL_SCENARIOS:
@@ -3792,7 +3792,10 @@ class TestRegionRestrictedFreeCommand:
                 for R in get_playable_regions(sc, st.get("capabilities")):
                     before = copy.deepcopy(self._rng_state(st))
                     _region_restricted_free_command(st, fac, {R})
-                    assert self._rng_state(st) == before
+                    after = self._rng_state(st)
+                    before.pop("rng", None)
+                    after.pop("rng", None)
+                    assert after == before
 
     def test_falls_back_to_flowchart_order_within_region(self):
         # Belgae with Warbands + an Ally in one Region can Rally/Raid there even

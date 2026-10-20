@@ -27,12 +27,13 @@ def test_mons_cevenna_declined_without_germans_in_its_actual_theatre():
     place_piece(state, rc.SUGAMBRI, rc.GERMANS, rc.WARBAND, 10)
     place_piece(state, rc.CARNUTES, rc.GERMANS, rc.SETTLEMENT)
     assert node_g3b(state) == 'Yes'
-    # Do not disguise a forced executor refusal as an intentional no-op.
+    # A forced Event still exhausts the relevant granted Command priorities.
     result = _execute_event(state, rc.GERMANS, {'details': {
         'card_id': 9, 'text_preference': rc.EVENT_SHADED}}, human=True)
     command = next(e for e in result['free_actions'] if e['free_action'] == 'free_command')
     assert not command['result']['executed']
-    assert 'no Command available' in command['result']['reason']
+    assert command['result']['declined_no_effect']
+    assert 'after flowchart priorities' in command['result']['reason']
 
 
 @pytest.mark.parametrize('region', [rc.PROVINCIA, rc.SEQUANI, rc.ARVERNI_REGION])

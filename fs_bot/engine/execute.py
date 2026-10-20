@@ -463,6 +463,10 @@ def _primary_command_region(bot_action):
         return regs[0] if regs else None
     if cmd == _CMD_MARCH:
         plan = d.get("march_plan") or d
+        if plan.get("explicit_moves"):
+            return plan["explicit_moves"][0].get("origin")
+        if plan.get("origin"):
+            return plan["origin"]
         origins = plan.get("origins") or []
         if origins:
             o = origins[0]
@@ -471,7 +475,8 @@ def _primary_command_region(bot_action):
     return None
 
 
-def _constrain_bot_action(bot_action, allowed):
+def _constrain_bot_action(bot_action, allowed, *, state=None, faction=None,
+                          constrain_sa=True):
     """Filter a chosen Command's plan to ``allowed`` Regions (for an event's
     "in/from <Region>" restriction). Returns a constrained copy of the action,
     or None if the Command has no action left within the allowed Regions.
@@ -514,29 +519,56 @@ def _constrain_bot_action(bot_action, allowed):
         d["disperse_regions"] = [r for r in (d.get("disperse_regions") or [])
                                  if r in allowed]
     elif cmd == _CMD_MARCH:
-        plan = d.get("march_plan") or d
-        origins = plan.get("origins") or []
-        def onorm(o):
-            return o[0] if isinstance(o, (list, tuple)) else o
-        keep = [o for o in origins if onorm(o) in allowed]
-        if not keep:
-            return None
-        if "march_plan" in d:
-            mp = dict(d["march_plan"]); mp["origins"] = keep
-            d["march_plan"] = mp
+        if state is not None and faction is not None:
+            # Expand plans have singular origins and implicit Leader moves;
+            # normalize every physical group before applying an origin limit.
+            # This also clips extra_groups, without narrowing destinations.
+            moves, _ = _collect_march_moves(state, faction, ba)
+            moves = [m for m in moves if m.get("origin") in allowed]
+            if not moves:
+                return None
+            plan = dict(d.get("march_plan") or d)
+            plan["explicit_moves"] = moves
+            plan["origins"] = list(dict.fromkeys(m["origin"] for m in moves))
+            plan["destinations"] = list(dict.fromkeys(
+                region for move in moves for region in move.get("path", ())))
+            d["march_plan"] = plan
         else:
-            d["origins"] = keep
+            plan = d.get("march_plan") or d
+            origins = plan.get("origins") or []
+            def onorm(o):
+                return o[0] if isinstance(o, (list, tuple)) else o
+            keep = [o for o in origins if onorm(o) in allowed]
+            singular = plan.get("origin")
+            if not keep and singular not in allowed:
+                return None
+            mp = dict(plan)
+            mp["origins"] = keep
+            if singular not in allowed:
+                mp.pop("origin", None)
+            for key in ("routes", "groups"):
+                if key in mp:
+                    mp[key] = {r: v for r, v in mp[key].items() if r in allowed}
+            if "extra_groups" in mp:
+                mp["extra_groups"] = [e for e in mp["extra_groups"]
+                                      if e.get("origin") in allowed]
+            # The executor still needs the scope to filter implicit Leaders.
+            mp["allowed_origins"] = sorted(allowed)
+            d["march_plan"] = mp
     else:
         return None
     ba["details"] = d
-    ba["sa_regions"] = [r for r in (bot_action.get("sa_regions") or [])
-                        if (not isinstance(r, str)) or r in allowed]
+    ba["regions"] = [r for r in (bot_action.get("regions") or []) if r in allowed]
+    if constrain_sa:
+        ba["sa_regions"] = [r for r in (bot_action.get("sa_regions") or [])
+                            if reg_of(r) in allowed]
     return ba
 
 
 @free_action
 def _resolve_free_command(state, faction, allowed_regions=None,
-                          exclude_commands=None, limited=False, with_sa=False):
+                          exclude_commands=None, limited=False, with_sa=False,
+                          _planner=None):
     """Execute one *free* Command for ``faction`` using its real flowchart.
 
     Event cards that grant "a free Command" (e.g. card 9 Mons Cevenna, card 70
@@ -547,14 +579,10 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     command executors. Game-run Factions (Germans in base, Arverni in
     Ariovistus) have no bot flowchart and are skipped.
 
-    REGION RESTRICTION (cards 9/62/67/70/...): when ``allowed_regions`` is
-    given, the Faction's flowchart-best Command is constrained to those
-    Regions. If that board-wide best Command cannot act there, we follow the
-    Faction's flowchart command order (the order its decision tree considers
-    Commands) and take the first whose plan, constrained to the allowed
-    Regions, is legal — i.e. "execute a free Command in/from <Region>" per the
-    Faction's own command priority (§8.x flowcharts; NP guideline "follow their
-    flowcharts"). See _region_restricted_free_command.
+    Apply the flowchart's conditions and priorities to the permitted action
+    Regions (§8.2.3), preserving the full board for strategic totals, Control,
+    Supply Lines, and March destinations. Event exclusions disable branches;
+    Sequence-of-Play Pass and Event opportunities do not apply to this grant.
     """
     from fs_bot.bots.bot_dispatch import dispatch_bot_turn
     from fs_bot.engine.free_actions import (command_options, consult_free_action,
@@ -570,117 +598,161 @@ def _resolve_free_command(state, faction, allowed_regions=None,
         if response.get("decline"):
             return {"executed": False, "command": None, "reason": "free Command declined"}
         return execute_free_action_plan(state, faction, request, response)
-    planning_state = dict(state)
-    planning_state["non_player_factions"] = set(state.get("non_player_factions", ())) | {faction}
-    planning_state["can_play_event"] = False  # force a Command, not an Event
-    planning_state["_planning_free_command"] = True
+    planning_state = _free_command_planning_state(
+        state, faction, allowed_regions, exclude_commands, with_sa=with_sa)
     try:
-        bot_action = dispatch_bot_turn(planning_state, faction)
-    except Exception as exc:  # BotDispatchError for game-run Factions, etc.
+        bot_action = (_planner(planning_state) if _planner is not None
+                      else dispatch_bot_turn(planning_state, faction))
+        if not isinstance(bot_action, dict):
+            raise ValueError("flowchart did not return an action")
+        cmd = bot_action.get("command")
+        if cmd == "Pass":
+            _commit_planning_rng(state, planning_state)
+            return {"executed": False, "command": None,
+                    "declined_no_effect": True,
+                    "reason": "no applicable free Command after flowchart priorities"}
+        if cmd in (None, _CMD_EVENT) or cmd in set(exclude_commands or ()):
+            raise ValueError(f"flowchart selected a disallowed free Command: {cmd!r}")
+        if allowed_regions is not None:
+            bot_action = _constrain_bot_action(
+                bot_action, set(allowed_regions), state=planning_state, faction=faction)
+            if bot_action is None:
+                raise ValueError("scoped flowchart selected no action in the allowed Regions")
+        if limited:
+            # Normalize implicit March origins even without a geographic grant.
+            if bot_action.get("command") == _CMD_MARCH and allowed_regions is None:
+                bot_action = _constrain_bot_action(
+                    bot_action, set(get_playable_regions_for_state(planning_state, faction)),
+                    state=planning_state, faction=faction, constrain_sa=False)
+            # Choose the first Region AFTER intersecting the Event scope.
+            primary = _primary_command_region(bot_action)
+            if primary is not None:
+                if cmd in (_CMD_RALLY, _CMD_RECRUIT):
+                    planning_state, bot_action = _replan_placement_regions(
+                        planning_state, faction, cmd, {primary}, bot_action)
+                else:
+                    bot_action = _constrain_bot_action(
+                        bot_action, {primary}, state=planning_state, faction=faction,
+                        constrain_sa=False)
+        if bot_action is None:
+            raise ValueError("flowchart selected an empty Limited Command")
+    except Exception as exc:
         return {"executed": False, "command": None, "reason": repr(exc)}
-    cmd = bot_action.get("command")
-    if cmd in (None, _CMD_EVENT):
-        return {"executed": False, "command": cmd,
-                "reason": "flowchart chose no free Command"}
-    if exclude_commands and cmd in exclude_commands:
-        # e.g. card 35 "no Battles": the flowchart's choice is disallowed here.
-        return {"executed": False, "command": cmd,
-                "reason": f"{cmd} excluded by card (e.g. no Battles)"}
-    if limited:
-        # Limited Command (§): one Region, no Special Activity.
-        bot_action = dict(bot_action)
-        if not with_sa:
-            bot_action["sa"] = SA_ACTION_NONE_LABEL
-            bot_action["sa_regions"] = []
-        primary = _primary_command_region(bot_action)
-        if primary is not None:
-            allowed_regions = ({primary} if allowed_regions is None
-                               else set(allowed_regions) & {primary})
-    if allowed_regions is not None:
-        constrained = _constrain_bot_action(bot_action, set(allowed_regions))
-        if constrained is None:
-            # The flowchart's board-wide best Command cannot act in the named
-            # Region(s). Follow the Faction's flowchart command order to take
-            # its highest-priority Command that legally can (faithful to
-            # "execute a free Command in/from <Region>").
-            constrained = _region_restricted_free_command(
-                state, faction, set(allowed_regions), exclude_commands)
-            if constrained is None:
-                return {"executed": False, "command": cmd,
-                        "reason": "no Command available in the allowed Region(s)"}
-        bot_action = constrained
-    res = _execute_bot_command(state, faction, bot_action, with_sa=with_sa)
+    _commit_planning_rng(state, planning_state)
+    with _command_execution_scope(state, allowed_regions, with_sa):
+        res = _execute_bot_command(state, faction, bot_action, with_sa=with_sa)
     if res is None:
         return {"executed": False, "command": cmd,
                 "reason": "chosen Command not executable"}
     return res
 
 
-# Each Faction's Command nodes in flowchart-decision order (the order its
-# decision tree considers Commands). Used to pick a free Command restricted to
-# a named Region when the board-wide best cannot act there — §8.5-8.8 / A8.7-8.8
-# flowcharts; NP guideline "for free Commands ... follow their flowcharts".
-_FACTION_COMMAND_NODE_ORDER = {
-    "Romans": ("fs_bot.bots.roman_bot",
-               ("node_r_battle", "node_r_march", "node_r_recruit",
-                "node_r_seize")),
-    "Arverni": ("fs_bot.bots.arverni_bot",
-                ("node_v_battle", "node_v_rally", "node_v_march_spread",
-                 "node_v_raid", "node_v_march_mass")),
-    "Aedui": ("fs_bot.bots.aedui_bot",
-              ("node_a_battle", "node_a_rally", "node_a_raid", "node_a_march")),
-    "Belgae": ("fs_bot.bots.belgae_bot",
-               ("node_b_battle", "node_b_rally", "node_b_raid", "node_b_march")),
-    "Germans": ("fs_bot.bots.german_bot",
-                ("node_g_battle", "node_g_march_threat", "node_g_raid",
-                 "node_g_rally", "node_g_march_expand")),
-}
+def _free_command_planning_state(state, faction, allowed_regions=None,
+                                  exclude_commands=None, forced_command=None,
+                                  with_sa=False):
+    """Detached planning with the real board and only action-local constraints.
+
+    Never carry a live human decision callback into a hypothetical Supply
+    Line/Retreat preview. Only the accepted plan's RNG position is committed.
+    """
+    from copy import deepcopy
+    planning = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    planning["non_player_factions"] = set(state.get("non_player_factions", ())) | {faction}
+    planning["can_play_event"] = False
+    planning["is_second_eligible"] = False
+    planning["is_limited"] = False
+    planning["_planning_free_command"] = True
+    planning["_free_action_factions"] = set(planning.get("_free_action_factions", ())) | {faction}
+    planning["_command_region_scope"] = (None if allowed_regions is None
+                                         else set(allowed_regions))
+    planning["_command_exclusions"] = set(exclude_commands or ())
+    planning["_planning_forced_command"] = forced_command
+    planning["_command_with_sa"] = bool(with_sa)
+    return planning
+
+
+def _replan_placement_regions(planning, faction, command, regions, original):
+    """Allocate Available pieces only among Regions retained by the Event cap."""
+    import importlib
+    nodes = {
+        _ROMANS_F: ("roman", "node_r_recruit"),
+        _ARVERNI_F: ("arverni", "node_v_rally"),
+        _AEDUI_F: ("aedui", "node_a_rally"),
+        _BELGAE_F: ("belgae", "node_b_rally"),
+        _GERMANS_F: ("german", "node_g_rally"),
+    }
+    module, name = nodes[faction]
+    narrowed = _free_command_planning_state(
+        planning, faction, regions, forced_command=command,
+        with_sa=planning.get("_command_with_sa", False))
+    action = getattr(importlib.import_module(f"fs_bot.bots.{module}_bot"), name)(narrowed)
+    if not isinstance(action, dict) or action.get("command") != command:
+        raise ValueError("retained placement Region no longer has its selected Command")
+    action = _constrain_bot_action(action, set(regions), state=narrowed,
+                                   faction=faction, constrain_sa=False)
+    if action is None:
+        raise ValueError("retained placement Region has no legal planned placement")
+    # A Limited Command's Region limit does not itself limit an explicitly
+    # granted accompanying SA (Druids); retain that separate chosen plan.
+    for key in ("sa", "sa_regions", "sa_timing"):
+        if key in original:
+            action[key] = original[key]
+    details = dict(original.get("details") or {})
+    plan_key = "recruit_plan" if command == _CMD_RECRUIT else "rally_plan"
+    details[plan_key] = action["details"][plan_key]
+    action["details"] = details
+    return narrowed, action
+
+
+def _command_execution_scope(state, allowed_regions, with_sa):
+    """Keep live SA re-planning inside the Event grant, restoring nested scopes."""
+    from contextlib import contextmanager
+    @contextmanager
+    def scoped():
+        missing = object()
+        values = {"_command_region_scope": (None if allowed_regions is None
+                                             else set(allowed_regions)),
+                  "_command_with_sa": bool(with_sa)}
+        previous = {key: state.get(key, missing) for key in values}
+        state.update(values)
+        try:
+            yield
+        finally:
+            for key, value in previous.items():
+                if value is missing:
+                    state.pop(key, None)
+                else:
+                    state[key] = value
+    return scoped()
+
+
+def _commit_planning_rng(state, planning):
+    if "rng" in state and "rng" in planning:
+        state["rng"].setstate(planning["rng"].getstate())
 
 
 def _region_restricted_free_command(state, faction, allowed_regions,
                                     exclude_commands=None):
-    """Pick a free Command for ``faction`` that legally acts within
-    ``allowed_regions``, following the Faction's flowchart command order.
+    """Plan through the complete flowchart with its regional scope (§8.2.3).
 
-    Evaluates each of the Faction's Command nodes (in flowchart-decision
-    order), constrains its plan to ``allowed_regions``, and returns the first
-    constrained action that has a legal action there — or None if the Faction
-    has no Command available in those Region(s). The Command nodes are
-    read-only planners; only the returned action is later executed.
+    No action means the flowchart exhausted its priorities. Exceptions and
+    malformed plans remain errors rather than silently trying unrelated nodes.
     """
-    spec = _FACTION_COMMAND_NODE_ORDER.get(faction)
-    if spec is None:
+    from fs_bot.bots.bot_dispatch import dispatch_bot_turn
+    planning = _free_command_planning_state(state, faction, allowed_regions,
+                                            exclude_commands)
+    action = dispatch_bot_turn(planning, faction)
+    if action.get("command") == "Pass":
+        _commit_planning_rng(state, planning)
         return None
-    import importlib, copy
-    module_name, node_names = spec
-    try:
-        module = importlib.import_module(module_name)
-    except Exception:
-        return None
-    exclude = set(exclude_commands or ())
-    for node_name in node_names:
-        node = getattr(module, node_name, None)
-        if node is None:
-            continue
-        try:
-            # Plan on a deep copy: Command nodes consume state["rng"] for
-            # §8.3.4 tie-breaks; isolating the copy keeps the real RNG stream
-            # deterministic (only the executed Command advances it). The plan
-            # is region/target strings, valid to execute on the real state.
-            sim = copy.deepcopy(state)
-            sim["_planning_free_command"] = True
-            action = node(sim)
-        except Exception:
-            continue  # a node mis-fires out of its flowchart context — skip
-        if not isinstance(action, dict):
-            continue
-        cmd = action.get("command")
-        if cmd in (None, _CMD_EVENT, "Pass") or cmd in exclude:
-            continue  # _constrain_bot_action also rejects non-Command actions
-        constrained = _constrain_bot_action(action, allowed_regions)
-        if constrained is not None:
-            return constrained
-    return None
+    if action.get("command") in set(exclude_commands or ()):
+        raise ValueError("flowchart returned an excluded free Command")
+    constrained = _constrain_bot_action(action, allowed_regions,
+                                         state=planning, faction=faction)
+    if constrained is None:
+        raise ValueError("scoped flowchart returned an out-of-scope action")
+    _commit_planning_rng(state, planning)
+    return constrained
 
 
 def _plan_region_order(bot_action):
@@ -747,33 +819,37 @@ def _resolve_free_rally_default(state, faction, allowed_regions=None,
         return {"executed": False, "command": None,
                 "reason": "no Rally node for Faction"}
     import importlib
+    command = _CMD_RECRUIT if faction == _ROMANS_F else _CMD_RALLY
+    planning = _free_command_planning_state(
+        state, faction, allowed_regions, forced_command=command)
     try:
         node = getattr(importlib.import_module(spec[0]), spec[1])
-        bot_action = node(state)
-    except Exception as exc:
-        return {"executed": False, "command": None, "reason": repr(exc)}
-    if not bot_action:
-        return {"executed": False, "command": None,
-                "reason": "Rally node produced no action"}
-    cmd = bot_action.get("command")
-    if cmd not in (_CMD_RALLY, _CMD_RECRUIT):
-        return {"executed": False, "command": cmd,
-                "reason": "no free Rally available (node fell through)"}
-    if allowed_regions is not None:
-        bot_action = _constrain_bot_action(bot_action, set(allowed_regions))
-        if bot_action is None:
-            return {"executed": False, "command": cmd,
-                    "reason": "no Rally action in the allowed Region(s)"}
-    if max_regions is not None:
-        # Card-imposed Region cap (e.g. 34 Acco: "in any 3 Regions") — keep
-        # the plan's top-priority Regions, drop the rest.
-        order = _plan_region_order(bot_action)
-        if len(order) > max_regions:
-            bot_action = _constrain_bot_action(
-                bot_action, set(order[:max_regions]))
+        bot_action = node(planning)
+        if not isinstance(bot_action, dict):
+            raise ValueError("Rally node did not return an action")
+        cmd = bot_action.get("command")
+        if cmd not in (_CMD_RALLY, _CMD_RECRUIT):
+            if cmd not in (_CMD_BATTLE, _CMD_MARCH, _CMD_RAID, _CMD_SEIZE, "Pass"):
+                raise ValueError(f"Rally node returned an invalid action: {cmd!r}")
+            # The forced Rally process's IF NONE means its placement
+            # priorities were exhausted; do not execute its other Command.
+            _commit_planning_rng(state, planning)
+            return {"executed": False, "command": command,
+                    "declined_no_effect": True,
+                    "reason": "no placement available for the granted Rally"}
+        if allowed_regions is not None:
+            bot_action = _constrain_bot_action(bot_action, set(allowed_regions),
+                                               state=planning, faction=faction)
             if bot_action is None:
-                return {"executed": False, "command": cmd,
-                        "reason": "no Rally action within the Region cap"}
+                raise ValueError("scoped Rally node selected no allowed Region")
+        if max_regions is not None:
+            order = _plan_region_order(bot_action)
+            if len(order) > max_regions:
+                planning, bot_action = _replan_placement_regions(
+                    planning, faction, command, set(order[:max_regions]), bot_action)
+    except Exception as exc:
+        return {"executed": False, "command": command, "reason": repr(exc)}
+    _commit_planning_rng(state, planning)
     res = _execute_bot_command(state, faction, bot_action)
     return res if res is not None else {"executed": False, "command": cmd,
                                         "reason": "Rally not executable"}
@@ -1774,9 +1850,29 @@ def _resolve_card62_war_fleet(state, faction):
     playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
     near_brit = {BRITANNIA} | set(get_adjacent(BRITANNIA, state["scenario"]))
     allowed = ({ARVERNI_REGION, PICTONES} | near_brit) & playable
+    from fs_bot.rules_consts import AEDUI, BELGAE, ARVERNI
+    nps = state.get("non_player_factions", ())
+    planner = None
+    if faction in nps and faction == AEDUI:
+        # Aedui Event instruction: Rally if it places pieces, otherwise Raid.
+        # The Rally process already has exactly that IF NONE continuation.
+        from fs_bot.bots.aedui_bot import node_a_rally
+        planner = node_a_rally
+    elif faction in nps and faction == BELGAE:
+        return [{"free_action": "free_command", "flag": "card_62",
+                 "result": _resolve_free_rally(
+                     state, faction, allowed_regions=allowed, max_regions=1)}]
+    elif faction in nps and faction == ARVERNI:
+        from fs_bot.bots.arverni_bot import node_v_battle
+        def planner(planning):
+            action = node_v_battle(planning)
+            # The card's explicit Battle does not authorize the process's
+            # threatened-March fallback. The earlier repositioning stands.
+            return action if action.get("command") == _CMD_BATTLE else {"command": "Pass"}
     return [{"free_action": "free_command", "flag": "card_62",
              "result": _resolve_free_command(state, faction,
-                                             allowed_regions=allowed)}]
+                                             allowed_regions=allowed,
+                                             limited=True, _planner=planner)}]
 
 
 def _resolve_card25_battle(state, faction, region, extra):
@@ -1952,7 +2048,8 @@ def _resolve_card26_arverni_rally(state):
     leader = find_leader(state, ARVERNI)
     if leader is None:
         return [{"free_action": "free_rally", "flag": "card_26",
-                 "executed": False, "reason": "Vercingetorix not on map"}]
+                 "executed": False, "declined_no_effect": True,
+                 "reason": "no Vercingetorix location for the follow-on Rally"}]
     playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
     allowed = ({leader} | set(get_adjacent(leader, state["scenario"]))) & playable
     return [{"free_action": "free_rally", "flag": "card_26",
@@ -1966,7 +2063,8 @@ def _resolve_card64_belgae_rally(state):
     playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
     allowed = set(BELGICA_REGIONS) & playable
     return [{"free_action": "free_rally", "flag": "card_64",
-             "result": _resolve_free_rally(state, BELGAE, allowed_regions=allowed)}]
+             "result": _resolve_free_rally(state, BELGAE, allowed_regions=allowed,
+                                             max_regions=1)}]
 
 
 def _resolve_card35_roman(state, faction):
@@ -3901,10 +3999,14 @@ def _collect_march_moves(state, faction, bot_action):
     """Normalize threat and expansion plans to groups and adjacent routes."""
     details = bot_action.get("details") or {}
     plan = details.get("march_plan") or details
+    if "explicit_moves" in plan:
+        return list(plan["explicit_moves"]), []
     origins, destinations = plan.get("origins"), plan.get("destinations")
     if not (isinstance(origins, list) and isinstance(destinations, list)
             and origins and destinations):
         moves = plan_expand_march_moves(state, faction, plan)
+        if plan.get("allowed_origins") is not None:
+            moves = [m for m in moves if m["origin"] in plan["allowed_origins"]]
         return moves, []
 
     destinations = [d[0] if isinstance(d, (list, tuple)) else d
@@ -4013,6 +4115,9 @@ def march_plan_has_effect(state, faction, plan):
         return False
     sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
     moves, _ = _collect_march_moves(sim, faction, {"details": plan})
+    scope = state.get("_command_region_scope")
+    if scope is not None:
+        moves = [m for m in moves if m.get("origin") in scope]
     selected, _, _, _ = _select_affordable_march_moves(sim, faction, moves, free=free)
     return bool(selected)
 
@@ -4469,6 +4574,9 @@ def maybe_np_aedui_subsidy(state):
 
 def _execute_trade(state, faction, *, allowed_regions=None):
     """Aedui Trade (§4.4.2) — yields Resources; no targets."""
+    scope = state.get("_command_region_scope")
+    if scope is not None:
+        allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     try:
         res = _sa_trade(state,
                         roman_agreed=_trade_roman_agreement(state),
@@ -6228,11 +6336,13 @@ def plan_expand_march_moves(state, faction, plan):
         origins.append(o1)
 
     scenario = state["scenario"]
-    playable = set(get_playable_regions(scenario, state.get("capabilities")))
+    playable = set(get_playable_regions_for_state(state, faction))
 
     from fs_bot.commands.march import _max_steps_for_group
 
     def _nearest(origin, candidates, group):
+        if origin not in playable:
+            return None
         allowance = _max_steps_for_group(state, origin, faction, group)
         best = None
         for d in candidates:

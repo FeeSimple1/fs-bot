@@ -81,7 +81,7 @@ def test_interlude_saves_current_seats_and_loads(tmp_path):
     save = tmp_path / "interlude.json"
     out = StopAtInterlude()
     assert app.main(
-        ["--scenario", SCENARIO_GALLIC_WAR, "--seed", "5",
+        ["--scenario", SCENARIO_GALLIC_WAR, "--seed", "4",
          "--non-interactive", "--save", str(save)],
         stdin=io.StringIO(""), stdout=out) == 0
     state, meta, _ = load_game(save)

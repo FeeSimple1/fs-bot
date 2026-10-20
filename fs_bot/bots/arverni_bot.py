@@ -852,7 +852,15 @@ def _determine_battle_sa(state, battle_plan, scenario):
     if devastate_regions:
         return (SA_ACTION_DEVASTATE, devastate_regions)
 
-    entreat_result = _check_entreat(state, scenario)
+    # §8.7.1 pays every selected Battle Region before choosing Entreat.
+    # Plan against that remaining budget, matching the live paid-Battle path.
+    from fs_bot.commands.common import battle_cost
+    planning = dict(state)
+    planning["resources"] = dict(state["resources"])
+    planning["resources"][ARVERNI] = max(0, state["resources"].get(ARVERNI, 0)
+        - sum(battle_cost(state, region, ARVERNI)
+              for region in {entry["region"] for entry in battle_plan}))
+    entreat_result = _check_entreat(planning, scenario)
     if entreat_result:
         return (SA_ACTION_ENTREAT, entreat_result)
 

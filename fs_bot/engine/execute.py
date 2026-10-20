@@ -264,6 +264,10 @@ def _execute_decision(state, faction, decision):
     handler = _COMMAND_HANDLERS.get(command)
     if handler is not None:
         sa = bot_action.get("sa")
+        if not is_human and faction == _ARVERNI_F and command == _CMD_BATTLE:
+            result = _execute_arverni_paid_battle(state, faction, bot_action)
+            _apply_end_of_action_capabilities(state)
+            return _attach_transfers(result)
         from fs_bot.bots.arverni_bot import MARCH_THREAT
         plan = (bot_action.get("details") or {}).get("march_plan") or {}
         if (not is_human and faction == _ARVERNI_F and command == _CMD_MARCH
@@ -3506,7 +3510,7 @@ def _execute_rally(state, faction, bot_action):
     }
 
 
-def _execute_battle(state, faction, bot_action):
+def _execute_battle(state, faction, bot_action, *, _paid_regions=()):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3632,7 +3636,7 @@ def _execute_battle(state, faction, bot_action):
         # Region, before any Battle effects or defender decisions. Event
         # actions waive the cost through their scoped §5.4 grant.
         from fs_bot.commands.common import battle_cost
-        cost = battle_cost(state, region, faction)
+        cost = 0 if region in _paid_regions else battle_cost(state, region, faction)
         if state["resources"].get(faction, 0) < cost:
             errors.append({"region": region, "defender": defender,
                            "error": f"Not enough Resources for Battle (need {cost})"})
@@ -4317,6 +4321,37 @@ def _execute_sa(state, faction, bot_action):
 
     return {"executed": False, "sa": sa,
             "reason": f"unrecognized Special Activity label: {sa!r}"}
+
+
+def _execute_arverni_paid_battle(state, faction, bot_action):
+    """§8.7.1: pay selected Battles before Devastate/Entreat, then resolve.
+
+    Devastation placed by this SA cannot retrospectively double the selected
+    Battle price, and Entreat can spend only the Resources remaining after
+    all Battle Regions have been paid. The private prepaid set never grants
+    an SA a cost waiver and cannot be supplied in a player action.
+    """
+    from fs_bot.commands.common import battle_cost
+    from fs_bot.bots.bot_common import affordable_battle_plan
+    details = dict(bot_action.get("details") or {})
+    plan = affordable_battle_plan(state, faction, details.get("battle_plan") or [])
+    costs = {entry["region"]: battle_cost(state, entry["region"], faction)
+             for entry in plan}
+    state["resources"][faction] -= sum(costs.values())
+    details["battle_plan"] = plan
+    action = dict(bot_action, details=details)
+    sa = action.get("sa")
+    before = _sa_runs_before_command(_CMD_BATTLE, sa)
+    sa_result = _execute_sa(state, faction, action) if before and plan else None
+    result = _execute_battle(state, faction, action, _paid_regions=costs)
+    if not before and _command_executed(result):
+        sa_result = _execute_sa(state, faction, action)
+    if sa_result is not None:
+        result["sa_execution"] = sa_result
+        result["sa_timing"] = "before" if before else "after"
+    result["total_cost"] = sum(costs.values())
+    result["region_costs"] = costs
+    return result
 
 
 def _execute_arverni_live_sa(state, faction, bot_action):

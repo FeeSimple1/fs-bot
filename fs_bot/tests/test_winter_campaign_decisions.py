@@ -58,6 +58,23 @@ def test_np_march_also_pays_normal_cost(monkeypatch):
     assert st["resources"][rc.ARVERNI] == 9
 
 
+@pytest.mark.parametrize("scenario,faction", [
+    (rc.SCENARIO_GREAT_REVOLT, rc.ARVERNI),
+    (rc.SCENARIO_GREAT_REVOLT, rc.BELGAE),
+    (rc.SCENARIO_ARIOVISTUS, rc.AEDUI),
+    (rc.SCENARIO_ARIOVISTUS, rc.GERMANS),
+])
+def test_human_may_delegate_campaign_without_changing_seat(scenario, faction):
+    from fs_bot.state.setup import setup_scenario
+    st = setup_scenario(scenario, seed=2)
+    st["non_player_factions"] = {rc.ROMANS, rc.AEDUI, rc.BELGAE} - {faction}
+    seats = set(st["non_player_factions"])
+    st["decision_agent"] = lambda *_: None
+    result = resolve_winter_campaign(st, faction, 63)
+    assert result["owner"] == faction
+    assert st["non_player_factions"] == seats
+
+
 def test_winter_campaign_does_not_swallow_interrupted_choice():
     st = _state()
     def stop(*args):
@@ -106,3 +123,73 @@ def test_cli_can_explicitly_decline_campaign():
     agent = make_cli_reactive([rc.ARVERNI], io.StringIO("Finish Winter Campaign\n"), out)
     assert agent(st, rc.ARVERNI, {"kind": "winter_campaign", "remaining_actions": 2}) == {"decline": True}
     assert "pay costs" in out.getvalue()
+
+
+def test_unaffordable_human_campaign_plan_retries_without_spending_action_budget():
+    from fs_bot.state.serialize import encode
+    st = _state(rc.AEDUI)
+    st['resources'][rc.AEDUI] = 0
+    place_piece(st, rc.CARNUTES, rc.AEDUI, rc.WARBAND, 3)
+    before = encode(st)
+    requests = []
+    def agent(board, faction, request):
+        requests.append(request)
+        if len(requests) == 1:
+            return _march(rc.CARNUTES, rc.MANDUBII)
+        assert encode({k: v for k, v in board.items() if k != 'decision_agent'}) == before
+        assert request['remaining_actions'] == 2
+        assert request['errors']
+        return {'decline': True}
+    st['decision_agent'] = agent
+    result = resolve_winter_campaign(st, rc.AEDUI, 63)
+    assert result['remaining_actions'] == 2
+    assert result['actions'] == []
+
+
+def test_partial_invalid_campaign_is_rejected_without_mutation_or_reactive_input():
+    from fs_bot.engine.winter_campaign import validate_human_plan
+    from fs_bot.state.serialize import encode
+    st = _state(rc.AEDUI)
+    place_piece(st, rc.MORINI, rc.AEDUI, rc.WARBAND, 3)
+    st['decision_agent'] = lambda *_: pytest.fail('validation must not consume human input')
+    before = encode({k: v for k, v in st.items() if k != 'decision_agent'})
+    plan = {'command': 'Raid', 'sa': 'No SA', 'details': {
+        'raid_plan': [{'region': rc.MORINI}, {'region': rc.MANDUBII}]}}
+    with pytest.raises(ValueError, match='Invalid Winter Campaign'):
+        validate_human_plan(st, rc.AEDUI, plan)
+    assert encode({k: v for k, v in st.items() if k != 'decision_agent'}) == before
+
+
+def test_campaign_battle_validation_does_not_roll_live_rng_or_ask_defender():
+    from copy import deepcopy
+    from fs_bot.engine.winter_campaign import validate_human_plan, _execute_plan
+    from fs_bot.state.serialize import encode
+    st = _state(rc.BELGAE)
+    place_piece(st, rc.MORINI, rc.BELGAE, rc.WARBAND, 8)
+    place_piece(st, rc.MORINI, rc.ROMANS, rc.LEGION, 2, from_legions_track=True)
+    refresh_all_control(st)
+    plan = {'command': 'Battle', 'sa': 'No SA', 'details': {
+        'battle_plan': [{'region': rc.MORINI, 'target': rc.ROMANS}]}}
+    # Verify the fixture actually exercises hard-piece dice.
+    comparison = deepcopy(st)
+    _execute_plan(comparison, rc.BELGAE, plan)
+    assert comparison['rng'].getstate() != st['rng'].getstate()
+    before = encode(st)
+    st['decision_agent'] = lambda *_: pytest.fail('preview asked the live defender')
+    assert validate_human_plan(st, rc.BELGAE, plan) == 1
+    assert encode({k: v for k, v in st.items() if k != 'decision_agent'}) == before
+
+
+def test_cli_campaign_rejects_unaffordable_march_then_allows_decline():
+    from fs_bot.cli.winter_campaign import collect_winter_campaign
+    st = _state(rc.AEDUI)
+    st['resources'][rc.AEDUI] = 0
+    place_piece(st, rc.CARNUTES, rc.AEDUI, rc.WARBAND, 3)
+    out = io.StringIO()
+    result = collect_winter_campaign(st, rc.AEDUI, {'remaining_actions': 2},
+        io.StringIO('\n'.join(['Command: March', rc.CARNUTES, rc.MANDUBII,
+                              'all 3', 'Finish Winter Campaign']) + '\n'), out)
+    assert result == {'decline': True}
+    assert 'Cannot use this plan:' in out.getvalue()
+    assert count_pieces(st, rc.CARNUTES, rc.AEDUI, rc.WARBAND) == 3
+    assert st['resources'][rc.AEDUI] == 0

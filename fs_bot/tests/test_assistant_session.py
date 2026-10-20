@@ -95,6 +95,30 @@ def test_bad_response_keeps_same_decision_and_input(req, response):
     assert session.data["pending"]["id"] == "d000001"
 
 
+def test_invalid_paid_winter_plan_keeps_pending_id_board_rng_and_input():
+    from fs_bot.board.pieces import place_piece
+    session = _session()
+    state = session.state
+    state['resources'][rc.ROMANS] = 0
+    # A Roman group pays for this Winter Campaign March, even when a free
+    # Event March would have succeeded with the same empty treasury.
+    place_piece(state, rc.MORINI, rc.ROMANS, rc.AUXILIA, 2)
+    response = {'command': 'March', 'sa': 'No SA', 'details': {
+        'origins': [rc.MORINI], 'destinations': [rc.BRITANNIA],
+        'routes': {rc.MORINI: [rc.BRITANNIA]}}}
+    session.import_inbox([{'response': response}])
+    before = encode(board_copy(state))
+    with pytest.raises(DecisionPending):
+        with _action_transaction(state, _driver(session)):
+            session.ask(state, rc.ROMANS, {'kind': 'winter_campaign',
+                                          'remaining_actions': 2})
+    assert session.error
+    assert session.data['queue'] == [{'response': response}]
+    assert session.data['pending']['id'] == 'd000001'
+    assert session.data['journal'] == []
+    assert encode(board_copy(state)) == before
+
+
 @pytest.mark.parametrize("req", [
     {"kind": RETREAT, "legal_regions": []},
     {"kind": LOSS_ORDER, "pieces": [(rc.LEGION, None)]},

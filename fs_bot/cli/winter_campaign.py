@@ -5,7 +5,10 @@ from fs_bot.cli.human_plan import (_FACTION_COMMANDS, _faction_special_abilities
 
 
 def collect_winter_campaign(state, faction, request, stdin, stdout):
+    from fs_bot.engine.winter_campaign import validate_human_plan
     remaining = request.get("remaining_actions", 2)
+    for error in request.get("errors", []):
+        stdout.write(f"Cannot use this plan: {error}\n")
     while True:
         commands = list(_FACTION_COMMANDS.get(faction, ()))
         abilities = list(_faction_special_abilities(faction, state["scenario"]))
@@ -26,8 +29,6 @@ def collect_winter_campaign(state, faction, request, stdin, stdout):
                       "sa_regions": [], "details": {}}
             action = _collect_sa_plan(state, faction, action, stdin, stdout,
                                       sa=value, standalone=True)
-            if action.get("sa") != "No SA":
-                return action
         else:
             action = _collect_command_plan(
                 state, faction, "Battle" if kind == "battle_sa" else value,
@@ -36,5 +37,12 @@ def collect_winter_campaign(state, faction, request, stdin, stdout):
                 if kind == "battle_sa":
                     action = _collect_sa_plan(state, faction, action, stdin, stdout,
                                               sa=value)
-                return action
-        stdout.write("No plan selected. Choose another action or finish.\n")
+        if action is None or (kind == "sa" and action.get("sa") == "No SA"):
+            stdout.write("No plan selected. Choose another action or finish.\n")
+            continue
+        try:
+            validate_human_plan(state, faction, action, remaining)
+        except ValueError as exc:
+            stdout.write(f"Cannot use this plan: {exc}\n")
+            continue
+        return action

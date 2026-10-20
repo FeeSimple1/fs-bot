@@ -42,6 +42,10 @@ def _bot_plan(state, faction, remaining):
     # A shallow view changes only decision context. The shared RNG remains
     # authoritative for the real flowchart choice, and no free-cost flag is set.
     planning = dict(state, can_play_event=False, is_second_eligible=False)
+    # A human may explicitly delegate this grant to the bot.  Dispatch checks
+    # seat ownership, so mark only the planning view as NP; execution retains
+    # the real seat's player rules and paid Command costs.
+    planning["non_player_factions"] = set(state.get("non_player_factions", ())) | {faction}
     planning.pop("_planning_free_command", None)
     plan = dispatch_bot_turn(planning, faction)
     if plan.get("command") in (None, "None", "Pass", "Event"):
@@ -53,35 +57,68 @@ def _bot_plan(state, faction, remaining):
     return plan
 
 
-def resolve_winter_campaign(state, owner, card_id):
-    """Resolve paid actions, querying a human again after each single action."""
+def _execute_plan(state, faction, plan, *, uses_bot=False):
+    """Apply one paid plan with the card's Command/SA compatibility exception."""
     from fs_bot.engine.execute import (_execute_decision, _execute_sa,
                                        _apply_end_of_action_capabilities)
-    remaining, results = 2, []
+    if plan.get("command") in (None, "None"):
+        result = _execute_sa(state, faction, plan) or {"executed": False}
+        _apply_end_of_action_capabilities(state)
+        return result
+    return _execute_decision(
+        state, faction, {"bot_action" if uses_bot else "player_action": plan})
+
+
+def validate_human_plan(state, faction, plan, remaining=2):
+    """Check paid mechanical feasibility without consuming live pieces/RNG/input."""
+    used = validate_plan(state, faction, plan, remaining)
+    if not used:
+        return used
+    from fs_bot.engine.free_actions import _result_error
+    from fs_bot.commands.common import CommandError
+    from fs_bot.board.pieces import PieceError
+    sim = copy.deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    try:
+        result = _execute_plan(sim, faction, copy.deepcopy(plan))
+    except (CommandError, PieceError, ValueError, TypeError, KeyError,
+            IndexError, AttributeError) as exc:
+        raise ValueError(f"Invalid Winter Campaign plan: {exc}") from exc
+    error = _result_error(result)
+    if error:
+        raise ValueError(f"Invalid Winter Campaign plan: {error}")
+    if not result.get("executed"):
+        raise ValueError("Winter Campaign plan has no legal effect.")
+    return used
+
+
+def resolve_winter_campaign(state, owner, card_id):
+    """Resolve paid actions, querying a human again after each single action."""
+    remaining, results, errors = 2, [], []
     while remaining:
         player = owner not in state.get("non_player_factions", set())
-        plan = (consult_agent(state, owner, {
+        request = {
             "kind": "winter_campaign", "card_id": card_id,
             "remaining_actions": remaining,
-        }) if player else None)
+        }
+        if errors:
+            request["errors"] = errors
+        plan = consult_agent(state, owner, request) if player else None
         uses_bot = plan is None
         if uses_bot:
             plan = _bot_plan(state, owner, remaining)
-        used = validate_plan(state, owner, plan, remaining)
+            used = validate_plan(state, owner, plan, remaining)
+        else:
+            try:
+                used = validate_human_plan(state, owner, plan, remaining)
+            except ValueError as exc:
+                errors = [str(exc)]
+                continue
         if used == 0:
             break
-        command = plan.get("command")
-        if command in (None, "None"):
-            result = _execute_sa(state, owner, plan) or {"executed": False}
-            _apply_end_of_action_capabilities(state)
-        else:
-            # The card overrides normal Command/SA compatibility. Execute
-            # the already validated structure directly, retaining normal
-            # resource costs and the player's chosen before/after order.
-            result = _execute_decision(
-                state, owner, {"bot_action" if uses_bot else "player_action": plan})
+        result = _execute_plan(state, owner, plan, uses_bot=uses_bot)
         results.append({"plan": plan, "actions": used, "result": result})
         remaining -= used
+        errors = []
     return {"owner": owner, "card_id": card_id, "actions": results,
             "remaining_actions": remaining,
             "result": {"executed": any(e["result"].get("executed") for e in results)}}

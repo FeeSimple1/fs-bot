@@ -178,6 +178,10 @@ Command+SA plan (two actions); `{decline:true}` ends the capability's actions.
 Ambush/Besiege must be paired with Battle. Cards 63/A63 permit other SAs
 independently of their usual accompanying Commands and pay normal costs.
 A single action resolves before the second decision is requested.
+`engine.winter_campaign.validate_human_plan` checks both the action budget
+and normal paid execution on a copy. Unaffordable, malformed, and ineffective
+human plans leave the same decision pending; the terminal offers another plan
+without spending an action. Preview validation never consumes live input or RNG.
 
 `replay --output-dir DIR` reconstructs the saved session from its origin and
 complete human decision log, verifies request context, and compares the final

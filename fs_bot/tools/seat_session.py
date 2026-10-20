@@ -87,9 +87,9 @@ def validate_response(state, request, response):
             raise ValueError("; ".join(errors))
         return response
     if kind == "winter_campaign":
-        from fs_bot.engine.winter_campaign import validate_plan
-        validate_plan(state, request["faction"], response,
-                      request.get("remaining_actions", 2))
+        from fs_bot.engine.winter_campaign import validate_human_plan
+        validate_human_plan(state, request["faction"], response,
+                            request.get("remaining_actions", 2))
         return response
     raise ValueError("Unknown decision kind; use_default must be chosen explicitly.")
 

@@ -1171,14 +1171,12 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         for target in steal_targets:
             if remaining <= 0:
                 break
-            avail = state["resources"].get(target, 0) - planned_steals.get(
-                target, 0)
-            if avail < 1:
-                continue  # already fully drained by earlier planned steals
-            region_entries.append({"region": region, "target": target})
-            planned_steals[target] = planned_steals.get(target, 0) + 1
-            total_gain += 1
-            remaining -= 1
+            while (remaining > 0 and state["resources"].get(target, 0)
+                   > planned_steals.get(target, 0)):
+                region_entries.append({"region": region, "target": target})
+                planned_steals[target] = planned_steals.get(target, 0) + 1
+                total_gain += 1
+                remaining -= 1
 
         # Tier 3: in other (non-Devastated) regions, no faction — A8.7.3
         while remaining > 0:

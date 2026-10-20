@@ -640,13 +640,14 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         for target in steal_targets:
             if remaining_flips <= 0:
                 break
-            if state["resources"].get(target, 0) - planned_steals.get(
-                    target, 0) < 1:
-                continue
-            region_entries.append({"region": region, "target": target})
-            planned_steals[target] = planned_steals.get(target, 0) + 1
-            total_gain += 1
-            remaining_flips -= 1
+            # Exhaust this priority before considering a lower-priority
+            # target or an untargeted gain; each Warband may steal again.
+            while (remaining_flips > 0 and state["resources"].get(target, 0)
+                   > planned_steals.get(target, 0)):
+                region_entries.append({"region": region, "target": target})
+                planned_steals[target] = planned_steals.get(target, 0) + 1
+                total_gain += 1
+                remaining_flips -= 1
 
         while remaining_flips > 0:
             if not is_devastated:

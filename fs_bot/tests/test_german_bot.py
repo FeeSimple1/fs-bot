@@ -707,7 +707,7 @@ class TestNodeGRaid:
     def test_raid_prefers_romans_then_belgae(self):
         state = _make_state()
         # §3.3.3: can only steal from a faction that HAS Resources.
-        state["resources"][ROMANS] = 5
+        state["resources"][ROMANS] = 1
         state["resources"][BELGAE] = 5
         _place_german_force(state, ATREBATES, warbands=2, hidden=True)
         _place_roman_force(state, ATREBATES, auxilia=1)
@@ -716,7 +716,7 @@ class TestNodeGRaid:
         result = node_g_raid(state)
         assert result["command"] == ACTION_RAID
         plan = result["details"]["raid_plan"]
-        # First flip targets Romans (Tier 1), second targets Belgae (Tier 2)
+        # Drain Rome's last Resource (Tier 1), then steal from Belgae (Tier 2)
         targets = [p["target"] for p in plan if p["region"] == ATREBATES]
         assert ROMANS in targets
         assert BELGAE in targets

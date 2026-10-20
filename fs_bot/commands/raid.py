@@ -146,17 +146,16 @@ def validate_raid_steal_target(state, region, faction, target_faction):
     from fs_bot.cards.capabilities import (is_capability_active as _ica8,
                                            get_capability_owner as _gco8)
     from fs_bot.rules_consts import EVENT_SHADED as _ES8
-    if _ica8(state, 8, _ES8) and _gco8(state, 8) == faction:
-        return True, None
+    bypass_fortifications = (_ica8(state, 8, _ES8)
+                             and _gco8(state, 8) == faction)
 
-    # Must NOT have Citadel — §3.3.3
+    # Card 8 bypasses only fortifications; a Resource must still exist.
     target_citadels = count_pieces(state, region, target_faction, CITADEL)
-    if target_citadels > 0:
+    if target_citadels > 0 and not bypass_fortifications:
         return False, f"{target_faction} has a Citadel in {region}"
 
-    # Must NOT have Fort — §3.3.3
     target_forts = count_pieces(state, region, target_faction, FORT)
-    if target_forts > 0:
+    if target_forts > 0 and not bypass_fortifications:
         return False, f"{target_faction} has a Fort in {region}"
 
     # Must have Resources to steal
@@ -281,6 +280,7 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
 
     # Validate each action
     is_devastated = _is_devastated(state, region)
+    remaining_resources = dict(state["resources"])
     for i, action in enumerate(raid_actions):
         action_type = action.get("type")
         if action_type == RAID_GAIN:
@@ -304,6 +304,9 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
                 raise CommandError(
                     f"Cannot steal from {target} in {region}: {reason}"
                 )
+            if remaining_resources.get(target, 0) < 1:
+                raise CommandError(f"Cannot steal from {target}: no Resources remain for Raid action {i+1}")
+            remaining_resources[target] -= 1
         else:
             raise CommandError(
                 f"Unknown Raid action type: {action_type} "

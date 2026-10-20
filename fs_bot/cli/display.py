@@ -54,7 +54,7 @@ from fs_bot.cards.card_data import (
 )
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available
 from fs_bot.map.map_data import (
-    get_playable_regions, get_tribes_in_region,
+    get_playable_regions_for_state, get_tribes_in_region,
 )
 
 
@@ -349,7 +349,7 @@ def format_region_table(state):
         Multi-line string.
     """
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state)
     lines = []
     lines.append(SEP_HEAVY)
     lines.append("REGIONS  (Al=Ally L=Leader Lg=Legion A=Aux W=Warband "
@@ -419,7 +419,7 @@ def format_tribes_table(state):
         Multi-line string.
     """
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state)
     lines = []
     lines.append(SEP_HEAVY)
     lines.append("TRIBES")

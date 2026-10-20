@@ -64,7 +64,7 @@ from fs_bot.board.control import (
 from fs_bot.map.map_data import (
     get_adjacent, get_tribes_in_region, get_tribe_data,
     get_region_data, get_region_group, is_city_tribe,
-    ALL_REGION_DATA,
+    ALL_REGION_DATA, is_region_playable, get_gallia_togata_card,
 )
 from fs_bot.commands.common import (CommandError, _is_devastated, _is_intimidated,
                                     is_free_action)
@@ -384,6 +384,9 @@ def validate_recruit_region(state, region):
     """
     scenario = state["scenario"]
 
+    if not is_region_playable(state, region, ROMANS):
+        return False, "Region is not playable for Romans"
+
     # Not Devastated — §3.2.1
     if (_is_devastated(state, region)
             and not _event_rally_option(state, region, ROMANS, "allow_devastated")):
@@ -433,6 +436,9 @@ def validate_rally_region(state, region, faction):
         (valid, reason) tuple.
     """
     scenario = state["scenario"]
+
+    if not is_region_playable(state, region, faction):
+        return False, f"Region is not playable for {faction}"
 
     # Devastated check — §3.3.1, with Vercingetorix exception
     is_devastated = _is_devastated(state, region)
@@ -494,6 +500,15 @@ def validate_rally_region(state, region, faction):
 # RECRUIT (§3.2.1, A3.2.1)
 # ============================================================================
 
+def can_recruit_auxilia(state, region):
+    """The normal Recruit base, or an Event that supplies Auxilia there."""
+    return (get_leader_in_region(state, region, ROMANS) is not None
+            or count_pieces(state, region, ROMANS, ALLY) > 0
+            or count_pieces(state, region, ROMANS, FORT) > 0
+            or _commius_unshaded_recruit(state, region)
+            or (region == CISALPINA and get_gallia_togata_card(state) == 5))
+
+
 def _count_recruit_auxilia_cap(state, region):
     """Calculate Auxilia placement cap for Recruit in a region.
 
@@ -509,6 +524,10 @@ def _count_recruit_auxilia_cap(state, region):
     Returns:
         Integer cap.
     """
+    gallia = get_gallia_togata_card(state) if region == CISALPINA else None
+    if gallia == 5:
+        return 2  # Card 5: each Recruit places 2 Auxilia.
+
     allies = count_pieces(state, region, ROMANS, ALLY)
     leader_count = 1 if get_leader_in_region(state, region, ROMANS) else 0
     forts = count_pieces(state, region, ROMANS, FORT)
@@ -523,6 +542,9 @@ def _count_recruit_auxilia_cap(state, region):
     # Home Region bonus: +1 in Provincia — §3.2.1
     if region in ROMAN_HOME_REGIONS:
         cap += 1
+
+    if gallia:
+        cap += 1  # A5: Recruit there places +1 Auxilia.
 
     return cap
 
@@ -676,12 +698,7 @@ def recruit_in_region(state, region, action, *, tribe=None, free=False,
     elif action == "place_auxilia":
         # §3.2.1: If Region has Roman Leader, Allied Tribe, or Fort,
         # place Auxilia up to cap
-        has_leader = get_leader_in_region(state, region, ROMANS) is not None
-        has_ally = count_pieces(state, region, ROMANS, ALLY) > 0
-        has_fort = count_pieces(state, region, ROMANS, FORT) > 0
-
-        if not (has_leader or has_ally or has_fort
-                or _commius_unshaded_recruit(state, region)):
+        if not can_recruit_auxilia(state, region):
             raise CommandError(
                 "Place Auxilia requires Roman Leader, Ally, or Fort in region"
             )

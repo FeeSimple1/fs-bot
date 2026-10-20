@@ -14,7 +14,7 @@ from fs_bot.board.pieces import count_pieces, count_pieces_by_state, move_piece,
 from fs_bot.board.control import refresh_all_control
 from fs_bot.commands.common import _is_devastated
 from fs_bot.commands.rally import has_supply_line
-from fs_bot.map.map_data import get_adjacent, get_playable_regions
+from fs_bot.map.map_data import (get_adjacent_for_state, get_playable_regions_for_state)
 
 
 class QuartersError(ValueError):
@@ -119,13 +119,6 @@ def _move(state, faction, piece, origin, destination, count):
         move_piece(state, origin, destination, faction, piece, count=count)
 
 
-def _map_capabilities(state):
-    capabilities = set(state.get('capabilities') or {})
-    if state.get('markers', {}).get(rc.CISALPINA, {}).get(rc.MARKER_GALLIA_TOGATA):
-        capabilities.add(rc.MARKER_GALLIA_TOGATA)
-    return capabilities
-
-
 def preview_relocations(state, faction, moves, *, confirm=False):
     """Return a detached post-relocation board or raise QuartersError.
 
@@ -142,7 +135,7 @@ def preview_relocations(state, faction, moves, *, confirm=False):
     sim = _clone(state)
     if confirm:
         sim['rng'] = state['rng']
-    playable = set(get_playable_regions(state['scenario'], _map_capabilities(state)))
+    playable = set(get_playable_regions_for_state(state, faction))
     types = ((rc.LEADER, rc.LEGION, rc.AUXILIA) if faction == rc.ROMANS
              else (rc.LEADER, rc.WARBAND))
     adjacent, provincia = [], []
@@ -164,7 +157,7 @@ def preview_relocations(state, faction, moves, *, confirm=False):
                  for r in playable for p in types}
     permissions = {}
     for piece, origin, destination, count in adjacent:
-        _need(destination in get_adjacent(origin, sim['scenario'], _map_capabilities(sim)),
+        _need(destination in get_adjacent_for_state(sim, origin, faction),
               'Quarters relocation must be to an adjacent Region')
         _need(not _is_devastated(sim, destination), 'Quarters destination is Devastated')
         host = _controller(sim, destination)
@@ -199,7 +192,7 @@ def preview_relocations(state, faction, moves, *, confirm=False):
               'Cannot relocate unavailable Roman pieces to Provincia')
         # A direct adjacent move into friendly Provincia is also legal in
         # the first step, even if its origin cannot trace a Supply Line.
-        direct_adjacent = (rc.PROVINCIA in get_adjacent(origin, sim['scenario'], _map_capabilities(sim))
+        direct_adjacent = (rc.PROVINCIA in get_adjacent_for_state(sim, origin, faction)
                            and _controller(sim, rc.PROVINCIA) == rc.ROMANS
                            and not _is_devastated(sim, rc.PROVINCIA))
         _need(piece == rc.LEADER or origin in supplied or direct_adjacent,

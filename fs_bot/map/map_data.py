@@ -46,7 +46,7 @@ from fs_bot.rules_consts import (
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     SCENARIO_ARIOVISTUS, SCENARIO_GALLIC_WAR,
     # Factions
-    AEDUI, ARVERNI, GERMANS,
+    ROMANS, AEDUI, ARVERNI, GERMANS,
     # Markers
     MARKER_GALLIA_TOGATA,
 )
@@ -336,6 +336,57 @@ def get_playable_regions(scenario, capabilities=None):
         r for r in ALL_REGIONS
         if ALL_REGION_DATA[r].is_playable(scenario, capabilities)
     )
+
+
+def get_map_capabilities(state):
+    """Map-changing rules, including Gallia Togata's saved regional marker.
+
+    Card 5/A5 writes a regional marker, not a Capability. Accept the older
+    capability-key representation too, without migrating or mutating a save.
+    """
+    capabilities = set(state.get("capabilities") or ())
+    if MARKER_GALLIA_TOGATA in state.get("markers", {}).get(CISALPINA, {}):
+        capabilities.add(MARKER_GALLIA_TOGATA)
+    return capabilities
+
+
+def is_gallia_togata_active(state):
+    return MARKER_GALLIA_TOGATA in get_map_capabilities(state)
+
+
+def get_gallia_togata_card(state):
+    """Retain the lingering Card 5/A5 text across the Gallic War Interlude."""
+    if not is_gallia_togata_active(state):
+        return None
+    marker = state.get("markers", {}).get(CISALPINA, {}).get(MARKER_GALLIA_TOGATA)
+    if isinstance(marker, dict) and marker.get("card_id") in (5, "A5"):
+        return marker["card_id"]
+    # Legacy saves store only True. A marked Gallia Togata carried through
+    # the Interlude remains the first half's A5 (Lingering Events).
+    if state["scenario"] in ARIOVISTUS_SCENARIOS or state.get("interlude_completed"):
+        return "A5"
+    return 5
+
+
+def is_region_playable(state, region, faction=None):
+    """State-aware geography, optionally enforcing Card 5/A5 stacking."""
+    data = ALL_REGION_DATA.get(region)
+    if data is None or not data.is_playable(state["scenario"], get_map_capabilities(state)):
+        return False
+    if (faction is not None and faction != ROMANS and region == CISALPINA
+            and is_gallia_togata_active(state)):
+        return False  # Card 5 and A5: only Romans may stack here.
+    return True
+
+
+def get_playable_regions_for_state(state, faction=None):
+    """Playable Regions, using the actual Event markers in this state."""
+    return tuple(r for r in ALL_REGIONS if is_region_playable(state, r, faction))
+
+
+def get_adjacent_for_state(state, region, faction=None):
+    """Adjacent playable Regions, optionally filtered for a moving faction."""
+    return tuple(r for r in get_adjacent(region) if is_region_playable(state, r, faction))
 
 
 def get_control_value(region, scenario):

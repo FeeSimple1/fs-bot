@@ -435,6 +435,7 @@ def execute_card_5(state, shaded=False):
     if not shaded:
         # Unshaded: Place Gallia Togata marker and 3 Auxilia in Cisalpina
         _add_region_marker(state, CISALPINA, MARKER_GALLIA_TOGATA)
+        state["markers"][CISALPINA][MARKER_GALLIA_TOGATA] = {"card_id": 5}
         avail = get_available(state, ROMANS, AUXILIA)
         to_place = min(3, avail)
         if to_place > 0:
@@ -3166,7 +3167,7 @@ def execute_card_A5(state, shaded=False):
     if not shaded:
         markers = state.setdefault("markers", {})
         region_markers = markers.setdefault(CISALPINA, {})
-        region_markers[MARKER_GALLIA_TOGATA] = True
+        region_markers[MARKER_GALLIA_TOGATA] = {"card_id": "A5"}
         avail = get_available(state, ROMANS, AUXILIA)
         to_place = min(3, avail)
         if to_place > 0:

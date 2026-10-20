@@ -37,7 +37,7 @@ from fs_bot.commands.sa_besiege import get_besiege_targets
 from fs_bot.commands.rally import recruit_in_region
 from fs_bot.commands.march import march_group, _flip_origin_pieces
 from fs_bot.board.pieces import count_pieces, get_leader_in_region
-from fs_bot.map.map_data import get_playable_regions
+from fs_bot.map.map_data import get_playable_regions, get_playable_regions_for_state
 from fs_bot.bots.bot_common import random_select
 from fs_bot.commands.sa_trade import trade as _sa_trade
 from fs_bot.commands.sa_settle import settle as _sa_settle
@@ -3946,7 +3946,7 @@ def _collect_march_moves(state, faction, bot_action):
                     for d in destinations]
     origins = [o[0] if isinstance(o, (list, tuple)) else o for o in origins]
     dest_pool = [d for d in destinations if d not in set(origins)]
-    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    playable = set(get_playable_regions_for_state(state, faction))
     routes, groups = plan.get("routes") or {}, plan.get("groups") or {}
     max_steps = plan.get("max_steps")
     from fs_bot.commands.march import _max_steps_for_group
@@ -3994,7 +3994,7 @@ def _select_affordable_march_moves(state, faction, moves, *, free=False):
     from fs_bot.commands.march import _max_steps_for_group, _validate_group_in_region
     from fs_bot.map.map_data import get_adjacency_type
     from fs_bot.rules_consts import LEADER
-    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
+    playable = set(get_playable_regions_for_state(state, faction))
     selected, costs, deferred, errors = [], {}, [], []
     budget = state["resources"].get(faction, 0)
     for move in moves:

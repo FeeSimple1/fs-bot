@@ -86,7 +86,8 @@ def validate_seize_region(state, region):
     if region_data is None:
         return False, f"{region} is not a valid region"
 
-    if not region_data.is_playable(scenario, state.get("capabilities")):
+    from fs_bot.map.map_data import is_region_playable
+    if not is_region_playable(state, region, ROMANS):
         return False, f"{region} is not playable in {scenario}"
 
     # Must have Roman pieces — §3.2.3

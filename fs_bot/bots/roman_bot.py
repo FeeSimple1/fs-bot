@@ -56,7 +56,7 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region,
+    get_adjacent, get_playable_regions_for_state, get_adjacent_for_state, get_tribes_in_region,
     get_region_group, ALL_REGION_DATA, is_adjacent,
 )
 from fs_bot.commands.common import _is_devastated
@@ -208,7 +208,7 @@ def _get_threat_regions(state, scenario):
     Returns:
         List of region constants.
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
     return [r for r in playable if _has_roman_threat(state, r, scenario)]
 
 
@@ -324,7 +324,7 @@ def _rank_march_destinations(state, scenario):
     """
     from fs_bot.commands.rally import has_supply_line
 
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
     non_players = state.get("non_player_factions", set())
 
     # Build candidate list with all relevant metadata
@@ -849,7 +849,7 @@ def _select_march_origins(state, threat_regions, destinations, scenario):
             break
 
     # (3) Region with no enemy Ally/Citadel, prefer with Leader then Legions
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
     clean_regions = []
     for r in playable:
         if r in origins:
@@ -902,9 +902,9 @@ def node_r_recruit(state):
     # eligibility, Subdued Tribes, and Auxilia caps all gate placement.
     from fs_bot.commands.rally import (
         validate_recruit_region, has_supply_line,
-        _find_subdued_tribe_for_ally, _count_recruit_auxilia_cap,
+        _find_subdued_tribe_for_ally, _count_recruit_auxilia_cap, can_recruit_auxilia,
     )
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
     eligible = [r for r in playable if validate_recruit_region(state, r)[0]]
     # Supply-Line Regions first (to save Resources), then a stable order.
     eligible.sort(key=lambda r: (0 if has_supply_line(state, r) else 1, r))
@@ -956,10 +956,7 @@ def node_r_recruit(state):
     for r in eligible:
         if rem_aux <= 0:
             break
-        has_base = (get_leader_in_region(state, r, ROMANS) is not None
-                    or count_pieces(state, r, ROMANS, ALLY) > 0
-                    or new_ally_in.get(r, 0) > 0
-                    or count_pieces(state, r, ROMANS, FORT) > 0)
+        has_base = can_recruit_auxilia(state, r) or new_ally_in.get(r, 0) > 0
         if not has_base:
             continue
         cost = recruit_cost(state, r, ROMANS)
@@ -1002,7 +999,7 @@ def node_r_seize(state):
     """
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
 
     # Find regions where Romans can Seize without Harassment
     # Per §3.2.3: Harassment comes from ALL factions with Warbands in the
@@ -1152,7 +1149,7 @@ def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
     """
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
     exclude = set(exclude_regions or [])
@@ -1334,8 +1331,7 @@ def _scout_guaranteed_supply_regions(state):
     agreements = {ROMANS: True}
     if AEDUI in state.get("non_player_factions", set()):
         agreements[AEDUI] = True
-    playable = get_playable_regions(state["scenario"],
-                                    state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
     out = set()
     for r in playable:
         if count_pieces(state, r, ROMANS) > 0 and has_supply_line(
@@ -1413,8 +1409,7 @@ def _scout_auxilia_moves(state, *, scouts=None):
         if MARKER_GALLIA_TOGATA in sim.get("markers", {}).get(CISALPINA, {}):
             sim.setdefault("capabilities", {})[MARKER_GALLIA_TOGATA] = True
     scenario = sim["scenario"]
-    playable = sorted(get_playable_regions(scenario,
-                                           sim.get("capabilities")))
+    playable = sorted(get_playable_regions_for_state(sim, ROMANS))
     caesar_region = _caesar_region(sim)
     non_players = sim.get("non_player_factions", set())
     moves = []
@@ -1446,7 +1441,7 @@ def _scout_auxilia_moves(state, *, scouts=None):
         deficit = 4 - count_pieces(sim, caesar_region, ROMANS, AUXILIA)
         if deficit > 0:
             sources = sorted(
-                (r for r in get_adjacent(caesar_region, scenario)
+                (r for r in get_adjacent_for_state(state, caesar_region, ROMANS)
                  if r in playable and r != BRITANNIA and movable(r) > 0),
                 key=lambda r: (-movable(r), r))
             for src in sources:
@@ -1471,7 +1466,7 @@ def _scout_auxilia_moves(state, *, scouts=None):
         for src in playable:
             if src == BRITANNIA or movable(src) <= 0:
                 continue
-            for dst in sorted(get_adjacent(src, scenario)):
+            for dst in sorted(get_adjacent_for_state(state, src, ROMANS)):
                 if dst not in playable or dst == BRITANNIA:
                     continue
                 ctrl = sim["spaces"][dst].get("control")
@@ -1512,7 +1507,7 @@ def _scout_auxilia_moves(state, *, scouts=None):
                     - count_pieces(sim, dst, ROMANS, AUXILIA))
         if capacity <= 0:
             continue
-        for src in sorted(get_adjacent(dst, scenario)):
+        for src in sorted(get_adjacent_for_state(state, dst, ROMANS)):
             if capacity <= 0:
                 break
             if (src not in playable or src == BRITANNIA
@@ -1558,7 +1553,7 @@ def node_r_scout(state, *, allowed_regions=None):
     # Step 2: Scout targets — Hidden first, then Revealed.
     # §4.2.2: Reveal only in Regions within 1 of Caesar (or the Successor's
     # Region) AND only by flipping a Roman Hidden Auxilia present THERE.
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
     # §4.1.2: Scout Reveal is allowed within 1 Region of the NAMED leader
@@ -1626,7 +1621,7 @@ def node_r_quarters(state):
         Quarters action details dict.
     """
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, ROMANS)
 
     quarters_plan = {
         "stay_auxilia": [],     # (region, count) — 1 per Fort & Ally
@@ -1774,7 +1769,7 @@ def build_np_winter_relocations(state):
 
     def _hoppable(region):
         """Adjacent un-Devastated Region under Roman/agreed Control."""
-        for adj in get_adjacent(region, scenario, state.get("capabilities")):
+        for adj in get_adjacent_for_state(state, region, ROMANS):
             if adj == PROVINCIA or _devastated(adj):
                 continue
             ctrl = _controller(adj)

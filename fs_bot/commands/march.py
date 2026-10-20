@@ -52,7 +52,7 @@ from fs_bot.board.pieces import (
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import (
     get_adjacent_with_type, get_adjacency_type,
-    ALL_REGION_DATA,
+    ALL_REGION_DATA, is_region_playable, is_gallia_togata_active,
 )
 from fs_bot.commands.common import CommandError, _is_devastated
 
@@ -86,6 +86,10 @@ def march_cost(state, region, faction):
     if is_free_action(state, faction):
         return 0
     scenario = state["scenario"]
+
+    # Card 5/A5: March out of the Gallia Togata garrison costs 0.
+    if faction == ROMANS and region == CISALPINA and is_gallia_togata_active(state):
+        return 0
 
     if faction == GERMANS:
         if scenario in BASE_SCENARIOS:
@@ -139,13 +143,9 @@ def march_cost(state, region, faction):
 # VALIDATION
 # ============================================================================
 
-def _is_region_playable(state, region):
+def _is_region_playable(state, region, faction=None):
     """Check if a region is playable in the current scenario."""
-    region_data = ALL_REGION_DATA.get(region)
-    if region_data is None:
-        return False
-    return region_data.is_playable(state["scenario"],
-                                   state.get("capabilities"))
+    return is_region_playable(state, region, faction)
 
 
 def _get_movable_piece_types(faction, scenario):
@@ -226,6 +226,8 @@ def _check_crossing_stop(state, from_region, to_region, faction):
     # A3.4.2: Germans March like Gauls; Cisalpina stop applies to all
     if scenario in ARIOVISTUS_SCENARIOS:
         if from_region == CISALPINA or to_region == CISALPINA:
+            if faction == ROMANS and is_gallia_togata_active(state):
+                return False, None  # A5: March ignores Alps.
             return True, "Alps crossing (Cisalpina)"
 
     return False, None
@@ -617,6 +619,9 @@ def march_group(state, faction, origin, destinations, group, *,
     """
     scenario = state["scenario"]
 
+    if not _is_region_playable(state, origin, faction):
+        raise MarchError(f"{origin} is not playable for {faction} in {scenario}")
+
     # Validate the group has only movable piece types
     movable_types = _get_movable_piece_types(faction, scenario)
     for piece_type, count in _iter_group_pieces(group):
@@ -657,7 +662,7 @@ def march_group(state, faction, origin, destinations, group, *,
                 f"{dest} is not adjacent to {current_region}")
 
         # Check destination is playable
-        if not _is_region_playable(state, dest):
+        if not _is_region_playable(state, dest, faction):
             raise MarchError(
                 f"{dest} is not playable in scenario {scenario}")
 

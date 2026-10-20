@@ -122,7 +122,7 @@ def validate_free_action_response(state, faction, request, response):
 def _validate_plan(state, faction, request, action):
     from fs_bot.cli.human_plan import _faction_special_abilities
     from fs_bot.engine.action_validation import command_regions, command_parts, compatible_sa
-    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.map.map_data import get_playable_regions_for_state
     standalone = request.get('request_type') == 'event_sa'
     cmd, sa = action.get('command'), action.get('sa', 'No SA')
     if standalone:
@@ -158,7 +158,7 @@ def _validate_plan(state, faction, request, action):
             selected.extend(e.get('origin') for e in plan.get('extra_groups') or [])
     if len(parts) > 1 and len(selected) != len(set(selected)):
         return 'Select each Command Region only once.'
-    playable = set(get_playable_regions(state['scenario'], state.get('capabilities')))
+    playable = set(get_playable_regions_for_state(state, faction))
     if any(r not in playable for r in selected):
         return 'Select playable Command Regions.'
     allowed = request.get('allowed_regions')

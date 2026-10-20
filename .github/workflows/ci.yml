@@ -7,13 +7,26 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.10"
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: windows-latest
+            python: "3.12"
+          - os: macos-latest
+            python: "3.12"
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python }}
       - run: pip install -r requirements-dev.txt
       - name: Unit, regression, sync-canary, and balance-canary tests
         run: python -m pytest -q
@@ -33,6 +46,7 @@ jobs:
           python -m fs_bot.tools.sync_check --scenario "Reconquest of Gaul" --seeds 1-8
           python -m fs_bot.tools.sync_check --scenario "The Great Revolt" --seeds 1-8
           python -m fs_bot.tools.sync_check --scenario "Ariovistus" --seeds 1-8
+          python -m fs_bot.tools.sync_check --scenario "The Gallic War" --seeds 1-8
 
   player-fuzz:
     runs-on: ubuntu-latest
@@ -59,5 +73,5 @@ jobs:
         with:
           python-version: "3.10"
       - run: pip install -r requirements-dev.txt
-      - name: Winners must match the committed baseline
+      - name: Scenario win rates must stay within the reviewed drift band
         run: python -m fs_bot.tools.balance_smoke --seeds 1-20

@@ -133,3 +133,22 @@ def test_pending_turn_requires_every_field_consumed_on_resume(tmp_path, missing)
     serialize.save_game(state, path)
     with pytest.raises(serialize.SaveFileError, match='Pending turn'):
         serialize.load_game(path, validate=True)
+
+
+def test_pending_turn_rejects_limited_command_as_first_action(tmp_path):
+    from fs_bot.engine.game_engine import (
+        ACTION_LIMITED_COMMAND, start_game, play_card,
+    )
+    state = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=1)
+    start_game(state)
+
+    def pause(*args):
+        raise EOFError()
+
+    with pytest.raises(EOFError):
+        play_card(state, pause, execute=True)
+    state['_card_turn']['first_action'] = ACTION_LIMITED_COMMAND
+    path = tmp_path / 'pending.json'
+    serialize.save_game(state, path)
+    with pytest.raises(serialize.SaveFileError, match='first action'):
+        serialize.load_game(path, validate=True)

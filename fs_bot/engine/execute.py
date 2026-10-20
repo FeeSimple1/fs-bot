@@ -30,7 +30,7 @@ from fs_bot.rules_consts import EVENT_SHADED
 from fs_bot.commands.common import CommandError, free_action
 from fs_bot.board.pieces import PieceError
 from fs_bot.commands.seize import seize_in_region, get_dispersible_tribes
-from fs_bot.commands.raid import raid_in_region
+from fs_bot.commands.raid import raid_in_region, max_raiders_per_region
 from fs_bot.commands.rally import rally_in_region
 from fs_bot.battle.resolve import resolve_battle
 from fs_bot.commands.sa_besiege import get_besiege_targets
@@ -3481,11 +3481,12 @@ def _execute_raid(state, faction, bot_action):
     ``{"region": R, "target": faction_or_None}`` (steal from ``target`` or,
     when None, gain 1 Resource). All four raiding bots (Arverni, Aedui,
     Belgae, German) share this shape. We group flips by region in order,
-    cap at the rules' 2 flips per region (§3.3.3), translate each flip to a
+    cap at the rules' 2 flips per region (3 for Card 8's owner), translate each flip to a
     raid action, and call ``raid_in_region`` once per region.
 
     Any accompanying Special Activity (Devastate/Entreat/Intimidate) is
-    executed by the orchestration layer (_execute_sa), not here.
+    executed by the orchestration layer (_execute_sa). A3.4.3's intrinsic
+    free Intimidate resolves here using the Warbands that actually Raided.
     """
     details = bot_action.get("details") or {}
     raid_plan = details.get("raid_plan", []) or []
@@ -3512,7 +3513,7 @@ def _execute_raid(state, faction, bot_action):
     gained_total = 0
     errors = []
     for region in order:
-        actions = by_region[region][:2]  # §3.3.3: max 2 Warbands/Region
+        actions = by_region[region][:max_raiders_per_region(state, faction)]
         if not actions:
             continue
         try:
@@ -3528,6 +3529,7 @@ def _execute_raid(state, faction, bot_action):
         "command": _CMD_RAID,
         "regions_resolved": [r["region"] for r in per_region],
         "resources_gained_total": gained_total,
+        "raids": per_region,
         "errors": errors,
     }
 
@@ -4375,7 +4377,7 @@ def _execute_sa(state, faction, bot_action):
                 state, details.get("march_plan") or {})
         else:
             new_sa, new_regions, new_details = _g_raid_sa(
-                state, details.get("raid_plan") or [])
+                state, details.get("raid_plan") or [], after_raid=True)
         rederived = dict(bot_action)
         d = dict(details)
         d.update(new_details or {})

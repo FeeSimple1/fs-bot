@@ -199,8 +199,27 @@ def _collect_battle(state, faction, stdin, stdout, single, *, excluded=()):
 
 
 def _collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
+    from fs_bot.board.pieces import count_pieces_by_state
+    from fs_bot.commands.common import _is_devastated
+    from fs_bot.commands.raid import (
+        get_valid_steal_targets, max_raiders_per_region, validate_raid_region,
+    )
+    from fs_bot.commands.sa_enlist import borrowed_count
+    from fs_bot.rules_consts import BASE_SCENARIOS, HIDDEN
+
+    # Reserve victim Resources across every chosen flip/Region. The menu
+    # must not execute Raid: that would reveal pieces, roll policy dice, or
+    # ask the intrinsic Intimidate question before this plan is submitted.
+    planning = dict(state, resources=dict(state['resources']))
+
+    def can_gain(region):
+        return (not _is_devastated(state, region)
+                and not (faction == GERMANS and state['scenario'] in BASE_SCENARIOS))
+
     regions = [r for r in _regions_with_pieces(state, faction)
-               if r not in excluded and count_pieces(state, r, faction, WARBAND) > 0]
+               if r not in excluded
+               and validate_raid_region(state, r, faction, allow_base_germans=True)[0]
+               and (can_gain(r) or get_valid_steal_targets(planning, r, faction))]
     if not regions:
         return None
     picked = _pick_regions(stdin, stdout, "Raid in which Region(s)?",
@@ -208,20 +227,40 @@ def _collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
                            max_regions=state.get("_cli_command_max_regions"))
     plan = []
     for r in picked:
-        enemies = _enemies_in_region(state, r, faction)
-        opts = [(f"steal from {f}", f) for f in enemies]
-        opts.append(("gain 1 Resource", None))
-        target = prompt_choice(stdin, stdout, f"  Raid target in {r}?", opts)
-        entry = {"region": r, "target": target}
-        from fs_bot.commands.sa_enlist import borrowed_count
-        from fs_bot.rules_consts import HIDDEN
-        if faction == BELGAE and borrowed_count(state, r, HIDDEN):
-            owners = [(GERMANS, GERMANS)]
-            if state["spaces"][r].get("pieces", {}).get(BELGAE, {}).get(HIDDEN, {}).get(WARBAND, 0):
-                owners.append((BELGAE, BELGAE))
-            entry["physical_owner"] = prompt_choice(stdin, stdout,
-                "Reveal a Warband belonging to which Faction?", owners)
-        plan.append(entry)
+        hidden = count_pieces_by_state(state, r, faction, WARBAND, HIDDEN)
+        maximum = min(hidden, max_raiders_per_region(state, faction))
+        if not can_gain(r):
+            maximum = min(maximum, sum(planning['resources'][target]
+                for target in get_valid_steal_targets(planning, r, faction)))
+        if not maximum:
+            stdout.write(f'  No Resources remain to Raid in {r}.\n')
+            continue
+        number = (prompt_choice(stdin, stdout,
+                  f'  Raid with how many Hidden Warbands in {r}?',
+                  [(str(n), n) for n in range(1, maximum + 1)])
+                  if maximum > 1 else 1)
+        borrowed = borrowed_count(state, r, HIDDEN) if faction == BELGAE else 0
+        owners_left = {GERMANS: borrowed, BELGAE: hidden - borrowed}
+        borrowing = borrowed > 0
+        for index in range(number):
+            opts = [(f'steal from {target}', target)
+                    for target in get_valid_steal_targets(planning, r, faction)]
+            if can_gain(r):
+                opts.append(('gain 1 Resource', None))
+            target = prompt_choice(stdin, stdout,
+                                   f'  Raid {index + 1} target in {r}?', opts)
+            entry = {'region': r, 'target': target}
+            if borrowing:
+                owners = [(owner, owner) for owner in (GERMANS, BELGAE)
+                          if owners_left[owner] > 0]
+                owner = (prompt_choice(stdin, stdout,
+                         'Reveal a Warband belonging to which Faction?', owners)
+                         if len(owners) > 1 else owners[0][1])
+                entry['physical_owner'] = owner
+                owners_left[owner] -= 1
+            if target is not None:
+                planning['resources'][target] -= 1
+            plan.append(entry)
     return {"raid_plan": plan} if plan else None
 
 

@@ -18,6 +18,13 @@ typed response.
 
 Request kinds
 -------------
+- ``raid_intimidate`` — A3.4.3 optional simultaneous Intimidate by the
+  German Warbands that just Raided with Ariovistus. Request carries trusted
+  region, raiders, max_removals, and physical target entries. Response is
+  {"targets": [{"target_faction", "target_piece", "target_state"}, ...]}
+  (empty targets places only the marker), or {"decline": True}. No normal
+  Special Ability is spent and no additional Hidden Warband is revealed.
+
 - ``RETREAT`` — a Defender's Retreat choice (§3.2.4/§8.4.3).
   request: ``{"kind": RETREAT, "region", "attacker", "defender",
               "is_ambush", "legal_regions": [region, ...]}``

@@ -72,6 +72,10 @@ def validate_response(state, request, response):
         if type(response) is not bool:
             raise ValueError("An agreement or harassment response must be true or false.")
         return response
+    if kind == "raid_intimidate":
+        from fs_bot.engine.raid_intimidate import validate_response as validate_raid
+        validate_raid(state, request, response)
+        return response
     if kind == "free_action":
         from fs_bot.engine.free_actions import validate_free_action_response
         error = validate_free_action_response(state, request["faction"], request, response)

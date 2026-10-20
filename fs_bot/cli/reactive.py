@@ -30,6 +30,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind == "raid_intimidate":
+                from fs_bot.cli.raid_intimidate import collect_raid_intimidate
+                return collect_raid_intimidate(state, faction, request, stdin, stdout)
             if kind in ("frumentum_amount", "frumentum_action"):
                 from fs_bot.cli.frumentum import collect_frumentum
                 return collect_frumentum(state, faction, request, stdin, stdout)

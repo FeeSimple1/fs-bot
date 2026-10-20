@@ -102,6 +102,7 @@ may control any subset of Factions and decision kinds. Request kinds
 | `free_action` | `request_type, allowed_commands, allowed_regions, max_regions, with_sa, free`; standalone SAs use `allowed_sas` | full action plan, `{"decline":true}`, or `{"use_default":true}` |
 | `frumentum_amount` | A53; `available_resources` (Aedui) | `{"amount": integer}`, `{"decline":true}` (zero), or explicit default |
 | `frumentum_action` | A53; `remaining_actions, remaining_resources, reserved_roman_resources` | one Recruit/March plan or standalone Build/Scout plan, `{"skip": action_name}`, finish with `{"decline":true}`, or explicit default |
+| `raid_intimidate` | A3.4.3; `region, raiders, max_removals, targets` | `{"targets":[...]}`, marker only `{"targets":[]}`, `{"decline":true}`, or `{"use_default":true}` |
 
 Free-action requests describe an Event's scope. `event_command` and
 `event_rally` select a Command; `event_sa` selects only an SA. Optional
@@ -112,6 +113,29 @@ isolated board and RNG and returns an error string or `None`. The terminal
 prompts **Plan the action / Use bot default / Decline**, keeps normal
 before/during/after SA ordering, and offers a new plan after a failed check.
 EOF interrupts and preserves the pending decision.
+
+After Germanic Warbands Raid with Ariovistus, `raid_intimidate` offers their
+optional free Intimidate. The pending board shows the completed Raid's
+Resources and revealed Warbands before the choice. `raiders` is the number
+that actually Raided; `max_removals` is the lesser of that number and two.
+Each offered target has `target_faction`, `target_piece`, `target_state`, and
+`available`. Return the first three fields for each chosen piece, repeating an
+entry only up to its available count. All chosen pieces must belong to one
+Faction with no Leader in the Region. For example:
+
+```json
+{"targets":[{"target_faction":"Romans","target_piece":"Auxilia","target_state":"Hidden"}]}
+```
+
+An empty `targets` list places only the Intimidated marker. Decline leaves
+the Raid intact, while explicit default uses the German bot's priorities.
+This effect uses the Warbands that just Raided, does not reveal additional
+Hidden Warbands, and does not consume a Special Ability. A separate normal
+Intimidate may use additional Hidden Warbands. The validator
+`engine.raid_intimidate.validate_response(state, request, response)` raises
+`ValueError` for an illegal choice without changing the live board or RNG.
+Missing or invalid assistant input remains pending; accepted choices are
+journaled and replayed with the rest of the action.
 
 Frumentum uses **normal paid costs** and only the specified Aedui allocation.
 Romans choose the order of Recruit, March, and one Special Ability; each may
@@ -170,7 +194,7 @@ full game with one agent-controlled Faction playing alongside the bots.
 ## Current limits
 
 - Reactive hooks cover Retreat, Loss absorption, Supply Line, Quarters hosting,
-  Trade, Harassment, Winter Campaign, and scoped Event-granted actions.
+  Trade, Harassment, Winter Campaign, Raid Intimidate, and scoped Event-granted actions.
   Resource gifts are explicit `details.transfers` entries in the acting
   faction's plan.
 - There is no full legal-move *generator* (COIN's branching is enormous);

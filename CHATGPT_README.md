@@ -57,6 +57,12 @@ You are about to PLAY one faction against the built-in bots.
    - Winter Campaign: one Command, one standalone SA, a Command+SA using both
      actions, or `{"decline":true}`. A second single action is requested after
      the first resolves.
+   - Raid Intimidate with Ariovistus: `{"targets":[]}` for the marker only,
+     `{"decline":true}` to skip, or a `targets` list copying each chosen
+     `target_faction`, `target_piece`, and `target_state` from the request.
+     Choose at most `max_removals` pieces of one Faction, within their offered
+     counts. The Warbands that just Raided provide this free effect; no
+     additional Hidden Warbands or Special Ability are spent.
 
    Reactions accept `{"use_default":true}` only when you explicitly want the
    engine's default choice. Nothing is silently decided for your seat.

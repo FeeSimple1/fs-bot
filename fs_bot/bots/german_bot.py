@@ -1872,89 +1872,47 @@ def _check_intimidate_before_battle(state, battle_plan):
     return plan
 
 
-def _determine_intimidate_after_raid(state, raid_plan):
-    """Per A8.7.3 + A8.7.1: free Intimidate in Ariovistus's Raid region,
-    then Intimidate further only if pieces would be removed.
+def _determine_intimidate_after_raid(state, raid_plan, *, after_raid=False):
+    """Choose only the additional ordinary SA after A3.4.3's free effect.
 
-    Per A8.7.1: "the Germans place Intimidated markers in Ariovistus's
-    Region if the Germans Raided there, as part of their free Intimidate
-    (A3.4.3). Then, if they removed any pieces above, they place
-    Intimidated markers wherever they can (per A4.6.2). NOTE: Outside of
-    Raid with free Intimidate, Non-player Germans will not Intimidate
-    merely to place markers without removing pieces."
-
-    If only the free marker (no removals at all), per A8.7.1 the Germans
-    instead add no Special Ability.
-
-    Returns:
-        (sa_action, sa_regions, sa_details).
+    A8.7.1: free Intimidate within Ariovistus's Raid Region does not use a
+    Special Ability. Before choosing the turn's SA, preview that intrinsic
+    effect; later live rederivation receives the already-resolved Raid board.
     """
-    raided_regions = {r["region"] for r in raid_plan}
-    aristos_region = _ariovistus_region(state)
-    free_intim_region = (aristos_region
-                         if aristos_region in raided_regions else None)
-
-    intim_plan = []
-
-    # Free Intimidate in Ariovistus's raid region (marker even if no removal)
-    if free_intim_region is not None:
-        valid, _ = _can_intimidate_region(state, free_intim_region)
-        if valid:
-            hidden = count_pieces_by_state(
-                state, free_intim_region, GERMANS, WARBAND, HIDDEN)
-            if hidden > 0:
-                targets = _select_intimidate_targets(
-                    state, free_intim_region, max_count=hidden)
-                if targets:
-                    for t in targets:
-                        intim_plan.append({
-                            "region": free_intim_region,
-                            "free": True,
-                            **t,
-                        })
-                else:
-                    # No removal targets but free Intimidate places marker
-                    intim_plan.append({
-                        "region": free_intim_region,
-                        "free": True,
-                        "target_faction": None,
-                        "target_piece": None,
-                        "target_state": None,
-                    })
-
-    # Further Intimidates elsewhere — only if they would remove pieces
-    for region in (sorted({r["region"] for r in raid_plan})
-                   if command_sa_allowed(state) else []):
-        if region == free_intim_region:
-            continue
-        valid, _ = _can_intimidate_region(state, region)
-        if not valid:
-            continue
-        hidden = count_pieces_by_state(
-            state, region, GERMANS, WARBAND, HIDDEN)
-        if hidden == 0:
-            continue
-        targets = _select_intimidate_targets(
-            state, region, max_count=hidden)
-        for t in targets:
-            intim_plan.append({"region": region, "free": False, **t})
-
-    removed_anything = any(
-        p.get("target_piece") is not None for p in intim_plan)
-    only_free_marker = (
-        len(intim_plan) == 1
-        and intim_plan[0].get("free")
-        and intim_plan[0].get("target_piece") is None
-    )
-    if not intim_plan:
+    if not state.get("_command_with_sa", True):
         return (SA_ACTION_NONE, [], {})
-    if only_free_marker and not removed_anything and command_sa_allowed(state):
-        # Per A8.7.1: "only free Intimidated -> no Special Ability"
-        return (SA_ACTION_NONE, [], {})
+    if not after_raid:
+        from copy import deepcopy
+        from fs_bot.engine.execute import _execute_raid
+        state = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+        _execute_raid(state, GERMANS, {"details": {"raid_plan": raid_plan}})
 
-    return (SA_ACTION_INTIMIDATE,
-            sorted({p["region"] for p in intim_plan}),
-            {"intimidate_plan": intim_plan})
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    from fs_bot.rules_consts import MARKER_INTIMIDATED
+    scope = state.get("_command_region_scope")
+    plan, marker_regions = [], []
+    for region in get_playable_regions_for_state(state, GERMANS):
+        if scope is not None and region not in scope:
+            continue
+        if not _can_intimidate_region(state, region)[0]:
+            continue
+        hidden = count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN)
+        if not hidden:
+            continue
+        targets = _select_intimidate_targets(state, region, min(2, hidden))
+        if targets:
+            plan.extend(dict(target, region=region, free=False) for target in targets)
+        elif MARKER_INTIMIDATED not in state.get("markers", {}).get(region, {}):
+            marker_regions.append(region)
+    # No ordinary SA merely to mark Regions; the free Raid marker is
+    # already handled independently even when no removals are possible.
+    if not plan:
+        return (SA_ACTION_NONE, [], {})
+    plan.extend({"region": region, "free": False, "target_faction": None,
+                 "target_piece": None, "target_state": None}
+                for region in marker_regions)
+    return (SA_ACTION_INTIMIDATE, sorted({p["region"] for p in plan}),
+            {"intimidate_plan": plan})
 
 
 def _determine_intimidate_or_settle_after_march(state, march_plan):

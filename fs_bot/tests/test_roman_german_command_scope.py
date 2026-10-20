@@ -221,10 +221,19 @@ def test_no_sa_grant_preserves_intrinsic_ariovistus_raid_intimidate():
     refresh_all_control(state)
     sa, regions, details = german._determine_intimidate_after_raid(
         state, [{'region': UBII, 'target': None}])
-    assert sa == german.SA_ACTION_INTIMIDATE
-    assert regions == [UBII]
-    assert details['intimidate_plan']
-    assert all(entry['free'] for entry in details['intimidate_plan'])
+    assert (sa, regions, details) == (german.SA_ACTION_NONE, [], {})
+    # The free effect belongs to Raid itself, so it survives a grant with
+    # no accompanying SA and reveals only the actual Raider.
+    from fs_bot.engine.execute import _execute_raid
+    from fs_bot.board.pieces import count_pieces_by_state
+    from fs_bot.rules_consts import HIDDEN, REVEALED, MARKER_INTIMIDATED
+    result = _execute_raid(state, GERMANS, {
+        'details': {'raid_plan': [{'region': UBII, 'target': None}]}})
+    assert result['executed'] and not result['errors']
+    assert result['raids'][0]['raid_intimidate']['executed']
+    assert MARKER_INTIMIDATED in state['markers'][UBII]
+    assert count_pieces_by_state(state, UBII, GERMANS, WARBAND, HIDDEN) == 2
+    assert count_pieces_by_state(state, UBII, GERMANS, WARBAND, REVEALED) == 1
 
 
 def test_roman_build_scope_applies_before_fort_pool_selection():

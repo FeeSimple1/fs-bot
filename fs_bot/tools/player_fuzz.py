@@ -111,6 +111,22 @@ def make_random_reactive(seats, rng):
         if faction not in seats:
             return None
         kind = request.get("kind")
+        if kind == "raid_intimidate":
+            if rng.random() < 0.25:
+                return {"decline": True}
+            offered = list(request.get("targets") or [])
+            if not offered or rng.random() < 0.25:
+                return {"targets": []}
+            faction = offered[rng.randrange(len(offered))]["target_faction"]
+            pieces = []
+            for target in offered:
+                if target["target_faction"] == faction:
+                    pieces.extend([{key: target[key] for key in
+                                    ("target_faction", "target_piece", "target_state")}]
+                                  * target["available"])
+            rng.shuffle(pieces)
+            maximum = min(request["max_removals"], len(pieces))
+            return {"targets": pieces[:rng.randrange(1, maximum + 1)]}
         if kind == RETREAT:
             legal = list(request.get("legal_regions") or [])
             choices = [None] + legal

@@ -150,14 +150,14 @@ def test_free_command_keeps_human_sa_timing_and_region_budget(timing):
                'allowed_commands': ['Raid'], 'allowed_regions': [rc.MORINI, rc.NERVII],
                'max_regions': 2, 'with_sa': True, 'free': True}
     sa = ['Suborn', rc.MORINI, 'place a Warband', '(done)']
-    raid = [rc.MORINI, '(done)', 'gain 1 Resource']
+    raid = [rc.MORINI, '(done)', '1', 'gain 1 Resource']
     if timing == 'before':
         lines = ['Special Activity first, then Command'] + sa + ['Raid'] + raid
     elif timing == 'after':
         lines = ['Raid'] + raid + ['y'] + sa
     else:
         lines = ['Command, Special Activity, then continue Command', 'Raid'] + raid + sa
-        lines += [rc.NERVII, 'gain 1 Resource']
+        lines += [rc.NERVII, '1', 'gain 1 Resource']
     action, output = _collect(state, rc.AEDUI, request, ['Plan the action'] + lines)
     assert action['sa_timing'] == timing
     assert rc.MANDUBII not in output

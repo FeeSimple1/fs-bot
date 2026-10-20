@@ -50,6 +50,14 @@ RAID_GAIN = "gain"
 RAID_STEAL = "steal"
 
 
+def max_raiders_per_region(state, faction):
+    """§3.3.3's two Warbands, or three for Card 8 shaded's owner."""
+    from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
+    from fs_bot.rules_consts import EVENT_SHADED
+    return (3 if is_capability_active(state, 8, EVENT_SHADED)
+            and get_capability_owner(state, 8) == faction else 2)
+
+
 # ============================================================================
 # VALIDATION
 # ============================================================================
@@ -232,18 +240,13 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
     # Validate action count
     if not raid_actions or len(raid_actions) < 1:
         raise CommandError("Must specify at least 1 Raid action")
-    from fs_bot.cards.capabilities import (is_capability_active,
-                                            get_capability_owner)
-    from fs_bot.rules_consts import EVENT_SHADED as _ESH8
-    _c8 = (is_capability_active(state, 8, _ESH8)
-           and get_capability_owner(state, 8) == faction)
     # Card 8 shaded (Baggage Trains): "Your Raids may use 3 Warbands
     # per Region ..."
-    _raid_max = 3 if _c8 else 2
+    _raid_max = max_raiders_per_region(state, faction)
     if len(raid_actions) > _raid_max:
         raise CommandError(
             f"Maximum {_raid_max} Warbands can Raid per Region (§3.3.3"
-            + (", card 8 shaded)" if _c8 else ")"))
+            + (", card 8 shaded)" if _raid_max == 3 else ")"))
 
     # Check enough Hidden Warbands
     hidden_warbands = count_pieces_by_state(
@@ -313,6 +316,16 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
                 f"(must be '{RAID_GAIN}' or '{RAID_STEAL}')"
             )
 
+    # A reactive human choice may pause or reject this atomic Region. Keep
+    # its pre-Raid board so neither resources nor visibility are half-applied.
+    snapshot = None
+    from fs_bot.engine.raid_intimidate import eligible
+    if faction == GERMANS and eligible(state, region, len(raid_actions)):
+        from copy import deepcopy
+        snapshot = deepcopy({k: v for k, v in state.items()
+                             if k not in ("decision_agent", "_card_turn")})
+        agent, card_turn = state.get("decision_agent"), state.get("_card_turn")
+
     # Execute: flip Warbands and apply effects
     result = {
         "faction": faction,
@@ -356,8 +369,26 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
                     result["resources_stolen"].get(target, 0) + 1
                 )
 
-    # Control doesn't change from Raid (no pieces placed/removed,
-    # only flipped), but refresh for safety
+    # A3.4.3: these very Warbands can free Intimidate while Raiding with
+    # Ariovistus. Resolve at the primitive boundary so Event-granted Raids
+    # (including Card 44) get the same optional effect as ordinary Commands.
+    if faction == GERMANS and scenario in ARIOVISTUS_SCENARIOS:
+        from fs_bot.engine.raid_intimidate import resolve_raid_intimidate
+        try:
+            intrinsic = resolve_raid_intimidate(state, region, result["warbands_flipped"])
+        except BaseException:
+            if snapshot is not None:
+                state.clear()
+                state.update(snapshot)
+                if agent is not None:
+                    state["decision_agent"] = agent
+                if card_turn is not None:
+                    state["_card_turn"] = card_turn
+            raise
+        if intrinsic is not None:
+            result["raid_intimidate"] = intrinsic
+
+    # Intimidate may remove pieces, so refresh Control before returning.
     refresh_all_control(state)
 
     return result

@@ -423,6 +423,11 @@ def main(argv=None, stdin=None, stdout=None):
     if humans:
 
         def agent(state_, faction, request):
+            # Bot previews may deepcopy the board and retain this callable.
+            # They cannot consume human input or replay entries belonging to
+            # the live game, or alter its decision display/history.
+            if state_ is not state:
+                return None
             if faction in humans:
                 view.before_decision(state_, faction)
             if faction in humans and replay_reactive:

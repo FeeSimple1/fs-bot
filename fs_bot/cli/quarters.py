@@ -17,10 +17,10 @@ def collect_quarters_plan(state, faction, request, stdin, stdout):
         ('Stay in place (Romans choose payments next)', 'stay'),
     ])
     if pick == 'standard':
-        if faction == rc.ROMANS:
-            from fs_bot.bots.roman_bot import build_np_winter_relocations
-            return build_np_winter_relocations(state)
-        return {faction: []}
+        # Record the explicit default choice, then let the engine run the
+        # planner. Planning can consume agreement dice; running it inside
+        # this menu would omit those draws when replay uses the saved answer.
+        return None
     moves = []
     if pick == 'choose':
         while True:

@@ -70,9 +70,39 @@ def _mobile_count(state, region, faction):
     return n
 
 
+def _playable_regions(state):
+    """Playable Regions, intersected with the current Event's selection scope."""
+    regions = get_playable_regions(state["scenario"], state.get("capabilities"))
+    allowed = state.get("_cli_allowed_regions")
+    return [r for r in regions if allowed is None or r in allowed]
+
+
+def _march_routes(state, origin, faction):
+    """Offer exact routes to an Event's destination, within movement allowance."""
+    required = state.get("_cli_required_destinations")
+    if required is None:
+        return [[r] for r in sorted(get_adjacent(origin, state["scenario"]))]
+    from fs_bot.commands.march import _max_steps_for_group
+    from fs_bot.board.pieces import get_leader_in_region
+    from fs_bot.rules_consts import LEADER
+    maximum = _max_steps_for_group(
+        state, origin, faction, {LEADER: get_leader_in_region(state, origin, faction)})
+    routes = []
+    def visit(current, route):
+        if route and current in required:
+            routes.append(route)
+            return
+        if len(route) == maximum:
+            return
+        for region in sorted(get_adjacent(current, state["scenario"])):
+            if region != origin and region not in route:
+                visit(region, route + [region])
+    visit(origin, [])
+    return routes
+
+
 def _regions_with_pieces(state, faction):
-    return [r for r in get_playable_regions(state["scenario"],
-                                            state.get("capabilities"))
+    return [r for r in _playable_regions(state)
             if count_pieces(state, r, faction) > 0]
 
 
@@ -83,7 +113,7 @@ def _enemies_in_region(state, region, faction):
 
 def _battle_regions(state, faction):
     out = []
-    for r in get_playable_regions(state["scenario"], state.get("capabilities")):
+    for r in _playable_regions(state):
         if (_mobile_count(state, r, faction) > 0
                 and _enemies_in_region(state, r, faction)):
             out.append(r)
@@ -101,11 +131,11 @@ def _subdued_tribes(state, region):
 
 
 def _pick_regions(stdin, stdout, prompt, candidates, *, at_least_one=True,
-                  single=False):
+                  single=False, max_regions=None):
     """Pick Region(s) from ``candidates`` (each pickable once). ``single``
     collects exactly one; otherwise add Regions until "(done)"."""
     chosen, remaining = [], list(candidates)
-    while remaining:
+    while remaining and (max_regions is None or len(chosen) < max_regions):
         opts = [(r, r) for r in remaining]
         if not single and (chosen or not at_least_one):
             opts.append(("(done)", None))
@@ -124,7 +154,8 @@ def _collect_battle(state, faction, stdin, stdout, single, *, excluded=()):
     if not regions:
         return None
     picked = _pick_regions(stdin, stdout, "Battle in which Region(s)?",
-                           regions, single=single)
+                           regions, single=single,
+                           max_regions=state.get("_cli_command_max_regions"))
     plan = []
     for r in picked:
         enemies = _enemies_in_region(state, r, faction)
@@ -140,7 +171,8 @@ def _collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
     if not regions:
         return None
     picked = _pick_regions(stdin, stdout, "Raid in which Region(s)?",
-                           regions, single=single)
+                           regions, single=single,
+                           max_regions=state.get("_cli_command_max_regions"))
     plan = []
     for r in picked:
         enemies = _enemies_in_region(state, r, faction)
@@ -162,11 +194,13 @@ def _collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
 
 def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
     origins_c = [r for r in _regions_with_pieces(state, faction)
-                 if r not in excluded and _mobile_count(state, r, faction) > 0]
+                 if r not in excluded and _mobile_count(state, r, faction) > 0
+                 and _march_routes(state, r, faction)]
     if not origins_c:
         return None
     origins = _pick_regions(stdin, stdout, "March OUT of which Region(s)?",
-                            origins_c, single=single)
+                            origins_c, single=single,
+                            max_regions=state.get("_cli_command_max_regions"))
     if not origins:
         return None
     # One destination per origin, chosen explicitly (other origins are
@@ -176,13 +210,14 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
     destinations = []
     routes = {}
     for o in origins:
-        adj = sorted(get_adjacent(o, state["scenario"]))
-        if not adj:
+        candidates = _march_routes(state, o, faction)
+        if not candidates:
             continue
-        d = prompt_choice(stdin, stdout,
-                          f"  March the {o} group INTO which Region?",
-                          [(a, a) for a in adj])
-        routes[o] = [d]
+        route = prompt_choice(stdin, stdout,
+                              f"  March the {o} group along which route?",
+                              [(" → ".join(path), path) for path in candidates])
+        routes[o] = route
+        d = route[-1]
         if d not in destinations:
             destinations.append(d)
     if not destinations:
@@ -244,10 +279,11 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
                              f"March a SECOND group from {o}?",
                              default=False):
             continue
-        adj = sorted(get_adjacent(o, state["scenario"]))
-        d2 = prompt_choice(stdin, stdout,
-                           f"  Second group from {o} INTO which Region?",
-                           [(a, a) for a in adj])
+        candidates = _march_routes(state, o, faction)
+        route2 = prompt_choice(stdin, stdout,
+                               f"  Second group from {o} along which route?",
+                               [(" → ".join(path), path) for path in candidates])
+        d2 = route2[-1]
         g2 = {}
         for pt, avail in remaining.items():
             if avail <= 0:
@@ -267,7 +303,7 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
                 g2["german_warbands"] = prompt_choice(stdin, stdout,
                     f"Of these {total} Warbands, how many are German?",
                     [(str(k), k) for k in range(min(total, loan), max(0, total - own) - 1, -1)])
-            extra.append({"origin": o, "route": [d2], "group": g2})
+            extra.append({"origin": o, "route": route2, "group": g2})
             if d2 not in destinations:
                 destinations.append(d2)
     if extra:
@@ -277,12 +313,13 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
 
 def _collect_rally(state, faction, stdin, stdout, single, *, excluded=()):
     from fs_bot.commands.rally import validate_rally_region
-    regions = [r for r in get_playable_regions(state["scenario"], state.get("capabilities"))
+    regions = [r for r in _playable_regions(state)
                if r not in excluded and validate_rally_region(state, r, faction)[0]]
     if not regions:
         return None
     picked = _pick_regions(stdin, stdout, "Rally in which Region(s)?",
-                           regions, single=single)
+                           regions, single=single,
+                           max_regions=state.get("_cli_command_max_regions"))
     warbands, allies, citadels = [], [], []
     for r in picked:
         opts = [("Warbands", "warbands"),
@@ -332,12 +369,15 @@ def _collect_rally(state, faction, stdin, stdout, single, *, excluded=()):
 
 
 def _collect_recruit(state, faction, stdin, stdout, single, *, excluded=()):
-    regions = get_playable_regions(state["scenario"], state.get("capabilities"))
-    cand = [r for r in regions if r not in excluded and count_pieces(state, r, ROMANS) > 0]
+    from fs_bot.commands.rally import validate_recruit_region
+    regions = _playable_regions(state)
+    cand = [r for r in regions if r not in excluded
+            and validate_recruit_region(state, r)[0]]
     if not cand:
         return None
     picked = _pick_regions(stdin, stdout, "Recruit in which Region(s)?",
-                           cand, single=single)
+                           cand, single=single,
+                           max_regions=state.get("_cli_command_max_regions"))
     plan = []
     for r in picked:
         action = prompt_choice(stdin, stdout, f"  In {r}:",
@@ -356,12 +396,13 @@ def _collect_recruit(state, faction, stdin, stdout, single, *, excluded=()):
 
 def _collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
     from fs_bot.commands.seize import get_dispersible_tribes
-    regions = get_playable_regions(state["scenario"], state.get("capabilities"))
+    regions = _playable_regions(state)
     cand = [r for r in regions if r not in excluded and count_pieces(state, r, ROMANS) > 0]
     if not cand:
         return None
     picked = _pick_regions(stdin, stdout, "Seize in which Region(s)?",
-                           cand, single=single)
+                           cand, single=single,
+                           max_regions=state.get("_cli_command_max_regions"))
     disperse = []
     for r in picked:
         if get_dispersible_tribes(state, r) and prompt_yes_no(
@@ -470,6 +511,8 @@ def _collect_entreat(state, faction, stdin, stdout, *, pending=None):
     entries = []
     while True:
         regions = _regions_with_pieces(state, faction)
+        if not regions:
+            return None, None
         opts = [(r, r) for r in regions]
         if entries:
             opts.append(("(done)", None))
@@ -592,7 +635,7 @@ def _collect_enlist(state, faction, stdin, stdout, *, pending=None,
                              ("lend Warbands to the Belgic Command", "borrow")])
     if sub == "borrow":
         state = before_state if before_state is not None else state
-        candidates = [r for r in get_playable_regions(state["scenario"], state.get("capabilities"))
+        candidates = [r for r in _playable_regions(state)
                       if validate_enlist_region(state, r)[0]]
         if not candidates:
             return None, None
@@ -612,7 +655,7 @@ def _collect_enlist(state, faction, stdin, stdout, *, pending=None,
                 budget -= count
         return regions, {"enlist": {"type": "borrow", "regions": regions,
                                      "warbands": selected}}
-    german_regions = [r for r in get_playable_regions(state["scenario"], state.get("capabilities"))
+    german_regions = [r for r in _playable_regions(state)
                       if validate_enlist_region(state, r)[0]
                       and (sub == "german_rally" or count_pieces(state, r, GERMANS, WARBAND))]
     if not german_regions:
@@ -706,7 +749,7 @@ def _collect_build(state, faction, stdin, stdout, *, pending=None):
             d = d[0] if isinstance(d, (list, tuple)) else d
             from fs_bot.commands.common import check_leader_proximity
             from fs_bot.rules_consts import CAESAR
-            if d not in cands and check_leader_proximity(
+            if d in _playable_regions(state) and d not in cands and check_leader_proximity(
                     state, d, ROMANS, CAESAR, "Build")[0]:
                 cands.append(d)
     if not cands:
@@ -836,6 +879,11 @@ _COMMAND_COLLECTORS = {
 
 def _collect_command_plan(state, faction, cmd, stdin, stdout, single=False,
                           *, excluded=()):
+    maximum = state.get("_cli_max_regions")
+    if maximum is not None:
+        state = dict(state, _cli_command_max_regions=max(0, maximum - len(set(excluded))))
+        if state["_cli_command_max_regions"] == 0:
+            return None
     collector = _COMMAND_COLLECTORS.get(cmd)
     details = (collector(state, faction, stdin, stdout, single, excluded=excluded)
                if collector else None)
@@ -856,18 +904,28 @@ def _planning_copy(state):
 
 def _preview_command(state, faction, action):
     """Plan later choices on a copy; never spend Resources or RNG on live state."""
-    from fs_bot.engine.execute import execute_decision
+    from fs_bot.engine.execute import execute_decision, _execute_bot_command
+    from fs_bot.commands.common import is_free_action
     sim = _planning_copy(state)
-    execute_decision(sim, faction, {"player_action": action})
+    if is_free_action(sim, faction):
+        _execute_bot_command(sim, faction, action, with_sa=True)
+    else:
+        execute_decision(sim, faction, {"player_action": action})
     return sim
 
 
 def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
-                     standalone=False, before_state=None):
+                     standalone=False, before_state=None, allowed_sas=None,
+                     allowed_regions=None):
     from fs_bot.engine.action_validation import compatible_sa
+    if allowed_regions is not None:
+        state = dict(state, _cli_allowed_regions=allowed_regions)
+        if before_state is not None:
+            before_state = dict(before_state, _cli_allowed_regions=allowed_regions)
     sas = [s for s in _faction_special_abilities(faction, state["scenario"])
            if (action.get("command") is None or compatible_sa(action["command"], s))
-           and (not standalone or s not in ("Ambush", "Besiege"))]
+           and (not standalone or s not in ("Ambush", "Besiege"))
+           and (allowed_sas is None or s in allowed_sas)]
     if not sas:
         return action
     if sa is None:
@@ -912,20 +970,32 @@ def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
     return action
 
 
-def _collect_command(state, faction, engine_action, stdin, stdout):
+def _collect_command(state, faction, engine_action, stdin, stdout, *,
+                     allowed_commands=None, allowed_regions=None, max_regions=None,
+                     required_destinations=None):
     from copy import deepcopy
     from fs_bot.engine.action_validation import compatible_sa, command_regions
     from fs_bot.engine.game_engine import is_frost
     from fs_bot.engine.execute import _execute_sa
+    from fs_bot.commands.common import is_free_action
+    state = dict(state)
+    if allowed_regions is not None:
+        state["_cli_allowed_regions"] = allowed_regions
+    if max_regions is not None:
+        state["_cli_max_regions"] = max_regions
+    if required_destinations is not None:
+        state["_cli_required_destinations"] = required_destinations
     single = engine_action == ACTION_LIMITED_COMMAND
     commands = [c for c in _FACTION_COMMANDS.get(faction, ())
-                if c != "March" or not is_frost(state)]
+                if (allowed_commands is None or c in allowed_commands)
+                and (c != "March" or not is_frost(state) or is_free_action(state, faction))]
+    if not commands:
+        return None
     choices = [(c, c) for c in commands]
     if engine_action == ACTION_COMMAND_SA:
-        choices.extend([
-            ("Special Activity first, then Command", "sa_first"),
-            ("Command, Special Activity, then continue Command", "sa_during"),
-        ])
+        choices.append(("Special Activity first, then Command", "sa_first"))
+        if any(c not in ("March", "Battle") for c in commands):
+            choices.append(("Command, Special Activity, then continue Command", "sa_during"))
         if faction == BELGAE:
             choices.append(("Command first, with borrowed German Warbands", "enlist_command_first"))
         stdout.write("Choose a Command for Command-first timing, or an order below.\n")
@@ -949,8 +1019,13 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
     if cmd == "sa_first":
         action = {"command": None, "regions": [], "sa": _SA_NONE,
                   "sa_regions": [], "details": {}, "sa_timing": "before"}
-        action = _collect_sa_plan(state, faction, action, stdin, stdout)
+        abilities = [s for s in _faction_special_abilities(faction, state["scenario"])
+                     if any(compatible_sa(c, s) for c in commands)]
+        action = _collect_sa_plan(state, faction, action, stdin, stdout,
+                                  allowed_sas=abilities)
         legal = [c for c in commands if compatible_sa(c, action["sa"])]
+        if not legal:
+            return None
         cmd = prompt_choice(stdin, stdout, "Which accompanying Command?",
                             [(c, c) for c in legal])
         action["command"] = cmd

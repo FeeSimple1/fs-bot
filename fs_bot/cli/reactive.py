@@ -30,6 +30,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind == "free_action":
+                from fs_bot.cli.free_actions import collect_free_action
+                return collect_free_action(state, faction, request, stdin, stdout)
             if kind == "winter_campaign":
                 from fs_bot.cli.winter_campaign import collect_winter_campaign
                 return collect_winter_campaign(state, faction, request, stdin, stdout)

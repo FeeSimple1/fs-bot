@@ -97,8 +97,19 @@ may control any subset of Factions and decision kinds. Request kinds
 | `request["kind"]` | request fields | response |
 |---|---|---|
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
-| `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered list of `(piece_type, piece_state)` (which piece absorbs next); hard pieces still roll |
+| `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add a third `physical_owner` field; hard pieces still roll |
 | `AGREEMENT` | `request_type, requesting_faction, context` | `bool` (agree?) — `request_type` in {`retreat_into_control`, `supply_line`, ...} |
+| `free_action` | `request_type, allowed_commands, allowed_regions, max_regions, with_sa, free`; standalone SAs use `allowed_sas` | full action plan, `{"decline":true}`, or `{"use_default":true}` |
+
+Free-action requests describe an Event's scope. `event_command` and
+`event_rally` select a Command; `event_sa` selects only an SA. Optional
+`as_if_control` and `allow_devastated` apply only to the granted Rally/Recruit.
+`required_destinations` restricts where every March group must end.
+`engine.free_actions.validate_free_action_response` checks a response on an
+isolated board and RNG and returns an error string or `None`. The terminal
+prompts **Plan the action / Use bot default / Decline**, keeps normal
+before/during/after SA ordering, and offers a new plan after a failed check.
+EOF interrupts and preserves the pending decision.
 
 ```python
 def reactive(state, faction, request):
@@ -146,10 +157,10 @@ full game with one agent-controlled Faction playing alongside the bots.
 
 ## Current limits
 
-- The reactive hooks cover Retreat, Loss absorption, and the Retreat-into-Control
-  and Supply-Line agreements. Other niche agreements (Quarters, resource
-  transfers) still use the NP defaults; add an `AGREEMENT` `request_type` at
-  those call sites the same way if needed.
+- Reactive hooks cover Retreat, Loss absorption, Supply Line, Quarters hosting,
+  Trade, Harassment, Winter Campaign, and scoped Event-granted actions.
+  Resource gifts are explicit `details.transfers` entries in the acting
+  faction's plan.
 - There is no full legal-move *generator* (COIN's branching is enormous);
   `moves` gives the building blocks plus a validator, which is the practical
   shape for an LLM that proposes a move and checks it.

@@ -3146,20 +3146,17 @@ def _resolve_a19_march_romans(state, faction):
 
 
 def _resolve_a67_arduenna(state, faction):
-    """A67 Arduenna (German NP path): March Warbands+Leader into Nervii or
-    Treveri to take Germanic Control of a Region with player pieces (Roman,
-    then Aedui, then Belgae), then free Battle that player there, then flip
-    the German pieces there Hidden.
+    """A67 German NP: gather the maximum safe force, take Control, Battle.
 
-    Per the German Ariovistus event instruction for "Arduenna, Impetuosity".
-    Only the German path is specified by the references; other Factions no-op
-    (documented). The "without losing Germanic Control" constraint is honored
-    by only Marching from adjacent origins the Germans do not Control (no
-    Control to lose); gathering surplus from Controlled origins is a
-    documented refinement.
+    The specific Arduenna instruction requires retaining Germanic Control at
+    origins, including when the Leader departs. Its "as many ... as possible"
+    replaces the normal March flowchart's additional one-Warband leave-behind.
+    Only targets that the gathered force can Control qualify for the stated
+    Roman, then Aedui, then Belgic target priority.
     """
     from fs_bot.rules_consts import (GERMANS, ROMANS, AEDUI, BELGAE, WARBAND,
-                                     NERVII, TREVERI, REVEALED, HIDDEN, AUXILIA)
+                                     NERVII, TREVERI, REVEALED, HIDDEN, AUXILIA,
+                                     FACTIONS, LEADER)
     from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
                                      flip_piece)
     from fs_bot.board.control import is_controlled_by
@@ -3169,37 +3166,55 @@ def _resolve_a67_arduenna(state, faction):
         return out
     priority = (ROMANS, AEDUI, BELGAE)
 
-    def player_in(region):
-        for pf in priority:
-            if count_pieces(state, region, pf) > 0:
-                return pf
-        return None
+    def other_forces(region):
+        return sum(count_pieces(state, region, other)
+                   for other in FACTIONS if other != GERMANS)
 
-    # Choose target: Nervii/Treveri holding the highest-priority player.
-    target, defender = None, None
-    for region in (NERVII, TREVERI):
-        pf = player_in(region)
-        if pf is None:
-            continue
-        if defender is None or priority.index(pf) < priority.index(defender):
-            target, defender = region, pf
-    if target is None:
-        return out
-
-    # March German Warbands+Leader from adjacent origins the Germans do NOT
-    # Control (no Control lost) one step into the target, to build force.
-    marched = []
-    for origin in get_adjacent(target, state["scenario"]):
+    def safe_group(origin):
+        warbands = count_pieces(state, origin, GERMANS, WARBAND)
+        leader = get_leader_in_region(state, origin, GERMANS)
+        movable = warbands + int(leader is not None)
         if is_controlled_by(state, origin, GERMANS):
+            # Control requires strictly more than ALL other Forces combined.
+            # Structures can retain Control without leaving a Warband behind.
+            movable = min(movable, max(0,
+                count_pieces(state, origin, GERMANS) - other_forces(origin) - 1))
+        moving_leader = leader if movable > 0 else None
+        return {LEADER: moving_leader,
+                WARBAND: min(warbands, movable - int(moving_leader is not None))}
+
+    candidates = []
+    for region in (NERVII, TREVERI):
+        defender = next((pf for pf in priority
+                         if count_pieces(state, region, pf) > 0), None)
+        if defender is None:
             continue
-        grp = _mobile_march_group(state, faction, origin)
-        if not _group_has_pieces(grp):
-            continue
+        moves = []
+        gathered = count_pieces(state, region, GERMANS)
+        for origin in get_adjacent(region, state['scenario']):
+            group = safe_group(origin)
+            if not _group_has_pieces(group):
+                continue
+            moves.append((origin, group))
+            gathered += group[WARBAND] + int(group[LEADER] is not None)
+        if gathered > other_forces(region):
+            candidates.append((region, defender, moves))
+    if not candidates:
+        return out
+    first_priority = min(priority.index(candidate[1]) for candidate in candidates)
+    target, defender, moves = random_select(state, [
+        candidate for candidate in candidates
+        if priority.index(candidate[1]) == first_priority])
+
+    marched = []
+    for origin, group in moves:
         try:
-            final = _march_with_harassment(state, faction, origin, [target])
+            final = _march_with_harassment(state, faction, origin, [target],
+                                           group_cap=group)
             marched.append({"origin": origin, "final_region": final})
-        except _EXEC_ERRORS:
-            continue
+        except _EXEC_ERRORS as exc:
+            marched.append({"origin": origin, "executed": False,
+                            "reason": repr(exc)})
     out.append({"free_action": "march", "flag": "card_A67_arduenna",
                 "target": target, "marches": marched})
 

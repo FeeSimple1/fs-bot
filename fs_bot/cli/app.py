@@ -434,7 +434,9 @@ def main(argv=None, stdin=None, stdout=None):
                 replay_reactive.clear()
                 replay_decisions.clear()
             resp = cli_agent(state_, faction, request)
-            if faction in humans and resp is not None:
+            if faction in humans:
+                # Explicit defaults are decisions too: omitting None desyncs
+                # replay at Quarters before the next recorded agreement.
                 live_log.append({"reactive": request.get("kind"),
                                  "faction": faction,
                                  "card": state_.get("current_card"),

@@ -77,28 +77,61 @@ def _playable_regions(state, faction=None):
     return [r for r in regions if allowed is None or r in allowed]
 
 
-def _march_routes(state, origin, faction):
-    """Offer exact routes to an Event's destination, within movement allowance."""
+def _march_routes(state, origin, faction, group=None):
+    """Offer full legal routes for the selected group, including normal March.
+
+    The movement-only mechanic checks each prospective step on a detached
+    board. It neither resolves Harassment nor rolls dice, so route options
+    never peek at future outcomes or consume a live player's reactions.
+    """
     required = state.get("_cli_required_destinations")
-    if required is None:
-        return [[r] for r in sorted(get_adjacent_for_state(state, origin, faction))]
-    from fs_bot.commands.march import _max_steps_for_group
+    from fs_bot.commands.march import _max_steps_for_group, march_group, MarchError
+    from fs_bot.board.pieces import PieceError
     from fs_bot.board.pieces import get_leader_in_region
     from fs_bot.rules_consts import LEADER
-    maximum = _max_steps_for_group(
-        state, origin, faction, {LEADER: get_leader_in_region(state, origin, faction)})
+    leader = get_leader_in_region(state, origin, faction)
+    if group is None:
+        group = {pt: count_pieces(state, origin, faction, pt)
+                 for pt in (LEGION, AUXILIA, WARBAND)}
+        group[LEADER] = leader
+    else:
+        group = dict(group)
+        group[LEADER] = leader if group.get(LEADER) else None
+    maximum = _max_steps_for_group(state, origin, faction, group)
     routes = []
-    def visit(current, route):
-        if route and current in required:
-            routes.append(route)
-            return
+    def visit(board, current, route):
         if len(route) == maximum:
             return
-        for region in sorted(get_adjacent_for_state(state, current, faction)):
-            if region != origin and region not in route:
-                visit(region, route + [region])
-    visit(origin, [])
-    return routes
+        for region in sorted(get_adjacent_for_state(board, current, faction)):
+            if region == origin or region in route:
+                continue
+            sim = _planning_copy(board)
+            try:
+                outcome = march_group(sim, faction, current, [region], group, free=True)
+            except (MarchError, PieceError):
+                continue
+            if outcome['path'] != [current, region]:
+                continue
+            path = route + [region]
+            if required is None or region in required:
+                routes.append(path)
+            if not outcome['stopped_reason'] and not (required is not None and region in required):
+                visit(sim, region, path)
+    visit(state, origin, [])
+    return sorted(routes, key=lambda path: (len(path), path))
+
+
+def _check_selected_march_route(state, faction, origin, route, group, stdin, stdout):
+    """Re-pick if a subset leaves behind the Leader needed for a long route."""
+    routes = _march_routes(state, origin, faction, group)
+    if route in routes:
+        return route
+    if not routes:
+        stdout.write("This group cannot reach a permitted destination.\n")
+        return None
+    stdout.write("This group cannot complete that route. Choose a route for its selected pieces.\n")
+    return prompt_choice(stdin, stdout, f"  March the {origin} group along which route?",
+                         [(" → ".join(path), path) for path in routes])
 
 
 def _regions_with_pieces(state, faction):
@@ -259,6 +292,11 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
                 f"Of these {total} Warbands, how many are German?",
                 [(str(k), k) for k in range(min(total, loan), max(0, total - own) - 1, -1)])
             groups[o] = cap
+        routes[o] = _check_selected_march_route(
+            state, faction, o, routes[o], cap, stdin, stdout)
+        if routes[o] is None:
+            return None
+    destinations = list(dict.fromkeys(route[-1] for route in routes.values()))
     plan = {"origins": origins, "destinations": destinations,
             "routes": routes}
     if groups:
@@ -283,13 +321,17 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
                           if faction == BELGAE else 0)
         group_number = 2
         while leader_remaining or any(v > 0 for v in remaining.values()):
+            candidates = _march_routes(state, o, faction,
+                                       dict(remaining, **{LEADER: leader_remaining}))
+            if not candidates:
+                stdout.write("The remaining pieces cannot reach a permitted destination.\n")
+                break
             label = "SECOND" if group_number == 2 else f"group {group_number}"
             if not prompt_yes_no(stdin, stdout,
                                  f"March a {label} group from {o}?" if group_number == 2
                                  else f"March {label} from {o}?",
                                  default=False):
                 break
-            candidates = _march_routes(state, o, faction)
             route = prompt_choice(stdin, stdout,
                                   f"  Group {group_number} from {o} along which route?",
                                   [(" → ".join(path), path) for path in candidates])
@@ -309,6 +351,10 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
                 group[LEADER] = True
             if not group:
                 stdout.write("No pieces selected for this group.\n")
+                continue
+            route = _check_selected_march_route(
+                state, faction, o, route, group, stdin, stdout)
+            if route is None:
                 continue
             if faction == BELGAE and borrowed_count(state, o) and group.get(WARBAND):
                 total = group[WARBAND]

@@ -221,6 +221,13 @@ def _check_crossing_stop(state, from_region, to_region, faction):
     if _is_devastated(state, to_region):
         return True, "Entering Devastated region"
 
+    # A64: "Roman March treats Abatis as Devastation." This also applies
+    # to a marker retained through the Gallic War Interlude, and regardless
+    # of which Faction owns the marker; other Factions' March is unaffected.
+    from fs_bot.rules_consts import MARKER_ABATIS
+    if faction == ROMANS and MARKER_ABATIS in state.get("markers", {}).get(to_region, {}):
+        return True, "Entering Abatis region"
+
     # Alps / Cisalpina — A3.2.2 (Ariovistus only)
     # "Upon Marching into or out of Cisalpina, a Roman group must stop"
     # A3.4.2: Germans March like Gauls; Cisalpina stop applies to all

@@ -71,6 +71,56 @@ def _display_resources(state):
     return resources
 
 
+def _physical_piece_view(state):
+    """Read physical counters without changing the live Command/Battle view.
+
+    The board keeps ownership even when the piece query helpers temporarily
+    lend or filter forces. Leave current Control markers intact: Enlist really
+    does change Control for its accompanying Command (§4.5.1).
+    """
+    from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
+    from fs_bot.battle.combined import COMBINED_KEY
+    contexts = (BORROW_KEY, FREE_FORCE_KEY, COMBINED_KEY)
+    if not any(key in state for key in contexts):
+        return state
+    return {key: value for key, value in state.items() if key not in contexts}
+
+
+def _active_force_context(state):
+    """Explain temporary treatment separately from physical board ownership."""
+    from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
+    from fs_bot.battle.combined import COMBINED_KEY, TYPES
+    lines = []
+
+    def selected_warbands(counts):
+        return (f"{sum(counts.values())} {WARBAND} "
+                f"[H{counts.get(HIDDEN, 0)}/R{counts.get(REVEALED, 0)}"
+                f"/S{counts.get(SCOUTED, 0)}]")
+
+    for region, counts in sorted(state.get(BORROW_KEY, {}).get("pieces", {}).items()):
+        lines.append(f"  Enlist in {region}: {BELGAE} use {GERMANS}' "
+                     f"{selected_warbands(counts)} for this Command, including Control.")
+    for region, counts in sorted(state.get(FREE_FORCE_KEY, {}).get("pieces", {}).items()):
+        lines.append(f"  Enlist free Battle in {region}: {GERMANS}' "
+                     f"{selected_warbands(counts)} participate.")
+    combined = state.get(COMBINED_KEY)
+    if combined:
+        physical = _physical_piece_view(state)
+        for region, owners in sorted(combined["owners"].items()):
+            forces = []
+            for owner in sorted(owners):
+                for piece in TYPES:
+                    total = count_pieces(physical, region, owner, piece)
+                    if total:
+                        forces.append(f"{owner} " + _flippable_summary(
+                            physical, region, owner, piece, piece, total))
+            lines.append(f"  Admagetobriga in {region}: {combined['faction']} use "
+                         f"lent forces: {', '.join(forces) or '(none remaining)'}.")
+    if not lines:
+        return []
+    return ["ACTIVE FORCES (board counts show physical owners)", *lines]
+
+
 # Faction display short codes for tables
 _FACTION_SHORT = {
     ROMANS: "Rom",
@@ -150,6 +200,7 @@ def _eligibility_label(state, faction):
 def _faction_total_allies_citadels(state, faction):
     """Return (allies, citadels) on the map for a faction."""
     from fs_bot.board.pieces import count_allied_discs
+    state = _physical_piece_view(state)
     allies = count_allied_discs(state, faction)
     citadels = 0
     for region in state["spaces"]:
@@ -271,6 +322,7 @@ def format_state_summary(state):
                      else budget["remaining"])
         lines.append(f"Frumentum: {remaining} of {budget['allocated']} Aedui Resources remain; "
                      f"Roman own treasury {budget['reserved_treasury']} is reserved.")
+    lines.extend(_active_force_context(state))
 
     # Senate / Legions
     lines.append(SEP)
@@ -305,6 +357,7 @@ def format_state_summary(state):
 
 def _region_pieces_summary(state, region, faction, scenario):
     """One-cell summary of a faction's pieces in a region."""
+    state = _physical_piece_view(state)
     parts = []
     # Allied Tribe discs FIRST — they are victory points and battle
     # targets; omitting them made enemy Allies invisible in play.
@@ -370,6 +423,7 @@ def format_region_table(state):
     lines.append("REGIONS  (Al=Ally L=Leader Lg=Legion A=Aux W=Warband "
                  "F=Fort C=Citadel S=Settlement)")
     lines.append("  Mobile piece states: H=Hidden / R=Revealed / S=Scouted")
+    lines.append("  Piece columns show physical owners; Ctrl shows current Control.")
     lines.append(SEP)
     # Column widths chosen so the Roman cell (which carries Caesar,
     # Legions, Auxilia, and Forts together) fits.
@@ -561,6 +615,7 @@ def format_victory_state(state):
         calculate_victory_score, calculate_victory_margin, VictoryError,
         check_victory,
     )
+    state = _physical_piece_view(state)
     scenario = state["scenario"]
     lines = []
     lines.append(SEP_HEAVY)
@@ -686,6 +741,7 @@ def snapshot_state(state):
     from fs_bot.rules_consts import (FACTIONS, WARBAND, AUXILIA, LEGION,
                                      ALLY, CITADEL, FORT, SETTLEMENT)
     from fs_bot.board.pieces import count_pieces, get_leader_in_region
+    state = _physical_piece_view(state)
     pieces = {}
     piece_states = {}
     leaders = {}

@@ -1234,7 +1234,7 @@ def _resolve_free_actions_scoped(state, faction):
     if mods.get("card_36_gallic_ambush_battle"):
         results.extend(_resolve_card36_shaded(state, faction))
     if mods.get("card_66_german_rally_march"):
-        results.extend(_resolve_card66_german_rally_march(state))
+        results.extend(_resolve_card66_german_rally_march(state, faction))
     if mods.get("card_21_no_fort"):
         results.extend(_resolve_card21_provincia_battle(state))
     if mods.get("card_45_battle_romans"):
@@ -1849,16 +1849,10 @@ def _resolve_card36_shaded(state, faction):
              "executed": bool(ambushes) or bool(march.get("executed"))}]
 
 
-def _resolve_card66_german_rally_march(state):
-    """Card 66 Migration: "Execute a Germanic Rally then March in/from up to 2
-    Regions each." The Germans free Rally, then free March (base-game Germans
-    are game-run; the rally/march nodes drive them)."""
-    from fs_bot.rules_consts import GERMANS
-    rally = _resolve_free_rally(state, GERMANS)
-    march = _resolve_free_march(state, GERMANS)
-    return [{"free_action": "german_rally_march", "flag": "card_66",
-             "rally": rally, "march": march,
-             "executed": bool(rally.get("executed") or march.get("executed"))}]
+def _resolve_card66_german_rally_march(state, faction):
+    """Card 66: the executing Faction guides the German Rally then March."""
+    from fs_bot.cards.migration import resolve_migration
+    return resolve_migration(state, faction)
 
 
 def _resolve_card21_provincia_battle(state):

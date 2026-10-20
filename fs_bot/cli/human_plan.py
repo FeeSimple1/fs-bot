@@ -332,6 +332,7 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
 
 
 def _collect_rally(state, faction, stdin, stdout, single, *, excluded=()):
+    from fs_bot.rules_consts import BASE_SCENARIOS
     from fs_bot.commands.rally import validate_rally_region
     regions = [r for r in _playable_regions(state, faction)
                if r not in excluded and validate_rally_region(state, r, faction)[0]]
@@ -356,6 +357,12 @@ def _collect_rally(state, faction, stdin, stdout, single, *, excluded=()):
                                       f"  Ally which Tribe in {r}?",
                                       [(t, t) for t in subdued])
                 allies.append({"region": r, "tribe": tribe})
+                # Base German §3.4.1 permits Warbands after the new Ally,
+                # unlike the single-option Gallic/Ariovistus Rally.
+                if (faction == GERMANS and state['scenario'] in BASE_SCENARIOS
+                        and prompt_yes_no(stdin, stdout,
+                            '  Also place Warbands after this Ally?', default=True)):
+                    warbands.append(r)
                 continue
         elif what == "citadel":
             tribe = prompt_choice(stdin, stdout,

@@ -532,6 +532,11 @@ def node_r4(state):
     if instr and instr.action == NO_EVENT:
         return "Yes"
 
+    if card_id == 66 and state['scenario'] in BASE_SCENARIOS:
+        from fs_bot.cards.migration import can_roman_migrate
+        if not can_roman_migrate(state):
+            return "Yes"
+
     return "No"
 
 

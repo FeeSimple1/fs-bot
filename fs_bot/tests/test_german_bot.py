@@ -424,6 +424,8 @@ class TestNodeG3b:
         import fs_bot.cards.event_eval as ev
         state = _make_state()
         state["current_card_id"] = 9  # a generic German PLAY_EVENT card
+        # The card also needs German presence in its named theatre.
+        place_piece(state, SEQUANI, GERMANS, WARBAND)
         state["final_year"] = False
         monkeypatch.setattr(ev, "is_event_effective", lambda *a, **k: False)
         assert node_g3b(state) == "Yes"

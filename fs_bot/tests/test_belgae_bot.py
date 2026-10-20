@@ -288,6 +288,9 @@ class TestNodeB3b:
         """Don't decline for a normal card."""
         state = _make_state()
         state["current_card_id"] = 9  # No special Belgae instruction
+        # Mons Cevenna still needs an effective presence in its theatre.
+        from fs_bot.rules_consts import SEQUANI
+        place_piece(state, SEQUANI, BELGAE, WARBAND)
         assert node_b3b(state) == "No"
 
 

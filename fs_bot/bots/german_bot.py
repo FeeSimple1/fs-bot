@@ -517,6 +517,16 @@ def node_g3b(state):
         return "Yes"
 
     scenario = state["scenario"]
+    if card_id == 9:
+        from fs_bot.bots.bot_common import mons_cevenna_cannot_affect_theatre
+        if mons_cevenna_cannot_affect_theatre(state, GERMANS):
+            return "Yes"
+    if card_id == "A57":
+        # The German Sabis instruction restricts candidates by Ariovistus's
+        # four-Warband floor; no qualifying battle is ineffective (§8.1.1).
+        from fs_bot.bots.bot_common import sabis_has_qualifying_battle
+        if not sabis_has_qualifying_battle(state, GERMANS):
+            return "Yes"
     instr = get_event_instruction(card_id, GERMANS, scenario)
     if instr is None:
         # No instruction table entry — treat as decline for safety.
@@ -563,6 +573,16 @@ def _instruction_says_no_germans(state, card_id, instr):
     - Kinship: if Belgae Non-Player, treat as 'No Germans'.
     - Winter Uprising!: if next Winter is the last, treat as 'No Germans'.
     """
+    if card_id == 52:
+        # Assembly of Gaul: select Germans, then Non-player Belgae only
+        # if qualified; otherwise No Germans (A Event Instructions).
+        # The shaded beneficiary is fixed by Control of Carnutes, not
+        # chosen freely. Never send game-run Arverni to a bot flowchart.
+        from fs_bot.rules_consts import CARNUTES
+        if is_controlled_by(state, CARNUTES, GERMANS):
+            return False
+        return not (BELGAE in state.get("non_player_factions", set())
+                    and is_controlled_by(state, CARNUTES, BELGAE))
     if card_id == 44:
         # Dumnorix's own instruction is No Germans unless Roman Auxilia
         # can be removed in/adjacent to Germania or a Settlement Region.

@@ -832,9 +832,9 @@ class TestSecondHalfPlays:
         return st, res, acts
 
     def test_interlude_reachable_and_second_half_seats_arverni(self):
-        # Seed 3 reaches the Interlude with the corrected Enlist, Rally,
-        # March and A28 rules. Keep the assertions on actual play.
-        st, res, acts = self._drive(3)
+        # Seed 5 reaches the Interlude with the corrected Event selection
+        # conditions. Keep the assertions on actual play.
+        st, res, acts = self._drive(5)
         assert st.get("interlude_completed") is True
         assert res["winter_count"] > 3
         second = {f for (ph, f), n in acts.items() if ph == "2nd" and n}

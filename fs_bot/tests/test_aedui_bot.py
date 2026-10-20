@@ -201,6 +201,9 @@ class TestNodeA3:
         """Don't decline for a normal card."""
         state = _make_state()
         state["current_card_id"] = 9  # Mons Cevenna — no special Aedui instr
+        # Its geographic free actions still need a presence in the theatre.
+        from fs_bot.rules_consts import SEQUANI
+        place_piece(state, SEQUANI, AEDUI, WARBAND)
         assert node_a3(state) == "No"
 
 
@@ -1241,6 +1244,8 @@ class TestExecuteAeduiTurn:
         state = _make_state()
         state["can_play_event"] = True
         state["current_card_id"] = 9  # Mons Cevenna — normal card
+        from fs_bot.rules_consts import SEQUANI
+        place_piece(state, SEQUANI, AEDUI, WARBAND)
         # Make sure A1 says No
         state["next_card_faction_order"] = [ROMANS, AEDUI]
         state["current_card_faction_order"] = [ROMANS, AEDUI]

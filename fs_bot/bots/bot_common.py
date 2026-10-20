@@ -147,6 +147,40 @@ def is_final_year_capability(state, card_id):
     return state.get("final_year", False)
 
 
+def mons_cevenna_cannot_affect_theatre(state, faction):
+    """Card 9: a definite empty-theatre case, not a general action forecast.
+
+    Germans, Aedui and Belgae have no Rally home in Provincia/Sequani/Arverni.
+    Their other Commands need pieces there. Static pieces are retained as
+    potential Rally/SA bases. Also retain Belgic cases with German Warbands
+    that could be used through the card's SA-first Enlist allowance.
+    Roman Build and the Arverni home Rally need separate analysis, so this
+    deliberately does not declare those factions' Events ineffective.
+    """
+    from fs_bot.rules_consts import PROVINCIA, SEQUANI, ARVERNI_REGION
+    if faction not in (GERMANS, AEDUI, BELGAE):
+        return False
+    theatre = (PROVINCIA, SEQUANI, ARVERNI_REGION)
+    if any(count_pieces(state, r, faction) for r in theatre):
+        return False
+    if faction == BELGAE and any(count_pieces(state, r, GERMANS, WARBAND)
+                                 for r in theatre):
+        return False
+    return True
+
+
+def sabis_has_qualifying_battle(state, faction):
+    """A57 needs a Battle in Belgica to have any effect (§8.1.1).
+
+    Reuse the execution selector so the Belgic Legion-Loss requirement and
+    the German Ariovistus Warband floor also govern Event selection.
+    """
+    from fs_bot.engine.execute import _choose_free_battle
+    from fs_bot.rules_consts import BELGICA_REGIONS
+    region, _ = _choose_free_battle(state, faction, set(BELGICA_REGIONS))
+    return region is not None
+
+
 def should_decline_event(state, card_id, faction):
     """Combined check: should a NP decline the current Event?
 
@@ -171,6 +205,11 @@ def should_decline_event(state, card_id, faction):
 
     # Capability in final year — §8.1.1
     if is_final_year_capability(state, card_id):
+        return True
+
+    if card_id == 9 and mons_cevenna_cannot_affect_theatre(state, faction):
+        return True
+    if card_id == "A57" and not sabis_has_qualifying_battle(state, faction):
         return True
 
     # Ineffective Event — §8.1.1 (no effect, or merely Revealing own pieces).

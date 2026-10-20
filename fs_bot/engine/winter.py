@@ -295,6 +295,13 @@ def _germans_phase_raid_all(state):
 # ============================================================================
 
 def quarters_phase(state, relocations=None):
+    """Execute §6.3/A6.3 with stable agreements across plan/execute."""
+    from fs_bot.engine.quarters import agreement_cache
+    with agreement_cache(state):
+        return _quarters_phase(state, relocations)
+
+
+def _quarters_phase(state, relocations=None):
     """Execute the Quarters Phase — §6.3 / A6.3.
 
     Each faction relocates its Forces, then forced die rolls for
@@ -315,49 +322,65 @@ def quarters_phase(state, relocations=None):
     Returns:
         Dict with phase results.
     """
+    from fs_bot.engine.quarters import (
+        QuartersError, quarters_factions, validate_quarters_plan,
+    )
+    from fs_bot.engine.agent import consult_agent
     scenario = state["scenario"]
-    if relocations is None:
-        relocations = {}
-
+    if relocations is not None:
+        errors = validate_quarters_plan(state, relocations)
+        if errors:
+            raise QuartersError("; ".join(errors))
     result = {
-        "german_relocation": None,
-        "gallic_relocations": {},
-        "gallic_desertion": {},
-        "roman_relocation": None,
+        "german_relocation": None, "gallic_relocations": {},
+        "gallic_desertion": {}, "roman_relocation": None,
         "roman_quartering": None,
     }
-
     if scenario in BASE_SCENARIOS:
-        # Base game order: Germans, Belgae, Aedui, Arverni, Romans — §6.3
         result["german_relocation"] = _quarters_german_relocation(state)
-        for faction in (BELGAE, AEDUI, ARVERNI):
-            _apply_relocations(state, faction, relocations.get(faction, []))
-            result["gallic_desertion"][faction] = _quarters_gallic_desertion(
-                state, faction
-            )
-        _apply_relocations(state, ROMANS, relocations.get(ROMANS, []))
-        result["roman_quartering"] = _quarters_roman_pay_or_roll(
-            state, relocations.get(ROMANS + "_quartering", {})
-        )
-    else:
-        # Ariovistus order: Belgae, Aedui, Germans, Romans — A6.3
-        # A6.3.1: Arverni do not relocate
-        for faction in (BELGAE, AEDUI):
-            _apply_relocations(state, faction, relocations.get(faction, []))
-            result["gallic_desertion"][faction] = _quarters_gallic_desertion(
-                state, faction
-            )
-        # A6.3.2: Germans treated like Gauls in Ariovistus
-        _apply_relocations(state, GERMANS, relocations.get(GERMANS, []))
-        result["gallic_desertion"][GERMANS] = _quarters_gallic_desertion(
-            state, GERMANS
-        )
-        # Romans unchanged — A6.3.3
-        _apply_relocations(state, ROMANS, relocations.get(ROMANS, []))
-        result["roman_quartering"] = _quarters_roman_pay_or_roll(
-            state, relocations.get(ROMANS + "_quartering", {})
-        )
-
+    for faction in quarters_factions(state):
+        errors = []
+        while True:
+            plan = relocations
+            human_choice = False
+            if plan is None:
+                if faction not in state.get("non_player_factions", set()):
+                    plan = consult_agent(state, faction, {
+                        "kind": "quarters_plan", "request_type": "quarters_plan",
+                        "faction": faction, "errors": errors})
+                    human_choice = plan is not None
+                if plan is None:
+                    if faction == ROMANS:
+                        from fs_bot.bots.roman_bot import build_np_winter_relocations
+                        plan = build_np_winter_relocations(state)
+                    else:
+                        plan = {faction: []}
+            # An explicitly supplied full-phase plan may include other
+            # factions; a human response may choose only its own pieces.
+            current_plan = plan
+            if relocations is not None:
+                # Previous factions have already moved; validating their
+                # entries again would replay them against depleted origins.
+                current_plan = {faction: plan.get(faction, [])}
+                if faction == ROMANS and ROMANS + "_quartering" in plan:
+                    current_plan[ROMANS + "_quartering"] = plan[ROMANS + "_quartering"]
+            errors = validate_quarters_plan(state, current_plan, faction=faction)
+            if not errors:
+                try:
+                    _apply_relocations(state, faction, plan.get(faction, []))
+                    break
+                except QuartersError as exc:
+                    errors = [str(exc)]
+            if (relocations is not None or not human_choice
+                    or faction in state.get("non_player_factions", set())):
+                raise QuartersError("; ".join(errors))
+        if faction == ROMANS:
+            result["roman_relocation"] = plan.get(faction, [])
+            result["roman_quartering"] = _quarters_roman_pay_or_roll(
+                state, plan.get(ROMANS + "_quartering", {}))
+        else:
+            result["gallic_relocations"][faction] = plan.get(faction, [])
+            result["gallic_desertion"][faction] = _quarters_gallic_desertion(state, faction)
     refresh_all_control(state)
     return result
 
@@ -477,160 +500,48 @@ def _quarters_gallic_desertion(state, faction):
 
 
 def _apply_relocations(state, faction, relocation_list):
-    """Apply pre-made relocation decisions for a faction.
+    """Validate and atomically apply one faction's §6.3 relocations."""
+    from fs_bot.engine.quarters import apply_relocations
+    apply_relocations(state, faction, relocation_list)
 
-    Each relocation is (piece_type, from_region, to_region, count).
-    """
-    for piece_type, from_region, to_region, count in relocation_list:
-        if piece_type in FLIPPABLE_PIECES:
-            # Move all states
-            for ps in (HIDDEN, REVEALED, SCOUTED):
-                ps_count = count_pieces_by_state(
-                    state, from_region, faction, piece_type, ps
-                )
-                to_move = min(ps_count, count)
-                if to_move > 0:
-                    move_piece(
-                        state, from_region, to_region, faction, piece_type,
-                        count=to_move, piece_state=ps
-                    )
-                    count -= to_move
-                if count <= 0:
-                    break
-        else:
-            move_piece(
-                state, from_region, to_region, faction, piece_type,
-                count=count
-            )
+
+def validate_quarters_plan(state, relocations, *, faction=None):
+    """Public nonmutating frontend validator; see engine.quarters."""
+    from fs_bot.engine.quarters import validate_quarters_plan as validate
+    return validate(state, relocations, faction=faction)
 
 
 def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
-    """Execute Roman pay-or-roll for pieces outside Provincia — §6.3.3.
+    """Quarter exactly the pieces selected as free, paid, or rolled (§6.3.3).
 
-    For each Legion and Auxilia outside Provincia:
-    - Pay to keep: 1 Resource with Roman Ally, 2 without, doubled if Devastated
-    - One piece per Roman Ally and per Fort stays free
-    - Or roll: remove on 1-3 (Legion to Fallen)
-
-    quartering_decisions: Dict of {region: {"pay": int, "roll": int}}
-    specifying how many to pay for and how many to roll for. If not
-    provided, defaults to rolling for all (bot behavior).
-
-    Returns:
-        Dict with quartering results.
+    Legacy pay counts still work. ``free_pieces``/``pay_pieces`` entries
+    identify (piece type, visibility or None, count), so a failed Auxilia
+    roll cannot remove a Legion that was already protected by payment.
     """
-    if quartering_decisions is None:
-        quartering_decisions = {}
-
-    result = {
-        "payments": {},
-        "rolls": {},
-        "removed": {},
-        "total_cost": 0,
-    }
-    rng = state["rng"]
-
-    # §8.8.7 pay priority: an explicit region order may be supplied; pay
-    # processing is sequential, so order decides who gets scarce Resources.
-    _order = quartering_decisions.get("_pay_order") or []
-    _regions = [r for r in _order if r in state["spaces"]] + \
-        [r for r in state["spaces"] if r not in _order]
-
-    for region in _regions:
-        if region == PROVINCIA:
+    from fs_bot.engine.quarters import quartering_allocations
+    allocations = quartering_allocations(state, quartering_decisions or {})
+    result = {"payments": {}, "rolls": {}, "removed": {}, "total_cost": 0}
+    for region, allocation in allocations.items():
+        if not (allocation["paid"] or allocation["roll"]):
             continue
-
-        # Count Roman pieces that need quartering
-        legion_count = count_pieces(state, region, ROMANS, LEGION)
-        auxilia_count = count_pieces(state, region, ROMANS, AUXILIA)
-        total_pieces = legion_count + auxilia_count
-        if total_pieces == 0:
-            continue
-
-        # Free pieces: one per Roman Ally + one per Fort — §6.3.3
-        roman_allies = count_pieces(state, region, ROMANS, ALLY)
-        roman_forts = count_pieces(state, region, ROMANS, FORT)
-        free_pieces = (
-            roman_allies * QUARTERS_FREE_PIECES_PER_ALLY
-            + roman_forts * QUARTERS_FREE_PIECES_PER_FORT
-        )
-        pieces_needing_quarters = max(0, total_pieces - free_pieces)
-
-        if pieces_needing_quarters == 0:
-            continue
-
-        # Cost per piece
-        has_ally = roman_allies > 0
-        base_cost = (
-            QUARTERS_COST_WITH_ALLY if has_ally
-            else QUARTERS_COST_WITHOUT_ALLY
-        )
-        if _is_devastated(state, region):
-            base_cost *= QUARTERS_DEVASTATED_MULTIPLIER
-        elif state.get("event_modifiers", {}).get(
-                "card_A63_quarters_devastated_only"):
-            # A63 Winter Campaign: Romans pay Quarters only in Devastated
-            # Regions — elsewhere pieces Quarter at no cost.
-            base_cost = 0
-        else:
-            # Base card 63 unshaded (Winter Campaign): same rule.
-            from fs_bot.cards.capabilities import (
-                is_capability_active as _ica63)
-            from fs_bot.rules_consts import EVENT_UNSHADED as _EU63
-            if _ica63(state, 63, _EU63):
-                base_cost = 0
-
-        # Apply decisions or default to rolling
-        decisions = quartering_decisions.get(region, {})
-        if not isinstance(decisions, dict):
-            decisions = {}
-        pay_count = decisions.get("pay", 0)
-        roll_count = decisions.get("roll", pieces_needing_quarters - pay_count)
-
-        # Pay for pieces
-        actual_paid = min(pay_count, pieces_needing_quarters)
-        cost = actual_paid * base_cost
-        available_resources = state["resources"].get(ROMANS, 0)
-        # Can only pay if have enough Resources
-        affordable = min(actual_paid, available_resources // base_cost) if base_cost > 0 else actual_paid
-        cost = affordable * base_cost
-        state["resources"][ROMANS] = state["resources"].get(ROMANS, 0) - cost
-        result["payments"][region] = {"count": affordable, "cost": cost}
+        cost = allocation["cost"]
+        state["resources"][ROMANS] -= cost
+        result["payments"][region] = {"count": len(allocation["paid"]), "cost": cost}
         result["total_cost"] += cost
-
-        # Roll for remaining
-        remaining_to_roll = pieces_needing_quarters - affordable
-        if remaining_to_roll > 0:
-            region_rolls = {"rolls": [], "removed_legions": 0,
-                            "removed_auxilia": 0}
-            # Roll for Legions first (more valuable), then Auxilia
-            for _ in range(remaining_to_roll):
-                roll = rng.randint(DIE_MIN, DIE_MAX)
-                region_rolls["rolls"].append(roll)
-                if roll <= DESERTION_ROLL_THRESHOLD:
-                    # Remove a piece — Legion first, then Auxilia
-                    current_legions = count_pieces(
-                        state, region, ROMANS, LEGION
-                    )
-                    if current_legions > 0:
-                        remove_piece(
-                            state, region, ROMANS, LEGION, to_fallen=True
-                        )
-                        region_rolls["removed_legions"] += 1
-                    else:
-                        current_auxilia = count_pieces(
-                            state, region, ROMANS, AUXILIA
-                        )
-                        if current_auxilia > 0:
-                            remove_piece(state, region, ROMANS, AUXILIA)
-                            region_rolls["removed_auxilia"] += 1
-
-            result["rolls"][region] = region_rolls
-            result["removed"][region] = (
-                region_rolls["removed_legions"]
-                + region_rolls["removed_auxilia"]
-            )
-
+        if not allocation["roll"]:
+            continue
+        rolled = {"rolls": [], "pieces": [], "removed_legions": 0,
+                  "removed_auxilia": 0}
+        for piece, visibility in allocation["roll"]:
+            roll = state["rng"].randint(DIE_MIN, DIE_MAX)
+            rolled["rolls"].append(roll)
+            rolled["pieces"].append((piece, visibility))
+            if roll <= DESERTION_ROLL_THRESHOLD:
+                remove_piece(state, region, ROMANS, piece, count=1,
+                             piece_state=visibility, to_fallen=(piece == LEGION))
+                rolled["removed_legions" if piece == LEGION else "removed_auxilia"] += 1
+        result["rolls"][region] = rolled
+        result["removed"][region] = rolled["removed_legions"] + rolled["removed_auxilia"]
     return result
 
 
@@ -1314,31 +1225,9 @@ def run_winter_round(state, is_final=False,
         else:
             result["phases"]["germans"] = germans_phase(state)
 
-    # Phase 3: Quarters
-    # Q12 (QUESTIONS.md): when the Romans are Non-player and no explicit
-    # relocation decisions were provided, drive the Quarters Phase from the
-    # Roman bot's §8.8.7 plan (§6.3.3 procedure) instead of the roll-all
-    # default. Built HERE -- after the Germans Phase -- so piece counts are
-    # current. Owner-confirmed reading: relocate to Provincia via Supply
-    # Lines, then pay-all-affordable in §8.8.7 priority order.
-    if relocations is None:
-        # Quarters relocation/payment is a ROMAN decision (§6.3.3/§8.8.7).
-        # A player Rome is consulted via the decision agent
-        # (kind "quarters_plan"; respond with a relocations dict); when it
-        # defers — or for NP Rome — the §8.8.7 plan applies. The old
-        # behaviour left a PLAYER Rome on roll-for-all, which is a choice
-        # no player would make (found in live human-seat play: winter
-        # attrition is the Great Revolt Roman loss condition).
-        if ROMANS not in state.get("non_player_factions", set()):
-            from fs_bot.engine.agent import consult_agent
-            resp = consult_agent(state, ROMANS, {
-                "kind": "quarters_plan",
-                "request_type": "quarters_plan"})
-            if isinstance(resp, dict):
-                relocations = resp
-        if relocations is None:
-            from fs_bot.bots.roman_bot import build_np_winter_relocations
-            relocations = build_np_winter_relocations(state)
+    # §6.3/A6.3 decisions are collected in faction order, after earlier
+    # relocations/desertions have changed the board. Every human faction
+    # can choose; a deferring Roman still receives the standard NP plan.
     result["phases"]["quarters"] = quarters_phase(
         state, relocations=relocations
     )

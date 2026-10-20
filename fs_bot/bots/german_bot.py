@@ -1702,6 +1702,11 @@ def _select_intimidate_targets(state, region, max_count, exclude_faction=None):
     Excludes targets where the target faction has a Leader in the region
     (per A4.6.2).
     """
+    # A4.6.2 caps each application at two Warbands, even where a caller
+    # supplies the entire Hidden force as its available budget.
+    max_count = min(2, max_count)
+    if max_count <= 0:
+        return []
     non_players = state.get("non_player_factions", set())
     selected = []
 
@@ -1712,7 +1717,8 @@ def _select_intimidate_targets(state, region, max_count, exclude_faction=None):
         # A8.7.1 / G_INTIMIDATE: before a Battle, do not Intimidate-remove the
         # Battle's own defender — those pieces are "removed in Battle". Removing
         # them here can leave the Battle with no target ('defender not present').
-        return (faction == exclude_faction or
+        return ((selected and faction != selected[0]["target_faction"]) or
+                faction == exclude_faction or
                 (faction == ROMANS and state.get("event_modifiers", {}).get(
                     "card_A22_no_intimidate_romans")))
 
@@ -1724,7 +1730,7 @@ def _select_intimidate_targets(state, region, max_count, exclude_faction=None):
             continue
         if _faction_has_leader(faction):
             continue
-        if count_pieces(state, region, faction, ALLY) > 0:
+        for _ in range(count_pieces(state, region, faction, ALLY)):
             selected.append({
                 "tier": 1,
                 "target_faction": faction,
@@ -1767,7 +1773,7 @@ def _select_intimidate_targets(state, region, max_count, exclude_faction=None):
             continue
         if _faction_has_leader(faction):
             continue
-        if count_pieces(state, region, faction, ALLY) > 0:
+        for _ in range(count_pieces(state, region, faction, ALLY)):
             selected.append({
                 "tier": 3,
                 "target_faction": faction,

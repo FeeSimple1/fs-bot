@@ -27,7 +27,7 @@ from fs_bot.rules_consts import (
     # Piece types
     WARBAND, AUXILIA, ALLY, LEGION,
     # Piece states
-    HIDDEN, REVEALED,
+    HIDDEN, REVEALED, SCOUTED,
     # Leaders
     ARIOVISTUS_LEADER,
     # Markers
@@ -36,7 +36,7 @@ from fs_bot.rules_consts import (
     ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.board.pieces import (
-    count_pieces_by_state, get_leader_in_region,
+    count_pieces, count_pieces_by_state, get_leader_in_region,
     flip_piece, remove_piece, clear_allied_tribe,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
@@ -81,7 +81,7 @@ def validate_intimidate_region(state, region):
 
 
 def intimidate(state, region, warbands_to_flip, target_faction,
-               target_removals):
+               target_removals, *, revealed_by_raid=0):
     """Execute Intimidate in a region.
 
     A4.6.2: Flip 1-2 Hidden Germanic Warbands to Revealed. Place
@@ -115,14 +115,23 @@ def intimidate(state, region, warbands_to_flip, target_faction,
             f"{warbands_to_flip}"
         )
 
+    # A3.4.3: the SAME Warbands may Raid and Intimidate simultaneously.
+    # Only the engine's successful Raid result supplies this credit; an
+    # action's caller-controlled ``free`` flag never supplies it.
+    if (type(revealed_by_raid) is not int
+            or not 0 <= revealed_by_raid <= warbands_to_flip
+            or count_pieces_by_state(state, region, GERMANS, WARBAND,
+                                     REVEALED) < revealed_by_raid):
+        raise CommandError("Invalid Raiding Warband credit for Intimidate")
+    fresh_flips = warbands_to_flip - revealed_by_raid
     # Check Hidden Warbands available
     hidden_wb = count_pieces_by_state(
         state, region, GERMANS, WARBAND, HIDDEN
     )
-    if hidden_wb < warbands_to_flip:
+    if hidden_wb < fresh_flips:
         raise CommandError(
             f"Only {hidden_wb} Hidden Germanic Warbands in {region}, "
-            f"need {warbands_to_flip}"
+            f"need {fresh_flips}"
         )
 
     # Validate target: must have no Leader in region — A4.6.2
@@ -134,14 +143,16 @@ def intimidate(state, region, warbands_to_flip, target_faction,
     if target_faction == GERMANS:
         raise CommandError("Cannot Intimidate own faction")
 
-    target_leader = get_leader_in_region(state, region, target_faction)
+    target_leader = (get_leader_in_region(state, region, target_faction)
+                     if target_faction is not None else None)
     if target_leader is not None:
         raise CommandError(
             f"{target_faction} has a Leader in {region} — cannot Intimidate"
         )
 
     # Validate removals match flip count
-    if len(target_removals) != warbands_to_flip:
+    marker_only = target_faction is None and not target_removals
+    if not marker_only and len(target_removals) != warbands_to_flip:
         raise CommandError(
             f"Must remove exactly {warbands_to_flip} pieces, "
             f"got {len(target_removals)}"
@@ -155,16 +166,33 @@ def intimidate(state, region, warbands_to_flip, target_faction,
                 f"not {piece_type}"
             )
 
+    # Validate every removal before flipping or placing a marker. A plan may
+    # mix specified visibility with "any"; reserve those pieces in the same
+    # Hidden/Revealed/Scouted order used by remove_piece.
+    pool = {(pt, ps): count_pieces_by_state(state, region, target_faction, pt, ps)
+            for pt in (WARBAND, AUXILIA) for ps in (HIDDEN, REVEALED, SCOUTED)}
+    pool[(ALLY, None)] = (count_pieces(state, region, target_faction, ALLY)
+                          if target_faction is not None else 0)
+    for pt, ps in target_removals:
+        choices = (None,) if pt == ALLY else ((ps,) if ps is not None
+                                             else (HIDDEN, REVEALED, SCOUTED))
+        selected = next((p for p in choices if pool.get((pt, p), 0) > 0), False)
+        if selected is False:
+            raise CommandError(f"Not enough {target_faction} {pt} in {region}")
+        pool[(pt, selected)] -= 1
+
     result = {
-        "warbands_flipped": warbands_to_flip,
+        "warbands_flipped": fresh_flips,
+        "raiding_warbands_used": revealed_by_raid,
         "intimidated_placed": False,
         "target_removed": [],
     }
 
     # Flip Germanic Warbands
-    flip_piece(state, region, GERMANS, WARBAND,
-               count=warbands_to_flip,
-               from_state=HIDDEN, to_state=REVEALED)
+    if fresh_flips:
+        flip_piece(state, region, GERMANS, WARBAND,
+                   count=fresh_flips,
+                   from_state=HIDDEN, to_state=REVEALED)
 
     # Place Intimidated marker
     markers = state.setdefault("markers", {})

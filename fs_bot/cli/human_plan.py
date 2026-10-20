@@ -585,23 +585,34 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
     from fs_bot.board.pieces import count_pieces_by_state
     cands = [r for r in _regions_with_pieces(state, faction)
              if count_pieces_by_state(state, r, faction, WARBAND,
-                                      HIDDEN) > 0
-             and _enemies_in_region(state, r, faction)]
+                                      HIDDEN) > 0]
     if not cands:
         return None, None
     picked = _pick_regions(stdin, stdout,
                            "Intimidate in which Region(s)?", cands)
     plan = []
     for r in picked:
+        from fs_bot.board.pieces import get_leader_in_region
+        targets = [f for f in _enemies_in_region(state, r, faction)
+                   if get_leader_in_region(state, r, f) is None
+                   and any(count_pieces(state, r, f, pt)
+                           for pt in (WARBAND, AUXILIA, ALLY))
+                   and not (f == ROMANS and state.get("event_modifiers", {}).get(
+                       "card_A22_no_intimidate_romans"))]
         target = prompt_choice(stdin, stdout,
                                f"  Intimidate which Faction in {r}?",
-                               [(f, f) for f in
-                                _enemies_in_region(state, r, faction)])
+                               [(f, f) for f in targets] +
+                               [("Place an Intimidated marker only", None)])
+        if target is None:
+            plan.append({"region": r, "target_faction": None,
+                         "target_piece": None, "target_state": None})
+            continue
         flips = min(2, count_pieces_by_state(state, r, faction, WARBAND,
                                              HIDDEN))
+        reserved = {}
         for _ in range(flips):
             pts = [(pt, pt) for pt in (WARBAND, AUXILIA, ALLY)
-                   if count_pieces(state, r, target, pt) > 0]
+                   if count_pieces(state, r, target, pt) > reserved.get(pt, 0)]
             if not pts:
                 break
             pts.append(("(stop here)", None))
@@ -610,6 +621,7 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
                                pts)
             if pt is None:
                 break
+            reserved[pt] = reserved.get(pt, 0) + 1
             plan.append({"region": r, "target_faction": target,
                          "target_piece": pt, "target_state": None})
     if not plan:

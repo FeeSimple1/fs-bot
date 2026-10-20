@@ -1393,50 +1393,48 @@ def _resolve_card_A69_ambush(state):
 
 
 def _resolve_card_A45_intimidate(state):
-    """Card A45 Savage Dictates (shaded): the Germans free Intimidate anywhere.
-    Build a plan flipping Hidden German Warbands to remove enemy pieces in each
-    Region where the Germans have Hidden Warbands and an enemy has removable
-    mobile pieces (most-pieces enemy, up to 2 per Region)."""
-    from fs_bot.rules_consts import (GERMANS, FACTIONS, WARBAND, AUXILIA,
-                                     LEGION, HIDDEN, REVEALED)
-    from fs_bot.board.pieces import count_pieces, count_pieces_by_state
-    from fs_bot.map.map_data import get_playable_regions
-    plan = []
-    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
-        gh = count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN)
-        if gh <= 0:
-            continue
-        # Pick the enemy with the most removable mobile pieces here.
-        best, best_n = None, 0
-        for ef in FACTIONS:
-            if ef == GERMANS:
-                continue
-            n = (count_pieces(state, region, ef, WARBAND)
-                 + count_pieces(state, region, ef, AUXILIA)
-                 + count_pieces(state, region, ef, LEGION))
-            if n > best_n:
-                best, best_n = ef, n
-        if best is None:
-            continue
-        # Up to min(2, gh) removals of that enemy's mobile pieces.
-        removable = []
-        for pt in (WARBAND, AUXILIA, LEGION):
-            for ps in (HIDDEN, REVEALED, None):
-                if pt == LEGION and ps is not None:
-                    continue
-                cnt = (count_pieces(state, region, best, pt) if ps is None
-                       else count_pieces_by_state(state, region, best, pt, ps))
-                for _ in range(cnt):
-                    removable.append((pt, ps if pt != LEGION else None))
-        for (pt, ps) in removable[:min(2, gh)]:
-            plan.append({"region": region, "target_faction": best,
-                         "target_piece": pt, "target_state": ps})
-    if not plan:
-        return [{"free_action": "intimidate", "flag": "card_A45",
-                 "executed": False, "reason": "no German Intimidate available"}]
-    res = _execute_intimidate(state, GERMANS,
-                              {"details": {"intimidate_plan": plan}})
-    return [{"free_action": "intimidate", "flag": "card_A45", "result": res}]
+    """A45: a human chooses; Germans follow their Intimidate priorities.
+
+    Only the Leader/Control selection restriction is waived. The usual
+    Hidden-Warband, one-Faction, protected-Leader and removal rules remain.
+    """
+    from fs_bot.rules_consts import GERMANS, WARBAND, HIDDEN
+    from fs_bot.board.pieces import count_pieces_by_state
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    from fs_bot.bots.german_bot import _select_intimidate_targets
+    from fs_bot.engine.free_actions import consult_free_action, execute_free_action_plan
+    request = {"kind": "free_action", "request_type": "event_sa",
+               "card_id": "A45", "allowed_sas": ["Intimidate"],
+               "free": True, "intimidate_anywhere": True}
+    response = consult_free_action(state, GERMANS, request)
+    if response is not None:
+        result = ({"executed": False, "declined": True,
+                   "reason": "Intimidate declined"} if response.get("decline") else
+                  execute_free_action_plan(state, GERMANS, request, response))
+    else:
+        plan = []
+        for region in get_playable_regions_for_state(state, GERMANS):
+            hidden = count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN)
+            if hidden:
+                plan.extend({"region": region, **target} for target in
+                            _select_intimidate_targets(state, region, min(2, hidden)))
+        if plan:
+            # A8.7.1: only after removing pieces, place markers wherever
+            # else possible. A45 also waives selection in these Regions.
+            from fs_bot.rules_consts import MARKER_INTIMIDATED
+            removing = {entry["region"] for entry in plan}
+            for region in get_playable_regions_for_state(state, GERMANS):
+                if (region not in removing and count_pieces_by_state(
+                        state, region, GERMANS, WARBAND, HIDDEN) > 0
+                        and MARKER_INTIMIDATED not in
+                        (state.get("markers", {}).get(region) or {})):
+                    plan.append({"region": region, "target_faction": None,
+                                 "target_piece": None, "target_state": None})
+        result = (_execute_intimidate(state, GERMANS,
+                    {"details": {"intimidate_plan": plan}}, ignore_selection=True)
+                  if plan else {"executed": False, "declined": True,
+                                "reason": "No Intimidate target under A8.7.1"})
+    return [{"free_action": "intimidate", "flag": "card_A45", "result": result}]
 
 
 def _resolve_card_A5_evict(state):
@@ -4523,47 +4521,58 @@ def _execute_devastate(state, faction, bot_action):
             "regions": done, "errors": errors}
 
 
-def _execute_intimidate(state, faction, bot_action):
-    """German Intimidate (A4.6.2).
+def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
+                        raid_credits=None):
+    """One faction and 1–2 Warbands per Region/application (A4.6.2).
 
-    The bot's ``intimidate_plan`` is a flat list of per-removal entries
-    ``{region, target_faction, target_piece, target_state, free}``. The
-    mechanic intimidate(region, warbands_to_flip, target_faction,
-    target_removals) flips 1-2 Hidden Warbands and removes that many pieces
-    of ONE target faction. We group entries by (region, target_faction), cap
-    each group at the rules' 2 flips, and translate to one call per group.
+    A45's trusted grant waives selection. Successful Raid execution may
+    supply already-Revealed Warband credits for its separate free Intimidate.
+    Neither exception is accepted from the action's own fields.
     """
+    from fs_bot.rules_consts import GERMANS
+    from fs_bot.commands.sa_intimidate import validate_intimidate_region
+    if faction != GERMANS:
+        return {"executed": False, "sa": _SA_INTIMIDATE,
+                "errors": ["Only Germans may Intimidate"]}
     plan = _sa_detail(bot_action, "intimidate_plan") or []
-
+    credits = dict(raid_credits or {})
     groups = {}
-    order = []
     for entry in plan:
         region = entry.get("region")
-        tgt = entry.get("target_faction")
-        if region is None or tgt is None:
-            continue
-        key = (region, tgt)
-        if key not in groups:
-            groups[key] = []
-            order.append(key)
-        groups[key].append(
-            (entry.get("target_piece"), entry.get("target_state")))
-
+        if region is not None:
+            # A free Raid use and a regular SA are distinct applications;
+            # absent trusted Raid credit, free=True is just a normal attempt.
+            free = bool(entry.get("free") and region in credits)
+            groups.setdefault((region, free), []).append(entry)
     done, errors = [], []
-    for (region, tgt) in order:
-        removals = groups[(region, tgt)][:2]  # A4.6.2: flip 1-2 Warbands
+    for (region, free), entries in groups.items():
         try:
-            from fs_bot.commands.sa_intimidate import validate_intimidate_region
-            valid, reason = validate_intimidate_region(state, region)
-            if not valid:
-                raise CommandError(reason)
-            _sa_intimidate(state, region, len(removals), tgt, removals)
-            done.append({"region": region, "target": tgt,
-                         "count": len(removals)})
+            targets = {e.get("target_faction") for e in entries}
+            if len(targets) != 1:
+                raise CommandError("Intimidate targets only one Faction per Region")
+            target = next(iter(targets))
+            removals = [(e.get("target_piece"), e.get("target_state"))
+                        for e in entries if e.get("target_piece") is not None]
+            count = len(removals) or 1
+            if count > 2 or len(entries) > 2:
+                raise CommandError("Intimidate uses at most two Warbands per Region")
+            if not ignore_selection:
+                valid, reason = validate_intimidate_region(state, region)
+                if not valid:
+                    raise CommandError(reason)
+            credit = min(count, credits.get(region, 0)) if free else 0
+            if free and credit < count:
+                raise CommandError("Intimidate exceeds the Warbands that actually Raided")
+            res = _sa_intimidate(state, region, count, target, removals,
+                                 revealed_by_raid=credit)
+            if free:
+                credits.pop(region, None)
+            done.append({"region": region, "target": target,
+                         "count": len(removals), **res})
         except _EXEC_ERRORS as exc:
-            errors.append({"region": region, "target": tgt,
+            errors.append({"region": region,
                            "error": str(exc)})
-    return {"executed": len(done) > 0, "sa": _SA_INTIMIDATE,
+    return {"executed": bool(done), "sa": _SA_INTIMIDATE,
             "intimidations": done, "errors": errors}
 
 

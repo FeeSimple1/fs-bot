@@ -103,6 +103,10 @@ def execute_free_action_plan(state, faction, request, action):
                         'Devastate': ex._execute_devastate,
                         'Rampage': ex._execute_rampage, 'Enlist': ex._execute_enlist,
                         'Settle': ex._execute_settle, 'Intimidate': ex._execute_intimidate}
+            if sa == 'Intimidate':
+                return ex._execute_intimidate(
+                    state, faction, action,
+                    ignore_selection=request.get('intimidate_anywhere', False))
             if sa == 'Trade':
                 return ex._execute_trade(state, faction,
                                          allowed_regions=request.get('allowed_regions'))

@@ -1086,6 +1086,7 @@ _ONE_SHOT_FREE_ACTION_FLAGS = (
     "card_70_roman_march_battle",
     "card_70_target_regions",
     "card_72_hidden_march_battle",
+    "card_72_march_and_enemy_battle",
     "card_9_free_march_and_command",
     "card_9_march_from",
     "card_9_march_to",

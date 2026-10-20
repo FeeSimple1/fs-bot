@@ -239,6 +239,16 @@ def card_param_schema(card_id, scenario):
 # violation). Offering/generating only these keeps humans out of dead ends
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
+    54: {"region": {"kind": "region"},
+         "origin_region": {"kind": "region"},
+         "march_regions": {"kind": "regions"},
+         "march_legions": {"kind": "count"},
+         "march_auxilia": {"kind": "count"},
+         "march_warbands": {"kind": "count"},
+         "march_leader": {"kind": "value", "values": (True, False)},
+         "target_faction": {"kind": "faction"},
+         "second_faction": {"kind": "faction"},
+         "first_battle": {"kind": "value", "values": (True, False)}},
     "A35": {"piece_type": {"values": (WARBAND, AUXILIA)},
             "ally_faction": {"values": tuple(f for f in FACTIONS
                                              if f != GERMANS)}},

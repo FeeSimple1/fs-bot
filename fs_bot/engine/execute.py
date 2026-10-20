@@ -1861,94 +1861,8 @@ def _resolve_card45_battle(state, faction):
 
 def _resolve_card54_joined_ranks(state, faction, march_limit,
                                  second_always_retreat=False):
-    """Card 54 Joined Ranks: the executing Faction may free March a group to a
-    Region that already has >=2 other Gallic/Roman Factions; then it free
-    Battles there (No Retreat) and a 2nd such Faction free Battles there
-    (Retreat allowed), each against a 3rd Faction."""
-    from fs_bot.rules_consts import (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-                                     ARIOVISTUS_SCENARIOS)
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    scen = state["scenario"]
-    # The player Factions that count toward "2 other Factions" and may be the
-    # 2nd Battler. In Ariovistus the card reads "2 other Factions" and Germans
-    # are a player while Arverni are game-run (A6.2) — swap them in.
-    if scen in ARIOVISTUS_SCENARIOS:
-        gr = (ROMANS, GERMANS, AEDUI, BELGAE)
-    else:
-        gr = (ROMANS, ARVERNI, AEDUI, BELGAE)
-    playable = set(get_playable_regions(scen, state.get("capabilities")))
-    # Target Region: >=2 other Gallic/Roman Factions, reachable/occupied by us.
-    T = None
-    for R in sorted(playable):
-        others = [f for f in gr if f != faction and count_pieces(state, R, f) > 0]
-        if len(others) < 2:
-            continue
-        reachable = _attacker_has_force(state, R, faction) or any(
-            _group_has_pieces(_mobile_march_group(state, faction, a))
-            for a in get_adjacent(R, scen) if a in playable)
-        if reachable:
-            T = R
-            break
-    if T is None:
-        return [{"free_action": "joined_ranks", "flag": "card_54",
-                 "executed": False, "reason": "no Region with 2+ other "
-                 "Gallic/Roman Factions reachable"}]
-    out = []
-    # Free March our group into T (if not already there).
-    if not _attacker_has_force(state, T, faction):
-        srcs = [a for a in get_adjacent(T, scen) if a in playable
-                and _group_has_pieces(_mobile_march_group(state, faction, a))]
-        if srcs:
-            S = max(srcs, key=lambda a: sum(
-                count_pieces(state, a, faction, pt)
-                for pt in ("Legion", "Auxilia", "Warband")))
-            try:
-                _march_with_harassment(state, faction, S, [T])
-                out.append({"free_action": "march", "flag": "card_54",
-                            "source": S, "dest": T})
-            except _EXEC_ERRORS as exc:
-                out.append({"free_action": "march", "flag": "card_54",
-                            "executed": False, "reason": repr(exc)})
-    # First Battle: executing Faction (No Retreat).
-    d1 = _rank_free_battle_defender(state, T, faction)
-    if d1 is not None and _attacker_has_force(state, T, faction):
-        try:
-            r1 = _execute_battle(state, faction, {
-                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
-                "sa_regions": [], "details": {"battle_plan": [
-                    {"region": T, "target": d1}], "no_retreat": True}})
-            out.append({"free_action": "battle", "flag": "card_54",
-                        "battler": faction, "region": T, "defender": d1,
-                        "result": r1})
-        except _EXEC_ERRORS as exc:
-            out.append({"free_action": "battle", "flag": "card_54",
-                        "executed": False, "reason": repr(exc)})
-    # Second Battle: another Gallic/Roman Faction there (Retreat allowed),
-    # ganging up on a 3rd Faction — prefer the one the executing Faction hit;
-    # never the executing Faction itself.
-    for f2 in gr:
-        if f2 in (faction, d1) or not _attacker_has_force(state, T, f2):
-            continue
-        if d1 is not None and d1 != f2 and count_pieces(state, T, d1) > 0:
-            d2 = d1
-        else:
-            d2 = _rank_free_battle_defender(state, T, f2)
-        if d2 is None or d2 in (f2, faction):
-            continue
-        try:
-            r2 = _execute_battle(state, f2, {
-                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
-                "sa_regions": [], "details": {"battle_plan": [
-                    {"region": T, "target": d2}],
-                    "force_retreat": second_always_retreat}})
-            out.append({"free_action": "battle", "flag": "card_54",
-                        "battler": f2, "region": T, "defender": d2,
-                        "result": r2})
-        except _EXEC_ERRORS:
-            pass
-        break
-    return out
+    from fs_bot.cards.joined_ranks import resolve_joined_ranks
+    return resolve_joined_ranks(state, faction, march_limit, second_always_retreat)
 
 
 def _resolve_card44_scout(state):
@@ -3371,6 +3285,8 @@ def _execute_event(state, faction, bot_action, *, human=False):
         state["decision_agent"] = _agent
     try:
         event_result = execute_event(state, card_id, shaded=shaded)
+        # Follow-up choices are part of the same Event transaction (§5.4).
+        free_actions = _resolve_free_actions(state, faction)
     except _EVENT_SAFE_ERRORS as exc:
         # Ineffective/non-applicable Event in this state (missing pieces, a
         # stub, or a choice not derivable here). Report, do not crash —
@@ -3387,7 +3303,6 @@ def _execute_event(state, faction, bot_action, *, human=False):
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"event not applicable: {exc!r}"}
-    free_actions = _resolve_free_actions(state, faction)
     state["event_params"] = prev_params
     state["executing_faction"] = prev_faction
     result = {"executed": True, "command": _CMD_EVENT,

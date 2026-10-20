@@ -29,6 +29,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind == "winter_campaign":
+                from fs_bot.cli.winter_campaign import collect_winter_campaign
+                return collect_winter_campaign(state, faction, request, stdin, stdout)
             if kind == RETREAT:
                 legal = list(request.get("legal_regions") or [])
                 ctx = request.get("context") or {}

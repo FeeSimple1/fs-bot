@@ -4510,7 +4510,17 @@ def execute_card_A63(state, shaded=False):
         # it (companion modifier cleared on removal/replacement).
         activate_capability(state, "A63", EVENT_UNSHADED)
     else:
+        # "Unless Roman, take this card" names the executing faction, not
+        # an arbitrary beneficiary. Romans cannot acquire its shaded side.
+        owner = state.get("executing_faction")
+        if owner is None or owner == ROMANS:
+            return
+        from fs_bot.engine.game_engine import get_sop_factions
+        if owner not in get_sop_factions(state):
+            return
+        from fs_bot.cards.capabilities import set_capability_owner
         activate_capability(state, "A63", EVENT_SHADED)
+        set_capability_owner(state, "A63", owner)
 
 def execute_card_A64(state, shaded=False):
     """Card A64: Abatis — Place Abatis marker.

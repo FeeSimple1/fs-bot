@@ -16,8 +16,9 @@ from fs_bot.cli.menus import prompt_choice, prompt_yes_no
 
 
 def _fmt_piece(piece):
-    ptype, pstate = piece
-    return f"{ptype} ({pstate})" if pstate else str(ptype)
+    ptype, pstate = piece[:2]
+    label = f"{ptype} ({pstate})" if pstate else str(ptype)
+    return f"{piece[2]} {label}" if len(piece) == 3 else label
 
 
 def make_cli_reactive(human_factions, stdin, stdout):

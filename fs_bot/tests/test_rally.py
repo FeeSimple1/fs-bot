@@ -1464,8 +1464,8 @@ class TestRallyPlanStringEntries:
         action = {"action": "command", "player_action": {
             "command": "Rally", "regions": [], "sa": "No SA",
             "sa_regions": [], "details": {"rally_plan": {
-                "citadels": ["Morini"], "allies": ["Morini"],
-                "warbands": ["Morini"],
+                "citadels": [TREVERI], "allies": [NERVII],
+                "warbands": [MORINI],
                 "settlements_before": [], "settlements_after": []}}}}
         res = execute_decision(state, BELGAE, action)
         # warbands leg succeeds; string ally/citadel legs -> captured errors

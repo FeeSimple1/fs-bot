@@ -262,8 +262,16 @@ def test_prompt_action_validation_feedback_loop():
     # Invalid: Aedui Rally warbands in a Region with no Ally/Citadel
     # (§3.3.1) — validation fails, player answers 'n' to re-plan.
     st = _mk_state()
-    region = "Morini"
-    place_piece(st, region, rc.AEDUI, rc.WARBAND, 2, piece_state=rc.HIDDEN)
+    region = rc.MORINI
+    # Establish Control so the Region is selectable, but no Ally/Citadel
+    # allows the requested Warband option. Remove scenario opponents first.
+    from fs_bot.board.pieces import count_pieces_by_state, remove_piece
+    for opponent in (rc.ROMANS, rc.ARVERNI, rc.BELGAE, rc.GERMANS):
+        for ps in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED):
+            n = count_pieces_by_state(st, region, opponent, rc.WARBAND, ps)
+            if n:
+                remove_piece(st, region, opponent, rc.WARBAND, n, piece_state=ps)
+    place_piece(st, region, rc.AEDUI, rc.WARBAND, 6, piece_state=rc.HIDDEN)
     st["current_card"] = 5
     out = io.StringIO()
     # menu: action=Command; command=Rally; region pick; "(done)"?;

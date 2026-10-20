@@ -386,6 +386,12 @@ class TestMarchExecution:
         from fs_bot.map.map_data import get_playable_regions
         from fs_bot.engine.execute import _bfs_march_path
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=4)
+        # Only Vercingetorix's accompanying group can enter a second Region.
+        from fs_bot.board.pieces import find_leader, move_piece
+        from fs_bot.rules_consts import LEADER
+        leader_region = find_leader(st, ARVERNI)
+        if leader_region != ARVERNI_REGION:
+            move_piece(st, leader_region, ARVERNI_REGION, ARVERNI, LEADER)
         playable = set(get_playable_regions(st["scenario"], st.get("capabilities")))
         adj = set(get_adjacent(ARVERNI_REGION))
         far = None

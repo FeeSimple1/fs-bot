@@ -228,7 +228,8 @@ class TestHumanPlanCollection:
         for name, fn in _SA_COLLECTORS.items():
             sig = inspect.signature(fn)
             params = list(sig.parameters.values())
-            assert len(params) == 5, (name, sig)
+            assert len(params) >= 5, (name, sig)
+            sig.bind(st, rc.BELGAE, _io.StringIO(), _io.StringIO(), pending=None)
             assert params[4].name == "pending", (name, sig)
             assert params[4].default is None, (name, sig)
         # Drive Build end-to-end: pick 1st region, done, fort action.

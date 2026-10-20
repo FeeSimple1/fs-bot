@@ -780,8 +780,32 @@ def _german_warband_cap(state, region):
     return allies
 
 
+def validate_rally_option(state, region, faction, action, prior):
+    """§3.3.1/A3.4.1: one option per Region, with Vercingetorix's exception.
+
+    ``prior`` contains options already completed in this Region during this
+    Command. Vercingetorix permits one Ally OR Citadel and one Warband option,
+    in either order. The Region's Resource cost is paid only once.
+    """
+    if not prior:
+        return
+    # Base German Rally places an Ally, then Warbands in that Region (§3.4.1).
+    if (faction == GERMANS and state["scenario"] in BASE_SCENARIOS
+            and prior == {"place_ally"} and action == "place_warbands"):
+        return
+    vercingetorix = (faction == ARVERNI and state["scenario"] in BASE_SCENARIOS
+                    and get_leader_in_region(state, region, faction) == VERCINGETORIX)
+    static = {"place_ally", "place_citadel"}
+    if (vercingetorix and len(prior) == 1 and action not in prior
+            and ((action == "place_warbands" and prior <= static)
+                 or (action in static and prior == {"place_warbands"}))):
+        return
+    raise CommandError("Rally selects one option per Region (§3.3.1/A3.4.1)")
+
+
 def rally_in_region(state, region, faction, action, *, tribe=None,
-                    free=False):
+                    free=False, warband_mix=None, include_home_bonus=False,
+                    max_pieces=None):
     """Execute Rally in a single region.
 
     This is the mechanical execution for ONE option in ONE region.
@@ -817,6 +841,17 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
         CommandError: If the action violates rules.
     """
     scenario = state["scenario"]
+
+    if max_pieces is not None and (type(max_pieces) is not int
+                                    or max_pieces < 1):
+        raise CommandError("Rally piece limit must be a positive integer")
+    # A3.4.1's extra Warband belongs to the full German Rally, after its
+    # chosen Ally/Warbands option. The low-level default remains a single
+    # option for callers that explicitly orchestrate a whole procedure.
+    home_bonus = (include_home_bonus and faction == GERMANS
+                  and scenario in ARIOVISTUS_SCENARIOS
+                  and (region in GERMANIA_REGIONS
+                       or count_pieces(state, region, GERMANS, SETTLEMENT) > 0))
 
     # Validate region
     valid, reason = validate_rally_region(state, region, faction)
@@ -947,7 +982,8 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
 
             if not (has_ally or has_settlement):
                 if is_home:
-                    cap = max(cap, 1)  # At least 1 in home regions
+                    if not home_bonus:
+                        cap = max(cap, 1)  # Base home minimum, or low-level option
                 else:
                     if cap == 0:
                         raise CommandError(
@@ -963,11 +999,22 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
 
         available = get_available(state, faction, WARBAND)
         to_place = min(cap, available)
+        if home_bonus:
+            to_place = min(to_place, max(0, available - 1))
+        if max_pieces is not None:
+            to_place = min(to_place, max_pieces - int(home_bonus and available > 0))
+        mix = None
+        if warband_mix is not None:
+            from fs_bot.commands.sa_enlist import enlist_rally_mix
+            if faction != BELGAE:
+                raise CommandError("Only Belgic Enlist can borrow Rally Warbands")
+            mix = enlist_rally_mix(state, region, warband_mix, cap)
+            to_place = sum(mix.values())
 
         # Found via play: an empty Available pool (or zero cap) made the
         # Rally charge Resources while placing nothing. A no-effect
         # selection is refused before payment, like other no-effect cases.
-        if to_place <= 0:
+        if to_place <= 0 and not (home_bonus and available > 0):
             raise CommandError(
                 f"Rally would place no Warbands in {region} "
                 f"(cap {cap}, available {available})"
@@ -983,7 +1030,18 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
             state["resources"][faction] -= cost
 
         if to_place > 0:
-            place_piece(state, region, faction, WARBAND, to_place)
+            if mix is None:
+                place_piece(state, region, faction, WARBAND, to_place)
+            else:
+                from fs_bot.commands.sa_enlist import BORROW_KEY
+                for owner, n in mix.items():
+                    if n:
+                        place_piece(state, region, owner, WARBAND, n)
+                ctx = state[BORROW_KEY]
+                ctx["affected"] += mix[GERMANS]
+                ledger = ctx["pieces"].setdefault(region, {})
+                ledger[HIDDEN] = ledger.get(HIDDEN, 0) + mix[GERMANS]
+                result["warband_owners"] = mix
 
         result["pieces_placed"][WARBAND] = to_place
 
@@ -1046,6 +1104,15 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
 
     else:
         raise CommandError(f"Unknown Rally action: {action}")
+
+    if home_bonus:
+        placed = sum(result["pieces_placed"].values())
+        if max_pieces is None or placed < max_pieces:
+            bonus = german_rally_home_bonus(state, region)
+            result["home_bonus"] = bonus
+            if bonus:
+                result["pieces_placed"][WARBAND] = (
+                    result["pieces_placed"].get(WARBAND, 0) + bonus)
 
     # Refresh control
     refresh_all_control(state)

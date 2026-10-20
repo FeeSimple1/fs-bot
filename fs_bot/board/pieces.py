@@ -10,7 +10,7 @@ Reference: §1.4, §1.4.1, §1.4.2, §1.4.3, A1.4
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS, FACTIONS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     PIECE_TYPES, FLIPPABLE_PIECES, MOBILE_PIECES,
@@ -177,6 +177,31 @@ def _get_piece_count_in_region(state, region, faction, piece_type):
         return pieces.get(piece_type, 0)
 
 
+def get_effective_faction_pieces(state, region, faction):
+    """Command-facing pieces, retaining physical ownership in the board.
+
+    §4.5.1 treats selected German Warbands as Belgic until their Command
+    ends. A4.5.1 free Battle instead ignores unselected German pieces.
+    Inventory/cap checks intentionally continue reading physical counters.
+    """
+    from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
+    from fs_bot.rules_consts import BELGAE
+    raw = state["spaces"].get(region, {}).get("pieces", {}).get(faction, {})
+    free = state.get(FREE_FORCE_KEY)
+    if free and faction == GERMANS and region in free["pieces"]:
+        return {ps: {WARBAND: free["pieces"][region].get(ps, 0)}
+                for ps in (HIDDEN, REVEALED, SCOUTED)}
+    loan = state.get(BORROW_KEY, {}).get("pieces", {}).get(region)
+    if not loan or faction not in (BELGAE, GERMANS):
+        return raw
+    effective = dict(raw)
+    for ps in (HIDDEN, REVEALED, SCOUTED):
+        effective[ps] = dict(raw.get(ps, {}))
+        effective[ps][WARBAND] = (effective[ps].get(WARBAND, 0)
+                                  + loan.get(ps, 0) * (1 if faction == BELGAE else -1))
+    return effective
+
+
 def count_pieces(state, region, faction=None, piece_type=None):
     """Count pieces in a region, optionally filtered by faction/type.
 
@@ -192,10 +217,11 @@ def count_pieces(state, region, faction=None, piece_type=None):
     space = state["spaces"].get(region, {})
     total = 0
 
-    factions_to_check = [faction] if faction else list(space.get("pieces", {}).keys())
+    # A loan can create an effective Belgic force without a physical entry.
+    factions_to_check = [faction] if faction else FACTIONS
 
     for f in factions_to_check:
-        f_pieces = space.get("pieces", {}).get(f, {})
+        f_pieces = get_effective_faction_pieces(state, region, f)
         if piece_type:
             if piece_type == LEADER:
                 if f_pieces.get(LEADER) is not None:
@@ -238,8 +264,7 @@ def count_pieces_by_state(state, region, faction, piece_type, piece_state):
     """
     if piece_type not in FLIPPABLE_PIECES:
         raise PieceError(f"{piece_type} is not flippable")
-    space = state["spaces"].get(region, {})
-    return space.get("pieces", {}).get(faction, {}).get(
+    return get_effective_faction_pieces(state, region, faction).get(
         piece_state, {}
     ).get(piece_type, 0)
 
@@ -701,8 +726,7 @@ def get_leader_in_region(state, region, faction):
     Returns:
         Leader name string (e.g. CAESAR), or None.
     """
-    space = state["spaces"].get(region, {})
-    return space.get("pieces", {}).get(faction, {}).get(LEADER)
+    return get_effective_faction_pieces(state, region, faction).get(LEADER)
 
 
 def find_leader(state, faction):
@@ -845,7 +869,80 @@ place_piece.__doc__ = _place_piece_inner.__doc__
 _remove_piece_inner = remove_piece
 
 
+def _enlist_operation(state, region, faction, piece_type, count, operation,
+                      *, owner=None, **kwargs):
+    """Route borrowed counters through physical-owner piece helpers.
+
+    Returns True when the operation was handled. The board and Available
+    pools always retain each counter's actual colour, even during prompts.
+    """
+    from fs_bot.commands.sa_enlist import (
+        BORROW_KEY, FREE_FORCE_KEY, allocate_borrowed_operation,
+        record_borrowed_change)
+    from fs_bot.rules_consts import BELGAE
+    free = state.get(FREE_FORCE_KEY)
+    free = free if free and region in free["pieces"] and faction == GERMANS else None
+    borrow = state.get(BORROW_KEY)
+    if not free and not (borrow and faction in (BELGAE, GERMANS)):
+        if owner is not None:
+            raise PieceError("Physical-owner selection requires Enlist")
+        return False
+    if piece_type != WARBAND:
+        if free:
+            raise PieceError("Free Enlist Battle cannot affect other German pieces")
+        return False
+    ps = kwargs.get("from_state") if operation == "flip" else kwargs.get("piece_state")
+    if free:
+        if type(count) is not int or count < 0:
+            raise PieceError("Warband count must be a non-negative integer")
+        remaining, allocations = count, []
+        for visibility in ((ps,) if ps else (HIDDEN, REVEALED, SCOUTED)):
+            take = min(remaining, free["pieces"][region].get(visibility, 0))
+            if take:
+                allocations.append((GERMANS, visibility, take))
+                remaining -= take
+        if remaining:
+            raise PieceError("Not enough selected Enlist Warbands")
+    else:
+        allocations = allocate_borrowed_operation(state, region, faction,
+                                                   count, ps, owner=owner)
+    for physical, visibility, n in allocations:
+        params = dict(kwargs)
+        dest = params.pop("destination", None)
+        if operation == "remove":
+            params["piece_state"] = visibility
+            _remove_piece_inner(state, region, physical, WARBAND, n, **params)
+            new_state = None
+        elif operation == "move":
+            _move_piece_inner(state, region, dest, physical, WARBAND, n,
+                               piece_state=visibility)
+            new_state = None
+        else:
+            new_state = params["to_state"]
+            if visibility == SCOUTED and new_state == HIDDEN:
+                new_state = REVEALED
+            _flip_piece_inner(state, region, physical, WARBAND, n,
+                              from_state=visibility, to_state=new_state)
+        if free:
+            counts = free["pieces"][region]
+            counts[visibility] -= n
+            if operation == "flip":
+                counts[new_state] = counts.get(new_state, 0) + n
+            elif operation == "move":
+                counts = free["pieces"].setdefault(dest, {})
+                counts[visibility] = counts.get(visibility, 0) + n
+        elif faction == BELGAE and physical == GERMANS:
+            record_borrowed_change(state, region, visibility, n,
+                                   destination=dest, new_state=new_state)
+    return True
+
+
 def remove_piece(state, region, faction, piece_type, count=1, **kwargs):
+    owner = kwargs.pop("physical_owner", None)
+    if _enlist_operation(state, region, faction, piece_type, count, "remove",
+                          owner=owner, **kwargs):
+        _refresh_region_control(state, region)
+        return
     result = _remove_piece_inner(state, region, faction, piece_type, count,
                                  **kwargs)
     _refresh_region_control(state, region)
@@ -859,6 +956,11 @@ _move_piece_inner = move_piece
 
 def move_piece(state, from_region, to_region, faction, piece_type, count=1,
                **kwargs):
+    owner = kwargs.pop("physical_owner", None)
+    if _enlist_operation(state, from_region, faction, piece_type, count, "move",
+                          owner=owner, destination=to_region, **kwargs):
+        _refresh_region_control(state, from_region, to_region)
+        return
     result = _move_piece_inner(state, from_region, to_region, faction,
                                piece_type, count, **kwargs)
     _refresh_region_control(state, from_region, to_region)
@@ -866,3 +968,17 @@ def move_piece(state, from_region, to_region, faction, piece_type, count=1,
 
 
 move_piece.__doc__ = _move_piece_inner.__doc__
+
+
+_flip_piece_inner = flip_piece
+
+
+def flip_piece(state, region, faction, piece_type, count=1, **kwargs):
+    owner = kwargs.pop("physical_owner", None)
+    if _enlist_operation(state, region, faction, piece_type, count, "flip",
+                          owner=owner, **kwargs):
+        return
+    return _flip_piece_inner(state, region, faction, piece_type, count, **kwargs)
+
+
+flip_piece.__doc__ = _flip_piece_inner.__doc__

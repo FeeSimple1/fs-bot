@@ -37,6 +37,7 @@ from fs_bot.rules_consts import (
     DIE_SIDES, DIE_MIN, DIE_MAX,
 )
 from fs_bot.board.pieces import (
+    get_effective_faction_pieces,
     count_pieces, count_pieces_by_state, get_leader_in_region,
     remove_piece, flip_piece, clear_allied_tribe,
 )
@@ -107,7 +108,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     space = state["spaces"][region]
     # "Enemy" = the faction causing losses
     enemy_faction = attacking_faction
-    enemy_pieces = space.get("pieces", {}).get(enemy_faction, {})
+    enemy_pieces = get_effective_faction_pieces(state, region, enemy_faction)
 
     # Count enemy pieces causing losses
     enemy_leader = get_leader_in_region(state, region, enemy_faction)
@@ -118,7 +119,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # "treating Arverni and allied Warbands/Auxilia as your own"): allied
     # Factions' mobile pieces add to the attacker's Loss-causing force.
     for _af in allied_factions:
-        _ap = space.get("pieces", {}).get(_af, {})
+        _ap = get_effective_faction_pieces(state, region, _af)
         enemy_legions += _ap.get(LEGION, 0)
         enemy_auxilia += _count_all_flippable(_ap, AUXILIA)
         enemy_warbands += _count_all_flippable(_ap, WARBAND)
@@ -205,7 +206,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # counterattack even with Fort/Citadel.
     if ariovistus_in_battle and not state.get("event_modifiers", {}).get(
             "card_A31_no_ario_double"):
-        defender_pieces = space.get("pieces", {}).get(defending_faction, {})
+        defender_pieces = get_effective_faction_pieces(state, region, defending_faction)
         _m2 = state.get("markers", {}).get(region, {})
         from fs_bot.rules_consts import MARKER_ABATIS as _MAB
         has_fort_or_citadel = (
@@ -250,7 +251,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # Only applies during the Attack step (not Counterattack).
     # The Attacker never gets halving during Counterattack.
     if not is_counterattack:
-        defender_pieces = space.get("pieces", {}).get(defending_faction, {})
+        defender_pieces = get_effective_faction_pieces(state, region, defending_faction)
         has_fort = defender_pieces.get(FORT, 0) > 0
         has_citadel = defender_pieces.get(CITADEL, 0) > 0
 
@@ -336,7 +337,7 @@ def card30_arverni_legion_warbands(state, region, faction):
         return 0
     if get_leader_in_region(state, region, ARVERNI) is None:
         return 0
-    f_pieces = state["spaces"][region].get("pieces", {}).get(ARVERNI, {})
+    f_pieces = get_effective_faction_pieces(state, region, ARVERNI)
     from fs_bot.cards.edition import uses_second_edition
     limit = 4 if uses_second_edition(state) else 2
     return min(limit, _count_all_flippable(f_pieces, WARBAND))
@@ -456,7 +457,7 @@ def resolve_losses(state, region, faction, num_losses, *,
 
         # Take the first available piece from the priority list (default), or
         # let a human/LLM agent choose which present piece absorbs this Loss.
-        piece_type, piece_state = piece_order[0]
+        chosen = piece_order[0]
         if loss_order is None:
             from fs_bot.engine.agent import consult_agent, LOSS_ORDER
             _resp = consult_agent(state, faction, {
@@ -467,8 +468,10 @@ def resolve_losses(state, region, faction, num_losses, *,
                 _present = set(piece_order)
                 for _e in _resp:
                     if tuple(_e) in _present:
-                        piece_type, piece_state = tuple(_e)
+                        chosen = tuple(_e)
                         break
+        piece_type, piece_state = chosen[:2]
+        physical_owner = chosen[2] if len(chosen) == 3 else None
 
         # Determine if this is a hard target that gets a die roll
         is_hard_target = piece_type in HARD_TARGET_PIECES
@@ -510,7 +513,7 @@ def resolve_losses(state, region, faction, num_losses, *,
             if roll <= threshold:
                 # Remove the piece
                 _remove_battle_piece(state, region, faction,
-                                     piece_type, piece_state)
+                                     piece_type, piece_state, physical_owner)
                 if is_legion_warband:
                     arverni_legions_alive -= 1
                 result["rolls"].append((piece_type, roll, True))
@@ -523,14 +526,14 @@ def resolve_losses(state, region, faction, num_losses, *,
         elif is_hard_target and not use_rolls:
             # Ambush auto-remove (no roll) — §4.3.3
             _remove_battle_piece(state, region, faction,
-                                 piece_type, piece_state)
+                                 piece_type, piece_state, physical_owner)
             result["rolls"].append((piece_type, None, True))
             result["removed"].append((piece_type, 1))
             result["losses_taken"] += 1
         else:
             # Soft target: auto-remove — §3.2.4
             _remove_battle_piece(state, region, faction,
-                                 piece_type, piece_state)
+                                 piece_type, piece_state, physical_owner)
             result["removed"].append((piece_type, 1))
             result["losses_taken"] += 1
 
@@ -564,7 +567,7 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
 
     scenario = state["scenario"]
     space = state["spaces"][region]
-    f_pieces = space.get("pieces", {}).get(faction, {})
+    f_pieces = get_effective_faction_pieces(state, region, faction)
 
     # Build lists of available pieces
     available_pieces = []
@@ -661,8 +664,8 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
 
     # Filter to only pieces actually present
     result = _filter_to_present(state, region, faction, result)
-
-    return result
+    from fs_bot.commands.sa_enlist import borrowed_loss_choices
+    return borrowed_loss_choices(state, region, faction, result)
 
 
 def _filter_to_present(state, region, faction, piece_list):
@@ -672,7 +675,7 @@ def _filter_to_present(state, region, faction, piece_list):
     "claimed" to avoid duplicates.
     """
     space = state["spaces"][region]
-    f_pieces = space.get("pieces", {}).get(faction, {})
+    f_pieces = get_effective_faction_pieces(state, region, faction)
 
     # Track remaining counts
     remaining = {}
@@ -723,7 +726,8 @@ def _filter_to_present(state, region, faction, piece_list):
     return filtered
 
 
-def _remove_battle_piece(state, region, faction, piece_type, piece_state):
+def _remove_battle_piece(state, region, faction, piece_type, piece_state,
+                         physical_owner=None):
     """Remove a single piece as a battle loss.
 
     Legions go to Fallen (§1.4.1).
@@ -736,7 +740,7 @@ def _remove_battle_piece(state, region, faction, piece_type, piece_state):
         remove_piece(state, region, faction, LEGION, 1, to_fallen=True)
     elif piece_type in FLIPPABLE_PIECES:
         remove_piece(state, region, faction, piece_type, 1,
-                     piece_state=piece_state)
+                     piece_state=piece_state, physical_owner=physical_owner)
     else:
         remove_piece(state, region, faction, piece_type, 1)
         if piece_type in (ALLY, CITADEL):

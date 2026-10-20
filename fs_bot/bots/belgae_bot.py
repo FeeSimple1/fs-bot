@@ -893,21 +893,19 @@ def _determine_battle_sa(state, battle_plan, scenario):
     """
     ambush_regions = _check_ambush(state, battle_plan, scenario)
     if ambush_regions:
-        # With Ambush, also determine Enlist for in-Battle use — §8.5.1
-        enlist_details = _check_enlist_in_battle(state, battle_plan, scenario)
-        return (SA_ACTION_AMBUSH, ambush_regions,
-                {"enlist": enlist_details})
+        return (SA_ACTION_AMBUSH, ambush_regions, {})
 
     # No Ambush → check Rampage before Battle — §8.5.1
     rampage_regions = _check_rampage(
         state, scenario, before_battle=True, battle_plan=battle_plan)
     if rampage_regions:
-        # With Rampage, also determine Enlist for in-Battle use
-        enlist_details = _check_enlist_in_battle(state, battle_plan, scenario)
-        return (SA_ACTION_RAMPAGE, rampage_regions,
-                {"enlist": enlist_details})
+        return (SA_ACTION_RAMPAGE, rampage_regions, {})
 
     # No Rampage → Enlist — §8.5.1
+    enlist_details = _check_enlist_in_battle(state, battle_plan, scenario)
+    if enlist_details:
+        return (SA_ACTION_ENLIST, enlist_details["regions"],
+                {"enlist": enlist_details})
     enlist_details = _check_enlist_after_command(state, scenario)
     if enlist_details:
         return (SA_ACTION_ENLIST, enlist_details.get("regions", []),
@@ -1569,11 +1567,14 @@ def _check_enlist_in_battle(state, battle_plan, scenario):
     if not battle_plan:
         return None
 
+    from copy import deepcopy
+    from fs_bot.commands.sa_enlist import validate_enlist_region, begin_borrow, end_borrow
+    from fs_bot.battle.losses import calculate_losses
+    selected = {}
+    budget = 4 if scenario in ARIOVISTUS_SCENARIOS else float("inf")
     for bp in battle_plan:
         region = bp["region"]
-
-        # §4.5.1: Must be within 1 of Ambiorix or have Successor
-        if not _is_within_one_of_ambiorix(state, region, scenario):
+        if region in selected or budget <= 0 or not validate_enlist_region(state, region)[0]:
             continue
 
         # Check if Germanic Warbands exist in this region
@@ -1585,16 +1586,31 @@ def _check_enlist_in_battle(state, battle_plan, scenario):
         # "add to enemy Losses and/or absorb Losses from a possible
         # Counterattack" — §8.5.1
         enemy = bp["target"]
-        enemy_pieces = count_pieces(state, region, enemy)
-        if enemy_pieces > 0:
-            return {
-                "type": "in_battle",
-                "region": region,
-                "german_warbands": german_wb,
-                "regions": [region],
-            }
-
-    return None
+        counts, remaining = {}, min(german_wb, budget)
+        # §8.5.1: borrow the most available, absorbing German losses first.
+        for ps in (SCOUTED, REVEALED, HIDDEN):
+            n = min(remaining, count_pieces_by_state(state, region, GERMANS, WARBAND, ps))
+            counts[ps] = n
+            remaining -= n
+        sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+        plan = {"sa": SA_ACTION_ENLIST, "sa_regions": [region],
+                "details": {"enlist": {"type": "borrow", "warbands": {region: counts}}}}
+        old_losses = calculate_losses(state, region, BELGAE, enemy)
+        begin_borrow(sim, plan)
+        # In Ariovistus the enemy may be Germans; borrowed counters cannot
+        # simultaneously remain defending pieces.
+        legal_enemy = count_pieces(sim, region, enemy) > 0
+        new_losses = calculate_losses(sim, region, BELGAE, enemy)
+        # A surviving defender could Counterattack even when the best-case
+        # estimate removes everything. The source says "possible".
+        counter = calculate_losses(sim, region, enemy, BELGAE, is_counterattack=True)
+        end_borrow(sim)
+        if legal_enemy and (new_losses > old_losses or counter > 0):
+            selected[region] = counts
+            budget -= sum(counts.values())
+    return ({"type": "in_battle", "region": next(iter(selected)),
+             "regions": list(selected), "warbands": selected}
+            if selected else None)
 
 
 def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
@@ -1646,10 +1662,16 @@ def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
                     continue
                 if count_pieces(state, region, enemy) == 0:
                     continue
+                if scenario in BASE_SCENARIOS:
+                    enemy_hidden = sum(count_pieces_by_state(state, region, enemy, pt, HIDDEN)
+                                       for pt in (WARBAND, AUXILIA))
+                    if count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN) <= enemy_hidden:
+                        continue  # §4.5.1: German Battle must be able to Ambush.
                 # Estimate German Attack Losses
                 enemy_fort = count_pieces(state, region, enemy, FORT)
                 enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-                attack_raw = german_wb * 0.5
+                attack_raw = (min(german_wb, 4) if scenario in ARIOVISTUS_SCENARIOS
+                              else german_wb) * 0.5
                 if enemy_fort > 0 or enemy_citadel > 0:
                     attack_raw = attack_raw / 2
                 losses = int(attack_raw)
@@ -1699,7 +1721,7 @@ def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
                             "destination": dest,
                             "target_control": target,
                             "is_player": prefer_player,
-                            "warbands": german_wb,
+                            "warbands": min(german_wb, 4) if scenario in ARIOVISTUS_SCENARIOS else german_wb,
                             "regions": [origin, dest],
                         }
 
@@ -1717,7 +1739,8 @@ def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
             return {
                 "type": "german_march_hide",
                 "region": region,
-                "warbands_to_hide": unhidden,
+                "warbands": min(unhidden, 4) if scenario in ARIOVISTUS_SCENARIOS else unhidden,
+                "warbands_to_hide": min(unhidden, 4) if scenario in ARIOVISTUS_SCENARIOS else unhidden,
                 "regions": [region],
             }
 
@@ -1746,6 +1769,12 @@ def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
             cap = _german_warband_cap(state, region)
             if region in _get_home_regions(GERMANS, scenario):
                 cap = max(cap, 1)
+            if scenario in ARIOVISTUS_SCENARIOS:
+                from fs_bot.rules_consts import SETTLEMENT
+                if (region in GERMANIA_REGIONS
+                        or count_pieces(state, region, GERMANS, SETTLEMENT)):
+                    cap = _german_warband_cap(state, region) + 1
+                cap = min(cap, 4)
             if cap:
                 candidates.append((min(cap, avail_german_wb), region))
     if candidates:
@@ -1779,6 +1808,7 @@ def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
                 "type": "german_raid",
                 "region": region,
                 "target": target,
+                "count": min(2, german_hidden, state["resources"].get(target, 0)),
                 "regions": [region],
             }
 

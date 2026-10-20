@@ -147,7 +147,16 @@ def _collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
         opts = [(f"steal from {f}", f) for f in enemies]
         opts.append(("gain 1 Resource", None))
         target = prompt_choice(stdin, stdout, f"  Raid target in {r}?", opts)
-        plan.append({"region": r, "target": target})
+        entry = {"region": r, "target": target}
+        from fs_bot.commands.sa_enlist import borrowed_count
+        from fs_bot.rules_consts import HIDDEN
+        if faction == BELGAE and borrowed_count(state, r, HIDDEN):
+            owners = [(GERMANS, GERMANS)]
+            if state["spaces"][r].get("pieces", {}).get(BELGAE, {}).get(HIDDEN, {}).get(WARBAND, 0):
+                owners.append((BELGAE, BELGAE))
+            entry["physical_owner"] = prompt_choice(stdin, stdout,
+                "Reveal a Warband belonging to which Faction?", owners)
+        plan.append(entry)
     return {"raid_plan": plan} if plan else None
 
 
@@ -206,6 +215,15 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
                 partial = True
         if partial:
             groups[o] = cap
+        from fs_bot.commands.sa_enlist import borrowed_count
+        if faction == BELGAE and borrowed_count(state, o):
+            total = cap.get(WARBAND, 0)
+            loan = borrowed_count(state, o)
+            own = count_pieces(state, o, faction, WARBAND) - loan
+            cap["german_warbands"] = prompt_choice(stdin, stdout,
+                f"Of these {total} Warbands, how many are German?",
+                [(str(k), k) for k in range(min(total, loan), max(0, total - own) - 1, -1)])
+            groups[o] = cap
     plan = {"origins": origins, "destinations": destinations,
             "routes": routes}
     if groups:
@@ -241,6 +259,14 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
             if pick:
                 g2[pt] = pick
         if g2:
+            from fs_bot.commands.sa_enlist import borrowed_count
+            if faction == BELGAE and borrowed_count(state, o):
+                total = g2.get(WARBAND, 0)
+                loan = borrowed_count(state, o) - groups[o].get("german_warbands", 0)
+                own = remaining[WARBAND] - loan
+                g2["german_warbands"] = prompt_choice(stdin, stdout,
+                    f"Of these {total} Warbands, how many are German?",
+                    [(str(k), k) for k in range(min(total, loan), max(0, total - own) - 1, -1)])
             extra.append({"origin": o, "route": [d2], "group": g2})
             if d2 not in destinations:
                 destinations.append(d2)
@@ -250,7 +276,9 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
 
 
 def _collect_rally(state, faction, stdin, stdout, single, *, excluded=()):
-    regions = [r for r in _regions_with_pieces(state, faction) if r not in excluded]
+    from fs_bot.commands.rally import validate_rally_region
+    regions = [r for r in get_playable_regions(state["scenario"], state.get("capabilities"))
+               if r not in excluded and validate_rally_region(state, r, faction)[0]]
     if not regions:
         return None
     picked = _pick_regions(stdin, stdout, "Rally in which Region(s)?",
@@ -278,7 +306,27 @@ def _collect_rally(state, faction, stdin, stdout, single, *, excluded=()):
                                   [(t, t) for t in upgradable])
             citadels.append({"region": r, "tribe": tribe})
             continue
-        warbands.append(r)
+        from fs_bot.commands.sa_enlist import BORROW_KEY
+        ctx = state.get(BORROW_KEY)
+        if faction == BELGAE and ctx and r in ctx["regions"]:
+            from fs_bot.commands.rally import _gallic_warband_cap, _get_home_regions
+            from fs_bot.board.pieces import get_available
+            cap = _gallic_warband_cap(state, r, faction)
+            if r in _get_home_regions(faction, state["scenario"]):
+                cap = max(cap, 1)
+            german_limit = min(cap, get_available(state, GERMANS, WARBAND))
+            if state["scenario"] in ARIOVISTUS_SCENARIOS:
+                selected = sum(e.get("warband_mix", {}).get(GERMANS, 0)
+                               for e in warbands if isinstance(e, dict))
+                german_limit = min(german_limit, max(0, 4 - ctx["affected"] - selected))
+            german = prompt_choice(stdin, stdout, "Place how many German Warbands?",
+                [(str(k), k) for k in range(german_limit, -1, -1)])
+            own_limit = min(cap - german, get_available(state, BELGAE, WARBAND))
+            own = prompt_choice(stdin, stdout, "Place how many Belgic Warbands?",
+                [(str(k), k) for k in range(own_limit, -1, -1)])
+            warbands.append({"region": r, "warband_mix": {BELGAE: own, GERMANS: german}})
+        else:
+            warbands.append(r)
     return {"rally_plan": {"citadels": citadels, "allies": allies,
                            "warbands": warbands}}
 
@@ -526,16 +574,47 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
     return picked, {"intimidate_plan": plan}
 
 
-def _collect_enlist(state, faction, stdin, stdout, *, pending=None):
-    """Belgic Enlist (Sec.4.5.1): one free Germanic sub-Command."""
-    sub = prompt_choice(stdin, stdout, "Enlist the Germans to:",
-                        [("Battle", "german_battle"),
-                         ("March", "german_march"),
-                         ("hide (flip Warbands Hidden)",
-                          "german_march_hide"),
-                         ("Rally", "german_rally"),
-                         ("Raid", "german_raid")])
-    german_regions = _regions_with_pieces(state, GERMANS)
+def _collect_enlist(state, faction, stdin, stdout, *, pending=None,
+                    before_state=None, borrow_only=False):
+    """Choose either borrowed Warbands or a free German Command (§4.5.1)."""
+    from fs_bot.commands.sa_enlist import validate_enlist_region
+    from fs_bot.rules_consts import HIDDEN, REVEALED, SCOUTED
+    from fs_bot.board.pieces import count_pieces_by_state
+    if borrow_only:
+        sub = "borrow"
+    else:
+        sub = prompt_choice(stdin, stdout, "Enlist the Germans to:",
+                            [("Battle", "german_battle"),
+                             ("March", "german_march"),
+                             ("hide (flip Warbands Hidden)", "german_march_hide"),
+                             ("Rally", "german_rally"),
+                             ("Raid", "german_raid"),
+                             ("lend Warbands to the Belgic Command", "borrow")])
+    if sub == "borrow":
+        state = before_state if before_state is not None else state
+        candidates = [r for r in get_playable_regions(state["scenario"], state.get("capabilities"))
+                      if validate_enlist_region(state, r)[0]]
+        if not candidates:
+            return None, None
+        regions = _pick_regions(stdin, stdout, "Enlist in which Regions?", candidates)
+        if state["scenario"] not in ARIOVISTUS_SCENARIOS:
+            return regions, {"enlist": {"type": "borrow", "regions": regions}}
+        selected = {}
+        budget = 4 if state["scenario"] in ARIOVISTUS_SCENARIOS else float("inf")
+        for region in regions:
+            selected[region] = {}
+            for ps in (HIDDEN, REVEALED, SCOUTED):
+                n = min(budget, count_pieces_by_state(state, region, GERMANS, WARBAND, ps))
+                count = (prompt_choice(stdin, stdout,
+                         f"Borrow how many {ps} German Warbands in {region}?",
+                         [(str(k), k) for k in range(n, -1, -1)]) if n else 0)
+                selected[region][ps] = count
+                budget -= count
+        return regions, {"enlist": {"type": "borrow", "regions": regions,
+                                     "warbands": selected}}
+    german_regions = [r for r in get_playable_regions(state["scenario"], state.get("capabilities"))
+                      if validate_enlist_region(state, r)[0]
+                      and (sub == "german_rally" or count_pieces(state, r, GERMANS, WARBAND))]
     if not german_regions:
         return None, None
     ed = {"type": sub}
@@ -552,15 +631,44 @@ def _collect_enlist(state, faction, stdin, stdout, *, pending=None):
         region = prompt_choice(stdin, stdout, "In which Region?",
                                [(r, r) for r in german_regions])
         ed["region"] = region
+    ario = state["scenario"] in ARIOVISTUS_SCENARIOS
+    if ario and sub in ("german_battle", "german_march", "german_march_hide"):
+        # The human selects the actual counters: visibility matters to Battle,
+        # March and hiding, and A4.5.1 affects at most four in total.
+        selected, left = {}, 4
+        for ps in (HIDDEN, REVEALED, SCOUTED):
+            limit = min(left, count_pieces_by_state(state, region, GERMANS, WARBAND, ps))
+            n = (prompt_choice(stdin, stdout, f"Use how many {ps} German Warbands?",
+                               [(str(k), k) for k in range(limit, -1, -1)])
+                 if limit else 0)
+            selected[ps] = n
+            left -= n
+        ed["warbands"] = selected
+    elif sub == "german_march":
+        n = count_pieces(state, region, GERMANS, WARBAND)
+        ed["warbands"] = prompt_choice(stdin, stdout, "March how many German Warbands?",
+                                      [(str(k), k) for k in range(n, 0, -1)])
     if sub in ("german_battle", "german_raid"):
         enemies = _enemies_in_region(state, region, GERMANS)
         opts = [(f, f) for f in enemies]
-        if sub == "german_raid":
+        if sub == "german_raid" and state["scenario"] in ARIOVISTUS_SCENARIOS:
             opts.append(("(just gain 1 Resource)", None))
         if not opts:
             return None, None
-        ed["target"] = prompt_choice(stdin, stdout,
-                                     f"  Target in {region}?", opts)
+        if sub == "german_raid":
+            limit = min(2, count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN))
+            if not limit:
+                return None, None
+            n = prompt_choice(stdin, stdout, "Raid with how many Hidden German Warbands?",
+                              [(str(k), k) for k in range(limit, 0, -1)])
+            ed["actions"] = []
+            for i in range(n):
+                target = prompt_choice(stdin, stdout, f"  Raid {i + 1} target in {region}?", opts)
+                ed["actions"].append({"type": "steal", "target": target} if target
+                                     else {"type": "gain"})
+        else:
+            ed["target"] = prompt_choice(stdin, stdout,
+                                         f"  Target in {region}?", opts)
     if sub == "german_rally":
         subdued = _subdued_tribes(state, region)
         if subdued and prompt_yes_no(stdin, stdout,
@@ -771,8 +879,9 @@ def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
         state = before_state
     collector = _SA_COLLECTORS.get(sa)
     if collector is not None:
+        kwargs = {"before_state": before_state} if sa == "Enlist" else {}
         sa_regions, extra = collector(state, faction, stdin, stdout,
-                                      pending=action)
+                                      pending=action, **kwargs)
         if sa_regions is None:
             stdout.write(f"  (no legal {sa} plan -- Command only)\n")
             return action
@@ -817,8 +926,26 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
             ("Special Activity first, then Command", "sa_first"),
             ("Command, Special Activity, then continue Command", "sa_during"),
         ])
+        if faction == BELGAE:
+            choices.append(("Command first, with borrowed German Warbands", "enlist_command_first"))
         stdout.write("Choose a Command for Command-first timing, or an order below.\n")
     cmd = prompt_choice(stdin, stdout, "Which Command?", choices)
+    if cmd == "enlist_command_first":
+        cmd = prompt_choice(stdin, stdout, "Which Command?", [(c, c) for c in commands])
+        regions, details = _collect_enlist(state, faction, stdin, stdout, borrow_only=True)
+        if regions is None:
+            return None
+        action = {"command": cmd, "regions": [], "sa": "Enlist", "sa_regions": regions,
+                  "details": details, "sa_timing": "before"}
+        from fs_bot.commands.sa_enlist import begin_borrow
+        sim = _planning_copy(state)
+        begin_borrow(sim, action)
+        command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
+        if command is None:
+            return None
+        action["regions"] = command["regions"]
+        action["details"].update(command["details"])
+        return action
     if cmd == "sa_first":
         action = {"command": None, "regions": [], "sa": _SA_NONE,
                   "sa_regions": [], "details": {}, "sa_timing": "before"}
@@ -828,7 +955,11 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
                             [(c, c) for c in legal])
         action["command"] = cmd
         sim = _planning_copy(state)
-        _execute_sa(sim, faction, action)
+        from fs_bot.commands.sa_enlist import is_borrow_plan, begin_borrow
+        if is_borrow_plan(action):
+            begin_borrow(sim, action)
+        else:
+            _execute_sa(sim, faction, action)
         command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
         if command is None:
             return None
@@ -850,11 +981,18 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
         action = deepcopy(first)
         action = _collect_sa_plan(sim, faction, action, stdin, stdout,
                                   standalone=True)
-        _execute_sa(sim, faction, action)
+        from fs_bot.commands.sa_enlist import is_borrow_plan, begin_borrow
+        if is_borrow_plan(action):
+            begin_borrow(sim, action)
+        else:
+            _execute_sa(sim, faction, action)
         stdout.write("Continue the same Command in additional Regions.\n")
         second = _collect_command_plan(sim, faction, cmd, stdin, stdout,
                                        excluded=command_regions(first))
         if second is None:
+            if is_borrow_plan(action):
+                # A loan cannot apply retroactively to the already resolved part.
+                return first
             action["sa_timing"] = "after"
             return action
         action["sa_timing"] = "during"
@@ -869,6 +1007,16 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
             action = _collect_sa_plan(sim, faction, action, stdin, stdout,
                                       before_state=state)
             action["sa_timing"] = "after"
+            from fs_bot.commands.sa_enlist import is_borrow_plan, begin_borrow
+            if is_borrow_plan(action):
+                sim = _planning_copy(state)
+                begin_borrow(sim, action)
+                stdout.write("Plan the Command with its borrowed German Warbands.\n")
+                command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
+                if command is None:
+                    return None
+                action["regions"] = command["regions"]
+                action["details"].update(command["details"])
     return action
 
 

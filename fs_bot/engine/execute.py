@@ -264,6 +264,11 @@ def _execute_decision(state, faction, decision):
     handler = _COMMAND_HANDLERS.get(command)
     if handler is not None:
         sa = bot_action.get("sa")
+        from fs_bot.commands.sa_enlist import is_borrow_plan
+        if is_borrow_plan(bot_action):
+            result = _execute_borrowed_command(state, faction, bot_action, handler)
+            _apply_end_of_action_capabilities(state)
+            return _attach_transfers(result)
         if not is_human and faction == _ARVERNI_F and command == _CMD_BATTLE:
             result = _execute_arverni_paid_battle(state, faction, bot_action)
             _apply_end_of_action_capabilities(state)
@@ -338,6 +343,41 @@ def _sa_survives_empty_command(faction, command, sa):
             and sa == _SA_SETTLE)
 
 
+def _execute_borrowed_command(state, faction, action, handler):
+    """§4.5.1 option 1 applies for the Command and expires immediately."""
+    from fs_bot.commands.sa_enlist import begin_borrow, end_borrow, BORROW_KEY
+    if faction != _BELGAE_F or action.get("command") not in (
+            _CMD_RALLY, _CMD_MARCH, _CMD_RAID, _CMD_BATTLE):
+        return {"executed": False, "command": action.get("command"),
+                "reason": "Only a Belgic Command may borrow German Warbands"}
+    parts = (action.get("details") or {}).get("command_parts") or []
+    first = None
+    if parts:
+        if action.get("sa_timing") != "during" or len(parts) != 2:
+            return {"executed": False, "command": action.get("command"),
+                    "reason": "Interrupted Enlist needs two Command portions"}
+        first = handler(state, faction, parts[0])
+    try:
+        begin_borrow(state, action)
+    except _EXEC_ERRORS as exc:
+        return {"executed": False, "command": action.get("command"),
+                "reason": str(exc), "errors": [{"error": str(exc)}]}
+    try:
+        result = handler(state, faction, parts[1] if parts else action)
+        affected = state[BORROW_KEY]["affected"]
+    finally:
+        end_borrow(state)
+    if first is not None:
+        result = {"executed": _command_executed(first) or _command_executed(result),
+                  "command": action["command"], "command_parts": [first, result],
+                  "errors": (first.get("errors") or []) + (result.get("errors") or [])}
+    result["sa_execution"] = {"executed": bool(affected) and _command_executed(result),
+                              "sa": _SA_ENLIST, "type": "borrow",
+                              "affected_warbands": affected}
+    result["sa_timing"] = "during"
+    return result
+
+
 def _execute_bot_command(state, faction, bot_action, *, with_sa=False):
     """Execute an Event-granted Command; add an SA only when text grants it."""
     from fs_bot.commands.common import free_action_scope
@@ -362,6 +402,9 @@ def _execute_free_bot_command(state, faction, bot_action):
     h = handlers.get(cmd)
     if h is None:
         return None
+    from fs_bot.commands.sa_enlist import is_borrow_plan
+    if is_borrow_plan(bot_action):
+        return _execute_borrowed_command(state, faction, bot_action, h)
     sa = bot_action.get("sa")
     timing = bot_action.get("sa_timing")
     before = (timing == "before" if timing else _sa_runs_before_command(cmd, sa))
@@ -3424,6 +3467,8 @@ def _execute_raid(state, faction, bot_action):
         else:
             by_region[region].append(
                 {"type": "steal", "target": entry["target"]})
+        if "physical_owner" in entry:
+            by_region[region][-1]["physical_owner"] = entry["physical_owner"]
 
     per_region = []
     gained_total = 0
@@ -3470,10 +3515,32 @@ def _execute_rally(state, faction, bot_action):
 
     placed = []
     errors = []
+    selected_options = {}
+    # One option per Region is a whole-Command constraint. Reject a malformed
+    # combination before placing its first Ally or spending any Resources.
+    from fs_bot.commands.rally import validate_rally_option
+    planned_options = {}
+    for key, option in (("citadels", "place_citadel"), ("allies", "place_ally"),
+                        ("warbands", "place_warbands")):
+        for entry in plan.get(key) or []:
+            region = entry if isinstance(entry, str) else entry.get("region")
+            try:
+                validate_rally_option(state, region, faction, option,
+                                      planned_options.get(region, set()))
+            except _EXEC_ERRORS as exc:
+                return {"executed": False, "command": _CMD_RALLY, "placements": [],
+                        "errors": [{"region": region, "action": option, "error": str(exc)}]}
+            planned_options.setdefault(region, set()).add(option)
 
-    def _do(region, action, tribe=None):
+    def _do(region, action, tribe=None, warband_mix=None):
         try:
-            res = rally_in_region(state, region, faction, action, tribe=tribe)
+            from fs_bot.commands.rally import validate_rally_option
+            prior = selected_options.get(region, set())
+            validate_rally_option(state, region, faction, action, prior)
+            res = rally_in_region(state, region, faction, action, tribe=tribe,
+                                   warband_mix=warband_mix, include_home_bonus=True,
+                                   free=bool(prior))
+            selected_options.setdefault(region, set()).add(action)
             placed.append({"region": region, "action": action,
                            "tribe": tribe})
         except _EXEC_ERRORS as exc:
@@ -3500,7 +3567,8 @@ def _execute_rally(state, faction, bot_action):
     for entry in plan.get("warbands", []) or []:
         region = entry if isinstance(entry, str) else entry.get("region")
         if region is not None:
-            _do(region, "place_warbands")
+            _do(region, "place_warbands", warband_mix=(
+                entry.get("warband_mix") if isinstance(entry, dict) else None))
 
     return {
         "executed": len(placed) > 0,
@@ -3902,16 +3970,27 @@ def _collect_march_moves(state, faction, bot_action):
     playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
     routes, groups = plan.get("routes") or {}, plan.get("groups") or {}
     max_steps = plan.get("max_steps")
+    from fs_bot.commands.march import _max_steps_for_group
+    from fs_bot.rules_consts import LEADER
     moves, deferred = [], []
     for origin in dict.fromkeys(origins):
         if not _group_has_pieces(_mobile_march_group(state, faction, origin)):
             continue
+        available = _mobile_march_group(state, faction, origin)
+        cap = groups.get(origin)
+        if cap is not None:
+            available = {pt: (value if cap.get(pt) else None) if pt == LEADER
+                         else min(value or 0, int(cap.get(pt, 0) or 0))
+                         for pt, value in available.items()}
+        allowance = _max_steps_for_group(state, origin, faction, available)
+        if max_steps is not None:
+            allowance = min(allowance, max_steps)
         path = routes.get(origin)
         if not path:
             best = None
             for dest in dest_pool:
                 route = _bfs_march_path(origin, dest, playable)
-                if not route or (max_steps is not None and len(route) > max_steps):
+                if not route or len(route) > allowance:
                     continue
                 if (best is None or len(route) < len(best[1]) or
                         (len(route) == len(best[1]) and
@@ -3933,6 +4012,7 @@ def _collect_march_moves(state, faction, bot_action):
 def _select_affordable_march_moves(state, faction, moves, *, free=False):
     """Select origins in plan priority order without moving or spending."""
     from fs_bot.commands.march import march_cost
+    from fs_bot.commands.march import _max_steps_for_group, _validate_group_in_region
     from fs_bot.map.map_data import get_adjacency_type
     from fs_bot.rules_consts import LEADER
     playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
@@ -3951,6 +4031,16 @@ def _select_affordable_march_moves(state, faction, moves, *, free=False):
             available = {pt: (value if cap.get(pt) else None) if pt == LEADER
                          else min(value or 0, int(cap.get(pt, 0) or 0))
                          for pt, value in available.items()}
+            if "german_warbands" in cap:
+                available["german_warbands"] = cap["german_warbands"]
+        if len(path) > _max_steps_for_group(state, origin, faction, available):
+            errors.append({"origin": origin, "error": "March route exceeds this group's movement allowance"})
+            continue
+        try:
+            _validate_group_in_region(state, origin, faction, available)
+        except _EXEC_ERRORS as exc:
+            errors.append({"origin": origin, "error": str(exc)})
+            continue
         if not _group_has_pieces(available):
             continue
         if origin not in costs:
@@ -4082,8 +4172,6 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None):
     instructions. Found needed in live human-seat play: without it a
     human could never split a stack.
     """
-    # §3.2.2: marching pieces flip to Hidden as they March.
-    _flip_origin_pieces(state, origin, faction)
     # §3.2.2: the marching group is SELECTED AT THE ORIGIN and carried through
     # the whole path. It must NOT be recomputed from each intermediate Region:
     # doing so absorbed that Region's RESIDENT forces into the march (and tried
@@ -4100,6 +4188,14 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None):
             else:
                 capped[pt] = min(int(group_cap.get(pt, 0) or 0), v or 0)
         group = capped
+        if "german_warbands" in group_cap:
+            group["german_warbands"] = group_cap["german_warbands"]
+    from fs_bot.commands.march import _max_steps_for_group, _validate_group_in_region
+    if len(path) > _max_steps_for_group(state, origin, faction, group):
+        raise CommandError("March route exceeds this group's movement allowance")
+    _validate_group_in_region(state, origin, faction, group)
+    # Validate the whole group's route before changing any visibility state.
+    _flip_origin_pieces(state, origin, faction)
     current = origin
     for i, nxt in enumerate(path):
         if not _group_has_pieces(group):
@@ -5145,64 +5241,23 @@ def _execute_enlist(state, faction, bot_action):
       - german_rally: place a German Ally or Warbands.
       - german_raid: a free German Raid (steal from the named player, else gain).
     """
-    from fs_bot.rules_consts import GERMANS, BASE_SCENARIOS
+    from fs_bot.rules_consts import BELGAE
+    from fs_bot.commands.enlist_free import execute_free_enlist
     ed = _sa_detail(bot_action, "enlist")
     if not isinstance(ed, dict):
         return {"executed": False, "sa": _SA_ENLIST,
                 "reason": "no enlist sub-command details"}
-    scenario = state["scenario"]
     t = ed.get("type")
     try:
-        from fs_bot.commands.sa_enlist import validate_enlist_region
-        from fs_bot.engine.game_engine import is_frost
-        if t in ("german_march", "german_march_hide") and is_frost(state):
-            raise CommandError("No Enlist March during Frost (§4.5.1)")
-        region = ed.get("origin") if t == "german_march" else ed.get("region")
-        valid, reason = validate_enlist_region(state, region)
-        if not valid:
-            raise CommandError(reason)
-        if t == "german_battle":
-            region, target = ed.get("region"), ed.get("target")
-            decl, rr = _decide_defender_retreat(
-                state, region, GERMANS, target, scenario in BASE_SCENARIOS)
-            resolve_battle(state, region, GERMANS, target,
-                           is_ambush=(scenario in BASE_SCENARIOS),
-                           retreat_declaration=decl, retreat_region=rr)
-        elif t == "german_march":
-            origin, dest = ed.get("origin"), ed.get("destination")
-            if not _group_has_pieces(_mobile_march_group(state, GERMANS, origin)):
-                return {"executed": False, "sa": _SA_ENLIST,
-                        "type": t, "reason": "no German pieces to March"}
-            playable = set(get_playable_regions(
-                scenario, state.get("capabilities")))
-            path = _bfs_march_path(origin, dest, playable)
-            if not path:
-                return {"executed": False, "sa": _SA_ENLIST, "type": t,
-                        "reason": "no path to enlist March destination"}
-            _march_with_harassment(state, GERMANS, origin, path)
-        elif t == "german_march_hide":
-            _flip_origin_pieces(state, ed.get("region"), GERMANS)
-        elif t == "german_rally":
-            region = ed.get("region")
-            if ed.get("place") == "ally":
-                rally_in_region(state, region, GERMANS, "place_ally",
-                                tribe=ed.get("tribe"), free=True)
-            else:
-                rally_in_region(state, region, GERMANS, "place_warbands",
-                                free=True)
-        elif t == "german_raid":
-            region, target = ed.get("region"), ed.get("target")
-            actions = ([{"type": "steal", "target": target}] if target
-                       else [{"type": "gain"}])
-            raid_in_region(state, region, GERMANS, actions, free=True)
-        else:
-            return {"executed": False, "sa": _SA_ENLIST,
-                    "type": t, "reason": "unknown enlist sub-type"}
+        if faction != BELGAE:
+            raise CommandError("Only the Belgae may Enlist (§4.5.1)")
+        details = execute_free_enlist(state, ed)
     except _EXEC_ERRORS as exc:
         return {"executed": False, "sa": _SA_ENLIST, "type": t,
                 "error": str(exc)}
     return {"executed": True, "sa": _SA_ENLIST, "type": t,
-            "region": ed.get("region") or ed.get("origin")}
+            "region": ed.get("region") or ed.get("origin"),
+            "details": details}
 
 
 def _derive_event_params(state, faction, card_id, shaded):
@@ -6247,13 +6302,16 @@ def plan_expand_march_moves(state, faction, plan):
     scenario = state["scenario"]
     playable = set(get_playable_regions(scenario, state.get("capabilities")))
 
-    def _nearest(origin, candidates):
+    from fs_bot.commands.march import _max_steps_for_group
+
+    def _nearest(origin, candidates, group):
+        allowance = _max_steps_for_group(state, origin, faction, group)
         best = None
         for d in candidates:
             if d == origin:
                 continue
             path = _bfs_march_path(origin, d, playable)
-            if path is None:
+            if path is None or len(path) > allowance:
                 continue
             if best is None or len(path) < best[0]:
                 best = (len(path), d, path)
@@ -6265,15 +6323,14 @@ def plan_expand_march_moves(state, faction, plan):
     leader_region = find_leader(state, faction)
     if leader_region is not None:
         dests = leader_dests if leader_dests else cs_dests
-        best = _nearest(leader_region, dests)
+        keep = _control_keep_warbands(state, faction, leader_region,
+                                      leader_leaving=True)
+        march_wb = max(0, count_pieces(state, leader_region, faction,
+                                       WARBAND) - keep)
+        group = {LEADER: get_leader_in_region(state, leader_region, faction),
+                 WARBAND: march_wb, LEGION: 0, AUXILIA: 0}
+        best = _nearest(leader_region, dests, group)
         if best is not None:
-            keep = _control_keep_warbands(state, faction, leader_region,
-                                          leader_leaving=True)
-            march_wb = max(0, count_pieces(state, leader_region, faction,
-                                           WARBAND) - keep)
-            group = {LEADER: get_leader_in_region(state, leader_region,
-                                                  faction),
-                     WARBAND: march_wb, LEGION: 0, AUXILIA: 0}
             moves.append({"origin": leader_region, "path": best[2],
                           "group": group, "leader": True,
                           "warbands": march_wb})
@@ -6288,10 +6345,10 @@ def plan_expand_march_moves(state, faction, plan):
         march_wb = max(0, count_pieces(state, origin, faction, WARBAND) - keep)
         if march_wb <= 0:
             continue
-        best = _nearest(origin, cs_dests)
+        group = {LEADER: None, WARBAND: march_wb, LEGION: 0, AUXILIA: 0}
+        best = _nearest(origin, cs_dests, group)
         if best is None:
             continue
-        group = {LEADER: None, WARBAND: march_wb, LEGION: 0, AUXILIA: 0}
         moves.append({"origin": origin, "path": best[2], "group": group,
                       "leader": False, "warbands": march_wb})
         processed.add(origin)
@@ -6310,6 +6367,9 @@ def _march_group_fixed(state, faction, origin, path, group):
     """March a specific group along a path (step by step), returning the final
     Region. Unlike _march_with_harassment this marches a CAPPED group (used for
     the Leader's expand/mass move with a Control-preserving Warband count)."""
+    from fs_bot.commands.march import _max_steps_for_group
+    if len(path) > _max_steps_for_group(state, origin, faction, group):
+        raise CommandError("March route exceeds this group's movement allowance")
     current = origin
     for nxt in path:
         march_group(state, faction, current, [nxt], group, free=False)

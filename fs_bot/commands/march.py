@@ -625,6 +625,8 @@ def march_group(state, faction, origin, destinations, group, *,
 
     # Validate pieces exist in origin
     _validate_group_in_region(state, origin, faction, group)
+    if len(destinations) > _max_steps_for_group(state, origin, faction, group):
+        raise MarchError("March route exceeds this group's movement allowance")
 
     result = {
         "faction": faction,
@@ -714,10 +716,21 @@ def _validate_group_in_region(state, region, faction, group):
             raise MarchError(
                 f"Only {actual} {faction} {piece_type} in {region}, "
                 f"need {count}")
+    if "german_warbands" in group:
+        from fs_bot.commands.sa_enlist import borrowed_count, BORROW_KEY
+        from fs_bot.rules_consts import BELGAE
+        n = group["german_warbands"]
+        own = state["spaces"][region].get("pieces", {}).get(BELGAE, {})
+        own_count = sum(own.get(ps, {}).get(WARBAND, 0) for ps in (HIDDEN, REVEALED, SCOUTED))
+        if (faction != BELGAE or BORROW_KEY not in state
+                or type(n) is not int or not 0 <= n <= group.get(WARBAND, 0)
+                or n > borrowed_count(state, region)
+                or group.get(WARBAND, 0) - n > own_count):
+            raise MarchError("Invalid German/Belgic composition for this March group")
 
 
 def _move_flippable_preserving_state(state, from_region, to_region, faction,
-                                     piece_type, count):
+                                     piece_type, count, *, physical_owner=None):
     """Move ``count`` flippable pieces, taking Hidden first, then Revealed,
     then Scouted, so each piece keeps its current flip state across the move
     (§3.2.2/§3.3.2). The group dict only carries a total per type, so we
@@ -729,10 +742,15 @@ def _move_flippable_preserving_state(state, from_region, to_region, faction,
             break
         avail = count_pieces_by_state(state, from_region, faction,
                                       piece_type, ps)
+        if physical_owner is not None:
+            from fs_bot.commands.sa_enlist import borrowed_count
+            avail = (borrowed_count(state, from_region, ps) if physical_owner == GERMANS
+                     else state["spaces"][from_region].get("pieces", {}).get(
+                         physical_owner, {}).get(ps, {}).get(piece_type, 0))
         take = min(avail, remaining)
         if take > 0:
             move_piece(state, from_region, to_region, faction, piece_type,
-                       count=take, piece_state=ps)
+                       count=take, piece_state=ps, physical_owner=physical_owner)
             remaining -= take
     if remaining > 0:
         # Fall back to the helper's own validation error for the shortfall.
@@ -768,8 +786,16 @@ def _move_group_to(state, from_region, to_region, faction, group):
 
     warband_count = group.get(WARBAND, 0)
     if warband_count > 0:
-        _move_flippable_preserving_state(
-            state, from_region, to_region, faction, WARBAND, warband_count)
+        if "german_warbands" in group:
+            from fs_bot.rules_consts import BELGAE
+            german = group["german_warbands"]
+            for owner, n in ((GERMANS, german), (BELGAE, warband_count - german)):
+                if n:
+                    _move_flippable_preserving_state(state, from_region, to_region,
+                        faction, WARBAND, n, physical_owner=owner)
+        else:
+            _move_flippable_preserving_state(
+                state, from_region, to_region, faction, WARBAND, warband_count)
 
 
 # ============================================================================

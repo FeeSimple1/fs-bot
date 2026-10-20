@@ -88,15 +88,19 @@ class TestPrevalidateRallyPlan:
         for t in spare_tribes:
             st["tribes"][t]["allied_faction"] = "parked"
         st["available"][ARVERNI][ALLY] = 0
+        # The freed Ally is placed in another Region: one Rally option per Region.
+        place_piece(st, MANDUBII, ARVERNI, WARBAND, 2)
+        st["tribes"]["Mandubii"]["allied_faction"] = None
+        refresh_all_control(st)
         plan_in = {
             "citadels": [{"region": ARVERNI_REGION, "tribe": "Arverni"}],
-            "allies": [{"region": ARVERNI_REGION, "tribe": "Cadurci"}],
+            "allies": [{"region": MANDUBII, "tribe": "Mandubii"}],
             "warbands": [],
         }
         plan = prevalidate_rally_plan(st, ARVERNI, plan_in)
         assert plan["citadels"] == plan_in["citadels"]
         # The Citadel replacement frees its Ally back to Available,
-        # funding the Cadurci placement
+        # funding the Mandubii placement
         assert plan["allies"] == plan_in["allies"]
 
     def test_citadel_not_reproposed_when_tribe_allied_via_citadel(self):
@@ -274,3 +278,61 @@ class TestExpandMarchDryRun:
             plan = (action.get("details") or {}).get("march_plan") or {}
             assert plan_expand_march_moves(st, ARVERNI, plan), \
                 "node returned a March the executor would refuse"
+
+
+@pytest.mark.parametrize("scenario", [SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS])
+def test_rally_rejects_ally_then_warbands_without_vercingetorix(scenario):
+    """§3.3.1: Control permits one Ally OR Warbands, not both."""
+    from fs_bot.rules_consts import TRIBE_AEDUI
+    from fs_bot.state.serialize import encode
+    st = _state(scenario)
+    st["resources"][AEDUI] = 10
+    place_piece(st, AEDUI_REGION, AEDUI, WARBAND, 2)
+    refresh_all_control(st)
+    plan = {"allies": [{"region": AEDUI_REGION, "tribe": TRIBE_AEDUI}],
+            "warbands": [AEDUI_REGION, AEDUI_REGION]}
+    filtered = prevalidate_rally_plan(st, AEDUI, plan)
+    assert filtered["allies"] == plan["allies"] and filtered["warbands"] == []
+    before = encode(st)
+    result = execute_decision(st, AEDUI, {"player_action": {
+        "command": "Rally", "sa": "No SA", "regions": [AEDUI_REGION],
+        "details": {"rally_plan": plan}}})
+    assert not result["executed"] and encode(st) == before
+
+
+def test_vercingetorix_allows_two_rally_options_for_one_payment():
+    """§3.3.1: Vercingetorix permits one Ally and Warbands, once each."""
+    from fs_bot.rules_consts import TRIBE_ARVERNI, LEADER
+    st = _state()
+    st["resources"][ARVERNI] = 1
+    place_piece(st, ARVERNI_REGION, ARVERNI, LEADER, leader_name=VERCINGETORIX)
+    refresh_all_control(st)
+    plan = {"allies": [{"region": ARVERNI_REGION, "tribe": TRIBE_ARVERNI}],
+            "warbands": [ARVERNI_REGION, ARVERNI_REGION]}
+    filtered = prevalidate_rally_plan(st, ARVERNI, plan)
+    assert filtered["warbands"] == [ARVERNI_REGION]
+    result = execute_decision(st, ARVERNI, {"bot_action": {
+        "command": "Rally", "sa": "No SA", "details": {"rally_plan": filtered}}})
+    assert result["executed"] and not result["errors"]
+    assert st["resources"][ARVERNI] == 0
+    assert count_pieces(st, ARVERNI_REGION, ARVERNI, ALLY) == 1
+    assert count_pieces(st, ARVERNI_REGION, ARVERNI, WARBAND) > 0
+
+
+@pytest.mark.parametrize("scenario", [SCENARIO_PAX_GALLICA, SCENARIO_ARIOVISTUS])
+def test_german_rally_options_are_scenario_specific(scenario):
+    """§3.4.1 allows Ally THEN WB; A3.4.1 replaces it with one option + bonus."""
+    from fs_bot.rules_consts import TRIBE_SUGAMBRI
+    st = _state(scenario)
+    st["resources"][GERMANS] = 5
+    place_piece(st, SUGAMBRI, GERMANS, WARBAND, 1)
+    refresh_all_control(st)
+    draft = {"allies": [{"region": SUGAMBRI, "tribe": TRIBE_SUGAMBRI}],
+             "warbands": [SUGAMBRI, SUGAMBRI]}
+    plan = prevalidate_rally_plan(st, GERMANS, draft)
+    assert plan["allies"] == draft["allies"]
+    assert plan["warbands"] == ([SUGAMBRI] if scenario == SCENARIO_PAX_GALLICA else [])
+    result = execute_decision(st, GERMANS, {"bot_action": {
+        "command": "Rally", "sa": "No SA", "details": {"rally_plan": plan}}})
+    assert result["executed"] and not result["errors"]
+    assert count_pieces(st, SUGAMBRI, GERMANS, WARBAND) == 2

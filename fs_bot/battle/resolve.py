@@ -37,6 +37,7 @@ from fs_bot.rules_consts import (
     PROVINCIA,
 )
 from fs_bot.board.pieces import (
+    get_effective_faction_pieces,
     count_pieces, count_pieces_by_state, get_leader_in_region,
     move_piece, flip_piece, remove_piece, clear_allied_tribe,
 )
@@ -148,7 +149,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     # Check if defender has mobile pieces — §3.2.4, §3.3.4
     if can_retreat:
         space = state["spaces"][region]
-        d_pieces = space.get("pieces", {}).get(defending_faction, {})
+        d_pieces = get_effective_faction_pieces(state, region, defending_faction)
         has_mobile = False
         if d_pieces.get(LEADER) is not None:
             has_mobile = True
@@ -178,9 +179,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     # ── Track if defender started with Citadel/Fort ──
     # §4.2.3: "A Defender with a Citadel still suffers only half Losses
     # that Battle, even after the Citadel is removed"
-    d_pieces = state["spaces"][region].get("pieces", {}).get(
-        defending_faction, {}
-    )
+    d_pieces = get_effective_faction_pieces(state, region, defending_faction)
     if citadel_at_start is None:
         had_citadel_at_start = d_pieces.get(CITADEL, 0) > 0
     else:
@@ -222,9 +221,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     )
 
     # Check current Fort/Citadel AFTER Besiege
-    d_pieces_now = state["spaces"][region].get("pieces", {}).get(
-        defending_faction, {}
-    )
+    d_pieces_now = get_effective_faction_pieces(state, region, defending_faction)
     has_fort_now = d_pieces_now.get(FORT, 0) > 0 and not ignore_fort
     has_citadel_now = d_pieces_now.get(CITADEL, 0) > 0 and not ignore_citadel
 
@@ -478,8 +475,8 @@ def _calculate_attack_losses(state, region, attacking_faction,
     that Battle, even after the Citadel is removed."
     """
     space = state["spaces"][region]
-    enemy_pieces = space.get("pieces", {}).get(attacking_faction, {})
-    defender_pieces = space.get("pieces", {}).get(defending_faction, {})
+    enemy_pieces = get_effective_faction_pieces(state, region, attacking_faction)
+    defender_pieces = get_effective_faction_pieces(state, region, defending_faction)
 
     # Count enemy pieces (attacker's forces that cause losses)
     enemy_leader = get_leader_in_region(state, region, attacking_faction)
@@ -487,7 +484,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
     enemy_auxilia = _count_all_flippable(enemy_pieces, AUXILIA)
     enemy_warbands = _count_all_flippable(enemy_pieces, WARBAND)
     for _af in allied_factions:
-        _ap = space.get("pieces", {}).get(_af, {})
+        _ap = get_effective_faction_pieces(state, region, _af)
         enemy_legions += _ap.get(LEGION, 0)
         enemy_auxilia += _count_all_flippable(_ap, AUXILIA)
         enemy_warbands += _count_all_flippable(_ap, WARBAND)
@@ -705,7 +702,7 @@ def _execute_retreat(state, region, defending_faction, attacking_faction,
     }
 
     space = state["spaces"][region]
-    d_pieces = space.get("pieces", {}).get(defending_faction, {})
+    d_pieces = get_effective_faction_pieces(state, region, defending_faction)
 
     # Determine if the "stay" option is available
     # §3.2.4 (Roman Attack): Leader and Hidden Warbands may stay

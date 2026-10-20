@@ -98,6 +98,13 @@ def calculate_control(state, region):
         force_counts[faction] = c
         total_all += c
 
+    # §4.5.1: borrowed Warbands count as Belgic until the Command ends.
+    # A4.5.1 free-Battle filtering must NOT alter physical Control.
+    from fs_bot.commands.sa_enlist import borrowed_count
+    borrowed = borrowed_count(state, region)
+    force_counts[BELGAE] += borrowed
+    force_counts[GERMANS] -= borrowed
+
     if total_all == 0:
         return NO_CONTROL
 

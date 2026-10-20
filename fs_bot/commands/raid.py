@@ -54,7 +54,7 @@ RAID_STEAL = "steal"
 # VALIDATION
 # ============================================================================
 
-def validate_raid_region(state, region, faction):
+def validate_raid_region(state, region, faction, *, allow_base_germans=False):
     """Check if a faction can Raid in a region.
 
     Requirements (§3.3.3):
@@ -85,7 +85,8 @@ def validate_raid_region(state, region, faction):
 
     # Germans cannot Raid as a player command in base game — §3.4.3
     # (base game Germanic Raid is only via Germans Phase §6.2.3)
-    if faction == GERMANS and scenario in BASE_SCENARIOS:
+    if (faction == GERMANS and scenario in BASE_SCENARIOS
+            and not allow_base_germans):
         return False, (
             "Germans cannot Raid as a player command in base game "
             "(only via Germans Phase §6.2.3)"
@@ -224,7 +225,8 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
     scenario = state["scenario"]
 
     # Validate region
-    valid, reason = validate_raid_region(state, region, faction)
+    valid, reason = validate_raid_region(
+        state, region, faction, allow_base_germans=free)
     if not valid:
         raise CommandError(f"Cannot Raid in {region}: {reason}")
 
@@ -254,11 +256,36 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
             f"{region}, need {len(raid_actions)}"
         )
 
+    # A human Enlisting German Warbands may preserve either colour's Hidden
+    # pieces. Check the complete allocation before revealing any Warband.
+    from fs_bot.commands.sa_enlist import BORROW_KEY, borrowed_count
+    borrowing = faction == BELGAE and BORROW_KEY in state
+    remaining_borrowed = borrowed_count(state, region, HIDDEN) if borrowing else 0
+    remaining_native = hidden_warbands - remaining_borrowed
+    owners = []
+    for action in raid_actions:
+        owner = action.get("physical_owner")
+        if owner is not None and (not borrowing or owner not in (BELGAE, GERMANS)):
+            raise CommandError("Raid physical-owner choice requires borrowed Enlist Warbands")
+        if borrowing:
+            selected_owner = owner or (GERMANS if remaining_borrowed else BELGAE)
+            if selected_owner == GERMANS:
+                remaining_borrowed -= 1
+            else:
+                remaining_native -= 1
+            if min(remaining_borrowed, remaining_native) < 0:
+                raise CommandError("Not enough Hidden Warbands of the selected physical owner")
+            owners.append(selected_owner)
+        else:
+            owners.append(None)
+
     # Validate each action
     is_devastated = _is_devastated(state, region)
     for i, action in enumerate(raid_actions):
         action_type = action.get("type")
         if action_type == RAID_GAIN:
+            if faction == GERMANS and scenario in BASE_SCENARIOS:
+                raise CommandError("Germanic Raid must target a Faction (§3.4.3)")
             if is_devastated:
                 raise CommandError(
                     f"Cannot gain Resources from Raid in Devastated "
@@ -293,11 +320,12 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
         "cost": RAID_COST,
     }
 
-    for action in raid_actions:
+    for action, owner in zip(raid_actions, owners):
         # Flip one Hidden Warband to Revealed
         flip_piece(
             state, region, faction, WARBAND, count=1,
             from_state=HIDDEN, to_state=REVEALED,
+            physical_owner=owner,
         )
 
         action_type = action["type"]
@@ -313,11 +341,14 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
             target_resources = state["resources"].get(target, 0)
             if target_resources >= 1:
                 state["resources"][target] = target_resources - 1
-                current = state["resources"].get(faction, 0)
-                state["resources"][faction] = min(
-                    current + 1, MAX_RESOURCES
-                )
-                result["resources_gained"] += 1
+                # §3.4.3: Event/Enlist-guided German Raid in the base game
+                # reduces the victim's Resources but earns none for Germans.
+                if not (faction == GERMANS and scenario in BASE_SCENARIOS):
+                    current = state["resources"].get(faction, 0)
+                    state["resources"][faction] = min(
+                        current + 1, MAX_RESOURCES
+                    )
+                    result["resources_gained"] += 1
                 result["resources_stolen"][target] = (
                     result["resources_stolen"].get(target, 0) + 1
                 )

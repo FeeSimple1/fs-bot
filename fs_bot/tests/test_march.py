@@ -969,21 +969,23 @@ def test_multihop_march_leaves_intermediate_residents_behind():
     """
     from fs_bot.engine.execute import _march_with_harassment
     state = make_state()
-    # Origin Aedui: 3 Aedui Warbands (the marching group).
-    place_piece(state, AEDUI_REGION, AEDUI, WARBAND, 3, piece_state=HIDDEN)
-    # Intermediate Mandubii: 14 RESIDENT Aedui Warbands, mostly Revealed.
-    place_piece(state, MANDUBII, AEDUI, WARBAND, 14, piece_state=REVEALED)
+    place_piece(state, AEDUI_REGION, ARVERNI, LEADER, leader_name=VERCINGETORIX)
+    # Vercingetorix legally carries this group two Regions (§3.3.2).
+    # Origin Aedui: 3 Arverni Warbands (the marching group).
+    place_piece(state, AEDUI_REGION, ARVERNI, WARBAND, 3, piece_state=HIDDEN)
+    # Intermediate Mandubii: 14 RESIDENT Arverni Warbands, mostly Revealed.
+    place_piece(state, MANDUBII, ARVERNI, WARBAND, 14, piece_state=REVEALED)
     # Remove enemy hidden warbands that could harass, to isolate the mechanic.
     refresh_all_control(state)
-    before_resident = count_pieces(state, MANDUBII, AEDUI, WARBAND)
+    before_resident = count_pieces(state, MANDUBII, ARVERNI, WARBAND)
     # March Aedui -> Mandubii -> Atrebates (2 hops).
-    final = _march_with_harassment(state, AEDUI, AEDUI_REGION,
+    final = _march_with_harassment(state, ARVERNI, AEDUI_REGION,
                                    [MANDUBII, ATREBATES])
     assert final == ATREBATES
     # The 3 origin Warbands reached Atrebates; the 14 residents stayed.
-    assert count_pieces(state, ATREBATES, AEDUI, WARBAND) == 3
-    assert count_pieces(state, MANDUBII, AEDUI, WARBAND) == before_resident == 14
-    assert count_pieces(state, AEDUI_REGION, AEDUI, WARBAND) == 0
+    assert count_pieces(state, ATREBATES, ARVERNI, WARBAND) == 3
+    assert count_pieces(state, MANDUBII, ARVERNI, WARBAND) == before_resident == 14
+    assert count_pieces(state, AEDUI_REGION, ARVERNI, WARBAND) == 0
 
 
 def test_march_group_with_scouted_warbands_moves_as_revealed():

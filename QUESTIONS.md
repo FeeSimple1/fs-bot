@@ -3,8 +3,8 @@ QUESTIONS.md — Ambiguities and their resolutions
 These items were identified during implementation when the Reference Documents
 appeared ambiguous, contradictory, or silent. They have now been resolved by
 re-reading the Reference Documents closely (the only permitted source of truth
-per CLAUDE.md). Each entry records the question, the reference basis for the
-answer, and the resulting implementation. No open questions remain.
+per CLAUDE.md). Each entry records the question, its reference basis, and its disposition.
+Later entries may remain open; consult the status on the individual entry.
 
 ---
 
@@ -2695,3 +2695,73 @@ the printed A8.6.6 really state the Belgae policy, and is there a
 separate parallel rule for the other Faction? Until answered, the
 planned A28 implementation will apply the conditional-agreement rule
 to BOTH Non-player Aedui and Belgae (Romans never agree per A8.8.8).
+
+
+## [RESOLVED SOURCE CONFLICT] Vassal comparison — A24/A70 NP symbols
+
+**Behavior:** human-visible NP cues on Seduni Uprising! and Nervii.
+
+**Sources:** base Chapter 8 §8.2.1; Ariovistus A Card Reference headers A24
+(line 76) and A70 (line 323); Ariovistus German Event Instructions lines
+37–38, Roman Instructions lines 12–16 and 40–41, Aedui Instructions
+lines 12–16 and 42–43, and the Belgic No Events list. The owner expressly
+requested a Vassal comparison; physical card faces in FallingSky4.0.0.vmod
+corroborate these faction instructions. Package identity and URLs appear in
+`docs/reviews/vassal-module-2026-10-20.md`.
+
+**Conflict and resolution:** A24's transcribed header assigns the wrong cues.
+The faction instructions prescribe German laurels, Roman swords, no Belgic
+cue, and Aedui swords. A70's header omits Roman and Aedui laurels although
+both factions have a conditional Nervii instruction. Those instructions
+and both physical faces agree, so metadata and the two displayed header
+suffixes are corrected. Event bodies and existing bot instructions are
+unchanged. This is a reconciled source inconsistency, not an invented
+change to bot behavior. Protected reference files remain unchanged.
+
+**Verification:** `fs_bot/tests/test_vassal_card_cues.py`.
+
+## [OPEN] Vassal comparison — A30 Orgetorix Belgic laurels
+
+**Behavior:** the Belgic NP cue and any special instruction for A30.
+
+**Sources:** A Card Reference A30 header (line 111), supplied Ariovistus
+Belgic Event Instructions, base §8.2.1 and A8.2.1; physical
+`images/A30 - Orgetorix.jpg` in Vassal 4.0.0.
+
+**Conflict:** the physical face shows Belgic laurels, but the transcribed
+header has no Belgic symbol and the supplied Belgic instructions contain
+no Orgetorix entry. Laurels indicate an instruction; they do not define it.
+
+**Options and consequences:** retain the supplied header/instructions, as
+currently implemented, or correct the cue after obtaining the corresponding
+printed instruction or clarification that the laurels are erroneous. Merely
+adding an icon cannot justify inventing a targeting rule or No Event test.
+
+**Blocked:** choosing a different cue or specific Belgic Event behavior.
+Existing generic Event handling remains unchanged; unrelated work proceeds.
+
+## [OPEN] Vassal comparison — original versus Second Edition card policy
+
+**Behavior:** base-game selection of versions of cards 11, 30, 39, 44 and 54,
+and persistence of that choice through save/load and the Gallic War Interlude.
+
+**Sources:** Ariovistus A Setup, Deck Preparation (lines 20–29), Chapter A1
+§A1.2.1 (lines 51–60), corresponding base/amended Card Reference entries.
+The Vassal module is labeled Second Edition and supplies the five revised
+faces globally. CLAUDE also describes this project as Second Edition.
+
+**Incomplete policy:** A Setup recommends the replacements regardless of
+scenario. It does not require choosing them. The current engine selects
+these amendments by Ariovistus scenario, leaving base scenarios on original
+cards; no explicit owner choice of the edition default was identified.
+
+**Options:** use Second Edition everywhere; expose a saved edition selector
+with an explicit default; or deliberately retain the current original-base /
+amended-Ariovistus profile. The first two can change Battle strength, Trade,
+free Commands, capability interpretation, and deterministic game outcomes.
+
+**Blocked:** silently changing the default or claiming the base game already
+implements the recommended Second Edition card set. Both printed versions
+are source-defined, so an eventual selector should consistently govern
+card text, effect execution, previews, bot targeting, persistent capabilities,
+saves and Interlude. No edition behavior was changed in this review.

@@ -201,7 +201,10 @@ _ARIOVISTUS_FACTION_TOKENS = {
     "A21": "Ge L Ro Ae Be L C",
     "A22": "Ge Ro Be S Ae L",
     "A23": "Ge L Ro L Be Ae",
-    "A24": "Ge Ro Be S Ae L",
+    # A Card Reference's A24 header conflicts with the faction instruction
+    # files: Seduni is No Romans/No Aedui, has a German instruction, and is
+    # not No Belgae. These §8.2.1 cues also match the physical card face.
+    "A24": "Ge L Ro S Be Ae S",
     "A25": "Ge Ae L Ro Be S",
     "A26": "Ge L Ae L Ro Be",
     "A27": "Ge Ae S Ro S Be",
@@ -235,7 +238,10 @@ _ARIOVISTUS_FACTION_TOKENS = {
     "A66": "Be L Ge L Ae S Ro S C",
     "A67": "Be Ae Ro Ge L C",
     "A69": "Be Ae Ro Ge S C",
-    "A70": "Be Ae Ge S Ro C",
+    # Roman/Aedui Ariovistus Event Instructions both give Nervii a
+    # conditional instruction. Their laurels are omitted in the transcribed
+    # header, but are printed on the card. The final C is the Arverni trigger.
+    "A70": "Be Ae L Ge S Ro L C",
 }
 
 

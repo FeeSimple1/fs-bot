@@ -337,7 +337,9 @@ def card30_arverni_legion_warbands(state, region, faction):
     if get_leader_in_region(state, region, ARVERNI) is None:
         return 0
     f_pieces = state["spaces"][region].get("pieces", {}).get(ARVERNI, {})
-    return min(2, _count_all_flippable(f_pieces, WARBAND))
+    from fs_bot.cards.edition import uses_second_edition
+    limit = 4 if uses_second_edition(state) else 2
+    return min(limit, _count_all_flippable(f_pieces, WARBAND))
 
 
 # ============================================================================

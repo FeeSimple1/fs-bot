@@ -92,10 +92,11 @@ def infer_kind(name, default_node=None):
     return "value"
 
 
-def _resolve_handler(card_id, scenario):
+def _resolve_handler(card_id, scenario, card_edition=None):
     """The handler execute_event would dispatch to (or None)."""
     from fs_bot.cards import card_effects as ce
-    ario = scenario in ARIOVISTUS_SCENARIOS
+    from fs_bot.cards.edition import uses_second_edition
+    ario = uses_second_edition(scenario, card_edition)
     if isinstance(card_id, str) and card_id.startswith("A"):
         return ce._ARIOVISTUS_HANDLERS.get(card_id)
     if isinstance(card_id, int):
@@ -229,10 +230,11 @@ def _schema_uncached(card_id, ario):
     return schema
 
 
-def card_param_schema(card_id, scenario):
+def card_param_schema(card_id, scenario, card_edition=None):
     """The typed event_params schema for ``card_id`` in ``scenario``."""
+    from fs_bot.cards.edition import uses_second_edition
     return {k: dict(v) for k, v in _schema_uncached(
-        card_id, scenario in ARIOVISTUS_SCENARIOS).items()}
+        card_id, uses_second_edition(scenario, card_edition)).items()}
 
 
 # Card-legal value constraints the handlers enforce (ValueError on
@@ -335,7 +337,8 @@ def generate_params(state, card_id, rng, *, include_p=0.9):
     """Random-but-typed event_params drawn from the card's schema (the
     fuzzer's success-path generator). Every entry field the handler reads
     is populated (subscript reads raise KeyError otherwise)."""
-    schema = card_param_schema(card_id, state.get("scenario"))
+    schema = card_param_schema(card_id, state.get("scenario"),
+                               state.get("card_edition"))
     params = {}
     for key, spec in schema.items():
         kind = spec["kind"]

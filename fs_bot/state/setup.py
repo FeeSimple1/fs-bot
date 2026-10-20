@@ -926,7 +926,7 @@ _SETUP_FUNCTIONS = {
 }
 
 
-def setup_scenario(scenario, seed=None):
+def setup_scenario(scenario, seed=None, *, card_edition="legacy"):
     """Set up a scenario and return the initial game state.
 
     Args:
@@ -943,7 +943,10 @@ def setup_scenario(scenario, seed=None):
     if scenario not in _SETUP_FUNCTIONS:
         raise ValueError(f"Unknown scenario: {scenario}")
 
+    from fs_bot.cards.edition import validate_card_edition
+    validate_card_edition(card_edition)
     state = build_initial_state(scenario, seed=seed)
+    state["card_edition"] = card_edition
     _SETUP_FUNCTIONS[scenario](state)
 
     # Validate state integrity

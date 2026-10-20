@@ -86,7 +86,7 @@ _CONTROL_SHORT = {
 # CARD DISPLAY
 # ============================================================================
 
-def format_card(card_id, scenario, *, include_text=False):
+def format_card(card_id, scenario, *, include_text=False, card_edition=None):
     """Render a card as a multi-line summary.
 
     Shows: card number, title, faction order, NP instruction symbols
@@ -123,7 +123,8 @@ def format_card(card_id, scenario, *, include_text=False):
         lines.append("  Capability card (Sec 5.3)")
     if include_text:
         from fs_bot.cards.card_text import format_card_text
-        printed = format_card_text(card_id, indent="  | ", scenario=scenario)
+        printed = format_card_text(card_id, indent="  | ", scenario=scenario,
+                                   card_edition=card_edition)
         if printed:
             lines.append(printed)
     return "\n".join(lines)
@@ -209,17 +210,21 @@ def format_state_summary(state):
     lines = []
     lines.append(SEP_HEAVY)
     lines.append(f"Scenario: {scenario}")
+    from fs_bot.cards.edition import card_edition_label
+    lines.append(f"Cards 11/30/39/44/54: {card_edition_label(state)}")
     lines.append(SEP)
 
     # Cards
     lines.append("Current card:")
     for ln in format_card(state.get("current_card"), scenario,
-                          include_text=True).splitlines():
+                          include_text=True,
+                          card_edition=state.get("card_edition")).splitlines():
         lines.append("  " + ln)
     lines.append("")
     lines.append("Upcoming card:")
     for ln in format_card(state.get("next_card"), scenario,
-                          include_text=True).splitlines():
+                          include_text=True,
+                          card_edition=state.get("card_edition")).splitlines():
         lines.append("  " + ln)
 
     # Markers
@@ -650,7 +655,8 @@ def format_board(state):
             parts.append(f"  Card {card_id}: "
                          f"{state['capabilities'][card_id]}")
             printed = format_card_text(card_id, indent="  | ",
-                                       scenario=state["scenario"])
+                                       scenario=state["scenario"],
+                                       card_edition=state.get("card_edition"))
             if printed:
                 parts.append(printed)
     return "\n".join(parts)

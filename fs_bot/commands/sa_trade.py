@@ -68,6 +68,7 @@ def trade(state, agreements=None, roman_agreed=False):
     result = {"resources_gained": 0, "per_item": []}
 
     from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.cards.edition import uses_second_edition
     from fs_bot.rules_consts import EVENT_UNSHADED as _EU, EVENT_SHADED as _ESh
     # Subdued & Roman-Allied Tribes under Aedui Control: +1, or +2 only if
     # Romans agreed (§4.4.1).
@@ -75,13 +76,17 @@ def trade(state, agreements=None, roman_agreed=False):
     # Card 39 (River Commerce) unshaded: Aedui Allies & Citadels in Supply Lines
     # "always yield +2 Resources each" — that boost applies to those two item
     # types only, not to Subdued/Roman-Allied Tribes.
-    aedui_value = 2 if (roman_agreed
-                        or is_capability_active(state, 39, _EU)) else 1
+    commerce = is_capability_active(state, 39, _EU)
+    revised_commerce = commerce and uses_second_edition(state)
+    aedui_value = 2 if (roman_agreed or (commerce and not revised_commerce)) else 1
 
     # Find all regions on Supply Lines
     supply_line_regions = set()
     for region in get_playable_regions(scenario, state.get("capabilities")):
-        if has_supply_line(state, region, ROMANS, agreements):
+        # Revised card 39 removes Supply Lines, rather than retaining the
+        # original card's guaranteed +2 for blue pieces. Normal Roman
+        # agreement still determines the +1/+2 yield (A Card Reference 39).
+        if revised_commerce or has_supply_line(state, region, ROMANS, agreements):
             supply_line_regions.add(region)
 
     # Ariovistus Diviciacus proximity filter — A4.4, A4.1.2

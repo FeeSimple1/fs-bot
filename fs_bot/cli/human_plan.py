@@ -883,7 +883,8 @@ def _collect_command(state, faction, engine_action, stdin, stdout):
 def _card_param_keys(state, card_id):
     """Ordered event_params keys the card's handler reads (schema keys)."""
     from fs_bot.cards.param_schema import card_param_schema
-    return list(card_param_schema(card_id, state.get("scenario")))
+    return list(card_param_schema(card_id, state.get("scenario"),
+                                  state.get("card_edition")))
 
 
 def _kind_options(state, kind, spec):
@@ -953,7 +954,8 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
         if prompt_yes_no(stdin, stdout, "Use them?", default=True):
             return dict(derived)
     from fs_bot.cards.param_schema import card_param_schema
-    schema = card_param_schema(card_id, state.get("scenario"))
+    schema = card_param_schema(card_id, state.get("scenario"),
+                               state.get("card_edition"))
     params = {}
     for key, spec in schema.items():
         v = _prompt_event_param(state, key, spec, stdin, stdout)

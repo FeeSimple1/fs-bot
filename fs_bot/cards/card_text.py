@@ -10,7 +10,7 @@ Reference Documents are absent (returns "").
 import os
 import re
 
-from fs_bot.rules_consts import ARIOVISTUS_SCENARIOS
+from fs_bot.cards.edition import uses_second_edition
 
 _CACHE = None
 
@@ -88,28 +88,28 @@ def _load():
     return _CACHE
 
 
-def get_card_text(card_id, scenario=None):
+def get_card_text(card_id, scenario=None, card_edition=None):
     """Full printed text block for a card (title line, both sides, Tips),
     or "" when unknown/unavailable (e.g. Winter cards).
 
-    Integer amendments use the same scenario selection as the Event engine;
+    Integer amendments use the same saved edition selection as the Event engine;
     A-prefix and optional O-prefix cards have unambiguous printed identities.
     """
     base, expansion = _load()
-    if scenario in ARIOVISTUS_SCENARIOS or isinstance(card_id, str):
+    if uses_second_edition(scenario, card_edition) or isinstance(card_id, str):
         if card_id in expansion:
             return expansion[card_id]
     return base.get(card_id, "")
 
 
-def format_card_text(card_id, indent="  ", scenario=None):
+def format_card_text(card_id, indent="  ", scenario=None, card_edition=None):
     """Indent the reference text without inventing missing side boundaries.
 
     The transcription does not consistently mark the boundary between sides,
     and some Events have only a single effect. Preserve its paragraphs and
     CAPABILITY/Tips/Rationale markers instead of labelling a nonexistent side.
     """
-    txt = get_card_text(card_id, scenario=scenario)
+    txt = get_card_text(card_id, scenario=scenario, card_edition=card_edition)
     if not txt:
         return ""
     return "\n".join(indent + line for line in txt.splitlines())

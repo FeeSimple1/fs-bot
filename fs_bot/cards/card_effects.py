@@ -4965,10 +4965,7 @@ def execute_event(state, card_id, shaded=False):
     Raises:
         KeyError: if card_id has no handler.
     """
-    from fs_bot.rules_consts import ARIOVISTUS_SCENARIOS
-
-    scenario = state.get("scenario")
-    is_ariovistus = scenario in ARIOVISTUS_SCENARIOS if scenario else False
+    from fs_bot.cards.edition import uses_second_edition
 
     # String card ids: A-prefix (Ariovistus-only) and O38 (The Gallic War
     # second half's 2nd-Ed Diviciacus replacement).
@@ -4980,7 +4977,7 @@ def execute_event(state, card_id, shaded=False):
     # Integer card IDs
     if isinstance(card_id, int):
         # In Ariovistus, 2nd Edition text-change cards use modified handlers
-        if is_ariovistus and card_id in _ARIOVISTUS_TEXT_CHANGE_HANDLERS:
+        if uses_second_edition(state) and card_id in _ARIOVISTUS_TEXT_CHANGE_HANDLERS:
             return _ARIOVISTUS_TEXT_CHANGE_HANDLERS[card_id](state, shaded)
         # Base game handler
         if card_id in _BASE_HANDLERS:

@@ -120,7 +120,7 @@ def setup_wizard(stdin, stdout, *, preset_scenario=None,
 # CARD RESULT DISPLAY
 # ============================================================================
 
-def display_card_result(card_result, stdout, scenario=None):
+def display_card_result(card_result, stdout, scenario=None, card_edition=None):
     """Print what happened on a card.
 
     Reports: card id, turn type (event/winter), passes, actions taken,
@@ -166,7 +166,8 @@ def display_card_result(card_result, stdout, scenario=None):
                                  f"card {ex['card_id']}\n")
                     from fs_bot.cards.card_text import format_card_text
                     txt = format_card_text(ex["card_id"], indent="      | ",
-                                           scenario=scenario)
+                                           scenario=scenario,
+                                           card_edition=card_edition)
                     if txt:
                         stdout.write(txt + "\n")
                 if not ex.get("executed"):
@@ -203,6 +204,13 @@ def _parse_args(argv):
     p.add_argument(
         "--seed", type=int, default=None,
         help="RNG seed for deterministic replay.",
+    )
+    from fs_bot.cards.edition import CARD_EDITIONS
+    p.add_argument(
+        "--card-edition", choices=CARD_EDITIONS, default=None,
+        help=("Versions of cards 11/30/39/44/54: original or second-edition. "
+              "Default legacy preserves scenario-dependent selection. "
+              "Saved games retain their profile."),
     )
     p.add_argument(
         "--bots", default=None,
@@ -288,6 +296,11 @@ def main(argv=None, stdin=None, stdout=None):
     if args.load or args.replay:
         # Scenario / seed / seats come from the save file.
         state, meta, log = serialize.load_game(args.load or args.replay)
+        card_edition = state.get("card_edition", "legacy")
+        if args.card_edition is not None and args.card_edition != card_edition:
+            stdout.write("Cannot change --card-edition when loading or replaying "
+                         "a game; start a new game to choose a different profile.\n")
+            return 2
         scenario = meta.get("scenario") or state.get("scenario")
         seed = meta.get("seed")
         faction_modes = dict(meta.get("faction_modes") or {})
@@ -302,7 +315,8 @@ def main(argv=None, stdin=None, stdout=None):
                 return 2
             faction_modes = dict(meta.get("initial_faction_modes")
                                  or faction_modes)
-            state = setup_scenario(scenario, seed=seed)
+            state = setup_scenario(scenario, seed=seed,
+                                   card_edition=card_edition)
         elif state.get("interlude_completed") and GERMANS in faction_modes:
             # Older snapshots saved the original seats after the Interlude.
             faction_modes[ARVERNI] = faction_modes.pop(GERMANS)
@@ -333,12 +347,14 @@ def main(argv=None, stdin=None, stdout=None):
         # Explicit seed always, so every game is saveable/replayable.
         seed = (args.seed if args.seed is not None
                 else _random.randrange(2 ** 31))
-        state = setup_scenario(scenario, seed=seed)
+        state = setup_scenario(scenario, seed=seed,
+                               card_edition=args.card_edition or "legacy")
 
     initial_modes = dict(meta.get("initial_faction_modes") or faction_modes)
     if state.get("interlude_completed") and GERMANS not in initial_modes:
         initial_modes[GERMANS] = initial_modes.pop(ARVERNI, "bot")
     meta.update({"scenario": scenario, "seed": seed,
+                 "card_edition": state.get("card_edition", "legacy"),
                  "initial_faction_modes": initial_modes,
                  "faction_modes": dict(faction_modes)})
     # Non-player factions = bots (the engine uses this for tiebreak;
@@ -487,7 +503,8 @@ def main(argv=None, stdin=None, stdout=None):
                 meta["faction_modes"] = dict(faction_modes)
                 stdout.write("\n*** Interlude: the German player now "
                              "plays the Arverni (A2.1). ***\n")
-            display_card_result(card_result, stdout, scenario=card_scenario)
+            display_card_result(card_result, stdout, scenario=card_scenario,
+                                card_edition=state.get("card_edition"))
             if args.save:
                 save_snapshot()
             if card_result["game_over"]:

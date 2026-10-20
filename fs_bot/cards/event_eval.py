@@ -860,7 +860,7 @@ _SECOND_EDITION_FLAGS = {
 # Public API: get_event_flags
 # ---------------------------------------------------------------------------
 
-def get_event_flags(card_id, shaded=False, scenario=None):
+def get_event_flags(card_id, shaded=False, scenario=None, card_edition=None):
     """Return the set of boolean effect flags for a card's event side.
 
     Args:
@@ -884,7 +884,8 @@ def get_event_flags(card_id, shaded=False, scenario=None):
         raise KeyError(f"No flags for Ariovistus card {card_id!r}")
 
     # Integer cards: check if Ariovistus text-change applies
-    if (scenario is not None and scenario in ARIOVISTUS_SCENARIOS
+    from fs_bot.cards.edition import uses_second_edition
+    if (uses_second_edition(scenario, card_edition)
             and card_id in _SECOND_EDITION_FLAGS):
         return _SECOND_EDITION_FLAGS[card_id][idx]
 
@@ -992,7 +993,8 @@ def is_event_effective(state, card_id, shaded=False):
 
     # Check card-specific effectiveness via the flag table plus state checks
     try:
-        flags = get_event_flags(card_id, shaded, scenario)
+        flags = get_event_flags(card_id, shaded, scenario,
+                                state.get("card_edition"))
     except KeyError:
         # Unknown card — assume effective to be safe
         return True

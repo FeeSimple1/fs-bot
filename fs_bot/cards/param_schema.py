@@ -6,7 +6,8 @@ Each handler reads its choices from ``state["event_params"]`` — scalar keys
 walks a handler's AST and produces a typed schema:
 
     {key: {"kind": <kind>, "entry_fields": {subkey: <kind>} | None,
-           "values": tuple | None, "region_pool": name | None}}
+           "values": tuple | None, "region_pool": name | None,
+           "entry_values": {kind: tuple}}}
 
 Kinds: region, regions, faction, factions, tribe, count, direction,
 piece_type, piece_state, leader_name, entries, value.
@@ -27,7 +28,7 @@ import textwrap
 from functools import lru_cache
 
 from fs_bot.rules_consts import (
-    ARIOVISTUS_SCENARIOS, FACTIONS, GERMANS, ROMANS, AEDUI,
+    ARIOVISTUS_SCENARIOS, FACTIONS, GALLIC_FACTIONS, GERMANS, ROMANS, AEDUI,
     WARBAND, AUXILIA, LEGION, ALLY, CITADEL, FORT, LEADER,
     HIDDEN, REVEALED, SCOUTED,
     SENATE_UP, SENATE_DOWN,
@@ -245,7 +246,12 @@ _OVERRIDES = {
     "A69": {"piece_type": {"values": (WARBAND, AUXILIA)},
             "ally_faction": {"values": (ROMANS, AEDUI)},
             "piece_faction": {"values": (ROMANS, AEDUI)}},
-    62: {"moves": {"region_pool": "card62_coastal"}},
+    32: {"moves": {"region_pool": "card32_mainland", "entry_values": {
+        "piece_type": (WARBAND, AUXILIA, LEGION, LEADER)}}},
+    62: {"moves": {"region_pool": "card62_coastal", "entry_values": {
+        "piece_type": (WARBAND, AUXILIA, LEGION, LEADER)}}},
+    66: {"faction": {"values": tuple(GALLIC_FACTIONS)},
+         "moves": {"entry_values": {"piece_type": (WARBAND, LEADER)}}},
     26: {"place_faction": {"values": (ROMANS, AEDUI)},
          "place_type": {"values": (ALLY, CITADEL)}},
     # Card 71 Colony: the colony name must be NEW — never an existing
@@ -254,9 +260,10 @@ _OVERRIDES = {
     71: {"colony_tribe_name": {"kind": "omit"}},
     # Card 22 Hostages unshaded: "remove or replace ... Warbands or
     # Auxilia" — entry piece_type takes those two only.
-    22: {"replacements": {"values": (WARBAND, AUXILIA)}},
+    22: {"replacements": {"entry_values": {"piece_type": (WARBAND, AUXILIA)}}},
     # Card 40 Alpine Tribes unshaded: "3 Warbands, 2 Auxilia, or 1 Ally".
-    40: {"placements": {"values": (WARBAND, AUXILIA, ALLY)}},
+    40: {"placements": {"entry_values": {
+        "piece_type": (WARBAND, AUXILIA, ALLY)}}},
     # Cards 10/63 shaded: "Place this card near a Gallic Faction" — the
     # player CHOOSES the receiving Faction (may gift it). Handlers read
     # event_params["faction"]; default (no param) = executing Gallic
@@ -268,19 +275,26 @@ _OVERRIDES = {
 
 def region_pool(state, name):
     """Named region pools for constrained cards."""
+    from fs_bot.map.map_data import get_playable_regions
+    playable = set(get_playable_regions(state["scenario"],
+                                        state.get("capabilities")))
+    if name == "card32_mainland":
+        return sorted(playable - {BRITANNIA})
     if name == "card62_coastal":
         from fs_bot.map.map_data import get_adjacent
-        return sorted({ARVERNI_REGION, PICTONES, BRITANNIA,
-                       *get_adjacent(BRITANNIA, state["scenario"])})
-    from fs_bot.map.map_data import get_playable_regions
-    return sorted(get_playable_regions(state["scenario"],
-                                       state.get("capabilities")))
+        return sorted(playable & {ARVERNI_REGION, PICTONES, BRITANNIA,
+                                  *get_adjacent(BRITANNIA, state["scenario"])})
+    return sorted(playable)
 
 
 def kind_values(state, kind, spec=None):
     """Candidate values for a kind — the shared vocabulary for CLI menus
     and fuzz generation. Returns a list (may contain None for optional
     piece_state)."""
+    # Entry lists reuse their spec for every field. A piece restriction
+    # must not turn region/faction/count menus into lists of piece names.
+    if spec and kind in spec.get("entry_values", {}):
+        return list(spec["entry_values"][kind])
     if spec and spec.get("values"):
         return list(spec["values"])
     if kind in ("region", "regions"):

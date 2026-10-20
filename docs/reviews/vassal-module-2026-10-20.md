@@ -94,6 +94,48 @@ demonstrated change in bot Event execution. Ten new cases in
 `test_vassal_card_cues.py` check metadata, briefing text, body preservation,
 instruction dispositions, trigger separation and base-card isolation.
 
+### Corrected: relocation and human-menu defects found by the stress run
+
+The initial extended mixed-seat run exposed 33 structural findings, all
+following Card 32 in Great Revolt seed 213, with Arverni and Belgae human
+seats. Both hash seeds reproduced the same failure. Forced Marches accepted
+two Arverni Allies moving from Sequani to Aedui, leaving their Tribe records
+behind. Card Reference lines 319–325 permits mobile forces only.
+
+An isolated checkout containing only the Card 32 correction, retaining the
+original menus and all other Event handlers, replayed those exact inputs
+without corruption. Both hash seeds then reported zero hard findings, four
+soft partial notices and digest `0ed0534c71bc9c1a`. The original failure and
+before/after traces are retained in the verification archive.
+
+The correction and a narrow review of the same relocation pattern cover:
+
+- **Forced Marches (32):** only mobile forces move; counts and the complete
+  movement list are validated before mutation. Original pieces are reserved
+  before relocation, and visibility changes are deferred so an arriving
+  Scouted Warband cannot be moved again to hide it in the same Event.
+  Unmoved destination pieces retain their visibility.
+- **War Fleet (62):** only the executing Faction's mobile forces move, between
+  the card's allowed playable Regions; invalid later selections cannot leave
+  earlier moves applied. Source: Card Reference lines 637–643 and A1.3.4.
+- **Migration shaded (66):** the human may select a Gallic beneficiary;
+  only its Warbands/Leader relocate to one initially uncontrolled Region.
+  Earlier arrivals gaining Control do not stop subsequent arrivals. Leader
+  identity is preserved, and the following Ally placement respects tribe
+  restrictions. Sources: Card Reference lines 676–684, §§1.4.2/5.1.
+- **Human parameter menus:** relocation menus restrict piece types and
+  relevant Region choices. Hostages (22) and Alpine Tribes (40) had also
+  applied piece-type restrictions to every field of an entry, offering such
+  values as “Warband” for Regions and counts. Restrictions now apply only
+  to their intended field kind, while handlers remain authoritative.
+
+Ninety further regression cases were added: 33 for Card 32, 47 for Cards
+62/66, and 10 for human/menu schema choices. The initial 19 Card 32 cases
+gave 13 failures against its old implementation; the 47 Card 62/66 cases
+gave 24 failures against their old handlers; all seven initial menu cases
+failed before the menu correction. These are defects discovered during
+verification of this review, not claims that Vassal automates these Events.
+
 ### Unresolved differences
 
 1. **A30 Orgetorix:** its physical face has Belgic laurels, but the transcribed
@@ -147,8 +189,9 @@ diagnostics, or winner/ranking disagreements. All 61 new regression cases
 were also run against unchanged main: 43 failed and 18 passed, confirming
 that the tests detect the original defects and preserve unaffected branches.
 
-The corrected engine passed **2,570 tests**, including **61 new parameterized
-regression cases** (32 Senate, 19 Razed, 10 card cues). The revised 1,000-game
+The final engine passed **2,660 tests**, including **151 new parameterized
+regression cases** (32 Senate, 19 Razed, 10 card cues, 90 relocation/menu).
+The revised 1,000-game
 set and held-out 100 games all completed with zero crashes, illegal-action
 diagnostics, conservation/structural findings, missing rankings or
 winner/ranking disagreements. Every record includes a final-state SHA-256.
@@ -159,7 +202,7 @@ winner/ranking disagreements. Every record includes a final-state SHA-256.
 | --- | --- | --- | --- |
 | Pax Gallica? | Aedui 4, Arverni 14, Belgae 25, Romans 157 | Aedui 6, Arverni 9, Belgae 27, Romans 158 | 34.040 → 33.740 |
 | Reconquest of Gaul | Aedui 8, Arverni 18, Belgae 27, Romans 147 | Aedui 9, Arverni 7, Belgae 33, Romans 151 | 29.705 → 29.140 |
-| The Great Revolt | Aedui 14, Arverni 75, Belgae 60, Romans 51 | Aedui 13, Arverni 71, Belgae 61, Romans 55 | 43.315 → 43.395 |
+| The Great Revolt | Aedui 14, Arverni 75, Belgae 60, Romans 51 | Aedui 13, Arverni 71, Belgae 60, Romans 56 | 43.315 → 43.395 |
 | Ariovistus | Aedui 21, Belgae 27, Germans 46, Romans 106 | Aedui 28, Belgae 20, Germans 34, Romans 118 | 36.870 → 36.785 |
 | The Gallic War | Aedui 17, Arverni 32, Belgae 55, Romans 96 | Aedui 14, Arverni 24, Belgae 47, Romans 115 | 55.155 → 57.460 |
 
@@ -169,39 +212,49 @@ game trajectories. The same 60-game CI baseline was regenerated exactly,
 without changing tolerances: five winners and six game records changed. An
 isolated Senate-only run reproduced every changed baseline record, confirming
 that the baseline drift is explained by the reinforcement correction.
+The subsequent relocation/menu fixes preserve that exact 60-game baseline.
+Across the 1,000-game comparison they change only Great Revolt seed 55's
+final state, including its winner from Belgae to Romans.
+The isolated Card 32-only correction reproduces that final state exactly.
 
 Nineteen fixed representative replays matched winner, card count, final
 ranking, diagnostics and final-state hash exactly. They cover all scenarios,
 short/long games, Interlude, simultaneous qualifiers, final Winter, Optimates
 and changed trajectories. The full case list is in the outcome-summary JSON.
 
-All 32 CI synchronization games passed. Mixed-seat seeds 1–40 (200 games
+Before the relocation/menu follow-up, all 32 CI synchronization games passed.
+Mixed-seat seeds 1–40 (200 games
 per hash seed) produced byte-identical output under hash seeds 0 and 7:
 digest `e9993af920d81523`, 6,440 human turns, 1,746 Event turns, 1,717
 successful Events, zero hard findings, 507 soft partial-action notices.
 Soft telemetry was preserved.
 
-The three code commits passed all four GitHub CI jobs on Python 3.10:
+The initial three code commits passed all four GitHub CI jobs on Python 3.10:
 tests, balance-guardrail, sync-sweep and player-fuzz
 ([run 39351571390](https://github.com/FeeSimple1/fs-bot/actions/runs/39351571390)).
-Local verification used Python 3.12.14. The final 1,000-game batch was run
-before committing the tested working tree; its metadata therefore records
-the starting commit plus a dirty flag. Its source SHA-256
-`f4734c26a8cd44226b5e3074fd380a67a2107d7566355f03ee90893506ce23ec`
-matches the committed engine exactly.
+Local verification used Python 3.12.14. Batch metadata records the checked-out
+commit, dirty flag and an independent digest of all engine/test Python files,
+so results run before a commit still identify the exact tested content.
+The first corrected batch's source SHA-256 was
+`f4734c26a8cd44226b5e3074fd380a67a2107d7566355f03ee90893506ce23ec`;
+the final relocation/menu-corrected source is
+`3c129c2af14ff60add5e7dc568dcd8324fe1480e784d7437e5cd0f1082828aff`.
 
-The scheduled-depth strict census completed 2,500 bot-only games under each
+The first scheduled-depth strict census completed 2,500 bot-only games under each
 of hash seeds 0 and 7 (five scenarios, game seeds 1–500). Both runs reported
 zero incidents of any severity, exited successfully, and produced identical
 logs and detailed JSON. Their common log SHA-256 is
 `91b5fa60266791b0e4e3716edc2dbd1cc211d9db894ddc5ffaf41d159909cc82`.
 Source digests remained unchanged throughout both runs.
 
-The extended mixed-seat soak (seeds 1–300 under both hash seeds, with each
-case internally replayed), informational telemetry, and final integration
+The final extended mixed-seat soak uses the unchanged canonical runner,
+split into the five scenarios: seeds 1–300 under both hash seeds, each case
+internally replayed, each scenario's two outputs compared byte-for-byte.
+Final strict census, mixed-seat, informational telemetry and integration
 results are recorded on [pull request #35](https://github.com/FeeSimple1/fs-bot/pull/35)
-and in the accompanying raw verification archive. The archive retains
-commands, exit statuses, source digests and unfiltered diagnostic totals.
+and in the accompanying raw verification archive. It retains the original
+failure as well as commands, exit statuses, source digests and unfiltered
+diagnostic totals from the corrected runs.
 
 ### Reproduction
 
@@ -216,8 +269,10 @@ python -m fs_bot.tools.balance_smoke --seeds 1-20
 
 For replay selection, retain the original-main run in `results/baseline-1000`
 using the same batch command on the starting commit. Sync/fuzz/soak commands
-match `.github/workflows/ci.yml` and `deep-soak.yml` exactly, with both
-hash-seed outputs compared. No assertion, legality guard or tolerance was
+use the canonical tools and seed ranges from `.github/workflows/ci.yml` and
+`deep-soak.yml`, with both hash-seed outputs compared. The final long fuzz
+run adds `--scenario` to shard the same coverage for parallel execution.
+No assertion, legality guard or tolerance was
 weakened. Reproduction helper operates on existing audited `run_batch.play_one`.
 
 ### Commits and integration
@@ -225,6 +280,8 @@ weakened. Reproduction helper operates on existing audited `run_batch.play_one`.
 - A24/A70 cues: `8cca43322f1625c740d88671228e1cd9dc0c86c7`.
 - Senate corrections and exact baseline: `f44707a1ecb781be02e2040414f477fc5ec6d61e`.
 - Razed scoring: `04ced84db28224e077b4b9a038c8c977a241eecd`.
+- The subsequent relocation/menu corrections and their regressions are included
+  in the same pull request; the final tested head is recorded there.
 - [Pull request #35](https://github.com/FeeSimple1/fs-bot/pull/35).
 - Final report-head CI and merge verification are recorded on the pull request
   and in the accompanying raw verification archive's `integration.json`.

@@ -14,10 +14,8 @@ from fs_bot.engine.agent import consult_agent, AGREEMENT
 
 
 def _revised(state):
-    # Explicit profiles also work in saves made before the edition module.
-    edition = state.get("card_edition", "legacy")
-    return (edition == "second-edition" or
-            edition == "legacy" and state["scenario"] in ARIOVISTUS_SCENARIOS)
+    from fs_bot.cards.edition import uses_second_edition
+    return uses_second_edition(state)
 
 
 def _group(state, faction, origin, params, limit):
@@ -80,8 +78,11 @@ def resolve_joined_ranks(state, faction, march_limit=8, second_always_retreat=Fa
     if region is None:
         return [{"free_action": "joined_ranks", "flag": "card_54", "executed": False,
                  "reason": "no qualifying Region reachable"}]
-    origin = params.get("origin_region")
-    if origin is None and not _attacker_has_force(state, region, faction):
+    do_march = params.get("march", True)
+    if not isinstance(do_march, bool):
+        raise ValueError("Card 54 march must be true or false")
+    origin = params.get("origin_region") if do_march else None
+    if do_march and origin is None and not _attacker_has_force(state, region, faction):
         origin = next((o for o in sorted(playable) if is_adjacent(o, region)
                        and _group_has_pieces(_mobile_march_group(state, faction, o))), None)
     group = route = None

@@ -242,6 +242,7 @@ def card_param_schema(card_id, scenario, card_edition=None):
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
     54: {"region": {"kind": "region"},
+         "march": {"kind": "value", "values": (True, False)},
          "origin_region": {"kind": "region"},
          "march_regions": {"kind": "regions"},
          "march_legions": {"kind": "count"},

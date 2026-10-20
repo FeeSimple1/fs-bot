@@ -165,3 +165,16 @@ def test_invalid_follow_up_is_reported_and_rolls_back_entire_event():
     assert s['spaces'] == before['spaces']
     assert s.get('event_modifiers') == before.get('event_modifiers')
     assert s['rng'].getstate() == before['rng'].getstate()
+
+
+def test_player_can_decline_optional_march_and_still_offer_second_battle(monkeypatch):
+    s = state()
+    place_piece(s, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 2)
+    s['non_player_factions'] = {rc.ARVERNI}
+    s['event_params'].update(march=False, second_faction=rc.BELGAE)
+    s['decision_agent'] = lambda *a: True
+    calls = record_battles(monkeypatch)
+    resolve_joined_ranks(s, rc.ROMANS)
+    assert count_pieces(s, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 2
+    assert count_pieces(s, rc.AEDUI_REGION, rc.ROMANS, rc.AUXILIA) == 0
+    assert [f for f, _ in calls] == [rc.BELGAE]

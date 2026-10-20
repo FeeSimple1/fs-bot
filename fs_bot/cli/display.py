@@ -78,6 +78,8 @@ def _physical_piece_view(state):
     lend or filter forces. Leave current Control markers intact: Enlist really
     does change Control for its accompanying Command (§4.5.1).
     """
+    from fs_bot.cards.morbihan_display import physical_view
+    state = physical_view(state)
     from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
     from fs_bot.battle.combined import COMBINED_KEY
     contexts = (BORROW_KEY, FREE_FORCE_KEY, COMBINED_KEY)
@@ -116,6 +118,15 @@ def _active_force_context(state):
                             physical, region, owner, piece, piece, total))
             lines.append(f"  Admagetobriga in {region}: {combined['faction']} use "
                          f"lent forces: {', '.join(forces) or '(none remaining)'}.")
+    from fs_bot.cards.morbihan_display import PROJECTION_KEY
+    projection = state.get(PROJECTION_KEY)
+    if projection:
+        origins = [f"{region}: {selected_warbands(counts)}"
+                   for region, counts in sorted(projection['sources'].items())
+                   if any(counts.values())]
+        lines.append(f"  Morbihan: {ARVERNI} Warbands fight {ROMANS} in "
+                     f"{projection['region']} as if there; physical origins: "
+                     + '; '.join(origins) + '.')
     if not lines:
         return []
     return ["ACTIVE FORCES (board counts show physical owners)", *lines]

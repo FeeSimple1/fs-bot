@@ -2981,6 +2981,8 @@ def _resolve_a20_arverni_ambush(state):
                  "executed": False, "reason": "no valid Ambush within 1 of Veneti"}]
 
     B, sources, projected, _ = best
+    from fs_bot.cards.morbihan_display import snapshot_sources, projected_battle
+    physical_sources = snapshot_sources(state, theater)
     moved = {}
     for r, n in sources.items():
         if r == B:
@@ -2988,8 +2990,9 @@ def _resolve_a20_arverni_ambush(state):
         move_piece(state, r, B, ARVERNI, WARBAND, count=n, piece_state=HIDDEN)
         moved[r] = n
     try:
-        res = resolve_battle(state, B, attacking_faction=ARVERNI,
-                             defending_faction=ROMANS, is_ambush=True)
+        with projected_battle(state, B, physical_sources):
+            res = resolve_battle(state, B, attacking_faction=ARVERNI,
+                                 defending_faction=ROMANS, is_ambush=True)
     except _EXEC_ERRORS as exc:
         # Restore on failure to keep the board consistent.
         for r, n in moved.items():

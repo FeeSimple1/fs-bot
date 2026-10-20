@@ -241,6 +241,9 @@ def card_param_schema(card_id, scenario, card_edition=None):
 # violation). Offering/generating only these keeps humans out of dead ends
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
+    "A28": {"battle_plan": {"kind": "entries", "entry_fields": {
+        "region": "region", "target_faction": "faction",
+        "allied_factions": "factions"}}},
     54: {"region": {"kind": "region"},
          "march": {"kind": "value", "values": (True, False)},
          "origin_region": {"kind": "region"},

@@ -548,6 +548,8 @@ def _calculate_attack_losses(state, region, attacking_faction,
             component_a = enemy_legions + 1
         else:
             component_a = enemy_legions * 2
+        # A28 adds Warbands to Caesar's force without changing their rate.
+        component_a += enemy_warbands * (1.0 if warband_full_loss else 0.5)
     elif ambiorix_attacking:
         component_a = enemy_warbands * 1
     else:

@@ -94,6 +94,14 @@ def make_cli_reactive(human_factions, stdin, stdout):
                 rf = request.get("requesting_faction")
                 ctx = request.get("context") or {}
                 where = f" in {ctx['region']}" if ctx.get("region") else ""
+                if rt == "admagetobriga_warbands":
+                    return prompt_yes_no(
+                        stdin, stdout,
+                        f"\n{faction}: lend your Warbands and Auxilia{where} "
+                        f"to {rf} for Battle against {ctx.get('defender')}? "
+                        "They fight as that faction's pieces, can take its "
+                        "Counterattack losses, and surviving Hidden pieces "
+                        "will Reveal. Agree?", default=False)
                 if rt == "harassment":
                     # An opt-in, not a favour: your Hidden Warbands may
                     # Harass the moving/foraging group (Sec.3.2.2).

@@ -187,6 +187,10 @@ def get_effective_faction_pieces(state, region, faction):
     from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
     from fs_bot.rules_consts import BELGAE
     raw = state["spaces"].get(region, {}).get("pieces", {}).get(faction, {})
+    from fs_bot.battle.combined import effective_pieces
+    combined = effective_pieces(state, region, faction, raw)
+    if combined is not None:
+        return combined
     free = state.get(FREE_FORCE_KEY)
     if free and faction == GERMANS and region in free["pieces"]:
         return {ps: {WARBAND: free["pieces"][region].get(ps, 0)}
@@ -876,6 +880,10 @@ def _enlist_operation(state, region, faction, piece_type, count, operation,
     Returns True when the operation was handled. The board and Available
     pools always retain each counter's actual colour, even during prompts.
     """
+    from fs_bot.battle.combined import operate
+    if operate(state, region, faction, piece_type, count, operation,
+               owner=owner, **kwargs):
+        return True
     from fs_bot.commands.sa_enlist import (
         BORROW_KEY, FREE_FORCE_KEY, allocate_borrowed_operation,
         record_borrowed_change)

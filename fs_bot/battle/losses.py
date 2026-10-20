@@ -166,6 +166,9 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
             component_a = enemy_legions + 1
         else:
             component_a = enemy_legions * 2
+        # A28 can put borrowed Warbands beside Caesar; his Legion bonus
+        # does not replace their ordinary contribution (§3.2.4, A28).
+        component_a += enemy_warbands * (1.0 if warband_full_loss else 0.5)
     elif ambiorix_attacking:
         # §3.3.4: "one for each Belgic Warband, not just ½"
         component_a = enemy_warbands * 1
@@ -665,7 +668,9 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
     # Filter to only pieces actually present
     result = _filter_to_present(state, region, faction, result)
     from fs_bot.commands.sa_enlist import borrowed_loss_choices
-    return borrowed_loss_choices(state, region, faction, result)
+    result = borrowed_loss_choices(state, region, faction, result)
+    from fs_bot.battle.combined import loss_choices
+    return loss_choices(state, region, faction, result)
 
 
 def _filter_to_present(state, region, faction, piece_list):

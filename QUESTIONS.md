@@ -455,8 +455,9 @@ The mandatory parts of each are implemented; the untaken part is an *optional*
 - **A53** "+1 Special Ability" — the Roman NP's default SA (Build) is taken;
   Build/Scout/Besiege is an NP choice.
 - **A28** "and—with their agreement—any other Factions' Warbands/Auxilia as own"
-  — Arverni (combined-Battle Loss math) implemented; other-Faction agreement is
-  a separate inter-Faction agreement-protocol extension.
+  — resolved for human consent, Warbands/Auxilia-only forces, Counterattack
+  losses, Reveal, and all granted Regions. The A8.6.6 Non-player Aedui/Belgae
+  transcription conflict below is the remaining blocked rule.
 - **A67** "without losing Germanic Control" surplus-gathering, and defender
   **Retreat into another Faction's Control** (§1.5.2 agreement) — both are
   NP-decision refinements; the core effects (March/Battle/flip; Retreat into own
@@ -2635,8 +2636,8 @@ Rulings/judgment calls logged (owner may override):
   a second SA; the bot adds the one SA it selects (documented).
 - 57 unshaded "any free Special Ability there": open-ended SA choice
   still a documented follow-up; March + conditional +4 executed.
-- A28 combined multi-Faction Loss math still a documented follow-up;
-  the no-Retreat free Battle itself executes.
+- A28 combined multi-Faction force and human agreements are now implemented;
+  only the A8.6.6 Non-player agreement source conflict remains blocked.
 
 Everything else in the truly-inert flag list verified VESTIGIAL —
 the effect is implemented via explicit executor args and the flag is
@@ -2678,12 +2679,11 @@ answered in the rules/reference documents. Four were. Dispositions:
    the same 8.2.3 (follow the flowchart, scoped to Britannia); what
    remains is engineering (a standalone SA-only chooser), not a
    ruling.
-5. A28 agreements: ANSWERED in the A8 chapter — A8.8.8 Non-player
-   Romans NEVER agree to use of their Auxilia; A8.6.6 Non-players
-   agree to use of their Warbands only where the executing Faction
-   has pieces that will also be in the Battle. These now spec the
-   combined-Loss follow-up. The multi-Faction Loss math itself is
-   still the open engineering item.
+5. A28 agreements: A8.8.8 unambiguously says Non-player Romans
+   NEVER agree to use of their Auxilia. The A8.6.6 Aedui/Belgae
+   policy remains blocked by the source conflict below. The Event's
+   Warband/Auxilia force, Counterattack losses, Reveal, multiple
+   eligible Regions, and explicit human consent/targets are implemented.
 
 NEW QUESTION FOR THE OWNER (transcription check, like the A38/
 Vergobret case): our Chapter A8 transcription reads "A8.6.6
@@ -2693,8 +2693,11 @@ only where..." — header names the Aedui, body names the Belgae.
 Please check the printed rulebook: is the body a typo for Aedui, does
 the printed A8.6.6 really state the Belgae policy, and is there a
 separate parallel rule for the other Faction? Until answered, the
-planned A28 implementation will apply the conditional-agreement rule
-to BOTH Non-player Aedui and Belgae (Romans never agree per A8.8.8).
+A28 implementation does not infer an agreement policy for either
+Non-player Aedui or Belgae. Such an unanswered request is reported as
+an unresolved agreement; those pieces are not lent without a settled
+rule. Human factions make their own explicit choice. Automatic Arverni
+participation and all other source-clear parts of the Event still resolve.
 
 
 ## [RESOLVED SOURCE CONFLICT] Vassal comparison — A24/A70 NP symbols

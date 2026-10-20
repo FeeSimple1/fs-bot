@@ -1168,6 +1168,9 @@ def _prompt_event_param(state, key, spec, stdin, stdout):
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
+    if card_id == "A28":
+        from fs_bot.cards.admagetobriga import collect_battle_plan
+        return collect_battle_plan(state, faction, stdin, stdout)
     from fs_bot.engine.execute import _derive_event_params
     derived = None
     try:

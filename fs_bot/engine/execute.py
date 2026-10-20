@@ -988,14 +988,6 @@ def _free_battle_region_set(state, flag):
 _FREE_FIRST_BATTLE_FLAGS = (
     "card_A21_first_no_retreat",
     "card_A57_first_no_retreat",
-    # A28 Admagetobriga: a no-Retreat free Battle in/adjacent to Sequani.
-    # The card additionally lets the actor treat Arverni and allied
-    # Warbands/Auxilia as its own for this Battle's Losses ("combined
-    # Battle"). That augmentation requires multi-Faction Loss math in the
-    # battle engine (a Faction cannot literally own another's piece type —
-    # e.g. Germans hold no Auxilia), so it is a documented follow-up; the
-    # core no-Retreat Battle with the actor's own force is executed here.
-    "card_A28_combined_battle",
 )
 
 # First-Battle flag -> the matching "optional second Battle there" flag
@@ -1138,6 +1130,9 @@ def _resolve_free_actions_scoped(state, faction):
     """
     mods = state.get("event_modifiers") or {}
     results = []
+    if mods.get("card_A28_combined_battle"):
+        from fs_bot.cards.admagetobriga import resolve_admagetobriga
+        results.extend(resolve_admagetobriga(state, faction))
     for flag in _FREE_FIRST_BATTLE_FLAGS:
         if not mods.get(flag):
             continue
@@ -1150,8 +1145,6 @@ def _resolve_free_actions_scoped(state, faction):
         from fs_bot.rules_consts import ARVERNI as _ARVERNI
         _details = {"battle_plan": [{"region": region, "target": defender}],
                     "no_retreat": True}
-        if flag == "card_A28_combined_battle":
-            _details["allied_factions"] = (_ARVERNI,)  # treat Arverni as own
         try:
             res = _execute_battle(state, faction, {
                 "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,

@@ -295,7 +295,12 @@ def main(argv=None, stdin=None, stdout=None):
     meta = {}
     if args.load or args.replay:
         # Scenario / seed / seats come from the save file.
-        state, meta, log = serialize.load_game(args.load or args.replay)
+        save_path = args.load or args.replay
+        try:
+            state, meta, log = serialize.load_game(save_path, validate=True)
+        except (serialize.SaveFileError, OSError) as exc:
+            stdout.write(f"Cannot load game from {save_path}: {exc}\n")
+            return 2
         card_edition = state.get("card_edition", "legacy")
         if args.card_edition is not None and args.card_edition != card_edition:
             stdout.write("Cannot change --card-edition when loading or replaying "

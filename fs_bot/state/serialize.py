@@ -29,6 +29,10 @@ import tempfile
 
 SAVE_VERSION = 1
 
+
+class SaveFileError(ValueError):
+    """A save cannot be read safely; callers should show its message."""
+
 _TAGS = ("__set__", "__tuple__", "__dict__", "__rng__")
 
 
@@ -61,6 +65,13 @@ def decode(obj):
     if isinstance(obj, list):
         return [decode(x) for x in obj]
     if isinstance(obj, dict):
+        tags = set(obj).intersection(_TAGS)
+        if tags:
+            if len(obj) != 1:
+                raise ValueError("Tagged value has extra fields")
+            tag = next(iter(tags))
+            if tag != "__rng__" and not isinstance(obj[tag], list):
+                raise ValueError(f"{tag} must contain a list")
         if "__rng__" in obj and len(obj) == 1:
             rng = random.Random()
             rng.setstate(decode(obj["__rng__"]))
@@ -70,7 +81,15 @@ def decode(obj):
         if "__set__" in obj and len(obj) == 1:
             return set(decode(x) for x in obj["__set__"])
         if "__dict__" in obj and len(obj) == 1:
-            return {decode(k): decode(v) for k, v in obj["__dict__"]}
+            result = {}
+            for pair in obj["__dict__"]:
+                if not isinstance(pair, list) or len(pair) != 2:
+                    raise ValueError("__dict__ entries must be key/value pairs")
+                key, value = decode(pair[0]), decode(pair[1])
+                if key in result:
+                    raise ValueError("__dict__ contains a duplicate key")
+                result[key] = value
+            return result
         return {k: decode(v) for k, v in obj.items()}
     return obj
 
@@ -99,17 +118,43 @@ def save_game(state, path, *, meta=None, log=None):
             os.unlink(temporary)
 
 
-def load_game(path):
-    """Read a save file. Returns (state, meta, log).
+def load_game(path, *, validate=False):
+    """Read a version-1 save, returning ``(state, meta, log)``.
 
-    The caller must reinstall ``state['decision_agent']`` if the game has
-    human seats.
+    Envelope and tagged-value shapes are always checked. Frontends must use
+    ``validate=True`` to check the playable board and session metadata too.
+    The default preserves the low-level serializer's partial-state use cases.
+    Unknown save versions are refused, never silently converted. Optional
+    version-1 fields remain optional, so older valid snapshots still load.
+    The caller must reinstall ``state['decision_agent']`` for human seats.
     """
-    with open(path) as fh:
-        payload = json.load(fh)
-    version = payload.get("fsbot_save")
-    if version != SAVE_VERSION:
-        raise ValueError(f"Unsupported save version: {version!r} "
-                         f"(expected {SAVE_VERSION})")
-    return (decode(payload["state"]), payload.get("meta") or {},
-            payload.get("log") or [])
+    try:
+        with open(path, encoding="utf-8") as fh:
+            payload = json.load(fh)
+        if not isinstance(payload, dict):
+            raise ValueError("Save must contain a JSON object")
+        version = payload.get("fsbot_save")
+        if type(version) is not int or version != SAVE_VERSION:
+            raise ValueError(f"Unsupported save version: {version!r} "
+                             f"(expected {SAVE_VERSION})")
+        if "state" not in payload:
+            raise ValueError("Save has no game state")
+        state = decode(payload["state"])
+        if not isinstance(state, dict):
+            raise ValueError("Saved state must be an object")
+        meta = payload.get("meta", {})
+        log = payload.get("log", [])
+        # Historical writers occasionally supplied null optional fields.
+        meta = {} if meta is None else meta
+        log = [] if log is None else log
+        if not isinstance(meta, dict):
+            raise ValueError("Save metadata must be an object")
+        if not isinstance(log, list) or not all(isinstance(e, dict) for e in log):
+            raise ValueError("Decision log must be a list of objects")
+        if validate:
+            from fs_bot.state.save_validation import validate_saved_game
+            validate_saved_game(state, meta, log)
+        return state, meta, log
+    except (ValueError, TypeError, KeyError, IndexError, AttributeError,
+            RecursionError, OverflowError) as exc:
+        raise SaveFileError(f"Invalid save: {exc}") from exc

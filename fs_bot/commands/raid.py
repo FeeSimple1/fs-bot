@@ -20,7 +20,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
-    WARBAND, FORT, CITADEL,
+    WARBAND, FORT, CITADEL, PROVINCIA,
     # Piece states
     HIDDEN, REVEALED,
     # Scenarios
@@ -163,7 +163,9 @@ def validate_raid_steal_target(state, region, faction, target_faction):
         return False, f"{target_faction} has a Citadel in {region}"
 
     target_forts = count_pieces(state, region, target_faction, FORT)
-    if target_forts > 0 and not bypass_fortifications:
+    province_no_fort = (faction == ARVERNI and region == PROVINCIA
+                        and state.get("event_modifiers", {}).get("card_21_no_fort", False))
+    if target_forts > 0 and not (bypass_fortifications or province_no_fort):
         return False, f"{target_faction} has a Fort in {region}"
 
     # Must have Resources to steal

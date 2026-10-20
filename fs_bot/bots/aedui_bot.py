@@ -714,7 +714,7 @@ def node_a_event(state):
     """
     card_id = state.get("current_card_id")
     scenario = state["scenario"]
-    preference = get_dual_use_preference(AEDUI, scenario)
+    preference = get_dual_use_preference(AEDUI, scenario, card_id)
     instr = get_event_instruction(card_id, AEDUI, scenario)
 
     return _make_action(

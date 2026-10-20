@@ -1042,8 +1042,8 @@ def execute_card_21(state, shaded=False):
             if to_place > 0:
                 place_piece(state, PROVINCIA, ARVERNI, WARBAND,
                             count=to_place)
-            # Free Battle as if no Fort — resolved by the orchestration layer
-            # (_resolve_card21_provincia_battle) from the modifier set below.
+            # Arverni choose free Raid or Battle as if no Fort; the
+            # orchestration layer collects their scoped Command choice.
             state.setdefault("event_modifiers", {})
             state["event_modifiers"]["card_21_no_fort"] = True
 
@@ -1316,6 +1316,8 @@ def execute_card_26(state, shaded=False):
         # Remove the tribe's piece (Ally disc or the Gergovia Citadel) and
         # its tribes-dict entry together.
         _unally_tribe(state, tribe)
+        if tribe_info:
+            tribe_info["status"] = None  # "Remove anything" includes a Dispersed marker.
         # Defensive: pair any stray Citadel removal with its tribe entry
         for fac in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS):
             while count_pieces(state, region, fac, CITADEL) > 0:
@@ -1348,7 +1350,8 @@ def execute_card_26(state, shaded=False):
         removals = params.get("ally_removals", [])
         for tribe_name in removals:
             # "in Arverni Region" — only tribes that sit there qualify
-            if _tribe_region(state, tribe_name) == ARVERNI_REGION:
+            if (_tribe_region(state, tribe_name) == ARVERNI_REGION
+                    and _tribe_piece_type(state, tribe_name) == ALLY):
                 _unally_tribe(state, tribe_name)
         placements = params.get("ally_placements", [])
         for tribe_name in placements:
@@ -2749,14 +2752,15 @@ def execute_card_64(state, shaded=False):
     if not shaded:
         # Replace up to 8 Belgic pieces in Atrebates
         replacements = params.get("replacements", [])
-        for r in replacements:
+        for r in replacements[:8]:
             orig_type = r.get("from_type")
             if orig_type == ALLY:
                 tribe = r.get("tribe")
                 tribe_info = state.get("tribes", {}).get(tribe)
                 if (tribe_info
                         and tribe_info.get("allied_faction") == BELGAE
-                        and _tribe_region(state, tribe) == ATREBATES):
+                        and _tribe_region(state, tribe) == ATREBATES
+                        and _tribe_piece_type(state, tribe) == ALLY):
                     _unally_tribe(state, tribe)
                     if faction:
                         _ally_tribe(state, tribe, faction)
@@ -2764,14 +2768,17 @@ def execute_card_64(state, shaded=False):
                 ps = r.get("piece_state", HIDDEN)
                 if count_pieces_by_state(state, ATREBATES, BELGAE, WARBAND, ps) > 0:
                     remove_piece(state, ATREBATES, BELGAE, WARBAND, piece_state=ps)
-                    # Replace with Auxilia
-                    if faction and get_available(state, faction, AUXILIA) > 0:
-                        place_piece(state, ATREBATES, faction, AUXILIA)
+                    # "with yours (Auxilia for Warbands)": only Romans use
+                    # Auxilia; Gallic/German factions place their Warbands.
+                    replacement_type = AUXILIA if faction == ROMANS else WARBAND
+                    if faction and get_available(state, faction, replacement_type) > 0:
+                        place_piece(state, ATREBATES, faction, replacement_type)
     else:
         # Remove 2 Allies from Atrebates
         ally_removals = params.get("ally_removals", [])
         for tribe in ally_removals[:2]:
-            if _tribe_region(state, tribe) == ATREBATES:
+            if (_tribe_region(state, tribe) == ATREBATES
+                    and _tribe_piece_type(state, tribe) == ALLY):
                 _unally_tribe(state, tribe)
         # Belgae place up to 2 Allies
         belgae_placements = params.get("belgae_ally_placements", [])
@@ -3333,8 +3340,7 @@ def execute_card_A20(state, shaded=False):
         has_romans = False
         regions_near = [VENETI] + list(get_adjacent(VENETI, scenario))
         for r in regions_near:
-            if (count_pieces(state, r, ROMANS, LEGION) > 0 or
-                    count_pieces(state, r, ROMANS, AUXILIA) > 0):
+            if count_pieces(state, r, ROMANS) > 0:
                 has_romans = True
                 break
         if has_romans:
@@ -3345,7 +3351,7 @@ def execute_card_A20(state, shaded=False):
                 while count_pieces(state, VENETI, ARVERNI, pt) > 0:
                     remove_piece(state, VENETI, ARVERNI, pt)
                     clear_allied_tribe(state, VENETI, ARVERNI, pt)
-            for ps in (HIDDEN, REVEALED):
+            for ps in (HIDDEN, REVEALED, SCOUTED):
                 c = count_pieces_by_state(state, VENETI, ARVERNI, WARBAND, ps)
                 if c > 0:
                     remove_piece(state, VENETI, ARVERNI, WARBAND,

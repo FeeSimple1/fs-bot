@@ -130,7 +130,7 @@ def upgrade_limited_command(is_limited_by_sop):
 # §8.2.2 / A8.2.2 — Dual Use Event Preference
 # ============================================================================
 
-def get_dual_use_preference(faction, scenario):
+def get_dual_use_preference(faction, scenario, card_id=None):
     """Which Event text a NP faction uses for Dual Use cards.
 
     Per §8.2.2 / A8.2.2: Romans/Aedui → unshaded; Belgae/Arverni → shaded.
@@ -143,6 +143,12 @@ def get_dual_use_preference(faction, scenario):
     Returns:
         EVENT_UNSHADED or EVENT_SHADED.
     """
+    # Base Aedui specific instructions override the generic §8.2.2 side.
+    # Read the supplied instruction so grouped card names stay consistent.
+    if faction == AEDUI and scenario in BASE_SCENARIOS and card_id is not None:
+        instruction = get_event_instruction(card_id, faction, scenario)
+        if instruction and (instruction.instruction or "").startswith("Use shaded text"):
+            return EVENT_SHADED
     if faction in (ROMANS, AEDUI):
         return EVENT_UNSHADED
     if faction in (BELGAE, ARVERNI):
@@ -284,6 +290,12 @@ def should_decline_event(state, card_id, faction):
     if is_no_faction_event(card_id, faction, scenario):
         return True
 
+    # The same base Aedui shaded-text instruction makes Remi Influence
+    # conditional on Remi already being their Ally.
+    if (card_id == 68 and faction == AEDUI and scenario in BASE_SCENARIOS
+            and state["tribes"].get(TRIBE_REMI, {}).get("allied_faction") != AEDUI):
+        return True
+
     # War Fleet grants no Special Ability. Romans/Aedui have no Home Rally
     # in its theatre, so with no own pieces there neither movement nor the
     # follow-on Command can have an effect (§8.1.1; Card 62).
@@ -315,7 +327,10 @@ def should_decline_event(state, card_id, faction):
 
     # Ineffective Event — §8.1.1 (no effect, or merely Revealing own pieces).
     from fs_bot.cards.event_eval import is_event_effective
-    shaded = faction in (ARVERNI, BELGAE, GERMANS)
+    shaded = get_dual_use_preference(faction, scenario, card_id) == EVENT_SHADED
+    from fs_bot.cards.event_conditions import np_event_available
+    if np_event_available(state, card_id, faction, shaded) is False:
+        return True
     if not is_event_effective(state, card_id, shaded):
         return True
 
@@ -576,19 +591,18 @@ def get_own_flippable_loss_order():
 def is_ally_in_city_or_remi(tribe_name, scenario):
     """Check if a tribe is in a City or is the Remi tribe.
 
-    Per §8.4.1: "Allied Tribes in Cities first" (base game).
-    Per A8.4.1: "Cities or Remi first" (Ariovistus).
+    Both §8.4.1 and A8.4.1 prioritize Allies in Cities or at Remi.
 
     Args:
         tribe_name: Tribe constant.
         scenario: Scenario constant.
 
     Returns:
-        True if the tribe is in a City, or (in Ariovistus) is Remi.
+        True if the tribe is in a City or is Remi.
     """
     if is_city_tribe(tribe_name):
         return True
-    if scenario in ARIOVISTUS_SCENARIOS and tribe_name == TRIBE_REMI:
+    if tribe_name == TRIBE_REMI:
         return True
     return False
 

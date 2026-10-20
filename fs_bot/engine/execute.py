@@ -1181,7 +1181,9 @@ def _resolve_free_actions_scoped(state, faction):
         region, defender = _choose_free_battle(state, faction, allowed)
         if region is None:
             results.append({"free_action": "battle", "flag": flag,
-                            "executed": False, "reason": "no valid target"})
+                            "executed": False, "reason": "no valid target",
+                            **({"declined_no_effect": True}
+                               if flag == "card_A21_first_no_retreat" else {})})
             continue
         from fs_bot.rules_consts import ARVERNI as _ARVERNI
         _details = {"battle_plan": [{"region": region, "target": defender}],
@@ -1875,16 +1877,27 @@ def _resolve_card62_war_fleet(state, faction):
                                              limited=True, _planner=planner)}]
 
 
+def _card25_battle_target(state, region, faction):
+    """Aquitani: Roman NP instructions target Arverni, then Belgae only."""
+    from fs_bot.rules_consts import ROMANS, ARVERNI, BELGAE
+    if faction == ROMANS and faction in state.get("non_player_factions", ()):
+        return next((enemy for enemy in (ARVERNI, BELGAE)
+                     if count_pieces(state, region, enemy)), None)
+    return _rank_free_battle_defender(state, region, faction)
+
+
 def _resolve_card25_battle(state, faction, region, extra):
     """Card 25 Aquitani (unshaded): free Battle in Pictones/Arverni with
     ``extra`` extra Losses and 1 Ally (not Citadel) removed first."""
     from fs_bot.battle.resolve import resolve_battle
     if region is None:
         return [{"free_action": "battle", "flag": "card_25", "executed": False,
+                 "declined_no_effect": True,
                  "reason": "no Pictones/Arverni Battle target"}]
-    defender = _rank_free_battle_defender(state, region, faction)
+    defender = _card25_battle_target(state, region, faction)
     if defender is None:
         return [{"free_action": "battle", "flag": "card_25", "executed": False,
+                 "declined_no_effect": True,
                  "reason": "no enemy in Region"}]
     rd, rr = _decide_defender_retreat(state, region, faction, defender, False)
     try:
@@ -1898,16 +1911,18 @@ def _resolve_card25_battle(state, faction, region, extra):
              "defender": defender, "result": res}]
 
 
-def _resolve_card36_battle(state, faction):
-    """Card 36 Morasses (unshaded): free Battle against a Gallic Faction in 1
-    Region — No Retreat, No Counterattack, no Citadel effect, Attackers
-    Hidden."""
+def _card36_battle_target(state, faction):
+    """Morasses scope, including the base Aedui player-only instruction."""
     from fs_bot.rules_consts import (ARVERNI, AEDUI, BELGAE, WARBAND, LEGION,
                                      AUXILIA)
     from fs_bot.board.pieces import count_pieces
     from fs_bot.map.map_data import get_playable_regions
-    from fs_bot.battle.resolve import resolve_battle
-    gallic = {ARVERNI, AEDUI, BELGAE}
+    from fs_bot.rules_consts import BASE_SCENARIOS
+    gallic = (ARVERNI, AEDUI, BELGAE)
+    if (faction == AEDUI and state["scenario"] in BASE_SCENARIOS
+            and faction in state.get("non_player_factions", ())):
+        gallic = tuple(f for f in (ARVERNI, BELGAE)
+                       if f not in state.get("non_player_factions", ()))
     best = None  # (region, defender, enemy_mobile)
     for R in get_playable_regions(state["scenario"], state.get("capabilities")):
         if not _attacker_has_force(state, R, faction):
@@ -1920,8 +1935,16 @@ def _resolve_card36_battle(state, faction):
                    + count_pieces(state, R, d, LEGION))
             if best is None or mob > best[2]:
                 best = (R, d, mob)
+    return best
+
+
+def _resolve_card36_battle(state, faction):
+    """Card 36: Battle a Gallic Faction, without Retreat/Counterattack/Citadel."""
+    from fs_bot.battle.resolve import resolve_battle
+    best = _card36_battle_target(state, faction)
     if best is None:
         return [{"free_action": "battle", "flag": "card_36", "executed": False,
+                 "declined_no_effect": True,
                  "reason": "no Gallic Faction to Battle"}]
     R, d, _m = best
     try:
@@ -1953,28 +1976,22 @@ def _resolve_card66_german_rally_march(state, faction):
 
 
 def _resolve_card21_provincia_battle(state):
-    """Card 21 The Province (shaded): after the Arverni place Warbands in
-    Provincia, they free Battle there as if no Fort (the Provincia Fort gives
-    no protection)."""
+    """Card 21 shaded: the Arverni choose free Raid OR Battle in Provincia.
+
+    Both Commands use their normal plan/decision interface. The trusted Event
+    modifier supplies the card's Fort exception only for this scoped grant.
+    """
     from fs_bot.rules_consts import ARVERNI, PROVINCIA
-    from fs_bot.battle.resolve import resolve_battle
     if not _attacker_has_force(state, PROVINCIA, ARVERNI):
-        return [{"free_action": "battle", "flag": "card_21", "executed": False,
+        return [{"free_action": "free_command", "flag": "card_21",
+                 "faction": ARVERNI, "executed": False,
+                 "declined_no_effect": True,
                  "reason": "no Arverni force in Provincia"}]
-    defender = _rank_free_battle_defender(state, PROVINCIA, ARVERNI)
-    if defender is None:
-        return [{"free_action": "battle", "flag": "card_21", "executed": False,
-                 "reason": "no enemy in Provincia"}]
-    rd, rr = _decide_defender_retreat(state, PROVINCIA, ARVERNI, defender, False)
-    try:
-        res = resolve_battle(state, PROVINCIA, ARVERNI, defender,
-                             ignore_fort=True,
-                             retreat_declaration=rd, retreat_region=rr)
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "battle", "flag": "card_21",
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "battle", "flag": "card_21", "region": PROVINCIA,
-             "defender": defender, "result": res}]
+    result = _resolve_free_command(
+        state, ARVERNI, allowed_regions={PROVINCIA},
+        exclude_commands={_CMD_RALLY, _CMD_MARCH}, with_sa=False)
+    return [{"free_action": "free_command", "flag": "card_21",
+             "faction": ARVERNI, "region": PROVINCIA, "result": result}]
 
 
 def _resolve_card45_battle(state, faction):
@@ -1996,6 +2013,7 @@ def _resolve_card45_battle(state, faction):
             best = (R, rp)
     if best is None:
         return [{"free_action": "battle", "flag": "card_45", "executed": False,
+                 "declined_no_effect": True,
                  "reason": "no Roman target with a combined force"}]
     R = best[0]
     is_ambush, _ = validate_ambush_region(
@@ -2027,6 +2045,11 @@ def _resolve_card44_scout(state):
     result = scout_cohort(state, mods.get("card_44_placed", []),
                           mods.get("card_44_scout_moves", []),
                           mods.get("card_44_scout_reveals", []))
+    if not result["executed"] and not result.get("errors"):
+        # Replacement remains effective. Scout permits no movement and the
+        # new cohort may have no eligible reveal (§5.1.3; Card 44 Tips).
+        result.update(declined_no_effect=True,
+                      reason="replacement cohort has no Scout movement or eligible reveal")
     return [{"free_action": "scout", "flag": "card_44", "result": result}]
 
 
@@ -2042,11 +2065,11 @@ def _resolve_card44_raid(state, faction):
 def _resolve_card26_arverni_rally(state):
     """Card 26 Gobannitio (shaded): the Arverni free Rally within 1 Region of
     Vercingetorix."""
-    from fs_bot.rules_consts import ARVERNI
-    from fs_bot.board.pieces import find_leader
+    from fs_bot.rules_consts import ARVERNI, VERCINGETORIX
+    from fs_bot.board.pieces import find_leader, get_leader_in_region
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     leader = find_leader(state, ARVERNI)
-    if leader is None:
+    if leader is None or get_leader_in_region(state, leader, ARVERNI) != VERCINGETORIX:
         return [{"free_action": "free_rally", "flag": "card_26",
                  "executed": False, "declined_no_effect": True,
                  "reason": "no Vercingetorix location for the follow-on Rally"}]
@@ -2239,16 +2262,18 @@ def _resolve_card17_march_ambush(state, march_limit):
     march_limit German groups (shared helper), then Ambush in the single best
     Region (Hidden-majority, Loss-causing; most enemy pieces — per Roman
     Battle priority 8.8.1's spirit)."""
-    from fs_bot.rules_consts import GERMANS
+    from fs_bot.rules_consts import GERMANS, ROMANS
     from fs_bot.board.pieces import count_pieces
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_playable_regions
     from fs_bot.battle.resolve import resolve_battle
-    marched = _german_setup_marches(state, march_limit)
+    roman_guided = ROMANS in state.get("non_player_factions", ())
+    marched = (_roman_german_setup_marches(state, march_limit) if roman_guided
+               else _german_setup_marches(state, march_limit))
     # Single best Ambush Region.
     best, best_tgt, best_score = None, None, None
     for region in get_playable_regions(state["scenario"], state.get("capabilities")):
-        tgt = _german_ambush_target(state, region)
+        tgt = _german_ambush_target(state, region, roman_guided=roman_guided)
         if tgt is None:
             continue
         score = count_pieces(state, region, tgt)
@@ -2257,7 +2282,8 @@ def _resolve_card17_march_ambush(state, march_limit):
     if best is None:
         return [{"free_action": "german_march_ambush",
                  "flag": "card_17_german_ambush", "marches": marched,
-                 "executed": False, "reason": "no legal German Ambush"}]
+                 "executed": bool(marched), "declined_no_effect": not bool(marched),
+                 "reason": "no legal German Ambush"}]
     try:
         res = resolve_battle(state, best, GERMANS, best_tgt, is_ambush=True)
     except _EXEC_ERRORS as exc:
@@ -2319,9 +2345,63 @@ def _faction_ambush_target(state, region, attacker, only_faction=None):
     return best
 
 
-def _german_ambush_target(state, region):
+def _german_ambush_target(state, region, *, roman_guided=False):
     from fs_bot.rules_consts import GERMANS
+    if roman_guided:
+        from fs_bot.bots.roman_bot import _rank_battle_targets
+        for target in _rank_battle_targets(state, region, state["scenario"]):
+            if _faction_ambush_target(state, region, GERMANS, target):
+                return target
+        return None
     return _faction_ambush_target(state, region, GERMANS)
+
+
+def _roman_german_setup_marches(state, march_limit):
+    """Card 17 Roman instruction: March from Romans to no Romans.
+
+    Normal March hides Revealed Warbands. Groups are previewed together:
+    several individually insufficient groups may jointly enable the Ambush.
+    """
+    from copy import deepcopy
+    from itertools import combinations
+    from fs_bot.rules_consts import GERMANS, ROMANS, WARBAND, LEADER
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.map.map_data import get_playable_regions_for_state, get_adjacent_for_state
+    from fs_bot.bots.bot_common import random_select
+    marched, used = [], set()
+    while len(marched) < march_limit:
+        candidates = []
+        for destination in sorted(get_playable_regions_for_state(state, GERMANS)):
+            if count_pieces(state, destination, ROMANS):
+                continue
+            sources = [source for source in sorted(get_adjacent_for_state(state, destination, GERMANS))
+                       if source not in used and count_pieces(state, source, ROMANS)
+                       and count_pieces(state, source, GERMANS, WARBAND)]
+            group_count = min(march_limit - len(marched), len(sources))
+            if not group_count:
+                continue
+            for group_sources in combinations(sources, group_count):
+                trial = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+                groups = [(source, count_pieces(state, source, GERMANS, WARBAND))
+                          for source in group_sources]
+                for source, number in groups:
+                    _march_with_harassment(trial, GERMANS, source, [destination],
+                                           {WARBAND: number, LEADER: False})
+                target = _german_ambush_target(trial, destination, roman_guided=True)
+                if target:
+                    candidates.append((count_pieces(trial, destination, target),
+                                       destination, groups))
+        if not candidates:
+            break
+        score = max(candidate[0] for candidate in candidates)
+        _, destination, groups = random_select(
+            state, [candidate for candidate in candidates if candidate[0] == score])
+        for source, number in groups:
+            _march_with_harassment(state, GERMANS, source, [destination],
+                                   {WARBAND: number, LEADER: False})
+            used.add(source)
+            marched.append({"source": source, "dest": destination, "warbands": number})
+    return marched
 
 
 def _faction_ambush_sweep(state, attacker, only_faction=None):
@@ -2468,26 +2548,20 @@ def _resolve_card58_german_ambush(state):
     Ambush Romans there, 1 Loss per 2 Warbands." ("Sugambri strike unprepared
     fort" — the Fort gives no protection: ignore_fort.)
 
-    Gather German Hidden Warbands from a Roman-Fort Region and its neighbours
+    Gather German Warbands from a Roman-Fort Region and its neighbours
     into that Region, then resolve a German Ambush of the Romans there with
     ignore_fort (no halving, full auto-remove). Warband Losses are the normal
     1/2 each = 1 Loss per 2 Warbands. Chooses the Fort Region where the most
-    German Warbands can be gathered and the Ambush is legal (German Hidden
-    Warbands outnumber Roman Hidden pieces) and causes a Loss.
+    German Warbands can be gathered. The Card Tips expressly waive Hidden
+    superiority; Revealed/Scouted Warbands may March and participate too.
     """
-    from fs_bot.rules_consts import (GERMANS, ROMANS, WARBAND, AUXILIA, FORT,
-                                     HIDDEN)
-    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
-                                     move_piece)
+    from fs_bot.rules_consts import GERMANS, ROMANS, WARBAND, FORT, LEADER
+    from fs_bot.board.pieces import count_pieces
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     from fs_bot.battle.resolve import resolve_battle
     scen = state["scenario"]
     playable = set(get_playable_regions(scen, state.get("capabilities")))
-
-    def roman_hidden(r):
-        return (count_pieces_by_state(state, r, ROMANS, AUXILIA, HIDDEN)
-                + count_pieces_by_state(state, r, ROMANS, WARBAND, HIDDEN))
 
     best = None  # (gatherable, R, sources)
     for R in sorted(playable):
@@ -2495,21 +2569,19 @@ def _resolve_card58_german_ambush(state):
             continue
         if count_pieces(state, R, ROMANS) <= 0:
             continue
-        sources = {r: count_pieces_by_state(state, r, GERMANS, WARBAND, HIDDEN)
+        sources = {r: count_pieces(state, r, GERMANS, WARBAND)
                    for r in [R] + [a for a in get_adjacent(R, scen)
                                    if a in playable]}
         sources = {r: n for r, n in sources.items() if n > 0}
         total = sum(sources.values())
-        if total <= 0 or total // 2 < 1:
-            continue
-        if total <= roman_hidden(R):      # Ambush needs Hidden majority
+        if total <= 0:
             continue
         if best is None or total > best[0]:
             best = (total, R, sources)
 
     if best is None:
         return [{"free_action": "ambush", "flag": "card_58_german_march_battle",
-                 "executed": False,
+                 "executed": False, "declined_no_effect": True,
                  "reason": "no Fort Region where Germans can gather an Ambush"}]
 
     total, R, sources = best
@@ -2517,7 +2589,8 @@ def _resolve_card58_german_ambush(state):
     for src, n in sources.items():
         if src == R:
             continue
-        move_piece(state, src, R, GERMANS, WARBAND, count=n, piece_state=HIDDEN)
+        _march_with_harassment(state, GERMANS, src, [R],
+                               {WARBAND: n, LEADER: False})
         marched += n
     refresh_all_control(state)
     try:
@@ -2839,6 +2912,7 @@ def _resolve_double_aux_battle_card(state, region, flag):
     res = _free_double_aux_battle(state, region, auxilia_only=(flag == "card_11a"))
     if res is None:
         return [{"free_action": "battle", "flag": flag, "executed": False,
+                 "declined_no_effect": True,
                  "reason": "no Battle target in placement Region"}]
     return [{"free_action": "battle", "flag": flag, "region": region,
              "result": res}]
@@ -2897,7 +2971,8 @@ def _resolve_a20_free_seize(state):
     from fs_bot.board.control import is_controlled_by
     if count_pieces(state, VENETI, ROMANS) <= 0:
         return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
-                 "executed": False, "reason": "Romans have no pieces in Veneti"}]
+                 "executed": False, "declined_no_effect": True,
+                 "reason": "Romans have no pieces in Veneti"}]
     # Card A20: "free Seize there as if Roman Control" — Disperse Veneti's
     # Subdued Tribes regardless of actual Control.
     try:
@@ -2917,13 +2992,13 @@ def _resolve_a20_arverni_ambush(state):
     1 Region Ambush Romans in a Region within 1 as if there."
 
     The Arverni are game-run in Ariovistus (A6.2), so this is a mechanical
-    Battle-with-Ambush per A6.2.4. The card's "as if there" lets Hidden
-    Arverni Warbands within one Region of the Battle Region join the Ambush as
+    Battle-with-Ambush per A6.2.4. The card's "as if there" lets all
+    Arverni Warbands within one Region of Veneti join the Ambush as
     if present: we gather those projecting Warbands into the Battle Region,
     resolve the standard Ambush (no Retreat, auto-remove; Step 5 Reveal flips
     surviving Hidden Warbands), then return the projected Warbands — now
-    Revealed — to their home Regions. Ambush has no Counterattack, so the
-    Arverni take no Losses and the projected Warbands are conserved.
+    Revealed — to their home Regions. Surviving projected Warbands return
+    after any Caesar Counterattack.
 
     A6.2.4 requires Hidden Arverni Warbands to outnumber the Defender's Hidden
     pieces and the Ambush to cause an enemy Loss. The Battle Region is chosen
@@ -2931,16 +3006,18 @@ def _resolve_a20_arverni_ambush(state):
     """
     from fs_bot.rules_consts import (VENETI, ARVERNI, ROMANS, WARBAND, AUXILIA,
                                      LEGION, FORT, CITADEL, HIDDEN, REVEALED,
-                                     ALLY)
+                                     SCOUTED, ALLY, TRIBE_VENETI)
     from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
                                      move_piece, get_leader_in_region)
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_adjacent
     from fs_bot.battle.resolve import resolve_battle
 
-    if count_pieces(state, VENETI, ARVERNI, ALLY) <= 0:
+    if (state.get("tribes", {}).get(TRIBE_VENETI, {}).get("allied_faction") != ARVERNI
+            or count_pieces(state, VENETI, ARVERNI, ALLY) <= 0):
         return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
-                 "executed": False, "reason": "no Arverni Ally in Veneti"}]
+                 "executed": False, "declined_no_effect": True,
+                 "reason": "no Arverni Ally in Veneti"}]
     scen = state["scenario"]
     theater = [VENETI] + list(get_adjacent(VENETI, scen))
 
@@ -2952,14 +3029,15 @@ def _resolve_a20_arverni_ambush(state):
     for B in theater:
         if count_pieces(state, B, ROMANS) <= 0:
             continue
-        # Projecting Hidden Arverni Warbands: in B, plus adjacent Regions that
-        # are themselves within 1 of Veneti ("within 1 Region ... as if there").
-        proj_regions = [B] + [r for r in get_adjacent(B, scen) if r in theater]
-        sources = {r: count_pieces_by_state(state, r, ARVERNI, WARBAND, HIDDEN)
-                   for r in proj_regions}
-        sources = {r: n for r, n in sources.items() if n > 0}
+        # Both "within 1" clauses are centred on Veneti. A source and
+        # destination need not be adjacent to each other. All Warbands
+        # contribute Losses; only Hidden ones establish Ambush superiority.
+        sources = {(r, ps): count_pieces_by_state(state, r, ARVERNI, WARBAND, ps)
+                   for r in theater for ps in (HIDDEN, REVEALED, SCOUTED)}
+        sources = {key: n for key, n in sources.items() if n > 0}
         projected = sum(sources.values())
-        if projected <= 0 or projected <= roman_hidden(B):
+        hidden = sum(n for (r, ps), n in sources.items() if ps == HIDDEN)
+        if projected <= 0 or hidden <= roman_hidden(B):
             continue
         # Arverni cause floor(Warbands * 1/2); halved again vs Fort/Citadel.
         raw = projected * 0.5
@@ -2967,9 +3045,9 @@ def _resolve_a20_arverni_ambush(state):
                 or count_pieces(state, B, ROMANS, CITADEL) > 0):
             raw *= 0.5
         predicted = int(raw)
-        removable = (count_pieces(state, B, ROMANS, AUXILIA)
-                     + count_pieces(state, B, ROMANS, LEGION)
-                     + (1 if get_leader_in_region(state, B, ROMANS) else 0))
+        # "Romans" includes Allies and Forts; a mobile escort is not a
+        # prerequisite for the granted Battle.
+        removable = count_pieces(state, B, ROMANS)
         damage = min(predicted, removable)
         if damage <= 0:
             continue
@@ -2978,34 +3056,35 @@ def _resolve_a20_arverni_ambush(state):
 
     if best is None:
         return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
-                 "executed": False, "reason": "no valid Ambush within 1 of Veneti"}]
+                 "executed": False, "declined_no_effect": True,
+                 "reason": "no valid Ambush within 1 of Veneti"}]
 
     B, sources, projected, _ = best
     from fs_bot.cards.morbihan_display import snapshot_sources, projected_battle
     physical_sources = snapshot_sources(state, theater)
     moved = {}
-    for r, n in sources.items():
+    for (r, ps), n in sources.items():
         if r == B:
             continue
-        move_piece(state, r, B, ARVERNI, WARBAND, count=n, piece_state=HIDDEN)
-        moved[r] = n
+        move_piece(state, r, B, ARVERNI, WARBAND, count=n, piece_state=ps)
+        moved[r, ps] = n
     try:
         with projected_battle(state, B, physical_sources):
             res = resolve_battle(state, B, attacking_faction=ARVERNI,
                                  defending_faction=ROMANS, is_ambush=True)
     except _EXEC_ERRORS as exc:
         # Restore on failure to keep the board consistent.
-        for r, n in moved.items():
-            avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, HIDDEN)
+        for (r, ps), n in moved.items():
+            avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, ps)
             take = min(n, avail)
             if take > 0:
                 move_piece(state, B, r, ARVERNI, WARBAND, count=take,
-                           piece_state=HIDDEN)
+                           piece_state=ps)
         refresh_all_control(state)
         return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
                  "executed": False, "reason": repr(exc)}]
     # Return projected Warbands (now Revealed by Step 5) to their Regions.
-    for r, n in moved.items():
+    for (r, ps), n in moved.items():
         avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, REVEALED)
         take = min(n, avail)
         if take > 0:
@@ -3118,14 +3197,14 @@ def _resolve_a19_march_romans(state, faction):
     and Germans will outnumber Romans." So a Germanic actor relocates all
     Roman mobile pieces (Caesar, Legions, Auxilia) from a source Region into
     an adjacent destination that (a) contains Germans, (b) has no Fort, and
-    (c) where, after the move, German mobile force outnumbers the Roman mobile
-    force — trapping the Romans for a German attack. Among valid moves, the
+    (c) where, after the move, German pieces outnumber the Roman pieces —
+    trapping the Romans for a German attack. Among valid moves, the
     one trapping the most Roman pieces (then the largest German advantage) is
     chosen. Only the Germanic path is specified; other Factions no-op.
     """
     from fs_bot.rules_consts import (GERMANS, ROMANS, CAESAR, LEADER, LEGION,
                                      AUXILIA, WARBAND, FORT, HIDDEN, REVEALED,
-                                     SCOUTED, ARIOVISTUS_LEADER)
+                                     SCOUTED)
     from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
                                      get_leader_in_region, move_piece)
     from fs_bot.board.control import refresh_all_control
@@ -3138,13 +3217,7 @@ def _resolve_a19_march_romans(state, faction):
     def roman_mobile(r):
         m = (count_pieces(state, r, ROMANS, LEGION)
              + count_pieces(state, r, ROMANS, AUXILIA))
-        if get_leader_in_region(state, r, ROMANS) == CAESAR:
-            m += 1
-        return m
-
-    def german_mobile(r):
-        m = count_pieces(state, r, GERMANS, WARBAND)
-        if get_leader_in_region(state, r, GERMANS) == ARIOVISTUS_LEADER:
+        if get_leader_in_region(state, r, ROMANS) is not None:
             m += 1
         return m
 
@@ -3158,8 +3231,8 @@ def _resolve_a19_march_romans(state, faction):
                 continue
             if count_pieces(state, D, ROMANS, FORT) > 0:     # "no Fort"
                 continue
-            romans_after = roman_mobile(D) + rs
-            adv = german_mobile(D) - romans_after
+            romans_after = count_pieces(state, D, ROMANS) + rs
+            adv = count_pieces(state, D, GERMANS) - romans_after
             if adv <= 0:                                     # "outnumber"
                 continue
             key = (rs, adv)
@@ -3169,14 +3242,17 @@ def _resolve_a19_march_romans(state, faction):
     if best is None:
         return [{"free_action": "march_romans", "flag":
                  "card_A19_march_romans", "executed": False,
+                 "declined_no_effect": True,
                  "reason": "no move where Germans outnumber Romans (no Fort)"}]
 
     S, D, trapped, adv = best
     # Move all Roman mobile pieces S -> D (Caesar, then Legions, then Auxilia).
     moved = {"caesar": False, "legions": 0, "auxilia": 0}
-    if get_leader_in_region(state, S, ROMANS) == CAESAR:
+    leader = get_leader_in_region(state, S, ROMANS)
+    if leader is not None:
         move_piece(state, S, D, ROMANS, LEADER)
-        moved["caesar"] = True
+        moved["caesar"] = leader == CAESAR
+        moved["leader"] = leader
     legs = count_pieces(state, S, ROMANS, LEGION)
     if legs:
         move_piece(state, S, D, ROMANS, LEGION, count=legs)
@@ -3789,7 +3865,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
         # Card 27 shaded (Massed Gallic Archers): at the start of Battles
         # with 6+ Arverni Warbands, the other side first absorbs 1 extra
         # Loss (attacking or defending — card Tip).
-        from fs_bot.rules_consts import (ARVERNI as _ARV_B,
+        from fs_bot.rules_consts import (ARVERNI as _ARV_B, PROVINCIA,
                                          WARBAND as _WB_B)
         if _ica_b(state, 27, _ES_B):
             from fs_bot.battle.losses import resolve_losses as _rl27
@@ -3838,6 +3914,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 allied_factions=allied_factions,
                 warband_full_loss=warband_full_loss,
                 full_loss_warbands=_full_loss_warbands,
+                ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
+                             and faction == _ARV_B and region == PROVINCIA),
             )
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "defender": defender,
@@ -5890,8 +5968,8 @@ def _derive_card_11(state, faction, shaded):
     Roman NP instruction (Numidians): "Place the full number of Auxilia; if not
     able, treat as 'No Romans'." So choose a Region within 1 of the Roman
     Leader where the Romans can place all 3 Auxilia (>=3 Available) and an
-    enemy is present to Battle, ranked by Roman Battle priority (8.8.1). If
-    none qualifies, return None (no placement, no Battle).
+    enemy is present to Battle, ranked by Roman Battle priority (8.8.1).
+    If no enemy is present, the placement still occurs (§5.1.3).
 
     Returns both the base ("target_region") and Ariovistus ("region") param
     keys so whichever card text is in play reads its own key.
@@ -5923,7 +6001,13 @@ def _derive_card_11(state, faction, shaded):
         if best is None or em > best[1]:
             best = (r, em)
     if best is None:
-        return None
+        # The placement is not conditional on a follow-up Battle. All legal
+        # Regions place the same three pieces; resolve that tie per §8.3.4.
+        if not within1:
+            return None
+        from fs_bot.bots.bot_common import random_select
+        target = random_select(state, sorted(within1))
+        return {"target_region": target, "region": target}
     return {"target_region": best[0], "region": best[0]}
 
 
@@ -6026,21 +6110,27 @@ def _derive_card_70(state, faction, shaded):
 
 def _derive_card_25(state, faction, shaded):
     """Card 25 Aquitani (unshaded): free Battle in Pictones or the Arverni
-    Region. Choose the one where the acting Faction has an attacking force and
-    an enemy is present (most enemy pieces). Shaded is a Capability."""
+    Region. The Card Tips explicitly allow no attacking force: the three
+    extra Losses add to zero. Shaded is a Capability."""
     if shaded:
         return None
-    from fs_bot.rules_consts import PICTONES, ARVERNI_REGION, FACTIONS
+    from fs_bot.rules_consts import PICTONES, ARVERNI_REGION, ROMANS, ARVERNI
     from fs_bot.board.pieces import count_pieces
     from fs_bot.map.map_data import get_playable_regions
     playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
     best = None
     for R in (PICTONES, ARVERNI_REGION):
-        if R not in playable or not _attacker_has_force(state, R, faction):
+        if R not in playable:
             continue
-        enemy = sum(count_pieces(state, R, f) for f in FACTIONS if f != faction)
-        if enemy > 0 and (best is None or enemy > best[1]):
-            best = (R, enemy)
+        target = _card25_battle_target(state, R, faction)
+        if target is None:
+            continue
+        priority = int(faction == ROMANS
+                       and faction in state.get("non_player_factions", ())
+                       and target == ARVERNI)
+        score = priority, count_pieces(state, R, target)
+        if best is None or score > best[1]:
+            best = (R, score)
     return {"battle_region": best[0]} if best else None
 
 
@@ -6242,7 +6332,12 @@ def _derive_card_32(state, faction=None, shaded=False):
     return {"moves": out} if out else {}
 
 
+from fs_bot.cards.ally_events import derive_gobannitio, derive_correus
+
+
 _EVENT_PARAM_DERIVERS = {
+    26: derive_gobannitio,
+    64: derive_correus,
     "O38": _derive_o38_region,
     1: _derive_senate_direction,
     2: _derive_card_2,

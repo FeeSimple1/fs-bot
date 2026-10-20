@@ -553,6 +553,10 @@ def node_g3b(state):
     if is_cap and state.get("final_year", False):
         return "Yes"
 
+    from fs_bot.cards.event_conditions import np_event_available
+    if np_event_available(state, card_id, GERMANS, shaded=True) is False:
+        return "Yes"
+
     # Specific-instruction conditional decline cases — per-card text. A card
     # with a specific bot directive is governed by that directive (A8.2.1), so
     # the generic effectiveness check below does NOT apply to it.

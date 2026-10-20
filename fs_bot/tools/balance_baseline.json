@@ -13,8 +13,8 @@
    "winner": "Romans"
   },
   "Pax Gallica?|12": {
-   "cards": 38,
-   "winner": "Romans"
+   "cards": 71,
+   "winner": "Aedui"
   },
   "Pax Gallica?|13": {
    "cards": 27,
@@ -22,7 +22,7 @@
   },
   "Pax Gallica?|14": {
    "cards": 54,
-   "winner": "Romans"
+   "winner": "Arverni"
   },
   "Pax Gallica?|15": {
    "cards": 26,
@@ -34,35 +34,35 @@
   },
   "Pax Gallica?|17": {
    "cards": 42,
-   "winner": "Arverni"
+   "winner": "Belgae"
   },
   "Pax Gallica?|18": {
    "cards": 23,
    "winner": "Romans"
   },
   "Pax Gallica?|19": {
-   "cards": 40,
-   "winner": "Romans"
+   "cards": 70,
+   "winner": "Arverni"
   },
   "Pax Gallica?|2": {
    "cards": 25,
    "winner": "Romans"
   },
   "Pax Gallica?|20": {
-   "cards": 25,
-   "winner": "Romans"
+   "cards": 57,
+   "winner": "Belgae"
   },
   "Pax Gallica?|3": {
    "cards": 24,
    "winner": "Romans"
   },
   "Pax Gallica?|4": {
-   "cards": 56,
+   "cards": 40,
    "winner": "Belgae"
   },
   "Pax Gallica?|5": {
-   "cards": 56,
-   "winner": "Belgae"
+   "cards": 71,
+   "winner": "Aedui"
   },
   "Pax Gallica?|6": {
    "cards": 27,
@@ -81,23 +81,23 @@
    "winner": "Romans"
   },
   "Reconquest of Gaul|1": {
-   "cards": 46,
-   "winner": "Belgae"
+   "cards": 29,
+   "winner": "Romans"
   },
   "Reconquest of Gaul|10": {
-   "cards": 29,
-   "winner": "Arverni"
+   "cards": 62,
+   "winner": "Belgae"
   },
   "Reconquest of Gaul|11": {
    "cards": 47,
    "winner": "Romans"
   },
   "Reconquest of Gaul|12": {
-   "cards": 27,
-   "winner": "Aedui"
+   "cards": 61,
+   "winner": "Romans"
   },
   "Reconquest of Gaul|13": {
-   "cards": 14,
+   "cards": 43,
    "winner": "Romans"
   },
   "Reconquest of Gaul|14": {
@@ -105,7 +105,7 @@
    "winner": "Romans"
   },
   "Reconquest of Gaul|15": {
-   "cards": 31,
+   "cards": 47,
    "winner": "Romans"
   },
   "Reconquest of Gaul|16": {
@@ -129,20 +129,20 @@
    "winner": "Romans"
   },
   "Reconquest of Gaul|20": {
-   "cards": 43,
-   "winner": "Aedui"
+   "cards": 30,
+   "winner": "Romans"
   },
   "Reconquest of Gaul|3": {
    "cards": 63,
    "winner": "Arverni"
   },
   "Reconquest of Gaul|4": {
-   "cards": 15,
+   "cards": 61,
    "winner": "Romans"
   },
   "Reconquest of Gaul|5": {
-   "cards": 30,
-   "winner": "Romans"
+   "cards": 46,
+   "winner": "Belgae"
   },
   "Reconquest of Gaul|6": {
    "cards": 15,
@@ -153,11 +153,11 @@
    "winner": "Romans"
   },
   "Reconquest of Gaul|8": {
-   "cards": 46,
+   "cards": 31,
    "winner": "Romans"
   },
   "Reconquest of Gaul|9": {
-   "cards": 28,
+   "cards": 14,
    "winner": "Romans"
   },
   "The Great Revolt|1": {
@@ -166,11 +166,11 @@
   },
   "The Great Revolt|10": {
    "cards": 47,
-   "winner": "Romans"
+   "winner": "Arverni"
   },
   "The Great Revolt|11": {
    "cards": 47,
-   "winner": "Romans"
+   "winner": "Arverni"
   },
   "The Great Revolt|12": {
    "cards": 43,
@@ -186,14 +186,14 @@
   },
   "The Great Revolt|15": {
    "cards": 47,
-   "winner": "Arverni"
+   "winner": "Romans"
   },
   "The Great Revolt|16": {
    "cards": 43,
    "winner": "Arverni"
   },
   "The Great Revolt|17": {
-   "cards": 47,
+   "cards": 12,
    "winner": "Arverni"
   },
   "The Great Revolt|18": {
@@ -218,27 +218,27 @@
   },
   "The Great Revolt|4": {
    "cards": 32,
-   "winner": "Romans"
+   "winner": "Arverni"
   },
   "The Great Revolt|5": {
    "cards": 46,
-   "winner": "Arverni"
+   "winner": "Belgae"
   },
   "The Great Revolt|6": {
    "cards": 43,
-   "winner": "Aedui"
+   "winner": "Romans"
   },
   "The Great Revolt|7": {
    "cards": 47,
    "winner": "Belgae"
   },
   "The Great Revolt|8": {
-   "cards": 46,
+   "cards": 31,
    "winner": "Belgae"
   },
   "The Great Revolt|9": {
    "cards": 46,
-   "winner": "Aedui"
+   "winner": "Romans"
   }
  }
 }

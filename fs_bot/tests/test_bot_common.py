@@ -254,8 +254,9 @@ class TestPieceTargetOrder:
     def test_ally_in_city(self):
         assert is_ally_in_city_or_remi(TRIBE_CARNUTES, SCENARIO_PAX_GALLICA) is True
 
-    def test_non_city_tribe(self):
-        assert is_ally_in_city_or_remi(TRIBE_REMI, SCENARIO_PAX_GALLICA) is False
+    def test_remi_in_base_game(self):
+        """§8.4.1 explicitly places Remi alongside Cities in the base game."""
+        assert is_ally_in_city_or_remi(TRIBE_REMI, SCENARIO_PAX_GALLICA) is True
 
     def test_remi_in_ariovistus(self):
         """A8.4.1: Remi counts as City in Ariovistus."""

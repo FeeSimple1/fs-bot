@@ -1344,31 +1344,15 @@ def _resolve_free_actions_scoped(state, faction):
 
 
 def _resolve_card_A29_raid(state):
-    """Card A29 (shaded): the placed German Warbands free Raid — Raid in each
-    Region where the Germans have Warbands and an enemy with Resources is
-    present."""
-    from fs_bot.rules_consts import GERMANS, WARBAND, FACTIONS
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.map.map_data import get_playable_regions
-    raid_plan = []
-    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
-        if count_pieces(state, region, GERMANS, WARBAND) <= 0:
-            continue
-        target = next((f for f in FACTIONS if f != GERMANS
-                       and count_pieces(state, region, f) > 0
-                       and state["resources"].get(f, 0) > 0), None)
-        raid_plan.append({"region": region, "target": target})
-    if not raid_plan:
-        return [{"free_action": "raid", "flag": "card_A29", "executed": False,
-                 "reason": "no German Warband Region to Raid"}]
-    try:
-        res = _execute_raid(state, GERMANS, {"command": _CMD_RAID,
-              "sa": SA_ACTION_NONE_LABEL, "sa_regions": [],
-              "details": {"raid_plan": raid_plan}})
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "raid", "flag": "card_A29",
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "raid", "flag": "card_A29", "result": res}]
+    """A29: only the newly placed German Warbands receive the free Raid."""
+    from fs_bot.cards.dumnorix import derive_raids, raid_cohort
+    cohort = state.get("event_modifiers", {}).pop("card_A29_raid_cohort", [])
+    actions = derive_raids(state, cohort)
+    result = raid_cohort(state, cohort, actions)
+    if not result["executed"]:
+        result["declined_no_effect"] = True
+    return [{"free_action": "raid", "flag": "card_A29", "faction": _GERMANS_F,
+             "result": result}]
 
 
 def _resolve_card_A65_battle(state, faction):
@@ -1408,27 +1392,38 @@ def _resolve_card_A65_battle(state, faction):
 
 
 def _resolve_card_A69_ambush(state):
-    """Card A69 Bellovaci (shaded): the 6 placed Belgic Warbands Ambush at
-    Bellovaci, causing 1 Loss each (warband_full_loss)."""
-    from fs_bot.rules_consts import BELGAE, TRIBE_BELLOVACI, TRIBE_TO_REGION
-    R = TRIBE_TO_REGION.get(TRIBE_BELLOVACI)
-    if R is None:
+    """A69: legal Ambush at Bellovaci; only the placed Warbands gain full Loss."""
+    from fs_bot.rules_consts import (BELGAE, FACTIONS, TRIBE_BELLOVACI,
+                                     TRIBE_TO_REGION, FORT, CITADEL)
+    from fs_bot.commands.sa_ambush import validate_ambush_region
+    from fs_bot.battle.resolve import _calculate_attack_losses
+    region = TRIBE_TO_REGION[TRIBE_BELLOVACI]
+    placed = state.get("event_modifiers", {}).pop("card_A69_loss_per_warband", 0)
+    candidates = []
+    if placed:
+        for enemy in FACTIONS:
+            if enemy == BELGAE or not count_pieces(state, region, enemy):
+                continue
+            valid, _ = validate_ambush_region(state, region, BELGAE, enemy)
+            if not valid:
+                continue
+            losses = _calculate_attack_losses(
+                state, region, BELGAE, enemy, is_retreat=False,
+                had_citadel_at_start=count_pieces(state, region, enemy, CITADEL) > 0,
+                had_fort_at_start=count_pieces(state, region, enemy, FORT) > 0,
+                full_loss_warbands=placed)
+            if losses > 0:
+                candidates.append(enemy)
+    if not candidates:
         return [{"free_action": "ambush", "flag": "card_A69", "executed": False,
-                 "reason": "Bellovaci region unknown"}]
-    defender = _faction_ambush_target(state, R, BELGAE)
-    if defender is None:
-        return [{"free_action": "ambush", "flag": "card_A69", "executed": False,
-                 "reason": "no legal Belgic Ambush at Bellovaci"}]
-    try:
-        res = _execute_battle(state, BELGAE, {
-            "command": _CMD_BATTLE, "sa": _SA_AMBUSH, "sa_regions": [R],
-            "details": {"battle_plan": [{"region": R, "target": defender}],
-                        "warband_full_loss": True}})
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "ambush", "flag": "card_A69",
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "ambush", "flag": "card_A69", "region": R,
-             "defender": defender, "result": res}]
+                 "declined_no_effect": True, "reason": "no legal Belgic Ambush at Bellovaci"}]
+    defender = max(candidates, key=lambda enemy: count_pieces(state, region, enemy))
+    result = _execute_battle(state, BELGAE, {
+        "command": _CMD_BATTLE, "sa": _SA_AMBUSH, "sa_regions": [region],
+        "details": {"battle_plan": [{"region": region, "target": defender}]}},
+        _full_loss_warbands=placed)
+    return [{"free_action": "ambush", "flag": "card_A69", "region": region,
+             "faction": BELGAE, "defender": defender, "result": result}]
 
 
 def _resolve_card_A45_intimidate(state):
@@ -3550,7 +3545,8 @@ def _execute_rally(state, faction, bot_action):
     }
 
 
-def _execute_battle(state, faction, bot_action, *, _paid_regions=()):
+def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
+                    _full_loss_warbands=0):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3763,6 +3759,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=()):
                 retreat_region=retreat_region,
                 allied_factions=allied_factions,
                 warband_full_loss=warband_full_loss,
+                full_loss_warbands=_full_loss_warbands,
             )
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "defender": defender,

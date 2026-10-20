@@ -76,11 +76,54 @@ def census_result(res, counts, examples, scenario, seed, occurrences=None):
             if isinstance(ex, dict):
                 _walk(ex, faction, ba.get("command"), ba.get("sa"),
                       counts, examples, scenario, seed, cr.get("card"), occurrences)
+        winter = cr.get("winter_result")
+        if isinstance(winter, dict):
+            _walk(winter, "Winter", "Winter", None, counts, examples,
+                  scenario, seed, cr.get("card"), occurrences)
+
+
+_FREE_COMMAND_LABELS = {label.lower(): label for label in (
+    rc.CMD_RECRUIT, rc.CMD_MARCH, rc.CMD_SEIZE, rc.CMD_BATTLE,
+    rc.CMD_RALLY, rc.CMD_RAID)}
+_FREE_SA_LABELS = {label.lower(): label for label in (
+    rc.SA_BUILD, rc.SA_SCOUT, rc.SA_BESIEGE, rc.SA_ENTREAT, rc.SA_DEVASTATE,
+    rc.SA_AMBUSH, rc.SA_TRADE, rc.SA_SUBORN, rc.SA_ENLIST, rc.SA_RAMPAGE,
+    rc.SA_SETTLE, rc.SA_INTIMIDATE)}
+_EXPLICIT_DECLINE_REASONS = frozenset((
+    "free Command declined", "free Rally declined", "no March selected",
+    "no Special Ability selected",
+))
 
 
 def _walk(ex, faction, cmd, sa, counts, examples, scenario, seed, card,
-          occurrences=None):
-    def record(command, kind, raw):
+          occurrences=None, *, _is_sa=False, _seen=None):
+    """Inspect every nested execution result, including Event-granted actions.
+
+    Error payloads are recorded once, not recursively interpreted as another
+    failed action. Split Commands expose an aggregate errors list as well as
+    their actual portions; remove only that known duplication. Other refusals
+    retain the existing severity policy, even when nested in a successful Event.
+    """
+    if _seen is None:
+        _seen = set()
+    if not isinstance(ex, dict) or id(ex) in _seen:
+        return
+    _seen.add(id(ex))
+    faction = ex.get("faction") or ex.get("owner") or faction
+    cmd = ex.get("command") or cmd
+    sa = ex.get("sa") or sa
+    free_kind = ex.get("free_action", "")
+    if isinstance(free_kind, str):
+        label = free_kind.removeprefix("free_")
+        if label in _FREE_COMMAND_LABELS:
+            cmd = _FREE_COMMAND_LABELS[label]
+        elif label in _FREE_SA_LABELS:
+            sa, _is_sa = _FREE_SA_LABELS[label], True
+        elif free_kind == "free_sa":
+            _is_sa = True
+    command = f"{cmd}+{sa}" if _is_sa else cmd
+
+    def record(kind, raw):
         message = _norm(raw)
         key = (faction, command, kind, message)
         counts[key] += 1
@@ -91,27 +134,52 @@ def _walk(ex, faction, cmd, sa, counts, examples, scenario, seed, card,
                                     severity=_severity(kind, message),
                                     message=message, raw=raw))
 
-    for error in ex.get("errors") or []:
-        record(cmd, "command-error", error)
+    errors = list(ex.get("errors") or [])
+    for part in ex.get("command_parts") or []:
+        if isinstance(part, dict):
+            for error in part.get("errors") or []:
+                if error in errors:
+                    errors.remove(error)
+    for error in errors:
+        record("sa-error" if _is_sa else "command-error", error)
     if ex.get("error"):
-        record(cmd, "command-error", ex["error"])
-    if ex.get("executed") is False and ex.get("reason"):
-        record(cmd, "command-refused", ex["reason"])
+        record("sa-error" if _is_sa else "command-error", ex["error"])
+    declined = (ex.get("decline") is True or ex.get("declined") is True
+                or ex.get("declined_no_effect") is True
+                or (isinstance(ex.get("reason"), str)
+                    and ex["reason"] in _EXPLICIT_DECLINE_REASONS))
+    if ex.get("executed") is False:
+        if declined:
+            record("action-declined", ex.get("reason") or "action declined")
+        elif _is_sa:
+            why = ex.get("reason") or ("no effect" if not ex.get("actions")
+                                        and not ex.get("regions") else "?")
+            record("sa-no-effect", why)
+        elif ex.get("reason"):
+            record("command-refused", ex["reason"])
     if ex.get("sa_skipped"):
-        record(cmd, "sa-skipped", ex["sa_skipped"])
-    sx = ex.get("sa_execution")
-    if isinstance(sx, dict):
-        # A flowchart fallback may have changed the SA; record what ran.
-        actual_sa = sx.get("sa") or sa
-        command = f"{cmd}+{actual_sa}"
-        for error in sx.get("errors") or []:
-            record(command, "sa-error", error)
-        if sx.get("error"):
-            record(command, "sa-error", sx["error"])
-        if sx.get("executed") is False and not sx.get("declined_no_effect"):
-            why = sx.get("reason") or ("no effect" if not sx.get("actions")
-                                       and not sx.get("regions") else "?")
-            record(command, "sa-no-effect", why)
+        record("sa-skipped", ex["sa_skipped"])
+
+    def descend(value, is_sa, acting_faction, action_command):
+        if isinstance(value, dict):
+            _walk(value, acting_faction, action_command, sa, counts, examples, scenario, seed,
+                  card, occurrences, _is_sa=is_sa, _seen=_seen)
+        elif isinstance(value, (list, tuple)):
+            if id(value) in _seen:
+                return
+            _seen.add(id(value))
+            for item in value:
+                descend(item, is_sa, acting_faction, action_command)
+
+    for key, value in ex.items():
+        if key not in ("errors", "error", "reason", "sa_skipped"):
+            phase_faction = {"germans": rc.GERMANS, "arverni": rc.ARVERNI,
+                             "arverni_phase": rc.ARVERNI}.get(key, faction)
+            if key in rc.FACTIONS:
+                phase_faction = key
+            phase_command = _FREE_COMMAND_LABELS.get(key, cmd)
+            descend(value, _is_sa or key == "sa_execution",
+                    phase_faction, phase_command)
 
 
 _SEVERITY_ORDER = ("illegal", "wasteful-sa", "ineffective-event",
@@ -134,7 +202,7 @@ def _severity(kind, msg):
         return "illegal"
     if kind == "sa-no-effect":
         return "wasteful-sa"
-    if kind == "sa-skipped":
+    if kind in ("sa-skipped", "action-declined"):
         return "legal-decline"
     if kind == "command-refused":
         low = str(msg).lower()

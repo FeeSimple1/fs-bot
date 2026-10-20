@@ -3654,6 +3654,8 @@ def execute_card_A29(state, shaded=False):
             adj_regions.update(get_adjacent(g_region, scenario))
         placements = params.get("placements", [])
         wb_placed = 0
+        raid_cohort = {}
+        settlement_placed = False
         for p in placements:
             region = p["region"]
             if region not in adj_regions:
@@ -3667,11 +3669,16 @@ def execute_card_A29(state, shaded=False):
                     place_piece(state, region, GERMANS, WARBAND,
                                 count=to_place)
                     wb_placed += to_place
-            elif piece_type == SETTLEMENT:
+                    raid_cohort[region] = raid_cohort.get(region, 0) + to_place
+            elif piece_type == SETTLEMENT and not settlement_placed:
                 if get_available(state, GERMANS, SETTLEMENT) > 0:
                     place_piece(state, region, GERMANS, SETTLEMENT)
+                    settlement_placed = True
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A29_german_raid"] = True
+        state["event_modifiers"]["card_A29_raid_cohort"] = [
+            {"region": region, "faction": GERMANS, "count": count}
+            for region, count in raid_cohort.items()]
 
 def execute_card_A30(state, shaded=False):
     """Card A30: Orgetorix — Remove Arverni / Place Arverni.

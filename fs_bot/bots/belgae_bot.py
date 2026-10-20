@@ -858,6 +858,9 @@ def node_b_battle(state):
                 "region": region, "target": target, "is_trigger": False,
             })
 
+    from fs_bot.bots.bot_common import affordable_battle_plan
+    battle_plan = affordable_battle_plan(state, BELGAE, battle_plan)
+
     if not battle_plan:
         return node_b_march_threat(state)
 

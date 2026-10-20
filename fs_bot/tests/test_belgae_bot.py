@@ -843,6 +843,7 @@ class TestNodeBBattle:
     def test_battle_returns_battle_action(self):
         """Battle returns a Battle action dict."""
         state = _make_state()
+        state["resources"][BELGAE] = 1
         _place_belgae_force(state, MANDUBII, warbands=6, leader=True)
         _place_roman_force(state, MANDUBII, ally_tribe=TRIBE_MANDUBII,
                            auxilia=2)
@@ -870,6 +871,7 @@ class TestNodeBBattle:
         targeting priority order applies: Romans first, then Aedui.
         """
         state = _make_state()
+        state["resources"][BELGAE] = 1
         _place_belgae_force(state, MANDUBII, warbands=6, leader=True)
         # Both enemies have fewer mobile forces than Belgae (7 total)
         # AND meet the threat condition (4+ pieces)

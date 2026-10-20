@@ -66,7 +66,8 @@ from fs_bot.map.map_data import (
     get_region_data, get_region_group, is_city_tribe,
     ALL_REGION_DATA,
 )
-from fs_bot.commands.common import CommandError, _is_devastated, _is_intimidated
+from fs_bot.commands.common import (CommandError, _is_devastated, _is_intimidated,
+                                    is_free_action)
 
 
 # ============================================================================
@@ -222,6 +223,8 @@ def recruit_cost(state, region, faction=ROMANS, agreements=None):
     Returns:
         Integer Resource cost.
     """
+    if is_free_action(state, faction):
+        return 0
     from fs_bot.cards.capabilities import is_capability_active
     from fs_bot.rules_consts import EVENT_SHADED as _ES13
     # Card 13 shaded: "Recruit only where Supply Line, paying 2
@@ -275,6 +278,8 @@ def rally_cost(state, region, faction):
     Returns:
         Integer Resource cost.
     """
+    if is_free_action(state, faction):
+        return 0
     scenario = state["scenario"]
 
     if faction == GERMANS:

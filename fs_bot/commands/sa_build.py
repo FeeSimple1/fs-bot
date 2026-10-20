@@ -44,7 +44,7 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.map.map_data import get_tribes_in_region, get_tribe_data
-from fs_bot.commands.common import CommandError, check_leader_proximity
+from fs_bot.commands.common import action_cost, CommandError, check_leader_proximity
 from fs_bot.commands.rally import has_supply_line
 
 
@@ -118,14 +118,15 @@ def build_fort(state, region):
 
     # Check Resources
     resources = state["resources"].get(ROMANS, 0)
-    if resources < BUILD_COST_PER_FORT:
+    cost = action_cost(state, ROMANS, BUILD_COST_PER_FORT)
+    if resources < cost:
         raise CommandError(
             f"Not enough Resources ({resources}) for Fort "
-            f"(need {BUILD_COST_PER_FORT})"
+            f"(need {cost})"
         )
 
     # Pay cost
-    state["resources"][ROMANS] -= BUILD_COST_PER_FORT
+    state["resources"][ROMANS] -= cost
 
     # Place Fort
     place_piece(state, region, ROMANS, FORT)
@@ -133,7 +134,7 @@ def build_fort(state, region):
     # Refresh control — Fort placement may change control
     refresh_all_control(state)
 
-    return {"placed": FORT, "cost": BUILD_COST_PER_FORT}
+    return {"placed": FORT, "cost": cost}
 
 
 def build_subdue(state, region, tribe, target_faction):
@@ -189,14 +190,15 @@ def build_subdue(state, region, tribe, target_faction):
 
     # Check Resources
     resources = state["resources"].get(ROMANS, 0)
-    if resources < BUILD_COST_PER_ALLY:
+    cost = action_cost(state, ROMANS, BUILD_COST_PER_ALLY)
+    if resources < cost:
         raise CommandError(
             f"Not enough Resources ({resources}) for subdue "
-            f"(need {BUILD_COST_PER_ALLY})"
+            f"(need {cost})"
         )
 
     # Pay cost
-    state["resources"][ROMANS] -= BUILD_COST_PER_ALLY
+    state["resources"][ROMANS] -= cost
 
     # Remove the Allied Tribe disc
     remove_piece(state, region, target_faction, ALLY, 1)
@@ -211,7 +213,7 @@ def build_subdue(state, region, tribe, target_faction):
     return {
         "subdued": tribe,
         "faction_removed": target_faction,
-        "cost": BUILD_COST_PER_ALLY,
+        "cost": cost,
     }
 
 
@@ -268,14 +270,15 @@ def build_place_ally(state, region, tribe):
 
     # Check Resources
     resources = state["resources"].get(ROMANS, 0)
-    if resources < BUILD_COST_PER_ALLY:
+    cost = action_cost(state, ROMANS, BUILD_COST_PER_ALLY)
+    if resources < cost:
         raise CommandError(
             f"Not enough Resources ({resources}) for Ally placement "
-            f"(need {BUILD_COST_PER_ALLY})"
+            f"(need {cost})"
         )
 
     # Pay cost
-    state["resources"][ROMANS] -= BUILD_COST_PER_ALLY
+    state["resources"][ROMANS] -= cost
 
     # Place Ally
     place_piece(state, region, ROMANS, ALLY)
@@ -286,7 +289,7 @@ def build_place_ally(state, region, tribe):
     # Refresh control
     refresh_all_control(state)
 
-    return {"placed_ally_at": tribe, "cost": BUILD_COST_PER_ALLY}
+    return {"placed_ally_at": tribe, "cost": cost}
 
 
 

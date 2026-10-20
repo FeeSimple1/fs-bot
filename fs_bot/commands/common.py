@@ -4,6 +4,8 @@ Provides the base CommandError exception and shared helper functions
 used by rally, march, raid, and seize modules.
 """
 
+from contextlib import contextmanager
+
 from fs_bot.rules_consts import (MARKER_DEVASTATED, MARKER_INTIMIDATED,
                                  ROMANS)
 from fs_bot.board.pieces import find_leader, get_leader_in_region
@@ -80,3 +82,61 @@ def check_leader_proximity(state, region, faction, named_leader, sa_name):
             return (True, "")
         return (False,
                 f"Successor must be in the same region for {sa_name}")
+
+
+def is_free_action(state, faction):
+    """Whether an Event's current action waives this Faction's costs (§5.4)."""
+    grant = state.get("_free_action_factions", ())
+    return faction in grant
+
+
+def action_cost(state, faction, cost):
+    """Apply only the Event Resource waiver; all other restrictions remain."""
+    return 0 if is_free_action(state, faction) else cost
+
+
+@contextmanager
+def free_action_scope(state, faction=None):
+    """Scope free-action costs, including nested grants, without leaking them."""
+    from fs_bot.rules_consts import FACTIONS
+    missing = object()
+    previous = state.get("_free_action_factions", missing)
+    prior = set() if previous is missing else set(previous)
+    state["_free_action_factions"] = prior | set(FACTIONS if faction is None else (faction,))
+    try:
+        yield
+    finally:
+        if previous is missing:
+            state.pop("_free_action_factions", None)
+        else:
+            state["_free_action_factions"] = previous
+
+
+def battle_cost(state, region, faction):
+    """Per-Region Battle cost, including scenario/capability exceptions."""
+    from fs_bot.rules_consts import (ROMANS, GERMANS, ARVERNI, AEDUI,
+        BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, ROMAN_BATTLE_COST,
+        GALLIC_BATTLE_COST, EVENT_SHADED)
+    if is_free_action(state, faction):
+        return 0
+    if ((faction == GERMANS and state["scenario"] in BASE_SCENARIOS)
+            or (faction == ARVERNI and state["scenario"] in ARIOVISTUS_SCENARIOS)):
+        return 0
+    cost = ROMAN_BATTLE_COST if faction == ROMANS else GALLIC_BATTLE_COST
+    if _is_devastated(state, region):
+        cost *= 2
+    if faction == AEDUI:
+        from fs_bot.cards.capabilities import is_capability_active
+        if is_capability_active(state, 43, EVENT_SHADED):
+            cost *= 2
+    return cost
+
+
+def free_action(function):
+    """Decorate a (state, faction, ...) Event action, including its planner."""
+    from functools import wraps
+    @wraps(function)
+    def scoped(state, faction, *args, **kwargs):
+        with free_action_scope(state, faction):
+            return function(state, faction, *args, **kwargs)
+    return scoped

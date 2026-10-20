@@ -49,7 +49,7 @@ from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import (
     is_adjacent, get_tribes_in_region, get_tribe_data,
 )
-from fs_bot.commands.common import CommandError
+from fs_bot.commands.common import action_cost, CommandError
 
 
 def validate_suborn_region(state, region):
@@ -161,6 +161,7 @@ def suborn(state, region, operations):
         else:
             total_cost += SUBORN_COST_PER_PIECE
 
+    total_cost = action_cost(state, AEDUI, total_cost)
     # Check Resources
     resources = state["resources"].get(AEDUI, 0)
     if resources < total_cost:

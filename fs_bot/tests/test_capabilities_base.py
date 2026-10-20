@@ -291,6 +291,7 @@ class TestCard13BalearicSlingersUnshaded:
     def test_prefire_strips_attacker_before_battle(self):
         from fs_bot.engine.execute import _execute_battle
         st = _state()
+        st["resources"][BELGAE] = 1  # Pay the normal Battle cost (§3.3.4).
         r = TREVERI
         _clear(st, r)
         place_piece(st, r, BELGAE, WARBAND, 4)   # attacker
@@ -310,6 +311,7 @@ class TestCard27ShadedAbsorption:
     def test_six_arverni_attacking_forces_extra_loss(self):
         from fs_bot.engine.execute import _execute_battle
         st = _state()
+        st["resources"][ARVERNI] = 1  # Pay the normal Battle cost (§3.3.4).
         r = MANDUBII
         _clear(st, r)
         place_piece(st, r, ARVERNI, WARBAND, 6)
@@ -330,6 +332,7 @@ class TestCard10ShadedAmbushRemoval:
         from fs_bot.engine.execute import _execute_battle
         from fs_bot.rules_consts import HIDDEN, AMBIORIX
         st = _state()
+        st["resources"][BELGAE] = 1  # Pay the normal Battle cost (§3.3.4).
         r = MANDUBII
         _clear(st, r)
         # §4.5.3: Belgic Ambush requires its Leader in range.

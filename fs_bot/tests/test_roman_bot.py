@@ -336,6 +336,7 @@ class TestNodeRBattle:
     def test_battle_with_threats(self):
         """R_BATTLE returns Battle action when threats exist."""
         state = _make_state()
+        state["resources"][ROMANS] = 2
         _place_roman_force(state, MANDUBII, leader=True, legions=3,
                            auxilia=4)
         _place_enemy_threat(state, MANDUBII, ARVERNI,
@@ -874,6 +875,7 @@ class TestExecuteRomanTurn:
     def test_full_turn_threat_battles(self):
         """Full turn: threat → Battle."""
         state = _make_state()
+        state["resources"][ROMANS] = 2
         _place_roman_force(state, MANDUBII, leader=True, legions=3,
                            auxilia=4)
         _place_enemy_threat(state, MANDUBII, ARVERNI,

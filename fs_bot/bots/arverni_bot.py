@@ -790,6 +790,9 @@ def node_v_battle(state):
                             "is_trigger": False,
                         })
 
+    from fs_bot.bots.bot_common import affordable_battle_plan
+    battle_plan = affordable_battle_plan(state, ARVERNI, battle_plan)
+
     if not battle_plan:
         return node_v_march_threat(state)
 
@@ -1635,6 +1638,9 @@ def _check_entreat(state, scenario):
     for action in entreat_actions:
         selected.setdefault(action["region"], action)
     budget = state["resources"].get(ARVERNI, 0)
+    from fs_bot.commands.common import is_free_action
+    if is_free_action(state, ARVERNI):
+        budget = len(selected)
     entreat_actions = list(selected.values())[:budget]
 
     return entreat_actions

@@ -27,7 +27,7 @@ Design notes:
 """
 
 from fs_bot.rules_consts import EVENT_SHADED
-from fs_bot.commands.common import CommandError
+from fs_bot.commands.common import CommandError, free_action
 from fs_bot.board.pieces import PieceError
 from fs_bot.commands.seize import seize_in_region, get_dispersible_tribes
 from fs_bot.commands.raid import raid_in_region
@@ -334,7 +334,18 @@ def _sa_survives_empty_command(faction, command, sa):
             and sa == _SA_SETTLE)
 
 
-def _execute_bot_command(state, faction, bot_action):
+def _execute_bot_command(state, faction, bot_action, *, with_sa=False):
+    """Execute an Event-granted Command; add an SA only when text grants it."""
+    from fs_bot.commands.common import free_action_scope
+    action = dict(bot_action)
+    if not with_sa:
+        action["sa"] = SA_ACTION_NONE_LABEL
+        action["sa_regions"] = []
+    with free_action_scope(state, faction):
+        return _execute_free_bot_command(state, faction, action)
+
+
+def _execute_free_bot_command(state, faction, bot_action):
     """Route a bot_action's Command (never an Event) to the matching command
     executor. Returns the result dict, or None if the command is not one of
     the wired board Commands."""
@@ -465,8 +476,9 @@ def _constrain_bot_action(bot_action, allowed):
     return ba
 
 
+@free_action
 def _resolve_free_command(state, faction, allowed_regions=None,
-                          exclude_commands=None, limited=False):
+                          exclude_commands=None, limited=False, with_sa=False):
     """Execute one *free* Command for ``faction`` using its real flowchart.
 
     Event cards that grant "a free Command" (e.g. card 9 Mons Cevenna, card 70
@@ -509,8 +521,9 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     if limited:
         # Limited Command (§): one Region, no Special Activity.
         bot_action = dict(bot_action)
-        bot_action["sa"] = SA_ACTION_NONE_LABEL
-        bot_action["sa_regions"] = []
+        if not with_sa:
+            bot_action["sa"] = SA_ACTION_NONE_LABEL
+            bot_action["sa_regions"] = []
         primary = _primary_command_region(bot_action)
         if primary is not None:
             allowed_regions = ({primary} if allowed_regions is None
@@ -528,7 +541,7 @@ def _resolve_free_command(state, faction, allowed_regions=None,
                 return {"executed": False, "command": cmd,
                         "reason": "no Command available in the allowed Region(s)"}
         bot_action = constrained
-    res = _execute_bot_command(state, faction, bot_action)
+    res = _execute_bot_command(state, faction, bot_action, with_sa=with_sa)
     if res is None:
         return {"executed": False, "command": cmd,
                 "reason": "chosen Command not executable"}
@@ -625,6 +638,7 @@ def _plan_region_order(bot_action):
     return order
 
 
+@free_action
 def _resolve_free_rally(state, faction, allowed_regions=None,
                         max_regions=None):
     """Execute a *free* Rally (Recruit for the Romans) for ``faction`` using
@@ -1011,6 +1025,13 @@ _ONE_SHOT_FREE_ACTION_FLAGS = (
 )
 
 def _resolve_free_actions(state, faction):
+    """Every action granted by an Event costs no Resources (§5.4)."""
+    from fs_bot.commands.common import free_action_scope
+    with free_action_scope(state):
+        return _resolve_free_actions_scoped(state, faction)
+
+
+def _resolve_free_actions_scoped(state, faction):
     """Run any free actions granted by the just-resolved Event.
 
     Called from ``_execute_event`` for the acting Faction. Returns a list of
@@ -1658,7 +1679,7 @@ def _resolve_card48_druids(state, target_factions):
     for fac in targets:
         out.append({"free_action": "free_command", "flag": "card_48",
                     "faction": fac,
-                    "result": _resolve_free_command(state, fac, limited=True)})
+                    "result": _resolve_free_command(state, fac, limited=True, with_sa=True)})
     return out
 
 
@@ -1989,7 +2010,7 @@ def _resolve_card52_free_command(state):
     if controller is None:
         return [{"free_action": "free_command", "flag": "card_52",
                  "executed": False, "reason": "no Faction controls Carnutes"}]
-    res = _resolve_free_command(state, controller)
+    res = _resolve_free_command(state, controller, with_sa=True)
     return [{"free_action": "free_command", "flag": "card_52",
              "controller": controller,
              "sa_included": bool((res or {}).get("sa_execution")),
@@ -2010,7 +2031,7 @@ def _resolve_card70_free_command(state, faction):
         return [{"free_action": "free_command", "flag": "card_70_free_command_sa",
                  "executed": False, "reason": "no target Region in play"}]
     R = max(regs, key=lambda r: count_pieces(state, r, faction))
-    cmd_res = _resolve_free_command(state, faction, allowed_regions={R})
+    cmd_res = _resolve_free_command(state, faction, allowed_regions={R}, with_sa=True)
     return [{"free_action": "free_command", "flag": "card_70_free_command_sa",
              "region": R, "result": cmd_res}]
 
@@ -2053,7 +2074,7 @@ def _resolve_card9_march_command(state, faction, march_from, march_to):
                         "executed": False, "reason": repr(exc)})
     # Free Command "in (or from) the destination Region" — restrict to dest.
     allowed = {dest} if dest else (set(near) if near else None)
-    cmd_res = _resolve_free_command(state, faction, allowed_regions=allowed)
+    cmd_res = _resolve_free_command(state, faction, allowed_regions=allowed, with_sa=True)
     out.append({"free_action": "free_command", "flag": "card_9",
                 "result": cmd_res})
     return out
@@ -2256,6 +2277,7 @@ def _faction_ambush_sweep(state, attacker, only_faction=None):
     return out
 
 
+@free_action
 def _resolve_free_march(state, faction):
     """Execute a *free* March for ``faction`` using its primary March node."""
     nodes = {
@@ -3607,6 +3629,17 @@ def _execute_battle(state, faction, bot_action):
             errors.append({"region": region, "defender": defender,
                            "error": "defender not present"})
             continue
+
+        # §3.2.4 / §3.3.4 / A3.4.4: pay once for the selected Battle
+        # Region, before any Battle effects or defender decisions. Event
+        # actions waive the cost through their scoped §5.4 grant.
+        from fs_bot.commands.common import battle_cost
+        cost = battle_cost(state, region, faction)
+        if state["resources"].get(faction, 0) < cost:
+            errors.append({"region": region, "defender": defender,
+                           "error": f"Not enough Resources for Battle (need {cost})"})
+            continue
+        state["resources"][faction] = state["resources"].get(faction, 0) - cost
 
         is_ambush = (sa == _SA_AMBUSH and region in sa_regions)
         if is_ambush:

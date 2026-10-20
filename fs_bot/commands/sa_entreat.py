@@ -43,7 +43,7 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.map.map_data import get_tribes_in_region, get_tribe_data
-from fs_bot.commands.common import CommandError, check_leader_proximity
+from fs_bot.commands.common import action_cost, CommandError, check_leader_proximity
 
 
 def validate_entreat_region(state, region):
@@ -105,7 +105,7 @@ def entreat_replace_piece(state, region, target_faction, target_piece_type,
         dict with:
             "target_removed": (faction, piece_type)
             "arverni_placed": True if replacement placed, False if just removed.
-            "cost": ENTREAT_COST
+            "cost": cost
 
     Raises:
         CommandError: If operation violates rules.
@@ -120,10 +120,11 @@ def entreat_replace_piece(state, region, target_faction, target_piece_type,
 
     # Check Resources
     resources = state["resources"].get(ARVERNI, 0)
-    if resources < ENTREAT_COST:
+    cost = action_cost(state, ARVERNI, ENTREAT_COST)
+    if resources < cost:
         raise CommandError(
             f"Not enough Resources ({resources}) for Entreat "
-            f"(need {ENTREAT_COST})"
+            f"(need {cost})"
         )
 
     # Check target exists
@@ -143,7 +144,7 @@ def entreat_replace_piece(state, region, target_faction, target_piece_type,
         )
 
     # Pay cost
-    state["resources"][ARVERNI] -= ENTREAT_COST
+    state["resources"][ARVERNI] -= cost
 
     # Remove the target piece
     remove_piece(state, region, target_faction, target_piece_type, 1,
@@ -161,7 +162,7 @@ def entreat_replace_piece(state, region, target_faction, target_piece_type,
     return {
         "target_removed": (target_faction, target_piece_type),
         "arverni_placed": placed,
-        "cost": ENTREAT_COST,
+        "cost": cost,
     }
 
 
@@ -184,7 +185,7 @@ def entreat_replace_ally(state, region, target_faction, tribe):
         dict with:
             "target_removed": (faction, tribe)
             "arverni_placed": True if replacement placed.
-            "cost": ENTREAT_COST
+            "cost": cost
 
     Raises:
         CommandError: If operation violates rules.
@@ -215,10 +216,11 @@ def entreat_replace_ally(state, region, target_faction, tribe):
 
     # Check Resources
     resources = state["resources"].get(ARVERNI, 0)
-    if resources < ENTREAT_COST:
+    cost = action_cost(state, ARVERNI, ENTREAT_COST)
+    if resources < cost:
         raise CommandError(
             f"Not enough Resources ({resources}) for Entreat "
-            f"(need {ENTREAT_COST})"
+            f"(need {cost})"
         )
 
     # Check stacking for Arverni Ally — §1.4.2
@@ -228,7 +230,7 @@ def entreat_replace_ally(state, region, target_faction, tribe):
         can_place = False
 
     # Pay cost
-    state["resources"][ARVERNI] -= ENTREAT_COST
+    state["resources"][ARVERNI] -= cost
 
     # Remove enemy Ally
     remove_piece(state, region, target_faction, ALLY, 1)
@@ -248,7 +250,7 @@ def entreat_replace_ally(state, region, target_faction, tribe):
     return {
         "target_removed": (target_faction, tribe),
         "arverni_placed": placed,
-        "cost": ENTREAT_COST,
+        "cost": cost,
     }
 
 

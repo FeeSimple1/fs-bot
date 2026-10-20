@@ -820,6 +820,9 @@ def node_a_battle(state):
                 })
                 break
 
+    from fs_bot.bots.bot_common import affordable_battle_plan
+    battle_plan = affordable_battle_plan(state, AEDUI, battle_plan)
+
     if not battle_plan:
         return _make_action(ACTION_PASS)
 
@@ -1397,6 +1400,8 @@ def _determine_suborn_sa(state, scenario):
         cost = (SUBORN_COST_PER_ALLY if action in ("place_ally",
                                                    "remove_ally")
                 else SUBORN_COST_PER_PIECE)
+        from fs_bot.commands.common import action_cost
+        cost = action_cost(state, AEDUI, cost)
         return cost if cost <= budget else None
 
     for region in playable:

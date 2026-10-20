@@ -1256,3 +1256,22 @@ def card27_shaded_absorption(state, region, own_faction, enemy):
             and count_pieces(state, region, ARVERNI, WARBAND) >= 6):
         return 1
     return 0
+
+
+def affordable_battle_plan(state, faction, plan):
+    """Keep Battle Regions in flowchart order while Resources permit (8.3)."""
+    from fs_bot.commands.common import battle_cost
+    budget = state["resources"].get(faction, 0)
+    selected = []
+    seen = set()
+    for entry in plan:
+        region = entry.get("region")
+        if region in seen:
+            continue
+        cost = battle_cost(state, region, faction)
+        if cost > budget:
+            continue
+        selected.append(entry)
+        seen.add(region)
+        budget -= cost
+    return selected

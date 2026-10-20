@@ -44,6 +44,7 @@ from fs_bot.board.pieces import (
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.map.map_data import is_adjacent, get_adjacent
 from fs_bot.commands.common import (
+    action_cost,
     CommandError, _is_devastated, check_leader_proximity,
 )
 
@@ -133,6 +134,7 @@ def settle(state, region):
     if _is_devastated(state, region):
         cost *= 2
 
+    cost = action_cost(state, GERMANS, cost)
     # Check Resources
     resources = state["resources"].get(GERMANS, 0)
     if resources < cost:

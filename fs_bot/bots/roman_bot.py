@@ -606,6 +606,9 @@ def node_r_battle(state):
             and not any(bp["region"] == caesar_region for bp in battle_plan)):
         return node_r_march(state)
 
+    from fs_bot.bots.bot_common import affordable_battle_plan
+    battle_plan = affordable_battle_plan(state, ROMANS, battle_plan)
+
     if not battle_plan:
         return node_r_march(state)
 
@@ -1174,6 +1177,9 @@ def node_r_build(state, *, exclude_regions=None):
     def _can_spend(cost):
         """Check if spending cost would violate the Resource floor."""
         nonlocal resources
+        from fs_bot.commands.common import is_free_action
+        if is_free_action(state, ROMANS):
+            return True
         if resources < RESOURCE_FLOOR:
             return False
         if resources - cost < RESOURCE_FLOOR:
@@ -1183,7 +1189,8 @@ def node_r_build(state, *, exclude_regions=None):
     def _spend(cost):
         """Track spending against the Resource floor."""
         nonlocal resources
-        resources -= cost
+        from fs_bot.commands.common import action_cost
+        resources -= action_cost(state, ROMANS, cost)
 
     # (1) Place Forts — first where non-Aedui Warbands
     avail_forts = get_available(state, ROMANS, FORT)

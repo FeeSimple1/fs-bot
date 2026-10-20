@@ -1250,6 +1250,7 @@ class TestExecuteAeduiTurn:
     def test_battle_on_a4(self):
         """Full flowchart Battles on A4 condition."""
         state = _make_state()
+        state["resources"][AEDUI] = 1
         state["can_play_event"] = False
         # Place forces to trigger A4
         _place_aedui_force(state, MANDUBII, warbands=6)

@@ -708,16 +708,9 @@ def _any_settle_destination(state, scenario):
 
 
 def _german_rally_cost(state, region):
-    """Resource cost to Rally a piece in a region per A3.4.1.
-
-    Returns:
-        0 in Germania, 1 at Settlement, 2 elsewhere.
-    """
-    if region in GERMANIA_REGIONS:
-        return GERMAN_RALLY_COST_IN_GERMANIA
-    if _has_settlement(state, region):
-        return GERMAN_RALLY_COST_AT_SETTLEMENT
-    return GERMAN_RALLY_COST_OUTSIDE_GERMANIA_NO_SETTLEMENT
+    """Use the mechanic's A3.4.1 price, including Event free actions."""
+    from fs_bot.commands.rally import rally_cost
+    return rally_cost(state, region, GERMANS)
 
 
 def _count_placeable_warbands(state, scenario, resources, avail_warbands):
@@ -915,10 +908,8 @@ def node_g_battle(state):
                 "is_trigger": False,
             })
 
-    # Cap by Resources — Gallic Battle costs 1 per region — A3.4 (Ariovistus)
-    max_battles = max(0, resources // max(1, GALLIC_BATTLE_COST))
-    if max_battles < len(battle_plan):
-        battle_plan = battle_plan[:max_battles]
+    from fs_bot.bots.bot_common import affordable_battle_plan
+    battle_plan = affordable_battle_plan(state, GERMANS, battle_plan)
 
     if not battle_plan:
         return node_g_march_threat(state)
@@ -1226,6 +1217,8 @@ def node_g_rally(state):
             cost = SETTLE_COST
             if _is_devastated(state, region):
                 cost *= 2
+            from fs_bot.commands.common import action_cost
+            cost = action_cost(state, GERMANS, cost)
             if resources < cost:
                 break
             rally_plan["settlements_before"].append({
@@ -1254,6 +1247,8 @@ def node_g_rally(state):
             if avail_allies <= 0:
                 break
             cost = _german_rally_cost(state, region)
+            from fs_bot.commands.common import action_cost
+            cost = action_cost(state, GERMANS, cost)
             if resources < cost:
                 continue
             rally_plan["allies"].append({
@@ -1321,6 +1316,8 @@ def node_g_rally(state):
                 cost = SETTLE_COST
                 if _is_devastated(state, region):
                     cost *= 2
+                from fs_bot.commands.common import action_cost
+                cost = action_cost(state, GERMANS, cost)
                 if resources < cost:
                     break
                 rally_plan["settlements_after"].append({
@@ -1941,6 +1938,8 @@ def _determine_intimidate_or_settle_after_march(state, march_plan):
             cost = SETTLE_COST
             if _is_devastated(state, region):
                 cost *= 2
+            from fs_bot.commands.common import action_cost
+            cost = action_cost(state, GERMANS, cost)
             if resources < cost:
                 break
             plan.append({"region": region, "cost": cost})
@@ -1984,6 +1983,8 @@ def node_g_settle(state):
         cost = SETTLE_COST
         if _is_devastated(state, region):
             cost *= 2
+        from fs_bot.commands.common import action_cost
+        cost = action_cost(state, GERMANS, cost)
         if resources < cost:
             break
         plan.append({"region": region, "cost": cost})

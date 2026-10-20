@@ -535,6 +535,7 @@ class TestNodeVBattle:
     def test_battle_vs_romans_with_legion(self):
         """V_BATTLE fights Romans when Legion present."""
         state = _make_state()
+        state["resources"][ARVERNI] = 1
         _place_arverni_force(state, MANDUBII, leader=True, warbands=12)
         _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
         _place_enemy_threat(state, MANDUBII, ROMANS,
@@ -558,6 +559,7 @@ class TestNodeVBattle:
     def test_battle_verc_fights_caesar_with_ratio(self):
         """V_BATTLE: Vercingetorix fights Caesar with >2:1 ratio."""
         state = _make_state()
+        state["resources"][ARVERNI] = 1
         # Vercingetorix + 15 Warbands = 16 mobile
         _place_arverni_force(state, MANDUBII, leader=True, warbands=15)
         # Caesar + 2 Legions + 1 Auxilia = 4 mobile → ratio 16:4 = 4:1 > 2:1
@@ -1291,6 +1293,7 @@ class TestExecuteArverniTurn:
     def test_full_turn_with_threat_battles(self):
         """Full turn: V1=Yes leads to Battle."""
         state = _make_state()
+        state["resources"][ARVERNI] = 1
         _place_arverni_force(state, MANDUBII, leader=True, warbands=15)
         _place_roman_force(state, MANDUBII, legions=1, auxilia=2,
                            ally_tribe=TRIBE_MANDUBII)

@@ -359,8 +359,18 @@ def _execute_free_bot_command(state, faction, bot_action):
     if h is None:
         return None
     sa = bot_action.get("sa")
-    before = _sa_runs_before_command(cmd, sa)
+    timing = bot_action.get("sa_timing")
+    before = (timing == "before" if timing else _sa_runs_before_command(cmd, sa))
     sa_result = None
+    if timing == "during":
+        parts = (bot_action.get("details") or {}).get("command_parts") or []
+        first = h(state, faction, parts[0])
+        sa_result = _execute_sa(state, faction, bot_action)
+        second = h(state, faction, parts[1])
+        return {"executed": _command_executed(first) or _command_executed(second),
+                "command": cmd, "command_parts": [first, second],
+                "errors": (first.get("errors") or []) + (second.get("errors") or []),
+                "sa_execution": sa_result, "sa_timing": "during"}
     if before:
         sa_result = _execute_sa(state, faction, bot_action)
     result = (_execute_march(state, faction, bot_action, free=True)
@@ -499,11 +509,21 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     flowcharts"). See _region_restricted_free_command.
     """
     from fs_bot.bots.bot_dispatch import dispatch_bot_turn
-    nps = state.get("non_player_factions", set())
-    if faction not in nps:
-        return {"executed": False, "command": None,
-                "reason": "free Command actor is not a bot Faction"}
+    from fs_bot.engine.free_actions import (command_options, consult_free_action,
+                                             execute_free_action_plan)
+    request = {"kind": "free_action", "request_type": "event_command",
+               "allowed_commands": [cmd for cmd in command_options(faction)
+                                    if cmd not in (exclude_commands or ())],
+               "allowed_regions": sorted(allowed_regions) if allowed_regions is not None else None,
+               "max_regions": 1 if limited else None, "with_sa": with_sa,
+               "free": True}
+    response = consult_free_action(state, faction, request)
+    if response is not None:
+        if response.get("decline"):
+            return {"executed": False, "command": None, "reason": "free Command declined"}
+        return execute_free_action_plan(state, faction, request, response)
     planning_state = dict(state)
+    planning_state["non_player_factions"] = set(state.get("non_player_factions", ())) | {faction}
     planning_state["can_play_event"] = False  # force a Command, not an Event
     planning_state["_planning_free_command"] = True
     try:
@@ -640,7 +660,28 @@ def _plan_region_order(bot_action):
 
 @free_action
 def _resolve_free_rally(state, faction, allowed_regions=None,
-                        max_regions=None):
+                        max_regions=None, *, as_if_control=False,
+                        allow_devastated=False):
+    from fs_bot.engine.free_actions import (rally_event_scope, consult_free_action,
+                                             execute_free_action_plan)
+    request = {"kind": "free_action", "request_type": "event_rally",
+               "allowed_commands": [_CMD_RECRUIT if faction == _ROMANS_F else _CMD_RALLY],
+               "allowed_regions": sorted(allowed_regions) if allowed_regions is not None else None,
+               "max_regions": max_regions, "with_sa": False, "free": True,
+               "as_if_control": as_if_control, "allow_devastated": allow_devastated}
+    with rally_event_scope(state, faction, as_if_control=as_if_control,
+                           allow_devastated=allow_devastated, regions=allowed_regions):
+        response = consult_free_action(state, faction, request)
+        if response is not None:
+            if response.get("decline"):
+                return {"executed": False, "command": request["allowed_commands"][0],
+                        "reason": "free Rally declined"}
+            return execute_free_action_plan(state, faction, request, response)
+        return _resolve_free_rally_default(state, faction, allowed_regions, max_regions)
+
+
+def _resolve_free_rally_default(state, faction, allowed_regions=None,
+                                max_regions=None):
     """Execute a *free* Rally (Recruit for the Romans) for ``faction`` using
     that Faction's own Rally node — node_a/v/b/g_rally, or node_r_recruit. The
     node returns a Rally/Recruit action with its plan; we execute it through
@@ -961,6 +1002,8 @@ _ONE_SHOT_FREE_ACTION_FLAGS = (
     "card_2_auto_legion_loss",
     "card_2_battle_region",
     "card_34_free_rally",
+    "card_34_rally_faction",
+    "card_34_rally_regions",
     "card_35_free_limited_command",
     "card_35_gallic_commands",
     "card_36_free_battle",
@@ -981,6 +1024,8 @@ _ONE_SHOT_FREE_ACTION_FLAGS = (
     "card_54_march_limit",
     "card_54a_second_always_retreat",
     "card_57_march_britannia",
+    "card_57_faction",
+    "card_57_free_sa",
     "card_58_german_march_battle",
     "card_62_war_fleet",
     "card_64_belgae_rally",
@@ -1163,8 +1208,9 @@ def _resolve_free_actions_scoped(state, faction):
     if mods.get("card_34_free_rally"):
         results.append({"free_action": "free_rally", "flag": "card_34",
                         "result": _resolve_free_rally(
-                            state, faction,
-                            max_regions=mods.get("card_34_rally_regions", 3))})
+                            state, mods.get("card_34_rally_faction", faction),
+                            max_regions=mods.get("card_34_rally_regions", 3),
+                            as_if_control=True, allow_devastated=True)})
     if mods.get("card_26_arverni_rally"):
         results.extend(_resolve_card26_arverni_rally(state))
     if mods.get("card_64_belgae_rally"):
@@ -2113,56 +2159,8 @@ def _resolve_card4_circumvallation(state, region):
 
 
 def _resolve_card57_britannia_march(state, faction):
-    """Card 57 Land of Mist and Mystery (unshaded): "A non-German Faction may
-    free March into Britannia, add any free Special Ability there, then — if
-    in Britannia — add +4 Resources."
-
-    Executes the free March: the acting non-German Faction Marches one mobile
-    group from a coastal-adjacent Region (Morini, Atrebates, or Veneti) into
-    Britannia, resolving Harassment en route. The +4 Resources is granted by
-    the card handler. The open-ended "any free Special Ability there" depends
-    on a generic per-Faction SA-choice layer and is a documented follow-up;
-    the March (and the resulting Britannia presence that justifies the +4) is
-    executed here.
-    """
-    from fs_bot.rules_consts import GERMANS, BRITANNIA, MORINI, ATREBATES, VENETI
-    from fs_bot.map.map_data import get_playable_regions
-    if faction == GERMANS:
-        return [{"free_action": "march", "flag": "card_57_march_britannia",
-                 "executed": False, "reason": "Germans may not March to Britannia"}]
-    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
-    if BRITANNIA not in playable:
-        return [{"free_action": "march", "flag": "card_57_march_britannia",
-                 "executed": False, "reason": "Britannia not in play"}]
-    sources = [r for r in (MORINI, ATREBATES, VENETI)
-               if r in playable
-               and _group_has_pieces(_mobile_march_group(state, faction, r))]
-    if not sources:
-        return [{"free_action": "march", "flag": "card_57_march_britannia",
-                 "executed": False,
-                 "reason": "no mobile group adjacent to Britannia"}]
-    # March from the coastal source with the largest mobile group.
-    def group_size(r):
-        g = _mobile_march_group(state, faction, r)
-        from fs_bot.rules_consts import LEGION, AUXILIA, WARBAND, LEADER
-        return (g.get(LEGION, 0) + g.get(AUXILIA, 0) + g.get(WARBAND, 0)
-                + (1 if g.get(LEADER) else 0))
-    S = max(sources, key=group_size)
-    try:
-        final = _march_with_harassment(state, faction, S, [BRITANNIA])
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "march", "flag": "card_57_march_britannia",
-                 "source": S, "executed": False, "reason": repr(exc)}]
-    # "...then — if in Britannia — add +4 Resources." Only when the group
-    # actually reached Britannia.
-    bonus = 0
-    if final == BRITANNIA and count_pieces(state, BRITANNIA, faction) > 0:
-        from fs_bot.cards.card_effects import _cap_resources
-        _cap_resources(state, faction, 4)
-        bonus = 4
-    return [{"free_action": "march", "flag": "card_57_march_britannia",
-             "source": S, "final_region": final, "resources_bonus": bonus,
-             "sa_deferred": "any free Special Ability (open-ended)"}]
+    from fs_bot.engine.event_britannia import resolve_britannia
+    return resolve_britannia(state, faction)
 
 
 def _resolve_card17_march_ambush(state, march_limit):
@@ -4393,11 +4391,12 @@ def maybe_np_aedui_subsidy(state):
         return None    # e.g. card 38 shaded bans the transfer
 
 
-def _execute_trade(state, faction):
+def _execute_trade(state, faction, *, allowed_regions=None):
     """Aedui Trade (§4.4.2) — yields Resources; no targets."""
     try:
         res = _sa_trade(state,
-                        roman_agreed=_trade_roman_agreement(state))
+                        roman_agreed=_trade_roman_agreement(state),
+                        allowed_regions=allowed_regions)
     except _EXEC_ERRORS as exc:
         return {"executed": False, "sa": _SA_TRADE, "error": str(exc)}
     return {"executed": True, "sa": _SA_TRADE, "result": res}

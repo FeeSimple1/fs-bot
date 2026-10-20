@@ -1002,6 +1002,7 @@ def node_v_rally(state):
     Returns:
         Action dict for Rally, or redirects to March (spread).
     """
+    from fs_bot.commands.rally import has_rally_control
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
@@ -1035,7 +1036,7 @@ def node_v_rally(state):
     # place_ally requires Arverni Control or Vercingetorix — §3.3.1; tribe
     # eligibility per the executor's _find_subdued_tribe_for_ally.
     for region in playable:
-        has_control = is_controlled_by(state, region, ARVERNI)
+        has_control = has_rally_control(state, region, ARVERNI)
         has_vercingetorix = (
             scenario in BASE_SCENARIOS
             and get_leader_in_region(state, region, ARVERNI)
@@ -1419,7 +1420,7 @@ def _check_ambush(state, battle_plan, scenario):
                                       bp["target"])[0]]
 
 
-def _check_devastate(state, scenario):
+def _check_devastate(state, scenario, *, allowed_regions=None):
     """V_DEVASTATE: Determine Devastate regions.
 
     Per §4.3.2: Devastate requires:
@@ -1433,6 +1434,8 @@ def _check_devastate(state, scenario):
         List of Devastate regions, or empty.
     """
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    if allowed_regions is not None:
+        playable = [r for r in playable if r in allowed_regions]
     devastate_regions = []
 
     for region in playable:
@@ -1478,7 +1481,7 @@ def _check_devastate(state, scenario):
     return devastate_regions
 
 
-def _check_entreat(state, scenario):
+def _check_entreat(state, scenario, *, allowed_regions=None):
     """V_ENTREAT: Determine Entreat targets.
 
     Per §4.3.1: Entreat requires:
@@ -1494,6 +1497,8 @@ def _check_entreat(state, scenario):
         List of Entreat action dicts, or empty.
     """
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    if allowed_regions is not None:
+        playable = [r for r in playable if r in allowed_regions]
     entreat_actions = []
 
     avail_allies = get_available(state, ARVERNI, ALLY)

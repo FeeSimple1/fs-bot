@@ -355,6 +355,19 @@ def _get_home_regions(faction, scenario):
     return ()
 
 
+def _event_rally_option(state, region, faction, option):
+    grant = state.get("_rally_event_grant") or {}
+    regions = grant.get("regions")
+    return (grant.get("faction") == faction and grant.get(option, False)
+            and (regions is None or region in regions))
+
+
+def has_rally_control(state, region, faction):
+    """Control for Rally/Recruit only; an Event cannot alter actual Control."""
+    return (is_controlled_by(state, region, faction)
+            or _event_rally_option(state, region, faction, "as_if_control"))
+
+
 def validate_recruit_region(state, region):
     """Validate that a region is eligible for Roman Recruit.
 
@@ -372,7 +385,8 @@ def validate_recruit_region(state, region):
     scenario = state["scenario"]
 
     # Not Devastated — §3.2.1
-    if _is_devastated(state, region):
+    if (_is_devastated(state, region)
+            and not _event_rally_option(state, region, ROMANS, "allow_devastated")):
         return False, "Region is Devastated"
 
     # Ariovistus: not Intimidated unless Roman Leader — A3.2.1
@@ -389,7 +403,7 @@ def validate_recruit_region(state, region):
             return False, "Card 13 shaded: Recruit only where Supply Line"
 
     # Must have Roman Control OR Roman Leader/Ally/Fort — §3.2.1
-    has_roman_control = is_controlled_by(state, region, ROMANS)
+    has_roman_control = has_rally_control(state, region, ROMANS)
     has_roman_leader = get_leader_in_region(state, region, ROMANS) is not None
     has_roman_ally = count_pieces(state, region, ROMANS, ALLY) > 0
     has_roman_fort = count_pieces(state, region, ROMANS, FORT) > 0
@@ -422,7 +436,8 @@ def validate_rally_region(state, region, faction):
 
     # Devastated check — §3.3.1, with Vercingetorix exception
     is_devastated = _is_devastated(state, region)
-    if is_devastated:
+    if (is_devastated
+            and not _event_rally_option(state, region, faction, "allow_devastated")):
         # Arverni exception: can rally if Vercingetorix present — §3.3.1
         if (faction == ARVERNI
                 and scenario in BASE_SCENARIOS
@@ -446,7 +461,7 @@ def validate_rally_region(state, region, faction):
 
     # Must have effect: faction's Control, Ally, Citadel, Leader,
     # or Rally symbol — §3.3.1
-    has_control = (is_controlled_by(state, region, faction)
+    has_control = (has_rally_control(state, region, faction)
                    or _commius_shaded_rally_control(state, region, faction))
     has_ally = count_pieces(state, region, faction, ALLY) > 0
     has_citadel = count_pieces(state, region, faction, CITADEL) > 0
@@ -620,7 +635,7 @@ def recruit_in_region(state, region, action, *, tribe=None, free=False,
     if action == "place_ally":
         # §3.2.1: If under Roman Control, or if Caesar is there, place
         # one Available Roman Ally at a Subdued Tribe
-        has_roman_control = (is_controlled_by(state, region, ROMANS)
+        has_roman_control = (has_rally_control(state, region, ROMANS)
                              or _commius_unshaded_recruit(state, region))
         from fs_bot.rules_consts import CAESAR
         has_caesar = (get_leader_in_region(state, region, ROMANS) == CAESAR)
@@ -825,7 +840,7 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
         # §3.3.1: If faction Controls the region, place one Ally at
         # a Subdued Tribe.
         # Vercingetorix exception: Arverni may place Ally without Control
-        has_control = (is_controlled_by(state, region, faction)
+        has_control = (has_rally_control(state, region, faction)
                        or _commius_shaded_rally_control(state, region,
                                                         faction))
 

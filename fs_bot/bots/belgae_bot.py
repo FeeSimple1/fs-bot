@@ -1041,6 +1041,7 @@ def node_b_rally(state):
     Returns:
         Action dict for Rally.
     """
+    from fs_bot.commands.rally import has_rally_control
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
@@ -1074,7 +1075,7 @@ def node_b_rally(state):
     # place_ally requires Belgic Control — §3.3.1; tribe eligibility per
     # the executor's _find_subdued_tribe_for_ally.
     for region in playable:
-        if not is_controlled_by(state, region, BELGAE):
+        if not has_rally_control(state, region, BELGAE):
             continue
         for tribe in _find_subdued_tribe_for_ally(state, region, BELGAE):
             rally_plan["allies"].append({
@@ -1088,7 +1089,7 @@ def node_b_rally(state):
     # Home Region — §3.3.1).
     wb_candidates = []
     for region in playable:
-        adds_control = 0 if is_controlled_by(state, region, BELGAE) else 1
+        adds_control = 0 if has_rally_control(state, region, BELGAE) else 1
         wb_candidates.append((region, adds_control))
 
     # Sort: regions that add Control first — §8.5.3
@@ -1454,7 +1455,7 @@ def _check_ambush(state, battle_plan, scenario):
                                       bp["target"])[0]]
 
 
-def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None):
+def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None, allowed_regions=None):
     """B_RAMPAGE: Determine Rampage regions.
 
     Per §4.5.2: Rampage requires Hidden Belgic Warbands present and the
@@ -1474,6 +1475,8 @@ def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None):
         List of Rampage region dicts, or empty.
     """
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    if allowed_regions is not None:
+        playable = [r for r in playable if r in allowed_regions]
     rampage_regions = []
 
     # Collect battle regions if before battle
@@ -1594,7 +1597,7 @@ def _check_enlist_in_battle(state, battle_plan, scenario):
     return None
 
 
-def _check_enlist_after_command(state, scenario):
+def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
     """B_ENLIST (after Command): Enlist to add a free German Command.
 
     Per §8.5.1: Add a free Germanic Command in 1 Region:
@@ -1616,6 +1619,8 @@ def _check_enlist_after_command(state, scenario):
         Dict with enlist details, or None.
     """
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    if allowed_regions is not None:
+        playable = [r for r in playable if r in allowed_regions]
     non_players = state.get("non_player_factions", set())
     from fs_bot.commands.sa_enlist import validate_enlist_region
     from fs_bot.commands.rally import (validate_rally_region,

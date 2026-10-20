@@ -44,7 +44,7 @@ from fs_bot.commands.common import CommandError
 from fs_bot.commands.rally import has_supply_line
 
 
-def trade(state, agreements=None, roman_agreed=False):
+def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None):
     """Execute Trade — Aedui gain Resources from Supply Lines.
 
     §4.4.1: Aedui receive +1 Resource (or +2 if Romans agreed) for each
@@ -88,6 +88,9 @@ def trade(state, agreements=None, roman_agreed=False):
         # agreement still determines the +1/+2 yield (A Card Reference 39).
         if revised_commerce or has_supply_line(state, region, ROMANS, agreements):
             supply_line_regions.add(region)
+
+    if allowed_regions is not None:
+        supply_line_regions.intersection_update(allowed_regions)
 
     # Ariovistus Diviciacus proximity filter — A4.4, A4.1.2
     # "If the Diviciacus piece is on the map, Suborn, Trade, and Aedui Ambush

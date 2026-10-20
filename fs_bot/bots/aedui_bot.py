@@ -856,6 +856,7 @@ def node_a_rally(state):
     Returns:
         Action dict for Rally, or redirects to Raid.
     """
+    from fs_bot.commands.rally import has_rally_control
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
@@ -889,7 +890,7 @@ def node_a_rally(state):
     # place_ally requires Aedui Control — §3.3.1; tribe eligibility per
     # the executor's _find_subdued_tribe_for_ally.
     for region in playable:
-        if not is_controlled_by(state, region, AEDUI):
+        if not has_rally_control(state, region, AEDUI):
             continue
         for tribe in _find_subdued_tribe_for_ally(state, region, AEDUI):
             rally_plan["allies"].append({
@@ -1239,7 +1240,7 @@ def _determine_battle_sa(state, battle_plan, scenario):
     return (sa, sa_regions, sa_details)
 
 
-def _determine_trade_sa(state, scenario, *, battled=False):
+def _determine_trade_sa(state, scenario, *, battled=False, allowed_regions=None):
     """A_TRADE: Determine if Aedui should Trade.
 
     Per §8.6.3: Trade only if:
@@ -1269,14 +1270,14 @@ def _determine_trade_sa(state, scenario, *, battled=False):
 
     if not precondition_met:
         if not battled:
-            return _determine_suborn_sa(state, scenario)
+            return _determine_suborn_sa(state, scenario, allowed_regions=allowed_regions)
         return (SA_ACTION_NONE, [], {})
 
     # Check Trade trigger — §8.6.3
     # "Trade only if either the Aedui are currently acting as the 2nd
     # Eligible Faction or if Trading would earn the Aedui more than two
     # Resources"
-    trade_resources = _estimate_trade_resources(state, scenario)
+    trade_resources = _estimate_trade_resources(state, scenario, allowed_regions=allowed_regions)
 
     trigger_met = False
     if is_second_eligible:
@@ -1288,10 +1289,12 @@ def _determine_trade_sa(state, scenario, *, battled=False):
         # No Trade: if Battled, no SA; otherwise fall through to Suborn
         if battled:
             return (SA_ACTION_NONE, [], {})
-        return _determine_suborn_sa(state, scenario)
+        return _determine_suborn_sa(state, scenario, allowed_regions=allowed_regions)
 
     # Trade for all Resources possible
     trade_regions = _get_trade_regions(state, scenario)
+    if allowed_regions is not None:
+        trade_regions = [r for r in trade_regions if r in allowed_regions]
 
     return (SA_ACTION_TRADE, trade_regions, {
         "trade_resources": trade_resources,
@@ -1299,7 +1302,7 @@ def _determine_trade_sa(state, scenario, *, battled=False):
     })
 
 
-def _estimate_trade_resources(state, scenario):
+def _estimate_trade_resources(state, scenario, *, allowed_regions=None):
     """Estimate how many Resources Trade would earn.
 
     Per §4.4.1: Trade earns Resources based on pieces within Supply Lines
@@ -1334,7 +1337,8 @@ def _estimate_trade_resources(state, scenario):
     # non-deterministic): strip it so trade() uses agreement defaults.
     sim.pop("decision_agent", None)
     try:
-        return trade(sim, roman_agreed=romans_agree).get("resources_gained", 0)
+        return trade(sim, roman_agreed=romans_agree,
+                     allowed_regions=allowed_regions).get("resources_gained", 0)
     except Exception:
         return 0
 
@@ -1348,7 +1352,7 @@ def _get_trade_regions(state, scenario):
     return get_controlled_regions(state, AEDUI)
 
 
-def _determine_suborn_sa(state, scenario):
+def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
     """A_SUBORN: Determine Suborn action.
 
     Per §8.6.3: Suborn in 1 Region (or 2 if unshaded Convictolitavis).
@@ -1372,6 +1376,8 @@ def _determine_suborn_sa(state, scenario):
         (sa_action, sa_regions, sa_details) tuple.
     """
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    if allowed_regions is not None:
+        playable = [r for r in playable if r in allowed_regions]
     non_players = state.get("non_player_factions", set())
     capabilities = state.get("capabilities", {})
 

@@ -263,6 +263,8 @@ _OVERRIDES = {
         "piece_type": (WARBAND, AUXILIA, LEGION, LEADER)}}},
     62: {"moves": {"region_pool": "card62_coastal", "entry_values": {
         "piece_type": (WARBAND, AUXILIA, LEGION, LEADER)}}},
+    34: {"faction": {"values": ("Romans", "Arverni", "Aedui", "Belgae")}},
+    57: {"faction": {"values": ("Romans", "Arverni", "Aedui", "Belgae")}},
     66: {"faction": {"values": tuple(GALLIC_FACTIONS)},
          "moves": {"entry_values": {"piece_type": (WARBAND, LEADER)}}},
     26: {"place_faction": {"values": (ROMANS, AEDUI)},

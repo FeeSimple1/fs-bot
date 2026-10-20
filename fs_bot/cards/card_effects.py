@@ -1680,9 +1680,14 @@ def execute_card_34(state, shaded=False):
     from fs_bot.rules_consts import CARNUTES, MANDUBII
     from fs_bot.map.map_data import get_tribes_in_region
     if not shaded:
+        params = state.get("event_params", {})
+        beneficiary = params.get("faction", state.get("executing_faction"))
+        if beneficiary not in (ROMANS, ARVERNI, AEDUI, BELGAE):
+            raise ValueError("Acco requires a Gallic or Roman Faction")
         # Free Rally in 3 Regions as if with Control — deferred to caller
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_34_free_rally"] = True
+        state["event_modifiers"]["card_34_rally_faction"] = beneficiary
         state["event_modifiers"]["card_34_rally_regions"] = 3
     else:
         # Replace all Allies with Arverni Allies in Carnutes & Mandubii
@@ -2462,10 +2467,14 @@ def execute_card_57(state, shaded=False):
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
     if not shaded:
+        beneficiary = params.get("faction", faction)
+        if beneficiary not in (ROMANS, ARVERNI, AEDUI, BELGAE):
+            raise ValueError("Land of Mist and Mystery requires a non-German Faction")
         # Free March into Britannia + SA + Resources — deferred to caller
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_57_march_britannia"] = True
         state["event_modifiers"]["card_57_free_sa"] = True
+        state["event_modifiers"]["card_57_faction"] = beneficiary
         # +4 Resources only "if in Britannia" — applied after the free March
         # resolves (_resolve_card57_britannia_march), not unconditionally here.
     else:

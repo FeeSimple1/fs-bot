@@ -890,6 +890,7 @@ def node_r_recruit(state):
     Returns:
         Action dict for Recruit, or redirects to Seize.
     """
+    from fs_bot.commands.rally import has_rally_control
     scenario = state["scenario"]
 
     # Check if Recruit would place enough pieces
@@ -926,7 +927,7 @@ def node_r_recruit(state):
         if rem_allies <= 0:
             break
         # place_ally gate — §3.2.1: Roman Control or Caesar in the Region.
-        if not (is_controlled_by(state, r, ROMANS)
+        if not (has_rally_control(state, r, ROMANS)
                 or get_leader_in_region(state, r, ROMANS) == _CAESAR):
             continue
         cost = recruit_cost(state, r, ROMANS)
@@ -1133,7 +1134,7 @@ def node_r_besiege(state, battle_regions):
     return []
 
 
-def node_r_build(state, *, exclude_regions=None):
+def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
     """R_BUILD: Build after March/Seize or before Recruit.
 
     Per §8.8.1:
@@ -1152,6 +1153,8 @@ def node_r_build(state, *, exclude_regions=None):
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    if allowed_regions is not None:
+        playable = [r for r in playable if r in allowed_regions]
     exclude = set(exclude_regions or [])
 
     # §4.2.1 Build region eligibility: within 1 of Caesar (or Successor's
@@ -1505,7 +1508,7 @@ def _scout_auxilia_moves(state):
     return moves
 
 
-def node_r_scout(state):
+def node_r_scout(state, *, allowed_regions=None):
     """R_SCOUT: Scout per Command.
 
     Per §8.8.1:
@@ -1525,12 +1528,17 @@ def node_r_scout(state):
         "auxilia_moves": _scout_auxilia_moves(state),
         "scout_targets": [],
     }
+    if allowed_regions is not None:
+        scout_plan["auxilia_moves"] = [m for m in scout_plan["auxilia_moves"]
+                                       if m.get("from_region") in allowed_regions]
     caesar_region = _caesar_region(state)
 
     # Step 2: Scout targets — Hidden first, then Revealed.
     # §4.2.2: Reveal only in Regions within 1 of Caesar (or the Successor's
     # Region) AND only by flipping a Roman Hidden Auxilia present THERE.
     playable = get_playable_regions(scenario, state.get("capabilities"))
+    if allowed_regions is not None:
+        playable = [r for r in playable if r in allowed_regions]
     # §4.1.2: Scout Reveal is allowed within 1 Region of the NAMED leader
     # (Caesar), but only in the SAME Region as a Successor. Using within-1 for
     # a Successor made the executor refuse ('Successor must be in the same

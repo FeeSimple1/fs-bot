@@ -1098,7 +1098,7 @@ def prevalidate_rally_plan(state, faction, rally_plan, *, resources=None):
         entries.
     """
     from fs_bot.commands.rally import (
-        validate_rally_region, rally_cost, _find_subdued_tribe_for_ally,
+        validate_rally_region, rally_cost, has_rally_control, _find_subdued_tribe_for_ally,
         _gallic_warband_cap, _german_warband_cap, _get_home_regions,
     )
 
@@ -1164,7 +1164,7 @@ def prevalidate_rally_plan(state, faction, rally_plan, *, resources=None):
             continue
         # place_ally gate — §3.3.1: faction Control (or Vercingetorix
         # for Arverni in the base game).
-        gate = is_controlled_by(state, region, faction)
+        gate = has_rally_control(state, region, faction)
         if not gate and vercingetorix_gate:
             from fs_bot.rules_consts import VERCINGETORIX
             gate = (get_leader_in_region(state, region, ARVERNI)

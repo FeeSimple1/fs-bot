@@ -2502,13 +2502,14 @@ def test_free_command_layer_uses_flowchart():
     assert validate_state(st) == []
 
 
-def test_free_command_layer_skips_non_bot_faction():
-    """The free-Command chooser no-ops for a Faction not marked Non-Player."""
+def test_free_command_layer_respects_human_decline():
+    """The free-Command chooser honors an explicit player decision to decline."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.engine.execute import _resolve_free_command
     from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT, ROMANS
     st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=100)
     st["non_player_factions"] = set()   # nobody is a bot
+    st["decision_agent"] = lambda *args: {"decline": True}
     res = _resolve_free_command(st, ROMANS)
     assert res["executed"] is False
 
@@ -2677,7 +2678,8 @@ def test_card35_unshaded_or_be_eligible():
     from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ROMANS, ELIGIBLE,
         INELIGIBLE)
     st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=140)
-    st["non_player_factions"] = set()      # Romans can't run a free Command
+    st["non_player_factions"] = set()
+    st["decision_agent"] = lambda *args: {"decline": True}  # choose Eligibility
     st.setdefault("eligibility", {})[ROMANS] = INELIGIBLE
     out = _resolve_card35_roman(st, ROMANS)
     assert out and out[0]["free_action"] == "stay_eligible"

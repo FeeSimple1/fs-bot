@@ -54,6 +54,7 @@ from fs_bot.map.map_data import (
     get_region_group, is_city_tribe,
 )
 from fs_bot.bots.bot_common import (
+    command_region_candidates, command_is_allowed, command_sa_allowed,
     # Event decisions
     should_decline_event, get_dual_use_preference, get_event_instruction,
     upgrade_limited_command,
@@ -334,6 +335,8 @@ def node_a1(state):
     Returns:
         "Yes" (Pass) or "No" (proceed to A2).
     """
+    if state.get("_planning_free_command"):
+        return "No"
     current_order = state.get("current_card_faction_order", [])
     next_order = state.get("next_card_faction_order", [])
 
@@ -400,7 +403,8 @@ def node_a4(state):
         "Yes" (Battle) or "No" (proceed to A5).
     """
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     enemies = _get_battle_enemies(state, scenario)
 
     for region in playable:
@@ -417,7 +421,7 @@ def node_a4(state):
             if enemy == ROMANS:
                 hidden_enemy += count_pieces_by_state(
                     state, region, enemy, AUXILIA, HIDDEN)
-            ambush = hidden_aedui > hidden_enemy
+            ambush = command_sa_allowed(state) and hidden_aedui > hidden_enemy
             if _would_force_loss_on_high_value(
                     state, region, AEDUI, enemy, scenario,
                     ambush_possible=ambush):
@@ -485,7 +489,11 @@ def _estimate_rally_placements(state, scenario):
     Returns:
         Dict with "citadels", "allies", "warbands", "total" counts.
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    if state.get("_planning_free_command") or state.get("_command_region_scope") is not None:
+        from fs_bot.bots.bot_common import estimate_scoped_rally
+        return estimate_scoped_rally(state, AEDUI, node_a_rally)
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     citadels = 0
     allies = 0
     warbands = 0
@@ -573,7 +581,8 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
     Returns:
         (bool, list of raid plan dicts).
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     non_players = state.get("non_player_factions", set())
     total_gain = 0
     raid_plan = []
@@ -736,7 +745,8 @@ def node_a_battle(state):
     """
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     enemies = _get_battle_enemies(state, scenario)
 
     battle_plan = []
@@ -781,7 +791,7 @@ def node_a_battle(state):
             if enemy == ROMANS:
                 hidden_enemy += count_pieces_by_state(
                     state, region, enemy, AUXILIA, HIDDEN)
-            ambush = hidden_aedui > hidden_enemy
+            ambush = command_sa_allowed(state) and hidden_aedui > hidden_enemy
             if _would_force_loss_on_high_value(
                     state, region, AEDUI, enemy, scenario,
                     ambush_possible=ambush):
@@ -868,7 +878,8 @@ def node_a_rally(state):
     """
     from fs_bot.commands.rally import has_rally_control
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
 
     rally_plan = {
         "citadels": [],
@@ -951,6 +962,8 @@ def node_a_raid(state):
     Returns:
         Action dict for Raid, or Pass.
     """
+    if not command_is_allowed(state, ACTION_RAID):
+        return _make_action(ACTION_PASS)
     scenario = state["scenario"]
     enough, raid_plan = _would_raid_gain_enough(state, scenario)
 
@@ -986,6 +999,8 @@ def node_a_march(state):
     Returns:
         Action dict for March, or redirects to Raid.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return node_a_raid(state)
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
@@ -1011,7 +1026,7 @@ def node_a_march(state):
 
     enemy_most_ac = _get_enemy_with_most_allies_citadels(state, scenario)
 
-    for origin in playable:
+    for origin in command_region_candidates(state, playable):
         aedui_wb = count_pieces(state, origin, AEDUI, WARBAND)
         if aedui_wb < 2:  # Need at least 2 (leave 1 behind)
             continue
@@ -1076,6 +1091,7 @@ def node_a_march(state):
     # a destination above."
     # "With fewest Warbands needed" — §8.6.5 step 2a
     best_ctrl_dest = None
+    best_ctrl_origin = None
     fewest_needed = 999
 
     for region in playable:
@@ -1102,7 +1118,7 @@ def node_a_march(state):
         # Check if we have a source for these Warbands (adjacent with enough)
         can_supply = False
         for adj in get_adjacent(region, scenario):
-            if adj not in set(playable):
+            if adj not in command_region_candidates(state, playable):
                 continue
             adj_wb = count_pieces(state, adj, AEDUI, WARBAND)
             # §8.6.5: leave one Warband AND enough to keep Control at the source.
@@ -1116,16 +1132,20 @@ def node_a_march(state):
         if can_supply and needed < fewest_needed:
             fewest_needed = needed
             best_ctrl_dest = region
+            best_ctrl_origin = adj
 
     if best_ctrl_dest is not None:
         march_plan["control_destination"] = best_ctrl_dest
+        if state.get("_command_region_scope") is not None:
+            march_plan["origins"] = list(dict.fromkeys(
+                r for r in (best_origin, best_ctrl_origin) if r is not None))
 
     # Per A8.6.5: "After carrying out the specified March priorities, March
     # the Diviciacus Leader to join the largest group of Aedui Warbands
     # possible (if on the map and not already with the largest group)."
     if scenario in ARIOVISTUS_SCENARIOS:
         div_region = _diviciacus_region(state)
-        if div_region is not None:
+        if div_region in command_region_candidates(state, playable):
             # Find region with the largest group of Aedui Warbands
             best_wb_region = None
             best_wb_count = -1
@@ -1197,6 +1217,8 @@ def _check_ambush(state, battle_plan, scenario):
     Returns:
         Region where Ambush applies, or None.
     """
+    if not command_sa_allowed(state):
+        return None
     if not battle_plan:
         return None
 
@@ -1266,6 +1288,11 @@ def _determine_trade_sa(state, scenario, *, battled=False, allowed_regions=None)
     Returns:
         (sa_action, sa_regions, sa_details) tuple.
     """
+    if not command_sa_allowed(state):
+        return SA_ACTION_NONE, [], {}
+    scope = state.get("_command_region_scope")
+    if scope is not None:
+        allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     resources = state.get("resources", {}).get(AEDUI, 0)
     roman_resources = state.get("resources", {}).get(ROMANS, 0)
     is_second_eligible = state.get("is_second_eligible", False)
@@ -1386,6 +1413,11 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
     Returns:
         (sa_action, sa_regions, sa_details) tuple.
     """
+    if not command_sa_allowed(state):
+        return SA_ACTION_NONE, [], {}
+    scope = state.get("_command_region_scope")
+    if scope is not None:
+        allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     playable = get_playable_regions(scenario, state.get("capabilities"))
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
@@ -1878,12 +1910,12 @@ def execute_aedui_turn(state):
 
     # A4: Battle would force Loss on high-value target?
     a4_result = node_a4(state)
-    if a4_result == "Yes":
+    if a4_result == "Yes" and command_is_allowed(state, ACTION_BATTLE):
         return node_a_battle(state)
 
     # A5: Rally?
     a5_result = node_a5(state)
-    if a5_result == "Yes":
+    if a5_result == "Yes" and command_is_allowed(state, ACTION_RALLY):
         return node_a_rally(state)
 
     # A6: Raid (0-3 Resources and roll 1-4)?

@@ -19,7 +19,7 @@ from fs_bot.rules_consts import (
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Events
-    EVENT_UNSHADED, EVENT_SHADED,
+    EVENT_UNSHADED, EVENT_SHADED, CMD_RALLY,
     # NP symbols
     NP_SYMBOL_CARNYX, NP_SYMBOL_LAURELS, NP_SYMBOL_SWORDS,
     # Markers
@@ -49,6 +49,59 @@ from fs_bot.cards.bot_instructions import (
     get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
     CONDITIONAL,
 )
+
+
+def command_region_candidates(state, regions):
+    """Apply an Event's action-region scope without changing the physical board.
+
+    Call at regional candidate selection, before priority limits and Available
+    pools are consumed. March callers apply it to origins, not destinations.
+    Explicitly map-wide objectives continue to query the complete state.
+    """
+    allowed = state.get("_command_region_scope")
+    return [region for region in regions if allowed is None or region in allowed]
+
+
+def command_sa_allowed(state):
+    """An Event grants a Special Ability only when its text permits one."""
+    return state.get("_command_with_sa", True)
+
+
+def estimate_scoped_rally(state, faction, planner):
+    """Measure a restricted/free Rally through its actual planner and executor.
+
+    Entry conditions must reflect legal placement caps, one option per Region,
+    available pieces, and free costs. Use detached state so estimates neither
+    spend tie-break rolls nor ask player reactions or perform a Special Ability.
+    """
+    from copy import deepcopy
+    from fs_bot.engine.execute import _execute_rally
+    sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    sim["_command_with_sa"] = False
+    result = {"citadels": 0, "allies": 0, "warbands": 0,
+              "total": 0, "adds_control": False}
+    action = planner(sim)
+    if action.get("command") != CMD_RALLY:
+        return result
+    before_warbands = get_available(sim, faction, WARBAND)
+    before_control = set(get_controlled_regions(sim, faction))
+    execution = _execute_rally(sim, faction, action)
+    if execution.get("errors"):
+        raise ValueError(f"Rally planner produced an invalid scoped plan: {execution['errors']}")
+    for placement in execution.get("placements", []):
+        if placement["action"] == "place_citadel":
+            result["citadels"] += 1
+        elif placement["action"] == "place_ally":
+            result["allies"] += 1
+    result["warbands"] = before_warbands - get_available(sim, faction, WARBAND)
+    result["total"] = sum(result[key] for key in ("citadels", "allies", "warbands"))
+    result["adds_control"] = bool(set(get_controlled_regions(sim, faction)) - before_control)
+    return result
+
+
+def command_is_allowed(state, command):
+    """Whether a granted Command permits this flowchart branch (§8.2.3)."""
+    return command not in state.get("_command_exclusions", ())
 
 
 # ============================================================================
@@ -202,6 +255,24 @@ def should_decline_event(state, card_id, faction):
     # "No [Faction]" cards — §8.1.1
     if is_no_faction_event(card_id, faction, scenario):
         return True
+
+    # War Fleet grants no Special Ability. Romans/Aedui have no Home Rally
+    # in its theatre, so with no own pieces there neither movement nor the
+    # follow-on Command can have an effect (§8.1.1; Card 62).
+    if card_id == 62 and faction in (ROMANS, AEDUI):
+        from fs_bot.rules_consts import ARVERNI_REGION, PICTONES, BRITANNIA
+        theatre = {ARVERNI_REGION, PICTONES, BRITANNIA,
+                   *get_adjacent(BRITANNIA, scenario)}
+        if not any(count_pieces(state, r, faction)
+                   for r in theatre if r in state["spaces"]):
+            return True
+
+    # Arverni Assembly of Gaul instruction: decline unless they qualify.
+    # The shaded benefit belongs to the physical Carnutes controller.
+    if card_id == 52 and faction == ARVERNI:
+        from fs_bot.rules_consts import CARNUTES
+        if not is_controlled_by(state, CARNUTES, ARVERNI):
+            return True
 
     # Capability in final year — §8.1.1
     if is_final_year_capability(state, card_id):

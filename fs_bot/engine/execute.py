@@ -286,8 +286,9 @@ def _execute_decision(state, faction, decision):
         # those first; all other standalone SAs run after the Command. Battle-
         # modifying SAs (Ambush/Besiege) are applied inside _execute_battle.
         # §4.1: human ordering is explicit; only bots use flowchart timing.
-        timing = (bot_action.get("sa_timing", "after") if is_human else
-                  ("before" if _sa_runs_before_command(command, sa) else "after"))
+        timing = bot_action.get("sa_timing") or (
+            "after" if is_human else
+            ("before" if _sa_runs_before_command(command, sa) else "after"))
         before = timing == "before"
         sa_result = None
         if timing == "during" and sa not in _BATTLE_MODIFYING_SAS:

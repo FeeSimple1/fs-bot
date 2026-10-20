@@ -58,6 +58,7 @@ from fs_bot.map.map_data import (
     get_region_group, is_city_tribe, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
+    command_region_candidates, command_is_allowed, command_sa_allowed,
     # Event decisions
     should_decline_event, get_dual_use_preference, get_event_instruction,
     upgrade_limited_command,
@@ -223,7 +224,8 @@ def _get_threat_regions(state, scenario):
     Returns:
         List of region constants.
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     return [r for r in playable if _has_belgae_threat(state, r, scenario)]
 
 
@@ -357,13 +359,20 @@ def _estimate_rally_would_qualify(state, scenario):
     Returns:
         True if Rally qualifies per §8.5.3.
     """
+    if state.get("_planning_free_command") or state.get("_command_region_scope") is not None:
+        from fs_bot.bots.bot_common import estimate_scoped_rally
+        estimate = estimate_scoped_rally(state, BELGAE, node_b_rally)
+        return bool(estimate["citadels"] or estimate["allies"]
+                    or estimate["warbands"] >= 3 or estimate["adds_control"])
     resources = state.get("resources", {}).get(BELGAE, 0)
 
     # §8.5.3 NOTE: 0 Resources means Rally places nothing (not free)
-    if resources <= 0:
+    from fs_bot.commands.common import is_free_action
+    if resources <= 0 and not is_free_action(state, BELGAE):
         return False
 
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
 
     avail_citadels = get_available(state, BELGAE, CITADEL)
     avail_allies = get_available(state, BELGAE, ALLY)
@@ -466,7 +475,8 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         (bool, list of raid plan dicts) — whether 2+ Resources would be
         gained and the raid plan.
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     non_players = state.get("non_player_factions", set())
     total_gain = 0
     raid_plan = []
@@ -649,6 +659,8 @@ def node_b2(state):
     Returns:
         "Yes" (Pass) or "No" (continue).
     """
+    if state.get("_planning_free_command"):
+        return "No"
     # Check faction order on current and next cards
     current_order = state.get("current_card_faction_order", [])
     next_order = state.get("next_card_faction_order", [])
@@ -784,6 +796,8 @@ def node_b_battle(state):
     Returns:
         Action dict for Battle, or redirects to March (threat).
     """
+    if not command_is_allowed(state, ACTION_BATTLE):
+        return node_b_march_threat(state)
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
     threat_regions = _get_threat_regions(state, scenario)
@@ -836,7 +850,8 @@ def node_b_battle(state):
     # Step 3/4: Fight enemies meeting trigger condition, then others — §8.5.1
     # "the Belgae next Battle non-German enemies where they can"
     # (or all enemies in Ariovistus per A8.5.1)
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     enemies = _get_non_german_enemies(scenario)
 
     for region in threat_regions:
@@ -942,6 +957,8 @@ def node_b_march_threat(state):
     Returns:
         Action dict for March.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return _make_action(ACTION_MARCH, details={"march_plan": {"origins": [], "destinations": []}})
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
     ambiorix_region = _ambiorix_region(state)
@@ -971,11 +988,12 @@ def node_b_march_threat(state):
     # Sort: Leader's Region first — §8.5.1
     # "March first with the Belgic Leader (and the Belgic Warbands with him)
     # then with other groups."
-    origin_list = sorted(origins)
+    origin_list = sorted(command_region_candidates(state, origins))
     if ambiorix_region and ambiorix_region in origin_list:
         origin_list.remove(ambiorix_region)
         origin_list.insert(0, ambiorix_region)
 
+    origins = set(origin_list)
     march_plan["origins"] = origin_list
 
     # Determine destinations — §8.5.1
@@ -1051,7 +1069,8 @@ def node_b_rally(state):
     """
     from fs_bot.commands.rally import has_rally_control
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
 
     rally_plan = {
         "citadels": [],
@@ -1161,6 +1180,8 @@ def node_b_raid(state):
     Returns:
         Action dict for Raid, or Pass.
     """
+    if not command_is_allowed(state, ACTION_RAID):
+        return _make_action(ACTION_PASS)
     scenario = state["scenario"]
     enough, raid_plan = _would_raid_gain_enough(state, scenario)
 
@@ -1210,6 +1231,8 @@ def node_b_march(state):
     Returns:
         Action dict for March, or redirects to Raid.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return node_b_raid(state)
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
     resources = state.get("resources", {}).get(BELGAE, 0)
@@ -1250,7 +1273,7 @@ def node_b_march(state):
 
         # Find origins that can supply Warbands
         origin_supply = []
-        for origin in playable:
+        for origin in command_region_candidates(state, playable):
             if origin == region:
                 continue
             adj_regions = get_adjacent(origin, scenario)
@@ -1302,7 +1325,7 @@ def node_b_march(state):
             warbands_needed = max(0, non_belgae_forces - belgae_forces + 1)
 
             origin_supply = []
-            for origin in playable:
+            for origin in command_region_candidates(state, playable):
                 if origin == region:
                     continue
                 adj_regions = get_adjacent(origin, scenario)
@@ -1336,7 +1359,7 @@ def node_b_march(state):
 
     # Step 2: Leader alone — §8.5.5
     ambiorix_region = _ambiorix_region(state)
-    if ambiorix_region:
+    if ambiorix_region in command_region_candidates(state, playable):
         # Option A: "to 1 Region above if needed to join most Belgic
         # pieces able" — §8.5.5
         if march_plan["control_destinations"]:
@@ -1425,6 +1448,8 @@ def _check_ambush(state, battle_plan, scenario):
     Returns:
         List of Ambush regions, or empty.
     """
+    if not command_sa_allowed(state):
+        return []
     if not battle_plan:
         return []
 
@@ -1483,6 +1508,11 @@ def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None, al
     Returns:
         List of Rampage region dicts, or empty.
     """
+    if not command_sa_allowed(state):
+        return []
+    scope = state.get("_command_region_scope")
+    if scope is not None:
+        allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     playable = get_playable_regions(scenario, state.get("capabilities"))
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
@@ -1575,6 +1605,8 @@ def _check_enlist_in_battle(state, battle_plan, scenario):
     Returns:
         Dict with enlist details, or None.
     """
+    if not command_sa_allowed(state):
+        return None
     if not battle_plan:
         return None
 
@@ -1645,6 +1677,11 @@ def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
     Returns:
         Dict with enlist details, or None.
     """
+    if not command_sa_allowed(state):
+        return None
+    scope = state.get("_command_region_scope")
+    if scope is not None:
+        allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     playable = get_playable_regions(scenario, state.get("capabilities"))
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
@@ -2092,7 +2129,7 @@ def execute_belgae_turn(state):
 
     # B4: Rally?
     b4_result = node_b4(state)
-    if b4_result == "Yes":
+    if b4_result == "Yes" and command_is_allowed(state, ACTION_RALLY):
         return node_b_rally(state)
 
     # B5: Raid (0-3 Resources and roll 1-4)?

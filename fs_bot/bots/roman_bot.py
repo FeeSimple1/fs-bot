@@ -65,6 +65,7 @@ from fs_bot.bots.bot_common import (
     should_decline_event, get_dual_use_preference, get_event_instruction,
     NO_EVENT,
     upgrade_limited_command,
+    command_region_candidates, command_is_allowed, command_sa_allowed,
     # Targeting
     get_faction_targeting_order, get_enemy_piece_target_order,
     get_own_loss_order,
@@ -208,7 +209,8 @@ def _get_threat_regions(state, scenario):
     Returns:
         List of region constants.
     """
-    playable = get_playable_regions_for_state(state, ROMANS)
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, ROMANS))
     return [r for r in playable if _has_roman_threat(state, r, scenario)]
 
 
@@ -483,7 +485,8 @@ def node_r2(state):
 
     # Check Caesar's position
     caesar_region = _caesar_region(state)
-    if caesar_region is None:
+    if (caesar_region is None
+            or not command_region_candidates(state, [caesar_region])):
         return "No"
 
     # At least 2 Legions in Caesar's region
@@ -592,6 +595,9 @@ def node_r_battle(state):
     Returns:
         Action dict for Battle, or redirects to March.
     """
+    if not command_is_allowed(state, ACTION_BATTLE):
+        return node_r_march(state)
+
     scenario = state["scenario"]
     threat_regions = _get_threat_regions(state, scenario)
 
@@ -660,6 +666,8 @@ def _determine_battle_sa(state, battle_plan, scenario):
     Returns:
         (sa_action, sa_regions) tuple.
     """
+    if not command_sa_allowed(state):
+        return (SA_ACTION_NONE, [])
     from fs_bot.commands.sa_besiege import validate_besiege_region
     eligible = [bp for bp in battle_plan if bp.get("targets") and
                 validate_besiege_region(state, bp["region"], bp["targets"][0])[0]]
@@ -709,10 +717,32 @@ def node_r_march(state):
     Returns:
         Action dict for March.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return node_r_recruit(state)
+
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
 
-    destinations = _rank_march_destinations(state, scenario)
+    reachable = None
+    if state.get("_command_region_scope") is not None:
+        # §8.2.3 applies destination priorities only to Regions reachable
+        # from the Event's permitted origins. A remote higher-tier base
+        # must not hide a reachable lower-tier base from those forces.
+        from fs_bot.commands.march import _max_steps_for_group
+        from fs_bot.engine.execute import _bfs_march_path
+        playable = set(get_playable_regions_for_state(state, ROMANS))
+        reachable = set()
+        for origin in command_region_candidates(state, sorted(playable)):
+            group = _march_group_8_8_1(state, origin)
+            if not group:
+                continue
+            allowance = _max_steps_for_group(state, origin, ROMANS, group)
+            for destination in playable - {origin}:
+                route = _bfs_march_path(origin, destination, playable)
+                if route and len(route) <= allowance:
+                    reachable.add(destination)
+    destinations = _rank_march_destinations(
+        state, scenario, allowed_regions=reachable)
 
     # Per §8.4.4: Frost filters destinations, not the entire March.
     # "Non-players take no action that could directly advance any player
@@ -747,7 +777,7 @@ def node_r_march(state):
     selected_dests = destinations[:dest_count]
 
     # Determine SA: Scout during March or Build after — §8.8.1
-    sa = SA_ACTION_BUILD
+    sa = SA_ACTION_BUILD if command_sa_allowed(state) else SA_ACTION_NONE
 
     # §8.8.1 (errata): per-origin subset groups — Leader + all Legions +
     # at least 1 Auxilia + the most Auxilia able to leave without losing
@@ -841,6 +871,7 @@ def _select_march_origins(state, threat_regions, destinations, scenario):
     Returns:
         List of origin region constants.
     """
+    threat_regions = command_region_candidates(state, threat_regions)
     origins = []
 
     # Determine the destination of the 1st origin's group — this is the
@@ -860,7 +891,8 @@ def _select_march_origins(state, threat_regions, destinations, scenario):
             break
 
     # (3) Region with no enemy Ally/Citadel, prefer with Leader then Legions
-    playable = get_playable_regions_for_state(state, ROMANS)
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, ROMANS))
     clean_regions = []
     for r in playable:
         if r in origins:
@@ -901,6 +933,9 @@ def node_r_recruit(state):
     Returns:
         Action dict for Recruit, or redirects to Seize.
     """
+    if not command_is_allowed(state, ACTION_RECRUIT):
+        return node_r_seize(state)
+
     from fs_bot.commands.rally import has_rally_control
     scenario = state["scenario"]
 
@@ -915,7 +950,8 @@ def node_r_recruit(state):
         validate_recruit_region, has_supply_line,
         _find_subdued_tribe_for_ally, _count_recruit_auxilia_cap, can_recruit_auxilia,
     )
-    playable = get_playable_regions_for_state(state, ROMANS)
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, ROMANS))
     eligible = [r for r in playable if validate_recruit_region(state, r)[0]]
     # Supply-Line Regions first (to save Resources), then a stable order.
     eligible.sort(key=lambda r: (0 if has_supply_line(state, r) else 1, r))
@@ -981,10 +1017,12 @@ def node_r_recruit(state):
             placed_auxilia += take
             budget -= cost
 
-    if placed_allies >= 2 or (placed_allies + placed_auxilia) >= 6:
+    forced = state.get("_planning_forced_command") == ACTION_RECRUIT
+    if (placed_allies >= 2 or (placed_allies + placed_auxilia) >= 6
+            or (forced and recruit_plan)):
         return _make_action(
             ACTION_RECRUIT,
-            sa=SA_ACTION_BUILD,  # Build before Recruit — §8.8.4
+            sa=(SA_ACTION_BUILD if command_sa_allowed(state) else SA_ACTION_NONE),
             details={
                 "potential_allies": placed_allies,
                 "potential_auxilia": placed_auxilia,
@@ -1008,9 +1046,13 @@ def node_r_seize(state):
     Returns:
         Action dict for Seize, or Pass.
     """
+    if not command_is_allowed(state, ACTION_SEIZE):
+        return _make_action(ACTION_PASS)
+
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
-    playable = get_playable_regions_for_state(state, ROMANS)
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, ROMANS))
 
     # Find regions where Romans can Seize without Harassment
     # Per §3.2.3: Harassment comes from ALL factions with Warbands in the
@@ -1082,7 +1124,7 @@ def node_r_seize(state):
     return _make_action(
         ACTION_SEIZE,
         regions=all_seize,
-        sa=SA_ACTION_BUILD,
+        sa=(SA_ACTION_BUILD if command_sa_allowed(state) else SA_ACTION_NONE),
         details={"disperse_regions": disperse_regions},
     )
 
@@ -1105,6 +1147,9 @@ def node_r_besiege(state, battle_regions):
     Returns:
         List of regions to Besiege, or empty.
     """
+    if not command_sa_allowed(state):
+        return []
+    battle_regions = command_region_candidates(state, battle_regions)
     scenario = state["scenario"]
     besiege_needed = []
 
@@ -1158,9 +1203,12 @@ def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
     Returns:
         Build action details dict.
     """
+    if not command_sa_allowed(state):
+        return {"forts": [], "subdue": [], "allies": []}
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
-    playable = get_playable_regions_for_state(state, ROMANS)
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, ROMANS))
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
     exclude = set(exclude_regions or [])
@@ -1400,7 +1448,7 @@ def _scout_emit_move(sim, moves, src, dst, count):
         remaining -= n
 
 
-def _scout_auxilia_moves(state, *, scouts=None):
+def _scout_auxilia_moves(state, *, scouts=None, allowed_regions=None):
     """Concrete §8.8.1 SCOUT Auxilia moves (errata 15Nov2018), in the
     instruction's order: (1) end with 4+ Auxilia in Caesar's Region;
     (2) add guaranteed Supply Lines by breaking Arverni/Belgae/player-
@@ -1410,8 +1458,9 @@ def _scout_auxilia_moves(state, *, scouts=None):
     """
     import copy as _copy
     from fs_bot.rules_consts import BRITANNIA
-    sim = _copy.deepcopy(state)
-    sim.pop("decision_agent", None)
+    if not command_sa_allowed(state):
+        return []
+    sim = _copy.deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
     scenario = sim["scenario"]
     playable = sorted(get_playable_regions_for_state(sim, ROMANS))
     caesar_region = _caesar_region(sim)
@@ -1432,6 +1481,9 @@ def _scout_auxilia_moves(state, *, scouts=None):
                           "count": count, "piece_state": HIDDEN})
 
     def movable(src):
+        if (not command_region_candidates(sim, [src])
+                or (allowed_regions is not None and src not in allowed_regions)):
+            return 0
         aux = count_pieces(sim, src, ROMANS, AUXILIA)
         m = aux - count_pieces(sim, src, ROMANS, LEGION)
         if src == caesar_region:
@@ -1543,10 +1595,12 @@ def node_r_scout(state, *, allowed_regions=None):
     Returns:
         Scout action details dict.
     """
+    if not command_sa_allowed(state):
+        return {"auxilia_moves": [], "scout_targets": []}
     scenario = state["scenario"]
 
     scout_plan = {
-        "auxilia_moves": _scout_auxilia_moves(state),
+        "auxilia_moves": _scout_auxilia_moves(state, allowed_regions=allowed_regions),
         "scout_targets": [],
     }
     if allowed_regions is not None:
@@ -1557,7 +1611,8 @@ def node_r_scout(state, *, allowed_regions=None):
     # Step 2: Scout targets — Hidden first, then Revealed.
     # §4.2.2: Reveal only in Regions within 1 of Caesar (or the Successor's
     # Region) AND only by flipping a Roman Hidden Auxilia present THERE.
-    playable = get_playable_regions_for_state(state, ROMANS)
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, ROMANS))
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
     # §4.1.2: Scout Reveal is allowed within 1 Region of the NAMED leader

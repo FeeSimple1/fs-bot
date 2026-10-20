@@ -51,6 +51,7 @@ from fs_bot.map.map_data import (
     get_region_group, is_city_tribe,
 )
 from fs_bot.bots.bot_common import (
+    command_region_candidates, command_is_allowed, command_sa_allowed,
     # Event decisions
     should_decline_event, get_dual_use_preference, get_event_instruction,
     upgrade_limited_command,
@@ -189,7 +190,8 @@ def _get_threat_regions(state, scenario):
     Returns:
         List of region constants.
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     return [r for r in playable if _has_arverni_threat(state, r, scenario)]
 
 
@@ -308,7 +310,11 @@ def _estimate_rally_placements(state, scenario):
     Returns:
         Dict with "citadels", "allies", "warbands", "total" counts.
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    if state.get("_planning_free_command") or state.get("_command_region_scope") is not None:
+        from fs_bot.bots.bot_common import estimate_scoped_rally
+        return estimate_scoped_rally(state, ARVERNI, node_v_rally)
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     citadels = 0
     allies = 0
     warbands = 0
@@ -395,7 +401,8 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         (bool, list of raid plan dicts) — whether 2+ Resources would be
         gained and the raid plan organized by region.
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     total_gain = 0
     raid_plan = []
     # §3.3.3: each steal takes 1 Resource. Track Resources already committed so
@@ -705,6 +712,8 @@ def node_v_battle(state):
     Returns:
         Action dict for Battle, or redirects to March (threat).
     """
+    if not command_is_allowed(state, ACTION_BATTLE):
+        return node_v_march_threat(state)
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
     threat_regions = _get_threat_regions(state, scenario)
@@ -773,7 +782,8 @@ def node_v_battle(state):
     # Step 5: Additional Battles vs Romans, Aedui, player Belgae — §8.7.1
     # "spaces that did not trigger the Battle Command above"
     # "Non-player Arverni do not Battle against Non-player Belgae or Germans."
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
     for region in playable:
         if any(bp["region"] == region for bp in battle_plan):
             continue
@@ -966,6 +976,8 @@ def node_v_march_threat(state):
     Returns:
         Action dict for March, including Devastate/Entreat SA.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return _make_action(ACTION_MARCH, details={"march_plan": {"origins": [], "destinations": []}})
     scenario = state["scenario"]
     verc_region = _vercingetorix_region(state)
     playable = get_playable_regions(scenario, state.get("capabilities"))
@@ -980,7 +992,7 @@ def node_v_march_threat(state):
     # Step 1: Vercingetorix Marches to the Region with the most Arverni pieces
     # he can REACH within the §8.7.1 Harassment restriction (<=3 Losses, none
     # on Vercingetorix), by the Harassment-minimizing route.
-    if verc_region:
+    if verc_region in command_region_candidates(state, playable):
         best_dest, verc_route = _verc_march_route(state, scenario, verc_region)
         if best_dest is not None:
             march_plan["origins"].append(verc_region)
@@ -990,7 +1002,7 @@ def node_v_march_threat(state):
     # Step 2: Move all other Warbands toward Vercingetorix, leave 1 per origin
     verc_dest = march_plan["destinations"][0] if march_plan["destinations"] else verc_region
     if verc_dest:
-        for region in playable:
+        for region in command_region_candidates(state, playable):
             if region == verc_dest:
                 continue
             if region == verc_region:
@@ -998,6 +1010,11 @@ def node_v_march_threat(state):
             arverni_wb = count_pieces(state, region, ARVERNI, WARBAND)
             if arverni_wb > 1:
                 march_plan["origins"].append(region)
+        # A scoped grant may leave Vercingetorix outside its origin Regions.
+        # The allowed groups still approach his physical, stationary Region.
+        if (state.get("_command_region_scope") is not None
+                and march_plan["origins"] and not march_plan["destinations"]):
+            march_plan["destinations"] = [verc_dest]
 
     # Determine SA: Devastate before March (if marching away from threat),
     # otherwise after — §8.7.1
@@ -1027,7 +1044,8 @@ def node_v_rally(state):
     """
     from fs_bot.commands.rally import has_rally_control
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions(scenario, state.get("capabilities")))
 
     rally_plan = {
         "citadels": [],
@@ -1115,6 +1133,8 @@ def node_v_march_spread(state):
     Returns:
         Action dict for March, or redirects to Raid.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return node_v_raid(state)
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
 
@@ -1146,7 +1166,7 @@ def node_v_march_spread(state):
         # Find adjacent origins with 2+ Arverni Warbands
         possible_origins = []
         for adj in get_adjacent(region, scenario):
-            if adj not in playable_set:
+            if adj not in command_region_candidates(state, playable_set):
                 continue
             adj_wb = count_pieces(state, adj, ARVERNI, WARBAND)
             if adj_wb >= 2:
@@ -1183,7 +1203,7 @@ def node_v_march_spread(state):
     # Step 2: Leader with Warbands to take Arverni Control of Roman/Aedui
     # Controlled region — NOT Bibracte (AEDUI_REGION) — §8.7.4
     verc_region = _vercingetorix_region(state)
-    if verc_region:
+    if verc_region in command_region_candidates(state, playable):
         best_dest = None
         best_adj_count = -1
         for region in playable:
@@ -1247,6 +1267,8 @@ def node_v_raid(state):
     Returns:
         Action dict for Raid, or Pass.
     """
+    if not command_is_allowed(state, ACTION_RAID):
+        return _make_action(ACTION_PASS)
     scenario = state["scenario"]
     enough, raid_regions = _would_raid_gain_enough(state, scenario)
 
@@ -1279,13 +1301,15 @@ def node_v_march_mass(state):
     Returns:
         Action dict for March, or redirects to Raid.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return node_v_raid(state)
     scenario = state["scenario"]
     playable = get_playable_regions(scenario, state.get("capabilities"))
     verc_region = _vercingetorix_region(state)
 
     # IF NONE: no Leader or Frost — §8.7.6
     from fs_bot.commands.common import is_free_action
-    if verc_region is None or (is_frost_active(state) and not is_free_action(state, ARVERNI)):
+    if verc_region not in command_region_candidates(state, playable) or (is_frost_active(state) and not is_free_action(state, ARVERNI)):
         return node_v_raid(state)
 
     march_plan = {
@@ -1336,7 +1360,7 @@ def node_v_march_mass(state):
             # Count Arverni pieces that could gather here
             arverni_here = count_pieces(state, region, ARVERNI)
             # Add pieces that could March in
-            for adj in get_adjacent(region, scenario):
+            for adj in command_region_candidates(state, get_adjacent(region, scenario)):
                 adj_wb = count_pieces(state, adj, ARVERNI, WARBAND)
                 if adj_wb > 1:
                     arverni_here += adj_wb - 1  # Leave 1 per origin
@@ -1394,6 +1418,8 @@ def _check_ambush(state, battle_plan, scenario):
     Returns:
         List of Ambush regions, or empty.
     """
+    if not command_sa_allowed(state):
+        return []
     if not battle_plan:
         return []
 
@@ -1457,6 +1483,11 @@ def _check_devastate(state, scenario, *, allowed_regions=None):
     Returns:
         List of Devastate regions, or empty.
     """
+    if not command_sa_allowed(state):
+        return []
+    scope = state.get("_command_region_scope")
+    if scope is not None:
+        allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     playable = get_playable_regions(scenario, state.get("capabilities"))
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
@@ -1520,6 +1551,11 @@ def _check_entreat(state, scenario, *, allowed_regions=None):
     Returns:
         List of Entreat action dicts, or empty.
     """
+    if not command_sa_allowed(state):
+        return []
+    scope = state.get("_command_region_scope")
+    if scope is not None:
+        allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     playable = get_playable_regions(scenario, state.get("capabilities"))
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
@@ -1901,7 +1937,7 @@ def execute_arverni_turn(state):
 
     # V3: Rally?
     v3_result = node_v3(state)
-    if v3_result == "Yes":
+    if v3_result == "Yes" and command_is_allowed(state, ACTION_RALLY):
         return node_v_rally(state)
 
     # V4: March to spread?

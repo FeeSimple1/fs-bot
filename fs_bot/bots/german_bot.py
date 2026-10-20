@@ -66,7 +66,7 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region,
+    get_adjacent, get_playable_regions_for_state, get_tribes_in_region,
     get_region_group, is_city_tribe, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
@@ -77,6 +77,8 @@ from fs_bot.bots.bot_common import (
     count_mobile_pieces, count_faction_allies_and_citadels,
     get_leader_placement_region,
     prevalidate_rally_plan,
+    command_region_candidates, command_is_allowed, command_sa_allowed,
+    estimate_scoped_rally,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.bots.bot_dispatch import BotDispatchError
@@ -212,7 +214,8 @@ def _get_threat_regions(state, scenario):
     Returns:
         Sorted list of region constants (deterministic).
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
     return sorted(r for r in playable if _has_german_threat(state, r))
 
 
@@ -379,7 +382,8 @@ def _find_largest_german_warband_group_leaderless(state, scenario):
     Returns:
         (region, count) or (None, 0).
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
     leader_region = _ariovistus_region(state)
     best_region = None
     best_count = 0
@@ -428,7 +432,8 @@ def node_g1b(state):
         "Yes" (proceed to March-threat) or "No" (proceed to G2).
     """
     aristos_region = _ariovistus_region(state)
-    if aristos_region is None:
+    if (aristos_region is None
+            or not command_region_candidates(state, [aristos_region])):
         return "No"
 
     aristos_wb = count_pieces(state, aristos_region, GERMANS, WARBAND)
@@ -462,6 +467,9 @@ def node_g2(state):
     Returns:
         "Yes" (Pass) or "No" (continue to G3).
     """
+    if state.get("_planning_free_command"):
+        return "No"  # §8.2.3 grants a Command, not a Sequence-of-Play Pass.
+
     current_order = state.get("current_card_faction_order", [])
     next_order = state.get("next_card_faction_order", [])
 
@@ -590,6 +598,10 @@ def _instruction_says_no_germans(state, card_id, instr):
         return derive_params(state, GERMANS, shaded=True) is None
     non_players = state.get("non_player_factions", set())
     text = (instr.instruction or "").lower()
+    # The foldout explicitly forbids Germanic Horse, Remi Influence,
+    # and War Fleet even though these are specific-instruction entries.
+    if text.strip() == "treat as 'no germans'.":
+        return True
 
     if "if romans are a non-player" in text:
         return ROMANS in non_players
@@ -613,6 +625,8 @@ def node_g4(state):
     Returns:
         "Yes" (attempt Raid) or "No" (proceed to G5).
     """
+    if not command_is_allowed(state, ACTION_RAID):
+        return "No"
     resources = state.get("resources", {}).get(GERMANS, 0)
     if resources >= 4:
         return "No"
@@ -637,6 +651,8 @@ def node_g5(state):
     Returns:
         "Yes" (Rally+Settle) or "No" (March-expand).
     """
+    if not command_is_allowed(state, ACTION_RALLY):
+        return "No"
     scenario = state["scenario"]
     if _estimate_rally_settle_would_qualify(state, scenario):
         return "Yes"
@@ -653,27 +669,32 @@ def _estimate_rally_settle_would_qualify(state, scenario):
     - add to Germanic Control.
     """
     resources = state.get("resources", {}).get(GERMANS, 0)
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
 
     avail_settlements = get_available(state, GERMANS, SETTLEMENT)
     avail_allies = get_available(state, GERMANS, ALLY)
     avail_warbands = get_available(state, GERMANS, WARBAND)
 
     # Settlement: at least one validly placeable region — A4.6.1
-    if avail_settlements > 0 and _any_settle_destination(state, scenario):
+    if (command_sa_allowed(state) and avail_settlements > 0
+            and _any_settle_destination(state, scenario)):
         return True
+
+    if state.get("_planning_free_command") or state.get("_command_region_scope") is not None:
+        estimate = estimate_scoped_rally(state, GERMANS, node_g_rally)
+        return bool(estimate["allies"] or estimate["warbands"] >= 4
+                    or estimate["adds_control"])
 
     # Ally: at any tribe where Germans have base AND tribe unallied
     if avail_allies > 0:
         for region in playable:
-            if (count_pieces(state, region, GERMANS) == 0
-                    and not is_controlled_by(state, region, GERMANS)
-                    and region not in GERMANIA_REGIONS):
+            if not is_controlled_by(state, region, GERMANS):
                 continue
-            for tribe in get_tribes_in_region(region, scenario):
-                tribe_info = state["tribes"].get(tribe, {})
-                if tribe_info.get("allied_faction") is not None:
-                    continue
+            from fs_bot.commands.rally import validate_rally_region
+            if not validate_rally_region(state, region, GERMANS)[0]:
+                continue
+            for tribe in _find_subdued_tribe_for_ally(state, region, GERMANS):
                 # Ally placement cost = same as Warband per A3.4.1
                 cost = _german_rally_cost(state, region)
                 if resources >= cost:
@@ -699,13 +720,16 @@ def _estimate_rally_settle_would_qualify(state, scenario):
 
 def _any_settle_destination(state, scenario):
     """True if at least one region is a valid Settle destination per A4.6.1."""
+    if not command_sa_allowed(state):
+        return False
     aristos_region = _ariovistus_region(state)
     if aristos_region is None:
         return False
     leader_name = get_leader_in_region(state, aristos_region, GERMANS)
     is_named_leader = leader_name == ARIOVISTUS_LEADER
 
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
     for region in playable:
         if region in GERMANIA_REGIONS:
             continue
@@ -743,8 +767,13 @@ def _count_placeable_warbands(state, scenario, resources, avail_warbands):
 
     Per A8.7.4 starting-with-Settlements-and-Germania to reduce costs.
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
-    remaining_res = resources
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
+    from copy import deepcopy
+    from fs_bot.commands.rally import rally_in_region
+    from fs_bot.commands.common import CommandError
+    sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    sim["resources"][GERMANS] = resources
     remaining_wb = avail_warbands
     placed = 0
 
@@ -777,14 +806,17 @@ def _count_placeable_warbands(state, scenario, resources, avail_warbands):
     candidates.sort(key=_region_sort_key)
 
     for region in candidates:
-        cost = _german_rally_cost(state, region)
-        while remaining_wb > 0 and remaining_res >= cost:
-            placed += 1
-            remaining_wb -= 1
-            remaining_res -= cost
-            if cost == 0:
-                # Avoid infinite loop on free Germania placement; cap by avail
-                continue
+        if remaining_wb <= 0:
+            break
+        try:
+            result = rally_in_region(sim, region, GERMANS, "place_warbands",
+                                     include_home_bonus=True,
+                                     max_pieces=remaining_wb)
+        except CommandError:
+            continue
+        added = result["pieces_placed"].get(WARBAND, 0)
+        placed += added
+        remaining_wb -= added
 
     return placed
 
@@ -848,6 +880,9 @@ def node_g_battle(state):
     Returns:
         Action dict for Battle, or redirects to March-threat.
     """
+    if not command_is_allowed(state, ACTION_BATTLE):
+        return node_g_march_threat(state)
+
     scenario = state["scenario"]
     threat_regions = _get_threat_regions(state, scenario)
     if not threat_regions:
@@ -912,7 +947,8 @@ def node_g_battle(state):
 
     # Step 4 — Battle other enemies where they can (no trigger required)
     # "until they run out of candidate Regions or of Resources" — A8.7.1
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
     for region in playable:
         if any(bp["region"] == region for bp in battle_plan):
             continue
@@ -957,6 +993,9 @@ def _determine_battle_sa(state, battle_plan):
     Returns:
         (sa_action, sa_regions, sa_details).
     """
+    if not command_sa_allowed(state):
+        return (SA_ACTION_NONE, [], {})
+
     ambush_regions = _check_ambush(state, battle_plan)
     if ambush_regions:
         return (SA_ACTION_AMBUSH, ambush_regions, {})
@@ -996,8 +1035,12 @@ def node_g_march_threat(state):
     Returns:
         Action dict for March.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return _make_action(
+            ACTION_MARCH, details={"march_plan": {"origins": [], "destinations": []}})
+
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, GERMANS)
     threat_regions = _get_threat_regions(state, scenario)
     aristos_region = _ariovistus_region(state)
 
@@ -1006,7 +1049,7 @@ def node_g_march_threat(state):
     if aristos_region:
         origins.add(aristos_region)
 
-    origin_list = sorted(origins)
+    origin_list = sorted(command_region_candidates(state, origins))
     if aristos_region and aristos_region in origin_list:
         origin_list.remove(aristos_region)
         origin_list.insert(0, aristos_region)
@@ -1050,7 +1093,8 @@ def node_g_march_threat(state):
     routes = {}
     destinations = []
     for o in origin_list:
-        nbrs = sorted(r for r in get_adjacent(o, scenario) if r not in excluded)
+        nbrs = sorted(r for r in get_adjacent(o, scenario)
+                      if r in playable and r not in excluded)
         if not nbrs:
             continue  # no legal one-Region destination — this origin stays put
         best_key = max(_dest_key(r) for r in nbrs)
@@ -1060,8 +1104,11 @@ def node_g_march_threat(state):
         if pick not in destinations:
             destinations.append(pick)
 
-    if not destinations or not origins:
-        return _make_action(ACTION_PASS)
+    if not destinations or not origin_list:
+        if not state.get("_planning_free_command"):
+            return _make_action(ACTION_PASS)
+        return _make_action(
+            ACTION_MARCH, details={"march_plan": {"origins": [], "destinations": []}})
 
     march_plan = {
         "origins": origin_list,
@@ -1101,6 +1148,9 @@ def node_g_raid(state):
     Returns:
         Action dict for Raid, or Pass.
     """
+    if not command_is_allowed(state, ACTION_RAID):
+        return _make_action(ACTION_PASS)
+
     scenario = state["scenario"]
     enough, raid_plan = _would_raid_gain_enough(state, scenario)
     if not enough:
@@ -1146,7 +1196,8 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
     Returns:
         (bool enough, list of raid plan dicts).
     """
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
     total_gain = 0
     plan = []
     # §3.3.3: each steal takes 1 Resource. Track Resources already committed
@@ -1228,10 +1279,12 @@ def node_g_rally(state):
     Returns:
         Action dict for Rally with Settle (SA).
     """
-    scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
-    resources = state.get("resources", {}).get(GERMANS, 0)
+    if not command_is_allowed(state, ACTION_RALLY):
+        return node_g_raid(state)
 
+    scenario = state["scenario"]
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
     rally_plan = {
         "settlements_before": [],
         "allies": [],
@@ -1239,128 +1292,86 @@ def node_g_rally(state):
         "settlements_after": [],
     }
 
-    # Phase A: Settle BEFORE Rally if any can be placed — A8.7.4
-    settle_dests = _get_settle_destinations(state, scenario)
-    if settle_dests:
-        avail_settle = get_available(state, GERMANS, SETTLEMENT)
-        for region in settle_dests:
-            if avail_settle <= 0:
-                break
-            cost = SETTLE_COST
-            if _is_devastated(state, region):
-                cost *= 2
-            from fs_bot.commands.common import action_cost
-            cost = action_cost(state, GERMANS, cost)
-            if resources < cost:
-                break
-            rally_plan["settlements_before"].append({
-                "region": region, "cost": cost,
-            })
-            resources -= cost
-            avail_settle -= 1
-        sa = (SA_ACTION_SETTLE
-              if rally_plan["settlements_before"] else SA_ACTION_NONE)
-        sa_regions = [s["region"] for s in rally_plan["settlements_before"]]
-    else:
-        sa = SA_ACTION_NONE
-        sa_regions = []
+    from copy import deepcopy
+    from fs_bot.commands.common import CommandError
+    from fs_bot.commands.rally import rally_in_region
+    from fs_bot.commands.sa_settle import settle
+    sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
 
-    # Phase B: Place all Allies possible — A8.7.4
-    # place_ally requires German Control — §3.3.1/A3.4.1; tribe eligibility
-    # per the executor's _find_subdued_tribe_for_ally. Final legality and
-    # the Resource budget are enforced by prevalidate_rally_plan below.
-    avail_allies = get_available(state, GERMANS, ALLY)
-    for region in playable:
-        if avail_allies <= 0:
-            break
-        if not is_controlled_by(state, region, GERMANS):
-            continue
-        for tribe in _find_subdued_tribe_for_ally(state, region, GERMANS):
-            if avail_allies <= 0:
+    def plan_settlements():
+        # A4.6.1: each new Settlement can qualify the next Region in this
+        # same Special Ability. Reevaluate candidates on the evolving board.
+        placements = []
+        while get_available(sim, GERMANS, SETTLEMENT) > 0:
+            for region in _get_settle_destinations(sim, scenario):
+                try:
+                    result = settle(sim, region)
+                except CommandError:
+                    # A Devastated destination may be unaffordable while a
+                    # later destination still costs only two Resources.
+                    continue
+                placements.append({"region": region, "cost": result["cost"]})
                 break
-            cost = _german_rally_cost(state, region)
-            from fs_bot.commands.common import action_cost
-            cost = action_cost(state, GERMANS, cost)
-            if resources < cost:
+            else:
+                break
+        return placements
+
+    # A8.7.1: Settle before Rally if possible, otherwise after Rally.
+    rally_plan["settlements_before"] = plan_settlements()
+
+    # Plan one legal Rally option per Region, including A3.4.1's home
+    # bonus. Spending the pool on duplicate options before prevalidation
+    # would wrongly starve later eligible Regions of their placements.
+    before_rally = deepcopy(sim)
+    selected = set()
+
+    # Phase B: one Ally option per Region, before all Warband options.
+    for region in playable:
+        if get_available(sim, GERMANS, ALLY) <= 0:
+            break
+        for tribe in _find_subdued_tribe_for_ally(sim, region, GERMANS):
+            try:
+                result = rally_in_region(sim, region, GERMANS, "place_ally",
+                                         tribe=tribe, include_home_bonus=True)
+            except CommandError:
                 continue
             rally_plan["allies"].append({
-                "region": region, "tribe": tribe, "cost": cost,
+                "region": region, "tribe": tribe, "cost": result["cost"],
             })
-            resources -= cost
-            avail_allies -= 1
+            selected.add(region)
+            break
 
-    # Phase C: Place all Warbands possible, cheapest first — A8.7.4
-    def _wb_sort_key(r):
-        if r in GERMANIA_REGIONS:
+    # Phase C: all legal Warbands, Germania/Settlements first. Regions
+    # already selecting an Ally received any home bonus with that option.
+    def _wb_sort_key(region):
+        if region in GERMANIA_REGIONS:
             return 0
-        if _has_settlement(state, r):
+        if _has_settlement(sim, region):
             return 1
         return 2
 
-    avail_warbands = get_available(state, GERMANS, WARBAND)
-    candidates = []
-    for region in playable:
-        has_base = (
-            is_controlled_by(state, region, GERMANS)
-            or _has_settlement(state, region)
-            or region in GERMANIA_REGIONS
-        )
-        if not has_base:
-            for tribe in get_tribes_in_region(region, scenario):
-                if state["tribes"].get(tribe, {}).get(
-                        "allied_faction") == GERMANS:
-                    has_base = True
-                    break
-        if has_base:
-            candidates.append(region)
-    candidates.sort(key=_wb_sort_key)
-
-    for region in candidates:
-        if avail_warbands <= 0:
+    for region in sorted(playable, key=_wb_sort_key):
+        if get_available(sim, GERMANS, WARBAND) <= 0:
             break
-        cost = _german_rally_cost(state, region)
-        placements_here = 0
-        while avail_warbands > 0 and resources >= cost:
-            rally_plan["warbands"].append({"region": region, "cost": cost})
-            resources -= cost
-            avail_warbands -= 1
-            placements_here += 1
-            if cost == 0 and placements_here >= avail_warbands + 1:
-                break  # paranoia
-        # If cost == 0 we keep placing in this region until out of warbands;
-        # otherwise move to next candidate.
-        if cost == 0:
+        if region in selected:
             continue
+        try:
+            result = rally_in_region(sim, region, GERMANS, "place_warbands",
+                                     include_home_bonus=True)
+        except CommandError:
+            continue
+        rally_plan["warbands"].append({"region": region, "cost": result["cost"]})
+        selected.add(region)
 
-    # Filter to exactly what the executor accepts (legality, Available
-    # pools, Resources in execution order) — "one rule, one implementation".
-    # The settlements_* keys are Special Activity plans and pass through.
-    rally_plan = prevalidate_rally_plan(state, GERMANS, rally_plan)
+    rally_plan = prevalidate_rally_plan(before_rally, GERMANS, rally_plan)
 
-    # Phase D: Settle AFTER Rally only if not done before — A8.7.4
+    # Rally can establish Control where Settle was not legal beforehand.
+    # Evaluate those newly qualified destinations on its resulting state.
     if not rally_plan["settlements_before"]:
-        if settle_dests:
-            avail = (get_available(state, GERMANS, SETTLEMENT)
-                     - len(rally_plan["settlements_after"]))
-            for region in settle_dests:
-                if avail <= 0:
-                    break
-                cost = SETTLE_COST
-                if _is_devastated(state, region):
-                    cost *= 2
-                from fs_bot.commands.common import action_cost
-                cost = action_cost(state, GERMANS, cost)
-                if resources < cost:
-                    break
-                rally_plan["settlements_after"].append({
-                    "region": region, "cost": cost,
-                })
-                resources -= cost
-                avail -= 1
-            if rally_plan["settlements_after"]:
-                sa = SA_ACTION_SETTLE
-                sa_regions = [s["region"]
-                              for s in rally_plan["settlements_after"]]
+        rally_plan["settlements_after"] = plan_settlements()
+    settlements = rally_plan["settlements_before"] or rally_plan["settlements_after"]
+    sa = SA_ACTION_SETTLE if settlements else SA_ACTION_NONE
+    sa_regions = [placement["region"] for placement in settlements]
 
     all_regions = list(
         {s["region"] for s in rally_plan["settlements_before"]}
@@ -1380,13 +1391,20 @@ def node_g_rally(state):
     if not all_regions:
         return node_g_raid(state)
 
-    return _make_action(
+    action = _make_action(
         ACTION_RALLY,
         regions=all_regions,
         sa=sa,
         sa_regions=sa_regions,
         details={"rally_plan": rally_plan},
     )
+
+    # The executor consumes this order: a new Settlement may qualify a
+    # later one. The generic action builder's alphabetical summary is not
+    # a valid execution order for a chained Settle plan.
+    action["sa_regions"] = sa_regions
+    action["sa_timing"] = ("before" if rally_plan["settlements_before"] else "after")
+    return action
 
 
 def _get_settle_destinations(state, scenario):
@@ -1395,13 +1413,16 @@ def _get_settle_destinations(state, scenario):
     Adjacency-to-Germania first; then those adjacent only to existing
     Settlements.
     """
+    if not command_sa_allowed(state):
+        return []
     aristos_region = _ariovistus_region(state)
     if aristos_region is None:
         return []
     leader_name = get_leader_in_region(state, aristos_region, GERMANS)
     is_named_leader = leader_name == ARIOVISTUS_LEADER
 
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = command_region_candidates(
+        state, get_playable_regions_for_state(state, GERMANS))
     valid = []
     for region in playable:
         if region in GERMANIA_REGIONS:
@@ -1453,8 +1474,11 @@ def node_g_march_expand(state):
     Returns:
         Action dict for March, or redirects to Rally then Raid as fallback.
     """
+    if not command_is_allowed(state, ACTION_MARCH):
+        return node_g_rally(state)
+
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, GERMANS)
     resources = state.get("resources", {}).get(GERMANS, 0)
 
     # IF NONE (or Frost): Rally per A8.7.4 instead — A8.7.5
@@ -1483,7 +1507,7 @@ def node_g_march_expand(state):
             wb_needed = 1
 
         origin_supply = []
-        for origin in playable:
+        for origin in command_region_candidates(state, playable):
             if origin == region:
                 continue
             if region not in get_adjacent(origin, scenario):
@@ -1549,7 +1573,7 @@ def node_g_march_expand(state):
             and all(is_controlled_by(state, a, GERMANS)
                     for a in leader_adj if a in playable)
         )
-        if all_german_control:
+        if all_german_control and command_region_candidates(state, [leader_region]):
             non_control_adj = [
                 a for a in leader_adj
                 if a in playable
@@ -1623,6 +1647,10 @@ def _check_ambush(state, battle_plan):
     """
     from fs_bot.commands.sa_ambush import validate_ambush_region
 
+    if not command_sa_allowed(state):
+        return []
+    battle_plan = [bp for bp in battle_plan
+                   if command_region_candidates(state, [bp["region"]])]
     if not battle_plan:
         return []
 
@@ -1671,6 +1699,8 @@ def _can_intimidate_region(state, region):
     """Per A4.6.2: region has Ariovistus, OR Germanic Control + within
     one of Ariovistus / same region as Successor.
     """
+    if not command_region_candidates(state, [region]):
+        return (False, "outside the Event action Regions")
     if _has_ariovistus(state, region):
         return (True, "")
     if not is_controlled_by(state, region, GERMANS):
@@ -1893,7 +1923,8 @@ def _determine_intimidate_after_raid(state, raid_plan):
                     })
 
     # Further Intimidates elsewhere — only if they would remove pieces
-    for region in sorted({r["region"] for r in raid_plan}):
+    for region in (sorted({r["region"] for r in raid_plan})
+                   if command_sa_allowed(state) else []):
         if region == free_intim_region:
             continue
         valid, _ = _can_intimidate_region(state, region)
@@ -1917,7 +1948,7 @@ def _determine_intimidate_after_raid(state, raid_plan):
     )
     if not intim_plan:
         return (SA_ACTION_NONE, [], {})
-    if only_free_marker and not removed_anything:
+    if only_free_marker and not removed_anything and command_sa_allowed(state):
         # Per A8.7.1: "only free Intimidated -> no Special Ability"
         return (SA_ACTION_NONE, [], {})
 
@@ -1935,6 +1966,9 @@ def _determine_intimidate_or_settle_after_march(state, march_plan):
     Returns:
         (sa_action, sa_regions, sa_details).
     """
+    if not command_sa_allowed(state):
+        return (SA_ACTION_NONE, [], {})
+
     scenario = state["scenario"]
 
     march_regions = set()
@@ -2057,7 +2091,7 @@ def node_g_quarters(state):
         Quarters action details dict.
     """
     scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, GERMANS)
 
     quarters_plan = {
         "leave_devastated": [],

@@ -470,7 +470,7 @@ class TestSenateLegions:
         """Place Legions on same row as Senate or above."""
         state = make_state()
         state["senate"]["position"] = ADULATION
-        # Adulation: Middle + Top rows are at or above
+        # The printed board aligns Adulation with Bottom: all rows qualify.
         state["legions_track"] = {
             LEGIONS_ROW_BOTTOM: 4,
             LEGIONS_ROW_MIDDLE: 2,
@@ -479,13 +479,13 @@ class TestSenateLegions:
         state["fallen_legions"] = 0
         initial_legions = count_pieces(state, PROVINCIA, ROMANS, LEGION)
         result = _senate_legions(state)
-        # Should place Middle(2) + Top(1) = 3 into Provincia
-        assert result["legions_placed"] == 3
+        # Should place Bottom(4) + Middle(2) + Top(1) = 7 into Provincia
+        assert result["legions_placed"] == 7
         final_legions = count_pieces(state, PROVINCIA, ROMANS, LEGION)
-        assert final_legions == initial_legions + 3
+        assert final_legions == initial_legions + 7
 
-    def test_ariovistus_max_two_legions(self):
-        """A6.5.2: Max 2 Legions placed in Ariovistus."""
+    def test_ariovistus_max_two_lower_row_legions(self):
+        """A6.5.2 caps Intrigue/Adulation together; Uproar is uncapped."""
         state = make_state(SCENARIO_ARIOVISTUS)
         state["senate"]["position"] = ADULATION
         state["legions_track"] = {
@@ -495,16 +495,16 @@ class TestSenateLegions:
         }
         state["fallen_legions"] = 0
         result = _senate_legions(state)
-        assert result["legions_placed"] <= ARIOVISTUS_SENATE_MAX_LEGIONS
+        assert result["legions_placed"] == 4 + ARIOVISTUS_SENATE_MAX_LEGIONS
+        assert count_pieces(state, PROVINCIA, ROMANS, LEGION) == 6
+        assert state["legions_track"] == {
+            LEGIONS_ROW_BOTTOM: 4,
+            LEGIONS_ROW_MIDDLE: 2,
+            LEGIONS_ROW_TOP: 0,
+        }
 
-    def test_uproar_no_legions_placed(self):
-        """Uproar: no track row is at or above Uproar → place NOTHING.
-
-        Per §6.5.2: the Legions Track rows correspond to senate positions:
-        Bottom = below Adulation, Middle = at Adulation, Top = at Intrigue.
-        Since Uproar is above all track rows, no row is "at or above"
-        Uproar, so no Legions are placed into Provincia.
-        """
+    def test_uproar_places_top_row_only(self):
+        """§6.5.2 and the board: Uproar releases the Top row only."""
         state = make_state()
         state["senate"]["position"] = UPROAR
         state["legions_track"] = {
@@ -514,10 +514,10 @@ class TestSenateLegions:
         }
         state["fallen_legions"] = 0
         result = _senate_legions(state)
-        # No track row at or above Uproar → 0 placed
-        assert result["legions_placed"] == 0
-        # Legions remain on track
-        assert state["legions_track"][LEGIONS_ROW_TOP] == 2
+        assert result["legions_placed"] == 2
+        assert count_pieces(state, PROVINCIA, ROMANS, LEGION) == 2
+        # Lower rows remain on track.
+        assert state["legions_track"][LEGIONS_ROW_TOP] == 0
         assert state["legions_track"][LEGIONS_ROW_MIDDLE] == 4
         assert state["legions_track"][LEGIONS_ROW_BOTTOM] == 4
 

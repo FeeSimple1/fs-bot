@@ -18,6 +18,16 @@ _CACHE = None
 # replacement cards. Preserve any printed carnyx suffix in a card's identity.
 _HEADER_RE = re.compile(r"^((?:A\d{1,2}C?)|(?:O\d{1,2})|(?:\d{1,2}))\.\s+\S")
 
+# Two transcribed NP-symbol headers conflict with the Ariovistus faction
+# Event Instructions (Seduni Uprising! and Nervii). The corrected §8.2.1
+# cues agree with those instructions and the physical card faces inspected
+# in Vassal 4.0.0. Correct only these known header suffixes; preserve every
+# effect paragraph and leave the read-only Reference Documents untouched.
+_HEADER_CUE_CORRECTIONS = {
+    "A24": ("Ge Ro Be S Ae L", "Ge L Ro S Be Ae S"),
+    "A70": ("Be Ae Ge S Ro C", "Be Ae L Ge S Ro L C"),
+}
+
 
 def _card_id(header_id):
     return int(header_id) if header_id.isdigit() else header_id
@@ -68,6 +78,12 @@ def _load():
     expansion = _parse_file(
         os.path.join(ref, "Ariovistus", "A Card Reference"),
         _HEADER_RE, _card_id)
+    for card_id, (old_cues, new_cues) in _HEADER_CUE_CORRECTIONS.items():
+        if card_id in expansion:
+            header, separator, body = expansion[card_id].partition("\n")
+            if header.endswith(old_cues):
+                expansion[card_id] = (
+                    header[:-len(old_cues)] + new_cues + separator + body)
     _CACHE = base, expansion
     return _CACHE
 

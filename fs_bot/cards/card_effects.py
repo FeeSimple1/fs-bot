@@ -1542,38 +1542,75 @@ def execute_card_32(state, shaded=False):
 
     Source: Card Reference, card 32
     """
-    from fs_bot.rules_consts import BRITANNIA
+    from copy import deepcopy
+    from fs_bot.rules_consts import BRITANNIA, MOBILE_PIECES
+    from fs_bot.map.map_data import get_playable_regions
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
     # moves: list of {"piece_type": ..., "from_region": ..., "to_region": ...,
-    #                  "count": ..., "leader_name": ...}
+    #                  "count": ..., "piece_state": ...}
     moves = params.get("moves", [])
+    playable = get_playable_regions(state["scenario"],
+                                    state.get("capabilities"))
+    planned_moves = []
+    remaining = {}
+    to_hide = {}
     for m in moves:
         from_region = m["from_region"]
         to_region = m["to_region"]
         piece_type = m["piece_type"]
         cnt = m.get("count", 1)
-        if from_region == BRITANNIA or to_region == BRITANNIA:
+        # The generic piece helper also serves Events that move static
+        # pieces. Forced Marches permits only mobile forces (card 32).
+        if (piece_type not in MOBILE_PIECES
+                or from_region == BRITANNIA or to_region == BRITANNIA):
             continue
-        if piece_type == LEADER:
-            # move_piece relocates the Leader piece (identity travels with
-            # it) — latent TypeError surfaced by the first-ever derived
-            # Leader relocation (card 32 NP deriver).
-            move_piece(state, from_region, to_region, faction, LEADER,
-                       count=1)
-        else:
-            piece_state = m.get("piece_state")
-            move_piece(state, from_region, to_region, faction, piece_type,
-                       count=cnt, piece_state=piece_state)
-        # Pieces moved go Hidden — flip to Hidden
+        if not isinstance(cnt, int) or isinstance(cnt, bool) or cnt < 0:
+            raise PieceError("Forced Marches requires a non-negative integer count")
+        if cnt == 0:
+            continue
+        if from_region not in playable or to_region not in playable:
+            raise PieceError("Forced Marches requires playable Regions")
+        if piece_type == LEADER and cnt != 1:
+            raise PieceError("Forced Marches can relocate only one Leader")
+        piece_state = m.get("piece_state")
         if piece_type in (AUXILIA, WARBAND):
-            # Ensure moved pieces are Hidden in destination
-            revealed_count = count_pieces_by_state(
-                state, to_region, faction, piece_type, REVEALED)
-            if revealed_count > 0:
-                to_flip = min(cnt, revealed_count)
-                flip_piece(state, to_region, faction, piece_type, to_flip,
-                           from_state=REVEALED, to_state=HIDDEN)
+            # move_piece defaults omitted/None states to Hidden.
+            piece_state = HIDDEN if piece_state is None else piece_state
+            if piece_state not in (HIDDEN, REVEALED, SCOUTED):
+                raise PieceError("Forced Marches has an invalid piece state")
+        else:
+            piece_state = None
+        source = (from_region, piece_type, piece_state)
+        if source not in remaining:
+            remaining[source] = (
+                count_pieces_by_state(state, from_region, faction,
+                                      piece_type, piece_state)
+                if piece_type in (AUXILIA, WARBAND)
+                else count_pieces(state, from_region, faction, piece_type))
+        if cnt > remaining[source]:
+            raise PieceError("Forced Marches selects more pieces than in its origin")
+        remaining[source] -= cnt
+        planned_moves.append((from_region, to_region, piece_type, cnt,
+                              piece_state))
+        if piece_type in (AUXILIA, WARBAND):
+            destination = (to_region, piece_type, piece_state)
+            to_hide[destination] = to_hide.get(destination, 0) + cnt
+
+    # Select each original piece at most once, and finish all relocations
+    # before hiding. Otherwise an arriving Scouted Warband could become
+    # Revealed and be moved/hidden again during the same Event.
+    # Preflight also keeps any later invalid move from partially applying.
+    trial = {**state, "spaces": deepcopy(state["spaces"])}
+    for board in (trial, state):
+        for origin, destination, piece_type, cnt, piece_state in planned_moves:
+            move_piece(board, origin, destination, faction, piece_type,
+                       count=cnt, piece_state=piece_state)
+        # Only moved pieces change visibility. The helper turns Scouted
+        # into Revealed, as specified by card 32's tip (4.2.2).
+        for (destination, piece_type, piece_state), cnt in to_hide.items():
+            flip_piece(board, destination, faction, piece_type, cnt,
+                       from_state=piece_state, to_state=HIDDEN)
 
 def execute_card_33(state, shaded=False):
     """Card 33: Lost Eagle — Place Fallen Legion / Remove Legion permanently.
@@ -2648,20 +2685,21 @@ def execute_card_62(state, shaded=False):
 
     Source: Card Reference, card 62
     """
-    # Complex multi-step: movement + free Command — defer to caller
-    state.setdefault("event_modifiers", {})
-    state["event_modifiers"]["card_62_war_fleet"] = True
     # Piece movements handled via event_params by bot/CLI layer.
     # Card text: moves are "among Arverni Region, Pictones, and Regions
     # within 1 of Britannia" — validate EVERY move (both endpoints in the
     # allowed set, required keys present) before applying any.
     from fs_bot.rules_consts import ARVERNI_REGION, PICTONES, BRITANNIA
-    from fs_bot.map.map_data import get_adjacent
+    from copy import deepcopy
+    from fs_bot.map.map_data import get_adjacent, get_playable_regions
     params = state.get("event_params", {})
     moves = params.get("moves", [])
     faction = state.get("executing_faction")
     allowed = {ARVERNI_REGION, PICTONES, BRITANNIA,
                *get_adjacent(BRITANNIA, state["scenario"])}
+    allowed.intersection_update(get_playable_regions(
+        state["scenario"], state.get("capabilities")))
+    planned_moves = []
     for m in moves:
         for key in ("from_region", "to_region", "piece_type"):
             if key not in m:
@@ -2671,21 +2709,33 @@ def execute_card_62(state, shaded=False):
                 raise ValueError(
                     f"card 62: '{endpoint}' is not among Arverni Region, "
                     f"Pictones, or Regions within 1 of Britannia")
-    for m in moves:
-        from_region = m["from_region"]
-        to_region = m["to_region"]
         piece_type = m["piece_type"]
         cnt = m.get("count", 1)
-        if piece_type == LEADER:
-            # move_piece relocates the Leader piece (identity travels with
-            # it) — latent TypeError surfaced by the first-ever derived
-            # Leader relocation (card 32 NP deriver).
-            move_piece(state, from_region, to_region, faction, LEADER,
-                       count=1)
-        else:
-            ps = m.get("piece_state")
-            move_piece(state, from_region, to_region, faction, piece_type,
+        if piece_type not in (WARBAND, AUXILIA, LEGION, LEADER):
+            raise ValueError("card 62 moves only Warbands, Auxilia, Legions, or Leaders")
+        if type(cnt) is not int or cnt < 0:
+            raise ValueError("card 62 move count must be a non-negative integer")
+        if cnt == 0:
+            continue
+        if piece_type == LEADER and cnt != 1:
+            raise ValueError("card 62 can relocate only one Leader")
+        ps = m.get("piece_state")
+        if piece_type in (WARBAND, AUXILIA) and ps not in (
+                None, HIDDEN, REVEALED, SCOUTED):
+            raise ValueError("card 62 move has an invalid piece state")
+        planned_moves.append((m["from_region"], m["to_region"],
+                              piece_type, cnt, ps))
+
+    # Validate ownership and the complete movement list with the same piece
+    # helpers used to execute it. An unavailable later move must not leave a
+    # partially moved board, even for callers of the public Event dispatcher.
+    trial = {**state, "spaces": deepcopy(state["spaces"])}
+    for board in (trial, state):
+        for origin, destination, piece_type, cnt, ps in planned_moves:
+            move_piece(board, origin, destination, faction, piece_type,
                        count=cnt, piece_state=ps)
+    # Complex multi-step: the free Command is resolved by the caller.
+    state.setdefault("event_modifiers", {})["card_62_war_fleet"] = True
 
 def execute_card_63(state, shaded=False):
     """Card 63: Winter Campaign — CAPABILITY (both sides).
@@ -2814,35 +2864,72 @@ def execute_card_66(state, shaded=False):
 
     Source: Card Reference, card 66
     """
-    from fs_bot.rules_consts import TRIBE_TO_REGION
+    from copy import deepcopy
+    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.rules_consts import TRIBE_FACTION_RESTRICTION
     params = state.get("event_params", {})
     if not shaded:
         # Germanic Rally then March — defer to caller
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_66_german_rally_march"] = True
     else:
-        # Gallic Faction moves Warbands+Leader to No Control region + Ally
-        faction = state.get("executing_faction")
+        # The executing Faction selects a Gallic beneficiary (§5.1), which
+        # need not be itself. Preserve the old self-selection default.
+        faction = params.get("faction", state.get("executing_faction"))
         target_region = params.get("target_region")
-        # Moves handled by caller, but place Ally
         ally_tribe = params.get("ally_tribe")
-        if ally_tribe and faction:
-            _ally_tribe(state, ally_tribe, faction)
-        # Piece moves from event_params
         moves = params.get("moves", [])
+        if not target_region and not moves and not ally_tribe:
+            return
+        if faction not in GALLIC_FACTIONS:
+            raise ValueError("card 66 shaded requires a Gallic Faction")
+        # A single destination is chosen before moving any pieces. Arrivals
+        # can establish Control; that does not stop the remaining arrivals.
+        if target_region is None:
+            target_region = (moves[0].get("to_region") if moves
+                             else _tribe_region(state, ally_tribe))
+        playable = get_playable_regions(
+            state["scenario"], state.get("capabilities"))
+        if (target_region not in playable
+                or calculate_control(state, target_region) != NO_CONTROL):
+            raise ValueError("card 66 destination must be a playable Region with No Control")
+        if ally_tribe and _tribe_region(state, ally_tribe) != target_region:
+            raise ValueError("card 66 Ally must be placed in the movement destination")
+
+        planned_moves = []
         for m in moves:
             from_region = m["from_region"]
             to_region = m["to_region"]
             piece_type = m["piece_type"]
             cnt = m.get("count", 1)
-            if piece_type == LEADER:
-                leader_name = m.get("leader_name")
-                move_piece(state, from_region, to_region, faction, LEADER,
-                           count=1, leader_name=leader_name)
-            else:
-                ps = m.get("piece_state")
-                move_piece(state, from_region, to_region, faction, piece_type,
+            if from_region not in playable or to_region != target_region:
+                raise ValueError("card 66 moves must all enter the selected Region")
+            if piece_type not in (WARBAND, LEADER):
+                raise ValueError("card 66 shaded moves only Warbands or a Leader")
+            if type(cnt) is not int or cnt < 0:
+                raise ValueError("card 66 move count must be a non-negative integer")
+            if cnt == 0:
+                continue
+            if piece_type == LEADER and cnt != 1:
+                raise ValueError("card 66 can relocate only one Leader")
+            ps = m.get("piece_state")
+            if piece_type == WARBAND and ps not in (
+                    None, HIDDEN, REVEALED, SCOUTED):
+                raise ValueError("card 66 move has an invalid piece state")
+            planned_moves.append((from_region, to_region, piece_type, cnt, ps))
+
+        trial = {**state, "spaces": deepcopy(state["spaces"])}
+        for board in (trial, state):
+            for origin, destination, piece_type, cnt, ps in planned_moves:
+                # move_piece preserves the actual Leader identity itself.
+                move_piece(board, origin, destination, faction, piece_type,
                            count=cnt, piece_state=ps)
+        # Card text orders Ally placement after movement. The shared helper
+        # limits it to Subdued tribes and Available discs (§§1.4.2/5.1.3).
+        # Faction-exclusive circles remain exclusive during Events (§5.1.1).
+        if (ally_tribe
+                and TRIBE_FACTION_RESTRICTION.get(ally_tribe, faction) == faction):
+            _ally_tribe(state, ally_tribe, faction)
 
 def execute_card_67(state, shaded=False):
     """Card 67: Arduenna — March + Command in Nervii/Treveri, Hidden.

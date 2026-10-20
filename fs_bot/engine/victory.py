@@ -44,7 +44,8 @@ from fs_bot.rules_consts import (
     REGION_CONTROL_VALUES,
     CISALPINA, CISALPINA_CV_ARIOVISTUS,
     # Markers
-    MARKER_DISPERSED, MARKER_DISPERSED_GATHERING, MARKER_COLONY,
+    MARKER_DISPERSED, MARKER_DISPERSED_GATHERING, MARKER_RAZED,
+    MARKER_COLONY,
     # Legions
     LEGIONS_ROWS,
     # Misc
@@ -126,7 +127,10 @@ def _count_subdued_tribes(state):
 
 
 def _count_dispersed_tribes(state):
-    """Count tribes with Dispersed or Dispersed-Gathering markers.
+    """Count Dispersed, Dispersed-Gathering, and Razed tribes.
+
+    Card 23's tip treats Razed as Dispersed for every purpose except
+    removal in Spring, including Roman victory (§7.2).
 
     Returns:
         Integer count.
@@ -134,7 +138,8 @@ def _count_dispersed_tribes(state):
     count = 0
     for tribe_info in state["tribes"].values():
         status = tribe_info.get("status")
-        if status in (MARKER_DISPERSED, MARKER_DISPERSED_GATHERING):
+        if status in (MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
+                      MARKER_RAZED):
             count += 1
     return count
 
@@ -242,9 +247,11 @@ def _calculate_belgic_control_value(state):
     # -1 for each non-Suebi Dispersed tribe in Belgic-Controlled regions
     # Per §7.2 and §3.2.3: Dispersed reduces a Region's CV, so only
     # tribes in regions that contribute to BCV (Belgic-Controlled) count.
+    # Card 23: Razed is also Dispersed for this purpose, permanently.
     for tribe_name, tribe_info in state["tribes"].items():
         status = tribe_info.get("status")
-        if status in (MARKER_DISPERSED, MARKER_DISPERSED_GATHERING):
+        if status in (MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
+                      MARKER_RAZED):
             if tribe_name not in SUEBI_TRIBES:
                 tribe_region = TRIBE_TO_REGION.get(tribe_name)
                 if tribe_region in belgic_regions:

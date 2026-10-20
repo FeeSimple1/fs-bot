@@ -1,0 +1,1053 @@
+{
+  "starting_sha": "d34e3f358e3435394a5c4b6c60f22bed2ebf59e9",
+  "module_sha256": "1e5cc5aff7167720bfc47326a8acd5e44e31e0364587f1a69225b4257248ae27",
+  "baseline_1000": {
+    "Pax Gallica?": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Romans": 157,
+        "Aedui": 4,
+        "Belgae": 25,
+        "Arverni": 14
+      },
+      "highest_margin_leaders": {
+        "Romans": 157,
+        "Aedui": 4,
+        "Belgae": 25,
+        "Arverni": 14
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 5,
+      "terminations": {
+        "threshold": 178,
+        "final-winter-margin": 16,
+        "optimates": 6
+      },
+      "interlude_games": 0,
+      "cards_mean": 34.04,
+      "cards_median": 26.0,
+      "cards_range": [
+        22,
+        75
+      ],
+      "winters": {
+        "2": 129,
+        "5": 18,
+        "3": 41,
+        "4": 12
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 12574
+    },
+    "Reconquest of Gaul": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Romans": 147,
+        "Arverni": 18,
+        "Aedui": 8,
+        "Belgae": 27
+      },
+      "highest_margin_leaders": {
+        "Romans": 147,
+        "Arverni": 18,
+        "Aedui": 8,
+        "Belgae": 27
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 7,
+      "terminations": {
+        "threshold": 167,
+        "optimates": 7,
+        "final-winter-margin": 26
+      },
+      "interlude_games": 0,
+      "cards_mean": 29.705,
+      "cards_median": 16.0,
+      "cards_range": [
+        11,
+        64
+      ],
+      "winters": {
+        "1": 103,
+        "4": 43,
+        "3": 20,
+        "2": 34
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 11071
+    },
+    "The Great Revolt": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Arverni": 75,
+        "Belgae": 60,
+        "Aedui": 14,
+        "Romans": 51
+      },
+      "highest_margin_leaders": {
+        "Arverni": 75,
+        "Belgae": 60,
+        "Aedui": 14,
+        "Romans": 51
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 4,
+      "terminations": {
+        "final-winter-margin": 132,
+        "threshold": 53,
+        "optimates": 15
+      },
+      "interlude_games": 0,
+      "cards_mean": 43.315,
+      "cards_median": 45.0,
+      "cards_range": [
+        11,
+        48
+      ],
+      "winters": {
+        "3": 175,
+        "2": 22,
+        "1": 3
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 16169
+    },
+    "Ariovistus": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Romans": 106,
+        "Germans": 46,
+        "Aedui": 21,
+        "Belgae": 27
+      },
+      "highest_margin_leaders": {
+        "Romans": 106,
+        "Germans": 46,
+        "Aedui": 21,
+        "Belgae": 27
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 0,
+      "terminations": {
+        "final-winter-margin": 104,
+        "threshold": 96
+      },
+      "interlude_games": 0,
+      "cards_mean": 36.87,
+      "cards_median": 44.0,
+      "cards_range": [
+        11,
+        48
+      ],
+      "winters": {
+        "3": 131,
+        "1": 39,
+        "2": 30
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 13740
+    },
+    "The Gallic War": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Arverni": 32,
+        "Romans": 96,
+        "Belgae": 55,
+        "Aedui": 17
+      },
+      "highest_margin_leaders": {
+        "Arverni": 32,
+        "Romans": 96,
+        "Belgae": 55,
+        "Aedui": 17
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 18,
+      "terminations": {
+        "threshold": 173,
+        "final-winter-margin": 24,
+        "optimates": 3
+      },
+      "interlude_games": 104,
+      "cards_mean": 55.155,
+      "cards_median": 66.0,
+      "cards_range": [
+        11,
+        106
+      ],
+      "winters": {
+        "5": 65,
+        "1": 39,
+        "3": 27,
+        "2": 30,
+        "7": 28,
+        "6": 11
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 20481
+    }
+  },
+  "corrected_1000": {
+    "Pax Gallica?": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Romans": 158,
+        "Aedui": 6,
+        "Belgae": 27,
+        "Arverni": 9
+      },
+      "highest_margin_leaders": {
+        "Romans": 158,
+        "Aedui": 6,
+        "Belgae": 27,
+        "Arverni": 9
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 6,
+      "terminations": {
+        "threshold": 182,
+        "final-winter-margin": 11,
+        "optimates": 7
+      },
+      "interlude_games": 0,
+      "cards_mean": 33.74,
+      "cards_median": 26.0,
+      "cards_range": [
+        22,
+        75
+      ],
+      "winters": {
+        "2": 129,
+        "4": 13,
+        "3": 42,
+        "5": 16
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 12457
+    },
+    "Reconquest of Gaul": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Romans": 151,
+        "Belgae": 33,
+        "Aedui": 9,
+        "Arverni": 7
+      },
+      "highest_margin_leaders": {
+        "Romans": 151,
+        "Belgae": 33,
+        "Aedui": 9,
+        "Arverni": 7
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 8,
+      "terminations": {
+        "threshold": 172,
+        "optimates": 5,
+        "final-winter-margin": 23
+      },
+      "interlude_games": 0,
+      "cards_mean": 29.14,
+      "cards_median": 16.0,
+      "cards_range": [
+        11,
+        64
+      ],
+      "winters": {
+        "1": 103,
+        "4": 37,
+        "3": 24,
+        "2": 36
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 10856
+    },
+    "The Great Revolt": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Arverni": 71,
+        "Belgae": 60,
+        "Aedui": 13,
+        "Romans": 56
+      },
+      "highest_margin_leaders": {
+        "Arverni": 71,
+        "Belgae": 60,
+        "Aedui": 13,
+        "Romans": 56
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 4,
+      "terminations": {
+        "final-winter-margin": 136,
+        "threshold": 51,
+        "optimates": 13
+      },
+      "interlude_games": 0,
+      "cards_mean": 43.395,
+      "cards_median": 45.0,
+      "cards_range": [
+        11,
+        48
+      ],
+      "winters": {
+        "3": 176,
+        "2": 21,
+        "1": 3
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 16198
+    },
+    "Ariovistus": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Belgae": 20,
+        "Romans": 118,
+        "Germans": 34,
+        "Aedui": 28
+      },
+      "highest_margin_leaders": {
+        "Belgae": 20,
+        "Romans": 118,
+        "Germans": 34,
+        "Aedui": 28
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 0,
+      "terminations": {
+        "final-winter-margin": 104,
+        "threshold": 96
+      },
+      "interlude_games": 0,
+      "cards_mean": 36.785,
+      "cards_median": 44.0,
+      "cards_range": [
+        11,
+        48
+      ],
+      "winters": {
+        "3": 130,
+        "1": 39,
+        "2": 31
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 13702
+    },
+    "The Gallic War": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Belgae": 47,
+        "Romans": 115,
+        "Aedui": 14,
+        "Arverni": 24
+      },
+      "highest_margin_leaders": {
+        "Belgae": 47,
+        "Romans": 115,
+        "Aedui": 14,
+        "Arverni": 24
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 10,
+      "terminations": {
+        "threshold": 170,
+        "final-winter-margin": 25,
+        "optimates": 5
+      },
+      "interlude_games": 104,
+      "cards_mean": 57.46,
+      "cards_median": 66.0,
+      "cards_range": [
+        11,
+        106
+      ],
+      "winters": {
+        "5": 46,
+        "1": 39,
+        "3": 26,
+        "2": 31,
+        "7": 42,
+        "6": 16
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 21324
+    }
+  },
+  "heldout_100": {
+    "games": 100,
+    "hard_findings": [],
+    "summary": {
+      "Pax Gallica?": {
+        "attempted": 20,
+        "completed": 20,
+        "engine_completed": 20,
+        "crashes": 0,
+        "wins": {
+          "Belgae": 4,
+          "Romans": 12,
+          "Arverni": 2,
+          "Aedui": 2
+        },
+        "highest_margin_leaders": {
+          "Belgae": 4,
+          "Romans": 12,
+          "Arverni": 2,
+          "Aedui": 2
+        },
+        "winner_margin_disagreements": 0,
+        "simultaneous_threshold_games": 2,
+        "terminations": {
+          "threshold": 18,
+          "optimates": 1,
+          "final-winter-margin": 1
+        },
+        "interlude_games": 0,
+        "cards_mean": 35.25,
+        "cards_median": 27.0,
+        "cards_range": [
+          22,
+          70
+        ],
+        "winters": {
+          "3": 6,
+          "2": 11,
+          "4": 2,
+          "5": 1
+        },
+        "integrity_flagged_games": 0,
+        "diagnostic_incidents": {},
+        "diagnostic_games": {},
+        "decisions": 1303
+      },
+      "Reconquest of Gaul": {
+        "attempted": 20,
+        "completed": 20,
+        "engine_completed": 20,
+        "crashes": 0,
+        "wins": {
+          "Belgae": 3,
+          "Romans": 16,
+          "Aedui": 1
+        },
+        "highest_margin_leaders": {
+          "Belgae": 3,
+          "Romans": 16,
+          "Aedui": 1
+        },
+        "winner_margin_disagreements": 0,
+        "simultaneous_threshold_games": 2,
+        "terminations": {
+          "threshold": 18,
+          "final-winter-margin": 2
+        },
+        "interlude_games": 0,
+        "cards_mean": 29.25,
+        "cards_median": 21.0,
+        "cards_range": [
+          11,
+          62
+        ],
+        "winters": {
+          "4": 5,
+          "2": 4,
+          "1": 10,
+          "3": 1
+        },
+        "integrity_flagged_games": 0,
+        "diagnostic_incidents": {},
+        "diagnostic_games": {},
+        "decisions": 1089
+      },
+      "The Great Revolt": {
+        "attempted": 20,
+        "completed": 20,
+        "engine_completed": 20,
+        "crashes": 0,
+        "wins": {
+          "Romans": 7,
+          "Arverni": 8,
+          "Belgae": 3,
+          "Aedui": 2
+        },
+        "highest_margin_leaders": {
+          "Romans": 7,
+          "Arverni": 8,
+          "Belgae": 3,
+          "Aedui": 2
+        },
+        "winner_margin_disagreements": 0,
+        "simultaneous_threshold_games": 0,
+        "terminations": {
+          "final-winter-margin": 12,
+          "optimates": 1,
+          "threshold": 7
+        },
+        "interlude_games": 0,
+        "cards_mean": 39.9,
+        "cards_median": 44.0,
+        "cards_range": [
+          12,
+          48
+        ],
+        "winters": {
+          "3": 15,
+          "2": 3,
+          "1": 2
+        },
+        "integrity_flagged_games": 0,
+        "diagnostic_incidents": {},
+        "diagnostic_games": {},
+        "decisions": 1491
+      },
+      "Ariovistus": {
+        "attempted": 20,
+        "completed": 20,
+        "engine_completed": 20,
+        "crashes": 0,
+        "wins": {
+          "Germans": 6,
+          "Aedui": 2,
+          "Belgae": 1,
+          "Romans": 11
+        },
+        "highest_margin_leaders": {
+          "Germans": 6,
+          "Aedui": 2,
+          "Belgae": 1,
+          "Romans": 11
+        },
+        "winner_margin_disagreements": 0,
+        "simultaneous_threshold_games": 0,
+        "terminations": {
+          "final-winter-margin": 13,
+          "threshold": 7
+        },
+        "interlude_games": 0,
+        "cards_mean": 41.4,
+        "cards_median": 44.0,
+        "cards_range": [
+          15,
+          48
+        ],
+        "winters": {
+          "3": 16,
+          "1": 1,
+          "2": 3
+        },
+        "integrity_flagged_games": 0,
+        "diagnostic_incidents": {},
+        "diagnostic_games": {},
+        "decisions": 1543
+      },
+      "The Gallic War": {
+        "attempted": 20,
+        "completed": 20,
+        "engine_completed": 20,
+        "crashes": 0,
+        "wins": {
+          "Romans": 11,
+          "Belgae": 6,
+          "Arverni": 3
+        },
+        "highest_margin_leaders": {
+          "Romans": 11,
+          "Belgae": 6,
+          "Arverni": 3
+        },
+        "winner_margin_disagreements": 0,
+        "simultaneous_threshold_games": 1,
+        "terminations": {
+          "threshold": 15,
+          "final-winter-margin": 4,
+          "optimates": 1
+        },
+        "interlude_games": 13,
+        "cards_mean": 68.6,
+        "cards_median": 69.0,
+        "cards_range": [
+          15,
+          106
+        ],
+        "winters": {
+          "5": 5,
+          "7": 6,
+          "1": 1,
+          "2": 3,
+          "6": 2,
+          "3": 3
+        },
+        "integrity_flagged_games": 0,
+        "diagnostic_incidents": {},
+        "diagnostic_games": {},
+        "decisions": 2547
+      }
+    }
+  },
+  "replay": {
+    "games": 19,
+    "cases": [
+      [
+        "Pax Gallica?",
+        1
+      ],
+      [
+        "Pax Gallica?",
+        28
+      ],
+      [
+        "Pax Gallica?",
+        142
+      ],
+      [
+        "Reconquest of Gaul",
+        1
+      ],
+      [
+        "Reconquest of Gaul",
+        7
+      ],
+      [
+        "Reconquest of Gaul",
+        29
+      ],
+      [
+        "The Great Revolt",
+        1
+      ],
+      [
+        "The Great Revolt",
+        51
+      ],
+      [
+        "The Great Revolt",
+        23
+      ],
+      [
+        "Ariovistus",
+        1
+      ],
+      [
+        "Ariovistus",
+        7
+      ],
+      [
+        "Ariovistus",
+        23
+      ],
+      [
+        "The Gallic War",
+        1
+      ],
+      [
+        "The Gallic War",
+        7
+      ],
+      [
+        "The Gallic War",
+        46
+      ],
+      [
+        "Pax Gallica?",
+        10
+      ],
+      [
+        "Pax Gallica?",
+        19
+      ],
+      [
+        "Pax Gallica?",
+        25
+      ],
+      [
+        "Reconquest of Gaul",
+        5
+      ]
+    ],
+    "hard_findings": [],
+    "mismatches": []
+  },
+  "mixed_seat_ci": {
+    "seeds": "1-40",
+    "games_per_hash": 200,
+    "hash_seeds": [
+      0,
+      7
+    ],
+    "identical_output": true,
+    "digest": "e9993af920d81523",
+    "human_turns": 6440,
+    "event_turns": 1746,
+    "event_ok": 1717,
+    "hard_findings": 0,
+    "soft_partial": 507,
+    "stage": "before relocation and menu corrections"
+  },
+  "runtime_source_sha256": "3c129c2af14ff60add5e7dc568dcd8324fe1480e784d7437e5cd0f1082828aff",
+  "python_local": "3.12.14",
+  "regression_tests": {
+    "total_passed": 2660,
+    "added": 151,
+    "senate": 32,
+    "razed": 19,
+    "card_cues": 10,
+    "forced_marches": 33,
+    "war_fleet_migration": 47,
+    "human_menu_choices": 10,
+    "first_61_on_original_main": {
+      "failed": 43,
+      "passed": 18
+    },
+    "first_19_forced_marches_on_old_handler": {
+      "failed": 13,
+      "passed": 6
+    },
+    "war_fleet_migration_on_old_handlers": {
+      "failed": 24,
+      "passed": 23
+    },
+    "first_seven_menu_cases_before_correction": {
+      "failed": 7,
+      "passed": 0
+    }
+  },
+  "fix_commits": [
+    "8cca43322f1625c740d88671228e1cd9dc0c86c7",
+    "f44707a1ecb781be02e2040414f477fc5ec6d61e",
+    "04ced84db28224e077b4b9a038c8c977a241eecd"
+  ],
+  "verification": {
+    "pytest_passed": 2660,
+    "new_regression_cases": 151,
+    "regressions_on_original_main": {
+      "failed": 43,
+      "passed": 18
+    },
+    "ci_sync_games": 32,
+    "ci_fuzz": {
+      "games_per_hashseed": 200,
+      "hashseeds": [
+        0,
+        7
+      ],
+      "byte_identical": true,
+      "digest": "e9993af920d81523",
+      "hard_findings": 0,
+      "soft_partial_notices": 507,
+      "stage": "before relocation and menu corrections"
+    },
+    "soak_census": {
+      "games_per_hashseed": 2500,
+      "hashseeds": [
+        0,
+        7
+      ],
+      "byte_identical_logs_and_json": true,
+      "total_incidents": 0,
+      "source_changed": [],
+      "log_sha256": "91b5fa60266791b0e4e3716edc2dbd1cc211d9db894ddc5ffaf41d159909cc82",
+      "stage": "before relocation and menu corrections"
+    }
+  },
+  "vassal_only_1000": {
+    "Pax Gallica?": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Romans": 158,
+        "Aedui": 6,
+        "Belgae": 27,
+        "Arverni": 9
+      },
+      "highest_margin_leaders": {
+        "Romans": 158,
+        "Aedui": 6,
+        "Belgae": 27,
+        "Arverni": 9
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 6,
+      "terminations": {
+        "threshold": 182,
+        "final-winter-margin": 11,
+        "optimates": 7
+      },
+      "interlude_games": 0,
+      "cards_mean": 33.74,
+      "cards_median": 26.0,
+      "cards_range": [
+        22,
+        75
+      ],
+      "winters": {
+        "2": 129,
+        "4": 13,
+        "3": 42,
+        "5": 16
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 12457
+    },
+    "Reconquest of Gaul": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Romans": 151,
+        "Belgae": 33,
+        "Aedui": 9,
+        "Arverni": 7
+      },
+      "highest_margin_leaders": {
+        "Romans": 151,
+        "Belgae": 33,
+        "Aedui": 9,
+        "Arverni": 7
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 8,
+      "terminations": {
+        "threshold": 172,
+        "optimates": 5,
+        "final-winter-margin": 23
+      },
+      "interlude_games": 0,
+      "cards_mean": 29.14,
+      "cards_median": 16.0,
+      "cards_range": [
+        11,
+        64
+      ],
+      "winters": {
+        "1": 103,
+        "4": 37,
+        "3": 24,
+        "2": 36
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 10856
+    },
+    "The Great Revolt": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Arverni": 71,
+        "Belgae": 61,
+        "Aedui": 13,
+        "Romans": 55
+      },
+      "highest_margin_leaders": {
+        "Arverni": 71,
+        "Belgae": 61,
+        "Aedui": 13,
+        "Romans": 55
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 4,
+      "terminations": {
+        "final-winter-margin": 136,
+        "threshold": 51,
+        "optimates": 13
+      },
+      "interlude_games": 0,
+      "cards_mean": 43.395,
+      "cards_median": 45.0,
+      "cards_range": [
+        11,
+        48
+      ],
+      "winters": {
+        "3": 176,
+        "2": 21,
+        "1": 3
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 16198
+    },
+    "Ariovistus": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Belgae": 20,
+        "Romans": 118,
+        "Germans": 34,
+        "Aedui": 28
+      },
+      "highest_margin_leaders": {
+        "Belgae": 20,
+        "Romans": 118,
+        "Germans": 34,
+        "Aedui": 28
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 0,
+      "terminations": {
+        "final-winter-margin": 104,
+        "threshold": 96
+      },
+      "interlude_games": 0,
+      "cards_mean": 36.785,
+      "cards_median": 44.0,
+      "cards_range": [
+        11,
+        48
+      ],
+      "winters": {
+        "3": 130,
+        "1": 39,
+        "2": 31
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 13702
+    },
+    "The Gallic War": {
+      "attempted": 200,
+      "completed": 200,
+      "engine_completed": 200,
+      "crashes": 0,
+      "wins": {
+        "Belgae": 47,
+        "Romans": 115,
+        "Aedui": 14,
+        "Arverni": 24
+      },
+      "highest_margin_leaders": {
+        "Belgae": 47,
+        "Romans": 115,
+        "Aedui": 14,
+        "Arverni": 24
+      },
+      "winner_margin_disagreements": 0,
+      "simultaneous_threshold_games": 10,
+      "terminations": {
+        "threshold": 170,
+        "final-winter-margin": 25,
+        "optimates": 5
+      },
+      "interlude_games": 104,
+      "cards_mean": 57.46,
+      "cards_median": 66.0,
+      "cards_range": [
+        11,
+        106
+      ],
+      "winters": {
+        "5": 46,
+        "1": 39,
+        "3": 26,
+        "2": 31,
+        "7": 42,
+        "6": 16
+      },
+      "integrity_flagged_games": 0,
+      "diagnostic_incidents": {},
+      "diagnostic_games": {},
+      "decisions": 21324
+    }
+  },
+  "initial_extended_fuzz": {
+    "games_per_hashseed": 1500,
+    "hashseeds": [
+      0,
+      7
+    ],
+    "identical_output": true,
+    "hard_findings": 33,
+    "kinds": {
+      "structural": 33
+    },
+    "root_cause": {
+      "scenario": "The Great Revolt",
+      "seed": 213,
+      "card": 32
+    },
+    "soft_partial_notices": 3855,
+    "digest": "2430bd4eb7c15512"
+  },
+  "isolated_card32_repair": {
+    "scenario": "The Great Revolt",
+    "seed": 213,
+    "original_schema_retained": true,
+    "hard_findings": 0,
+    "soft_partial_notices": 4,
+    "digest": "0ed0534c71bc9c1a",
+    "hashseeds": [
+      0,
+      7
+    ],
+    "identical_output": true
+  },
+  "relocation_outcome_delta": {
+    "scenario": "The Great Revolt",
+    "seed": 55,
+    "old_winner": "Belgae",
+    "new_winner": "Romans",
+    "card32_only_run_matches": true,
+    "other_999_final_state_hashes_unchanged": true
+  },
+  "final_extended_verification": "Recorded on PR #35 and in verification-postfix/ in the accompanying raw archive; same canonical coverage sharded by scenario."
+}

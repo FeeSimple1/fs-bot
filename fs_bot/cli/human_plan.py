@@ -264,48 +264,68 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
     if groups:
         plan["groups"] = groups
 
-    # Sec.3.3.2: multiple groups may leave one origin. Offer one extra
-    # group per origin that still has mobile pieces after the first.
+    # Sec.3.2.2/3.3.2 (A3.4.2): any number of groups may leave an origin,
+    # but no piece may March twice. Keep offering groups from the remaining
+    # original pieces, including a Leader left behind by the first group.
     extra = []
+    from fs_bot.rules_consts import LEADER
     for o in origins:
         if o not in groups:
             continue  # first group takes everything -- nothing remains
         remaining = {pt: count_pieces(state, o, faction, pt)
                      - int(groups[o].get(pt, 0) or 0)
                      for pt in (LEGION, AUXILIA, WARBAND)}
-        if not any(v > 0 for v in remaining.values()):
-            continue
-        if not prompt_yes_no(stdin, stdout,
-                             f"March a SECOND group from {o}?",
-                             default=False):
-            continue
-        candidates = _march_routes(state, o, faction)
-        route2 = prompt_choice(stdin, stdout,
-                               f"  Second group from {o} along which route?",
-                               [(" → ".join(path), path) for path in candidates])
-        d2 = route2[-1]
-        g2 = {}
-        for pt, avail in remaining.items():
-            if avail <= 0:
+        leader_remaining = (get_leader_in_region(state, o, faction) is not None
+                            and not groups[o].get(LEADER))
+        from fs_bot.commands.sa_enlist import borrowed_count
+        loan_remaining = (borrowed_count(state, o)
+                          - groups[o].get("german_warbands", 0)
+                          if faction == BELGAE else 0)
+        group_number = 2
+        while leader_remaining or any(v > 0 for v in remaining.values()):
+            label = "SECOND" if group_number == 2 else f"group {group_number}"
+            if not prompt_yes_no(stdin, stdout,
+                                 f"March a {label} group from {o}?" if group_number == 2
+                                 else f"March {label} from {o}?",
+                                 default=False):
+                break
+            candidates = _march_routes(state, o, faction)
+            route = prompt_choice(stdin, stdout,
+                                  f"  Group {group_number} from {o} along which route?",
+                                  [(" → ".join(path), path) for path in candidates])
+            group = {}
+            for pt, avail in remaining.items():
+                if avail <= 0:
+                    continue
+                pick = prompt_choice(
+                    stdin, stdout,
+                    f"  Group {group_number}: how many {pt}s? (of {avail})",
+                    [(str(k), k) for k in range(avail, -1, -1)])
+                if pick:
+                    group[pt] = pick
+            if leader_remaining and prompt_yes_no(
+                    stdin, stdout, f"  March the Leader with group {group_number} from {o}?",
+                    default=True):
+                group[LEADER] = True
+            if not group:
+                stdout.write("No pieces selected for this group.\n")
                 continue
-            pick = prompt_choice(
-                stdin, stdout,
-                f"  Second group: how many {pt}s? (of {avail})",
-                [(str(k), k) for k in range(avail, -1, -1)])
-            if pick:
-                g2[pt] = pick
-        if g2:
-            from fs_bot.commands.sa_enlist import borrowed_count
-            if faction == BELGAE and borrowed_count(state, o):
-                total = g2.get(WARBAND, 0)
-                loan = borrowed_count(state, o) - groups[o].get("german_warbands", 0)
-                own = remaining[WARBAND] - loan
-                g2["german_warbands"] = prompt_choice(stdin, stdout,
+            if faction == BELGAE and borrowed_count(state, o) and group.get(WARBAND):
+                total = group[WARBAND]
+                own = remaining[WARBAND] - loan_remaining
+                group["german_warbands"] = prompt_choice(stdin, stdout,
                     f"Of these {total} Warbands, how many are German?",
-                    [(str(k), k) for k in range(min(total, loan), max(0, total - own) - 1, -1)])
-            extra.append({"origin": o, "route": route2, "group": g2})
-            if d2 not in destinations:
-                destinations.append(d2)
+                    [(str(k), k) for k in range(min(total, loan_remaining),
+                                                max(0, total - own) - 1, -1)])
+                loan_remaining -= group["german_warbands"]
+            extra.append({"origin": o, "route": route, "group": group})
+            for pt in remaining:
+                remaining[pt] -= group.get(pt, 0)
+            if group.get(LEADER):
+                leader_remaining = False
+            if route[-1] not in destinations:
+                destinations.append(route[-1])
+            group_number += 1
     if extra:
         plan["extra_groups"] = extra
     return plan

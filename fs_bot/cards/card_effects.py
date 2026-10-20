@@ -4580,6 +4580,7 @@ def execute_card_A66(state, shaded=False):
 
     Source: A Card Reference, card A66
     """
+    from fs_bot.rules_consts import MARKER_WINTER_UPRISING
     params = state.get("event_params", {})
     region = params.get("region")
     state.setdefault("event_modifiers", {})
@@ -4587,7 +4588,7 @@ def execute_card_A66(state, shaded=False):
     if region:
         markers = state.setdefault("markers", {})
         region_markers = markers.setdefault(region, {})
-        region_markers["Uprising"] = True
+        region_markers[MARKER_WINTER_UPRISING] = True
         state["event_modifiers"]["card_A66_uprising_region"] = region
 
 def execute_card_A67(state, shaded=False):

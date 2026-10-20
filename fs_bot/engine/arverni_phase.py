@@ -176,6 +176,13 @@ def select_arverni_targets(state, triggering_regions):
     Returns:
         (target_region, target_faction)
     """
+    # Events can force an activation "as if At War" with no actual At War
+    # Regions (A66, for example). A6.2 supplies no legal target in that case.
+    # Per 5.1.3, omit this impossible step and carry out the remaining phase;
+    # do not invent an enemy/Region or roll against an empty candidate list.
+    if not triggering_regions:
+        return (None, None)
+
     rng = state["rng"]
 
     # Roll for Target Region
@@ -796,7 +803,7 @@ def _arverni_phase_battle(state, target_region, target_faction):
     }
 
     # Order: target region first, then others randomly
-    battle_regions = [target_region]
+    battle_regions = [target_region] if target_region is not None else []
     other_regions = [
         r for r in state["spaces"]
         if r != target_region

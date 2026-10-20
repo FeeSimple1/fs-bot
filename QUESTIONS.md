@@ -2806,3 +2806,39 @@ not depend on resolving this narrower policy.
 
 **Question:** when human Aedui allocate Resources under A53, who owns any
 portion that the Romans do not spend during the Event?
+
+---
+
+## [OPEN] German-owned A63 after the Gallic War Interlude
+
+**Clear behavior implemented:** the Interlude's Winter Events step resolves
+Winter Uprising! and shaded Winter Campaign in that order, before adjusting
+Forces. A63 owned by Aedui or Belgae remains usable after later Harvests.
+
+**Sources:** A Scenario - The Gallic War says "The Germanic player of the
+first half takes on the role of the Arverni for the second." Its Lingering
+Events paragraph says "Capabilities (including Germanic), Gallia Togata,
+Colony, and Abatis that ended the first half in effect remain marked and
+in effect where they are." Deck preparation keeps those cards "by their
+Factions as appropriate." A63 says "Unless Roman, take this card—after each
+Harvest, you may do any 2 Commands and/or Special Abilities (paying costs)."
+
+**Narrow unresolved point:** the text explicitly transfers the player seat,
+Eligibility cylinder, Resource cylinder, and Victory marker, but does not
+say whether a German-owned, faction-neutral Capability such as A63 follows
+that player to Arverni or remains German-owned. The latter also needs an
+execution procedure for the now game-run Germans, who have no paid Command
+turn, German Resource cylinder, or Non-player flowchart in the base game.
+
+**Options:** transfer this owner-scoped card to the new Arverni seat; retain
+German ownership and specify how the game-run Germans use its two actions;
+or retain the card with no usable benefit to a seated Faction. The references
+do not explicitly select among these outcomes.
+
+**Legacy behavior preserved:** German ownership is retained; A63 does not
+silently activate Arverni or call the Ariovistus German bot in the base game.
+This does not block the clear Aedui/Belgae carry-over or the pre-transition
+German Winter Campaign activation during the Interlude itself.
+
+**Question:** how should German-owned shaded A63 be owned and used after
+the Interlude?

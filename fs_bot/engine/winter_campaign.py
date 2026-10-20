@@ -127,10 +127,21 @@ def resolve_winter_campaign(state, owner, card_id):
 def winter_campaign_after_harvest(state):
     """Return the active card's result, or None if there is no eligible owner."""
     from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
-    cards = ("A63", 63) if state["scenario"] in ARIOVISTUS_SCENARIOS else (63,)
+    # A Scenario - The Gallic War, Lingering Events: A63 remains in effect
+    # after the Interlude changes the current rules to the base game.
+    cards = (("A63", 63) if state["scenario"] in ARIOVISTUS_SCENARIOS
+             or state.get("interlude_completed") else (63,))
     for card_id in cards:
         if is_capability_active(state, card_id, EVENT_SHADED):
             owner = get_capability_owner(state, card_id)
             if owner is not None and owner != ROMANS:
+                from fs_bot.engine.game_engine import get_sop_factions
+                if owner not in get_sop_factions(state):
+                    # The sources preserve Germanic capabilities in place but
+                    # do not transfer their ownership to the new Arverni seat.
+                    # Keep that unresolved owner's existing behavior (no
+                    # player activation), without silently reassigning A63.
+                    # See QUESTIONS.md: German-owned A63 after the Interlude.
+                    continue
                 return resolve_winter_campaign(state, owner, card_id)
     return None

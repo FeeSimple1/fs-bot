@@ -1655,15 +1655,31 @@ def _resolve_winter_uprising(state):
     Arverni Warbands within 1 Region of the marker and conduct an Arverni Phase
     as if At War.
     """
+    from fs_bot.rules_consts import MARKER_WINTER_UPRISING
     mods = state.get("event_modifiers", {})
     region = mods.get("card_A66_uprising_region")
+    if region is None:
+        # Old saves may retain only the physical marker. "Uprising" was
+        # the former noncanonical label; consume it as well when loading one.
+        region = next((r for r, markers in state.get("markers", {}).items()
+                       if isinstance(markers, (dict, set))
+                       and (MARKER_WINTER_UPRISING in markers
+                            or "Uprising" in markers)), None)
     # Consume the trigger so it fires exactly once.
     mods.pop("card_A66_winter_uprising", None)
     mods.pop("card_A66_uprising_region", None)
+    # A5.1.4 identifies A66 as a marker Event, not a permanent Capability.
+    # Clear the legacy capability representation when consuming the marker.
+    state.get("capabilities", {}).pop("A66", None)
+    state.get("capability_owners", {}).pop("A66", None)
     if region:
         rm = state.get("markers", {}).get(region)
         if isinstance(rm, dict):
+            rm.pop(MARKER_WINTER_UPRISING, None)
             rm.pop("Uprising", None)
+        elif isinstance(rm, set):
+            rm.discard(MARKER_WINTER_UPRISING)
+            rm.discard("Uprising")
     if not region:
         return [{"free_action": "winter_uprising", "executed": False,
                  "reason": "no Uprising marker region"}]
@@ -1690,7 +1706,8 @@ def _resolve_winter_uprising(state):
         results.extend(_resolve_event_arverni_phase(state))
     else:
         results.append(
-            _resolve_free_command(state, faction, allowed_regions=within1)
+            _resolve_free_command(state, faction, allowed_regions=within1,
+                                  with_sa=True)
         )
     return results
 
@@ -5695,9 +5712,11 @@ def _derive_card_A66(state, faction, shaded):
     acting Faction has pieces in (where it will benefit from the later
     placement+Command)."""
     from fs_bot.board.pieces import count_pieces
+    from fs_bot.rules_consts import MARKER_WINTER_UPRISING
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
     cands = [r for r in sorted(playable) if count_pieces(state, r, faction) > 0
-             and "Uprising" not in (state.get("markers", {}).get(r) or {})]
+             and not {MARKER_WINTER_UPRISING, "Uprising"}.intersection(
+                 state.get("markers", {}).get(r) or {})]
     return {"region": sorted(cands)[0]} if cands else None
 
 

@@ -354,10 +354,9 @@ def _step0_circumvallation(state):
 def _step1_winter_events(state):
     """Resolve Winter Uprising! and shaded Winter Campaign (in that order).
 
-    These Events are stored as in-effect flags in state. We do NOT
-    re-execute their card handlers; we simply record that they resolved
-    here for the Interlude trace. Their persistent effects remain in
-    'capabilities'/markers.
+    The Interlude replaces the normal Quarters/Harvest phases, so its
+    explicit Winter Events step must execute those effects here, before
+    Forces are adjusted and before the rules switch to the base game.
 
     Returns:
         Dict noting which events were resolved.
@@ -365,28 +364,33 @@ def _step1_winter_events(state):
     result = {"events_resolved": []}
     caps = state.get("capabilities", {})
 
-    # Winter Uprising! is recorded both as a marker per A66 handler and
-    # as a capability. Check either source.
-    uprising_active = False
-    if "A66" in caps:
-        uprising_active = True
+    # A66's live handler records a delayed trigger and a Region marker.
+    # Retain detection of older saves that used only a marker/capability.
+    uprising_active = bool(state.get("event_modifiers", {}).get(
+        "card_A66_winter_uprising")) or "A66" in caps
     markers = state.get("markers", {})
     for region_markers in markers.values():
         if isinstance(region_markers, dict):
-            if MARKER_WINTER_UPRISING in region_markers:
+            if (MARKER_WINTER_UPRISING in region_markers
+                    or "Uprising" in region_markers):
                 uprising_active = True
                 break
         elif isinstance(region_markers, set):
-            if MARKER_WINTER_UPRISING in region_markers:
+            if (MARKER_WINTER_UPRISING in region_markers
+                    or "Uprising" in region_markers):
                 uprising_active = True
                 break
     if uprising_active:
+        from fs_bot.engine.execute import _resolve_winter_uprising
         result["events_resolved"].append("Winter Uprising!")
+        result["winter_uprising"] = _resolve_winter_uprising(state)
 
     # Shaded Winter Campaign — card 63 (base) or A63 (Ariovistus).
     from fs_bot.rules_consts import EVENT_SHADED
     if caps.get(63) == EVENT_SHADED or caps.get("A63") == EVENT_SHADED:
+        from fs_bot.engine.winter_campaign import winter_campaign_after_harvest
         result["events_resolved"].append("Winter Campaign (shaded)")
+        result["winter_campaign"] = winter_campaign_after_harvest(state)
 
     return result
 

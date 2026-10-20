@@ -14,30 +14,15 @@ from fs_bot.rules_consts import (
     ROMANS, AEDUI, ARVERNI, BELGAE, GERMANS, GALLIC_FACTIONS, FACTIONS,
     AUXILIA, WARBAND, LEGION, SETTLEMENT, HIDDEN, REVEALED, SCOUTED,
     CAESAR, BRITANNIA, GERMANIA_REGIONS, ARIOVISTUS_SCENARIOS,
-    BASE_SCENARIOS, EVENT_SHADED, CISALPINA, MARKER_GALLIA_TOGATA,
+    BASE_SCENARIOS, EVENT_SHADED,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_available,
     place_piece, remove_piece, move_piece, flip_piece,
 )
-from fs_bot.map.map_data import get_playable_regions, is_adjacent, get_adjacent
+from fs_bot.map.map_data import (get_playable_regions_for_state, is_adjacent,
+                                   get_adjacent, is_region_playable)
 from fs_bot.commands.common import check_leader_proximity
-
-
-def _playable_regions(state):
-    # Card 5 stores Gallia Togata with the Region's markers, not among
-    # persistent Capabilities. The map API also accepts marker names.
-    map_rules = set(state.get("capabilities", {}))
-    markers = state.get("markers", {}).get(CISALPINA, {})
-    if MARKER_GALLIA_TOGATA in markers:
-        map_rules.add(MARKER_GALLIA_TOGATA)
-    return get_playable_regions(state["scenario"], map_rules)
-
-
-def _cisalpina_roman_only(state):
-    return (state["scenario"] in BASE_SCENARIOS or
-            MARKER_GALLIA_TOGATA in state.get("markers", {}).get(CISALPINA, {}) or
-            MARKER_GALLIA_TOGATA in state.get("capabilities", {}))
 
 
 def _clone(state):
@@ -64,7 +49,7 @@ def _normalize_replacements(state, shaded):
     entries = _entries(params, "replacements")
     normalized = []
     total = 0
-    playable = set(_playable_regions(state))
+    playable = set(get_playable_regions_for_state(state))
     for entry in entries:
         region = entry.get("region")
         if region not in playable:
@@ -120,8 +105,7 @@ def _replace(state, normalized):
             remove_piece(state, region, source, kind, piece_state=actual)
             # Cards 5/A5 permit only Roman stacking in Cisalpina.
             # §5.1.1 removes instead of replacing when stacking forbids it.
-            can_stack = not (region == CISALPINA and _cisalpina_roman_only(state)
-                             and destination != ROMANS)
+            can_stack = is_region_playable(state, region, destination)
             if can_stack and get_available(state, destination, destination_kind) > 0:
                 place_piece(state, region, destination, destination_kind)
                 placed[(region, destination, destination_kind)] += 1
@@ -166,7 +150,7 @@ def scout_cohort(state, cohort, moves, reveals):
     """Scout only the new Auxilia/blue Warbands, preserving their ownership."""
     budget = Counter({(e["region"], e["faction"]): e["count"] for e in cohort})
     original = budget.copy()
-    playable = set(_playable_regions(state))
+    playable = set(get_playable_regions_for_state(state))
     moved = []
     for entry in moves:
         origin, target, faction = entry.get("from_region"), entry.get("to_region"), entry.get("faction", ROMANS)
@@ -174,7 +158,7 @@ def scout_cohort(state, cohort, moves, reveals):
         if (origin not in playable or target not in playable or
                 BRITANNIA in (origin, target) or not is_adjacent(origin, target)):
             raise ValueError("Card 44 Scout moves must be adjacent playable Regions outside Britannia")
-        if target == CISALPINA and _cisalpina_roman_only(state) and faction != ROMANS:
+        if not is_region_playable(state, target, faction):
             raise ValueError("Only Romans may stack in Cisalpina with Gallia Togata (Cards 5/A5)")
         if faction not in (ROMANS, AEDUI) or amount > original[(origin, faction)]:
             raise ValueError("Card 44 Scout may move each just-placed piece only once")
@@ -386,7 +370,7 @@ def derive_params(state, actor, shaded):
     """NP Card 44 instructions, with every free action bounded to its cohort."""
     from fs_bot.bots.bot_common import get_faction_targeting_order
     from fs_bot.cards.edition import uses_second_edition
-    playable = sorted(_playable_regions(state))
+    playable = sorted(get_playable_regions_for_state(state))
     targets = [f for f in get_faction_targeting_order(actor, state["scenario"])
                if f != actor]
     candidates = []

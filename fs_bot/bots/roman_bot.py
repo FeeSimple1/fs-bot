@@ -1401,13 +1401,6 @@ def _scout_auxilia_moves(state, *, scouts=None):
     from fs_bot.rules_consts import BRITANNIA
     sim = _copy.deepcopy(state)
     sim.pop("decision_agent", None)
-    if scouts is not None:
-        # Card 44's scoped planner must see actual Card 5 map access.
-        # This is a planning copy; Gallia Togata stays a regional marker
-        # in the real state, never an invented persistent Capability.
-        from fs_bot.rules_consts import CISALPINA, MARKER_GALLIA_TOGATA
-        if MARKER_GALLIA_TOGATA in sim.get("markers", {}).get(CISALPINA, {}):
-            sim.setdefault("capabilities", {})[MARKER_GALLIA_TOGATA] = True
     scenario = sim["scenario"]
     playable = sorted(get_playable_regions_for_state(sim, ROMANS))
     caesar_region = _caesar_region(sim)

@@ -309,9 +309,8 @@ _OVERRIDES = {
 
 def region_pool(state, name):
     """Named region pools for constrained cards."""
-    from fs_bot.map.map_data import get_playable_regions
-    playable = set(get_playable_regions(state["scenario"],
-                                        state.get("capabilities")))
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    playable = set(get_playable_regions_for_state(state))
     if name == "card32_mainland":
         return sorted(playable - {BRITANNIA})
     if name == "card62_coastal":

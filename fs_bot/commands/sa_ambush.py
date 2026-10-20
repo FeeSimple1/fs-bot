@@ -56,7 +56,8 @@ from fs_bot.map.map_data import is_adjacent
 from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
-def validate_ambush_region(state, region, faction, defending_faction):
+def validate_ambush_region(state, region, faction, defending_faction,
+                           *, allied_factions=()):
     """Validate that a faction can Ambush in a region against a defender.
 
     Checks:
@@ -78,6 +79,10 @@ def validate_ambush_region(state, region, faction, defending_faction):
 
     # Count Hidden pieces for attacker
     attacker_hidden = _count_hidden(state, region, faction)
+    # Card 45 uses Aedui pieces as the attacker's own. This changes the
+    # Hidden-piece comparison, not the executing Faction's Leader range.
+    attacker_hidden += sum(_count_hidden(state, region, ally)
+                           for ally in set(allied_factions) - {faction})
 
     # Count Hidden pieces for defender
     defender_hidden = _count_hidden(state, region, defending_faction)

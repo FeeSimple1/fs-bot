@@ -76,6 +76,10 @@ def census_result(res, counts, examples, scenario, seed, occurrences=None):
             if isinstance(ex, dict):
                 _walk(ex, faction, ba.get("command"), ba.get("sa"),
                       counts, examples, scenario, seed, cr.get("card"), occurrences)
+        phase = tr.get("arverni_phase")
+        if isinstance(phase, dict):
+            _walk(phase, rc.ARVERNI, "Arverni Phase", None,
+                  counts, examples, scenario, seed, cr.get("card"), occurrences)
         winter = cr.get("winter_result")
         if isinstance(winter, dict):
             _walk(winter, "Winter", "Winter", None, counts, examples,

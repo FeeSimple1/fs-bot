@@ -897,9 +897,14 @@ def _verc_march_route(state, scenario, verc_region):
     INTO (1 or 2 hops), or (None, None) if no legal join destination exists.
     """
     from fs_bot.engine.execute import _np_harassers
+    from fs_bot.commands.march import _max_steps_for_group
     playable = set(get_playable_regions(scenario, state.get("capabilities")))
     warbands = count_pieces(state, verc_region, ARVERNI, WARBAND)
-    group = {LEADER: VERCINGETORIX, WARBAND: warbands}
+    # The flowchart also controls the Successor. Only Vercingetorix has
+    # the extra movement step (§3.3.2); use the actual marching Leader.
+    group = {LEADER: get_leader_in_region(state, verc_region, ARVERNI),
+             WARBAND: warbands}
+    max_steps = _max_steps_for_group(state, verc_region, ARVERNI, group)
 
     def _adj(r):
         return [a for a in get_adjacent(r, scenario) if a in playable]
@@ -921,7 +926,7 @@ def _verc_march_route(state, scenario, verc_region):
         route = None
         if dest in verc_adj:
             cost, route = 0, [dest]          # 1 hop: no pass-through, 0 Losses
-        else:
+        elif max_steps >= 2:
             for mid in sorted(verc_adj):     # 2 hops: pass through one Region
                 if mid == dest or dest not in _adj(mid):
                     continue

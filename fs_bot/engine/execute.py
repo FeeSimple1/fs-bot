@@ -1874,8 +1874,9 @@ def _resolve_card21_provincia_battle(state):
 def _resolve_card45_battle(state, faction):
     """Card 45 Litaviccus (shaded): free Battle against the Romans in 1 Region,
     using Aedui pieces as the attacker's own, Ambushing if able."""
-    from fs_bot.rules_consts import ROMANS, AEDUI, WARBAND, AUXILIA, HIDDEN
-    from fs_bot.board.pieces import count_pieces, count_pieces_by_state
+    from fs_bot.rules_consts import ROMANS, AEDUI
+    from fs_bot.board.pieces import count_pieces
+    from fs_bot.commands.sa_ambush import validate_ambush_region
     from fs_bot.map.map_data import get_playable_regions
     best = None
     for R in get_playable_regions(state["scenario"], state.get("capabilities")):
@@ -1891,12 +1892,8 @@ def _resolve_card45_battle(state, faction):
         return [{"free_action": "battle", "flag": "card_45", "executed": False,
                  "reason": "no Roman target with a combined force"}]
     R = best[0]
-    g_hidden = (count_pieces_by_state(state, R, faction, WARBAND, HIDDEN)
-                + count_pieces_by_state(state, R, AEDUI, WARBAND, HIDDEN)
-                + count_pieces_by_state(state, R, AEDUI, AUXILIA, HIDDEN))
-    r_hidden = (count_pieces_by_state(state, R, ROMANS, AUXILIA, HIDDEN)
-                + count_pieces_by_state(state, R, ROMANS, WARBAND, HIDDEN))
-    is_ambush = g_hidden > r_hidden and g_hidden > 0
+    is_ambush, _ = validate_ambush_region(
+        state, R, faction, ROMANS, allied_factions=(AEDUI,))
     details = {"battle_plan": [{"region": R, "target": ROMANS}],
                "allied_factions": (AEDUI,)}
     bot_action = {"command": _CMD_BATTLE,
@@ -3648,7 +3645,9 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
         is_ambush = (sa == _SA_AMBUSH and region in sa_regions)
         if is_ambush:
             from fs_bot.commands.sa_ambush import validate_ambush_region
-            valid, reason = validate_ambush_region(state, region, faction, defender)
+            valid, reason = validate_ambush_region(
+                state, region, faction, defender,
+                allied_factions=allied_factions)
             if not valid:
                 errors.append({"region": region, "sa": sa, "error": reason})
                 is_ambush = False

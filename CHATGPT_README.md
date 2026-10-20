@@ -26,35 +26,74 @@ You are about to PLAY one faction against the built-in bots.
 
        python -m fs_bot.tools.llm_seat play
 
-   Bots take their turns; when it is YOUR turn the board prints and
-   the program halts, showing your legal options.
+   Bots take their turns; whenever your seat has a decision, including a
+   reaction during another faction's action, the board and request print.
 
-4. Decide, then write `llm_play/queue.json` with a LIST of decisions
-   and run `play` again. One decision looks like:
+4. Read the pending request and its stable decision id. Submit a response:
 
-       [{"action": "command_sa",
-         "player_action": {
+       python -m fs_bot.tools.llm_seat submit --response '{"action":"pass"}'
+
+   `submit` answers the current request and continues until the next decision.
+   For a Command, the response is an action object like this:
+
+       {"action": "command",
+        "player_action": {
            "command": "Rally", "regions": [],
-           "sa": "Ambush", "sa_regions": ["Carnutes"],
+           "sa": "No SA", "sa_regions": [],
            "details": {"rally_plan": {"citadels": [], "allies": [],
                        "warbands": ["Carnutes"],
                        "settlements_before": [],
-                       "settlements_after": []}}}}]
+                       "settlements_after": []}}}}
 
-   `action` is one of the printed options: `command`, `command_sa`,
-   `limited_command`, `event`, `pass`.
+   Own-turn `action` is one of the printed options: `command`, `command_sa`,
+   `limited_command`, `event`, `pass`. Reactions also pause for your answer:
 
-5. Repeat step 3-4 until `*** GAME OVER` prints.
+   - Retreat: `{"retreat":true,"region":"Aedui"}` or `{"retreat":false}`.
+   - Loss order: a list of the piece entries offered by the request, such as
+     `[["Auxilia",null],["Legion",null]]`. Enlisted pieces may include an owner
+     as the third entry; copy those entries exactly.
+   - Agreement or harassment: `true` or `false`.
+   - Quarters: your faction's relocation/payment object (see AGENT_INTERFACE).
+   - Winter Campaign: one Command, one standalone SA, a Command+SA using both
+     actions, or `{"decline":true}`. A second single action is requested after
+     the first resolves.
+
+   Reactions accept `{"use_default":true}` only when you explicitly want the
+   engine's default choice. Nothing is silently decided for your seat.
+
+5. Continue submitting responses until `*** GAME OVER` prints.
 
 To inspect the saved board without advancing play:
 
     python -m fs_bot.tools.llm_seat board
 
 The board includes current/upcoming card text, piece states, Tribes,
-markers, and available forces. A halted turn preserves completed actions
-on the current card; running `play` again with no queued decision does not
-repeat earlier bot actions. Invalid Command plans remain pending so you
-can correct the queue and try again.
+markers, and available forces. During a reaction it shows the live board at
+that decision, including any preceding effects within the unfinished action.
+Each decision also shows changes since your last decision.
+
+A halt preserves completed actions. An unfinished action is retried from its
+starting board and RNG, automatically replaying your already accepted choices;
+it does not ask those questions again. Invalid responses remain pending.
+
+The save atomically records the board, accepted input, pending request, and
+complete decision history. `queue.json` is an inbox: an unchanged submitted
+file is never consumed twice. You may write
+`{"decision_id":"d000001","response":{"action":"pass"}}` into it and run
+`play`. Original list queues are accepted, but an identical list is treated
+as an already imported submission. Use `submit` (or the new decision id) when
+making the same choice again. A new submission replaces unconsumed inbox
+entries; it cannot change earlier accepted choices inside a pending action.
+
+Replay into a separate empty directory without changing the live game:
+
+    python -m fs_bot.tools.llm_seat replay --output-dir llm_replay
+
+Replay checks every recorded request against its board and verifies the final
+checkpoint and RNG. Older saves begin their assistant history when first
+upgraded; choices made before that checkpoint cannot be reconstructed.
+`init --card-edition legacy|original|second-edition` selects the saved card
+profile. The legacy default preserves existing scenario-based behavior.
 
 Human plans may set `sa_timing` to `"before"` or `"after"` to control the
 Special Activity's order. See **AGENT_INTERFACE.md** for interrupted

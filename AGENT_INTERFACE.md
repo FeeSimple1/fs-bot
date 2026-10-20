@@ -153,3 +153,32 @@ full game with one agent-controlled Faction playing alongside the bots.
 - There is no full legal-move *generator* (COIN's branching is enormous);
   `moves` gives the building blocks plus a validator, which is the practical
   shape for an LLM that proposes a move and checks it.
+
+
+## File-based assistant sessions
+
+`python -m fs_bot.tools.llm_seat` implements both integration points without
+interactive stdin. `play` stops at the next human request; `submit --response
+'<JSON>'` answers its stable id and continues. `board` shows that pending
+request's live board, while the saved engine state retains a safe transaction
+boundary. Do not edit the save to answer a request.
+
+`save.json` is authoritative for inbox consumption, pending requests, accepted
+choices within an interrupted action, and the committed decision log. The
+frontend verifies and replays the earlier choices when the engine retries an
+unfinished action. Bot preview copies cannot consume this human input.
+`queue.json` is only an inbox, supporting a `{decision_id,response}` envelope
+or legacy lists; unchanged inbox submissions cannot execute twice. Explicit
+`{use_default:true}` is supported for reactions. Missing, stale, malformed,
+or illegal responses pause rather than silently handing the choice to a bot.
+
+Winter Campaign requests include `remaining_actions` (initially 2). Return a
+normal Command plan, a standalone `{sa,sa_regions,details}` plan, or a combined
+Command+SA plan (two actions); `{decline:true}` ends the capability's actions.
+Ambush/Besiege must be paired with Battle. Cards 63/A63 permit other SAs
+independently of their usual accompanying Commands and pay normal costs.
+A single action resolves before the second decision is requested.
+
+`replay --output-dir DIR` reconstructs the saved session from its origin and
+complete human decision log, verifies request context, and compares the final
+board and RNG with the live save. It never overwrites the live game.

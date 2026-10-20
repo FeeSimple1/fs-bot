@@ -351,7 +351,19 @@ def test_llm_empty_queue_preserves_board_at_second_eligible(tmp_path, capsys):
                            seat=rc.ROMANS, seed=1)
     cmd_init(args)
     cmd_play(args)
-    original, meta, _ = load_game(tmp_path / "save.json")
+    # Reactions now pause too. Explicitly choose their defaults until the
+    # own-turn checkpoint whose second-eligible preservation this tests.
+    from fs_bot.tools.llm_seat import cmd_submit
+    from fs_bot.state.serialize import decode
+    for _ in range(100):
+        original, meta, _ = load_game(tmp_path / "save.json")
+        pending = meta["assistant_session"]["pending"]
+        if decode(pending["request"])["kind"] == "turn":
+            break
+        args.response = '{"use_default": true}'
+        cmd_submit(args)
+    else:
+        raise AssertionError("never reached the own-turn decision")
     assert original["_card_turn"]["first_action"] is not None
     assert meta["human_snapshots"]
     capsys.readouterr()

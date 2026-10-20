@@ -100,23 +100,24 @@ _SENATE_INDEX = {pos: i for i, pos in enumerate(SENATE_POSITIONS)}
 
 # Row-to-senate mapping for Legion placement: §6.5.2
 # Legions on same row as Senate or above are placed into Provincia.
-# Bottom = below Adulation, Middle = Adulation, Top = Intrigue
+# The printed board aligns Top with Uproar, Middle with Intrigue, and
+# Bottom with Adulation. See docs/reviews/vassal-module-2026-10-20.md for the image
+# and coordinate evidence; the legacy comments in rules_consts.py are
+# not the board geometry (that file remains read-only).
 _ROW_SENATE_MAP = {
-    LEGIONS_ROW_BOTTOM: None,      # Below Adulation — never at Senate level
-    LEGIONS_ROW_MIDDLE: ADULATION,  # At Adulation level
-    LEGIONS_ROW_TOP: INTRIGUE,      # At Intrigue level
+    LEGIONS_ROW_BOTTOM: ADULATION,
+    LEGIONS_ROW_MIDDLE: INTRIGUE,
+    LEGIONS_ROW_TOP: UPROAR,
 }
 
 # Senate rows at or above each position — §6.5.2
-# Bottom = below Adulation, Middle = at Adulation, Top = at Intrigue.
 # "Place into Provincia all Legions on same row as Senate or above."
-# Senate at Uproar: no track row is at Uproar level or above → place NOTHING
-# Senate at Intrigue: Top row (at Intrigue) → place from Top only
-# Senate at Adulation: Middle (at Adulation) + Top → place from both
+# Keep rows in bottom-to-top order: the placement loop reverses this
+# order when taking Legions, including the Ariovistus lower-row limit.
 _ROWS_AT_OR_ABOVE_SENATE = {
-    UPROAR: (),                                     # No track row at/above Uproar
-    INTRIGUE: (LEGIONS_ROW_TOP,),
-    ADULATION: (LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP),
+    UPROAR: (LEGIONS_ROW_TOP,),
+    INTRIGUE: (LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP),
+    ADULATION: (LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP),
 }
 
 
@@ -891,7 +892,8 @@ def _senate_legions(state):
     (fill lowest rows first). Then place into Provincia all Legions on
     same row as Senate marker or above.
 
-    A6.5.2: Max 2 Legions placed into Provincia in Ariovistus.
+    A6.5.2: In Ariovistus, at most 2 total from the Intrigue/Adulation
+    rows; Legions from the Uproar row are not subject to that limit.
 
     Returns:
         Dict with results.
@@ -929,28 +931,26 @@ def _senate_legions(state):
     senate_pos = state["senate"]["position"]
     rows_to_place = _ROWS_AT_OR_ABOVE_SENATE.get(senate_pos, ())
 
-    total_to_place = 0
-    for row in rows_to_place:
-        total_to_place += state["legions_track"].get(row, 0)
-
-    # A6.5.2: Max 2 Legions in Ariovistus
-    if scenario in ARIOVISTUS_SCENARIOS:
-        total_to_place = min(total_to_place, ARIOVISTUS_SENATE_MAX_LEGIONS)
+    # A6.5.2 caps the combined Intrigue/Adulation rows, not the Uproar
+    # row. Keep that budget separate so Top-row Legions neither consume
+    # it nor become restricted by it.
+    lower_row_budget = ARIOVISTUS_SENATE_MAX_LEGIONS
+    taken_by_row = {}
+    for row in reversed(rows_to_place):
+        take = state["legions_track"].get(row, 0)
+        if scenario in ARIOVISTUS_SCENARIOS and row != LEGIONS_ROW_TOP:
+            take = min(take, lower_row_budget)
+            lower_row_budget -= take
+        taken_by_row[row] = take
+    total_to_place = sum(taken_by_row.values())
 
     if total_to_place > 0:
         # Remove from track (top rows first) and place in Provincia
         # We manually manage the track and use direct placement to avoid
         # conflicts with place_piece(from_legions_track=True) which takes
         # from top rows unconditionally.
-        remaining = total_to_place
-        for row in reversed(list(rows_to_place)):
-            on_row = state["legions_track"].get(row, 0)
-            take = min(on_row, remaining)
-            if take > 0:
-                state["legions_track"][row] -= take
-                remaining -= take
-            if remaining == 0:
-                break
+        for row, take in taken_by_row.items():
+            state["legions_track"][row] -= take
 
         # Place directly into Provincia (track already decremented)
         from fs_bot.board.pieces import _ensure_faction_pieces_structure

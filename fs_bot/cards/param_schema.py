@@ -252,6 +252,22 @@ _OVERRIDES = {
          "target_faction": {"kind": "faction"},
          "second_faction": {"kind": "faction"},
          "first_battle": {"kind": "value", "values": (True, False)}},
+    44: {
+        "replacements": {"kind": "entries", "entry_fields": {
+            "region": "region", "from_faction": "faction",
+            "from_type": "piece_type", "to_faction": "faction",
+            "to_type": "piece_type", "piece_state": "piece_state", "count": "count"},
+            "entry_values": {"piece_type": (WARBAND, AUXILIA)}},
+        "scout_moves": {"kind": "entries", "entry_fields": {
+            "from_region": "region", "to_region": "region",
+            "faction": "faction", "count": "count"},
+            "entry_values": {"faction": (ROMANS, AEDUI)}},
+        "scout_reveals": {"kind": "entries", "entry_fields": {
+            "region": "region", "faction": "faction", "target_faction": "faction",
+            "count": "count", "scouts": "count"}},
+        "raid_actions": {"kind": "entries", "allow_empty": True, "entry_fields": {
+            "region": "region", "faction": "faction", "target_faction": "optional_faction"}},
+    },
     "A35": {"piece_type": {"values": (WARBAND, AUXILIA)},
             "ally_faction": {"values": tuple(f for f in FACTIONS
                                              if f != GERMANS)}},
@@ -316,6 +332,8 @@ def kind_values(state, kind, spec=None):
         return region_pool(state, (spec or {}).get("region_pool"))
     if kind in ("faction", "factions"):
         return list(FACTIONS)
+    if kind == "optional_faction":
+        return [None, *FACTIONS]
     if kind == "tribe":
         return sorted(state.get("tribes", {}))
     if kind == "count":

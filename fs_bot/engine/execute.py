@@ -1058,6 +1058,11 @@ _ONE_SHOT_FREE_ACTION_FLAGS = (
     "card_44_free_raid",
     "card_44_free_scout",
     "card_44a_free_command",
+    "card_44_placed",
+    "card_44_scout_moves",
+    "card_44_scout_reveals",
+    "card_44_raid_actions",
+    "card_44a_command_regions",
     "card_45_battle_romans",
     "card_46_free_command",
     "card_47_council",
@@ -1304,12 +1309,12 @@ def _resolve_free_actions_scoped(state, faction):
     if mods.get("card_44a_free_command"):
         # Card 44 (Ariovistus) shaded: the free Command is "in Regions
         # placed" — constrain the chooser to the Regions the handler
-        # recorded (board-wide only if it recorded none, e.g. no placement).
+        # recorded. No placements never authorize a board-wide Command.
         placed = mods.get("card_44a_command_regions") or []
-        results.append({"free_action": "free_command", "flag": "card_44a",
-                        "result": _resolve_free_command(
-                            state, faction,
-                            allowed_regions=set(placed) if placed else None)})
+        if placed:
+            results.append({"free_action": "free_command", "flag": "card_44a",
+                            "result": _resolve_free_command(
+                                state, faction, allowed_regions=set(placed))})
     if mods.get("card_A29_german_raid"):
         results.extend(_resolve_card_A29_raid(state))
     if mods.get("card_A34_use_german_pieces"):
@@ -1981,42 +1986,22 @@ def _resolve_card54_joined_ranks(state, faction, march_limit,
 
 
 def _resolve_card44_scout(state):
-    """Card 44 (unshaded): the Romans free Scout (as if Auxilia)."""
-    from fs_bot.rules_consts import ROMANS
-    try:
-        res = _execute_scout(state, ROMANS, {"sa": _SA_SCOUT,
-                                             "sa_regions": [], "details": {}})
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "scout", "flag": "card_44",
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "scout", "flag": "card_44", "result": res}]
+    """Card 44: only the successfully placed Auxilia/Aedui Warbands Scout."""
+    from fs_bot.cards.dumnorix import scout_cohort
+    mods = state.get("event_modifiers", {})
+    result = scout_cohort(state, mods.get("card_44_placed", []),
+                          mods.get("card_44_scout_moves", []),
+                          mods.get("card_44_scout_reveals", []))
+    return [{"free_action": "scout", "flag": "card_44", "result": result}]
 
 
 def _resolve_card44_raid(state, faction):
-    """Card 44 (shaded): the acting Faction's Warbands free Raid — in each
-    Region where it has Warbands and an enemy with Resources is present."""
-    from fs_bot.rules_consts import WARBAND, FACTIONS
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.map.map_data import get_playable_regions
-    raid_plan = []
-    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
-        if count_pieces(state, region, faction, WARBAND) <= 0:
-            continue
-        target = next((f for f in FACTIONS if f != faction
-                       and count_pieces(state, region, f) > 0
-                       and state["resources"].get(f, 0) > 0), None)
-        raid_plan.append({"region": region, "target": target})
-    if not raid_plan:
-        return [{"free_action": "raid", "flag": "card_44", "executed": False,
-                 "reason": "no Warband Region to Raid"}]
-    try:
-        res = _execute_raid(state, faction, {"command": _CMD_RAID,
-              "sa": SA_ACTION_NONE_LABEL, "sa_regions": [],
-              "details": {"raid_plan": raid_plan}})
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "raid", "flag": "card_44",
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "raid", "flag": "card_44", "result": res}]
+    """Original card 44: only the successfully placed Warbands Raid."""
+    from fs_bot.cards.dumnorix import raid_cohort
+    mods = state.get("event_modifiers", {})
+    result = raid_cohort(state, mods.get("card_44_placed", []),
+                         mods.get("card_44_raid_actions", []))
+    return [{"free_action": "raid", "flag": "card_44", "result": result}]
 
 
 def _resolve_card26_arverni_rally(state):
@@ -5997,39 +5982,9 @@ def _derive_card_16(state, faction, shaded):
 
 
 def _derive_card_44(state, faction, shaded):
-    """Card 44 Dumnorix Loyalists. Unshaded: replace up to 4 enemy Warbands
-    with Auxilia (Roman actor) or the acting Faction's Warbands; they free
-    Scout. Shaded: replace up to 3 Roman Auxilia with the acting Faction's
-    Warbands (take Auxilia first, exposing Legions); they free Raid."""
-    from fs_bot.rules_consts import (ROMANS, WARBAND, AUXILIA, HIDDEN, REVEALED,
-                                     FACTIONS)
-    from fs_bot.board.pieces import count_pieces_by_state, count_pieces
-    from fs_bot.map.map_data import get_playable_regions
-    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
-    if not shaded:
-        to_type = AUXILIA if faction == ROMANS else WARBAND
-        reps = []
-        for region in sorted(playable):
-            for ef in FACTIONS:
-                if ef == faction:
-                    continue
-                for ps in (HIDDEN, REVEALED):
-                    for _ in range(count_pieces_by_state(state, region, ef,
-                                                          WARBAND, ps)):
-                        if len(reps) >= 4:
-                            break
-                        reps.append({"region": region, "from_faction": ef,
-                                     "to_type": to_type, "to_faction": faction,
-                                     "piece_state": ps})
-        return {"replacements": reps} if reps else None
-    reps = []
-    for region in sorted(playable):
-        for _ in range(count_pieces(state, region, ROMANS, AUXILIA)):
-            if len(reps) >= 3:
-                break
-            reps.append({"region": region, "from_faction": ROMANS,
-                         "from_type": AUXILIA, "to_faction": faction})
-    return {"replacements": reps} if reps else None
+    """Card 44's NP replacement/Scout/Raid choices use only placed pieces."""
+    from fs_bot.cards.dumnorix import derive_params
+    return derive_params(state, faction, shaded)
 
 
 def _derive_card_A58(state, faction, shaded):

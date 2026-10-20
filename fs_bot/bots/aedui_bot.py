@@ -559,7 +559,7 @@ def _estimate_rally_placements(state, scenario):
 # HELPER: Raid estimation
 # ============================================================================
 
-def _would_raid_gain_enough(state, scenario):
+def _would_raid_gain_enough(state, scenario, *, raiders=None):
     """Check if Raiding would gain at least 2 Resources total.
 
     Per §8.6.4: Raid if would gain 2+ Resources.
@@ -609,10 +609,19 @@ def _would_raid_gain_enough(state, scenario):
     for region in playable:
         hidden_wb = count_pieces_by_state(
             state, region, AEDUI, WARBAND, HIDDEN)
+        if raiders is not None:
+            hidden_wb = min(hidden_wb, raiders.get(region, 0))
         if hidden_wb == 0:
             continue
 
-        flips = min(2, hidden_wb)
+        raid_limit = 2
+        if raiders is not None:
+            from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
+            from fs_bot.rules_consts import EVENT_SHADED
+            if (is_capability_active(state, 8, EVENT_SHADED)
+                    and get_capability_owner(state, 8) == AEDUI):
+                raid_limit = 3
+        flips = min(raid_limit, hidden_wb)
         is_devastated = _is_devastated(state, region)
 
         # Build steal targets for this region

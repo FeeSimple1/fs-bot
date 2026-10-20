@@ -173,7 +173,7 @@ class TestCard44aRegionRestriction:
         exe._resolve_free_actions(st, BELGAE)
         assert seen.get("allowed_regions") == {"Treveri"}
 
-    def test_no_placement_falls_back_board_wide(self, monkeypatch):
+    def test_no_placement_grants_no_command(self, monkeypatch):
         import fs_bot.engine.execute as exe
         st = _np_state(231)
         st.setdefault("event_modifiers", {})
@@ -187,7 +187,7 @@ class TestCard44aRegionRestriction:
 
         monkeypatch.setattr(exe, "_resolve_free_command", recorder)
         exe._resolve_free_actions(st, BELGAE)
-        assert seen.get("allowed_regions") is None
+        assert seen == {}
 
 
 class TestCard72Unshaded:

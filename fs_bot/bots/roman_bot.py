@@ -1393,7 +1393,7 @@ def _scout_emit_move(sim, moves, src, dst, count):
         remaining -= n
 
 
-def _scout_auxilia_moves(state):
+def _scout_auxilia_moves(state, *, scouts=None):
     """Concrete §8.8.1 SCOUT Auxilia moves (errata 15Nov2018), in the
     instruction's order: (1) end with 4+ Auxilia in Caesar's Region;
     (2) add guaranteed Supply Lines by breaking Arverni/Belgae/player-
@@ -1405,6 +1405,13 @@ def _scout_auxilia_moves(state):
     from fs_bot.rules_consts import BRITANNIA
     sim = _copy.deepcopy(state)
     sim.pop("decision_agent", None)
+    if scouts is not None:
+        # Card 44's scoped planner must see actual Card 5 map access.
+        # This is a planning copy; Gallia Togata stays a regional marker
+        # in the real state, never an invented persistent Capability.
+        from fs_bot.rules_consts import CISALPINA, MARKER_GALLIA_TOGATA
+        if MARKER_GALLIA_TOGATA in sim.get("markers", {}).get(CISALPINA, {}):
+            sim.setdefault("capabilities", {})[MARKER_GALLIA_TOGATA] = True
     scenario = sim["scenario"]
     playable = sorted(get_playable_regions(scenario,
                                            sim.get("capabilities")))
@@ -1412,11 +1419,26 @@ def _scout_auxilia_moves(state):
     non_players = sim.get("non_player_factions", set())
     moves = []
 
+    remaining_scouts = dict(scouts) if scouts is not None else None
+
+    def emit_move(src, dst, count):
+        if remaining_scouts is None:
+            _scout_emit_move(sim, moves, src, dst, count)
+        else:
+            # Card 44 grants Scout only to its just-placed Hidden pieces.
+            move_piece(sim, src, dst, ROMANS, AUXILIA, count=count,
+                       piece_state=HIDDEN)
+            remaining_scouts[src] -= count
+            moves.append({"from_region": src, "to_region": dst,
+                          "count": count, "piece_state": HIDDEN})
+
     def movable(src):
         aux = count_pieces(sim, src, ROMANS, AUXILIA)
         m = aux - count_pieces(sim, src, ROMANS, LEGION)
         if src == caesar_region:
             m = min(m, aux - 4)
+        if remaining_scouts is not None:
+            m = min(m, remaining_scouts.get(src, 0))
         return max(0, m)
 
     # ---- (1) Caesar escort to 4 ----
@@ -1436,7 +1458,7 @@ def _scout_auxilia_moves(state):
                         _scout_guaranteed_supply_regions(sim)):
                     take -= 1
                 if take > 0:
-                    _scout_emit_move(sim, moves, src, caesar_region, take)
+                    emit_move(src, caesar_region, take)
                     deficit -= take
 
     # ---- (2) add guaranteed Supply Lines by breaking enemy Control ----
@@ -1473,7 +1495,7 @@ def _scout_auxilia_moves(state):
         if best is None:
             break
         _, src, dst, need = best
-        _scout_emit_move(sim, moves, src, dst, need)
+        emit_move(src, dst, need)
         refresh_all_control(sim)
 
     # ---- (3) join Auxilia not yet with Legions to the most Legions,
@@ -1501,7 +1523,7 @@ def _scout_auxilia_moves(state):
                     sim, src, take, caesar_region, guaranteed):
                 take -= 1
             if take > 0:
-                _scout_emit_move(sim, moves, src, dst, take)
+                emit_move(src, dst, take)
                 refresh_all_control(sim)
                 capacity -= take
 

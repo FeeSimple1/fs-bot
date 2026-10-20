@@ -1983,51 +1983,11 @@ def execute_card_43(state, shaded=False):
     activate_capability(state, 43, side)
 
 def execute_card_44(state, shaded=False):
-    """Card 44: Dumnorix Loyalists — Replace Warbands / Replace Auxilia.
-
-    Unshaded: Replace any 4 Warbands with Auxilia or Aedui Warbands.
-    They free Scout (as if Auxilia).
-    Shaded: Replace any 3 Auxilia or Aedui Warbands total with any
-    Warbands. They all free Raid.
-
-    Source: Card Reference, card 44
+    """Original Card Reference 44: replace at most 4/3 pieces; only those
+    placed pieces Scout (unshaded) or Raid (shaded), per the printed Tips.
     """
-    params = state.get("event_params", {})
-    if not shaded:
-        # Replace 4 Warbands with Auxilia or Aedui Warbands
-        replacements = params.get("replacements", [])
-        for r in replacements:
-            region = r["region"]
-            from_faction = r["from_faction"]
-            to_type = r.get("to_type", AUXILIA)
-            to_faction = r.get("to_faction", ROMANS if to_type == AUXILIA else AEDUI)
-            ps = r.get("piece_state", HIDDEN)
-            if count_pieces_by_state(state, region, from_faction, WARBAND, ps) > 0:
-                remove_piece(state, region, from_faction, WARBAND, piece_state=ps)
-                if get_available(state, to_faction, to_type) > 0:
-                    place_piece(state, region, to_faction, to_type)
-        # Free Scout deferred to caller
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_44_free_scout"] = True
-    else:
-        # Replace 3 Auxilia/Aedui Warbands with any Warbands
-        replacements = params.get("replacements", [])
-        for r in replacements:
-            region = r["region"]
-            from_faction = r["from_faction"]
-            from_type = r.get("from_type", AUXILIA)
-            to_faction = r.get("to_faction")
-            if from_type == AUXILIA:
-                if count_pieces(state, region, from_faction, AUXILIA) > 0:
-                    remove_piece(state, region, from_faction, AUXILIA)
-            elif from_type == WARBAND:
-                ps = r.get("piece_state", HIDDEN)
-                if count_pieces_by_state(state, region, AEDUI, WARBAND, ps) > 0:
-                    remove_piece(state, region, AEDUI, WARBAND, piece_state=ps)
-            if to_faction and get_available(state, to_faction, WARBAND) > 0:
-                place_piece(state, region, to_faction, WARBAND)
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_44_free_raid"] = True
+    from fs_bot.cards.dumnorix import execute_replacements
+    return execute_replacements(state, shaded, revised=False)
 
 def execute_card_45(state, shaded=False):
     """Card 45: Litaviccus — Replace Arverni Warbands / Battle Romans.
@@ -4832,59 +4792,11 @@ def execute_card_39_ariovistus(state, shaded=False):
     activate_capability(state, 39, side)
 
 def execute_card_44_ariovistus(state, shaded=False):
-    """Card 44 (Ariovistus): Dumnorix Loyalists — Replace pieces.
-
-    Unshaded: Replace any 4 Warbands with Auxilia or Aedui Warbands.
-    Free Scout.
-    Shaded: Replace any 3 Auxilia or Aedui Warbands with any Warbands.
-    Execute a free Command in Regions placed.
-
-    Source: A Card Reference, card 44 (Ariovistus text — free Command)
+    """A Card Reference 44: same replacements and Scout; shaded grants
+    the executing faction a free Command in Regions where pieces placed.
     """
-    params = state.get("event_params", {})
-    if not shaded:
-        # Same as base unshaded
-        replacements = params.get("replacements", [])
-        for r in replacements:
-            region = r["region"]
-            from_faction = r["from_faction"]
-            to_type = r.get("to_type", AUXILIA)
-            to_faction = r.get("to_faction",
-                               ROMANS if to_type == AUXILIA else AEDUI)
-            ps = r.get("piece_state", HIDDEN)
-            if count_pieces_by_state(state, region, from_faction,
-                                     WARBAND, ps) > 0:
-                remove_piece(state, region, from_faction, WARBAND,
-                             piece_state=ps)
-                if get_available(state, to_faction, to_type) > 0:
-                    place_piece(state, region, to_faction, to_type)
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_44_free_scout"] = True
-    else:
-        # Ariovistus shaded: replace + free Command (not just Raid)
-        replacements = params.get("replacements", [])
-        placed_regions = set()
-        for r in replacements:
-            region = r["region"]
-            from_faction = r["from_faction"]
-            from_type = r.get("from_type", AUXILIA)
-            to_faction = r.get("to_faction")
-            if from_type == AUXILIA:
-                if count_pieces(state, region, from_faction, AUXILIA) > 0:
-                    remove_piece(state, region, from_faction, AUXILIA)
-            elif from_type == WARBAND:
-                ps = r.get("piece_state", HIDDEN)
-                if count_pieces_by_state(state, region, AEDUI,
-                                         WARBAND, ps) > 0:
-                    remove_piece(state, region, AEDUI, WARBAND,
-                                 piece_state=ps)
-            if to_faction and get_available(state, to_faction, WARBAND) > 0:
-                place_piece(state, region, to_faction, WARBAND)
-                placed_regions.add(region)
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_44a_free_command"] = True
-        state["event_modifiers"]["card_44a_command_regions"] = sorted(
-            placed_regions)
+    from fs_bot.cards.dumnorix import execute_replacements
+    return execute_replacements(state, shaded, revised=True)
 
 def execute_card_54_ariovistus(state, shaded=False):
     """Card 54 (Ariovistus): Joined Ranks — March + multi-faction Battle.

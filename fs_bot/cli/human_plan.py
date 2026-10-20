@@ -1071,7 +1071,9 @@ def _prompt_event_param(state, key, spec, stdin, stdout):
                     stdin, stdout, f"  {sub}:",
                     _kind_options(state, sub_kind, spec))
             entries.append(e)
-        return entries or None
+        # Explicit [] declines Card 44's granted Raid; omission requests
+        # its default plan. Keep that choice available in the typed menu.
+        return entries if spec.get("allow_empty") else entries or None
     if kind in ("regions", "factions") or kind.startswith("list:"):
         item = kind[5:] if kind.startswith("list:") else kind[:-1]
         out = []

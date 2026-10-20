@@ -563,6 +563,11 @@ def _instruction_says_no_germans(state, card_id, instr):
     - Kinship: if Belgae Non-Player, treat as 'No Germans'.
     - Winter Uprising!: if next Winter is the last, treat as 'No Germans'.
     """
+    if card_id == 44:
+        # Dumnorix's own instruction is No Germans unless Roman Auxilia
+        # can be removed in/adjacent to Germania or a Settlement Region.
+        from fs_bot.cards.dumnorix import derive_params
+        return derive_params(state, GERMANS, shaded=True) is None
     non_players = state.get("non_player_factions", set())
     text = (instr.instruction or "").lower()
 
@@ -1107,7 +1112,7 @@ def _is_devastated(state, region):
     return bool(state["spaces"].get(region, {}).get("devastated", False))
 
 
-def _would_raid_gain_enough(state, scenario):
+def _would_raid_gain_enough(state, scenario, *, raiders=None):
     """Check if Raiding gains 2+ Resources total per A8.7.3.
 
     Per §3.3.3 / A8.7.3: each Raid region flips 1-2 Hidden Warbands →
@@ -1133,10 +1138,19 @@ def _would_raid_gain_enough(state, scenario):
     for region in playable:
         hidden_wb = count_pieces_by_state(
             state, region, GERMANS, WARBAND, HIDDEN)
+        if raiders is not None:
+            hidden_wb = min(hidden_wb, raiders.get(region, 0))
         if hidden_wb == 0:
             continue
 
-        flips = min(2, hidden_wb)
+        raid_limit = 2
+        if raiders is not None:
+            from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
+            from fs_bot.rules_consts import EVENT_SHADED
+            if (is_capability_active(state, 8, EVENT_SHADED)
+                    and get_capability_owner(state, 8) == GERMANS):
+                raid_limit = 3
+        flips = min(raid_limit, hidden_wb)
         is_devastated = _is_devastated(state, region)
 
         # Steal targets per A8.7.3 priority: (1) Romans or Aedui, (2) Belgae.

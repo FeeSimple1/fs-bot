@@ -357,29 +357,68 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination):
             yield sim
 
 
+def _frost_retreat_choices(state, region, enemy):
+    """Enumerate Retreat decisions under possible agreements and refusals.
+
+    8.4.4 covers any player agreement or die outcome. A friendly host's
+    refusal can make a Non-player stand and Counterattack instead of
+    Retreating, so assuming every host agrees is not conservative.
+    """
+    from fs_bot.engine.agent import AGREEMENT
+    from fs_bot.engine.execute import _retreat_destinations, _decide_defender_retreat
+    non_players = state.get('non_player_factions', set())
+    scripts, choices = [()], set()
+    while scripts:
+        script = scripts.pop()
+        probe, index, agreements = _copy(state), 0, {}
+
+        def choose(options):
+            nonlocal index
+            if index == len(script):
+                raise _OutcomeBranch(index, options)
+            result = script[index]
+            index += 1
+            return result
+
+        class AgreementRng:
+            def randint(self, low, high):
+                # The published NP agreement roll is a threshold (8.6.6);
+                # its two endpoint outcomes cover agreement and refusal.
+                return choose((low, high))
+
+        def agent(board, faction, request):
+            if (request.get('kind') != AGREEMENT or faction in non_players
+                    or faction == rc.ARVERNI):
+                return None
+            key = (faction, request.get('requesting_faction'),
+                   request.get('context', {}).get('region'))
+            if key not in agreements:
+                agreements[key] = choose((False, True))
+            return agreements[key]
+
+        probe['rng'], probe['decision_agent'] = AgreementRng(), agent
+        try:
+            if enemy in non_players or enemy == rc.ARVERNI:
+                choices.add(_decide_defender_retreat(
+                    probe, region, rc.GERMANS, enemy, False))
+            else:
+                destinations = _retreat_destinations(probe, region, enemy)
+                choices.update([(False, None), (True, None)])
+                choices.update((True, dest) for dest in destinations)
+        except _OutcomeBranch as branch:
+            scripts.extend(script + (option,) for option in branch.options)
+    return sorted(choices, key=lambda item: (item[0], item[1] or ''))
+
+
 def _battle_frost_outcomes(state, region, enemy):
     """All loss-roll outcomes, plus legal player Retreat/agreement choices."""
     from fs_bot.battle.resolve import resolve_battle, _calculate_attack_losses
-    from fs_bot.engine.agent import LOSS_ORDER, AGREEMENT
-    from fs_bot.engine.execute import _retreat_destinations, _decide_defender_retreat
+    from fs_bot.engine.agent import LOSS_ORDER
     from fs_bot.state.serialize import encode
     from json import dumps
 
-    probe = _copy(state)
     non_players = state.get('non_player_factions', set())
-    # §8.4.4 explicitly includes a player's possible agreement to Retreat.
-    probe['decision_agent'] = lambda board, faction, request: (
-        True if request.get('kind') == AGREEMENT
-        and faction not in non_players and faction != rc.ARVERNI else None)
-    retreat_choices = [(False, None)]
-    destinations = _retreat_destinations(probe, region, enemy)
-    if enemy in non_players:
-        retreat, destination = _decide_defender_retreat(
-            probe, region, rc.GERMANS, enemy, False)
-        if retreat:
-            retreat_choices = [(True, destination)]
-    else:
-        retreat_choices += [(True, None)] + [(True, dest) for dest in destinations]
+    retreat_choices = _frost_retreat_choices(state, region, enemy)
 
     had_citadel = count_pieces(state, region, enemy, rc.CITADEL) > 0
     had_fort = count_pieces(state, region, enemy, rc.FORT) > 0

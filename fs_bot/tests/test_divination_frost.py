@@ -109,3 +109,60 @@ def test_game_run_arverni_cannot_supply_a_player_retreat_agreement():
     refresh_all_control(st)
     assert all(count_pieces(sim, rc.NERVII, rc.ROMANS) == 0
                for sim in _battle_frost_outcomes(st, rc.SUGAMBRI, rc.ROMANS))
+
+
+def test_frost_accounts_for_refusing_np_retreat_and_resulting_counterattack():
+    from fs_bot.engine.victory import calculate_victory_margin
+    from fs_bot.cards.divination_np import _frost_retreat_choices
+    st = position()
+    st['non_player_factions'] = {rc.ROMANS, rc.BELGAE, rc.GERMANS}
+    place_piece(st, rc.AEDUI_REGION, rc.AEDUI, rc.ALLY)
+    st['tribes'][rc.TRIBE_AEDUI]['allied_faction'] = rc.AEDUI
+    place_piece(st, rc.AEDUI_REGION, rc.AEDUI, rc.WARBAND, 3)
+    refresh_all_control(st)
+    assert calculate_victory_margin(st, rc.AEDUI) == 0
+    before, rng = signature(st), st['rng'].getstate()
+
+    # 8.4.3: the NP Romans Retreat to reduce Legion Losses if the Aedui
+    # grant a destination. Refusal leaves them in place to Counterattack.
+    assert _frost_retreat_choices(st, rc.SEQUANI, rc.ROMANS) == [
+        (False, None), (True, rc.AEDUI_REGION)]
+    outcomes = list(_battle_frost_outcomes(st, rc.SEQUANI, rc.ROMANS))
+    assert any(calculate_victory_margin(o, rc.AEDUI) == 1 for o in outcomes)
+    assert not _battle_frost_ok(st, rc.SEQUANI, rc.ROMANS)
+    assert signature(st) == before and st['rng'].getstate() == rng
+
+
+def test_np_refuses_to_stand_when_it_always_has_own_retreat_destination():
+    from fs_bot.cards.divination_np import _frost_retreat_choices
+    st = position()
+    st['non_player_factions'] = {rc.ROMANS, rc.BELGAE, rc.GERMANS}
+    place_piece(st, rc.AEDUI_REGION, rc.ROMANS, rc.AUXILIA, 2)
+    refresh_all_control(st)
+    # Do not invent a stand-and-fight branch when 8.4.3 always requires
+    # Retreat; only actual legal agreement/decision outcomes are explored.
+    assert _frost_retreat_choices(st, rc.SEQUANI, rc.ROMANS) == [
+        (True, rc.AEDUI_REGION)]
+
+
+def test_possible_np_agreement_die_success_is_included_without_advancing_rng():
+    from fs_bot.cards.divination_np import _frost_retreat_choices
+    st = position()
+    # NP Aedui sometimes agree for player Romans at score 10-12 (8.6.6).
+    # Supply enough enemy Allies to lower the empty-map Roman score to 12.
+    place_piece(st, rc.AEDUI_REGION, rc.AEDUI, rc.WARBAND, 3)
+    from fs_bot.engine.victory import calculate_victory_score
+    from fs_bot.board.pieces import get_available
+    for tribe, info in st['tribes'].items():
+        if calculate_victory_score(st, rc.ROMANS) <= 12:
+            break
+        region = rc.TRIBE_TO_REGION[tribe]
+        owner = (rc.BELGAE if get_available(st, rc.BELGAE, rc.ALLY)
+                 else rc.ARVERNI)
+        place_piece(st, region, owner, rc.ALLY)
+        info['allied_faction'] = owner
+    refresh_all_control(st)
+    assert 10 <= calculate_victory_score(st, rc.ROMANS) <= 12
+    rng = st['rng'].getstate()
+    assert (True, rc.AEDUI_REGION) in _frost_retreat_choices(st, rc.SEQUANI, rc.ROMANS)
+    assert st['rng'].getstate() == rng

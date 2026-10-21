@@ -1581,6 +1581,15 @@ def _resolve_card_A37_move(state, faction):
     from fs_bot.board.pieces import count_pieces
     from fs_bot.board.control import is_controlled_by
     from fs_bot.map.map_data import get_adjacent
+    from fs_bot.rules_consts import ARIOVISTUS_SCENARIOS
+    # Aedui Ariovistus Event Instructions, All Gaul Gathers: "Move no
+    # pieces." The card's movement is optional ("as desired"); declining
+    # it preserves the Ally placements already performed by the Event.
+    if (faction == AEDUI and state["scenario"] in ARIOVISTUS_SCENARIOS
+            and faction in state.get("non_player_factions", set())):
+        return [{"free_action": "march", "flag": "card_A37", "executed": False,
+                 "declined_no_effect": True,
+                 "reason": "Aedui Event instruction: move no pieces for All Gaul Gathers"}]
     if faction not in (AEDUI, ROMANS):
         return [{"free_action": "march", "flag": "card_A37", "executed": False,
                  "reason": "only Aedui/Romans"}]

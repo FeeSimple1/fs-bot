@@ -17,7 +17,7 @@ from fs_bot.rules_consts import (
     # Piece states
     HIDDEN, REVEALED, SCOUTED,
     # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS,
     # Events
     EVENT_UNSHADED, EVENT_SHADED, CMD_RALLY,
     # NP symbols
@@ -143,9 +143,10 @@ def get_dual_use_preference(faction, scenario, card_id=None):
     Returns:
         EVENT_UNSHADED or EVENT_SHADED.
     """
-    # Base Aedui specific instructions override the generic §8.2.2 side.
-    # Read the supplied instruction so grouped card names stay consistent.
-    if faction == AEDUI and scenario in BASE_SCENARIOS and card_id is not None:
+    # Aedui specific instructions override the generic §8.2.2 side in
+    # either ruleset. The scenario's instruction table distinguishes shared
+    # cards from replacements such as Winter Campaign (63/A63).
+    if faction == AEDUI and card_id is not None:
         instruction = get_event_instruction(card_id, faction, scenario)
         if instruction and (instruction.instruction or "").startswith("Use shaded text"):
             return EVENT_SHADED
@@ -290,11 +291,14 @@ def should_decline_event(state, card_id, faction):
     if is_no_faction_event(card_id, faction, scenario):
         return True
 
-    # The same base Aedui shaded-text instruction makes Remi Influence
+    # Both supplied Aedui instruction tables make Remi Influence
     # conditional on Remi already being their Ally.
-    if (card_id == 68 and faction == AEDUI and scenario in BASE_SCENARIOS
-            and state["tribes"].get(TRIBE_REMI, {}).get("allied_faction") != AEDUI):
-        return True
+    if card_id == 68 and faction == AEDUI:
+        instruction = get_event_instruction(card_id, faction, scenario)
+        if (instruction
+                and "if Remi are not an Aedui Ally" in (instruction.instruction or "")
+                and state["tribes"].get(TRIBE_REMI, {}).get("allied_faction") != AEDUI):
+            return True
 
     # War Fleet grants no Special Ability. Romans/Aedui have no Home Rally
     # in its theatre, so with no own pieces there neither movement nor the

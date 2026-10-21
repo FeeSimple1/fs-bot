@@ -1,7 +1,7 @@
 """Source-derived regressions for Event diagnostics from the 50-game census.
 
 Card Reference 11/17/21/25/36/44/58; A Card Reference A19/A20/A21;
-base Aedui/Roman and Ariovistus German specific Event instructions.
+base Aedui/Roman and Ariovistus Aedui/German specific Event instructions.
 """
 from collections import Counter
 from copy import deepcopy
@@ -76,16 +76,40 @@ def test_aquitani_extra_losses_can_attack_without_friendly_force():
     assert result['free_actions'][0]['region'] == rc.PICTONES
 
 
-@pytest.mark.parametrize('scenario,preference', [
-    (rc.SCENARIO_GREAT_REVOLT, rc.EVENT_SHADED),
-    (rc.SCENARIO_ARIOVISTUS, rc.EVENT_UNSHADED)])
+@pytest.mark.parametrize('scenario', rc.ALL_SCENARIOS)
 @pytest.mark.parametrize('card,title', [
-    (25, 'Aquitani'), (8, 'Baggage Trains'), (10, 'Ballistae'),
-    (70, 'Camulogenus'), (46, 'Celtic Rites'), (35, 'Gallic Shouts'),
-    (65, 'German Allegiances'), (59, 'Germanic Horse'),
-    (68, 'Remi Influence'), (63, 'Winter Campaign')])
-def test_aedui_specific_side_is_scenario_scoped(scenario, preference, card, title):
+    (8, 'Baggage Trains'), (10, 'Ballistae'), (46, 'Celtic Rites'),
+    (59, 'Germanic Horse'), (68, 'Remi Influence')])
+def test_aedui_shared_cards_use_shaded_instruction_in_both_rulesets(scenario, card, title):
     assert rc.CARD_NAMES_BASE[card] == title
+    board = state(scenario)
+    board['current_card_id'] = card
+    assert get_dual_use_preference(rc.AEDUI, scenario, card) == rc.EVENT_SHADED
+    assert node_a_event(board)['details']['text_preference'] == rc.EVENT_SHADED
+
+
+@pytest.mark.parametrize('scenario', rc.BASE_SCENARIOS)
+@pytest.mark.parametrize('card,title', [
+    (25, 'Aquitani'), (35, 'Gallic Shouts'), (63, 'Winter Campaign'),
+    (65, 'German Allegiances'), (66, 'Migration'), (70, 'Camulogenus')])
+def test_aedui_base_cards_use_their_own_shaded_instructions(scenario, card, title):
+    assert rc.CARD_NAMES_BASE[card] == title
+    board = state(scenario)
+    board['current_card_id'] = card
+    assert get_dual_use_preference(rc.AEDUI, scenario, card) == rc.EVENT_SHADED
+    assert node_a_event(board)['details']['text_preference'] == rc.EVENT_SHADED
+
+
+@pytest.mark.parametrize('scenario', rc.ARIOVISTUS_SCENARIOS)
+@pytest.mark.parametrize('card,title,preference', [
+    ('A25', "Ariovistus's Wife", rc.EVENT_UNSHADED),
+    ('A35', 'Nasua & Cimberius', rc.EVENT_UNSHADED),
+    ('A63', 'Winter Campaign', rc.EVENT_SHADED),
+    ('A65', 'Kinship', rc.EVENT_UNSHADED),
+    ('A66', 'Winter Uprising!', rc.EVENT_UNSHADED),
+    ('A70', 'Nervii', rc.EVENT_UNSHADED)])
+def test_aedui_replacements_use_their_own_instructions(scenario, card, title, preference):
+    assert rc.CARD_NAMES_ARIOVISTUS[card] == title
     board = state(scenario)
     board['current_card_id'] = card
     assert get_dual_use_preference(rc.AEDUI, scenario, card) == preference
@@ -491,9 +515,10 @@ def test_morbihan_can_ambush_roman_allies_without_mobile_escort():
     assert board['tribes'][rc.TRIBE_NAMNETES]['allied_faction'] is None
 
 
+@pytest.mark.parametrize('scenario', rc.ALL_SCENARIOS)
 @pytest.mark.parametrize('owner', [None, rc.ROMANS, rc.BELGAE, rc.AEDUI])
-def test_base_aedui_remi_influence_requires_their_remi_ally(owner):
-    board = state()
+def test_aedui_remi_influence_requires_their_remi_ally_in_both_rulesets(scenario, owner):
+    board = state(scenario)
     if owner:
         _ally(board, rc.ATREBATES, rc.TRIBE_REMI, owner)
     assert should_decline_event(board, 68, rc.AEDUI) == (owner != rc.AEDUI)

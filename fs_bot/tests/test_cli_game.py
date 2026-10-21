@@ -306,7 +306,7 @@ def test_prompt_action_validation_feedback_loop():
 
 
 def test_event_param_schema_prompts_rare_entry_fields():
-    """Card 62 (no NP deriver): the schema-driven prompt collects every
+    """Card 62: after declining bot defaults, the typed prompt collects every
     entry field the handler reads — including piece_state and leader_name
     — and offers only the card's coastal Regions."""
     from fs_bot.cli.human_plan import collect_player_action
@@ -315,11 +315,12 @@ def test_event_param_schema_prompts_rare_entry_fields():
     st = _mk_state(seed=3)
     st["current_card"] = 62
     out = io.StringIO()
-    # side=1 (Unshaded); add entry=y; six field picks (option 1 each);
+    # side=1 (Unshaded); decline standard choices; add entry=y;
+    # six field picks (option 1 each);
     # add another=n
     pa = collect_player_action(
         st, rc.ARVERNI, ACTION_EVENT,
-        _Script("1", "y", "1", "2", "1", "1", "1", "1", "n", "n"), out)
+        _Script("1", "n", "y", "1", "2", "1", "1", "1", "1", "n", "n"), out)
     moves = pa["details"]["event_params"]["moves"]
     assert len(moves) == 1
     m = moves[0]

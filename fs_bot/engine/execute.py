@@ -1853,37 +1853,8 @@ def _resolve_card47_council(state):
 
 
 def _resolve_card62_war_fleet(state, faction):
-    """Card 62 War Fleet: after the coastal repositioning, the Faction executes
-    a free Command in (or from) one of the War-Fleet Regions — the Arverni
-    Region, Pictones, or a Region within 1 of Britannia."""
-    from fs_bot.rules_consts import (ARVERNI_REGION, PICTONES, BRITANNIA)
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
-    near_brit = {BRITANNIA} | set(get_adjacent(BRITANNIA, state["scenario"]))
-    allowed = ({ARVERNI_REGION, PICTONES} | near_brit) & playable
-    from fs_bot.rules_consts import AEDUI, BELGAE, ARVERNI
-    nps = state.get("non_player_factions", ())
-    planner = None
-    if faction in nps and faction == AEDUI:
-        # Aedui Event instruction: Rally if it places pieces, otherwise Raid.
-        # The Rally process already has exactly that IF NONE continuation.
-        from fs_bot.bots.aedui_bot import node_a_rally
-        planner = node_a_rally
-    elif faction in nps and faction == BELGAE:
-        return [{"free_action": "free_command", "flag": "card_62",
-                 "result": _resolve_free_rally(
-                     state, faction, allowed_regions=allowed, max_regions=1)}]
-    elif faction in nps and faction == ARVERNI:
-        from fs_bot.bots.arverni_bot import node_v_battle
-        def planner(planning):
-            action = node_v_battle(planning)
-            # The card's explicit Battle does not authorize the process's
-            # threatened-March fallback. The earlier repositioning stands.
-            return action if action.get("command") == _CMD_BATTLE else {"command": "Pass"}
-    return [{"free_action": "free_command", "flag": "card_62",
-             "result": _resolve_free_command(state, faction,
-                                             allowed_regions=allowed,
-                                             limited=True, _planner=planner)}]
+    from fs_bot.cards.war_fleet import resolve_war_fleet_follow_on
+    return resolve_war_fleet_follow_on(state, faction)
 
 
 def _card25_battle_target(state, region, faction):
@@ -6341,6 +6312,11 @@ def _derive_card_32(state, faction=None, shaded=False):
     return {"moves": out} if out else {}
 
 
+def _derive_card_62(state, faction, shaded):
+    from fs_bot.cards.war_fleet import derive_war_fleet
+    return derive_war_fleet(state, faction, shaded)
+
+
 from fs_bot.cards.ally_events import derive_gobannitio, derive_correus
 
 
@@ -6370,6 +6346,7 @@ _EVENT_PARAM_DERIVERS = {
     41: _derive_card_41,
     23: _derive_card_23,
     32: _derive_card_32,
+    62: _derive_card_62,
     42: _derive_card_42,
     58: _derive_card_58,
     68: _derive_card_68,

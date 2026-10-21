@@ -231,6 +231,10 @@ def _frost_ok(before, after):
     return True
 
 
+def _game_run_arverni(state, faction):
+    return faction == rc.ARVERNI and state['scenario'] in rc.ARIOVISTUS_SCENARIOS
+
+
 class _LossOutcomeRng:
     """Realize each ordinary-loss outcome using failure counts per phase.
 
@@ -239,9 +243,9 @@ class _LossOutcomeRng:
     Moving all failures to that phase's first hard target therefore preserves
     the resulting pieces; failure counts enumerate outcomes in polynomial time.
     """
-    def __init__(self, enemy, defender_failures, attacker_failures):
+    def __init__(self, enemy, defender_failures, attacker_failures, attacker=rc.GERMANS):
         self.faction = enemy
-        self.remaining = {enemy: defender_failures, rc.GERMANS: attacker_failures}
+        self.remaining = {enemy: defender_failures, attacker: attacker_failures}
 
     def randint(self, low, high):
         if self.remaining[self.faction] > 0:
@@ -276,10 +280,11 @@ def _legal_loss_choices(state, region, faction, request):
     return first or pieces
 
 
-def _player_loss_outcomes(state, region, enemy, retreat, destination):
+def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
+                          attacker=rc.GERMANS, command=False):
     """Explore legal player absorption choices, merging identical continuations."""
     from fs_bot.battle.resolve import resolve_battle
-    from fs_bot.engine.agent import LOSS_ORDER
+    from fs_bot.engine.agent import LOSS_ORDER, AGREEMENT, RETREAT
     from fs_bot.state.serialize import encode
     from json import dumps
     scripts, branches, complete = [()], set(), set()
@@ -289,7 +294,7 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination):
         class OutcomeRng:
             def __init__(self):
                 self.index, self.faction, self.selected = 0, enemy, None
-                self.failed = {enemy: 0, rc.GERMANS: 0}
+                self.failed = {enemy: 0, attacker: 0}
                 self.remaining = None
 
             def choose(self, options, stage):
@@ -332,18 +337,40 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination):
         rng = OutcomeRng()
         sim['rng'] = rng
         def agent(board, faction, request):
+            non_player = (faction in state.get('non_player_factions', set())
+                          or _game_run_arverni(state, faction))
+            if command and not non_player:
+                if request.get('kind') == AGREEMENT:
+                    return rng.choose((False, True), 'agreement')
+                if request.get('kind') == RETREAT:
+                    options = [None, *request.get('legal_regions', [])]
+                    choice = rng.choose(options, 'retreat')
+                    return {'retreat': choice is not None, 'region': choice}
             if request.get('kind') != LOSS_ORDER:
                 return None
             rng.faction, rng.remaining, rng.selected = faction, request['num_losses'], None
-            if faction in state.get('non_player_factions', set()) or faction == rc.ARVERNI:
+            if faction in state.get('non_player_factions', set()) or _game_run_arverni(state, faction):
                 rng.selected = tuple(request['pieces'][0])
                 return None
             rng.selected = rng.choose(_legal_loss_choices(board, region, faction, request), 'piece')
             return [rng.selected]
         sim['decision_agent'] = agent
         try:
-            resolve_battle(sim, region, rc.GERMANS, enemy,
-                           retreat_declaration=retreat, retreat_region=destination)
+            if command:
+                # Use the actual Command boundary: Card13/27 pre-fire and
+                # Card59 region choices are not standalone Battle effects.
+                from fs_bot.engine.execute import _execute_battle
+                from fs_bot.commands.common import free_action_scope
+                from fs_bot.engine.free_actions import _result_error
+                with free_action_scope(sim, attacker):
+                    result = _execute_battle(sim, attacker, {
+                        'command': rc.CMD_BATTLE, 'sa': 'No SA', 'sa_regions': [],
+                        'details': {'battle_plan': [{'region': region, 'target': enemy}]}})
+                if _result_error(result):
+                    raise ValueError(f'Invalid Battle outcome preview: {result}')
+            else:
+                resolve_battle(sim, region, attacker, enemy,
+                               retreat_declaration=retreat, retreat_region=destination)
         except _OutcomeBranch as branch:
             if branch.key not in branches:
                 branches.add(branch.key)
@@ -357,7 +384,7 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination):
             yield sim
 
 
-def _frost_retreat_choices(state, region, enemy):
+def _frost_retreat_choices(state, region, enemy, *, attacker=rc.GERMANS):
     """Enumerate Retreat decisions under possible agreements and refusals.
 
     8.4.4 covers any player agreement or die outcome. A friendly host's
@@ -388,7 +415,7 @@ def _frost_retreat_choices(state, region, enemy):
 
         def agent(board, faction, request):
             if (request.get('kind') != AGREEMENT or faction in non_players
-                    or faction == rc.ARVERNI):
+                    or _game_run_arverni(state, faction)):
                 return None
             key = (faction, request.get('requesting_faction'),
                    request.get('context', {}).get('region'))
@@ -398,9 +425,9 @@ def _frost_retreat_choices(state, region, enemy):
 
         probe['rng'], probe['decision_agent'] = AgreementRng(), agent
         try:
-            if enemy in non_players or enemy == rc.ARVERNI:
+            if enemy in non_players or _game_run_arverni(state, enemy):
                 choices.add(_decide_defender_retreat(
-                    probe, region, rc.GERMANS, enemy, False))
+                    probe, region, attacker, enemy, False))
             else:
                 destinations = _retreat_destinations(probe, region, enemy)
                 choices.update([(False, None), (True, None)])
@@ -410,40 +437,48 @@ def _frost_retreat_choices(state, region, enemy):
     return sorted(choices, key=lambda item: (item[0], item[1] or ''))
 
 
-def _battle_frost_outcomes(state, region, enemy):
-    """All loss-roll outcomes, plus legal player Retreat/agreement choices."""
+def _battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMANS, command=False):
+    """All loss-roll outcomes, plus legal player Retreat/agreement choices.
+
+    A34 defaults to its actual German force. Other explicit Event Battles
+    (Card62's Arverni) supply their own attacker without projecting pieces.
+    """
     from fs_bot.battle.resolve import resolve_battle, _calculate_attack_losses
     from fs_bot.engine.agent import LOSS_ORDER
     from fs_bot.state.serialize import encode
     from json import dumps
 
+    if command:
+        yield from _player_loss_outcomes(
+            state, region, enemy, False, None, attacker=attacker, command=True)
+        return
     non_players = state.get('non_player_factions', set())
-    retreat_choices = _frost_retreat_choices(state, region, enemy)
+    retreat_choices = _frost_retreat_choices(state, region, enemy, attacker=attacker)
 
     had_citadel = count_pieces(state, region, enemy, rc.CITADEL) > 0
     had_fort = count_pieces(state, region, enemy, rc.FORT) > 0
-    counter_max = calculate_losses(state, region, enemy, rc.GERMANS, is_counterattack=True)
+    counter_max = calculate_losses(state, region, enemy, attacker, is_counterattack=True)
     seen = set()
-    player_choices = any(f not in non_players and f != rc.ARVERNI
+    player_choices = any(f not in non_players and not _game_run_arverni(state, f)
                          and len(set(_build_loss_priority(state, region, f))) > 1
-                         for f in (enemy, rc.GERMANS))
+                         for f in (enemy, attacker))
     for retreat, destination in retreat_choices:
         if player_choices:
-            yield from _player_loss_outcomes(state, region, enemy, retreat, destination)
+            yield from _player_loss_outcomes(state, region, enemy, retreat, destination, attacker=attacker)
             continue
-        attack_max = _calculate_attack_losses(state, region, rc.GERMANS, enemy,
+        attack_max = _calculate_attack_losses(state, region, attacker, enemy,
             is_retreat=retreat, had_citadel_at_start=had_citadel, had_fort_at_start=had_fort)
         for defender_failures in range(attack_max + 1):
             for attacker_failures in range((0 if retreat else counter_max) + 1):
                 sim = _copy(state)
-                rng = _LossOutcomeRng(enemy, defender_failures, attacker_failures)
+                rng = _LossOutcomeRng(enemy, defender_failures, attacker_failures, attacker)
                 sim['rng'] = rng
                 def phase_agent(board, faction, request):
                     if request.get('kind') == LOSS_ORDER:
                         rng.faction = faction
                     return None
                 sim['decision_agent'] = phase_agent
-                resolve_battle(sim, region, rc.GERMANS, enemy,
+                resolve_battle(sim, region, attacker, enemy,
                     retreat_declaration=retreat, retreat_region=destination)
                 refresh_all_control(sim)
                 sim.pop('decision_agent', None)

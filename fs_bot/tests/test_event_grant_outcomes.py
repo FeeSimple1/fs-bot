@@ -514,3 +514,39 @@ def test_correus_mandatory_own_removals_preserve_remi_before_ordinary_allies():
         _ally(board, rc.ATREBATES, tribe, rc.BELGAE)
     params = derive_correus(board, rc.BELGAE, True)
     assert set(params['ally_removals']) == {rc.TRIBE_ATREBATES, rc.TRIBE_BELLOVACI}
+
+
+@pytest.mark.parametrize('removals', [None, [], [rc.TRIBE_REMI],
+    [rc.TRIBE_REMI, rc.TRIBE_REMI], [rc.TRIBE_REMI, rc.TRIBE_CARNUTES],
+    [rc.TRIBE_REMI, rc.TRIBE_ATREBATES, rc.TRIBE_BELLOVACI],
+    [rc.TRIBE_REMI, {}]])
+def test_correus_human_rejects_missing_duplicate_or_invalid_mandatory_removals(removals):
+    board = state()
+    _ally(board, rc.ATREBATES, rc.TRIBE_REMI, rc.ROMANS)
+    _ally(board, rc.ATREBATES, rc.TRIBE_ATREBATES, rc.ROMANS)
+    before = deepcopy({key: board[key] for key in ('spaces', 'tribes', 'available')})
+    rng = board['rng'].getstate()
+    params = {'belgae_ally_placements': []}
+    if removals is not None:
+        params['ally_removals'] = removals
+    result = ex._execute_event(board, rc.AEDUI, {'command': 'Event', 'details': {
+        'card_id': 64, 'text_preference': rc.EVENT_SHADED, 'event_params': params}},
+        human=True)
+    assert result['executed'] is False
+    assert 'requires 2 distinct Allied Tribes' in result['reason']
+    assert {key: board[key] for key in before} == before
+    assert board['rng'].getstate() == rng
+
+
+@pytest.mark.parametrize('number', [0, 1, 2, 3])
+def test_correus_removes_exactly_two_allies_or_as_many_as_exist(number):
+    from fs_bot.cards.card_effects import execute_card_64
+    board = state()
+    tribes = [rc.TRIBE_REMI, rc.TRIBE_ATREBATES, rc.TRIBE_BELLOVACI][:number]
+    for tribe in tribes:
+        _ally(board, rc.ATREBATES, tribe, rc.ROMANS)
+    board['event_params'] = {'ally_removals': tribes[:2], 'belgae_ally_placements': []}
+    execute_card_64(board, shaded=True)
+    assert count_pieces(board, rc.ATREBATES, rc.ROMANS, rc.ALLY) == max(0, number - 2)
+    assert count_pieces(board, rc.ATREBATES, rc.BELGAE, rc.ALLY) == 0
+    assert board['event_modifiers']['card_64_belgae_rally'] is True

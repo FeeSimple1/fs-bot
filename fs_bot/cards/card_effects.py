@@ -2774,12 +2774,24 @@ def execute_card_64(state, shaded=False):
                     if faction and get_available(state, faction, replacement_type) > 0:
                         place_piece(state, ATREBATES, faction, replacement_type)
     else:
-        # Remove 2 Allies from Atrebates
+        # "Remove 2 Allies" is mandatory, to the extent possible (§5.1.3).
+        # Validate the whole choice before touching the board: omissions and
+        # duplicates must not silently waive one of the required removals.
+        eligible = {tribe for tribe in state.get("tribes", {})
+                    if _tribe_region(state, tribe) == ATREBATES
+                    and _tribe_piece_type(state, tribe) == ALLY}
+        required = min(2, len(eligible))
         ally_removals = params.get("ally_removals", [])
-        for tribe in ally_removals[:2]:
-            if (_tribe_region(state, tribe) == ATREBATES
-                    and _tribe_piece_type(state, tribe) == ALLY):
-                _unally_tribe(state, tribe)
+        if (not isinstance(ally_removals, (list, tuple))
+                or len(ally_removals) != required
+                or not all(isinstance(tribe, str) for tribe in ally_removals)
+                or len(set(ally_removals)) != required
+                or not set(ally_removals) <= eligible):
+            raise ValueError(
+                f"Card 64 requires {required} distinct Allied Tribes in Atrebates "
+                "to remove before the optional placements")
+        for tribe in ally_removals:
+            _unally_tribe(state, tribe)
         # Belgae place up to 2 Allies
         belgae_placements = params.get("belgae_ally_placements", [])
         for tribe in belgae_placements[:2]:

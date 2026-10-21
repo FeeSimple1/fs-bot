@@ -48,6 +48,18 @@ jobs:
           python -m fs_bot.tools.sync_check --scenario "Ariovistus" --seeds 1-8
           python -m fs_bot.tools.sync_check --scenario "The Gallic War" --seeds 1-8
 
+  event-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Nested Event, Winter, and Command outcomes must be legal
+        run: PYTHONHASHSEED=0 python -m fs_bot.tools.error_census --seeds 1-10 --strict
+
   player-fuzz:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -58,10 +70,11 @@ jobs:
           python-version: "3.10"
       - run: pip install -r requirements-dev.txt
       - name: Random-legal player fuzz (mixed seats) + cross-hashseed determinism
+        shell: bash
         run: |
-          PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-40 > fuzz0.txt
-          PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz --seeds 1-40 > fuzz7.txt
-          cat fuzz0.txt
+          set -o pipefail
+          PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-40 | tee fuzz0.txt
+          PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz --seeds 1-40 | tee fuzz7.txt
           diff fuzz0.txt fuzz7.txt
 
   balance-guardrail:

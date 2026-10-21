@@ -229,7 +229,7 @@ def main(argv=None) -> int:
                     help="list only 'illegal' defects (hide wasteful/legal)")
     ap.add_argument("--strict", action="store_true",
                     help="exit nonzero if any defect-class incident exists "
-                         "(illegal, wasteful-sa, ineffective-event) — for "
+                         "(illegal, wasteful-sa, ineffective-event, other-refused) — for "
                          "CI soak gating; legal-decline never fails")
     args = ap.parse_args(argv)
 

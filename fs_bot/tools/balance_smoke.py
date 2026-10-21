@@ -10,9 +10,8 @@ After an *intended* change, refresh with ``--update``.
     python -m fs_bot.tools.balance_smoke --update     # rebaseline
     python -m fs_bot.tools.balance_smoke --seeds 1-5  # quicker spot check
 
-Caught during bring-up: The Great Revolt is Arverni-won in every bot-only game
-(see QUESTIONS.md Q12). A guardrail makes any future shift in that pattern
-visible immediately.
+All five scenarios and all five factions are included. A requested game missing
+from the baseline is an error, never silently excluded from the comparison.
 """
 from __future__ import annotations
 
@@ -42,8 +41,23 @@ from fs_bot.cli.dispatcher import _translate_bot_action
 
 BASELINE_PATH = Path(__file__).resolve().parent / "balance_baseline.json"
 SCENARIOS = (rc.SCENARIO_PAX_GALLICA, rc.SCENARIO_RECONQUEST,
-             rc.SCENARIO_GREAT_REVOLT)
-FACTIONS = (rc.ROMANS, rc.ARVERNI, rc.AEDUI, rc.BELGAE)
+             rc.SCENARIO_GREAT_REVOLT, rc.SCENARIO_ARIOVISTUS,
+             rc.SCENARIO_GALLIC_WAR)
+FACTIONS = (rc.ROMANS, rc.ARVERNI, rc.AEDUI, rc.BELGAE, rc.GERMANS)
+
+
+def _valid_outcome(record, scenario):
+    # Gallic War can end in either half: Germans can win before Interlude,
+    # Arverni after it. Standalone base/expansion scenarios have only four
+    # victory factions even though the board contains all five factions.
+    if scenario == rc.SCENARIO_GALLIC_WAR:
+        winners = FACTIONS
+    elif scenario == rc.SCENARIO_ARIOVISTUS:
+        winners = (rc.ROMANS, rc.AEDUI, rc.BELGAE, rc.GERMANS)
+    else:
+        winners = (rc.ROMANS, rc.ARVERNI, rc.AEDUI, rc.BELGAE)
+    return (isinstance(record, dict) and record.get("winner") in winners
+            and type(record.get("cards")) is int and record["cards"] > 0)
 
 
 def play_bot_game(scenario, seed):
@@ -68,7 +82,10 @@ def play_bot_game(scenario, seed):
 
 def _seed_range(spec):
     lo, _, hi = spec.partition("-")
-    return range(int(lo), int(hi or lo) + 1)
+    low, high = int(lo), int(hi or lo)
+    if low < 1 or high < low:
+        raise ValueError("seed range must contain positive, ascending integers")
+    return range(low, high + 1)
 
 
 def _rates(games, scenario):
@@ -88,29 +105,63 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     scenarios = [s for s in args.scenarios.split("|") if s]
-    seeds = _seed_range(args.seeds)
+    if not scenarios or len(set(scenarios)) != len(scenarios):
+        ap.error("select one or more distinct scenarios")
+    unknown = [s for s in scenarios if s not in SCENARIOS]
+    if unknown:
+        ap.error(f"unknown scenario(s): {', '.join(unknown)}")
+    try:
+        seeds = _seed_range(args.seeds)
+    except ValueError as exc:
+        ap.error(f"invalid --seeds: {exc}")
+    if not 0 <= args.band <= 1:
+        ap.error("--band must be between 0 and 1")
     bpath = Path(args.baseline)
-    baseline = json.loads(bpath.read_text()) if bpath.exists() else {"games": {}}
+    try:
+        baseline = (json.loads(bpath.read_text(encoding="utf-8"))
+                    if bpath.exists() else {"games": {}})
+    except (OSError, ValueError) as exc:
+        print(f"Cannot read baseline: {exc}")
+        return 2
+    if not isinstance(baseline, dict) or not isinstance(baseline.get("games"), dict):
+        print("Invalid baseline: expected a games object.")
+        return 2
+    requested = {f"{scen}|{seed}" for scen in scenarios for seed in seeds}
+    if not args.update:
+        missing = sorted(requested - baseline["games"].keys())
+        if missing:
+            print(f"Missing {len(missing)} requested baseline game(s): {', '.join(missing)}")
+            print("No comparison performed. Review and populate the full requested baseline first.")
+            return 2
+        for key in sorted(requested):
+            record = baseline["games"][key]
+            scenario = key.rsplit("|", 1)[0]
+            if not _valid_outcome(record, scenario):
+                print(f"Invalid baseline game: {key}; expected an eligible winner for this scenario and positive card count.")
+                return 2
 
     current = {}
     for scen in scenarios:
         for seed in seeds:
             key = f"{scen}|{seed}"
             r = play_bot_game(scen, seed)
+            if not _valid_outcome(r, scen):
+                print(f"Invalid game outcome: {key}: {r!r}")
+                return 2
             current[key] = r
             print(f"[{scen} seed={seed:2d}] winner={r['winner']} "
                   f"({r['cards']} cards)")
 
     if args.update:
         baseline["games"].update(current)
-        bpath.write_text(json.dumps(baseline, indent=1, sort_keys=True) + "\n")
+        bpath.write_text(json.dumps(baseline, indent=1, sort_keys=True) + "\n",
+                         encoding="utf-8")
         print(f"\nBaseline updated: {bpath} ({len(baseline['games'])} games)")
         return 0
 
-    base_games = {k: v for k, v in baseline["games"].items() if k in current}
-    if not base_games:
-        print("\nNo overlapping baseline games. Run with --update first.")
-        return 2
+    # Coverage was checked before running: both denominators contain exactly
+    # the same requested (scenario, seed) pairs.
+    base_games = {k: baseline["games"][k] for k in current}
 
     changed = [k for k in base_games
                if base_games[k]["winner"] != current[k]["winner"]]
@@ -118,8 +169,6 @@ def main(argv=None) -> int:
     print("\n=== Win rates: baseline -> current ===")
     for scen in scenarios:
         b, c = _rates(base_games, scen), _rates(current, scen)
-        if not b:
-            continue
         for f in FACTIONS:
             d = c[f] - b[f]
             flag = ""

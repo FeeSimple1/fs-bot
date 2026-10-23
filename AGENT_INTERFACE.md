@@ -2,8 +2,10 @@
 
 This engine can be driven by an external **agent** (a human or an LLM) that
 plays a Faction by its own judgment instead of the built-in NP bot flowcharts.
-The all-bot harness is untouched: with no agent configured, play is byte-for-byte
-identical and deterministic.
+The standard frontends dispatch bot seats to the built-in non-player logic;
+a custom turn callback must dispatch those seats explicitly. See [current status](docs/current-status.md) for revision-specific
+verification and remaining source questions, and the [documentation
+index](docs/README.md) for the other guides.
 
 There are **two integration points**, because a Faction makes two kinds of
 decisions:
@@ -11,9 +13,9 @@ decisions:
 1. **Top-level Sequence-of-Play turns** — what to do on your own turn (Command /
    Event / Special Activity, and the full plan). Driven by the engine's
    `decision_func` callback.
-2. **Reactive decisions** — choices forced on you *during another action's
-   resolution*: defending Retreat, which pieces absorb Battle Losses, and
-   inter-Faction agreements. Driven by `state["decision_agent"]`.
+2. **Decisions during resolution** — Retreat, Battle and Harassment losses,
+   agreements, March piece selection, Event grants, and Winter choices. Driven
+   by `state["decision_agent"]`.
 
 Plus a **legal-move / validation API** (`fs_bot.engine.moves`) so an agent can
 enumerate options and dry-run a candidate move before committing it.
@@ -23,9 +25,12 @@ enumerate options and dry-run a candidate move before committing it.
 ## 1. Top-level turns — `decision_func`
 
 `run_game(state, decision_func, execute=True)` calls
-`decision_func(state, faction, options, position)` once per Faction's SoP turn.
+`decision_func(state, faction, options, position)` when a Faction needs its
+SoP action. A rejected action may cause another call for the same turn.
 Return a dict whose `action` is one of the legal engine constants in `options`,
-and — for a non-Pass action — a `player_action` carrying the full plan:
+and — for a non-Pass action — a `player_action` carrying the full plan.
+This minimal shape example uses a placeholder faction and passes for other
+seats; use a real dispatcher for an actual game, as in `fs_bot/tools/llm_seat.py`:
 
 ```python
 def decision_func(state, faction, options, position):
@@ -37,9 +42,9 @@ def decision_func(state, faction, options, position):
     return {"action": "pass"}
 ```
 
-`execute_decision` runs `player_action` through the **real rules engine** — the
-same machinery the bots use — so illegal sub-actions are skipped/reported, not
-crashed. A `player_action` is:
+`execute_decision` runs `player_action` through the same rules engine used by
+the bots. Inspect the execution result and any reported sub-action errors;
+a partial execution differs from a wholly refused action. A `player_action` is:
 
 ```text
 {"command": "Battle"|"March"|"Rally"|"Raid"|"Recruit"|"Seize"|"Event",
@@ -59,8 +64,9 @@ post-departure remainder of an origin). The Roman Build and Scout
 Special Abilities accept player plans (`build_plan`
 {forts, subdue, allies} and `scout_plan` {auxilia_moves,
 scout_targets}); without one, the bots' flowchart plans run instead.
-Optional `transfers` ([{to, amount}], §1.5.2) ride any action. Use it as the
-reference, or call the `moves` helpers below.
+Optional `details.transfers` (`[{"to": faction, "amount": integer}]`, §1.5.2)
+ride an action. The helpers below provide validation; the source plan builders
+remain the detailed reference for each Command and Special Activity.
 
 Human plans may set `sa_timing` to `"before"` or `"after"` (default).
 This controls resolution, independently of the timing required by the bot
@@ -76,7 +82,7 @@ the state. An interruption rolls back only the unfinished action or phase,
 including its RNG changes. Frontends with external queues/logs can attach
 `transaction_checkpoint()` and `transaction_restore(token)` attributes to
 their `decision_func` to keep those synchronized with rollback.
-An invalid human Command raises `ActionRejected` without consuming the
+A wholly refused human Command raises `ActionRejected` without consuming the
 turn; interactive frontends can provide
 `decision_func.decision_rejected(state, faction, result)` to explain the
 failure and retry the same turn.
@@ -89,20 +95,66 @@ Set `state["decision_agent"] = agent`, a callable:
 agent(state, faction, request) -> response | None
 ```
 
-It is consulted whenever `faction` must make a reactive decision. **Return
-`None` (or raise) to defer** that decision to the default NP logic — so an agent
-may control any subset of Factions and decision kinds. Request kinds
-(`fs_bot.engine.agent`):
+The callback receives the live board, which it must treat as read-only, and
+is consulted for decisions during resolution. At this low-level interface,
+returning `None` or raising an ordinary exception defers to default logic;
+raising `EOFError` interrupts. A raw callback is therefore not a durable
+human-input queue. The terminal and [file-based session](#file-based-assistant-sessions)
+frontends handle pending human input explicitly and validate responses.
+
+The constants `RETREAT`, `LOSS_ORDER`, `AGREEMENT`, and `HARASSMENT_LOSS`
+come from `fs_bot.engine.agent`; other kinds below are literal strings.
+Requests can include additional context. Copy offered values rather than
+inventing pieces, regions, owners, or internal grant flags.
 
 | `request["kind"]` | request fields | response |
 |---|---|---|
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add a third `physical_owner` field; hard pieces still roll |
+| `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
+| `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `AGREEMENT` | `request_type, requesting_faction, context` | `bool` (agree?) — `request_type` in {`retreat_into_control`, `supply_line`, ...} |
-| `free_action` | `request_type, allowed_commands, allowed_regions, max_regions, with_sa, free`; standalone SAs use `allowed_sas` | full action plan, `{"decline":true}`, or `{"use_default":true}` |
+| `free_action` | `request_type` plus the Event's scope; ordinary grants may carry `allowed_commands, allowed_regions, max_regions, with_sa, free, allow_decline`; standalone SAs use `allowed_sas` | ordinary action or subtype-specific response below; decline only when permitted |
+| `kinship` | A65; `attackers, regions_by_faction` | `{"faction": attacker, "regions": [...]}`, decline, or explicit default |
+| `quarters_plan` | `faction, errors` | relocation/payment object described below, or explicit default |
+| `winter_campaign` | `card_id, remaining_actions`, optional `errors` | one paid action, combined Command+SA, or decline; see the Winter section below |
 | `frumentum_amount` | A53; `available_resources` (Aedui) | `{"amount": integer}`, `{"decline":true}` (zero), or explicit default |
 | `frumentum_action` | A53; `remaining_actions, remaining_resources, reserved_roman_resources` | one Recruit/March plan or standalone Build/Scout plan, `{"skip": action_name}`, finish with `{"decline":true}`, or explicit default |
 | `raid_intimidate` | A3.4.3; `region, raiders, max_removals, targets` | `{"targets":[...]}`, marker only `{"targets":[]}`, `{"decline":true}`, or `{"use_default":true}` |
+
+The file-based frontend accepts `{"use_default":true}` for a non-turn
+request only as an explicit decision. An omitted or invalid response remains
+pending. A normal turn still requires a legal `action` and its plan.
+
+### Harassment and physical March pieces
+
+A `HARASSMENT_LOSS` request's `phase` determines what is being selected:
+
+| Phase | Choice |
+|---|---|
+| `absorb` | An offered soft piece type or `"roll"` |
+| `remove` | A hard piece type after a failed saving roll; the request includes `roll` |
+| `piece_state` | The offered visibility of the soft casualty |
+| `ally` | The exact Allied Tribe lost to Seize Harassment |
+
+Return one offered value, for example `{"choice":"roll"}` only when
+`"roll"` is in `options`. The engine makes the roll and requests any resulting
+casualty separately. Later harassers see earlier losses. Choosing whether to
+Harass is a separate `AGREEMENT` request with `request_type: "harassment"`.
+
+`march_cohort` identifies physical pieces after origin flipping (`formation`)
+or when leaving part of the carried group behind (`dropoff`). For a request
+with `count: 2` and sufficient offered counts, a response can be
+`{"counts":{"Hidden":1,"Revealed":1}}`. Counts cannot exceed `available`
+or change the group's planned total. The request may identify a different
+acting faction or physical owner, as with Divination or Enlist; that identity
+is supplied by the engine and cannot be changed by the response.
+
+The validators are `commands.march.validate_harassment_response` and
+`engine.march_choices.validate_response`; both validate without moving
+pieces or consuming RNG.
+
+### Scoped Event grants
 
 Free-action requests describe an Event's scope. `event_command` and
 `event_rally` select a Command; `event_sa` selects only an SA. Optional
@@ -112,7 +164,56 @@ Free-action requests describe an Event's scope. `event_command` and
 isolated board and RNG and returns an error string or `None`. The terminal
 prompts **Plan the action / Use bot default / Decline**, keeps normal
 before/during/after SA ordering, and offers a new plan after a failed check.
-EOF interrupts and preserves the pending decision.
+EOF interrupts and preserves the pending decision. A grant can require a
+follow-on action when possible (`allow_decline: false`); the generic decline
+response does not override that requirement. An engine-supplied
+`acting_faction` identifies the force commanded by a different chooser,
+such as German pieces under Divination. Do not add or change grant fields in
+a submitted action.
+
+Some `free_action` subtypes use a specialized response instead of an ordinary
+Command plan. These shapes describe the response, not guaranteed legal
+choices for a particular board:
+
+| `request_type` | Response fields | Validator/source |
+|---|---|---|
+| `impetuosity_march` | `origin, destination, warbands` | `cards/impetuosity.py`; one original Hidden group, no Leader |
+| `impetuosity_unshaded_march` | `destination, groups: [{origin, group}]` | `cards/impetuosity_unshaded.py`; selected origins are adjacent to one destination |
+| `impetuosity_enemy_battle` | `attacker` from the request's `attackers` | `engine/free_actions.py`; chooses the enemy attacker, not a normal Battle plan |
+| `publius_march` | `origin, route, legions, auxilia`, optional `dropoffs` | `cards/publius.py`; route is a Region list, drop-offs map intermediate Regions to piece counts |
+| `morasses_faction` | `faction` from the request's `factions` | `cards/morasses.py` |
+| `morasses_march` | `action, in_place` | `cards/morasses.py`; `action` is an ordinary March plan or null, `in_place` lists stationary origins |
+
+Use `engine.free_actions.validate_free_action_response` for these subtypes
+as well as ordinary grants. It returns an error string or `None`; do not
+submit a custom subtype as a top-level Command. Subsequent Battle choices
+arrive as their own requests on the resulting board. Unshaded Impetuosity's
+adjacent March is required when possible; A17's follow-on Battle is required
+when possible after the optional combined action has been accepted.
+
+Kinship uses the separate `kinship` kind, selecting the attacker and any
+eligible Battle Regions together. Its Battle excludes the attacking Leader
+from fighting and losses without moving that physical piece. The validator
+is `cards.kinship.validate_response(state, response)`.
+
+### Quarters
+
+A `quarters_plan` response maps the acting faction to relocations:
+`{"Belgae":[["Warband","Morini","Atrebates",2]]}` is a shape example.
+Each entry is `[piece_type, origin, destination, count]`; legality depends on
+the current board and any host agreement. `{"Belgae":[]}` chooses no
+relocations. Arrivals cannot make a second adjacent relocation in the same
+step; Roman movement to Provincia is a later step.
+
+Romans may also include `"Romans_quartering"`, mapping Regions to choices
+with `free_pieces` and `pay_pieces` lists of `[piece_type, visibility, count]`
+(use null visibility for Legions), or aggregate `pay`/`roll` counts. Optional
+`_pay_order` within `Romans_quartering` controls Resource allocation order.
+The printed free capacity and available Resources still apply. See
+`engine.quarters.validate_quarters_plan` and
+`fs_bot/tests/test_quarters_decisions.py` for concrete legal examples.
+
+### Other paid and optional grants
 
 After Germanic Warbands Raid with Ariovistus, `raid_intimidate` offers their
 optional free Intimidate. The pending board shows the completed Raid's
@@ -148,6 +249,8 @@ the narrower player-text ambiguity is recorded in `QUESTIONS.md`.
 spending live resources or RNG or consuming any human reaction.
 
 ```python
+from fs_bot.engine.agent import RETREAT, AGREEMENT
+
 def reactive(state, faction, request):
     if faction != MY_FACTION:
         return None                       # let the bots handle the rest
@@ -179,14 +282,27 @@ ok, info, resulting_state = moves.preview_player_action(state, faction, player_a
 `validate_player_action` runs the plan on a **deep copy** (never touching the
 live game, and never re-entering the live agent) and reports whether it executed
 and any per-region `errors`. `preview_player_action` also returns the board the
-move *would* produce, so an agent can look before it leaps.
+move would produce using that preview's default reactions. These helpers
+remove the live decision agent; they do not ask another human for consent or
+predict that human's future choices. Actual execution can therefore depend
+on later agreement, Retreat, casualty, or March-piece decisions.
 
 ## Putting it together
 
+A custom driver must identify human seats independently of its callbacks:
+remove them from `state["non_player_factions"]`. This set affects bot rules,
+request ownership, and victory comparisons. For example, after setup:
+
 ```python
+from fs_bot.engine.game_engine import get_sop_factions
+
+state["non_player_factions"] = set(get_sop_factions(state)) - {MY_FACTION}
 state["decision_agent"] = reactive          # reactive decisions
 run_game(state, decision_func, execute=True) # top-level turns
 ```
+
+The Gallic War changes German and Arverni seats at the Interlude. The standard
+frontends maintain that transition; a custom driver must do so as well.
 
 See `fs_bot/tests/test_agent_interface.py` for runnable examples, including a
 full game with one agent-controlled Faction playing alongside the bots.
@@ -194,7 +310,8 @@ full game with one agent-controlled Faction playing alongside the bots.
 ## Current limits
 
 - Reactive hooks cover Retreat, Loss absorption, Supply Line, Quarters hosting,
-  Trade, Harassment, Winter Campaign, Raid Intimidate, and scoped Event-granted actions.
+  Trade, Harassment and its losses, physical March pieces, Winter Campaign,
+  Raid Intimidate, Kinship, and scoped Event-granted actions.
   Resource gifts are explicit `details.transfers` entries in the acting
   faction's plan.
 - There is no full legal-move *generator* (COIN's branching is enormous);
@@ -206,9 +323,14 @@ full game with one agent-controlled Faction playing alongside the bots.
 
 `python -m fs_bot.tools.llm_seat` implements both integration points without
 interactive stdin. `play` stops at the next human request; `submit --response
-'<JSON>'` answers its stable id and continues. `board` shows that pending
+'<JSON>' --decision-id ID` answers the displayed id and continues. The
+optional id flag rejects stale submissions; without it, `submit` targets the
+current pending request. `board` shows that pending
 request's live board, while the saved engine state retains a safe transaction
-boundary. Do not edit the save to answer a request.
+boundary. Each human decision is preceded by current/upcoming card information
+and changes since that seat's previous decision. `board` (or `b`) can inspect
+the pending board without advancing play. Do not edit the save to answer a
+request.
 
 `save.json` is authoritative for inbox consumption, pending requests, accepted
 choices within an interrupted action, and the committed decision log. The

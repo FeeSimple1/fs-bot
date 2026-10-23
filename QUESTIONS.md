@@ -1,10 +1,31 @@
-QUESTIONS.md — Ambiguities and their resolutions
+# Ambiguities and their resolutions
 
 This is a historical decision ledger. Entries record what was understood and
 implemented at the time; later reviews have overturned some completion claims.
 Consult [current status](docs/current-status.md) for the current engineering
 dispositions and unresolved source conflicts. Earlier statements that all
 issues are closed do not supersede that status.
+
+## Current open source questions
+
+As of the 23 October 2026 validation checkpoint, these six source questions
+remain open. Their surrounding implemented mechanics are covered in
+[current status](docs/current-status.md); historical OPEN/CLOSED labels
+below describe earlier stages and do not replace this index.
+
+| Question | Current disposition |
+|---|---|
+| [A30 Orgetorix Belgic instruction](#open-a30) | Preserve the supplied behavior until the missing instruction or icon is clarified. |
+| [A8.6.6 / A28 agreement policy](#open-a28) | Do not infer which non-player faction the contradictory wording governs. |
+| [A53 unused human funding](#open-a53) | Preserve the documented legacy Roman retention policy. |
+| [German-owned A63 after Interlude](#open-a63) | Preserve ownership and existing non-activation after the seat transition. |
+| [Ariovistus automatic Arverni Harassment order](#open-ariovistus-harassment) | Preserve the existing expansion fallback order. |
+| [After-Harvest Winter Harassment order](#open-winter-harassment) | Preserve the existing Winter fallback without looking up Winter as an Event. |
+
+The [validation report](docs/reviews/outstanding-fixes-2026-10-23.md) records
+the corrected defects and accepted rerun. This ledger records source
+interpretations; it is not a guarantee that all possible positions or
+independent harnesses have been verified.
 
 ---
 
@@ -1162,7 +1183,7 @@ Ariovistus census: illegal=0; structural oracle, balance, determinism hold.
 
 ---
 
-## All documented audit findings resolved (June 2026)
+## Historical closure of documented audit findings (June 2026)
 
 Worked through every outstanding documented finding from the five-faction audit:
 
@@ -1259,11 +1280,12 @@ test_card_69_germans_phase_skips_empty_regions.
 
 ---
 
-## Reconciliation — authoritative current status (June 2026)
+## Historical reconciliation (June 2026)
 
-This section supersedes every earlier "OPEN" / "DOCUMENTED (not fixed)" note.
+This section recorded the June review’s disposition of earlier "OPEN" /
+"DOCUMENTED (not fixed)" notes. It does not supersede later findings.
 The all-bot census (5 scenarios x seeds 1-20, deterministic across hashseeds)
-is now **defect-free**: illegal=0, wasteful-sa=0, ineffective-event=0. The only
+reported illegal=0, wasteful-sa=0, ineffective-event=0 in that sample. The only
 remaining incidents are legal-decline — the published flowcharts' own IF-NONE
 fall-throughs, which are correct behaviour, not bugs.
 
@@ -1296,7 +1318,8 @@ fall-throughs, which are correct behaviour, not bugs.
    the bot never makes an illegal or corrupting move — this is planner
    permissiveness, not a defect.
 
-There are no correctness defects outstanding.
+That review reported no outstanding correctness defects at its checkpoint;
+later audits found additional defects. See the current status and dated reports.
 
 ---
 
@@ -2430,7 +2453,7 @@ Verification: 2129 tests pass; strict census seeds 1-12 exit 0
 illegal=0, hashseed 0/7 byte-identical; canary within band (no
 rebaseline needed).
 
-## USER RULINGS + FINAL HOMEWORK — the open-questions list closed (July 2026)
+## Historical rulings and closure of the July 2026 question list
 
 The project owner ruled on the four remaining askable questions:
 
@@ -2662,6 +2685,13 @@ census seeds strict illegal=0, byte-identical hashseed 0 vs 7.
 
 ## KNOCK-ON AUDIT FOLLOW-UP — rulings checked against the source docs
 
+**23 October 2026 update:** this is an earlier follow-up. The subsequent
+Acco, Britannia, and unshaded Impetuosity corrections implement scoped
+Command/SA choices and the human attacker selection; see the corresponding
+rows and tests in [current status](docs/current-status.md). The A28 source
+conflict below remains open. Historical explanations are retained here to
+show why the earlier assumptions were revisited.
+
 The owner asked whether the five "judgment calls" above were already
 answered in the rules/reference documents. Four were. Dispositions:
 
@@ -2692,8 +2722,11 @@ answered in the rules/reference documents. Four were. Dispositions:
    Warband/Auxilia force, Counterattack losses, Reveal, multiple
    eligible Regions, and explicit human consent/targets are implemented.
 
-NEW QUESTION FOR THE OWNER (transcription check, like the A38/
-Vergobret case): our Chapter A8 transcription reads "A8.6.6
+<a id="open-a28"></a>
+
+## [OPEN] A8.6.6 / A28 — non-player agreement policy
+
+**Source conflict (still open):** our Chapter A8 transcription reads "A8.6.6
 Non-Player AEDUI Agreements. For the unshaded Ariovistus Event
 Admagetobriga, Non-player BELGAE agree to use of their Warbands
 only where..." — header names the Aedui, body names the Belgae.
@@ -2729,6 +2762,8 @@ unchanged. This is a reconciled source inconsistency, not an invented
 change to bot behavior. Protected reference files remain unchanged.
 
 **Verification:** `fs_bot/tests/test_vassal_card_cues.py`.
+
+<a id="open-a30"></a>
 
 ## [OPEN] Vassal comparison — A30 Orgetorix Belgic laurels
 
@@ -2781,6 +2816,8 @@ without silently changing an existing game's rules. Regression coverage:
 
 ---
 
+<a id="open-a53"></a>
+
 ## [OPEN] A53 Frumentum — unused player-specified allocation
 
 **Clear rules implemented:** A Card Reference A53 (lines 238–243) says:
@@ -2811,6 +2848,8 @@ not depend on resolving this narrower policy.
 portion that the Romans do not spend during the Event?
 
 ---
+
+<a id="open-a63"></a>
 
 ## [OPEN] German-owned A63 after the Gallic War Interlude
 
@@ -2848,6 +2887,8 @@ the Interlude?
 
 ---
 
+<a id="open-ariovistus-harassment"></a>
+
 ## [OPEN] Ariovistus automatic Arverni Harassment order
 
 **Behavior under review:** the order of Harassment announcements and Losses
@@ -2881,6 +2922,8 @@ the four factions printed on the current Event card in Ariovistus?
 
 
 ---
+
+<a id="open-winter-harassment"></a>
 
 ## [OPEN] Harassment order during after-Harvest Winter Campaign actions
 

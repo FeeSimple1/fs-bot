@@ -1,15 +1,15 @@
 # Deep soak — thousands of games on a schedule, not per push.
 #
-# Three long-horizon oracles, each at ~10-25x the per-push CI depth:
-#   census-soak : bot-only legality (illegal / wasteful-sa /
-#                 ineffective-event must be zero) across 2,500 games,
-#                 byte-identical under two PYTHONHASHSEED values.
+# Two deeper checks plus informational telemetry (default seed ranges):
+#   census-soak : bot-only legality (all nonlegal severities must be zero)
+#                 across 2,500 games per hash seed, byte-identical under
+#                 two PYTHONHASHSEED values (5,000 executions total).
 #   fuzz-soak   : the player-facing surface (random-legal seats, fuzzed
 #                 events, transfers, reactive decisions) across 1,500
-#                 games, each double-run for replay determinism, again
-#                 hashseed-diffed.
+#                 cases per hash seed, each double-run for replay determinism,
+#                 again hashseed-diffed (6,000 executions total).
 #   telemetry   : play_quality behavioural snapshot, uploaded as an
-#                 artifact for trend-watching (never fails the run).
+#                 artifact for trend-watching, not a gameplay acceptance gate.
 #
 # Runs weekly and on demand (Actions tab -> deep-soak -> Run workflow,
 # optionally overriding the seed ranges).

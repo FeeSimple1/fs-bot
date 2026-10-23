@@ -1,21 +1,53 @@
 # Falling Sky — Self-Play Strategy & Balance Notes
 
-*Generated June 2026 by the process in `SELFPLAY_PLAYBOOK.md`: heuristic strategy
-profiles seated via the agent interface (`AGENT_INTERFACE.md`) against the NP bots,
-run in large self-play batches. These are findings about **this engine's bots**, not
-about human play. Strategy priors come from the designer's InsideGMT faction articles
-(used for hypotheses only — never for rules decisions, per CLAUDE.md); all rules
-behavior is the engine's own.*
+## Current reading guide — 23 October 2026
+
+This is a **historical experiment journal**. The June study and every addendum
+below describe earlier engine revisions. Their measured numbers are preserved;
+their explanations of faction strength, remaining defects, completed audits and
+closed questions are not statements about the current implementation.
+
+The accepted current bot-only sample is in the
+[23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md):
+1,000 completed games, 200 in each of five scenarios, with no crashes, rejected
+actions or integrity/ranking/hash findings. It records the tested commit,
+`legacy` card profile, per-scenario win rates, Interlude timing, commands and
+raw evidence. The reviewed 100-game baseline changed 23 winners after the
+corrections; earlier outcome distributions cannot be carried forward unchanged.
+See [current status](docs/current-status.md) for the six unresolved source
+questions and [SELFPLAY_PLAYBOOK.md](SELFPLAY_PLAYBOOK.md) for the current workflow.
+
+The October validation did **not** rerun and establish the historical heuristic
+strategy rankings below. The current experimental `heuristic_selfplay` harness
+also leaves its policy-controlled seat classified as non-player, so its results
+cannot establish human-seat performance under NP-sensitive rules. Its default
+profile matrix covers base factions only. Actual mixed-seat fuzzing and terminal
+journeys are separate tests, documented in the validation report.
+
+There are unreconciled internal inconsistencies in the original June narrative:
+the listed Pax bot-only counts sum to 22 despite the stated 20-seed denominator,
+and the prose's "20/20 in every configuration" conflicts with its own 95%/90%
+Arverni rows. Those original numbers have not been guessed or silently repaired.
+Do not use them for quantitative comparisons with the accepted October sample.
+The old approximate noise-band and runtime statements likewise belong to that
+study, not to current benchmark or statistical guarantees.
+
+## Historical study — June 2026
+
+*The original study used heuristic strategy profiles through the agent interface
+against the NP bots. It attributed strategy priors to the InsideGMT faction
+articles linked below. Those links preserve its historical provenance; they do
+not authorize new external research or override the supplied rules references.
+The current source restrictions are in [CLAUDE.md](CLAUDE.md).*
 
 ## Method
 
 Two competing strategy hypotheses per Faction were encoded as plan-building policies
 (`fs_bot/agents/heuristic.py`), each dry-run through `moves.validate_player_action`
-before committing, with a degrade-to-Pass fallback so a profile can never wedge a
-game. Each profile was compared against a random-legal-plan baseline (`RANDOM`) and a
+before committing, with a fallback to Pass when its attempted plans fail. Each profile was compared against a random-legal-plan baseline (`RANDOM`) and a
 pure bot-only reference (`BOTS`) on identical seeds. Volume: 780 games — 20 seeds ×
 13 configurations across the three base scenarios (Pax Gallica?, Reconquest of Gaul,
-The Great Revolt). No game errored. Each game runs in ~0.1 s. With n = 20 the 95%
+The Great Revolt). No game errored in that study. It reported ~0.1 s per game. With n = 20 the 95%
 noise band is roughly ±20 points; only larger gaps are reported.
 
 Profiles: Romans **R-PACIFY** (Seize/Recruit/Build, disperse, allies) vs **R-HUNT**
@@ -100,7 +132,11 @@ Aedui can't win." Natural next steps: wire the Quarters fix once Q12 is answered
 re-measure the Great Revolt; give the Roman seat an event-aware profile; and replace
 keyword SA targeting with state-scored placement.
 
-## Reproduce
+## Historical command examples
+
+These commands run against the checkout in use; running them now will not
+reproduce the historical tables. See the current playbook for fresh output files,
+source provenance and acceptance checks.
 
 ```bash
 python -m fs_bot.tools.heuristic_selfplay --scenario "The Great Revolt" --seeds 1-20 --out r.jsonl
@@ -247,7 +283,8 @@ Reading, with the design-vs-defect discipline:
    deserves human-play validation against the published bots, it is
    this one.
 
-Reproduce: `python -m fs_bot.tools.play_quality --seeds 1-20`.
+Command used for this July study: `python -m fs_bot.tools.play_quality --seeds 1-20`.
+Rerunning it on current code measures the current revision.
 
 ---
 
@@ -285,9 +322,9 @@ Reading:
    strong in human hands — the gap is flowchart passivity, not
    position.
 
-DESIGN QUESTIONS PARKED WITH THE OWNER (their explicit instruction):
-whether Pax Gallica?/Reconquest Roman dominance and Aedui bot
-passivity warrant house-rule tuning. Everything above is
-rules-faithful behavior; the instruments can only certify fidelity,
-not fun. The five human playthroughs (Aedui, Rome, Germans, Belgae,
-Arverni — every seat) are the qualitative record.
+The July record parked design questions about Pax Gallica?/Reconquest Roman
+dominance and Aedui bot passivity with the owner. Subsequent audits found
+additional outcome-affecting defects, so that report's confidence in complete
+rules fidelity was premature. The five recorded playthroughs (Aedui, Rome,
+Germans, Belgae and Arverni) remain historical qualitative observations. They
+do not establish current faction balance or authorize house-rule tuning.

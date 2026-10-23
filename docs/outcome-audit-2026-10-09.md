@@ -1,5 +1,12 @@
 # Outcome audit repairs — 2026-10-09
 
+**Historical report.** The results below describe the October 9 repair revision
+identified in this report. They are not current win rates or proof of the
+current engine's behavior. See [current engineering status](current-status.md)
+and the [23 October validation report](reviews/outstanding-fixes-2026-10-23.md)
+for the later fixes, six remaining source questions, and accepted evidence.
+Original measurements and source digests below are retained.
+
 ## Baseline and scope
 
 This change addresses the uploaded outcome study and audit of engine commit
@@ -189,3 +196,25 @@ study before committing the tested source as
 `00c0a0515043f3656a2aa489250f0ecf314e6450`. Runner metadata correctly records
 the pre-commit checkout as dirty; the source digest identifies the exact tested
 contents independently of that checkout revision.
+
+## Later work — 23 October 2026
+
+The subsequent audit extended the October 9 fixes. March now also preserves
+actual moving cohorts and Hidden/Revealed choices through split groups,
+drop-offs and Harassment. Quarters validates the complete relocation step
+against its starting Control. Event-granted actions, borrowed German pieces,
+human reactions and after-Harvest Winter Campaign have additional source-based
+regressions; the earlier Enlist limitation is no longer a pending implementation
+item. See the correction table in [current status](current-status.md).
+
+Diagnostic coverage also expanded to nested Event grants, Winter Campaign and
+game-run Winter phases. The newer census distinguishes legal declines from
+refused actions and avoids counting duplicate result aliases. Consequently the
+older zero-diagnostic result above must not be interpreted as the newer,
+broader instrument having found zero defects on that older revision.
+
+The accepted October 23 sample uses the same five scenarios and seeds 1–200
+but a different source revision and digest. Its counts and outcomes appear in
+the [new report](reviews/outstanding-fixes-2026-10-23.md), together with both
+intermediate failed batches. Do not pool the studies or overwrite this report's
+historical numbers with the new results.

@@ -5,7 +5,8 @@ The Gallic Revolt Against Caesar** (2nd Edition) and the
 **Ariovistus** expansion, with non-player bots for every faction.
 You pick any seat (or several); the bots play the rest using the
 published non-player flowcharts. See [current status](docs/current-status.md)
-for verified fixes, test coverage, and unresolved source conflicts.
+for verified fixes, test coverage, and unresolved source conflicts. The
+[documentation index](docs/README.md) also links assistant play and API guides.
 
 ## Requirements
 
@@ -74,7 +75,13 @@ Every plan is checked by the rules engine. A Command with no legal effect
 leaves your turn pending so you can choose again; a partly legal plan
 shows which portions would have no effect before you confirm it. You will
 also be consulted for in-battle decisions on other factions' turns:
-Retreats, loss order, Supply-Line and Trade agreements, harassment.
+Retreats, loss order, Supply-Line and Trade agreements, and Harassment.
+When Harassment causes a loss, you can choose an offered soft casualty or a
+saving roll, then choose a hard casualty if the roll requires one. The menus
+also distinguish piece visibility and specific Allied Tribes when relevant.
+March subset and drop-off prompts let you choose the actual Hidden/Revealed
+pieces from the selected group; pieces already in the destination remain
+separate.
 
 When saving is enabled, Ctrl-C also saves between decisions on the same
 card. Completed faction actions stay completed. If interrupted while
@@ -103,6 +110,6 @@ conflicts and supersedes older completion claims.
 | Ariovistus | Ro / Ge / Ae / Be | medium (expansion) |
 | The Gallic War | both sets | epic two-act (a German seat becomes the Arverni after the Interlude) |
 
-Fair warning from playtesting: the Roman bot garrisons its origins,
-consolidates its Legions when threatened, and subdue-farms whatever
-the table ignores. Good luck.
+For measured outcomes by scenario, see the [23 October validation
+report](docs/reviews/outstanding-fixes-2026-10-23.md). Those seeded bot games
+check the implementation; they do not predict results against a human player.

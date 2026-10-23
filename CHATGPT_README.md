@@ -1,10 +1,14 @@
 # Playing fs-bot with an AI assistant (ChatGPT / Claude / etc.)
 
-fs-bot is a rules-faithful Python engine for GMT's **Falling Sky: The
-Gallic Revolt Against Caesar** (2nd Ed.) and its **Ariovistus**
-expansion, with full non-player bots for every faction. It is pure
-Python 3 standard library — no pip installs, no internet — so it runs
-inside a sandboxed code-interpreter environment.
+fs-bot implements the supplied rules and non-player flowcharts for GMT's
+**Falling Sky: The Gallic Revolt Against Caesar** (2nd Ed.) and its
+**Ariovistus** expansion. Gameplay uses the Python 3.10+ standard library,
+with no package installation or internet connection required.
+
+See the [documentation index](docs/README.md), [current engineering
+status](docs/current-status.md), and [terminal play guide](PLAYING.md).
+The status document identifies verified fixes and unresolved source questions;
+passing tests is not a claim of complete rules compliance.
 
 ## Quick start (for the assistant)
 
@@ -31,9 +35,13 @@ You are about to PLAY one faction against the built-in bots.
 
 4. Read the pending request and its stable decision id. Submit a response:
 
-       python -m fs_bot.tools.llm_seat submit --response '{"action":"pass"}'
+       python -m fs_bot.tools.llm_seat submit --decision-id d000001 \
+           --response '{"action":"pass"}'
 
-   `submit` answers the current request and continues until the next decision.
+   Replace `d000001` with the displayed id. Including `--decision-id` rejects
+   an outdated submission. The flag is optional; without it, `submit` targets
+   whichever decision is currently pending. Submit Pass only when offered.
+   `submit` answers the request and continues until the next decision.
    For a Command, the response is an action object like this:
 
        {"action": "command",
@@ -52,7 +60,16 @@ You are about to PLAY one faction against the built-in bots.
    - Loss order: a list of the piece entries offered by the request, such as
      `[["Auxilia",null],["Legion",null]]`. Enlisted pieces may include an owner
      as the third entry; copy those entries exactly.
-   - Agreement or harassment: `true` or `false`.
+   - Agreement or opting to Harass: `true` or `false`.
+   - Harassment loss: `{"choice": option}` using an entry from `options`.
+     Absorbing a loss, choosing a hard casualty after a failed roll, selecting
+     visibility, and choosing an Allied Tribe are separate requests.
+   - Marching pieces: `{"counts":{"Hidden":1,"Revealed":1}}` selects the
+     requested total from the offered visibility counts. This example applies
+     only when both states are offered and `count` is 2.
+   - Kinship (A65): `{"faction":"Belgae","regions":["Nervii"]}` chooses
+     an offered attacker and its eligible Battle Regions; consult the request
+     before choosing Regions. This Event also permits an explicit decline.
    - Quarters: your faction's relocation/payment object (see AGENT_INTERFACE).
    - Winter Campaign: one Command, one standalone SA, a Command+SA using both
      actions, or `{"decline":true}`. A second single action is requested after
@@ -69,12 +86,17 @@ You are about to PLAY one faction against the built-in bots.
 
 5. Continue submitting responses until `*** GAME OVER` prints.
 
+The default game directory is `llm_play`. To maintain separate games, use
+`--dir YOUR_DIRECTORY` consistently on `init`, `play`, `submit`, `board`,
+and `replay`. The shell examples use POSIX quoting; in PowerShell or another
+shell, preserve the response as one valid JSON argument.
+
 To inspect the saved board without advancing play:
 
     python -m fs_bot.tools.llm_seat board
 
 The board includes current/upcoming card text, piece states, Tribes,
-markers, and available forces. During a reaction it shows the live board at
+markers, available forces, and active capabilities. `b` is an alias for `board`. During a reaction it shows the live board at
 that decision, including any preceding effects within the unfinished action.
 Each decision also shows changes since your last decision.
 
@@ -107,12 +129,9 @@ Rally/Recruit/Raid/Seize plans and Battle-modifying Special Activities.
 
 ## Where to find the plan formats
 
-- **AGENT_INTERFACE.md** — the full `player_action` schema: every
-  command's `details` shape (battle_plan, rally_plan, raid_plan,
-  recruit_plan, March `origins`/`destinations`/`routes`/`groups`/
-  `extra_groups`, Roman `build_plan`/`scout_plan`, suborn/entreat/
-  rampage/enlist plans, Event `card_id`/`text_preference`/
-  `event_params`, and optional `transfers`).
+- [AGENT_INTERFACE.md](AGENT_INTERFACE.md) — the core `player_action`
+  format, callback contract, typed decision responses, Event-specific request
+  formats, and links to the current validators and plan builders.
 - **`fs_bot/cli/human_plan.py`** — reference implementation that
   builds each shape.
 - **`fs_bot/cards/param_schema.py`** — per-card `event_params`
@@ -121,31 +140,41 @@ Rally/Recruit/Raid/Seize plans and Battle-modifying Special Activities.
   reference, and non-player flowcharts, with published errata applied
   inline as `[ERRATA ...]` annotations.
 
-Illegal plans are REFUSED cleanly with a reason (the engine
-validates everything); re-read the reason, fix the plan, run again.
-A refused Command still consumes your turn only if part executed, so
-prefer checking region adjacency and costs before committing.
+Invalid assistant responses remain pending with an explanation. A Command
+with no legal effect can be replanned; a partially executed Command reports
+its results and can consume the turn. Check the returned result and use the
+preview API described in [AGENT_INTERFACE.md](AGENT_INTERFACE.md) before
+submitting a complex plan. A preview cannot supply another human's future
+agreement or casualty choices.
 
 ## Victory conditions (checked each Winter)
 
 - Romans: Subdued + Dispersed + Roman Allies > 15 (minus Germanic
   Settlements in Ariovistus, > 15 there too).
 - Arverni (base): off-map Legions > 6 AND Arverni Allies+Citadels > 8.
-- Aedui: Aedui Allies+Citadels exceed every other Faction's.
-- Belgae (base): Belgic Control + Belgic AND Germanic Allies/
-  Citadels/Control > 15.
+- Aedui: Aedui Allies+Citadels exceed each other Faction's total;
+  Germanic Settlements count as Germanic Allies in Ariovistus.
+- Belgae: total Belgic Control Value + Belgic Allies + Citadels > 15.
 - Germans (Ariovistus): Germanic-controlled Germania Regions +
   controlled Settlements > 6.
 
-## Tips learned from play (all five seats have been played)
+These summarize threshold checks in Chapter 7/A7. Final-Winter ranking,
+Non-player victory priority, and scenario-specific exceptions also apply.
+Use the displayed scores and the supplied references for those cases.
 
-- The Roman bot consolidates Legions the moment you threaten them and
-  garrisons origins when it Marches; you rarely get the battle you
-  want. Kill its ALLIES to drag its score down.
-- Ambush prevents the Counterattack, but a defending Fort/Citadel
-  still gives Legions their 1-3 removal roll (§4.3.3) and halves
-  Losses.
+## Play observations from earlier revisions
+
+These observations predate the October corrections. They are possible
+strategy ideas, not evidence of current win rates or expert human balance.
+For the latest reproducible bot outcomes, see the [validation report](docs/reviews/outstanding-fixes-2026-10-23.md).
+
+- Roman March priorities can consolidate Legions under threat and leave
+  garrisons at origins. Removing Roman Allies can reduce the Roman score.
+- Ambush normally prevents Counterattack and removes hard pieces without
+  saving rolls; Caesar's exception can restore both (§4.3.3/§4.5.3).
+  A defending Fort/Citadel still reduces inflicted Losses.
 - Each Gallic Ally you place at a Subdued tribe is also -1 to the
   Roman score. Card 28 (Oppida) can swing Rome by -3 in one action.
-- Marching flips your Revealed Warbands to Hidden (§3.3.2); Hidden
-  count drives Ambush legality and Ambush Losses.
+- Marching flips Revealed Warbands to Hidden (§3.3.2). Scouted Warbands
+  instead lose their Scouted marker and remain Revealed (§4.2.2); that
+  distinction affects later Ambush choices.

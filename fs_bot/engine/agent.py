@@ -62,8 +62,9 @@ Request kinds
                                §8.4.2 table remains the NP default).
                                requesting_faction is the marching/seizing
                                Faction being harassed.
-  Voluntary resource transfers (§1.5.2 deal-making) have no engine
-  mechanism and are NOT consulted — documented in QUESTIONS.md.
+  Voluntary Resource transfers (§1.5.2) are explicit ``details.transfers``
+  entries on the acting Faction's plan, not a separate reactive request.
+  See AGENT_INTERFACE.md for their response format and scope.
 
 The ``RETREAT`` kind also carries ``context={"rampage": True, "num_pieces"}``
 for a Rampage target's remove-vs-Retreat choice (§4.5.2): respond

@@ -5,6 +5,13 @@ build plan. It distinguishes verified engineering fixes from unresolved
 source conflicts. The historical audit reports retain their original results;
 their game outcomes are not a baseline for a later rules revision.
 
+[Documentation index](README.md) · [Playing guide](../PLAYING.md) ·
+[Current question index](../QUESTIONS.md#current-open-source-questions)
+
+The corrections below describe the 23 October 2026 implementation review.
+Later documentation updates preserve the original validation report’s
+revision, source digest, and outcome evidence.
+
 ## Corrections in this review
 
 | Area | Corrected behavior | Regression coverage |
@@ -58,6 +65,9 @@ their game outcomes are not a baseline for a later rules revision.
 | Event selection | Non-players check actual eligible targets and the supplied instructions before choosing Mons Cevenna, Assembly of Gaul, or Sabis. | `test_event_conditional_declines.py` |
 
 ## Source conflicts still open
+
+Full source quotations and dispositions are indexed in the
+[question ledger](../QUESTIONS.md#current-open-source-questions).
 
 1. **A30 Orgetorix:** the Vassal card face shows Belgic laurels, while the
    supplied Belgic Event instructions contain no corresponding instruction.
@@ -121,3 +131,20 @@ The CI matrix covers Ubuntu Python 3.10/3.12, Windows Python 3.12 and macOS
 Python 3.12. Linux also runs synchronization, nested Event/Winter census, mixed-seat
 determinism and balance checks. Local results and remote CI results must be reported
 separately.
+
+## Strategy-harness limits
+
+The historical `heuristic_selfplay` tool overrides the selected faction's
+turn plans but retains that seat in `non_player_factions`. It therefore
+still uses non-player-sensitive rules and opponent treatment, unlike the
+human-seat paths exercised by `player_fuzz` and terminal playthroughs.
+Its built-in heuristic profile set also has no German profile. Old profile
+win rates cannot establish human strategy strength or expansion coverage.
+
+The historical runner's resume key omits the engine revision and policy
+version, and its process exit status alone does not certify error-free
+games. Fresh strategy studies need corrected/explicit seat semantics,
+revision-specific output, and record-level acceptance checks. See the
+[self-play workflow](../SELFPLAY_PLAYBOOK.md) and
+[historical strategy notes](../selfplay-strategy-notes.md). The accepted
+1,000-game bot batch used `run_batch`, not this profile runner.

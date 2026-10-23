@@ -3,6 +3,14 @@
 Review date: 2026-10-20 UTC. Repository starting point:
 `d34e3f358e3435394a5c4b6c60f22bed2ebf59e9`.
 
+**Historical comparison.** Findings, test counts, outcome tables and source
+digests below describe this review's revisions. See
+[current engineering status](../current-status.md) and the
+[23 October validation report](outstanding-fixes-2026-10-23.md) for current
+behavior and results. The [dated addendum](#later-dispositions--23-october-2026)
+below identifies which previously unresolved implementation items were fixed;
+the original measurements remain unchanged.
+
 ## Scope and evidence
 
 The owner explicitly requested this external comparison. Vassal is a secondary
@@ -20,8 +28,8 @@ engine corrections below cite both the relevant visual evidence and the rules.
   reproductions/regression tests. No claim of interactive play in Vassal.
 - Artwork/module binaries are not redistributed in this repository.
 
-This is a focused comparison against the current GitHub main branch. It is not
-the final report for the earlier comprehensive source-first audit. Workspace
+This was a focused comparison against GitHub main as checked out for this
+review. It is not the final report for the earlier comprehensive source-first audit. Workspace
 maintenance removed that audit's local checkout and unpushed work; its branch
 and checkpoint were not present in the fetched remote, and a Library search
 did not recover them. The earlier audit must not be represented as completed
@@ -136,7 +144,7 @@ gave 24 failures against their old handlers; all seven initial menu cases
 failed before the menu correction. These are defects discovered during
 verification of this review, not claims that Vassal automates these Events.
 
-### Unresolved differences
+### Differences open at the time of this review
 
 1. **A30 Orgetorix:** its physical face has Belgic laurels, but the transcribed
    header and supplied Belgic instructions provide no corresponding special
@@ -148,9 +156,9 @@ verification of this review, not claims that Vassal automates these Events.
    would need to cover display, effects, previews, targeting, capabilities
    and Interlude consistently. No default was silently changed.
 
-Both issues are recorded in `QUESTIONS.md` with sources, alternatives,
-consequences and blocked decisions. A65's physical wording still says
-“without Leader”; the module does not resolve that earlier wording ambiguity.
+Both issues were recorded in `QUESTIONS.md` with sources, alternatives,
+consequences and blocked decisions. See the later dispositions below. A65's
+physical wording still says “without Leader”; the module does not resolve that earlier wording ambiguity.
 
 ## What the module can and cannot establish
 
@@ -165,9 +173,9 @@ consequences and blocked decisions. A65's physical wording still says
   flowcharts. Aedui and Germanic victory require manual tracking.
 - Enlist marking does not recalculate control automatically; the module
   offers a manual Belgic-control override. This corroborates the previously
-  identified missing borrowed-Warband Enlist option on current main. That
-  broader Command-ownership implementation remains unfinished; a cosmetic
-  marker would not repair it.
+  identified missing borrowed-Warband Enlist option at the review's starting
+  revision. That broader Command-ownership implementation was unfinished then;
+  its later correction is recorded in the addendum below.
 - Combined-game transition requires manual card and Nori/Cisalpina cleanup.
   This suggests useful Interlude tests but does not prove the engine's full
   transition correct.
@@ -181,7 +189,7 @@ consequences and blocked decisions. A65's physical wording still says
   remain available in the CLI. Vassal's freely movable pieces do not validate
   all legal Command/Special Activity timing or human choice surfaces.
 
-## Verification
+## Verification of the October 20 review revisions
 
 Starting main: 2,509 tests passed. The 1,000-game baseline (five scenarios,
 seeds 1–200, hash seed 0) completed without crashes, integrity findings,
@@ -258,6 +266,12 @@ diagnostic totals from the corrected runs.
 
 ### Reproduction
 
+The commands below describe this historical workflow. Reproducing its tables
+requires the review's original source revision and raw archive identified
+above. Running the tools on a later checkout is a new experiment and needs a
+fresh output directory. Use the [23 October report](outstanding-fixes-2026-10-23.md#reproduction-and-evidence)
+for reproduction of the newer accepted matrix.
+
 ```sh
 python -m pytest -q
 PYTHONHASHSEED=0 python -m fs_bot.tools.run_batch --games 200 --workers 4 --out results/final-1000
@@ -285,3 +299,24 @@ weakened. Reproduction helper operates on existing audited `run_batch.play_one`.
 - [Pull request #35](https://github.com/FeeSimple1/fs-bot/pull/35).
 - Final report-head CI and merge verification are recorded on the pull request
   and in the accompanying raw verification archive's `integration.json`.
+
+## Later dispositions — 23 October 2026
+
+| Earlier item | Current disposition | Implementation/regressions |
+|---|---|---|
+| Saved card-edition policy | Implemented. `--card-edition original`, `second-edition`, or `legacy` controls the five optional revised cards' text, effects and planning consistently. Explicit profiles persist through saves and Interlude; the default `legacy` retains scenario-based behavior. | `fs_bot/cards/edition.py`; `test_card_edition.py`; [playing guide](../../PLAYING.md) |
+| Borrowed-Warband Enlist | Implemented. Borrowed German pieces keep physical ownership through Command execution, movement, Control and casualties; human board/delta views distinguish borrowed use from ownership. | `test_enlist_borrowed.py`, `test_enlist_free.py`, `test_borrowed_force_display.py` |
+| A65 Kinship, “without Leader” | The corrected Battle grant leaves the attacking Leader physically present but excludes it from fighting and absorbing losses. A human executor chooses the beneficiary and selected Regions; non-player restrictions remain scoped to their printed instructions. | `fs_bot/battle/excluded_leader.py`; `test_kinship.py`, `test_kinship_decisions.py` |
+| A30 Belgic laurels | Still unresolved. The icon does not supply the missing special instruction. | [Current source questions](../current-status.md#source-conflicts-still-open) and [decision ledger](../../QUESTIONS.md) |
+
+Later work also corrected human action ownership, March/Harassment identity,
+Quarters, Winter Campaign and additional Events. The
+[23 October report](outstanding-fixes-2026-10-23.md) records those changes and
+new test results. Its broader nested-action census detects paths the earlier
+instrument did not cover, so this historical report's zero-diagnostic totals
+are not a completeness claim about all Events or human choices.
+
+The later corrections do not retroactively complete the earlier lost audit
+mentioned under Scope and evidence. They have their own commits, regressions,
+source digest and accepted matrix. No Vassal package or rules transcription was
+modified as part of this documentation update.

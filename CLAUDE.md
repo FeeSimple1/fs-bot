@@ -1,15 +1,31 @@
-CLAUDE.md — Falling Sky Bot Engine
+# Developer instructions — Falling Sky Bot Engine
 Project Summary
 This is an automation engine for the non-player bot flowcharts in Falling Sky: The Gallic Revolt Against Caesar (GMT Games, COIN Series Vol. VI, 2nd Edition) and its Ariovistus expansion. It handles 0–4 bot-controlled factions (Roman, Arverni, Aedui, Belgae, plus Germanic in Ariovistus) via an interactive CLI. The goal is faithful implementation of the published flowcharts — not a variation, not a reinterpretation, not a "simplified" version.
-Language: Python 3.10+ (100%).
+Language/runtime: Python 3.10+; gameplay uses the standard library.
 Tests: pytest.
 No external game references. Do not consult BoardGameGeek, other COIN games, other GMT titles, or any historical sources outside the Reference Documents.
 
-Source of Truth (Strict Hierarchy)
+## Current project orientation
+
+Read [README.md](README.md) for entry points and
+[docs/README.md](docs/README.md) for the documentation map. Current fixes,
+known limits, and the six source questions are in
+[docs/current-status.md](docs/current-status.md). The
+[23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
+is a revision-specific checkpoint, not a promise about every future change.
+[BUILD_PLAN.md](BUILD_PLAN.md) is now the maintenance roadmap; the engine,
+CLI, assistant sessions, and validation tools already exist.
+
+Project guides and historical strategy notes are implementation documentation,
+not additional game-rule authorities. Preserve the provenance of earlier
+owner-authorized rulings and scoped external comparisons; they do not grant
+blanket permission to introduce other source material.
+
+## Source of Truth (Strict Hierarchy)
 These are read-only. Never modify them. All other code must conform to them.
 1. fs_bot/rules_consts.py — Canonical Labels
 Every string label for factions, pieces, markers, leaders, regions, tribes, and space IDs used anywhere in the codebase must come from this file. If a label doesn't exist here, it is wrong.
-If you encounter a string literal in the code that doesn't match a constant from rules_consts.py (e.g., "warband", "legion", "auxilia" used as a piece tag, "fort", "Romans" instead of the canonical form, etc.), it is a bug. Replace it with the correct constant.
+If you encounter a string literal in the code that doesn't match a constant from rules_consts.py (e.g., "warband", "legion", "auxilia" used as a piece tag, "fort", etc.), it is a bug. Replace it with the correct constant.
 2. Reference Documents/Card Reference and Reference Documents/Ariovistus/A Card Reference — Card Behavior
 The authoritative definition of every card's unshaded and shaded effects. Card handler implementations must match these files exactly — same targets, same piece types, same destinations, same conditions.
 3. Reference Documents/ — Everything Else
@@ -65,14 +81,14 @@ Ariovistus From Day 1
 Every data structure must accommodate Ariovistus expansion content. If a region can be playable in one scenario but not another, that's part of the schema. If a piece type only exists in Ariovistus (Settlements, Diviciacus), it's still in rules_consts.py and the piece system. Do not build base-only structures that will need to be refactored.
 Scenario Isolation — No Bleed-Through
 The base game and Ariovistus are two different rule sets sharing a common core. Content from one must never leak into the other. The game state must carry a scenario identifier (e.g., state["scenario"]) that gates every scenario-dependent behavior. Specific isolation requirements:
-Pieces: Settlements, Diviciacus, and the extra 15 Germanic Warbands do not exist in base game scenarios. Vercingetorix does not exist in Ariovistus scenarios. The piece system must refuse to place, remove, or reference pieces that don't exist in the current scenario. Available Forces pools must be built per-scenario from available_forces.txt (base) or available_forces_ariovistus.txt (Ariovistus).
-Map: Britannia is playable in base game, unplayable in Ariovistus (A1.3.4). Cisalpina is unplayable in base game (unless Gallia Togata Event), always playable in Ariovistus (A1.3.2). The Nori tribe replaces Catuvellauni in Ariovistus. Alps crossing rules (A3.2.2) apply only in Ariovistus. March, Rally, and any other region-targeting logic must check whether a region/tribe is valid for the current scenario before using it.
+Pieces: Default base setup excludes Settlements, Diviciacus, and the extra 15 Germanic Warbands; Ariovistus setup excludes Vercingetorix. Build the appropriate Available Forces pools from available_forces.txt or available_forces_ariovistus.txt and enforce them through piece helpers. Respect explicit exceptions: A Setup and A1.4 permit a separate optional Diviciacus rule in original scenarios, and the Gallic War Interlude has its own removal/return accounting. The current CLI's five-card edition selector does not enable that separate setup option. Do not erase a legal Interlude context merely because the current scenario has changed to a base scenario.
+Map: Default base geography includes Britannia; Ariovistus excludes it (A1.3.4) and adds Cisalpina (A1.3.2), with Nori replacing Catuvellauni. Base Cisalpina access depends on Gallia Togata. Ordinary Alps stops are scenario-dependent, while the active Gallia Togata card governs its printed exceptions. Use state-aware geography and active card identity: an A5 effect can survive the Gallic War Interlude. March, Rally, stacking, and other targeting must check the actual Region/Tribe and Event context.
 Factions: In the base game, Germans are a non-player procedure (§6.2) that activates during the Germans Phase — they do NOT take turns in the Sequence of Play and have no bot flowchart. In Ariovistus, Germans are a full player/bot faction with their own flowchart and Sequence of Play slot. Conversely, Arverni are a player/bot faction in the base game but become game-run via the Arverni Phase (A6.2) in Ariovistus — they do NOT take turns in the Sequence of Play and have no bot flowchart. The engine/dispatcher must gate faction participation on the scenario.
 Victory: Arverni do not track or achieve victory in Ariovistus (A7.0). Germanic victory conditions only exist in Ariovistus (A7.2). Roman and Aedui victory formulas differ between base (§7.2) and Ariovistus (A7.2) — Roman subtracts Settlements, Aedui counts Settlements as Germanic Allies. The victory module must use the correct formula set for the scenario.
-Bot flowcharts: The German bot flowchart (Chapter A8) is Ariovistus-only. The Arverni bot flowchart (§8.5) is base-game-only. Roman, Aedui, and Belgae bots use their base flowcharts in both scenarios, but with Chapter A8 modifications active only in Ariovistus. The bot event instruction files are scenario-specific: *_bot_event_instructions.txt for base game, *_bot_event_instructions_ariovistus.txt for Ariovistus.
+Bot flowcharts: The German bot flowchart (Chapter A8) is Ariovistus-only. The Arverni bot flowchart (§8.7) is base-game-only. Roman, Aedui, and Belgae bots use their base flowcharts in both scenarios, but with Chapter A8 modifications active only in Ariovistus. The bot event instruction files are scenario-specific: *_bot_event_instructions.txt for base game, *_bot_event_instructions_ariovistus.txt for Ariovistus.
 Cards: Base game and Ariovistus use different Event card decks. Card handlers, event evaluation tables, and bot instruction lookups must load the correct card set for the scenario.
-Rules: Several rules change in Ariovistus: Senate Phase max 2 Legions (A6.5.2), Arverni Home "Rally" marker, Intimidated markers, At War mechanics, Cisalpina as a full region. These must only be active when state["scenario"] is an Ariovistus scenario.
-General principle: If code checks state["scenario"] to decide what to do, that branch should be tested for both base and Ariovistus scenarios to confirm isolation works in both directions.
+Rules: Several rules change in Ariovistus: Senate Phase combined maximum of 2 Legions from the Intrigue/Adulation rows, with eligible Uproar-row Legions unaffected by that cap (A6.5.2), Arverni Home "Rally" marker, Intimidated markers, At War mechanics, Cisalpina as a full region. These must only be active when state["scenario"] is an Ariovistus scenario.
+General principle: Test both base and Ariovistus behavior, plus explicit Event and Interlude exceptions. The Gallic War preserves specified lingering effects and removed-piece bookkeeping while changing scenario and player seats. Consult scenario_phase and active effects where appropriate; preserve those exceptions without enabling unrelated expansion rules.
 Testing
 
 Run pytest -q before every commit
@@ -103,23 +119,61 @@ Control: Use the control module for control calculations
 Randomness: Use state["rng"] exclusively
 
 
-How to Run
-bash# Setup
+## Run and validate
+
+Playing needs no third-party packages:
+
+```sh
+python -m fs_bot --save autosave.json
+```
+
+For development, create an environment and install the test dependency:
+
+```sh
 python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
+# Activate the environment for your shell, then:
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+```
 
-# Run the game
-python -m fs_bot
+The full-test-before-every-commit requirement above also applies to
+project documentation commits. Do not change dependency requirements merely
+to use an optional local test runner such as pytest-xdist.
 
-# Run tests
-pytest -q
+Consult [SELFPLAY_PLAYBOOK.md](SELFPLAY_PLAYBOOK.md) for the actual batch,
+strict census, replay, and balance commands. Inspect per-game records:
+process exit status alone is not a sufficient acceptance check for every
+historical tool. Never overwrite earlier failed runs or combine results
+from different source revisions. The current balance guardrail uses seeds
+1–20 in all five scenarios and a 15-percentage-point band. Refresh it only
+after explaining intended, source-supported changes on the same seed set;
+do not tune the bots or widen the threshold to obtain preferred win rates.
 
-Build Plan
-See BUILD_PLAN.md for the phased implementation roadmap and lessons learned from the Liberty or Death project that inform architectural decisions.
+## Human-interface requirements
 
-For the Developer
-This project is being built from scratch with Claude Code, informed by the mistakes of a prior COIN-series bot project (Liberty or Death) that required 9+ audit sessions and 800+ tests to reach compliance. The primary goal from the start is correctness — making the implementation faithfully match the Reference Documents. Speed, optimization, and architectural elegance are secondary to rules accuracy.
-When in doubt, read the Reference Documents again. Then read them one more time.
+- Preserve the legal Command/Special Activity ordering choices, including
+  supported interrupted Commands. Ambush and Besiege resolve within Battle.
+- Show current/upcoming card text and changes before human decisions, and
+  retain `board`/`b` inspection at prompts.
+- Offer physical piece and beneficiary choices where the rules allow them;
+  previews must not consume live human input or random state.
+- Keep an invalid or missing assistant response pending. Do not silently
+  substitute a bot choice for a human in the durable session frontend.
+- Preserve transaction rollback, accepted choices, stable pending decision
+  identifiers, save/load, and deterministic replay when adding requests.
+  The raw callback's documented fallback contract is distinct from the
+  human-session contract; see [AGENT_INTERFACE.md](AGENT_INTERFACE.md).
+
+## Documentation maintenance
+
+Update the relevant player/API guide along with changed behavior. Keep
+current dispositions and links in `docs/current-status.md`, and source
+questions/rulings in `QUESTIONS.md`. Historical reports and strategy samples
+retain their original measurements, with dated supersession notices when
+needed. Record the tested commit and digest; even Python docstring edits
+change the byte-level source digest. Do not relabel old outcomes as new runs.
+
+Rules fidelity remains the priority. Consult the supplied references before
+changing behavior and leave unresolved source conflicts explicitly recorded.
 
 Card Key Suffixes: In CARD_NAMES_ARIOVISTUS, some A-prefix card keys end with "C" (e.g., "A15C"). The trailing "C" represents the carynx symbol printed on those cards in the physical game. It is part of the card's identity, not a typo or encoding artifact. Do not strip, rename, or "normalize" these suffixes.

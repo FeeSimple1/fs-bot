@@ -127,6 +127,10 @@ def validate_free_action_response(state, faction, request, response):
     if response == {'decline': True} or response == {'use_default': True}:
         return None
     try:
+        if request.get("request_type") == "impetuosity_march":
+            from fs_bot.cards.impetuosity import validate_march
+            validate_march(state, faction, response)
+            return None
         return _validate_plan(state, faction, request, response)
     except (ValueError, TypeError, KeyError, IndexError, AttributeError, CommandError, PieceError) as exc:
         return f'Invalid free action: {exc}'

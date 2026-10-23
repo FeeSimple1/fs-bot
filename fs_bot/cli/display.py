@@ -102,8 +102,10 @@ def _active_force_context(state):
     for region, counts in sorted(state.get(BORROW_KEY, {}).get("pieces", {}).items()):
         lines.append(f"  Enlist in {region}: {BELGAE} use {GERMANS}' "
                      f"{selected_warbands(counts)} for this Command, including Control.")
-    for region, counts in sorted(state.get(FREE_FORCE_KEY, {}).get("pieces", {}).items()):
-        lines.append(f"  Enlist free Battle in {region}: {GERMANS}' "
+    free_force = state.get(FREE_FORCE_KEY, {})
+    for region, counts in sorted(free_force.get("pieces", {}).items()):
+        lines.append(f"  {free_force.get('source', 'Enlist')} free Battle in {region}: "
+                     f"{free_force.get('faction', GERMANS)}' "
                      f"{selected_warbands(counts)} participate.")
     combined = state.get(COMBINED_KEY)
     if combined:

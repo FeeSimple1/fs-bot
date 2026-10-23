@@ -192,7 +192,7 @@ def get_effective_faction_pieces(state, region, faction):
     if combined is not None:
         return combined
     free = state.get(FREE_FORCE_KEY)
-    if free and faction == GERMANS and region in free["pieces"]:
+    if free and faction == free.get("faction", GERMANS) and region in free["pieces"]:
         return {ps: {WARBAND: free["pieces"][region].get(ps, 0)}
                 for ps in (HIDDEN, REVEALED, SCOUTED)}
     loan = state.get(BORROW_KEY, {}).get("pieces", {}).get(region)
@@ -889,7 +889,7 @@ def _enlist_operation(state, region, faction, piece_type, count, operation,
         record_borrowed_change)
     from fs_bot.rules_consts import BELGAE
     free = state.get(FREE_FORCE_KEY)
-    free = free if free and region in free["pieces"] and faction == GERMANS else None
+    free = free if free and region in free["pieces"] and faction == free.get("faction", GERMANS) else None
     borrow = state.get(BORROW_KEY)
     if not free and not (borrow and faction in (BELGAE, GERMANS)):
         if owner is not None:
@@ -907,7 +907,7 @@ def _enlist_operation(state, region, faction, piece_type, count, operation,
         for visibility in ((ps,) if ps else (HIDDEN, REVEALED, SCOUTED)):
             take = min(remaining, free["pieces"][region].get(visibility, 0))
             if take:
-                allocations.append((GERMANS, visibility, take))
+                allocations.append((faction, visibility, take))
                 remaining -= take
         if remaining:
             raise PieceError("Not enough selected Enlist Warbands")

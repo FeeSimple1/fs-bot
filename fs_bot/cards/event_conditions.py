@@ -12,6 +12,9 @@ from fs_bot import rules_consts as rc
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 72 and shaded:
+        from fs_bot.cards.impetuosity import np_choices
+        return bool(np_choices(state, faction))
     if not ((card_id in (6, 11, 17, 25, 36) and not shaded)
             or (card_id in (21, 45, 58) and shaded)
             or card_id in (26, 62, 64, 'A20', 'A21')

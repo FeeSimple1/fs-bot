@@ -56,8 +56,8 @@ BORROW_KEY = "_enlist_borrowed"
 FREE_FORCE_KEY = "_enlist_free_force"
 
 
-def scoped_free_force(state, region, counts):
-    """A4.5.1 free Battle sees only the selected German Warbands.
+def scoped_free_force(state, region, counts, *, faction=GERMANS, source="Enlist"):
+    """A4.5.1 or an explicit Event Battle sees only its selected Warbands.
 
     This is a battle-force filter, never a change of physical Control.
     The context manager restores the ordinary view even on interruption.
@@ -69,17 +69,23 @@ def scoped_free_force(state, region, counts):
         from fs_bot.board.pieces import PieceError
         if FREE_FORCE_KEY in state:
             raise CommandError("A free Enlist force is already selected")
-        raw = state["spaces"][region].get("pieces", {}).get(GERMANS, {})
+        raw = state["spaces"][region].get("pieces", {}).get(faction, {})
         if (not isinstance(counts, dict)
                 or set(counts) - {HIDDEN, REVEALED, SCOUTED}
                 or any(type(n) is not int or n < 0 for n in counts.values())
                 or any(n > raw.get(ps, {}).get(WARBAND, 0)
                        for ps, n in counts.items())):
             raise PieceError("Invalid selected Enlist Warbands")
-        valid, reason = validate_enlist_ariovistus_limit(state, sum(counts.values()))
-        if not valid:
-            raise CommandError(reason)
-        state[FREE_FORCE_KEY] = {"region": region, "pieces": {region: dict(counts)}}
+        if source == "Enlist":
+            valid, reason = validate_enlist_ariovistus_limit(state, sum(counts.values()))
+            if not valid:
+                raise CommandError(reason)
+        context = {"region": region, "pieces": {region: dict(counts)}}
+        # Keep Enlist's persisted request signature unchanged. New Event
+        # cohorts need explicit attribution; old saves default to Germans.
+        if faction != GERMANS or source != "Enlist":
+            context.update(faction=faction, source=source)
+        state[FREE_FORCE_KEY] = context
         try:
             yield
         finally:

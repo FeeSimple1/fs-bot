@@ -2133,26 +2133,24 @@ def _clear_all_mobiles(state, scenario):
 def test_card72_shaded_hidden_warband_march_battle():
     """Slice 37: Card 72 Impetuosity (shaded) — Arverni March a Hidden-Warband
     group into a player Region and free Battle; Aedui no-play."""
-    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import build_initial_state
     from fs_bot.state.state_schema import validate_state
     from fs_bot.board.pieces import place_piece, count_pieces
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     from fs_bot.engine.execute import (_execute_event,
         _resolve_card72_hidden_march_battle)
-    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, ROMANS, ARVERNI,
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ROMANS, ARVERNI,
         AEDUI, WARBAND, AUXILIA, EVENT_SHADED)
 
-    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=50)
+    st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=50)
     st["current_card"] = 72
-    _clear_all_mobiles(st, SCENARIO_GALLIC_WAR)
-    pl = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))
+    st["non_player_factions"] = set(get_sop_factions(st)) - {ROMANS}
+    _clear_all_mobiles(st, SCENARIO_GREAT_REVOLT)
+    pl = get_playable_regions(SCENARIO_GREAT_REVOLT, st.get("capabilities"))
     S = pl[5]
-    # The resolver scans sources/destinations in sorted (deterministic) order
-    # and breaks ties toward the sorted-first Region, so choose the sorted-first
-    # adjacent playable Region as the unique target (setup may leave Roman
-    # Allies in other neighbours).
-    B = sorted(r for r in get_adjacent(S, SCENARIO_GALLIC_WAR) if r in pl)[0]
+    # One player Roman destination makes the printed target unambiguous.
+    B = sorted(r for r in get_adjacent(S, SCENARIO_GREAT_REVOLT) if r in pl)[0]
     # Clear B of any setup pieces (e.g. a Roman Ally/Citadel/Fort) so the Battle
     # outcome is unambiguous — B should hold only the 3 Auxilia we place. Use
     # the piece helper so Available pools stay reconciled (validate_state).
@@ -2164,7 +2162,7 @@ def test_card72_shaded_hidden_warband_march_battle():
             _n = count_pieces(st, B, _f, _pt)
             if _n:
                 _rm(st, B, _f, _pt, _n, to_available=True)
-    for _t in get_tribes_in_region(B, SCENARIO_GALLIC_WAR):
+    for _t in get_tribes_in_region(B, SCENARIO_GREAT_REVOLT):
         if _t in st["tribes"]:
             st["tribes"][_t]["allied_faction"] = None
     place_piece(st, S, ARVERNI, WARBAND, 6)
@@ -2182,27 +2180,28 @@ def test_card72_shaded_hidden_warband_march_battle():
     assert validate_state(st) == []
 
     # Aedui: "continue on the flowchart instead" -> no free March/Battle.
-    st2 = setup_scenario(SCENARIO_GALLIC_WAR, seed=50)
+    st2 = build_initial_state(SCENARIO_GREAT_REVOLT, seed=50)
     out = _resolve_card72_hidden_march_battle(st2, AEDUI)
     assert out and out[0]["executed"] is False
 
 
 def test_card72_shaded_belgae_targets_an_enemy():
     """Belgae path executes a Hidden-Warband March+Battle against an enemy."""
-    from fs_bot.state.setup import setup_scenario
+    from fs_bot.state.state_schema import build_initial_state
     from fs_bot.state.state_schema import validate_state
     from fs_bot.board.pieces import place_piece, count_pieces
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     from fs_bot.engine.execute import _execute_event
-    from fs_bot.rules_consts import (SCENARIO_GALLIC_WAR, BELGAE, ROMANS,
+    from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, BELGAE, ROMANS,
         WARBAND, AUXILIA, EVENT_SHADED)
-    st = setup_scenario(SCENARIO_GALLIC_WAR, seed=51)
+    st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=51)
     st["current_card"] = 72
-    _clear_all_mobiles(st, SCENARIO_GALLIC_WAR)
-    pl = get_playable_regions(SCENARIO_GALLIC_WAR, st.get("capabilities"))
+    st["non_player_factions"] = set(get_sop_factions(st)) - {ROMANS}
+    _clear_all_mobiles(st, SCENARIO_GREAT_REVOLT)
+    pl = get_playable_regions(SCENARIO_GREAT_REVOLT, st.get("capabilities"))
     S = pl[6]
-    B = next(r for r in get_adjacent(S, SCENARIO_GALLIC_WAR) if r in pl)
+    B = next(r for r in get_adjacent(S, SCENARIO_GREAT_REVOLT) if r in pl)
     place_piece(st, S, BELGAE, WARBAND, 5)
     place_piece(st, B, ROMANS, AUXILIA, 2)
     refresh_all_control(st)

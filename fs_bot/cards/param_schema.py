@@ -241,6 +241,18 @@ def card_param_schema(card_id, scenario, card_edition=None):
 # violation). Offering/generating only these keeps humans out of dead ends
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
+    "A37": {
+        "target_region": {"kind": "region"},
+        "ally_placements": {"kind": "entries", "allow_empty": True,
+            "entry_fields": {"tribe": "tribe", "faction": "faction"}},
+        "moves": {"kind": "entries", "allow_empty": True, "entry_fields": {
+            "from_region": "region", "to_region": "region", "piece_type": "piece_type",
+            "piece_state": "piece_state", "count": "count"},
+            "entry_values": {"piece_type": (LEADER, WARBAND, AUXILIA)}},
+        "removals": {"kind": "entries", "entry_fields": {
+            "tribe": "tribe", "faction": "faction"},
+            "entry_values": {"faction": (AEDUI, ROMANS)}},
+    },
     "A28": {"battle_plan": {"kind": "entries", "entry_fields": {
         "region": "region", "target_faction": "faction",
         "allied_factions": "factions"}}},

@@ -1573,56 +1573,22 @@ def _resolve_card_A5_evict(state):
 
 
 def _resolve_card_A37_move(state, faction):
-    """Card A37 (unshaded): after placing an Ally in a Celtica Region within 1
-    of German Control, the Faction moves its Leader and Warbands/Auxilia there
-    from an adjacent Region (consolidating at the new Ally)."""
-    from fs_bot.rules_consts import (AEDUI, ROMANS, ALLY, CELTICA_REGIONS,
-                                     GERMANS)
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.board.control import is_controlled_by
-    from fs_bot.map.map_data import get_adjacent
-    from fs_bot.rules_consts import ARIOVISTUS_SCENARIOS
-    # Aedui Ariovistus Event Instructions, All Gaul Gathers: "Move no
-    # pieces." The card's movement is optional ("as desired"); declining
-    # it preserves the Ally placements already performed by the Event.
-    if (faction == AEDUI and state["scenario"] in ARIOVISTUS_SCENARIOS
-            and faction in state.get("non_player_factions", set())):
-        return [{"free_action": "march", "flag": "card_A37", "executed": False,
-                 "declined_no_effect": True,
-                 "reason": "Aedui Event instruction: move no pieces for All Gaul Gathers"}]
-    if faction not in (AEDUI, ROMANS):
-        return [{"free_action": "march", "flag": "card_A37", "executed": False,
-                 "reason": "only Aedui/Romans"}]
-    scen = state["scenario"]
-    # Target = a Celtica Region (within 1 of German Control) where the Faction
-    # now has an Ally.
-    dest = None
-    for region in CELTICA_REGIONS:
-        if count_pieces(state, region, faction, ALLY) <= 0:
-            continue
-        if is_controlled_by(state, region, GERMANS) or any(
-                is_controlled_by(state, a, GERMANS)
-                for a in get_adjacent(region, scen)):
-            dest = region
-            break
-    if dest is None:
-        return [{"free_action": "march", "flag": "card_A37", "executed": False,
-                 "reason": "no Ally Region to move to"}]
-    srcs = [a for a in get_adjacent(dest, scen)
-            if _group_has_pieces(_mobile_march_group(state, faction, a))]
-    if not srcs:
-        return [{"free_action": "march", "flag": "card_A37", "region": dest,
-                 "executed": False, "reason": "no adjacent group to move"}]
-    from fs_bot.rules_consts import LEGION, AUXILIA, WARBAND
-    S = max(srcs, key=lambda a: sum(count_pieces(state, a, faction, pt)
-                                    for pt in (LEGION, AUXILIA, WARBAND)))
-    try:
-        _march_with_harassment(state, faction, S, [dest])
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "march", "flag": "card_A37", "region": dest,
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "march", "flag": "card_A37", "source": S,
-             "region": dest}]
+    """Report the optional direct moves selected in A37's Event plan."""
+    from fs_bot.rules_consts import AEDUI, ARIOVISTUS_SCENARIOS
+    selection = state.get("event_modifiers", {}).get("card_A37_place_allies_move")
+    selection = selection if isinstance(selection, dict) else {}
+    moves = selection.get("moves", [])
+    result = {"free_action": "move", "flag": "card_A37",
+              "region": selection.get("region"), "moves": moves,
+              "executed": bool(moves)}
+    if not moves:
+        result["declined_no_effect"] = True
+        if (faction == AEDUI and state["scenario"] in ARIOVISTUS_SCENARIOS
+                and faction in state.get("non_player_factions", set())):
+            result["reason"] = "Aedui Event instruction: move no pieces for All Gaul Gathers"
+        else:
+            result["reason"] = "No optional A37 movement selected"
+    return [result]
 
 
 def _resolve_card_A53_frumentum(state):
@@ -5854,46 +5820,9 @@ def _derive_card_A45(state, faction, shaded):
 
 
 def _derive_card_A37(state, faction, shaded):
-    """Card A37 (All Gaul Gathers), shaded: remove up to 3 Aedui/Roman Allies
-    in Celtica (§8.2.3 — enemies' Allies). Unshaded (place + Leader move) is
-    deferred. Only a Faction other than Aedui/Romans benefits from shaded."""
-    from fs_bot.rules_consts import CELTICA_REGIONS, AEDUI, ROMANS, ALLY
-    from fs_bot.map.map_data import get_tribes_in_region
-    from fs_bot.board.pieces import count_pieces, get_available
-    from fs_bot.board.control import is_controlled_by
-    from fs_bot.map.map_data import get_adjacent
-    if not shaded:
-        # Unshaded: if Aedui or Roman, place an Ally at a Subdued Celtica Tribe
-        # within 1 of German Control. (The Leader/Warband move is executed by
-        # _resolve_card_A37_move.)
-        if faction not in (AEDUI, ROMANS) or get_available(state, faction, ALLY) <= 0:
-            return None
-        from fs_bot.rules_consts import GERMANS
-        scen = state["scenario"]
-        for region in CELTICA_REGIONS:
-            near_gc = is_controlled_by(state, region, GERMANS) or any(
-                is_controlled_by(state, a, GERMANS)
-                for a in get_adjacent(region, scen))
-            if not near_gc:
-                continue
-            for tribe in get_tribes_in_region(region, scen):
-                ti = state.get("tribes", {}).get(tribe)
-                if ti and ti.get("allied_faction") is None:
-                    return {"ally_placements": [{"tribe": tribe,
-                                                 "faction": faction}]}
-        return None
-    if faction in (AEDUI, ROMANS):
-        return None
-    removals = []
-    for region in CELTICA_REGIONS:
-        for tribe in get_tribes_in_region(region, state["scenario"]):
-            ti = state.get("tribes", {}).get(tribe)
-            af = ti.get("allied_faction") if ti else None
-            if (af in (AEDUI, ROMANS)
-                    and count_pieces(state, region, af, ALLY) > 0
-                    and len(removals) < 3):
-                removals.append({"tribe": tribe, "faction": af})
-    return {"removals": removals} if removals else None
+    """A37 choices obey the one-Region scope and Aedui no-movement instruction."""
+    from fs_bot.cards.all_gaul_gathers import derive_params
+    return derive_params(state, faction, shaded)
 
 
 def _derive_card_A64(state, faction, shaded):

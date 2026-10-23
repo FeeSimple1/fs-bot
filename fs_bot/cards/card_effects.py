@@ -4021,42 +4021,10 @@ def execute_card_A36(state, shaded=False):
                 _unally_tribe(state, tribe)
 
 def execute_card_A37(state, shaded=False):
-    """Card A37: All Gaul Gathers — Place Allies or remove them.
+    """A37: place any Allies in one eligible Region, then optional direct moves."""
+    from fs_bot.cards.all_gaul_gathers import execute
+    execute(state, shaded)
 
-    Unshaded: If Aedui or Roman, place any Allies in 1 Celtica Region
-    within 1 of German Control, then move Leader+Warbands/Auxilia there.
-    Shaded: Remove up to 3 Aedui/Roman Allies from Celtica within 1
-    of German Control.
-
-    Source: A Card Reference, card A37
-    """
-    from fs_bot.rules_consts import TRIBE_TO_REGION
-    params = state.get("event_params", {})
-    scenario = state["scenario"]
-    faction = state.get("executing_faction")
-    if not shaded:
-        # Place Allies + move Leader — partially deferred
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_A37_place_allies_move"] = True
-        # Handle Ally placements from params
-        ally_placements = params.get("ally_placements", [])
-        for p in ally_placements:
-            tribe = p["tribe"]
-            pfac = p.get("faction", faction)
-            if pfac:
-                _ally_tribe(state, tribe, pfac)
-    else:
-        # Remove up to 3 Aedui/Roman Allies from Celtica near German Control
-        removals = params.get("removals", [])
-        for r in removals[:3]:
-            tribe = r["tribe"]
-            fac = r.get("faction")
-            t_info = state.get("tribes", {}).get(tribe)
-            if (t_info and t_info.get("allied_faction") == fac
-                    and fac in (AEDUI, ROMANS)
-                    and _tribe_piece_type(state, tribe) == ALLY):
-                # "(not Citadels)" — only Ally discs
-                _unally_tribe(state, tribe)
 
 def execute_card_A38(state, shaded=False):
     """Card A38: Vergobret — Suborn enhancement / CAPABILITY restriction.

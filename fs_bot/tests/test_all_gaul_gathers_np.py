@@ -24,11 +24,14 @@ def test_np_aedui_actual_a37_places_ally_but_does_not_move_adjacent_force(scenar
     result = _execute_event(state, rc.AEDUI, {'command': 'Event', 'details': {
         'card_id': 'A37', 'text_preference': rc.EVENT_UNSHADED}})
     assert result['executed']
-    assert state['tribes'][rc.TRIBE_TREVERI]['allied_faction'] == rc.AEDUI
-    assert count_pieces(state, rc.TREVERI, rc.AEDUI, rc.ALLY) == 1
+    # §8.3.1: Sequani permits two Allies, versus one at Treveri.
+    assert state['tribes'][rc.TRIBE_SEQUANI]['allied_faction'] == rc.AEDUI
+    assert state['tribes'][rc.TRIBE_HELVETII]['allied_faction'] == rc.AEDUI
+    assert count_pieces(state, rc.SEQUANI, rc.AEDUI, rc.ALLY) == 2
     assert count_pieces(state, rc.NERVII, rc.AEDUI, rc.WARBAND) == 4
     assert get_leader_in_region(state, rc.NERVII, rc.AEDUI) == rc.DIVICIACUS
     assert count_pieces(state, rc.TREVERI, rc.AEDUI, rc.WARBAND) == 0
+    assert count_pieces(state, rc.SEQUANI, rc.AEDUI, rc.WARBAND) == 0
     assert result['free_actions'][0]['declined_no_effect']
     counts, examples, occurrences = Counter(), {}, []
     census_result({'card_results': [{'card': 'A37', 'turn_result': {

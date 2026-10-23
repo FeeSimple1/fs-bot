@@ -15,6 +15,7 @@ def np_event_available(state, card_id, faction, shaded):
     if not ((card_id in (6, 11, 17, 25, 36) and not shaded)
             or (card_id in (21, 45, 58) and shaded)
             or card_id in (26, 62, 64, 'A20', 'A21')
+            or (card_id == 'A37' and (shaded or faction == rc.AEDUI))
             or (card_id in ('A19', 'A45') and shaded and faction == rc.GERMANS)):
         return None
     from fs_bot.commands.common import free_action_scope
@@ -54,6 +55,21 @@ def _available(trial, card_id, faction, shaded):
         # Predict Losses, not removals after random hard-piece saving rolls.
         return calculate_losses(trial, target['region'], rc.ROMANS,
                                 target['target'], double_auxilia=True) > 0
+    if card_id == 'A37':
+        if trial['scenario'] not in rc.ARIOVISTUS_SCENARIOS:
+            return False
+        if shaded:
+            from fs_bot.cards.all_gaul_gathers import removal_options
+            return bool(removal_options(trial))
+        from fs_bot.cards.all_gaul_gathers import derive_params, execute
+        trial['event_params'] = derive_params(trial, faction, False) or {}
+        trial['executing_faction'] = faction
+        before = get_available(trial, faction, rc.ALLY)
+        execute(trial)
+        # Aedui's "Move no pieces" instruction leaves only actual legal
+        # own Ally placements as an effect. Other owners' discs are not a
+        # substitute under §8.2.3's select-yourself-only guideline.
+        return get_available(trial, faction, rc.ALLY) < before
     if card_id in (26, 64):
         from fs_bot.cards.ally_events import derive_gobannitio, derive_correus
         from fs_bot.cards.card_effects import execute_card_26, execute_card_64

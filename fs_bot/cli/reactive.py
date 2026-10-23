@@ -32,6 +32,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind == "march_cohort":
+                from fs_bot.cli.march_choices import collect_march_cohort
+                return collect_march_cohort(state, faction, request, stdin, stdout)
             if kind == "raid_intimidate":
                 from fs_bot.cli.raid_intimidate import collect_raid_intimidate
                 return collect_raid_intimidate(state, faction, request, stdin, stdout)

@@ -90,10 +90,12 @@ def _result_error(result):
 def execute_free_action_plan(state, faction, request, action):
     """Execute a validated concrete plan, retaining its human SA timing."""
     from fs_bot.engine import execute as ex
+    from fs_bot.engine.march_choices import chooser_scope
     from fs_bot.rules_consts import CMD_BATTLE
     # The request is an engine-owned grant. Responses cannot change its actor.
+    chooser = faction
     faction = request.get('acting_faction', faction)
-    with free_action_scope(state, faction), rally_event_scope(
+    with chooser_scope(state, faction, chooser), free_action_scope(state, faction), rally_event_scope(
             state, faction, as_if_control=request.get('as_if_control', False),
             allow_devastated=request.get('allow_devastated', False),
             regions=request.get('allowed_regions')):

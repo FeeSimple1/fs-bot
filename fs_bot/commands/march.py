@@ -843,7 +843,8 @@ def _move_group_to(state, from_region, to_region, faction, group):
             for owner, n in ((GERMANS, german), (BELGAE, warband_count - german)):
                 if n:
                     counts = _move_flippable_preserving_state(state, from_region, to_region,
-                        faction, WARBAND, n, physical_owner=owner)
+                        faction, WARBAND, n, physical_owner=owner,
+                        visibility=group.get("_march_owner_visibility", {}).get(owner))
                     for ps, count in counts.items():
                         moved[ps] = moved.get(ps, 0) + count
             visibility[WARBAND] = moved

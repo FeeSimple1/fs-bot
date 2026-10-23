@@ -128,6 +128,18 @@ def make_random_reactive(seats, rng):
             rng.shuffle(pieces)
             maximum = min(request["max_removals"], len(pieces))
             return {"targets": pieces[:rng.randrange(1, maximum + 1)]}
+        if kind == "march_cohort":
+            from fs_bot.engine.march_choices import VISIBILITIES
+            available = request["available"]
+            states = [ps for ps in VISIBILITIES if available.get(ps, 0)]
+            remaining, counts = request["count"], {}
+            for index, ps in enumerate(states):
+                minimum = max(0, remaining - sum(available[s] for s in states[index + 1:]))
+                n = rng.randint(minimum, min(remaining, available[ps]))
+                if n:
+                    counts[ps] = n
+                remaining -= n
+            return {"counts": counts}
         if kind == HARASSMENT_LOSS:
             return {"choice": rng.choice(request["options"])}
         if kind == RETREAT:

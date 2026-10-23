@@ -3913,11 +3913,13 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None)
         state["resources"][faction] -= total_cost
     sa_result = before_move() if selected and before_move is not None else None
     marched = []
+    flipped_origins = set()
     for move in selected:
         origin = move["origin"]
         try:
             final = _march_with_harassment(state, faction, origin, move["path"],
-                                           group_cap=move.get("group"))
+                                           group_cap=move.get("group"),
+                                           flipped_origins=flipped_origins)
             if final != origin:
                 entry = {k: v for k, v in move.items() if k not in ("path", "group")}
                 entry["final_region"] = final
@@ -3980,7 +3982,8 @@ def _bfs_march_path(origin, dest, playable):
 
 
 def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
-                           harassers_by_region=None, dropoffs_by_region=None):
+                           harassers_by_region=None, dropoffs_by_region=None,
+                           flipped_origins=None):
     """March a faction's mobile group origin -> ... -> path[-1], one step
     at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
     enters and then leaves. Returns the final Region reached.
@@ -4014,7 +4017,15 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
         raise CommandError("March route exceeds this group's movement allowance")
     _validate_group_in_region(state, origin, faction, group)
     # Validate the whole group's route before changing any visibility state.
-    _flip_origin_pieces(state, origin, faction)
+    # §3.2.2/3.3.2 flip once per selected origin, even when it forms multiple
+    # groups. Re-flipping would Hide the remaining de-Scouted Warbands.
+    if flipped_origins is None or origin not in flipped_origins:
+        _flip_origin_pieces(state, origin, faction)
+        if flipped_origins is not None:
+            flipped_origins.add(origin)
+    if path:
+        from fs_bot.engine.march_choices import select_origin_visibility
+        select_origin_visibility(state, faction, origin, group)
     current = origin
     for i, nxt in enumerate(path):
         if not _group_has_pieces(group):
@@ -4035,15 +4046,8 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
             # Event-owned plans may leave part of this group in a transit
             # Region (3.2.2). Only the continuing pieces suffer Harassment.
             for piece, count in (dropoffs_by_region or {}).get(current, {}).items():
-                group[piece] -= count
-                visibility = group.get("_march_visibility", {}).get(piece)
-                if visibility is not None:
-                    from fs_bot.rules_consts import HIDDEN, REVEALED, SCOUTED
-                    remaining = count
-                    for ps in (HIDDEN, REVEALED, SCOUTED):
-                        dropped = min(remaining, visibility.get(ps, 0))
-                        visibility[ps] = visibility.get(ps, 0) - dropped
-                        remaining -= dropped
+                from fs_bot.engine.march_choices import drop_visibility
+                drop_visibility(state, faction, current, group, piece, count)
             harassers = (harassers_by_region[current]
                          if harassers_by_region is not None and current in harassers_by_region
                          else _iter_harassers(state, current, faction, group,

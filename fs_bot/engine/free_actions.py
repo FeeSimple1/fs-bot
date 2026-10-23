@@ -112,6 +112,8 @@ def execute_free_action_plan(state, faction, request, action):
                 return ex._execute_trade(state, faction,
                                          allowed_regions=request.get('allowed_regions'))
             return handlers[sa](state, faction, action)
+        if request.get('morasses_ambush') and action.get('command') == CMD_BATTLE:
+            return ex._execute_battle(state, faction, action, _ambush_anywhere=True)
         if request.get('double_auxilia') and action.get('command') == CMD_BATTLE:
             # Card 6's bonus belongs to the engine-owned grant, never the
             # submitted plan. Validation executes this same path on a copy.
@@ -147,6 +149,11 @@ def validate_free_action_response(state, faction, request, response):
             from fs_bot.cards.publius import validate_march
             validate_march(state, response)
             return None
+        if request.get("request_type") in ("morasses_faction", "morasses_march"):
+            from fs_bot.cards.morasses import validate_faction, validate_march
+            validator = validate_faction if request['request_type'] == 'morasses_faction' else validate_march
+            validator(state, faction, response)
+            return None
         if request.get("request_type") == "impetuosity_march":
             from fs_bot.cards.impetuosity import validate_march
             validate_march(state, faction, response)
@@ -181,6 +188,20 @@ def _validate_plan(state, faction, request, action):
             return f'{faction} cannot execute {sa}.'
         if not standalone and not compatible_sa(cmd, sa):
             return f'{sa} cannot accompany {cmd}.'
+    if request.get('morasses_ambush'):
+        from fs_bot.rules_consts import AEDUI, SA_AMBUSH
+        plan = (action.get('details') or {}).get('battle_plan') or []
+        battle_regions = {e.get('region') for e in plan}
+        ambush_regions = action.get('sa_regions') or []
+        if (sa != SA_AMBUSH or not ambush_regions
+                or any(not isinstance(r, str) for r in ambush_regions)
+                or len(ambush_regions) != len(set(ambush_regions))
+                or not set(ambush_regions).issubset(battle_regions)):
+            return 'Morasses needs explicit Ambush Regions within the Battle Command.'
+        if faction == AEDUI and len(ambush_regions) != 1:
+            return 'Aedui Ambush still selects at most one Region (§4.4.3).'
+        if faction != AEDUI and set(ambush_regions) != battle_regions:
+            return 'The Morasses grant adds Ambush to each selected Battle Region.'
     parts = command_parts(action)
     if len(parts) > 1:
         if cmd in ('March', 'Battle') or action.get('sa_timing') != 'during' or len(parts) != 2:

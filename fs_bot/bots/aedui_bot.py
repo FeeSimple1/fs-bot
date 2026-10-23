@@ -175,6 +175,10 @@ def _estimate_battle_losses(state, region, attacker, defender, scenario):
     Returns:
         (losses_inflicted, losses_suffered) tuple — integers.
     """
+    if state.get('_morasses_ambush'):
+        from fs_bot.cards.morasses import ambush_prediction
+        pred = ambush_prediction(state, region, attacker, defender)
+        return pred['inflicted'], pred['taken']
     # Attacker forces
     atk_warbands = count_pieces(state, region, attacker, WARBAND)
     atk_auxilia = count_pieces(state, region, attacker, AUXILIA)
@@ -266,6 +270,9 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
         (1 if def_leader else 0)
         + def_legions + def_allies + def_citadels + def_settlements
     )
+
+    if state.get('_morasses_ambush') and high_value_count == 0:
+        return False
 
     # Count total defender pieces to see if losses reach high-value targets
     # Losses remove pieces in defender's choice, but we check if losses
@@ -748,6 +755,9 @@ def node_a_battle(state):
     playable = command_region_candidates(
         state, get_playable_regions(scenario, state.get("capabilities")))
     enemies = _get_battle_enemies(state, scenario)
+    if state.get('_morasses_ambush'):
+        # Morasses' Aedui instruction targets player Arverni/Belgae only.
+        enemies = [e for e in enemies if e in (ARVERNI, BELGAE) and e not in non_players]
 
     battle_plan = []
 
@@ -791,7 +801,8 @@ def node_a_battle(state):
             if enemy == ROMANS:
                 hidden_enemy += count_pieces_by_state(
                     state, region, enemy, AUXILIA, HIDDEN)
-            ambush = command_sa_allowed(state) and hidden_aedui > hidden_enemy
+            from fs_bot.cards.morasses import ambush_active
+            ambush = ambush_active(state, region) or (command_sa_allowed(state) and hidden_aedui > hidden_enemy)
             if _would_force_loss_on_high_value(
                     state, region, AEDUI, enemy, scenario,
                     ambush_possible=ambush):
@@ -801,6 +812,9 @@ def node_a_battle(state):
                     "priority": "high_value",
                 })
                 break  # One battle per region
+
+    if state.get('_morasses_ambush') and not battle_plan:
+        return _make_action(ACTION_PASS)  # §8.6.2's high-value trigger.
 
     # Step 3: Additional Battles where enemy takes Losses AND at least
     # as many as Aedui — §8.6.2

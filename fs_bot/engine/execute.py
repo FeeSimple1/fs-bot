@@ -1877,13 +1877,9 @@ def _resolve_card36_battle(state, faction):
 
 
 def _resolve_card36_shaded(state, faction):
-    """Card 36 Morasses (shaded): a Gallic Faction free Battles with Ambush
-    anywhere (Ambush in every able Region), then free Marches."""
-    ambushes = _faction_ambush_sweep(state, faction)
-    march = _resolve_free_march(state, faction)
-    return [{"free_action": "ambush_then_march", "flag": "card_36",
-             "ambushes": ambushes, "march": march,
-             "executed": bool(ambushes) or bool(march.get("executed"))}]
+    """Resolve the chosen Gallic Faction's two printed Morasses Commands."""
+    from fs_bot.cards.morasses import resolve_morasses
+    return resolve_morasses(state, faction)
 
 
 def _resolve_card66_german_rally_march(state, faction):
@@ -2340,34 +2336,6 @@ def _faction_ambush_sweep(state, attacker, only_faction=None):
             out.append({"region": region, "executed": False, "reason": repr(exc)})
     refresh_all_control(state)
     return out
-
-
-@free_action
-def _resolve_free_march(state, faction):
-    """Execute a *free* March for ``faction`` using its primary March node."""
-    nodes = {
-        "Aedui": ("fs_bot.bots.aedui_bot", "node_a_march"),
-        "Arverni": ("fs_bot.bots.arverni_bot", "node_v_march_threat"),
-        "Belgae": ("fs_bot.bots.belgae_bot", "node_b_march"),
-        "Germans": ("fs_bot.bots.german_bot", "node_g_march_threat"),
-        "Romans": ("fs_bot.bots.roman_bot", "node_r_march"),
-    }
-    spec = nodes.get(faction)
-    if spec is None:
-        return {"executed": False, "command": None, "reason": "no March node"}
-    import importlib
-    try:
-        node = getattr(importlib.import_module(spec[0]), spec[1])
-        bot_action = node(state)
-    except Exception as exc:
-        return {"executed": False, "command": None, "reason": repr(exc)}
-    if not bot_action or bot_action.get("command") != _CMD_MARCH:
-        return {"executed": False,
-                "command": bot_action.get("command") if bot_action else None,
-                "reason": "no free March available"}
-    res = _execute_bot_command(state, faction, bot_action)
-    return res if res is not None else {"executed": False, "command": _CMD_MARCH,
-                                        "reason": "March not executable"}
 
 
 def _german_setup_marches(state, march_limit):
@@ -3412,7 +3380,8 @@ def _execute_rally(state, faction, bot_action):
 
 
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
-                    _full_loss_warbands=0, _double_auxilia=False):
+                    _full_loss_warbands=0, _double_auxilia=False, _ambush_anywhere=False,
+                    _battle_observer=None):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3545,8 +3514,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             continue
         state["resources"][faction] = state["resources"].get(faction, 0) - cost
 
-        is_ambush = (sa == _SA_AMBUSH and region in sa_regions)
-        if is_ambush:
+        is_ambush = sa == _SA_AMBUSH and region in sa_regions
+        if is_ambush and not _ambush_anywhere:
             from fs_bot.commands.sa_ambush import validate_ambush_region
             valid, reason = validate_ambush_region(
                 state, region, faction, defender,
@@ -3593,6 +3562,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 _rl27(state, region, faction, 1)
             # If the absorption emptied the defender, skip the battle.
             if count_pieces(state, region, defender) <= 0:
+                if _battle_observer is not None:
+                    _battle_observer('before', state, region, defender, None)
                 battles.append({"region": region, "defender": defender,
                                 "is_ambush": is_ambush,
                                 "besiege": besiege_target,
@@ -3610,6 +3581,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             if _ica31s(state, "A31", _ES31s):
                 _no_retreat_here = False
 
+        if _battle_observer is not None:
+            _battle_observer('before', state, region, defender, None)
         try:
             if _no_retreat_here:
                 retreat_decl, retreat_region = (False, None)
@@ -3636,6 +3609,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             errors.append({"region": region, "defender": defender,
                            "error": str(exc)})
             continue
+        if _battle_observer is not None:
+            _battle_observer('after', state, region, defender, res)
         # Card 10 shaded (Ballistae): the owning Gallic Faction "after
         # Ambush may remove defending Fort or Citadel" — NP: always,
         # Citadel first (higher value; Q13 tribe sync applied).

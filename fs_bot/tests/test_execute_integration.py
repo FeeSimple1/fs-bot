@@ -3043,6 +3043,16 @@ def test_card36_shaded_gallic_ambush_then_march():
     _clear_region_mobiles(st, R)
     place_piece(st, R, ARVERNI, WARBAND, 6)
     place_piece(st, R, ROMANS, AUXILIA, 2)
+    # This fixture tests the player's unrestricted grant, not NP §8.7.1's
+    # ten-Warband/Leader threat conditions for choosing an Arverni Battle.
+    st["non_player_factions"].remove(ARVERNI)
+    st["decision_agent"] = lambda _s, _f, req: (
+        {"faction": ARVERNI} if req.get("request_type") == "morasses_faction"
+        else {"command": "Battle", "sa": "Ambush", "sa_regions": [R], "regions": [R],
+              "details": {"battle_plan": [{"region": R, "target": ROMANS}]}}
+        if req.get("request_type") == "event_command"
+        else {"decline": True} if req.get("request_type") == "morasses_march"
+        else None)
     refresh_all_control(st)
     res = _execute_event(st, ARVERNI, {"command": "Event", "sa": "No SA",
         "sa_regions": [], "details": {"card_id": 36, "text_preference": EVENT_SHADED}})

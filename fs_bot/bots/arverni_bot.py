@@ -211,6 +211,15 @@ def _can_battle_in_region(state, region, scenario, enemy):
     Returns:
         True if Arverni can Battle this enemy here per §8.7.1 restrictions.
     """
+    if state.get('_morasses_ambush'):
+        from fs_bot.cards.morasses import ambush_prediction
+        from fs_bot.battle.losses import _build_loss_priority
+        pred = ambush_prediction(state, region, ARVERNI, enemy)
+        order = _build_loss_priority(state, region, enemy)
+        legion_loss = any(p[0] == LEGION for p in order[:pred['inflicted']])
+        return (not pred['attacker_leader_lost']
+                and (legion_loss or pred['inflicted'] > pred['taken']))
+
     arverni_wb = count_pieces(state, region, ARVERNI, WARBAND)
     has_verc = get_leader_in_region(state, region, ARVERNI) is not None
 

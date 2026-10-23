@@ -19,9 +19,15 @@ def collect_free_action(state, faction, request, stdin, stdout):
     if request.get("request_type") == "publius_march":
         from fs_bot.cli.publius import collect_publius_march
         return collect_publius_march(state, faction, request, stdin, stdout)
+    if request.get("request_type") in ("morasses_faction", "morasses_march"):
+        from fs_bot.cli.morasses import collect_morasses
+        return collect_morasses(state, faction, request, stdin, stdout)
     if request.get("request_type") == "impetuosity_march":
         from fs_bot.cli.impetuosity import collect_impetuosity_march
         return collect_impetuosity_march(state, faction, request, stdin, stdout)
+    if request.get('morasses_ambush'):
+        from fs_bot.cli.morasses import collect_morasses_battle
+        return collect_morasses_battle(state, faction, request, stdin, stdout)
     actor = request.get("acting_faction", faction)
     message = f"{faction}: Event grants a free action."
     if actor != faction:

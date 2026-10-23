@@ -2898,37 +2898,74 @@ def _resolve_double_aux_battle_card(state, region, flag):
              "result": res}]
 
 
-def _resolve_card6_scout_battle(state):
-    """Card 6 Marcus Antonius (unshaded): "Romans may free Scout, then may free
-    Battle in 1 Region, Auxilia causing twice usual Losses." Roman free Scout
-    (4.2.2) via the Roman Scout node, then a free Battle in the Region chosen
-    by Roman Battle priority (8.8.1), with double Auxilia Losses."""
+def _card6_battle_plan(state):
+    """Retain Card 6's Region priority and Roman-specific defender ranking."""
     from fs_bot.rules_consts import ROMANS
-    out = []
-    # Free Scout (no Resource cost; the Scout node computes the plan).
-    try:
-        scout = _execute_scout(state, ROMANS, {"sa": _SA_SCOUT,
-                                               "sa_regions": [], "details": {}})
-        out.append({"free_action": "scout", "flag": "card_6", "result": scout})
-    except _EXEC_ERRORS as exc:
-        out.append({"free_action": "scout", "flag": "card_6",
-                    "executed": False, "reason": repr(exc)})
-    # Free Battle in 1 Region (double Auxilia), chosen across all playable
-    # Regions by Roman Battle priority.
-    from fs_bot.map.map_data import get_playable_regions
-    allowed = set(get_playable_regions(state["scenario"], state.get("capabilities")))
-    region, _defender = _choose_free_battle(state, ROMANS, allowed)
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    from fs_bot.bots.roman_bot import _rank_battle_targets
+    region, _ = _choose_free_battle(
+        state, ROMANS, get_playable_regions_for_state(state, ROMANS))
     if region is None:
-        out.append({"free_action": "battle", "flag": "card_6",
-                    "executed": False, "reason": "no valid Battle Region"})
-        return out
-    res = _free_double_aux_battle(state, region)
-    if res is None:
-        out.append({"free_action": "battle", "flag": "card_6",
-                    "executed": False, "reason": "no Battle target"})
+        return None
+    targets = _rank_battle_targets(state, region, state['scenario'])
+    if not targets:
+        return None
+    return {"command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
+            "regions": [region], "details": {
+                "battle_plan": [{"region": region, "target": targets[0]}]}}
+
+
+def _resolve_card6_scout_battle(state):
+    """Card 6: Romans independently choose free Scout, then one free Battle.
+
+    The Roman beneficiary chooses even if a different Faction played the
+    Event. NP/default plans retain Roman Scout and Battle priorities (§8.2.3).
+    """
+    from fs_bot.rules_consts import ROMANS
+    from fs_bot.engine.free_actions import consult_free_action, execute_free_action_plan
+    out = []
+    scout_request = {"kind": "free_action", "request_type": "event_sa",
+                     "allowed_sas": [_SA_SCOUT], "free": True}
+    scout_plan = consult_free_action(state, ROMANS, scout_request)
+    if scout_plan == {"decline": True}:
+        out.append({"free_action": "scout", "flag": "card_6",
+                    "executed": False, "declined": True,
+                    "reason": "free Scout declined"})
     else:
+        if scout_plan is None:
+            scout_plan = {"sa": _SA_SCOUT, "sa_regions": [], "details": {}}
+        try:
+            scout = execute_free_action_plan(state, ROMANS, scout_request, scout_plan)
+            out.append({"free_action": "scout", "flag": "card_6", "result": scout})
+        except _EXEC_ERRORS as exc:
+            out.append({"free_action": "scout", "flag": "card_6",
+                        "executed": False, "reason": repr(exc)})
+
+    # Consult after Scout so a human sees its changes before choosing Battle.
+    battle_request = {"kind": "free_action", "request_type": "event_command",
+                      "allowed_commands": [_CMD_BATTLE], "max_regions": 1,
+                      "with_sa": False, "free": True, "double_auxilia": True}
+    battle_plan = consult_free_action(state, ROMANS, battle_request)
+    if battle_plan == {"decline": True}:
         out.append({"free_action": "battle", "flag": "card_6",
-                    "region": region, "result": res})
+                    "executed": False, "declined": True,
+                    "reason": "free Battle declined"})
+        return out
+    if battle_plan is None:
+        battle_plan = _card6_battle_plan(state)
+        if battle_plan is None:
+            out.append({"free_action": "battle", "flag": "card_6",
+                        "executed": False, "declined_no_effect": True,
+                        "reason": "no valid Battle Region"})
+            return out
+    try:
+        # This is a Battle Command: apply capabilities/prefire as well as
+        # Card 6's trusted Auxilia bonus, without granting an accompanying SA.
+        res = execute_free_action_plan(state, ROMANS, battle_request, battle_plan)
+        out.append({"free_action": "battle", "flag": "card_6", "result": res})
+    except _EXEC_ERRORS as exc:
+        out.append({"free_action": "battle", "flag": "card_6",
+                    "executed": False, "reason": repr(exc)})
     return out
 
 
@@ -3678,7 +3715,7 @@ def _execute_rally(state, faction, bot_action):
 
 
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
-                    _full_loss_warbands=0):
+                    _full_loss_warbands=0, _double_auxilia=False):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3894,6 +3931,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 allied_factions=allied_factions,
                 warband_full_loss=warband_full_loss,
                 full_loss_warbands=_full_loss_warbands,
+                double_auxilia=_double_auxilia,
                 ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
                              and faction == _ARV_B and region == PROVINCIA),
             )

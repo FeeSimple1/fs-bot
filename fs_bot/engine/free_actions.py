@@ -90,6 +90,7 @@ def _result_error(result):
 def execute_free_action_plan(state, faction, request, action):
     """Execute a validated concrete plan, retaining its human SA timing."""
     from fs_bot.engine import execute as ex
+    from fs_bot.rules_consts import CMD_BATTLE
     # The request is an engine-owned grant. Responses cannot change its actor.
     faction = request.get('acting_faction', faction)
     with free_action_scope(state, faction), rally_event_scope(
@@ -111,6 +112,10 @@ def execute_free_action_plan(state, faction, request, action):
                 return ex._execute_trade(state, faction,
                                          allowed_regions=request.get('allowed_regions'))
             return handlers[sa](state, faction, action)
+        if request.get('double_auxilia') and action.get('command') == CMD_BATTLE:
+            # Card 6's bonus belongs to the engine-owned grant, never the
+            # submitted plan. Validation executes this same path on a copy.
+            return ex._execute_battle(state, faction, action, _double_auxilia=True)
         return ex._execute_bot_command(state, faction, action,
                                        with_sa=request.get('with_sa', False))
 

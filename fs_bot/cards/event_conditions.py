@@ -12,7 +12,7 @@ from fs_bot import rules_consts as rc
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
-    if not ((card_id in (11, 17, 25, 36) and not shaded)
+    if not ((card_id in (6, 11, 17, 25, 36) and not shaded)
             or (card_id in (21, 45, 58) and shaded)
             or card_id in (26, 62, 64, 'A20', 'A21')
             or (card_id in ('A19', 'A45') and shaded and faction == rc.GERMANS)):
@@ -33,6 +33,27 @@ def _available(trial, card_id, faction, shaded):
     if card_id == 62:
         from fs_bot.cards.war_fleet import np_war_fleet_available
         return np_war_fleet_available(trial, faction)
+    if card_id == 6 and not shaded:
+        # Marcus Antonius grants two independent optional Roman actions.
+        # Existing Auxilia or enemies somewhere on the map do not establish
+        # that either action can affect the board (§8.1.1). Scout may create
+        # a Battle target, so inspect Battle on its resulting board.
+        scout = ex._execute_scout(trial, rc.ROMANS, {
+            'sa': rc.SA_SCOUT, 'sa_regions': [], 'details': {}})
+        if scout.get('errors') or (scout.get('reason')
+                                   and not scout.get('declined_no_effect')):
+            return None  # Preserve diagnostics for a malformed Scout plan.
+        if scout.get('executed'):
+            return True
+        plan = ex._card6_battle_plan(trial)
+        if plan is None:
+            return False
+        from fs_bot.battle.losses import calculate_losses
+        target = plan['details']['battle_plan'][0]
+        # §8.1.1 explicitly excludes a Battle unable to cause enemy Losses.
+        # Predict Losses, not removals after random hard-piece saving rolls.
+        return calculate_losses(trial, target['region'], rc.ROMANS,
+                                target['target'], double_auxilia=True) > 0
     if card_id in (26, 64):
         from fs_bot.cards.ally_events import derive_gobannitio, derive_correus
         from fs_bot.cards.card_effects import execute_card_26, execute_card_64

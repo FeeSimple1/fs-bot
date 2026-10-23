@@ -45,6 +45,35 @@ def test_german_drift_detected_when_every_other_faction_is_within_band(tmp_path,
     assert "Germans" in output and "DRIFT" in output
 
 
+@pytest.mark.parametrize('old_wins,new_wins,exit_code', [
+    (13, 16, 0), (16, 13, 0),  # Exactly +/-15%, including the CI failure.
+    (13, 17, 1), (17, 13, 1),  # +/-20% still exceeds the unchanged band.
+])
+def test_default_drift_band_is_inclusive_at_exact_threshold(
+        tmp_path, monkeypatch, capsys, old_wins, new_wins, exit_code):
+    scenario = rc.SCENARIO_PAX_GALLICA
+    path = _baseline(tmp_path, {f'{scenario}|{seed}':
+        _game(rc.ROMANS if seed <= old_wins else rc.AEDUI)
+        for seed in range(1, 21)})
+    monkeypatch.setattr(balance, 'play_bot_game', lambda scenario, seed:
+        _game(rc.ROMANS if seed <= new_wins else rc.AEDUI))
+    assert balance.main(['--seeds', '1-20', '--scenarios', scenario,
+                         '--baseline', path]) == exit_code
+    assert ('DRIFT' in capsys.readouterr().out) == bool(exit_code)
+
+
+def test_explicit_band_just_below_boundary_still_rejects_exact_drift(tmp_path, monkeypatch):
+    # Exact arithmetic must not silently widen a user's requested band.
+    scenario = rc.SCENARIO_PAX_GALLICA
+    path = _baseline(tmp_path, {f'{scenario}|{seed}':
+        _game(rc.ROMANS if seed <= 13 else rc.AEDUI)
+        for seed in range(1, 21)})
+    monkeypatch.setattr(balance, 'play_bot_game', lambda scenario, seed:
+        _game(rc.ROMANS if seed <= 16 else rc.AEDUI))
+    assert balance.main(['--seeds', '1-20', '--scenarios', scenario,
+                         '--baseline', path, '--band', '0.1499999999999']) == 1
+
+
 @pytest.mark.parametrize("selection,baseline_games", [
     (rc.SCENARIO_PAX_GALLICA,
      {f"{rc.SCENARIO_PAX_GALLICA}|1": _game()}),

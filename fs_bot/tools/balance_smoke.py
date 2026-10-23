@@ -22,6 +22,7 @@ import json
 import os
 import sys
 from collections import Counter
+from fractions import Fraction
 from pathlib import Path
 
 # Pin the hash seed for reproducibility (re-exec once). lod-bot's analogous
@@ -92,7 +93,9 @@ def _rates(games, scenario):
     wins = Counter(v["winner"] for k, v in games.items()
                    if k.startswith(scenario + "|"))
     n = sum(wins.values())
-    return {f: wins.get(f, 0) / n for f in FACTIONS} if n else {}
+    # Compare exact count ratios: 16/20 - 13/20 equals the 15% band,
+    # although subtraction of their binary float rates exceeds 0.15.
+    return {f: Fraction(wins.get(f, 0), n) for f in FACTIONS} if n else {}
 
 
 def main(argv=None) -> int:
@@ -172,12 +175,12 @@ def main(argv=None) -> int:
         for f in FACTIONS:
             d = c[f] - b[f]
             flag = ""
-            if abs(d) > args.band:
+            if abs(d) > Fraction(str(args.band)):
                 flag = f"  <-- DRIFT > ±{args.band:.0%}"
                 drift = True
             if b[f] or c[f]:
-                print(f"  {scen:20s} {f:<8} {b[f]:>5.0%} -> {c[f]:>5.0%} "
-                      f"({d:+.0%}){flag}")
+                print(f"  {scen:20s} {f:<8} {float(b[f]):>5.0%} -> {float(c[f]):>5.0%} "
+                      f"({float(d):+.0%}){flag}")
     if changed:
         print(f"\n{len(changed)} game(s) changed winner: {', '.join(sorted(changed))}")
         print("(Deterministic engine: every change is caused by a code change.)")

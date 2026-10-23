@@ -211,7 +211,9 @@ def _group(state, origin, number=None, leader=True):
 def _preview_move(state, origin, dest, group):
     from fs_bot.commands.march import march_group
     sim = _copy(state)
-    march_group(sim, rc.GERMANS, origin, [dest], group, free=True)
+    # Movement records the selected pieces' visibility on its carried group;
+    # a detached preview must not attach that private ledger to the plan.
+    march_group(sim, rc.GERMANS, origin, [dest], _copy(group), free=True)
     return sim
 
 

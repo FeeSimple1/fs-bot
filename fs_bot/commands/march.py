@@ -547,12 +547,22 @@ def _resolve_one_harassment_loss(state, region, marching_faction,
     # Check if we can remove a soft target from the departing group
     soft_count = departing_pieces.get(soft_target, 0)
     if soft_count > 0:
+        visibility = departing_pieces.get("_march_visibility", {}).get(soft_target)
+        piece_state = None
+        if visibility is not None:
+            # §3.2.2: only departing pieces suffer. Residents may have a
+            # different visibility, so a region-wide removal can hit them.
+            # §8.4.1 takes own losses in reverse piece-priority order.
+            piece_state = next(ps for ps in (SCOUTED, REVEALED, HIDDEN)
+                               if visibility.get(ps, 0))
+            visibility[piece_state] -= 1
         departing_pieces[soft_target] = soft_count - 1
         # Actually remove from the region (the piece is still there
         # since it hasn't moved yet — it's "departing")
         # The piece removal happens in the region it's departing FROM,
         # which is the harassment region.
-        remove_piece(state, region, marching_faction, soft_target, 1)
+        remove_piece(state, region, marching_faction, soft_target, 1,
+                     piece_state=piece_state)
         return (soft_target, 1, None)
 
     # No soft targets — check for hard targets (Leader, Legion)
@@ -745,13 +755,18 @@ def _validate_group_in_region(state, region, faction, group):
 
 
 def _move_flippable_preserving_state(state, from_region, to_region, faction,
-                                     piece_type, count, *, physical_owner=None):
+                                     piece_type, count, *, physical_owner=None,
+                                     visibility=None):
     """Move ``count`` flippable pieces, taking Hidden first, then Revealed,
     then Scouted, so each piece keeps its current flip state across the move
-    (§3.2.2/§3.3.2). The group dict only carries a total per type, so we
-    distribute across the states actually present in the origin.
+    (§3.2.2/§3.3.2). On the first hop, select from the origin. On later
+    hops, ``visibility`` identifies the carried pieces, excluding residents.
+    Return their counts by state for the carried-group ledger.
     """
+    if visibility is not None and sum(visibility.values()) != count:
+        raise MarchError("March group visibility does not match its remaining pieces")
     remaining = count
+    moved = {}
     for ps in (HIDDEN, REVEALED, SCOUTED):
         if remaining <= 0:
             break
@@ -762,15 +777,18 @@ def _move_flippable_preserving_state(state, from_region, to_region, faction,
             avail = (borrowed_count(state, from_region, ps) if physical_owner == GERMANS
                      else state["spaces"][from_region].get("pieces", {}).get(
                          physical_owner, {}).get(ps, {}).get(piece_type, 0))
-        take = min(avail, remaining)
+        take = (visibility.get(ps, 0) if visibility is not None
+                else min(avail, remaining))
         if take > 0:
             move_piece(state, from_region, to_region, faction, piece_type,
                        count=take, piece_state=ps, physical_owner=physical_owner)
             remaining -= take
+            moved[ps] = take
     if remaining > 0:
         # Fall back to the helper's own validation error for the shortfall.
         move_piece(state, from_region, to_region, faction, piece_type,
                    count=remaining, piece_state=HIDDEN)
+    return moved
 
 
 def _move_group_to(state, from_region, to_region, faction, group):
@@ -795,22 +813,29 @@ def _move_group_to(state, from_region, to_region, faction, group):
     # group can legally contain Revealed pieces. Forcing HIDDEN here raised
     # "Only 0 Hidden Warband in <R>, need N" for a group of de-Scouted pieces.
     auxilia_count = group.get(AUXILIA, 0)
+    visibility = group.setdefault("_march_visibility", {})
     if auxilia_count > 0:
-        _move_flippable_preserving_state(
-            state, from_region, to_region, faction, AUXILIA, auxilia_count)
+        visibility[AUXILIA] = _move_flippable_preserving_state(
+            state, from_region, to_region, faction, AUXILIA, auxilia_count,
+            visibility=visibility.get(AUXILIA))
 
     warband_count = group.get(WARBAND, 0)
     if warband_count > 0:
         if "german_warbands" in group:
             from fs_bot.rules_consts import BELGAE
             german = group["german_warbands"]
+            moved = {}
             for owner, n in ((GERMANS, german), (BELGAE, warband_count - german)):
                 if n:
-                    _move_flippable_preserving_state(state, from_region, to_region,
+                    counts = _move_flippable_preserving_state(state, from_region, to_region,
                         faction, WARBAND, n, physical_owner=owner)
+                    for ps, count in counts.items():
+                        moved[ps] = moved.get(ps, 0) + count
+            visibility[WARBAND] = moved
         else:
-            _move_flippable_preserving_state(
-                state, from_region, to_region, faction, WARBAND, warband_count)
+            visibility[WARBAND] = _move_flippable_preserving_state(
+                state, from_region, to_region, faction, WARBAND, warband_count,
+                visibility=visibility.get(WARBAND))
 
 
 # ============================================================================

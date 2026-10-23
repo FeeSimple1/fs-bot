@@ -3758,14 +3758,9 @@ def _mobile_march_group(state, faction, region):
 
 
 def _group_has_pieces(group):
-    from fs_bot.rules_consts import LEADER
-    for k, v in group.items():
-        if k == LEADER:
-            if v is not None:
-                return True
-        elif v:
-            return True
-    return False
+    from fs_bot.rules_consts import LEADER, LEGION, AUXILIA, WARBAND
+    return (group.get(LEADER) is not None
+            or any(group.get(piece, 0) > 0 for piece in (LEGION, AUXILIA, WARBAND)))
 
 
 def _collect_march_moves(state, faction, bot_action):
@@ -4024,17 +4019,31 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
     for i, nxt in enumerate(path):
         if not _group_has_pieces(group):
             break
+        # The extra hop belongs only to pieces still moving with Caesar or
+        # Vercingetorix (§3.2.2/§3.3.2). A Harassment casualty can remove that
+        # Leader after the route was initially validated.
+        if i >= _max_steps_for_group(state, current, faction, group):
+            break
         res = march_group(state, faction, current, [nxt], group)
         current = res.get("final_region", nxt)
         if current != nxt or res.get("stopped_reason"):
             break  # stop in the crossing destination; do not continue/harass
         # Intermediate Region (entered then about to be left) -> Harassment
         # against the carried group only; survivors continue.
-        if i < len(path) - 1:
+        if (i < len(path) - 1
+                and i + 1 < _max_steps_for_group(state, current, faction, group)):
             # Event-owned plans may leave part of this group in a transit
             # Region (3.2.2). Only the continuing pieces suffer Harassment.
             for piece, count in (dropoffs_by_region or {}).get(current, {}).items():
                 group[piece] -= count
+                visibility = group.get("_march_visibility", {}).get(piece)
+                if visibility is not None:
+                    from fs_bot.rules_consts import HIDDEN, REVEALED, SCOUTED
+                    remaining = count
+                    for ps in (HIDDEN, REVEALED, SCOUTED):
+                        dropped = min(remaining, visibility.get(ps, 0))
+                        visibility[ps] = visibility.get(ps, 0) - dropped
+                        remaining -= dropped
             harassers = (harassers_by_region[current]
                          if harassers_by_region is not None and current in harassers_by_region
                          else _np_harassers(state, current, faction, group))

@@ -446,9 +446,8 @@ def resolve_harassment(state, region, marching_faction, departing_pieces,
     if not harassing_factions:
         return result
 
-    result["harassment_occurred"] = True
-
     for harasser_faction, num_hidden_warbands in harassing_factions:
+        result["harassment_occurred"] = True
         # §3.2.2: "For every three Hidden Warbands that the Faction has there
         # (rounded down)"
         num_losses = num_hidden_warbands // HARASSMENT_WARBANDS_PER_LOSS
@@ -463,9 +462,11 @@ def resolve_harassment(state, region, marching_faction, departing_pieces,
             "removals": [],
         }
 
-        for _ in range(num_losses):
+        for loss_index in range(1, num_losses + 1):
             removal = _resolve_one_harassment_loss(
-                state, region, marching_faction, departing_pieces)
+                state, region, marching_faction, departing_pieces,
+                harasser=harasser_faction, loss_index=loss_index,
+                num_losses=num_losses)
             if removal is not None:
                 faction_result["removals"].append(removal)
                 result["total_pieces_removed"] += removal[1]
@@ -511,85 +512,99 @@ def _auto_detect_harassers(state, region, marching_faction):
     return harassers
 
 
-def _resolve_one_harassment_loss(state, region, marching_faction,
-                                 departing_pieces):
-    """Resolve one Harassment loss against the departing group.
+def validate_harassment_response(request, response):
+    """Validate one current Harassment choice without changing board or RNG."""
+    if (not isinstance(response, dict) or set(response) != {"choice"}
+            or response["choice"] not in request["options"]):
+        raise ValueError("Harassment requires a choice from the offered options.")
+    return response
 
-    §3.2.2: "the Romans must either remove one departing Auxilia or—if any
-    Legions or Leader remain with the group—may instead roll a die. If the
-    roll is a 1, 2, or 3 (only), the Romans must remove the Legion or Leader."
 
-    This same mechanism applies to all factions per §3.3.2 Vercingetorix and
-    §3.2.3 Seize Harassment.
+def choose_harassment_loss(state, faction, request):
+    """Offer the printed choice; the first option remains the NP default.
 
-    For the mechanical execution, the loss priority is:
-    - Remove a soft target (Auxilia for Romans, Warband for Gauls) from
-      the departing group.
-    - If no soft targets remain and a hard target (Legion/Leader) is present,
-      roll for it.
-
-    Args:
-        state: Game state dict.
-        region: Region of harassment.
-        marching_faction: Faction taking the loss.
-        departing_pieces: Mutable dict of pieces still in the group.
-
-    Returns:
-        Tuple of (piece_type, count_removed, die_roll_or_None),
-        or None if no pieces to remove.
+    A roll and the choice of which hard piece to remove are separate steps
+    (§3.2.2). In particular, the player does not nominate a hard casualty
+    until a failed roll actually requires one. No choice consumes game RNG.
     """
-    # Determine soft target type for the marching faction
-    if marching_faction == ROMANS:
-        soft_target = AUXILIA
-    else:
-        soft_target = WARBAND
+    from fs_bot.engine.agent import HARASSMENT_LOSS, consult_agent
+    from fs_bot.engine.game_engine import get_sop_factions
+    options = request["options"]
+    if (len(options) == 1 or faction not in get_sop_factions(state)
+            or faction in state.get("non_player_factions", set())):
+        return options[0]
+    response = consult_agent(state, faction, dict(request, kind=HARASSMENT_LOSS))
+    if response is None or response == {"use_default": True}:
+        return options[0]
+    return validate_harassment_response(request, response)["choice"]
 
-    # Check if we can remove a soft target from the departing group
-    soft_count = departing_pieces.get(soft_target, 0)
-    if soft_count > 0:
-        visibility = departing_pieces.get("_march_visibility", {}).get(soft_target)
-        piece_state = None
-        if visibility is not None:
-            # §3.2.2: only departing pieces suffer. Residents may have a
-            # different visibility, so a region-wide removal can hit them.
-            # §8.4.1 takes own losses in reverse piece-priority order.
-            piece_state = next(ps for ps in (SCOUTED, REVEALED, HIDDEN)
-                               if visibility.get(ps, 0))
-            visibility[piece_state] -= 1
-        departing_pieces[soft_target] = soft_count - 1
-        # Actually remove from the region (the piece is still there
-        # since it hasn't moved yet — it's "departing")
-        # The piece removal happens in the region it's departing FROM,
-        # which is the harassment region.
+
+def choose_harassment_piece_state(state, region, faction, piece_type,
+                                   context, *, available_by_state=None):
+    """Choose the actual soft piece; NP losses use §8.4.1 reverse priority."""
+    counts = (available_by_state if available_by_state is not None else
+              {visibility: count_pieces_by_state(state, region, faction,
+                                                piece_type, visibility)
+               for visibility in (SCOUTED, REVEALED, HIDDEN)})
+    options = [visibility for visibility in (SCOUTED, REVEALED, HIDDEN)
+               if counts.get(visibility, 0) > 0]
+    if not options:
+        raise MarchError("No offered Harassment soft piece remains")
+    return choose_harassment_loss(state, faction, dict(
+        context, phase="piece_state", options=options, piece_type=piece_type))
+
+
+def _resolve_one_harassment_loss(state, region, marching_faction,
+                                 departing_pieces, *, harasser=None,
+                                 loss_index=1, num_losses=1):
+    """Resolve a player's choice or §8.4.1 default for one departing Loss.
+
+    §3.2.2 permits removing a departing Auxilia or rolling even while Auxilia
+    remain. On 1–3, choose a departing Legion or Leader to remove. §3.3.2
+    applies the same procedure to Vercingetorix's Warbands and Leader.
+    Only this function updates the carried group as well as the board.
+    """
+    soft_target = AUXILIA if marching_faction == ROMANS else WARBAND
+    hard_targets = []
+    if departing_pieces.get(LEGION, 0) > 0:
+        hard_targets.append(LEGION)
+    if departing_pieces.get(LEADER) is not None:
+        hard_targets.append(LEADER)
+    options = ([soft_target] if departing_pieces.get(soft_target, 0) > 0 else [])
+    if hard_targets:
+        options.append("roll")
+    if not options:
+        return None
+    from copy import deepcopy
+    context = {"region": region, "harasser": harasser,
+               "loss_index": loss_index, "num_losses": num_losses,
+               "departing_pieces": deepcopy(departing_pieces)}
+    choice = choose_harassment_loss(state, marching_faction, dict(
+        context, phase="absorb", options=options))
+    if choice == soft_target:
+        carried = departing_pieces.get("_march_visibility", {}).get(soft_target)
+        visibility = choose_harassment_piece_state(
+            state, region, marching_faction, soft_target, context,
+            available_by_state=carried)
+        departing_pieces[soft_target] -= 1
+        if carried is not None:
+            carried[visibility] -= 1
         remove_piece(state, region, marching_faction, soft_target, 1,
-                     piece_state=piece_state)
+                     piece_state=visibility)
         return (soft_target, 1, None)
 
-    # No soft targets — check for hard targets (Leader, Legion)
-    has_legion = departing_pieces.get(LEGION, 0) > 0
-    has_leader = departing_pieces.get(LEADER) is not None
-
-    if has_legion or has_leader:
-        # Roll for the hard target
-        roll = state["rng"].randint(DIE_MIN, DIE_MAX)
-        if roll <= LOSS_ROLL_THRESHOLD:
-            # Remove: prefer Legion over Leader
-            if has_legion:
-                departing_pieces[LEGION] = departing_pieces[LEGION] - 1
-                remove_piece(state, region, marching_faction, LEGION, 1,
-                             to_fallen=True)
-                return (LEGION, 1, roll)
-            elif has_leader:
-                departing_pieces[LEADER] = None
-                remove_piece(state, region, marching_faction, LEADER, 1)
-                return (LEADER, 1, roll)
-        else:
-            # Survived — loss absorbed without removing
-            return (LEADER if has_leader and not has_legion else LEGION,
-                    0, roll)
-
-    # No pieces left to take losses
-    return None
+    roll = state["rng"].randint(DIE_MIN, DIE_MAX)
+    if roll > LOSS_ROLL_THRESHOLD:
+        return (hard_targets[0], 0, roll)
+    target = choose_harassment_loss(state, marching_faction, dict(
+        context, phase="remove", options=hard_targets, roll=roll))
+    if target == LEADER:
+        departing_pieces[LEADER] = None
+    else:
+        departing_pieces[target] -= 1
+    remove_piece(state, region, marching_faction, target, 1,
+                 to_fallen=(target == LEGION))
+    return (target, 1, roll)
 
 
 # ============================================================================

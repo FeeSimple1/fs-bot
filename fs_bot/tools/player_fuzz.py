@@ -77,7 +77,7 @@ from fs_bot.state.setup import setup_scenario
 from fs_bot.engine.game_engine import (
     run_game, ACTION_EVENT, ACTION_PASS, get_sop_factions,
 )
-from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT
+from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
 from fs_bot.bots.bot_dispatch import dispatch_bot_turn
 from fs_bot.cli.dispatcher import _translate_bot_action
 from fs_bot.agents.heuristic import RandomPlanPolicy
@@ -106,6 +106,7 @@ def make_random_reactive(seats, rng):
     LOSS_ORDER: a random permutation; 25% of the time a random truncation
         (exercises the engine's fill-in default for unlisted pieces).
     AGREEMENT: coin flip (exercises both branches of every negotiation).
+    HARASSMENT_LOSS: uniformly choose among the current legal options.
     """
     def reactive(state, faction, request):
         if faction not in seats:
@@ -127,6 +128,8 @@ def make_random_reactive(seats, rng):
             rng.shuffle(pieces)
             maximum = min(request["max_removals"], len(pieces))
             return {"targets": pieces[:rng.randrange(1, maximum + 1)]}
+        if kind == HARASSMENT_LOSS:
+            return {"choice": rng.choice(request["options"])}
         if kind == RETREAT:
             legal = list(request.get("legal_regions") or [])
             choices = [None] + legal

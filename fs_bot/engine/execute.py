@@ -4046,7 +4046,8 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
                         remaining -= dropped
             harassers = (harassers_by_region[current]
                          if harassers_by_region is not None and current in harassers_by_region
-                         else _np_harassers(state, current, faction, group))
+                         else _iter_harassers(state, current, faction, group,
+                                              stop_when_empty=True))
             if harassers:
                 from fs_bot.commands.march import resolve_harassment
                 # This mechanic mutates the carried group as it removes
@@ -4865,33 +4866,54 @@ def _execute_rampage(state, faction, bot_action):
 
 
 def _np_harassers(state, region, target_faction, group):
+    """Collect advance agreements/NP estimates; live losses use the iterator."""
+    return list(_iter_harassers(state, region, target_faction, group))
+
+
+def _iter_harassers(state, region, target_faction, group, *, stop_when_empty=False):
     """Factions that opt to Harass per §8.4.2 (+ §3.4.5 / A3.2.2).
 
     §8.4.2: Belgae and Arverni Harass only Roman March and Seize; Aedui and
     Romans Harass only Vercingetorix March. §3.4.5: Germans always Harass
     (base). A3.2.2: Arverni always Harass (Ariovistus). A Faction can only
-    Harass where it has at least 3 Hidden Warbands (§3.2.2).
+    Harass where it has at least 3 Hidden Warbands (§3.2.2), or Roman
+    Hidden Auxilia against Vercingetorix (§3.3.2).
 
     Args:
         target_faction: The faction being Harassed (the marcher/seizer).
         group: For a March, the moving group dict (to detect Vercingetorix);
             None for Seize.
 
-    Returns:
-        List of (faction, hidden_warbands), in FACTIONS order.
+    Yield each announcement immediately before that Faction's losses so
+    later human harassers see earlier casualties (§3.2.2 / §3.2.3).
     """
     from fs_bot.rules_consts import (
         FACTIONS, ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS, VERCINGETORIX,
-        LEADER, WARBAND, HIDDEN, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+        LEADER, WARBAND, AUXILIA, LEGION, ALLY, FORT, HIDDEN,
+        BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     )
+    from fs_bot.engine.game_engine import get_sop_factions, get_faction_order
     scenario = state["scenario"]
-    has_verc = bool(group) and group.get(LEADER) == VERCINGETORIX
-
-    harassers = []
-    for f in FACTIONS:
+    has_verc = (scenario in BASE_SCENARIOS and target_faction == ARVERNI
+                and bool(group) and group.get(LEADER) == VERCINGETORIX)
+    order = FACTIONS
+    if scenario in BASE_SCENARIOS and state.get("current_card") is not None:
+        card_order = get_faction_order(state)
+        if card_order:
+            order = (*card_order, GERMANS)
+    # Expansion automatic Arverni ordering is not specified by the supplied
+    # sources; retain its existing order pending the recorded source question.
+    for f in order:
+        if stop_when_empty:
+            if group is not None and not _group_has_pieces(group):
+                break
+            if group is None and not any(count_pieces(state, region, target_faction, p)
+                                         for p in (AUXILIA, ALLY, LEGION, LEADER, FORT)):
+                break
         if f == target_faction:
             continue
-        hwb = _count_state(state, region, f, WARBAND, HIDDEN)
+        harassing_piece = AUXILIA if f == ROMANS and has_verc else WARBAND
+        hwb = _count_state(state, region, f, harassing_piece, HIDDEN)
         if hwb < _HWB_PER_LOSS:
             continue
         # §3.2.2: ANY Faction with 3+ Hidden Warbands MAY opt to Harass —
@@ -4899,59 +4921,57 @@ def _np_harassers(state, region, target_faction, group):
         # Faction decides for itself via the decision-agent hook
         # (AGREEMENT / "harassment"); if it defers (or no agent), fall
         # back to the NP table so the all-bot harness is unchanged.
-        if f not in state.get("non_player_factions", set()):
+        if (f in get_sop_factions(state)
+                and f not in state.get("non_player_factions", set())):
             from fs_bot.engine.agent import consult_agent, AGREEMENT
-            from fs_bot.rules_consts import VERCINGETORIX as _VERC
             resp = consult_agent(state, f, {
                 "kind": AGREEMENT, "request_type": "harassment",
                 "requesting_faction": target_faction,
                 "context": {"region": region, "hidden_warbands": hwb,
+                            "harassing_piece": harassing_piece,
                             "vercingetorix": has_verc}})
             if resp is not None:
                 if resp:
-                    harassers.append((f, hwb))
+                    yield f, hwb
                 continue
         opt = False
         if f == GERMANS and scenario in BASE_SCENARIOS:
             opt = True  # §3.4.5
         elif f == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
             opt = True  # A3.2.2
-        elif f in (BELGAE, ARVERNI) and target_faction == ROMANS:
-            opt = True  # §8.4.2: harass Roman March/Seize
+        elif f in (BELGAE, ARVERNI, GERMANS) and target_faction == ROMANS:
+            opt = True  # §8.4.2 / A8.4: harass Roman March/Seize
         elif f in (AEDUI, ROMANS) and has_verc:
             opt = True  # §8.4.2: harass Vercingetorix March
         if opt:
-            harassers.append((f, hwb))
-    return harassers
+            yield f, hwb
 
 
 def _resolve_seize_harassment(state, region):
-    """Harassment against the seizing Romans in a Region (§3.2.3 / §8.4.2).
-
-    Each opting Faction inflicts one Loss per 3 of its Hidden Warbands. The
-    Romans take each Loss on their least valuable piece first — Auxilia, then
-    Roman Ally — or, with only hard targets (Legion/Leader/Fort), roll a die.
-    """
-    from fs_bot.rules_consts import ROMANS, AUXILIA, ALLY, LEGION, FORT
+    """Roman choices or the printed NP loss priority (§3.2.3 / §8.4.1)."""
+    from fs_bot.commands.march import choose_harassment_loss
+    from fs_bot.rules_consts import ROMANS, AUXILIA, ALLY, LEGION, FORT, LEADER, CMD_SEIZE
     losses_applied = []
-    for faction, hwb in _np_harassers(state, region, ROMANS, None):
-        for _ in range(hwb // _HWB_PER_LOSS):
-            if count_pieces(state, region, ROMANS, AUXILIA) > 0:
-                choice = "auxilia"
-            elif count_pieces(state, region, ROMANS, ALLY) > 0:
-                choice = "ally"
-            elif (count_pieces(state, region, ROMANS, LEGION) > 0
-                  or get_leader_in_region(state, region, ROMANS) is not None
-                  or count_pieces(state, region, ROMANS, FORT) > 0):
-                choice = "roll"
-            else:
-                break  # nothing left for this harasser to remove
-            try:
-                res = _seize_harass_loss(state, region, choice)
-                losses_applied.append({"by": faction, "choice": choice,
-                                       "removed": res.get("removed")})
-            except _EXEC_ERRORS:
+    for faction, hwb in _iter_harassers(state, region, ROMANS, None,
+                                      stop_when_empty=True):
+        num_losses = hwb // _HWB_PER_LOSS
+        for loss_index in range(1, num_losses + 1):
+            pieces = {p: count_pieces(state, region, ROMANS, p)
+                      for p in (AUXILIA, ALLY, FORT, LEGION, LEADER)}
+            options = [p for p in (AUXILIA, ALLY) if pieces[p]]
+            if any(pieces[p] for p in (FORT, LEGION, LEADER)):
+                options.append("roll")
+            if not options:
                 break
+            context = {"region": region, "command": CMD_SEIZE,
+                       "harasser": faction, "loss_index": loss_index,
+                       "num_losses": num_losses, "pieces": pieces}
+            chosen = choose_harassment_loss(state, ROMANS, dict(
+                context, phase="absorb", options=options))
+            choice = {AUXILIA: "auxilia", ALLY: "ally"}.get(chosen, chosen)
+            res = _seize_harass_loss(state, region, choice, request_context=context)
+            losses_applied.append({"by": faction, "choice": choice,
+                                   "removed": res.get("removed")})
     return losses_applied
 
 

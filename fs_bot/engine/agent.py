@@ -39,6 +39,15 @@ Request kinds
   response: an ordered subset/permutation of ``pieces`` (the loss priority), or
   ``None`` to defer. Entries not currently present are skipped safely.
 
+- ``HARASSMENT_LOSS`` — March or Seize Harassment choice (§3.2.2,
+  §3.2.3, §3.3.2). Request carries region, harasser, loss_index, num_losses,
+  departing_pieces (March) or pieces (Seize), phase and options.
+  In phase "absorb", choose an offered soft piece type or "roll"; on a failed die roll, phase "remove" offers
+  the remaining hard piece types and the roll. Seize phase "ally" offers the
+  physical Allied Tribes when choosing which Ally to remove. Phase
+  "piece_state" offers the available visibility states for a soft casualty.
+  Response is {"choice": option}, {"use_default": True}, or None to use the first option (§8.4.1 priority).
+
 - ``AGREEMENT`` — an inter-Faction agreement or opt-in (§1.5.2/§3.2.2).
   request: ``{"kind": AGREEMENT, "request_type", "requesting_faction",
               "context": {...}}``
@@ -65,6 +74,7 @@ for a Rampage target's remove-vs-Retreat choice (§4.5.2): respond
 RETREAT = "retreat"
 LOSS_ORDER = "loss_order"
 AGREEMENT = "agreement"
+HARASSMENT_LOSS = "harassment_loss"
 
 
 def consult_agent(state, faction, request):

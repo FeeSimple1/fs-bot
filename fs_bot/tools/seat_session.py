@@ -11,7 +11,7 @@ import hashlib
 import json
 import sys
 
-from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT
+from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
 from fs_bot.engine.game_engine import ActionRejected, ACTION_PASS
 from fs_bot.state.serialize import encode, decode
 
@@ -47,6 +47,9 @@ def validate_response(state, request, response):
                 response.get("player_action"), dict):
             raise ValueError("This action needs a player_action plan.")
         return response
+    if kind == HARASSMENT_LOSS:
+        from fs_bot.commands.march import validate_harassment_response
+        return validate_harassment_response(request, response)
     if kind == RETREAT:
         if not isinstance(response, dict) or type(response.get("retreat")) is not bool:
             raise ValueError("Retreat requires {retreat: true/false, region: ...}.")

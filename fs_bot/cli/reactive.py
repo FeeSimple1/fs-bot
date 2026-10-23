@@ -3,6 +3,7 @@ them during ANOTHER action's resolution (engine/agent.py request kinds):
 
   RETREAT    -- the defender's Retreat choice (Sec.3.2.4/Sec.8.4.3)
   LOSS_ORDER -- which pieces absorb Battle Losses, in what order (Sec.3.2.4)
+  HARASSMENT_LOSS -- choose casualties or a hard-piece roll (Sec.3.2.2–3)
   AGREEMENT  -- inter-Faction agreements (Sec.1.5.2): Supply Line, Retreat into
                your Control, Quarters, Harassment, Trade
 
@@ -11,8 +12,9 @@ None (defer to the engine's defaults) for bot factions and unknown request
 kinds. Input exhaustion interrupts the action so it can be saved and resumed.
 """
 
-from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT
+from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
+from fs_bot.rules_consts import WARBAND
 
 
 def _fmt_piece(piece):
@@ -48,6 +50,30 @@ def make_cli_reactive(human_factions, stdin, stdout):
             if kind == "quarters_plan":
                 from fs_bot.cli.quarters import collect_quarters_plan
                 return collect_quarters_plan(state, faction, request, stdin, stdout)
+            if kind == HARASSMENT_LOSS:
+                phase = request["phase"]
+                stdout.write(
+                    f"\n{faction}: {request.get('harasser')} Harassment in "
+                    f"{request['region']}, Loss {request['loss_index']} of "
+                    f"{request['num_losses']}.\n")
+                if phase == "remove":
+                    stdout.write(f"Die roll {request['roll']}: remove a hard piece.\n")
+                elif phase == "ally":
+                    stdout.write("Choose the Roman Allied Tribe to remove.\n")
+                elif phase == "piece_state":
+                    stdout.write(f"Choose which {request['piece_type']} to remove.\n")
+                else:
+                    stdout.write("Remove a soft piece, or roll: on 1–3 remove a "
+                                 "hard piece; on 4–6 lose nothing.\n")
+                options = [("Use bot default", None)]
+                for option in request["options"]:
+                    label = ("Roll for a hard piece" if option == "roll"
+                             else f"Remove {option}")
+                    if phase == "piece_state":
+                        label = f"Remove {option} {request['piece_type']}"
+                    options.append((label, option))
+                choice = prompt_choice(stdin, stdout, "Harassment Loss?", options)
+                return {"use_default": True} if choice is None else {"choice": choice}
             if kind == RETREAT:
                 legal = list(request.get("legal_regions") or [])
                 ctx = request.get("context") or {}
@@ -117,7 +143,7 @@ def make_cli_reactive(human_factions, stdin, stdout):
                     return prompt_yes_no(
                         stdin, stdout,
                         f"\n{faction}: your {ctx.get('hidden_warbands')} "
-                        f"Hidden Warbands may Harass {rf}'s "
+                        f"Hidden {ctx.get('harassing_piece', WARBAND)} may Harass {rf}'s "
                         f"{'Vercingetorix ' if ctx.get('vercingetorix') else ''}"
                         f"group{where} (1 Loss per 3). Harass?",
                         default=False)

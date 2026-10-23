@@ -783,7 +783,7 @@ def count_allied_discs(state, faction):
                    faction, CITADEL)))
 
 
-def clear_allied_tribe(state, region, faction, removed_piece_type):
+def clear_allied_tribe(state, region, faction, removed_piece_type, *, tribe=None):
     """Clear the tribes-dict entry matching an ALLY/CITADEL piece removal.
 
     ``state["tribes"][tribe]["allied_faction"]`` is authoritative for victory
@@ -796,7 +796,8 @@ def clear_allied_tribe(state, region, faction, removed_piece_type):
     For a CITADEL removal the city tribe holding it is cleared; for an ALLY
     removal a non-Citadel-holding allied tribe is preferred (a tribe whose
     Citadel is on the map has no Ally disc — §1.4.2). Selection among equal
-    candidates is deterministic (sorted) for replay stability.
+    candidates is deterministic (sorted) for replay stability. If ``tribe``
+    is supplied, clear only that explicitly selected physical Tribe.
 
     Returns:
         The tribe name cleared, or None if no matching tribe was found.
@@ -806,7 +807,10 @@ def clear_allied_tribe(state, region, faction, removed_piece_type):
         return None
     tribes = state.get("tribes", {})
     candidates = []
+    selected_tribe = tribe
     for tribe in sorted(tribes):
+        if selected_tribe is not None and tribe != selected_tribe:
+            continue
         info = tribes[tribe]
         if info.get("allied_faction") != faction:
             continue

@@ -19,7 +19,7 @@ from fs_bot.rules_consts import (
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL,
-    PROVINCIA,
+    PROVINCIA, CMD_SEIZE, TRIBE_TO_CITY, TRIBE_REMI,
     # Piece states
     HIDDEN,
     # Costs
@@ -41,7 +41,7 @@ from fs_bot.rules_consts import (
 
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, remove_piece,
-    clear_allied_tribe,
+    clear_allied_tribe, tribe_has_ally_disc,
     PieceError,
 )
 from fs_bot.board.control import (
@@ -274,7 +274,7 @@ def get_harassment_factions(state, region):
     return result
 
 
-def execute_harassment_loss(state, region, loss_choice):
+def execute_harassment_loss(state, region, loss_choice, *, request_context=None):
     """Execute a single Harassment loss on Roman pieces.
 
     Per §3.2.2/§3.2.3: Romans select and remove one Auxilia or
@@ -295,6 +295,10 @@ def execute_harassment_loss(state, region, loss_choice):
             "removed": piece_type removed (or None if roll survived)
             "roll": die roll value (or None if no roll)
     """
+    from fs_bot.commands.march import choose_harassment_loss, choose_harassment_piece_state
+    context = {"region": region, "harasser": None, "loss_index": 1,
+               "num_losses": 1, "command": CMD_SEIZE}
+    context.update(request_context or {})
     result = {"choice": loss_choice, "removed": None, "roll": None}
 
     if loss_choice == "auxilia":
@@ -303,7 +307,10 @@ def execute_harassment_loss(state, region, loss_choice):
             raise CommandError(
                 f"No Roman Auxilia in {region} to remove"
             )
-        remove_piece(state, region, ROMANS, AUXILIA, count=1)
+        visibility = choose_harassment_piece_state(
+            state, region, ROMANS, AUXILIA, context)
+        remove_piece(state, region, ROMANS, AUXILIA, count=1,
+                     piece_state=visibility)
         result["removed"] = AUXILIA
 
     elif loss_choice == "ally":
@@ -312,9 +319,15 @@ def execute_harassment_loss(state, region, loss_choice):
             raise CommandError(
                 f"No Roman Allies in {region} to remove"
             )
+        tribes = sorted((tribe for tribe in state.get("tribes", {})
+                         if tribe_has_ally_disc(state, region, tribe, ROMANS)),
+                        key=lambda tribe: (tribe in TRIBE_TO_CITY or tribe == TRIBE_REMI,
+                                           tribe))
+        tribe = (choose_harassment_loss(state, ROMANS, dict(
+            context, phase="ally", options=tribes)) if tribes else None)
         remove_piece(state, region, ROMANS, ALLY, count=1)
-        # Keep state["tribes"] in sync with the removed Roman Ally.
-        clear_allied_tribe(state, region, ROMANS, ALLY)
+        # Keep the selected physical Ally and its Tribe record in sync.
+        clear_allied_tribe(state, region, ROMANS, ALLY, tribe=tribe)
         result["removed"] = ALLY
 
     elif loss_choice == "roll":
@@ -331,25 +344,17 @@ def execute_harassment_loss(state, region, loss_choice):
         result["roll"] = roll
 
         if roll <= LOSS_ROLL_THRESHOLD:
-            # Must remove a Legion, Leader, or Fort — §3.2.3. The Romans keep
-            # Caesar and combat power if able: remove a (non-Provincia) Fort
-            # first, then a Legion (to Fallen, §1.4.1), then the Leader last.
-            # The Provincia Fort is permanent and cannot be removed (§1.4.2).
-            if has_fort and region != PROVINCIA:
-                remove_hard_target(state, region, FORT)
-                result["removed"] = FORT
-            elif has_legion:
-                remove_hard_target(state, region, LEGION)
-                result["removed"] = LEGION
-            elif has_leader:
-                remove_hard_target(state, region, LEADER)
-                result["removed"] = LEADER
-            else:
-                # Only the permanent Provincia Fort remains — nothing to remove.
-                result["removed"] = None
-        else:
-            # Roll survived — no piece removed
-            result["removed"] = None
+            # §1.4.2's permanent Provincia Fort is never a casualty. Preserve
+            # the NP Fort/Legion/Leader priority while offering all legal
+            # hard targets to the human after the failed roll (§3.2.3).
+            targets = ([FORT] if has_fort and region != PROVINCIA else [])
+            targets += ([LEGION] if has_legion else [])
+            targets += ([LEADER] if has_leader else [])
+            if targets:
+                target = choose_harassment_loss(state, ROMANS, dict(
+                    context, phase="remove", options=targets, roll=roll))
+                remove_hard_target(state, region, target)
+                result["removed"] = target
 
     else:
         raise CommandError(f"Unknown loss choice: {loss_choice}")

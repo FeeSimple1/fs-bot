@@ -76,6 +76,12 @@ def validate_response(state, request, response):
         from fs_bot.engine.raid_intimidate import validate_response as validate_raid
         validate_raid(state, request, response)
         return response
+    if kind == "kinship":
+        from fs_bot.cards.kinship import validate_response as validate_kinship
+        error = validate_kinship(state, response)
+        if error:
+            raise ValueError(error)
+        return response
     if kind == "free_action":
         from fs_bot.engine.free_actions import validate_free_action_response
         error = validate_free_action_response(state, request["faction"], request, response)

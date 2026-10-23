@@ -82,7 +82,8 @@ def _physical_piece_view(state):
     state = physical_view(state)
     from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
     from fs_bot.battle.combined import COMBINED_KEY
-    contexts = (BORROW_KEY, FREE_FORCE_KEY, COMBINED_KEY)
+    from fs_bot.battle.excluded_leader import EXCLUDED_LEADER_KEY
+    contexts = (BORROW_KEY, FREE_FORCE_KEY, COMBINED_KEY, EXCLUDED_LEADER_KEY)
     if not any(key in state for key in contexts):
         return state
     return {key: value for key, value in state.items() if key not in contexts}
@@ -129,6 +130,11 @@ def _active_force_context(state):
         lines.append(f"  Morbihan: {ARVERNI} Warbands fight {ROMANS} in "
                      f"{projection['region']} as if there; physical origins: "
                      + '; '.join(origins) + '.')
+    from fs_bot.battle.excluded_leader import EXCLUDED_LEADER_KEY
+    exclusion = state.get(EXCLUDED_LEADER_KEY)
+    if exclusion:
+        lines.append(f"  Kinship: {exclusion['faction']} Battle without their Leader "
+                     f"in {', '.join(exclusion['regions'])}; the Leader remains on the board.")
     if not lines:
         return []
     return ["ACTIVE FORCES (board counts show physical owners)", *lines]

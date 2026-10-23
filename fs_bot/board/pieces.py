@@ -187,6 +187,8 @@ def get_effective_faction_pieces(state, region, faction):
     from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
     from fs_bot.rules_consts import BELGAE
     raw = state["spaces"].get(region, {}).get("pieces", {}).get(faction, {})
+    from fs_bot.battle.excluded_leader import effective_pieces as leader_view
+    raw = leader_view(state, region, faction, raw)
     from fs_bot.battle.combined import effective_pieces
     combined = effective_pieces(state, region, faction, raw)
     if combined is not None:

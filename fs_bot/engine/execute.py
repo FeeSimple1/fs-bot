@@ -1401,39 +1401,9 @@ def _resolve_card_A29_raid(state):
 
 
 def _resolve_card_A65_battle(state, faction):
-    """Card A65 Kinship (unshaded): Belgae (without Leader) Battle Germans, or
-    Germans (without Leader) Battle Belgae — in the Region where the acting
-    Faction can hit the most of the opponent's pieces."""
-    from fs_bot.rules_consts import BELGAE, GERMANS, WARBAND, AUXILIA, LEGION
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.map.map_data import get_playable_regions
-    if faction not in (BELGAE, GERMANS):
-        return [{"free_action": "battle", "flag": "card_A65", "executed": False,
-                 "reason": "only Belgae or Germans Battle here"}]
-    opp = GERMANS if faction == BELGAE else BELGAE
-    best = None
-    for R in get_playable_regions(state["scenario"], state.get("capabilities")):
-        if not _attacker_has_force(state, R, faction):
-            continue
-        mob = (count_pieces(state, R, opp, WARBAND)
-               + count_pieces(state, R, opp, AUXILIA)
-               + count_pieces(state, R, opp, LEGION))
-        if count_pieces(state, R, opp) > 0 and (best is None or mob > best[1]):
-            best = (R, mob)
-    if best is None:
-        return [{"free_action": "battle", "flag": "card_A65", "executed": False,
-                 "reason": "no opponent to Battle"}]
-    R = best[0]
-    from fs_bot.battle.resolve import resolve_battle
-    rd, rr = _decide_defender_retreat(state, R, faction, opp, False)
-    try:
-        res = resolve_battle(state, R, faction, opp, no_attacker_leader=True,
-                             retreat_declaration=rd, retreat_region=rr)
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "battle", "flag": "card_A65",
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "battle", "flag": "card_A65", "region": R,
-             "defender": opp, "result": res}]
+    """A65: the executing player chooses a side and all Battle Regions."""
+    from fs_bot.cards.kinship import resolve_kinship
+    return resolve_kinship(state, faction)
 
 
 def _resolve_card_A69_ambush(state):

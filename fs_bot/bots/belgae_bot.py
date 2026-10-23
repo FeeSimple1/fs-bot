@@ -155,7 +155,7 @@ def _count_belgae_allies_citadels_on_map(state):
     return count_faction_allies_and_citadels(state, BELGAE)
 
 
-def _get_non_german_enemies(scenario):
+def _get_non_german_enemies(scenario, state=None):
     """Get non-German enemy factions for B1 threat condition.
 
     Per §8.5.1: "any non-Germanic enemy (Romans, Arverni, or Aedui)".
@@ -170,9 +170,12 @@ def _get_non_german_enemies(scenario):
     """
     if scenario in ARIOVISTUS_SCENARIOS:
         # A8.5.1: consider German enemies too
-        return (ROMANS, ARVERNI, AEDUI, GERMANS)
-    # Base game: non-German enemies only — §8.5.1
-    return (ROMANS, ARVERNI, AEDUI)
+        enemies = (ROMANS, ARVERNI, AEDUI, GERMANS)
+    else:
+        # Base game: non-German enemies only — §8.5.1
+        enemies = (ROMANS, ARVERNI, AEDUI)
+    allowed = (state or {}).get("_command_target_factions")
+    return tuple(f for f in enemies if allowed is None or f in allowed)
 
 
 def _has_belgae_threat(state, region, scenario):
@@ -199,7 +202,7 @@ def _has_belgae_threat(state, region, scenario):
         return False
 
     # Check enemies for Ally, Citadel, Legion, or ≥4 pieces
-    enemies = _get_non_german_enemies(scenario)
+    enemies = _get_non_german_enemies(scenario, state)
     for enemy in enemies:
         if count_pieces(state, region, enemy, ALLY) > 0:
             return True
@@ -781,7 +784,7 @@ def node_b_event(state):
     )
 
 
-def node_b_battle(state):
+def node_b_battle(state, *, threat_regions=None):
     """B_BATTLE: Battle process.
 
     Per §8.5.1: Battle only where Belgic Losses less than enemy's AND
@@ -800,7 +803,8 @@ def node_b_battle(state):
         return node_b_march_threat(state)
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
-    threat_regions = _get_threat_regions(state, scenario)
+    if threat_regions is None:
+        threat_regions = _get_threat_regions(state, scenario)
 
     if not threat_regions:
         return node_b_march_threat(state)
@@ -810,7 +814,7 @@ def node_b_battle(state):
     if ambiorix_region and ambiorix_region in threat_regions:
         # Check if Ambiorix can Battle here
         can_ambiorix_battle = False
-        enemies = _get_non_german_enemies(scenario)
+        enemies = _get_non_german_enemies(scenario, state)
         for enemy in enemies:
             if count_pieces(state, ambiorix_region, enemy) == 0:
                 continue
@@ -829,7 +833,7 @@ def node_b_battle(state):
     # Step 3a: Ambiorix versus enemy with fewer mobile forces — §8.5.1
     if ambiorix_region and ambiorix_region in threat_regions:
         belgae_mobile = count_mobile_pieces(state, ambiorix_region, BELGAE)
-        enemies = _get_non_german_enemies(scenario)
+        enemies = _get_non_german_enemies(scenario, state)
         # Enemies with fewer mobile pieces than Belgae that can be Battled;
         # §8.3.4 random tie-break among equal candidates.
         cands = [e for e in enemies
@@ -852,7 +856,7 @@ def node_b_battle(state):
     # (or all enemies in Ariovistus per A8.5.1)
     playable = command_region_candidates(
         state, get_playable_regions(scenario, state.get("capabilities")))
-    enemies = _get_non_german_enemies(scenario)
+    enemies = _get_non_german_enemies(scenario, state)
 
     for region in threat_regions:
         if any(bp["region"] == region for bp in battle_plan):

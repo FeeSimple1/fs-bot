@@ -318,6 +318,13 @@ def should_decline_event(state, card_id, faction):
         if not is_controlled_by(state, CARNUTES, ARVERNI):
             return True
 
+    # Both expansion instruction tables make Kinship unavailable when
+    # the opposite side is Non-player, regardless of the chosen card side.
+    if card_id == "A65" and scenario in ARIOVISTUS_SCENARIOS:
+        if (faction == BELGAE and GERMANS in state.get("non_player_factions", set())
+                or faction == GERMANS and BELGAE in state.get("non_player_factions", set())):
+            return True
+
     # Capability in final year — §8.1.1
     if is_final_year_capability(state, card_id):
         return True

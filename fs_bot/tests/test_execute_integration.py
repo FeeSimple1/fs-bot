@@ -3165,7 +3165,9 @@ def test_cards_A29_A34_A65_free_actions():
     assert fa2 and fa2[0]["result"]["executed"] is True
     assert validate_state(st2) == []
     st3 = setup_scenario(SCENARIO_ARIOVISTUS, seed=232)
-    st3["non_player_factions"] = set(get_sop_factions(st3))
+    st3["non_player_factions"] = set(get_sop_factions(st3)) - {BELGAE, GERMANS}
+    st3["decision_agent"] = lambda _st, _faction, req: (
+        {"faction": BELGAE, "regions": ["Nervii"]} if req["kind"] == "kinship" else None)
     st3["current_card"] = "A65"
     R = "Nervii"
     _clear_region_mobiles(st3, R)

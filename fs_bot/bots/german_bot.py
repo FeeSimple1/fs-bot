@@ -158,7 +158,7 @@ def _count_german_warbands_on_map(state):
     return count_on_map(state, GERMANS, WARBAND)
 
 
-def _get_all_enemies():
+def _get_all_enemies(state=None):
     """Get enemy factions considered for G1 threat condition.
 
     Per A8.7.1: "where ANY enemy has an Ally, a Citadel, a Legion, or
@@ -169,7 +169,9 @@ def _get_all_enemies():
     Returns:
         Tuple of enemy faction constants. Germans excluded (self).
     """
-    return (ROMANS, ARVERNI, AEDUI, BELGAE)
+    allowed = (state or {}).get("_command_target_factions")
+    return tuple(f for f in (ROMANS, ARVERNI, AEDUI, BELGAE)
+                 if allowed is None or f in allowed)
 
 
 def _has_german_threat(state, region):
@@ -193,7 +195,7 @@ def _has_german_threat(state, region):
         return False
 
     # Check ANY enemy for Ally, Citadel, Legion, or >=4 pieces — A8.7.1
-    enemies = _get_all_enemies()
+    enemies = _get_all_enemies(state)
     for enemy in enemies:
         if count_pieces(state, region, enemy, ALLY) > 0:
             return True
@@ -442,7 +444,7 @@ def node_g1b(state):
 
     # Check any victory-tracking enemy at margin >= 0 — A8.7.1
     scenario = state["scenario"]
-    for enemy in _get_all_enemies():
+    for enemy in _get_all_enemies(state):
         # Arverni do not track victory in Ariovistus (A7.0); skip.
         if enemy == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
             continue
@@ -868,7 +870,7 @@ def node_g_event(state):
 # G_BATTLE — Battle process
 # ============================================================================
 
-def node_g_battle(state):
+def node_g_battle(state, *, threat_regions=None):
     """G_BATTLE: Battle process.
 
     Per A8.7.1:
@@ -888,7 +890,8 @@ def node_g_battle(state):
         return node_g_march_threat(state)
 
     scenario = state["scenario"]
-    threat_regions = _get_threat_regions(state, scenario)
+    if threat_regions is None:
+        threat_regions = _get_threat_regions(state, scenario)
     if not threat_regions:
         return node_g_march_threat(state)
 
@@ -896,7 +899,7 @@ def node_g_battle(state):
     aristos_region = _ariovistus_region(state)
     if aristos_region and aristos_region in threat_regions:
         can_ariovistus_battle = False
-        for enemy in _get_all_enemies():
+        for enemy in _get_all_enemies(state):
             if count_pieces(state, aristos_region, enemy) == 0:
                 continue
             if _can_battle_in_region(state, aristos_region, enemy):
@@ -912,7 +915,7 @@ def node_g_battle(state):
     if aristos_region and aristos_region in threat_regions:
         german_mobile = count_mobile_pieces(state, aristos_region, GERMANS)
         candidates = []
-        for enemy in _get_all_enemies():
+        for enemy in _get_all_enemies(state):
             if count_pieces(state, aristos_region, enemy) == 0:
                 continue
             enemy_mobile = count_mobile_pieces(state, aristos_region, enemy)
@@ -935,7 +938,7 @@ def node_g_battle(state):
         if any(bp["region"] == region for bp in battle_plan):
             continue
         candidates = []
-        for enemy in _get_all_enemies():
+        for enemy in _get_all_enemies(state):
             if count_pieces(state, region, enemy) == 0:
                 continue
             if _can_battle_in_region(state, region, enemy):
@@ -959,7 +962,7 @@ def node_g_battle(state):
         if count_pieces(state, region, GERMANS) == 0:
             continue
         candidates = []
-        for enemy in _get_all_enemies():
+        for enemy in _get_all_enemies(state):
             if count_pieces(state, region, enemy) == 0:
                 continue
             if _can_battle_in_region(state, region, enemy):

@@ -36,6 +36,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             if kind in ("frumentum_amount", "frumentum_action"):
                 from fs_bot.cli.frumentum import collect_frumentum
                 return collect_frumentum(state, faction, request, stdin, stdout)
+            if kind == "kinship":
+                from fs_bot.cli.kinship import collect_kinship
+                return collect_kinship(state, faction, request, stdin, stdout)
             if kind == "free_action":
                 from fs_bot.cli.free_actions import collect_free_action
                 return collect_free_action(state, faction, request, stdin, stdout)

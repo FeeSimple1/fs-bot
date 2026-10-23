@@ -155,7 +155,16 @@ def preview_relocations(state, faction, moves, *, confirm=False):
     # Only pieces present before the adjacent step may take that step.
     remaining = {(r, p): count_pieces(sim, r, faction, p)
                  for r in playable for p in types}
+    remaining_states = {(r, p, ps): count_pieces_by_state(sim, r, faction, p, ps)
+                        for r in playable for p in types if p in rc.FLIPPABLE_PIECES
+                        for ps in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)}
+    allocated = []
     permissions = {}
+    # §6.3.2-.3 selects the faction's adjacent relocations as one step.
+    # Validate all destination hosts before moving the selected pieces:
+    # a Legion and its accompanying Auxilia are not separate rules steps,
+    # and their arrival can remove the agreeing host's Control. Supply
+    # Lines are explicitly determined after this whole adjacent step.
     for piece, origin, destination, count in adjacent:
         _need(destination in get_adjacent_for_state(sim, origin, faction),
               'Quarters relocation must be to an adjacent Region')
@@ -173,7 +182,20 @@ def preview_relocations(state, faction, moves, *, confirm=False):
                 permissions[key] = _host_agrees(sim, faction, host, destination, 'quarters')
             _need(permissions[key], f'{host} did not agree to Quarters in {destination}')
         remaining[origin, piece] -= count
-        _move(sim, faction, piece, origin, destination, count)
+        if piece in rc.FLIPPABLE_PIECES:
+            # Allocate the original pieces now. Earlier Hidden arrivals
+            # must not replace an origin's Revealed/Scouted departing pieces.
+            for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED):
+                amount = min(count, remaining_states[origin, piece, visibility])
+                if amount:
+                    allocated.append((piece, origin, destination, amount, visibility))
+                    remaining_states[origin, piece, visibility] -= amount
+                    count -= amount
+        else:
+            allocated.append((piece, origin, destination, count, None))
+    for piece, origin, destination, count, visibility in allocated:
+        move_piece(sim, origin, destination, faction, piece,
+                   count=count, piece_state=visibility)
     # Determine all Supply Line Regions once, after the adjacent step (§6.3.3).
     supply_agreements = {f: True for f in rc.FACTIONS}
     if confirm and any(p != rc.LEADER for p, *_ in provincia):

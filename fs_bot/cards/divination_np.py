@@ -281,7 +281,7 @@ def _legal_loss_choices(state, region, faction, request):
 
 
 def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
-                          attacker=rc.GERMANS, command=False):
+                          attacker=rc.GERMANS, command=False, double_auxilia=False):
     """Explore legal player absorption choices, merging identical continuations."""
     from fs_bot.battle.resolve import resolve_battle
     from fs_bot.engine.agent import LOSS_ORDER, AGREEMENT, RETREAT
@@ -374,7 +374,8 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
                 with free_action_scope(sim, attacker):
                     result = _execute_battle(sim, attacker, {
                         'command': rc.CMD_BATTLE, 'sa': 'No SA', 'sa_regions': [],
-                        'details': {'battle_plan': [{'region': region, 'target': enemy}]}})
+                        'details': {'battle_plan': [{'region': region, 'target': enemy}]}},
+                        _double_auxilia=double_auxilia)
                 if _result_error(result):
                     raise ValueError(f'Invalid Battle outcome preview: {result}')
             else:
@@ -446,18 +447,21 @@ def _frost_retreat_choices(state, region, enemy, *, attacker=rc.GERMANS):
     return sorted(choices, key=lambda item: (item[0], item[1] or ''))
 
 
-def _battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMANS, command=False):
+def _battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMANS, command=False,
+                           double_auxilia=False):
     """Never let an empty prediction make a Frost safety check pass vacuously."""
     produced = False
     for outcome in _enumerate_battle_frost_outcomes(
-            state, region, enemy, attacker=attacker, command=command):
+            state, region, enemy, attacker=attacker, command=command,
+            double_auxilia=double_auxilia):
         produced = True
         yield outcome
     if not produced:
         raise ValueError('Battle outcome preview produced no possible states')
 
 
-def _enumerate_battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMANS, command=False):
+def _enumerate_battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMANS,
+                                    command=False, double_auxilia=False):
     """All loss-roll outcomes, plus legal player Retreat/agreement choices.
 
     A34 defaults to its actual German force. Other explicit Event Battles
@@ -470,7 +474,8 @@ def _enumerate_battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMAN
 
     if command:
         yield from _player_loss_outcomes(
-            state, region, enemy, False, None, attacker=attacker, command=True)
+            state, region, enemy, False, None, attacker=attacker, command=True,
+            double_auxilia=double_auxilia)
         return
     non_players = state.get('non_player_factions', set())
     retreat_choices = _frost_retreat_choices(state, region, enemy, attacker=attacker)

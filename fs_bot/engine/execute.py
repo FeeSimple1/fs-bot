@@ -1128,6 +1128,7 @@ _ONE_SHOT_FREE_ACTION_FLAGS = (
     "card_9_march_from",
     "card_9_march_to",
     "card_A17_roman_march_battle",
+    "card_A17_double_auxilia_losses",
     "card_A19_march_romans",
     "card_A20_arverni_ambush",
     "card_A20_free_seize_veneti",
@@ -2898,79 +2899,8 @@ def _move_roman_aux(state, src, dst, n):
 
 
 def _resolve_a17_march_battle(state):
-    """A17 Publius Licinius Crassus (unshaded): "Romans may free March a group
-    of 1-4 Legions and 1-8 Auxilia to a Region without Caesar and Battle
-    there, double Losses by Auxilia."
-
-    Roman NP instruction (Ariovistus): "Move Forces using Roman March
-    priorities (8.8.3), then for 'Publius' use Roman Battle priorities
-    (8.8.1)." So the destination is taken from the Roman March destination
-    ranking (8.8.1/8.8.3), restricted to Regions without Caesar that have an
-    adjacent Roman group to bring in; the Battle target is the top Roman
-    Battle-priority defender there; the Battle applies double Auxilia Losses.
-    """
-    from fs_bot.rules_consts import ROMANS, CAESAR, LEGION, AUXILIA
-    from fs_bot.board.pieces import (count_pieces, get_leader_in_region,
-                                     move_piece)
-    from fs_bot.board.control import refresh_all_control
-    from fs_bot.map.map_data import get_adjacent
-    from fs_bot.bots.roman_bot import (_rank_march_destinations,
-                                       _rank_battle_targets)
-    from fs_bot.battle.resolve import resolve_battle
-
-    scen = state["scenario"]
-    ranked = _rank_march_destinations(state, scen)  # [(region, enemy), ...]
-    for T, _enemy in ranked:
-        if get_leader_in_region(state, T, ROMANS) == CAESAR:
-            continue  # "to a Region without Caesar"
-        # Adjacent source with the most Roman Legions+Auxilia (Caesar stays).
-        best_src = None
-        for src in get_adjacent(T, scen):
-            leg = count_pieces(state, src, ROMANS, LEGION)
-            aux = count_pieces(state, src, ROMANS, AUXILIA)
-            if leg + aux <= 0:
-                continue
-            if best_src is None or (leg + aux) > best_src[1]:
-                best_src = (src, leg + aux, leg, aux)
-        if best_src is None:
-            continue
-        src, _tot, leg, aux = best_src
-        move_leg = min(4, leg)
-        move_aux = min(8, aux)
-        if move_leg + move_aux <= 0:
-            continue
-        if move_leg:
-            move_piece(state, src, T, ROMANS, LEGION, count=move_leg)
-        if move_aux:
-            _move_roman_aux(state, src, T, move_aux)
-        refresh_all_control(state)
-        # Battle the top Roman-priority defender in T (double Auxilia Losses).
-        targets = _rank_battle_targets(state, T, scen)
-        if not targets:
-            return [{"free_action": "march", "flag":
-                     "card_A17_roman_march_battle", "region": T,
-                     "moved": {"legions": move_leg, "auxilia": move_aux},
-                     "battle": None, "reason": "no Battle target in T"}]
-        defender = targets[0]
-        retreat_decl, retreat_region = _decide_defender_retreat(
-            state, T, ROMANS, defender, False)
-        try:
-            res = resolve_battle(state, T, ROMANS, defender,
-                                 double_auxilia=True,
-                                 retreat_declaration=retreat_decl,
-                                 retreat_region=retreat_region)
-        except _EXEC_ERRORS as exc:
-            return [{"free_action": "march_battle",
-                     "flag": "card_A17_roman_march_battle", "region": T,
-                     "executed": False, "reason": repr(exc)}]
-        return [{"free_action": "march_battle",
-                 "flag": "card_A17_roman_march_battle", "region": T,
-                 "defender": defender,
-                 "moved": {"legions": move_leg, "auxilia": move_aux},
-                 "result": res}]
-    return [{"free_action": "march_battle", "flag":
-             "card_A17_roman_march_battle", "executed": False,
-             "reason": "no Caesar-free destination with an adjacent Roman group"}]
+    from fs_bot.cards.publius import resolve_publius
+    return resolve_publius(state)
 
 
 def _resolve_a19_march_romans(state, faction):
@@ -4079,7 +4009,8 @@ def _bfs_march_path(origin, dest, playable):
     return None
 
 
-def _march_with_harassment(state, faction, origin, path, group_cap=None):
+def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
+                           harassers_by_region=None, dropoffs_by_region=None):
     """March a faction's mobile group origin -> ... -> path[-1], one step
     at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
     enters and then leaves. Returns the final Region reached.
@@ -4125,28 +4056,22 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None):
         # Intermediate Region (entered then about to be left) -> Harassment
         # against the carried group only; survivors continue.
         if i < len(path) - 1:
-            harassers = _np_harassers(state, current, faction, group)
+            # Event-owned plans may leave part of this group in a transit
+            # Region (3.2.2). Only the continuing pieces suffer Harassment.
+            for piece, count in (dropoffs_by_region or {}).get(current, {}).items():
+                group[piece] -= count
+            harassers = (harassers_by_region[current]
+                         if harassers_by_region is not None and current in harassers_by_region
+                         else _np_harassers(state, current, faction, group))
             if harassers:
                 from fs_bot.commands.march import resolve_harassment
-                hres = resolve_harassment(state, current, faction, group,
-                                          harassing_factions=harassers)
-                _apply_harassment_losses_to_group(group, hres)
+                # This mechanic mutates the carried group as it removes
+                # casualties. Reapplying its report would subtract twice
+                # and would drop a Leader even after a successful save.
+                resolve_harassment(state, current, faction, group,
+                                   harassing_factions=harassers)
     return current
 
-
-def _apply_harassment_losses_to_group(group, harass_result):
-    """Subtract Harassment removals from the carried marching group so the
-    next hop moves only the survivors (§3.2.2). Removals are
-    ``(piece_type, count, roll_or_None)``; a removed Leader clears the slot.
-    """
-    from fs_bot.rules_consts import LEADER
-    for fl in (harass_result or {}).get("losses_by_faction", []):
-        for removal in fl.get("removals", []):
-            ptype, count = removal[0], removal[1]
-            if ptype == LEADER:
-                group[LEADER] = None
-            else:
-                group[ptype] = max(0, group.get(ptype, 0) - count)
 
 
 def _sa_detail(bot_action, key):

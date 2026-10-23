@@ -134,12 +134,18 @@ def validate_free_action_response(state, faction, request, response):
         from fs_bot.cards.impetuosity_unshaded import origins_by_destination
         if origins_by_destination(state, faction):
             return 'Impetuosity requires an adjacent March when one is possible.'
+    if response == {'decline': True} and not request.get('allow_decline', True):
+        return 'This follow-on action must be carried out when possible.'
     if response == {'decline': True} or response == {'use_default': True}:
         return None
     try:
         if request.get("request_type") == "impetuosity_unshaded_march":
             from fs_bot.cards.impetuosity_unshaded import validate_march
             validate_march(state, faction, response)
+            return None
+        if request.get("request_type") == "publius_march":
+            from fs_bot.cards.publius import validate_march
+            validate_march(state, response)
             return None
         if request.get("request_type") == "impetuosity_march":
             from fs_bot.cards.impetuosity import validate_march

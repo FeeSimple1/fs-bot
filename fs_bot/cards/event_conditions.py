@@ -23,7 +23,7 @@ def np_event_available(state, card_id, faction, shaded):
             or (card_id in (21, 45, 58) and shaded)
             or card_id in (26, 62, 64, 'A20', 'A21')
             or (card_id == 'A37' and (shaded or faction == rc.AEDUI))
-            or (card_id == 'A65' and not shaded)
+            or (card_id in ('A17', 'A65') and not shaded)
             or (card_id in ('A19', 'A45') and shaded and faction == rc.GERMANS)):
         return None
     from fs_bot.commands.common import free_action_scope
@@ -39,6 +39,11 @@ def _available(trial, card_id, faction, shaded):
     from fs_bot.engine import execute as ex
     from fs_bot.board.pieces import count_pieces, get_available
     from fs_bot.board.control import is_controlled_by
+    if card_id == 'A17' and not shaded:
+        if trial['scenario'] not in rc.ARIOVISTUS_SCENARIOS:
+            return False
+        from fs_bot.cards.publius import default_plan
+        return bool(default_plan(trial, preview=True))
     if card_id == 'A65' and not shaded:
         from fs_bot.cards.kinship import default_plan
         return faction in (rc.BELGAE, rc.GERMANS) and bool(default_plan(trial, faction))

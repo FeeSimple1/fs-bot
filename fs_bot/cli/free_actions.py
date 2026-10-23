@@ -16,6 +16,9 @@ def collect_free_action(state, faction, request, stdin, stdout):
     if request.get("request_type") == "impetuosity_enemy_battle":
         from fs_bot.cli.impetuosity_unshaded import collect_attacker
         return collect_attacker(state, faction, request, stdin, stdout)
+    if request.get("request_type") == "publius_march":
+        from fs_bot.cli.publius import collect_publius_march
+        return collect_publius_march(state, faction, request, stdin, stdout)
     if request.get("request_type") == "impetuosity_march":
         from fs_bot.cli.impetuosity import collect_impetuosity_march
         return collect_impetuosity_march(state, faction, request, stdin, stdout)
@@ -24,10 +27,10 @@ def collect_free_action(state, faction, request, stdin, stdout):
     if actor != faction:
         message = f"{faction}: choose a free action using {actor} pieces."
     while True:
-        choice = prompt_choice(
-            stdin, stdout, message,
-            [("Plan the action", "plan"),
-             ("Use bot default", "default"), ("Decline", "decline")])
+        options = [("Plan the action", "plan"), ("Use bot default", "default")]
+        if request.get("allow_decline", True):
+            options.append(("Decline", "decline"))
+        choice = prompt_choice(stdin, stdout, message, options)
         if choice != "plan":
             return {"use_default" if choice == "default" else "decline": True}
         planning = _planning_copy(state)
@@ -52,7 +55,7 @@ def collect_free_action(state, faction, request, stdin, stdout):
                     max_regions=request.get("max_regions"),
                     required_destinations=request.get("required_destinations"))
         if action is None:
-            stdout.write("No legal plan selected. Choose another plan or decline.\n")
+            stdout.write("No legal plan selected. Choose another plan.\n")
             continue
         error = validate_free_action_response(state, faction, request, action)
         if error:

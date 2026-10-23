@@ -1775,49 +1775,25 @@ def test_double_auxilia_loss_modifier():
 
 
 def test_a17_unshaded_march_battle_double_auxilia():
-    """Slice 32: A17 unshaded — Romans free March a group to a Caesar-free
-    Region and Battle there with double Auxilia Losses."""
-    from fs_bot.state.setup import setup_scenario
-    from fs_bot.state.state_schema import validate_state
-    from fs_bot.board.pieces import (place_piece, remove_piece, count_pieces,
-        get_leader_in_region, find_leader)
+    """A17 requires both piece types and uses doubled Auxilia Losses."""
+    from fs_bot import rules_consts as rc
+    from fs_bot.state.state_schema import build_initial_state, validate_state
+    from fs_bot.board.pieces import place_piece, count_pieces
     from fs_bot.board.control import refresh_all_control
-    from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
     from fs_bot.engine.execute import _resolve_a17_march_battle
-    from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, ARVERNI,
-        CAESAR, AUXILIA, ALLY, CITADEL, WARBAND, TRIBE_TO_REGION,
-        BELGICA_REGIONS)
-    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=11)
-    # Null all Allies/Citadels so our staged Region is the unique destination.
-    for tribe, info in st["tribes"].items():
-        fac = info.get("allied_faction")
-        if fac:
-            reg = TRIBE_TO_REGION.get(tribe)
-            if reg and count_pieces(st, reg, fac, ALLY) > 0:
-                remove_piece(st, reg, fac, ALLY)
-            while reg and count_pieces(st, reg, fac, CITADEL) > 0:
-                remove_piece(st, reg, fac, CITADEL)
-            info["allied_faction"] = None
-    caesar_loc = find_leader(st, ROMANS)
-    T = next(r for r in BELGICA_REGIONS if r != caesar_loc)
-    _clear_region_mobiles(st, T)
-    place_piece(st, T, ARVERNI, WARBAND, 6)
-    for t in get_tribes_in_region(T, SCENARIO_ARIOVISTUS):
-        info = st["tribes"].get(t)
-        if info is not None:
-            place_piece(st, T, ARVERNI, ALLY)
-            info["allied_faction"] = ARVERNI
-            break
-    src = next(r for r in get_adjacent(T, SCENARIO_ARIOVISTUS)
-               if get_leader_in_region(st, r, ROMANS) != CAESAR)
-    _clear_region_mobiles(st, src)
-    place_piece(st, src, ROMANS, AUXILIA, 6)
+    st = build_initial_state(rc.SCENARIO_ARIOVISTUS, seed=11)
+    st['non_player_factions'] = {rc.ROMANS, rc.BELGAE, rc.AEDUI, rc.GERMANS}
+    place_piece(st, rc.NERVII, rc.ROMANS, rc.LEGION, 1, from_legions_track=True)
+    place_piece(st, rc.NERVII, rc.ROMANS, rc.AUXILIA, 6)
+    place_piece(st, rc.MORINI, rc.ARVERNI, rc.WARBAND, 6)
+    place_piece(st, rc.MORINI, rc.ARVERNI, rc.ALLY)
+    st['tribes'][rc.TRIBE_MORINI]['allied_faction'] = rc.ARVERNI
     refresh_all_control(st)
     out = _resolve_a17_march_battle(st)
-    assert out[0]["region"] == T and out[0]["defender"] == ARVERNI
-    # 6 Auxilia at double = 6 Losses; Arverni never Retreat in Ariovistus.
-    assert count_pieces(st, T, ARVERNI, WARBAND) == 0
-    assert count_pieces(st, T, ROMANS, AUXILIA) == 6  # marched in
+    assert out[0]['region'] == rc.MORINI and out[0]['defender'] == rc.ARVERNI
+    assert count_pieces(st, rc.MORINI, rc.ARVERNI, rc.WARBAND) == 0
+    assert count_pieces(st, rc.MORINI, rc.ROMANS, rc.AUXILIA) == 5
+    assert count_pieces(st, rc.NERVII, rc.ROMANS, rc.AUXILIA) == 1  # retain Control
     assert validate_state(st) == []
 
 

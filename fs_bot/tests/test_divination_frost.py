@@ -166,3 +166,34 @@ def test_possible_np_agreement_die_success_is_included_without_advancing_rng():
     rng = st['rng'].getstate()
     assert (True, rc.AEDUI_REGION) in _frost_retreat_choices(st, rc.SEQUANI, rc.ROMANS)
     assert st['rng'].getstate() == rng
+
+
+def test_battle_outcomes_keep_each_independent_human_retreat_agreement():
+    from fs_bot.cards.divination_np import _battle_frost_outcomes
+    from fs_bot.map.map_data import get_adjacent_for_state
+    from fs_bot.board.control import refresh_all_control
+    s = build_initial_state(rc.SCENARIO_GREAT_REVOLT, seed=7)
+    s['non_player_factions'] = {rc.AEDUI, rc.ARVERNI, rc.GERMANS}
+    place_piece(s, rc.NERVII, rc.ROMANS, rc.AUXILIA, 7)
+    place_piece(s, rc.NERVII, rc.BELGAE, rc.WARBAND, 4)
+    place_piece(s, rc.NERVII, rc.BELGAE, rc.LEADER, leader_name=rc.AMBIORIX)
+    destinations = get_adjacent_for_state(s, rc.NERVII)
+    for region in destinations:
+        place_piece(s, region, rc.BELGAE, rc.WARBAND)
+    refresh_all_control(s)
+    before = encode(s)
+    outcomes = list(_battle_frost_outcomes(s, rc.NERVII, rc.ROMANS,
+                                          attacker=rc.BELGAE, command=True))
+    assert outcomes  # Previously every permission branch was wrongly pruned.
+    assert {r for after in outcomes for r in destinations
+            if count_pieces(after, r, rc.ROMANS)} == set(destinations)
+    assert any(count_pieces(after, rc.NERVII, rc.ROMANS) for after in outcomes)
+    assert encode(s) == before
+
+
+def test_empty_battle_prediction_raises_instead_of_passing_frost(monkeypatch):
+    import pytest
+    from fs_bot.cards import divination_np
+    monkeypatch.setattr(divination_np, '_player_loss_outcomes', lambda *args, **kwargs: iter(()))
+    with pytest.raises(ValueError, match='no possible states'):
+        list(_battle_frost_outcomes(position(), rc.SEQUANI, rc.ROMANS, command=True))

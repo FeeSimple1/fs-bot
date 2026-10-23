@@ -10,6 +10,12 @@ from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_COMMAND_SA
 
 def collect_free_action(state, faction, request, stdin, stdout):
     """Collect and dry-run a full plan without changing the live board/RNG."""
+    if request.get("request_type") == "impetuosity_unshaded_march":
+        from fs_bot.cli.impetuosity_unshaded import collect_march
+        return collect_march(state, faction, request, stdin, stdout)
+    if request.get("request_type") == "impetuosity_enemy_battle":
+        from fs_bot.cli.impetuosity_unshaded import collect_attacker
+        return collect_attacker(state, faction, request, stdin, stdout)
     if request.get("request_type") == "impetuosity_march":
         from fs_bot.cli.impetuosity import collect_impetuosity_march
         return collect_impetuosity_march(state, faction, request, stdin, stdout)

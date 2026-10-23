@@ -196,16 +196,21 @@ class TestCard72Unshaded:
     silent no-op (flag consumed nowhere)."""
 
     def test_resolver_marches_then_is_battled(self):
-        st = _np_state(201)
+        from fs_bot import rules_consts as rc
+        from fs_bot.state.state_schema import build_initial_state
+        from fs_bot.board.pieces import place_piece
+        st = build_initial_state(rc.SCENARIO_GREAT_REVOLT, seed=201)
+        st['non_player_factions'] = set(rc.FACTIONS)
+        place_piece(st, rc.MORINI, ROMANS, rc.AUXILIA, 4)
+        place_piece(st, rc.NERVII, BELGAE, rc.WARBAND, 2)
+        place_piece(st, rc.NERVII, BELGAE, rc.ALLY)
+        st['tribes'][rc.TRIBE_NERVII]['allied_faction'] = BELGAE
         out = _resolve_card72_march_enemy_battle(st, ROMANS)
-        kinds = [o.get("free_action") for o in out]
-        assert "march" in kinds
-        battles = [o for o in out if o.get("free_action") == "battle"
-                   and "result" in o]
-        assert battles, out
-        b = battles[0]
-        assert b["defender"] == ROMANS
-        assert b["attacker"] in (ARVERNI, BELGAE)
+        result = out[0]
+        assert result["march"]["executed"]
+        assert result["battle"]["executed"]
+        assert result["battle"]["battles_resolved"] == [(result["region"], ROMANS)]
+        assert result["attacker"] in (ARVERNI, BELGAE)
         assert validate_state(st) == []
 
     def test_event_wiring_consumes_the_flag(self):
@@ -216,34 +221,19 @@ class TestCard72Unshaded:
         assert fa, "card 72 unshaded produced no free action"
         assert validate_state(st) == []
 
-    def test_both_present_executor_picks_weaker_battler(self):
-        """Sec.5.1: the executing Faction makes the selection; a
-        Non-player selects to benefit itself (8.3.1) — with both Arverni
-        and Belgae present, the one with FEWER Warbands attacks."""
-        from fs_bot.board.pieces import (count_pieces, remove_piece,
-                                         place_piece)
-        from fs_bot.map.map_data import get_playable_regions, get_adjacent
-        from fs_bot.rules_consts import WARBAND, AUXILIA
-        st = _np_state(233)
-        regions = list(get_playable_regions(st["scenario"],
-                                            st.get("capabilities")))
-        # Strip all Arverni/Belgae Warbands, then build oneboth-present bait.
-        for r in regions:
-            for f in (ARVERNI, BELGAE):
-                n = count_pieces(st, r, f, WARBAND)
-                if n:
-                    remove_piece(st, r, f, WARBAND, count=n)
-        B = next(r for r in regions
-                 if any(a in regions for a in
-                        get_adjacent(r, st["scenario"])))
-        S = next(a for a in get_adjacent(B, st["scenario"]) if a in regions)
-        place_piece(st, B, ARVERNI, WARBAND, count=4)
-        place_piece(st, B, BELGAE, WARBAND, count=1)
-        place_piece(st, S, ROMANS, AUXILIA, count=4)
-        out = _resolve_card72_march_enemy_battle(st, ROMANS)
-        battles = [o for o in out if o.get("free_action") == "battle"
-                   and "result" in o]
-        assert battles and battles[0]["attacker"] == BELGAE, out
+    def test_default_battler_uses_command_losses_not_raw_warband_counts(self):
+        """The normal Battle Command includes a Leader and capabilities."""
+        from fs_bot import rules_consts as rc
+        from fs_bot.board.pieces import place_piece
+        from fs_bot.state.state_schema import build_initial_state
+        from fs_bot.cards.impetuosity_unshaded import default_attacker
+        st = build_initial_state(rc.SCENARIO_GREAT_REVOLT, seed=233)
+        st['non_player_factions'] = set(rc.FACTIONS)
+        place_piece(st, rc.NERVII, rc.ROMANS, rc.AUXILIA, 5)
+        place_piece(st, rc.NERVII, rc.ARVERNI, rc.WARBAND, 4)
+        place_piece(st, rc.NERVII, rc.BELGAE, rc.WARBAND, 3)
+        place_piece(st, rc.NERVII, rc.BELGAE, rc.LEADER, leader_name=rc.AMBIORIX)
+        assert default_attacker(st, ROMANS, rc.NERVII) == ARVERNI
 
     def test_no_target_reports_cleanly(self):
         """With no Arverni/Belgae Warbands anywhere, the resolver reports

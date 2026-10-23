@@ -2521,87 +2521,9 @@ def _resolve_card58_german_ambush(state):
 
 
 def _resolve_card72_march_enemy_battle(state, faction):
-    """Card 72 Impetuosity (unshaded): "Free March into 1 Region from any
-    adjacent. Either Arverni or Belgae in that Region free Battle against
-    you." Tip: the March must include a move from at least one adjacent
-    Region; the free Battle does not include Ambush.
-
-    NP guidance (Roman event instruction 8.2.3/8.8.3): play only where the
-    March results in the Battle. Destination: the Region where, after
-    Marching in the largest adjacent mobile group, the acting Faction's
-    force most outweighs the resident Arverni/Belgae Warbands (take the
-    bait on the best defensive terms). If both Arverni and Belgae are
-    present, the EXECUTING Faction chooses which Battles it (Sec.5.1:
-    the executing Faction makes all selections the text allows); a
-    Non-player selects to benefit itself (8.3.1) — the candidate with
-    the fewest attacking Warbands — breaking ties by equal-chance die
-    roll (8.3.4)."""
-    from fs_bot.rules_consts import (ARVERNI, BELGAE, WARBAND, AUXILIA,
-                                     LEGION)
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    from fs_bot.battle.resolve import resolve_battle
-    scen = state["scenario"]
-    playable = set(get_playable_regions(scen, state.get("capabilities")))
-    baiters = [f for f in (ARVERNI, BELGAE) if f != faction]
-
-    def force(R, f):
-        return (count_pieces(state, R, f, LEGION)
-                + count_pieces(state, R, f, AUXILIA)
-                + count_pieces(state, R, f, WARBAND))
-
-    best = None  # (score, B, S, enemy)
-    for B in sorted(playable):
-        enemies = [(count_pieces(state, B, e, WARBAND), e) for e in baiters
-                   if count_pieces(state, B, e, WARBAND) > 0]
-        if not enemies:
-            continue
-        # Sec.5.1/8.3.1: the executor picks its battler to benefit itself —
-        # fewest attacking Warbands; equal candidates by die roll (8.3.4).
-        low = min(e[0] for e in enemies)
-        lows = sorted(nm for c, nm in enemies if c == low)
-        enemy = lows[0] if len(lows) == 1 else state["rng"].choice(lows)
-        srcs = [a for a in sorted(get_adjacent(B, scen)) if a in playable
-                and _group_has_pieces(_mobile_march_group(state, faction, a))]
-        if not srcs:
-            continue
-        S = max(srcs, key=lambda a: sum(
-            count_pieces(state, a, faction, pt)
-            for pt in (LEGION, AUXILIA, WARBAND)))
-        incoming = sum(count_pieces(state, S, faction, pt)
-                       for pt in (LEGION, AUXILIA, WARBAND))
-        score = (force(B, faction) + incoming - low)
-        if best is None or score > best[0]:
-            best = (score, B, S, enemy)
-
-    if best is None:
-        return [{"free_action": "march_enemy_battle", "flag": "card_72",
-                 "executed": False,
-                 "reason": "no adjacent March reaching Arverni/Belgae "
-                           "Warbands"}]
-    _sc, B, S, enemy = best
-    out = []
-    try:
-        final = _march_with_harassment(state, faction, S, [B])
-        out.append({"free_action": "march", "flag": "card_72",
-                    "source": S, "dest": B, "final_region": final})
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "march", "flag": "card_72",
-                 "executed": False, "reason": repr(exc)}]
-    if final != B or count_pieces(state, B, faction) <= 0:
-        out.append({"free_action": "battle", "flag": "card_72",
-                    "executed": False,
-                    "reason": "March did not end in the target Region"})
-        return out
-    try:
-        res = resolve_battle(state, B, enemy, faction)
-        out.append({"free_action": "battle", "flag": "card_72",
-                    "attacker": enemy, "defender": faction, "region": B,
-                    "result": res})
-    except _EXEC_ERRORS as exc:
-        out.append({"free_action": "battle", "flag": "card_72",
-                    "executed": False, "reason": repr(exc)})
-    return out
+    """Card72: bounded adjacent March followed by the chosen enemy's Battle."""
+    from fs_bot.cards.impetuosity_unshaded import resolve_impetuosity_unshaded
+    return resolve_impetuosity_unshaded(state, faction)
 
 
 def _resolve_card72_hidden_march_battle(state, faction):

@@ -124,9 +124,23 @@ def validate_free_action_response(state, faction, request, response):
     """Return a useful validation error, or None for a legal explicit response."""
     if not isinstance(response, dict):
         return 'Return a full action, decline, or use_default.'
+    if request.get('request_type') == 'impetuosity_enemy_battle':
+        if response == {'use_default': True}:
+            return None
+        if set(response) != {'attacker'} or response['attacker'] not in request['attackers']:
+            return 'Choose one of the available Arverni or Belgic attackers.'
+        return None
+    if request.get('request_type') == 'impetuosity_unshaded_march' and response == {'decline': True}:
+        from fs_bot.cards.impetuosity_unshaded import origins_by_destination
+        if origins_by_destination(state, faction):
+            return 'Impetuosity requires an adjacent March when one is possible.'
     if response == {'decline': True} or response == {'use_default': True}:
         return None
     try:
+        if request.get("request_type") == "impetuosity_unshaded_march":
+            from fs_bot.cards.impetuosity_unshaded import validate_march
+            validate_march(state, faction, response)
+            return None
         if request.get("request_type") == "impetuosity_march":
             from fs_bot.cards.impetuosity import validate_march
             validate_march(state, faction, response)

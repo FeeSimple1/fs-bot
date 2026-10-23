@@ -296,6 +296,7 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
                 self.index, self.faction, self.selected = 0, enemy, None
                 self.failed = {enemy: 0, attacker: 0}
                 self.remaining = None
+                self.reactions = []
 
             def choose(self, options, stage):
                 if len(options) == 1:
@@ -303,13 +304,16 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
                 if self.index < len(script):
                     result = script[self.index]
                     self.index += 1
+                    if isinstance(stage, tuple) and stage[0] in ('agreement', 'retreat'):
+                        self.reactions.append((stage, result))
                     return result
                 board = dumps(encode({k:v for k,v in sim.items()
                                       if k not in ('rng', 'decision_agent')}), sort_keys=True)
                 # Same board, phase, remaining Losses, and selected absorber
                 # are the same continuation, irrespective of earlier rolls.
                 key = (stage, board, self.faction, self.remaining,
-                       self.failed[self.faction], self.selected, tuple(options))
+                       self.failed[self.faction], self.selected, tuple(options),
+                       tuple(self.reactions))
                 raise _OutcomeBranch(key, options)
 
             def randint(self, low, high):
@@ -341,10 +345,15 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
                           or _game_run_arverni(state, faction))
             if command and not non_player:
                 if request.get('kind') == AGREEMENT:
-                    return rng.choose((False, True), 'agreement')
+                    # Different adjacent hosts/Regions are independent
+                    # permission decisions even when neither changes pieces.
+                    # Their request identity must survive branch deduplication.
+                    return rng.choose((False, True), (
+                        'agreement', faction, dumps(encode(request), sort_keys=True)))
                 if request.get('kind') == RETREAT:
                     options = [None, *request.get('legal_regions', [])]
-                    choice = rng.choose(options, 'retreat')
+                    choice = rng.choose(options, ('retreat', faction,
+                                                  dumps(encode(request), sort_keys=True)))
                     return {'retreat': choice is not None, 'region': choice}
             if request.get('kind') != LOSS_ORDER:
                 return None
@@ -438,6 +447,17 @@ def _frost_retreat_choices(state, region, enemy, *, attacker=rc.GERMANS):
 
 
 def _battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMANS, command=False):
+    """Never let an empty prediction make a Frost safety check pass vacuously."""
+    produced = False
+    for outcome in _enumerate_battle_frost_outcomes(
+            state, region, enemy, attacker=attacker, command=command):
+        produced = True
+        yield outcome
+    if not produced:
+        raise ValueError('Battle outcome preview produced no possible states')
+
+
+def _enumerate_battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMANS, command=False):
     """All loss-roll outcomes, plus legal player Retreat/agreement choices.
 
     A34 defaults to its actual German force. Other explicit Event Battles

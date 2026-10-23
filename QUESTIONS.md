@@ -1,10 +1,10 @@
 QUESTIONS.md — Ambiguities and their resolutions
 
-These items were identified during implementation when the Reference Documents
-appeared ambiguous, contradictory, or silent. They have now been resolved by
-re-reading the Reference Documents closely (the only permitted source of truth
-per CLAUDE.md). Each entry records the question, its reference basis, and its disposition.
-Later entries may remain open; consult the status on the individual entry.
+This is a historical decision ledger. Entries record what was understood and
+implemented at the time; later reviews have overturned some completion claims.
+Consult [current status](docs/current-status.md) for the current engineering
+dispositions and unresolved source conflicts. Earlier statements that all
+issues are closed do not supersede that status.
 
 ---
 
@@ -2750,7 +2750,7 @@ adding an icon cannot justify inventing a targeting rule or No Event test.
 **Blocked:** choosing a different cue or specific Belgic Event behavior.
 Existing generic Event handling remains unchanged; unrelated work proceeds.
 
-## [OPEN] Vassal comparison — original versus Second Edition card policy
+## [RESOLVED] Vassal comparison — original versus Second Edition card policy
 
 **Behavior:** base-game selection of versions of cards 11, 30, 39, 44 and 54,
 and persistence of that choice through save/load and the Gallic War Interlude.
@@ -2760,7 +2760,7 @@ and persistence of that choice through save/load and the Gallic War Interlude.
 The Vassal module is labeled Second Edition and supplies the five revised
 faces globally. CLAUDE also describes this project as Second Edition.
 
-**Incomplete policy:** A Setup recommends the replacements regardless of
+**Original finding:** A Setup recommends the replacements regardless of
 scenario. It does not require choosing them. The current engine selects
 these amendments by Ariovistus scenario, leaving base scenarios on original
 cards; no explicit owner choice of the edition default was identified.
@@ -2770,11 +2770,14 @@ with an explicit default; or deliberately retain the current original-base /
 amended-Ariovistus profile. The first two can change Battle strength, Trade,
 free Commands, capability interpretation, and deterministic game outcomes.
 
-**Blocked:** silently changing the default or claiming the base game already
-implements the recommended Second Edition card set. Both printed versions
-are source-defined, so an eventual selector should consistently govern
-card text, effect execution, previews, bot targeting, persistent capabilities,
-saves and Interlude. No edition behavior was changed in this review.
+**Resolution:** `--card-edition original|second-edition|legacy` now selects
+and saves a source-defined profile. It consistently governs the five cards'
+text, effects, previews, bot targeting and persistent capabilities. Explicit
+editions survive save/load and Interlude unchanged; `legacy` continues to
+follow the current scenario. The explicit `legacy` default preserves
+existing behavior and old saves. This adds the recommended revised profile
+without silently changing an existing game's rules. Regression coverage:
+`fs_bot/tests/test_card_edition.py`.
 
 ---
 
@@ -2842,3 +2845,67 @@ German Winter Campaign activation during the Interlude itself.
 
 **Question:** how should German-owned shaded A63 be owned and used after
 the Interlude?
+
+---
+
+## [OPEN] Ariovistus automatic Arverni Harassment order
+
+**Behavior under review:** the order of Harassment announcements and Losses
+when multiple factions can Harass Roman March or Seize in Ariovistus.
+
+**Sources:** Chapter 3, §3.2.2 says "Announce and inflict Losses in the Faction
+Order shown on the currently played Event card (2.3.2), then do so with
+Germans (3.4.5)." Section 3.2.3 repeats that order for Seize. A2.3.2 assigns
+playable Germans the green Arverni symbol on base cards, or their own black
+symbol on expansion cards. A3.2.2 states "Arverni always opt to do so";
+A1.5.2 likewise mandates their Harassment. Neither places the game-run
+Arverni in the resolution order. A8.4's Arverni/Germans substitutions expressly
+apply "Throughout section 8.4", rather than amending §3.2.2's timing.
+
+**Unresolved point:** the four printed factions have a card order, but the
+automatic fifth faction has no stated insertion point. It is plausible that
+Arverni replace base Germans-last, but that is not an explicit supplied rule.
+
+**Options:** resolve automatic Arverni last; assign another position relative
+to the card order; or supply an omitted timing rule or erratum.
+
+**Disposition:** base-game card order followed by Germans is corrected.
+Until the expansion timing is clarified, Ariovistus retains its existing
+fixed faction order (Romans, Arverni, Aedui, Belgae, Germans). This is a
+documented legacy policy, not a source-derived ruling. Correct harasser
+eligibility, mandatory game-run Harassment, victim choices, and sequential
+announcement/loss resolution are implemented independently.
+
+**Question:** where does automatic Arverni Harassment resolve relative to
+the four factions printed on the current Event card in Ariovistus?
+
+
+---
+
+## [OPEN] Harassment order during after-Harvest Winter Campaign actions
+
+**Behavior under review:** the order of multiple factions' Harassment during
+a March or Seize granted by shaded Card 63/A63 after Harvest.
+
+**Sources:** Chapter 6 begins: "As each Winter card is played, conduct a
+Winter Round in the sequence of phases below." Card 63 says: "After each
+Harvest, it may do any 2 Commands and/or Special Abilities (paying costs)."
+A63 provides the same after-Harvest timing. Sections 3.2.2 and 3.2.3 order
+Harassment by the "currently played Event card", followed by Germans in
+the base game. The current card during these actions is Winter, which has
+no printed faction symbols. None of these passages supplies a replacement
+order for this boundary.
+
+**Options:** use the granting capability's faction order; use the preceding
+or upcoming Event's order; or specify a separate Winter order. The supplied
+references do not select one of these possibilities.
+
+**Disposition:** the engine no longer attempts to look up the Winter marker
+as an Event. It preserves its existing fixed faction order (Romans,
+Arverni, Aedui, Belgae, Germans) for Winter, without changing the current
+card or inferring another card's order. This compatibility fallback is not
+claimed as a source-derived ruling. Actual after-Harvest Harassment and
+all three full-game crash seeds have regression coverage.
+
+**Question:** which faction order governs Harassment during shaded Card
+63/A63 actions after Harvest, when the currently played card is Winter?

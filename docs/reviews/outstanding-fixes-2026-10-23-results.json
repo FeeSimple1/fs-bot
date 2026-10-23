@@ -1,0 +1,861 @@
+{
+  "acceptance": {
+    "issues": [],
+    "passed": true,
+    "scope": "full-matrix"
+  },
+  "artifacts": {
+    "batch-hash0/games.jsonl": {
+      "bytes": 5700293,
+      "sha256": "6021cf2746ef6d33f7175399c5eac84272c5140fc35ddf9e65627523d274458d"
+    },
+    "batch-hash0/metadata.json": {
+      "bytes": 495,
+      "sha256": "bc84f33235c2f98a918ea3faaf452fabbf2769ac3529d42136b4b3b977f77e62"
+    },
+    "batch-hash0/summary.json": {
+      "bytes": 4541,
+      "sha256": "f34342382c1a5a2216b3856564f9c0a293822cb1a9c14e68fc9927a1226ca2e4"
+    },
+    "bots-hash7.jsonl": {
+      "bytes": 125378,
+      "sha256": "9bb5b3e84be012d2925ab5a6571e320442aecba3ad280b25e7336d813865e05d"
+    },
+    "census-hash0.json": {
+      "bytes": 7181,
+      "sha256": "1895f6e4dac43f9238c73d1dd84397f94ad442f4fb009f80b671f3341e59d0be"
+    },
+    "census-hash7.json": {
+      "bytes": 7181,
+      "sha256": "1895f6e4dac43f9238c73d1dd84397f94ad442f4fb009f80b671f3341e59d0be"
+    },
+    "fuzz-hash0.log": {
+      "bytes": 188,
+      "sha256": "cff24106b4189767b3f43c515864f5def425f6144b5a1a9a376e2b1c16671c95"
+    },
+    "fuzz-hash7.log": {
+      "bytes": 188,
+      "sha256": "cff24106b4189767b3f43c515864f5def425f6144b5a1a9a376e2b1c16671c95"
+    },
+    "manifest.json": {
+      "bytes": 3193,
+      "sha256": "a62caf21f095ff6e8443db1c634b6a2a781dc37041668c4115fa0cb364e6f59d"
+    },
+    "verification.json": {
+      "bytes": 1225,
+      "sha256": "81dd2b32fc455fe7848d269542376d9cc137454774088a0c99a79860251c984d"
+    }
+  },
+  "batch": {
+    "completed": 1000,
+    "completed_game_ranking_failures": [],
+    "coverage_exact": true,
+    "crash_games": [],
+    "diagnostic_incidents": {
+      "legal-decline": 9678
+    },
+    "errors": [],
+    "failed_games": [],
+    "games": 1000,
+    "integrity_games": [],
+    "invalid_final_hash_games": [],
+    "nonlegal_groups": {},
+    "nonlegal_incidents": 0,
+    "ordered_final_hashes_sha256": "2f2e80de63a1382e88e4a67ff200ea1134598a254eb2a26a06e1d97c60888138",
+    "outcomes": {
+      "Ariovistus": {
+        "attempted": 200,
+        "before_final_winter": 58,
+        "cards": {
+          "maximum": 48,
+          "mean": 38.395,
+          "median": 44.5,
+          "minimum": 11,
+          "total": 7679
+        },
+        "completed": 200,
+        "ending_scenarios": {
+          "Ariovistus": 200
+        },
+        "failed": 0,
+        "interlude_games": 0,
+        "on_final_winter": 142,
+        "rate_denominator": 200,
+        "termination_by_timing": [
+          {
+            "games": 58,
+            "reason": "threshold",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 126,
+            "reason": "final-winter-margin",
+            "timing": "final-winter"
+          },
+          {
+            "games": 16,
+            "reason": "threshold",
+            "timing": "final-winter"
+          }
+        ],
+        "terminations": {
+          "final-winter-margin": 126,
+          "threshold": 74
+        },
+        "win_rate_percent": {
+          "Aedui": 9.5,
+          "Arverni": 0.0,
+          "Belgae": 13.0,
+          "Germans": 31.0,
+          "Romans": 46.5
+        },
+        "wins": {
+          "Aedui": 19,
+          "Arverni": 0,
+          "Belgae": 26,
+          "Germans": 62,
+          "Romans": 93
+        },
+        "winter_counts": {
+          "1": 32,
+          "2": 26,
+          "3": 142
+        }
+      },
+      "Pax Gallica?": {
+        "attempted": 200,
+        "before_final_winter": 173,
+        "cards": {
+          "maximum": 75,
+          "mean": 36.415,
+          "median": 26.0,
+          "minimum": 22,
+          "total": 7283
+        },
+        "completed": 200,
+        "ending_scenarios": {
+          "Pax Gallica?": 200
+        },
+        "failed": 0,
+        "interlude_games": 0,
+        "on_final_winter": 27,
+        "rate_denominator": 200,
+        "termination_by_timing": [
+          {
+            "games": 7,
+            "reason": "optimates",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 166,
+            "reason": "threshold",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 18,
+            "reason": "final-winter-margin",
+            "timing": "final-winter"
+          },
+          {
+            "games": 9,
+            "reason": "threshold",
+            "timing": "final-winter"
+          }
+        ],
+        "terminations": {
+          "final-winter-margin": 18,
+          "optimates": 7,
+          "threshold": 175
+        },
+        "win_rate_percent": {
+          "Aedui": 7.5,
+          "Arverni": 7.0,
+          "Belgae": 16.0,
+          "Germans": 0.0,
+          "Romans": 69.5
+        },
+        "wins": {
+          "Aedui": 15,
+          "Arverni": 14,
+          "Belgae": 32,
+          "Germans": 0,
+          "Romans": 139
+        },
+        "winter_counts": {
+          "2": 124,
+          "3": 31,
+          "4": 18,
+          "5": 27
+        }
+      },
+      "Reconquest of Gaul": {
+        "attempted": 200,
+        "before_final_winter": 151,
+        "cards": {
+          "maximum": 64,
+          "mean": 32.71,
+          "median": 29.0,
+          "minimum": 11,
+          "total": 6542
+        },
+        "completed": 200,
+        "ending_scenarios": {
+          "Reconquest of Gaul": 200
+        },
+        "failed": 0,
+        "interlude_games": 0,
+        "on_final_winter": 49,
+        "rate_denominator": 200,
+        "termination_by_timing": [
+          {
+            "games": 5,
+            "reason": "optimates",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 146,
+            "reason": "threshold",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 30,
+            "reason": "final-winter-margin",
+            "timing": "final-winter"
+          },
+          {
+            "games": 1,
+            "reason": "optimates",
+            "timing": "final-winter"
+          },
+          {
+            "games": 18,
+            "reason": "threshold",
+            "timing": "final-winter"
+          }
+        ],
+        "terminations": {
+          "final-winter-margin": 30,
+          "optimates": 6,
+          "threshold": 164
+        },
+        "win_rate_percent": {
+          "Aedui": 15.0,
+          "Arverni": 5.5,
+          "Belgae": 17.0,
+          "Germans": 0.0,
+          "Romans": 62.5
+        },
+        "wins": {
+          "Aedui": 30,
+          "Arverni": 11,
+          "Belgae": 34,
+          "Germans": 0,
+          "Romans": 125
+        },
+        "winter_counts": {
+          "1": 85,
+          "2": 41,
+          "3": 25,
+          "4": 49
+        }
+      },
+      "The Gallic War": {
+        "attempted": 200,
+        "before_final_winter": 163,
+        "cards": {
+          "maximum": 107,
+          "mean": 61.66,
+          "median": 69.5,
+          "minimum": 11,
+          "total": 12332
+        },
+        "completed": 200,
+        "ending_scenarios": {
+          "Pax Gallica?": 126,
+          "The Gallic War": 74
+        },
+        "failed": 0,
+        "interlude_games": 126,
+        "on_final_winter": 37,
+        "rate_denominator": 200,
+        "termination_by_timing": [
+          {
+            "games": 6,
+            "reason": "optimates",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 157,
+            "reason": "threshold",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 22,
+            "reason": "final-winter-margin",
+            "timing": "final-winter"
+          },
+          {
+            "games": 1,
+            "reason": "optimates",
+            "timing": "final-winter"
+          },
+          {
+            "games": 14,
+            "reason": "threshold",
+            "timing": "final-winter"
+          }
+        ],
+        "terminations": {
+          "final-winter-margin": 22,
+          "optimates": 7,
+          "threshold": 171
+        },
+        "win_rate_percent": {
+          "Aedui": 6.0,
+          "Arverni": 18.0,
+          "Belgae": 25.5,
+          "Germans": 0.0,
+          "Romans": 50.5
+        },
+        "wins": {
+          "Aedui": 12,
+          "Arverni": 36,
+          "Belgae": 51,
+          "Germans": 0,
+          "Romans": 101
+        },
+        "winter_counts": {
+          "1": 32,
+          "2": 26,
+          "3": 16,
+          "5": 67,
+          "6": 22,
+          "7": 37
+        }
+      },
+      "The Great Revolt": {
+        "attempted": 200,
+        "before_final_winter": 25,
+        "cards": {
+          "maximum": 48,
+          "mean": 43.23,
+          "median": 45.0,
+          "minimum": 12,
+          "total": 8646
+        },
+        "completed": 200,
+        "ending_scenarios": {
+          "The Great Revolt": 200
+        },
+        "failed": 0,
+        "interlude_games": 0,
+        "on_final_winter": 175,
+        "rate_denominator": 200,
+        "termination_by_timing": [
+          {
+            "games": 3,
+            "reason": "optimates",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 22,
+            "reason": "threshold",
+            "timing": "before-final-winter"
+          },
+          {
+            "games": 121,
+            "reason": "final-winter-margin",
+            "timing": "final-winter"
+          },
+          {
+            "games": 11,
+            "reason": "optimates",
+            "timing": "final-winter"
+          },
+          {
+            "games": 43,
+            "reason": "threshold",
+            "timing": "final-winter"
+          }
+        ],
+        "terminations": {
+          "final-winter-margin": 121,
+          "optimates": 14,
+          "threshold": 65
+        },
+        "win_rate_percent": {
+          "Aedui": 12.0,
+          "Arverni": 38.5,
+          "Belgae": 29.5,
+          "Germans": 0.0,
+          "Romans": 20.0
+        },
+        "wins": {
+          "Aedui": 24,
+          "Arverni": 77,
+          "Belgae": 59,
+          "Germans": 0,
+          "Romans": 40
+        },
+        "winter_counts": {
+          "1": 4,
+          "2": 21,
+          "3": 175
+        }
+      }
+    },
+    "source": {
+      "all_factions_bots": true,
+      "commit": "c7264cb3d2afbf08ccfce140af6e03b0f17138ae",
+      "hash_seed": 0,
+      "python": "3.12.14",
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        200
+      ],
+      "source_sha256": "a7332a944ec34e2c9b802958fdbf926361985528044f799814a54e42827083af"
+    }
+  },
+  "manifest": {
+    "commands": {
+      "batch": {
+        "argv": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.run_batch",
+          "--games",
+          "200",
+          "--workers",
+          "4",
+          "--out",
+          "/workspace/scratch/534c265c65f4/final-validation-3/batch-hash0"
+        ],
+        "hash_seed": 0
+      },
+      "bots-hash7": {
+        "argv": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "/workspace/scratch/534c265c65f4/final-validation-3/orchestrate.py",
+          "bot-replay"
+        ],
+        "hash_seed": 7
+      },
+      "census-hash0": {
+        "argv": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.error_census",
+          "--seeds",
+          "1-20",
+          "--strict",
+          "--top",
+          "1000",
+          "--out",
+          "/workspace/scratch/534c265c65f4/final-validation-3/census-hash0.json"
+        ],
+        "hash_seed": 0
+      },
+      "census-hash7": {
+        "argv": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.error_census",
+          "--seeds",
+          "1-20",
+          "--strict",
+          "--top",
+          "1000",
+          "--out",
+          "/workspace/scratch/534c265c65f4/final-validation-3/census-hash7.json"
+        ],
+        "hash_seed": 7
+      },
+      "fuzz-hash0": {
+        "argv": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.player_fuzz",
+          "--seeds",
+          "1-40"
+        ],
+        "hash_seed": 0
+      },
+      "fuzz-hash7": {
+        "argv": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.player_fuzz",
+          "--seeds",
+          "1-40"
+        ],
+        "hash_seed": 7
+      }
+    },
+    "commit": "c7264cb3d2afbf08ccfce140af6e03b0f17138ae",
+    "source_sha256": "a7332a944ec34e2c9b802958fdbf926361985528044f799814a54e42827083af",
+    "stages": {
+      "batch": {
+        "finished_utc": "2026-10-23T22:49:53.601124+00:00",
+        "returncode": 0,
+        "source_unchanged": true,
+        "started_utc": "2026-10-23T22:48:27.751838+00:00"
+      },
+      "bots-hash7": {
+        "finished_utc": "2026-10-23T22:50:10.905857+00:00",
+        "returncode": 0,
+        "source_unchanged": true,
+        "started_utc": "2026-10-23T22:50:09.074825+00:00"
+      },
+      "census-hash0": {
+        "finished_utc": "2026-10-23T22:54:39.128611+00:00",
+        "returncode": 0,
+        "source_unchanged": true,
+        "started_utc": "2026-10-23T22:54:13.802095+00:00"
+      },
+      "census-hash7": {
+        "finished_utc": "2026-10-23T22:55:03.925339+00:00",
+        "returncode": 0,
+        "source_unchanged": true,
+        "started_utc": "2026-10-23T22:54:39.143746+00:00"
+      },
+      "fuzz-hash0": {
+        "finished_utc": "2026-10-23T22:52:10.050955+00:00",
+        "returncode": 0,
+        "source_unchanged": true,
+        "started_utc": "2026-10-23T22:50:10.923021+00:00"
+      },
+      "fuzz-hash7": {
+        "finished_utc": "2026-10-23T22:54:13.786738+00:00",
+        "returncode": 0,
+        "source_unchanged": true,
+        "started_utc": "2026-10-23T22:52:10.066140+00:00"
+      }
+    },
+    "started_utc": "2026-10-23T22:48:27.751514+00:00"
+  },
+  "matrix_verification": {
+    "batch": {
+      "failed_games": 0,
+      "games": 1000,
+      "games_by_scenario": {
+        "Ariovistus": 200,
+        "Pax Gallica?": 200,
+        "Reconquest of Gaul": 200,
+        "The Gallic War": 200,
+        "The Great Revolt": 200
+      },
+      "nonlegal_diagnostic_groups": 0,
+      "severity_games": {
+        "legal-decline": 995
+      },
+      "severity_incidents": {
+        "legal-decline": 9678
+      }
+    },
+    "bot_cross_hash": {
+      "compared_fields": [
+        "final_state_sha256",
+        "winner",
+        "cards",
+        "winters",
+        "diagnostics",
+        "diagnostic_occurrences",
+        "completed",
+        "errors",
+        "integrity_findings",
+        "final_ranking",
+        "termination",
+        "interlude_completed"
+      ],
+      "games": 25,
+      "mismatches": 0
+    },
+    "census": {
+      "by_severity": {
+        "legal-decline": 944
+      },
+      "exact_json_match": true,
+      "games_per_hash": 100
+    },
+    "failures": [],
+    "player_fuzz": {
+      "exact_output_match": true,
+      "games_per_hash": 200,
+      "output": "games=200  human-turns=6610  event-turns=1714  events-ok=1672  hard-findings=0  (soft: partial=586)\nfindings: none\nbatch-digest=a2c5dc6af82a365a  (must match across PYTHONHASHSEED values)\n",
+      "replay_enabled": true
+    }
+  },
+  "prior_failed_batch": {
+    "completed": 993,
+    "completed_game_ranking_failures": [],
+    "coverage_exact": true,
+    "crash_games": [
+      [
+        "Reconquest of Gaul",
+        29
+      ],
+      [
+        "The Great Revolt",
+        166
+      ],
+      [
+        "Ariovistus",
+        34
+      ],
+      [
+        "Ariovistus",
+        95
+      ],
+      [
+        "The Gallic War",
+        34
+      ],
+      [
+        "The Gallic War",
+        71
+      ],
+      [
+        "The Gallic War",
+        95
+      ]
+    ],
+    "diagnostic_incidents": {
+      "legal-decline": 9365,
+      "other-refused": 16
+    },
+    "errors": [
+      {
+        "games": [
+          [
+            "Reconquest of Gaul",
+            29
+          ],
+          [
+            "The Great Revolt",
+            166
+          ],
+          [
+            "Ariovistus",
+            34
+          ],
+          [
+            "Ariovistus",
+            95
+          ],
+          [
+            "The Gallic War",
+            34
+          ],
+          [
+            "The Gallic War",
+            71
+          ],
+          [
+            "The Gallic War",
+            95
+          ]
+        ],
+        "message": "Quarters destination must have eligible faction Control",
+        "stage": "gameplay",
+        "type": "QuartersError"
+      }
+    ],
+    "failed_games": [
+      [
+        "Reconquest of Gaul",
+        29
+      ],
+      [
+        "The Great Revolt",
+        166
+      ],
+      [
+        "Ariovistus",
+        34
+      ],
+      [
+        "Ariovistus",
+        95
+      ],
+      [
+        "The Gallic War",
+        34
+      ],
+      [
+        "The Gallic War",
+        71
+      ],
+      [
+        "The Gallic War",
+        95
+      ]
+    ],
+    "games": 1000,
+    "integrity_games": [],
+    "invalid_final_hash_games": [],
+    "nonlegal_groups": {
+      "no Caesar-free destination with an adjacent Roman group": [
+        {
+          "card": "A17",
+          "faction": "Aedui",
+          "incidents": 1,
+          "scenario": "Ariovistus",
+          "seed": 73,
+          "severity": "other-refused"
+        },
+        {
+          "card": "A17",
+          "faction": "Aedui",
+          "incidents": 1,
+          "scenario": "Ariovistus",
+          "seed": 103,
+          "severity": "other-refused"
+        },
+        {
+          "card": "A17",
+          "faction": "Romans",
+          "incidents": 1,
+          "scenario": "Ariovistus",
+          "seed": 161,
+          "severity": "other-refused"
+        },
+        {
+          "card": "A17",
+          "faction": "Aedui",
+          "incidents": 1,
+          "scenario": "The Gallic War",
+          "seed": 73,
+          "severity": "other-refused"
+        },
+        {
+          "card": "A17",
+          "faction": "Aedui",
+          "incidents": 1,
+          "scenario": "The Gallic War",
+          "seed": 103,
+          "severity": "other-refused"
+        },
+        {
+          "card": "A17",
+          "faction": "Romans",
+          "incidents": 1,
+          "scenario": "The Gallic War",
+          "seed": 161,
+          "severity": "other-refused"
+        }
+      ],
+      "no adjacent March reaching Arverni/Belgae Warbands": [
+        {
+          "card": 72,
+          "faction": "Romans",
+          "incidents": 1,
+          "scenario": "Ariovistus",
+          "seed": 29,
+          "severity": "other-refused"
+        },
+        {
+          "card": 72,
+          "faction": "Romans",
+          "incidents": 1,
+          "scenario": "Ariovistus",
+          "seed": 69,
+          "severity": "other-refused"
+        },
+        {
+          "card": 72,
+          "faction": "Romans",
+          "incidents": 1,
+          "scenario": "The Gallic War",
+          "seed": 29,
+          "severity": "other-refused"
+        },
+        {
+          "card": 72,
+          "faction": "Romans",
+          "incidents": 1,
+          "scenario": "The Gallic War",
+          "seed": 69,
+          "severity": "other-refused"
+        }
+      ],
+      "no free March available": [
+        {
+          "card": 36,
+          "faction": "Belgae",
+          "incidents": 1,
+          "scenario": "Pax Gallica?",
+          "seed": 64,
+          "severity": "other-refused"
+        },
+        {
+          "card": 36,
+          "faction": "Belgae",
+          "incidents": 1,
+          "scenario": "Pax Gallica?",
+          "seed": 105,
+          "severity": "other-refused"
+        },
+        {
+          "card": 36,
+          "faction": "Belgae",
+          "incidents": 1,
+          "scenario": "Pax Gallica?",
+          "seed": 120,
+          "severity": "other-refused"
+        },
+        {
+          "card": 36,
+          "faction": "Belgae",
+          "incidents": 1,
+          "scenario": "Reconquest of Gaul",
+          "seed": 60,
+          "severity": "other-refused"
+        },
+        {
+          "card": 36,
+          "faction": "Belgae",
+          "incidents": 1,
+          "scenario": "The Gallic War",
+          "seed": 166,
+          "severity": "other-refused"
+        },
+        {
+          "card": 36,
+          "faction": "Belgae",
+          "incidents": 1,
+          "scenario": "The Gallic War",
+          "seed": 172,
+          "severity": "other-refused"
+        }
+      ]
+    },
+    "nonlegal_incidents": 16,
+    "ordered_final_hashes_sha256": "e9579f2308482217d58e237e38bde4ad78be66e4c6f81d64feb2e5c738b79d49",
+    "source": {
+      "all_factions_bots": true,
+      "commit": "fe770da8fed98db5048ec704bc216f126f5dd134",
+      "hash_seed": 0,
+      "python": "3.12.14",
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        200
+      ],
+      "source_sha256": "56ff643572ab2d2f9652cb6ed52243993abcd48f78343428191d88bdc61a648f"
+    }
+  },
+  "schema_version": 1
+}

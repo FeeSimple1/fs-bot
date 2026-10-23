@@ -1,10 +1,11 @@
 # Playing Falling Sky against the bots
 
-This is a complete, rules-faithful engine for GMT's **Falling Sky:
+This engine supports GMT's **Falling Sky:
 The Gallic Revolt Against Caesar** (2nd Edition) and the
 **Ariovistus** expansion, with non-player bots for every faction.
 You pick any seat (or several); the bots play the rest using the
-published non-player flowcharts.
+published non-player flowcharts. See [current status](docs/current-status.md)
+for verified fixes, test coverage, and unresolved source conflicts.
 
 ## Requirements
 
@@ -37,6 +38,16 @@ Other options: `--scenario "Name"` and `--bots Romans,Aedui,Belgae`
 skip the wizard; `--seed N` makes the deck deterministic; see
 `python -m fs_bot.cli.app --help`.
 
+Choose card versions when starting a game with
+`--card-edition second-edition` or `--card-edition original`. This choice
+governs the five optional revised cards (11, 30, 39, 44, and 54), including
+their displayed text and effects. It does not change the expansion deck or
+scenario rules. The default, `legacy`, preserves the previous behavior:
+original versions in base scenarios and revised versions in Ariovistus.
+Explicit editions remain unchanged through the Gallic War Interlude;
+`legacy` continues to follow the current scenario. Older saves without a
+choice use `legacy`. A loaded game cannot change editions.
+
 ## How a turn works
 
 Each Event card shows the initiative order. When it is your turn the
@@ -48,6 +59,11 @@ the Command first and add its Special Activity afterward. The interrupt
 option allows Rally, Recruit, Raid, or Seize in some Regions, then the
 Special Activity, then the rest of that Command in other Regions.
 Ambush and Besiege resolve within their accompanying Battle.
+
+When an Event grants an action, its menu lets you plan the permitted action,
+request the bot default, or decline where the card allows. Region and piece
+limits still apply. Paid grants, such as Winter Campaign and Frumentum,
+use their own action and Resource budgets.
 
 Before your decisions, the display shows the current and upcoming card
 texts and changes since your previous decision. Type **`b`** or **`board`**
@@ -71,10 +87,11 @@ seats needed for replay after the Interlude.
 
 The full rulebook transcriptions ship in `Reference Documents/`
 (base chapters 1-8, Ariovistus A-chapters, card texts, non-player
-flowcharts), with all published errata applied inline as
-`[ERRATA ...]` notes. The engine implements the 2nd Edition rules,
-every capability card, and the designer rulings collected on BGG —
-see QUESTIONS.md for the complete decision ledger.
+flowcharts), including transcribed errata marked as `[ERRATA ...]` notes.
+The implementation follows these supplied references and the rulings
+recorded in QUESTIONS.md. That file is a historical decision ledger;
+[current status](docs/current-status.md) identifies the remaining source
+conflicts and supersedes older completion claims.
 
 ## Scenarios
 

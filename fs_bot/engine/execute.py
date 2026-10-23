@@ -4894,14 +4894,18 @@ def _iter_harassers(state, region, target_faction, group, *, stop_when_empty=Fal
     from fs_bot.rules_consts import (
         FACTIONS, ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS, VERCINGETORIX,
         LEADER, WARBAND, AUXILIA, LEGION, ALLY, FORT, HIDDEN,
-        BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+        BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, WINTER_CARD,
     )
     from fs_bot.engine.game_engine import get_sop_factions, get_faction_order
     scenario = state["scenario"]
     has_verc = (scenario in BASE_SCENARIOS and target_faction == ARVERNI
                 and bool(group) and group.get(LEADER) == VERCINGETORIX)
     order = FACTIONS
-    if scenario in BASE_SCENARIOS and state.get("current_card") is not None:
+    # Winter Campaign runs after Harvest with the Winter marker current.
+    # That marker has no Event metadata/order. Keep the legacy fallback;
+    # the supplied sources do not specify Winter Harassment ordering.
+    if (scenario in BASE_SCENARIOS
+            and state.get("current_card") not in (None, WINTER_CARD)):
         card_order = get_faction_order(state)
         if card_order:
             order = (*card_order, GERMANS)

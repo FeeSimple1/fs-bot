@@ -13,6 +13,12 @@ From the repository directory:
 python -m fs_bot --save autosave.json
 ```
 
+For an installed command, run `python -m pip install .` from a checkout,
+then `fs-bot --save autosave.json` from your game directory. Installation
+includes the unchanged reference inputs needed to display card text. See
+[release and compatibility checks](RELEASES.md) for building and verifying
+a local distribution.
+
 The setup wizard offers the five scenarios and lets you choose human or bot
 control for each playable faction. On Windows, `play.bat` starts the same
 interface. Resume a saved game with:
@@ -32,6 +38,10 @@ game. The saved choice governs the five optional revised cards. The default
 Ariovistus; explicit editions persist through the Gallic War Interlude.
 See [Playing](PLAYING.md) for timing, decisions, saves, and edition details.
 
+Original scenarios also support `--diviciacus-option`, independently of
+card edition. This replaces card 38 with O38 and enables the optional
+Diviciacus Leader rules. The choice is saved with the game.
+
 ## Documentation
 
 | Need | Start here |
@@ -40,21 +50,25 @@ See [Playing](PLAYING.md) for timing, decisions, saves, and edition details.
 | Play with an AI assistant | [Assistant guide](CHATGPT_README.md) |
 | Integrate a human or software agent | [Agent interface](AGENT_INTERFACE.md) |
 | Review fixes and remaining limitations | [Current engineering status](docs/current-status.md) |
-| Inspect outcomes and reproducible evidence | [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md) |
+| Inspect outcomes and reproducible evidence | [24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md) |
 | Find source questions and prior decisions | [Question ledger](QUESTIONS.md#current-open-source-questions) |
 | Develop and validate changes | [Developer instructions](CLAUDE.md), [maintenance roadmap](BUILD_PLAN.md), [self-play workflow](SELFPLAY_PLAYBOOK.md) |
+| Install or check a release | [Release guide](RELEASES.md), [change history](CHANGELOG.md) |
 | Browse all project documentation | [Documentation index](docs/README.md) |
 
 ## Verified checkpoint
 
-The [23 October report](docs/reviews/outstanding-fixes-2026-10-23.md) records
-the exact tested revision: **4,067 passing tests**, **1,000 completed bot
-games** across all five scenarios, no crashes or nonlegal action diagnostics
-in that batch, and matching cross-hash/replay results. All eight CI jobs
-passed for its [publication commit](https://github.com/FeeSimple1/fs-bot/actions/runs/40036918602).
-Those results belong to that checkpoint; they are not a claim that every
-possible position or later revision has been verified.
+The [24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md)
+records **4,431 passing tests**, **2,500 accepted bot games** across the
+five scenarios and three card-edition profiles, **90 optional-Diviciacus
+games**, and **1,000 mixed-seat executions** with replay. The accepted
+bot matrix has no crashes, illegal diagnostics, integrity failures or
+ranking/hash findings. The report identifies the exact source digest,
+seeds, outcome statistics, installation checks and remote CI status.
 
+The [23 October report](docs/reviews/outstanding-fixes-2026-10-23.md)
+preserves the earlier checkpoint. Results apply to their tested revision
+and paths; they do not establish that every possible position is correct.
 Six source questions remain documented. Historical strategy studies use
 older mechanics and have additional harness limitations; consult their
 dated caveats before using their numbers as play advice.

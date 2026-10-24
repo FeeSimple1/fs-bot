@@ -26,6 +26,11 @@ You are about to PLAY one faction against the built-in bots.
    Seats: Romans, Arverni, Aedui, Belgae (base) / Romans, Germans,
    Aedui, Belgae (Ariovistus).
 
+   `init --card-edition original|second-edition|legacy` selects the five
+   optional card versions. In an original scenario, `--diviciacus-option`
+   separately selects O38 and the optional Diviciacus Leader rule. Both
+   choices persist in saves and replay.
+
 3. Advance the game:
 
        python -m fs_bot.tools.llm_seat play
@@ -67,6 +72,11 @@ You are about to PLAY one faction against the built-in bots.
    - Marching pieces: `{"counts":{"Hidden":1,"Revealed":1}}` selects the
      requested total from the offered visibility counts. This example applies
      only when both states are offered and `count` is 2.
+   - Diviciacus physical pieces: `{"counts":{"Romans":1,"Aedui":1}}`
+     selects owners for an offered placement or March subset of two pieces.
+     Copy the owners and limits from `available`; this differs from the
+     visibility counts in `march_cohort`. Cooperation requests themselves
+     use the boolean agreement response.
    - Kinship (A65): `{"faction":"Belgae","regions":["Nervii"]}` chooses
      an offered attacker and its eligible Battle Regions; consult the request
      before choosing Regions. This Event also permits an explicit decline.

@@ -11,8 +11,11 @@ Read [README.md](README.md) for entry points and
 [docs/README.md](docs/README.md) for the documentation map. Current fixes,
 known limits, and the six source questions are in
 [docs/current-status.md](docs/current-status.md). The
+[24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md)
+tracks the newer repairs; the
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
-is a revision-specific checkpoint, not a promise about every future change.
+remains a revision-specific checkpoint. A report is not a promise about
+every future change.
 [BUILD_PLAN.md](BUILD_PLAN.md) is now the maintenance roadmap; the engine,
 CLI, assistant sessions, and validation tools already exist.
 

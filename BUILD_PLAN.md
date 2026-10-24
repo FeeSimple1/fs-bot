@@ -1,14 +1,16 @@
 # Build plan and maintenance roadmap
 
-Updated 23 October 2026. The original pre-implementation plan is retained in
+Updated 24 October 2026. The original pre-implementation plan is retained in
 Git history. The engine now has implementations for all eight original build
 phases; those phase labels are an architectural map, not a list of unbuilt
 features or a certification that every rule interaction is correct.
 
 Start with [current engineering status](docs/current-status.md) for corrected
 behavior and open source questions, and the
+[24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md)
+for the newer repairs and their validation status. The earlier
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
-for the exact tested revision and reproducible results. Use
+retains its exact tested revision and reproducible results. Use
 [PLAYING.md](PLAYING.md) for terminal play and
 [AGENT_INTERFACE.md](AGENT_INTERFACE.md) for external controllers.
 
@@ -30,7 +32,17 @@ summaries. Consult the supplied rules for faction abilities, costs, Winter
 ordering, and card composition; do not implement rules from a roadmap table.
 The protected references and canonical constants remain read-only.
 
-## Verified checkpoint
+## Follow-up verified checkpoint
+
+The 24 October source snapshot passes 4,431 tests, 2,500 audited bot games
+across all scenarios and three card-edition profiles, 90 optional-Diviciacus
+games, 75 bot hash-seed repeats, and 1,000 mixed-seat game executions with
+replay. Strict nested census, baseline checks, strategy-runner smoke and
+isolated installation checks pass. The
+[follow-up report](docs/reviews/followup-repairs-2026-10-24.md) records the
+source digest, detailed counts, failed attempts and separate remote CI status.
+
+## Earlier verified checkpoint
 
 The 23 October review tested source commit
 `c7264cb3d2afbf08ccfce140af6e03b0f17138ae` and recorded:
@@ -51,6 +63,13 @@ their own relevant checks; old counts must not be relabeled as new evidence.
 
 ## Continuing work
 
+The follow-up implementation adds Diviciacus cooperation and its optional
+original-scenario setup, repairs strategy-runner acceptance/resume, exposes
+edition matrices, expands real terminal journeys, and adds local packaging
+and historical save fixtures. These are now implemented maintenance items;
+the [current status](docs/current-status.md#follow-up-repairs) distinguishes
+them from the older validation checkpoint above.
+
 1. **Resolve the six source questions when authoritative answers are available.**
    [Current status](docs/current-status.md#source-conflicts-still-open) links
    their dispositions; [QUESTIONS.md](QUESTIONS.md) holds the source wording
@@ -64,16 +83,17 @@ their own relevant checks; old counts must not be relabeled as new evidence.
    physical piece ownership/visibility, and interruptions within Winter or
    Interlude. Preserve the failing seed or minimal position before a fix,
    add a source-derived regression, and rerun affected scenarios and editions.
-   New held-out seeds and explicit edition matrices would add evidence beyond
-   the accepted default-profile sample; they are not claimed as completed here.
+   The runners and CI now support held-out seeds and explicit edition
+   matrices. Record actual results for the tested revision; configured
+   coverage alone is not evidence that a run passed.
 3. **Keep the human interface reviewable.** Validate full card information,
    per-seat changes, `board`, all legal choices, exact decision ownership, and
    save/resume/replay whenever a new action or reaction is added. A passing
    bot-only batch does not cover choices a human never received.
 4. **Maintain reproducible validation and release evidence.** Preserve source
    revision/digest, scenario, edition, seats, seeds, commands, exit status and
-   raw findings. Review fresh-environment installation/play and saved-game
-   compatibility for a release. Treat the scheduled deep-soak workflow as
+   raw findings. Maintain fresh-environment installation/play and the archived
+   saved-game compatibility fixtures for each release. Treat the scheduled deep-soak workflow as
    configured coverage; verify its run and artifacts before claiming it passed
    on a particular revision.
 5. **Re-evaluate strategy separately from rules fidelity.** Historic heuristic

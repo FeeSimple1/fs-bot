@@ -1,0 +1,2415 @@
+{
+  "accepted": true,
+  "freeze": {
+    "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+    "dirty": true,
+    "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1",
+    "python": "3.12.14"
+  },
+  "tests": 4431,
+  "bot_games": 2500,
+  "batches": {
+    "legacy-1000": {
+      "card_edition": "legacy",
+      "seeds": [
+        1,
+        200
+      ],
+      "games": 1000,
+      "summary": {
+        "Pax Gallica?": {
+          "card_edition": "legacy",
+          "attempted": 200,
+          "completed": 200,
+          "engine_completed": 200,
+          "crashes": 0,
+          "wins": {
+            "Romans": 137,
+            "Belgae": 34,
+            "Arverni": 16,
+            "Aedui": 13
+          },
+          "highest_margin_leaders": {
+            "Romans": 137,
+            "Belgae": 34,
+            "Arverni": 16,
+            "Aedui": 13
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 5,
+          "terminations": {
+            "threshold": 174,
+            "final-winter-margin": 20,
+            "optimates": 6
+          },
+          "interlude_games": 0,
+          "cards_mean": 37.06,
+          "cards_median": 26.0,
+          "cards_range": [
+            22,
+            75
+          ],
+          "winters": {
+            "2": 122,
+            "3": 31,
+            "4": 16,
+            "5": 31
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 1466
+          },
+          "diagnostic_games": {
+            "legal-decline": 199
+          },
+          "decisions": 13701
+        },
+        "Reconquest of Gaul": {
+          "card_edition": "legacy",
+          "attempted": 200,
+          "completed": 200,
+          "engine_completed": 200,
+          "crashes": 0,
+          "wins": {
+            "Romans": 123,
+            "Arverni": 15,
+            "Belgae": 33,
+            "Aedui": 29
+          },
+          "highest_margin_leaders": {
+            "Romans": 123,
+            "Arverni": 15,
+            "Belgae": 33,
+            "Aedui": 29
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 5,
+          "terminations": {
+            "optimates": 7,
+            "threshold": 164,
+            "final-winter-margin": 29
+          },
+          "interlude_games": 0,
+          "cards_mean": 33.01,
+          "cards_median": 29.0,
+          "cards_range": [
+            11,
+            64
+          ],
+          "winters": {
+            "2": 41,
+            "1": 84,
+            "4": 51,
+            "3": 24
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 1808
+          },
+          "diagnostic_games": {
+            "legal-decline": 200
+          },
+          "decisions": 12318
+        },
+        "The Great Revolt": {
+          "card_edition": "legacy",
+          "attempted": 200,
+          "completed": 200,
+          "engine_completed": 200,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 62,
+            "Aedui": 27,
+            "Romans": 39,
+            "Arverni": 72
+          },
+          "highest_margin_leaders": {
+            "Belgae": 62,
+            "Aedui": 27,
+            "Romans": 39,
+            "Arverni": 72
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 2,
+          "terminations": {
+            "final-winter-margin": 121,
+            "threshold": 64,
+            "optimates": 15
+          },
+          "interlude_games": 0,
+          "cards_mean": 43.19,
+          "cards_median": 45.0,
+          "cards_range": [
+            12,
+            48
+          ],
+          "winters": {
+            "3": 175,
+            "2": 21,
+            "1": 4
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 1862
+          },
+          "diagnostic_games": {
+            "legal-decline": 200
+          },
+          "decisions": 16118
+        },
+        "Ariovistus": {
+          "card_edition": "legacy",
+          "attempted": 200,
+          "completed": 200,
+          "engine_completed": 200,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 31,
+            "Romans": 92,
+            "Germans": 58,
+            "Aedui": 19
+          },
+          "highest_margin_leaders": {
+            "Belgae": 31,
+            "Romans": 92,
+            "Germans": 58,
+            "Aedui": 19
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 1,
+          "terminations": {
+            "threshold": 76,
+            "final-winter-margin": 124
+          },
+          "interlude_games": 0,
+          "cards_mean": 38.16,
+          "cards_median": 44.0,
+          "cards_range": [
+            11,
+            48
+          ],
+          "winters": {
+            "2": 25,
+            "1": 34,
+            "3": 141
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 1768
+          },
+          "diagnostic_games": {
+            "legal-decline": 197
+          },
+          "decisions": 14231
+        },
+        "The Gallic War": {
+          "card_edition": "legacy",
+          "attempted": 200,
+          "completed": 200,
+          "engine_completed": 200,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 55,
+            "Romans": 93,
+            "Arverni": 36,
+            "Aedui": 16
+          },
+          "highest_margin_leaders": {
+            "Belgae": 55,
+            "Romans": 93,
+            "Arverni": 36,
+            "Aedui": 16
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 13,
+          "terminations": {
+            "threshold": 170,
+            "final-winter-margin": 21,
+            "optimates": 9
+          },
+          "interlude_games": 124,
+          "cards_mean": 61.13,
+          "cards_median": 69.0,
+          "cards_range": [
+            11,
+            107
+          ],
+          "winters": {
+            "2": 25,
+            "1": 34,
+            "7": 34,
+            "5": 63,
+            "6": 27,
+            "3": 17
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 2920
+          },
+          "diagnostic_games": {
+            "legal-decline": 197
+          },
+          "decisions": 22702
+        }
+      }
+    },
+    "legacy-heldout-500": {
+      "card_edition": "legacy",
+      "seeds": [
+        201,
+        300
+      ],
+      "games": 500,
+      "summary": {
+        "Pax Gallica?": {
+          "card_edition": "legacy",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Romans": 75,
+            "Arverni": 5,
+            "Belgae": 13,
+            "Aedui": 7
+          },
+          "highest_margin_leaders": {
+            "Romans": 75,
+            "Arverni": 5,
+            "Belgae": 13,
+            "Aedui": 7
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 3,
+          "terminations": {
+            "threshold": 91,
+            "optimates": 6,
+            "final-winter-margin": 3
+          },
+          "interlude_games": 0,
+          "cards_mean": 33.8,
+          "cards_median": 26.0,
+          "cards_range": [
+            22,
+            75
+          ],
+          "winters": {
+            "2": 62,
+            "3": 24,
+            "4": 7,
+            "5": 7
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 686
+          },
+          "diagnostic_games": {
+            "legal-decline": 99
+          },
+          "decisions": 6238
+        },
+        "Reconquest of Gaul": {
+          "card_edition": "legacy",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 19,
+            "Aedui": 19,
+            "Romans": 56,
+            "Arverni": 6
+          },
+          "highest_margin_leaders": {
+            "Belgae": 19,
+            "Aedui": 19,
+            "Romans": 56,
+            "Arverni": 6
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 3,
+          "terminations": {
+            "threshold": 80,
+            "final-winter-margin": 15,
+            "optimates": 5
+          },
+          "interlude_games": 0,
+          "cards_mean": 32.61,
+          "cards_median": 29.0,
+          "cards_range": [
+            11,
+            64
+          ],
+          "winters": {
+            "2": 24,
+            "3": 15,
+            "4": 22,
+            "1": 39
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 888
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 6084
+        },
+        "The Great Revolt": {
+          "card_edition": "legacy",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 29,
+            "Aedui": 13,
+            "Arverni": 36,
+            "Romans": 22
+          },
+          "highest_margin_leaders": {
+            "Belgae": 29,
+            "Aedui": 13,
+            "Arverni": 36,
+            "Romans": 22
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 2,
+          "terminations": {
+            "threshold": 34,
+            "final-winter-margin": 60,
+            "optimates": 6
+          },
+          "interlude_games": 0,
+          "cards_mean": 41.72,
+          "cards_median": 44.0,
+          "cards_range": [
+            12,
+            48
+          ],
+          "winters": {
+            "3": 80,
+            "1": 3,
+            "2": 17
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 897
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 7786
+        },
+        "Ariovistus": {
+          "card_edition": "legacy",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Romans": 51,
+            "Germans": 22,
+            "Aedui": 17,
+            "Belgae": 10
+          },
+          "highest_margin_leaders": {
+            "Romans": 51,
+            "Germans": 22,
+            "Aedui": 17,
+            "Belgae": 10
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 0,
+          "terminations": {
+            "final-winter-margin": 59,
+            "threshold": 41
+          },
+          "interlude_games": 0,
+          "cards_mean": 38.12,
+          "cards_median": 44.0,
+          "cards_range": [
+            11,
+            48
+          ],
+          "winters": {
+            "3": 66,
+            "2": 21,
+            "1": 13
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 872
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 7103
+        },
+        "The Gallic War": {
+          "card_edition": "legacy",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Arverni": 16,
+            "Aedui": 10,
+            "Romans": 52,
+            "Belgae": 22
+          },
+          "highest_margin_leaders": {
+            "Arverni": 16,
+            "Aedui": 10,
+            "Romans": 52,
+            "Belgae": 22
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 3,
+          "terminations": {
+            "final-winter-margin": 17,
+            "threshold": 80,
+            "optimates": 3
+          },
+          "interlude_games": 59,
+          "cards_mean": 61.97,
+          "cards_median": 70.0,
+          "cards_range": [
+            11,
+            107
+          ],
+          "winters": {
+            "7": 27,
+            "5": 26,
+            "2": 21,
+            "6": 6,
+            "3": 7,
+            "1": 13
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 1486
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 11511
+        }
+      }
+    },
+    "original-heldout-500": {
+      "card_edition": "original",
+      "seeds": [
+        201,
+        300
+      ],
+      "games": 500,
+      "summary": {
+        "Pax Gallica?": {
+          "card_edition": "original",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Romans": 75,
+            "Arverni": 5,
+            "Belgae": 13,
+            "Aedui": 7
+          },
+          "highest_margin_leaders": {
+            "Romans": 75,
+            "Arverni": 5,
+            "Belgae": 13,
+            "Aedui": 7
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 3,
+          "terminations": {
+            "threshold": 91,
+            "optimates": 6,
+            "final-winter-margin": 3
+          },
+          "interlude_games": 0,
+          "cards_mean": 33.8,
+          "cards_median": 26.0,
+          "cards_range": [
+            22,
+            75
+          ],
+          "winters": {
+            "2": 62,
+            "3": 24,
+            "4": 7,
+            "5": 7
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 686
+          },
+          "diagnostic_games": {
+            "legal-decline": 99
+          },
+          "decisions": 6238
+        },
+        "Reconquest of Gaul": {
+          "card_edition": "original",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 19,
+            "Aedui": 19,
+            "Romans": 56,
+            "Arverni": 6
+          },
+          "highest_margin_leaders": {
+            "Belgae": 19,
+            "Aedui": 19,
+            "Romans": 56,
+            "Arverni": 6
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 3,
+          "terminations": {
+            "threshold": 80,
+            "final-winter-margin": 15,
+            "optimates": 5
+          },
+          "interlude_games": 0,
+          "cards_mean": 32.61,
+          "cards_median": 29.0,
+          "cards_range": [
+            11,
+            64
+          ],
+          "winters": {
+            "2": 24,
+            "3": 15,
+            "4": 22,
+            "1": 39
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 888
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 6084
+        },
+        "The Great Revolt": {
+          "card_edition": "original",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 29,
+            "Aedui": 13,
+            "Arverni": 36,
+            "Romans": 22
+          },
+          "highest_margin_leaders": {
+            "Belgae": 29,
+            "Aedui": 13,
+            "Arverni": 36,
+            "Romans": 22
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 2,
+          "terminations": {
+            "threshold": 34,
+            "final-winter-margin": 60,
+            "optimates": 6
+          },
+          "interlude_games": 0,
+          "cards_mean": 41.72,
+          "cards_median": 44.0,
+          "cards_range": [
+            12,
+            48
+          ],
+          "winters": {
+            "3": 80,
+            "1": 3,
+            "2": 17
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 897
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 7786
+        },
+        "Ariovistus": {
+          "card_edition": "original",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Romans": 52,
+            "Germans": 23,
+            "Aedui": 17,
+            "Belgae": 8
+          },
+          "highest_margin_leaders": {
+            "Romans": 52,
+            "Germans": 23,
+            "Aedui": 17,
+            "Belgae": 8
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 1,
+          "terminations": {
+            "threshold": 42,
+            "final-winter-margin": 58
+          },
+          "interlude_games": 0,
+          "cards_mean": 38.12,
+          "cards_median": 44.0,
+          "cards_range": [
+            11,
+            48
+          ],
+          "winters": {
+            "3": 66,
+            "2": 21,
+            "1": 13
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 882
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 7103
+        },
+        "The Gallic War": {
+          "card_edition": "original",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Romans": 55,
+            "Aedui": 11,
+            "Arverni": 15,
+            "Belgae": 18,
+            "Germans": 1
+          },
+          "highest_margin_leaders": {
+            "Romans": 55,
+            "Aedui": 11,
+            "Arverni": 15,
+            "Belgae": 18,
+            "Germans": 1
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 4,
+          "terminations": {
+            "threshold": 79,
+            "final-winter-margin": 18,
+            "optimates": 3
+          },
+          "interlude_games": 58,
+          "cards_mean": 61.8,
+          "cards_median": 70.0,
+          "cards_range": [
+            11,
+            107
+          ],
+          "winters": {
+            "3": 8,
+            "7": 28,
+            "5": 26,
+            "2": 21,
+            "6": 4,
+            "1": 13
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 1493
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 11480
+        }
+      }
+    },
+    "second-edition-heldout-500": {
+      "card_edition": "second-edition",
+      "seeds": [
+        201,
+        300
+      ],
+      "games": 500,
+      "summary": {
+        "Pax Gallica?": {
+          "card_edition": "second-edition",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Romans": 74,
+            "Arverni": 4,
+            "Belgae": 15,
+            "Aedui": 7
+          },
+          "highest_margin_leaders": {
+            "Romans": 74,
+            "Arverni": 4,
+            "Belgae": 15,
+            "Aedui": 7
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 4,
+          "terminations": {
+            "threshold": 90,
+            "optimates": 5,
+            "final-winter-margin": 5
+          },
+          "interlude_games": 0,
+          "cards_mean": 34.38,
+          "cards_median": 26.0,
+          "cards_range": [
+            22,
+            75
+          ],
+          "winters": {
+            "2": 64,
+            "3": 19,
+            "4": 8,
+            "5": 9
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 700
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 6348
+        },
+        "Reconquest of Gaul": {
+          "card_edition": "second-edition",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 16,
+            "Aedui": 19,
+            "Romans": 59,
+            "Arverni": 6
+          },
+          "highest_margin_leaders": {
+            "Belgae": 16,
+            "Aedui": 19,
+            "Romans": 59,
+            "Arverni": 6
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 3,
+          "terminations": {
+            "threshold": 82,
+            "final-winter-margin": 12,
+            "optimates": 6
+          },
+          "interlude_games": 0,
+          "cards_mean": 30.34,
+          "cards_median": 29.0,
+          "cards_range": [
+            11,
+            64
+          ],
+          "winters": {
+            "2": 29,
+            "3": 16,
+            "4": 15,
+            "1": 40
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 834
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 5658
+        },
+        "The Great Revolt": {
+          "card_edition": "second-edition",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Belgae": 28,
+            "Aedui": 12,
+            "Arverni": 36,
+            "Romans": 24
+          },
+          "highest_margin_leaders": {
+            "Belgae": 28,
+            "Aedui": 12,
+            "Arverni": 36,
+            "Romans": 24
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 2,
+          "terminations": {
+            "threshold": 35,
+            "final-winter-margin": 60,
+            "optimates": 5
+          },
+          "interlude_games": 0,
+          "cards_mean": 41.72,
+          "cards_median": 44.0,
+          "cards_range": [
+            12,
+            48
+          ],
+          "winters": {
+            "3": 80,
+            "1": 3,
+            "2": 17
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 902
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 7786
+        },
+        "Ariovistus": {
+          "card_edition": "second-edition",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Romans": 51,
+            "Germans": 22,
+            "Aedui": 17,
+            "Belgae": 10
+          },
+          "highest_margin_leaders": {
+            "Romans": 51,
+            "Germans": 22,
+            "Aedui": 17,
+            "Belgae": 10
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 0,
+          "terminations": {
+            "final-winter-margin": 59,
+            "threshold": 41
+          },
+          "interlude_games": 0,
+          "cards_mean": 38.12,
+          "cards_median": 44.0,
+          "cards_range": [
+            11,
+            48
+          ],
+          "winters": {
+            "3": 66,
+            "2": 21,
+            "1": 13
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 872
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 7103
+        },
+        "The Gallic War": {
+          "card_edition": "second-edition",
+          "attempted": 100,
+          "completed": 100,
+          "engine_completed": 100,
+          "crashes": 0,
+          "wins": {
+            "Arverni": 18,
+            "Belgae": 23,
+            "Romans": 50,
+            "Aedui": 9
+          },
+          "highest_margin_leaders": {
+            "Arverni": 18,
+            "Belgae": 23,
+            "Romans": 50,
+            "Aedui": 9
+          },
+          "winner_margin_disagreements": 0,
+          "simultaneous_threshold_games": 4,
+          "terminations": {
+            "final-winter-margin": 17,
+            "threshold": 81,
+            "optimates": 2
+          },
+          "interlude_games": 59,
+          "cards_mean": 61.88,
+          "cards_median": 69.5,
+          "cards_range": [
+            11,
+            107
+          ],
+          "winters": {
+            "7": 27,
+            "6": 6,
+            "5": 26,
+            "2": 21,
+            "3": 7,
+            "1": 13
+          },
+          "integrity_flagged_games": 0,
+          "diagnostic_incidents": {
+            "legal-decline": 1486
+          },
+          "diagnostic_games": {
+            "legal-decline": 100
+          },
+          "decisions": 11494
+        }
+      }
+    }
+  },
+  "bot_hash_repeats": 75,
+  "optional": {
+    "accepted": true,
+    "attempted": 90,
+    "completed": 90,
+    "groups": {
+      "Pax Gallica? / legacy": {
+        "attempted": 10,
+        "cards_audited": 308,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 57
+        },
+        "failures": [],
+        "terminations": {
+          "optimates": 1,
+          "threshold": 9
+        },
+        "wins": {
+          "Aedui": 1,
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 6
+        }
+      },
+      "Pax Gallica? / original": {
+        "attempted": 10,
+        "cards_audited": 308,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 57
+        },
+        "failures": [],
+        "terminations": {
+          "optimates": 1,
+          "threshold": 9
+        },
+        "wins": {
+          "Aedui": 1,
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 6
+        }
+      },
+      "Pax Gallica? / second-edition": {
+        "attempted": 10,
+        "cards_audited": 292,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 53
+        },
+        "failures": [],
+        "terminations": {
+          "optimates": 1,
+          "threshold": 9
+        },
+        "wins": {
+          "Aedui": 1,
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 6
+        }
+      },
+      "Reconquest of Gaul / legacy": {
+        "attempted": 10,
+        "cards_audited": 276,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 87
+        },
+        "failures": [],
+        "terminations": {
+          "final-winter-margin": 1,
+          "threshold": 9
+        },
+        "wins": {
+          "Aedui": 3,
+          "Belgae": 1,
+          "Romans": 6
+        }
+      },
+      "Reconquest of Gaul / original": {
+        "attempted": 10,
+        "cards_audited": 276,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 87
+        },
+        "failures": [],
+        "terminations": {
+          "final-winter-margin": 1,
+          "threshold": 9
+        },
+        "wins": {
+          "Aedui": 3,
+          "Belgae": 1,
+          "Romans": 6
+        }
+      },
+      "Reconquest of Gaul / second-edition": {
+        "attempted": 10,
+        "cards_audited": 276,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 87
+        },
+        "failures": [],
+        "terminations": {
+          "final-winter-margin": 1,
+          "threshold": 9
+        },
+        "wins": {
+          "Aedui": 3,
+          "Belgae": 1,
+          "Romans": 6
+        }
+      },
+      "The Great Revolt / legacy": {
+        "attempted": 10,
+        "cards_audited": 388,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 83
+        },
+        "failures": [],
+        "terminations": {
+          "final-winter-margin": 6,
+          "threshold": 4
+        },
+        "wins": {
+          "Aedui": 1,
+          "Arverni": 4,
+          "Belgae": 4,
+          "Romans": 1
+        }
+      },
+      "The Great Revolt / original": {
+        "attempted": 10,
+        "cards_audited": 388,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 83
+        },
+        "failures": [],
+        "terminations": {
+          "final-winter-margin": 6,
+          "threshold": 4
+        },
+        "wins": {
+          "Aedui": 1,
+          "Arverni": 4,
+          "Belgae": 4,
+          "Romans": 1
+        }
+      },
+      "The Great Revolt / second-edition": {
+        "attempted": 10,
+        "cards_audited": 406,
+        "completed": 10,
+        "diagnostics": {
+          "legal-decline": 89
+        },
+        "failures": [],
+        "terminations": {
+          "final-winter-margin": 6,
+          "threshold": 4
+        },
+        "wins": {
+          "Aedui": 2,
+          "Arverni": 4,
+          "Belgae": 3,
+          "Romans": 1
+        }
+      }
+    },
+    "matrix_complete": true,
+    "matrix_results_sha256": "a4e2dc5249efc13285f6610a4120e45f4bafb54f63696e48933971b1b2465c04",
+    "source_after": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "source_unchanged": true
+  },
+  "fuzz": {
+    "source_before": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "source_after": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "source_unchanged": true,
+    "passed": true,
+    "comparisons": [
+      {
+        "edition": "legacy",
+        "full_json_identical": true,
+        "stdout_identical": true,
+        "games": 200,
+        "human_turns": 6465,
+        "event_turns": 1652,
+        "events_ok": 1607,
+        "hard_findings": 0,
+        "partial": 1,
+        "batch_digest": "08d955e1407bf519859ea2d4dbdf7a0dd53863d37c2575feb7abc19b2c4b7a3e",
+        "coverage_exact": true,
+        "all_games_completed": true,
+        "valid_metadata": true
+      },
+      {
+        "edition": "original",
+        "full_json_identical": true,
+        "stdout_identical": true,
+        "games": 25,
+        "human_turns": 693,
+        "event_turns": 182,
+        "events_ok": 171,
+        "hard_findings": 0,
+        "partial": 0,
+        "batch_digest": "cec2ba00cb2b61e355697eb93aed7d4c95b0f04e5a6880f3cb0a63d15abfd1d2",
+        "coverage_exact": true,
+        "all_games_completed": true,
+        "valid_metadata": true
+      },
+      {
+        "edition": "second-edition",
+        "full_json_identical": true,
+        "stdout_identical": true,
+        "games": 25,
+        "human_turns": 633,
+        "event_turns": 171,
+        "events_ok": 164,
+        "hard_findings": 0,
+        "partial": 0,
+        "batch_digest": "229db7579f667164021fb74e76cd081026ee9c6f4df71ac4902ae0c964f3c901",
+        "coverage_exact": true,
+        "all_games_completed": true,
+        "valid_metadata": true
+      }
+    ],
+    "runs": [
+      {
+        "name": "fuzz-legacy-hash0",
+        "edition": "legacy",
+        "hash_seed": 0,
+        "command": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.player_fuzz",
+          "--seeds",
+          "1-40",
+          "--card-edition",
+          "legacy",
+          "--out",
+          "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-legacy-hash0.json"
+        ],
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40
+        ],
+        "json": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-legacy-hash0.json",
+        "stdout": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-legacy-hash0.txt",
+        "source_after": {
+          "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "dirty": true,
+          "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+        },
+        "exit_status": 0,
+        "summary": {
+          "games": 200,
+          "human_turns": 6465,
+          "event_turns": 1652,
+          "events_ok": 1607,
+          "hard_findings": 0,
+          "partial": 1,
+          "batch_digest": "08d955e1407bf519859ea2d4dbdf7a0dd53863d37c2575feb7abc19b2c4b7a3e",
+          "coverage_exact": true,
+          "all_games_completed": true,
+          "valid_metadata": true
+        }
+      },
+      {
+        "name": "fuzz-legacy-hash7",
+        "edition": "legacy",
+        "hash_seed": 7,
+        "command": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.player_fuzz",
+          "--seeds",
+          "1-40",
+          "--card-edition",
+          "legacy",
+          "--out",
+          "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-legacy-hash7.json"
+        ],
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40
+        ],
+        "json": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-legacy-hash7.json",
+        "stdout": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-legacy-hash7.txt",
+        "source_after": {
+          "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "dirty": true,
+          "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+        },
+        "exit_status": 0,
+        "summary": {
+          "games": 200,
+          "human_turns": 6465,
+          "event_turns": 1652,
+          "events_ok": 1607,
+          "hard_findings": 0,
+          "partial": 1,
+          "batch_digest": "08d955e1407bf519859ea2d4dbdf7a0dd53863d37c2575feb7abc19b2c4b7a3e",
+          "coverage_exact": true,
+          "all_games_completed": true,
+          "valid_metadata": true
+        }
+      },
+      {
+        "name": "fuzz-original-hash0",
+        "edition": "original",
+        "hash_seed": 0,
+        "command": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.player_fuzz",
+          "--seeds",
+          "201-205",
+          "--card-edition",
+          "original",
+          "--out",
+          "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-original-hash0.json"
+        ],
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "json": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-original-hash0.json",
+        "stdout": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-original-hash0.txt",
+        "source_after": {
+          "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "dirty": true,
+          "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+        },
+        "exit_status": 0,
+        "summary": {
+          "games": 25,
+          "human_turns": 693,
+          "event_turns": 182,
+          "events_ok": 171,
+          "hard_findings": 0,
+          "partial": 0,
+          "batch_digest": "cec2ba00cb2b61e355697eb93aed7d4c95b0f04e5a6880f3cb0a63d15abfd1d2",
+          "coverage_exact": true,
+          "all_games_completed": true,
+          "valid_metadata": true
+        }
+      },
+      {
+        "name": "fuzz-original-hash7",
+        "edition": "original",
+        "hash_seed": 7,
+        "command": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.player_fuzz",
+          "--seeds",
+          "201-205",
+          "--card-edition",
+          "original",
+          "--out",
+          "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-original-hash7.json"
+        ],
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "json": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-original-hash7.json",
+        "stdout": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-original-hash7.txt",
+        "source_after": {
+          "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "dirty": true,
+          "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+        },
+        "exit_status": 0,
+        "summary": {
+          "games": 25,
+          "human_turns": 693,
+          "event_turns": 182,
+          "events_ok": 171,
+          "hard_findings": 0,
+          "partial": 0,
+          "batch_digest": "cec2ba00cb2b61e355697eb93aed7d4c95b0f04e5a6880f3cb0a63d15abfd1d2",
+          "coverage_exact": true,
+          "all_games_completed": true,
+          "valid_metadata": true
+        }
+      },
+      {
+        "name": "fuzz-second-edition-hash0",
+        "edition": "second-edition",
+        "hash_seed": 0,
+        "command": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.player_fuzz",
+          "--seeds",
+          "201-205",
+          "--card-edition",
+          "second-edition",
+          "--out",
+          "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-second-edition-hash0.json"
+        ],
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "json": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-second-edition-hash0.json",
+        "stdout": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-second-edition-hash0.txt",
+        "source_after": {
+          "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "dirty": true,
+          "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+        },
+        "exit_status": 0,
+        "summary": {
+          "games": 25,
+          "human_turns": 633,
+          "event_turns": 171,
+          "events_ok": 164,
+          "hard_findings": 0,
+          "partial": 0,
+          "batch_digest": "229db7579f667164021fb74e76cd081026ee9c6f4df71ac4902ae0c964f3c901",
+          "coverage_exact": true,
+          "all_games_completed": true,
+          "valid_metadata": true
+        }
+      },
+      {
+        "name": "fuzz-second-edition-hash7",
+        "edition": "second-edition",
+        "hash_seed": 7,
+        "command": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.player_fuzz",
+          "--seeds",
+          "201-205",
+          "--card-edition",
+          "second-edition",
+          "--out",
+          "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-second-edition-hash7.json"
+        ],
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "json": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-second-edition-hash7.json",
+        "stdout": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/fuzz-second-edition-hash7.txt",
+        "source_after": {
+          "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "dirty": true,
+          "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+        },
+        "exit_status": 0,
+        "summary": {
+          "games": 25,
+          "human_turns": 633,
+          "event_turns": 171,
+          "events_ok": 164,
+          "hard_findings": 0,
+          "partial": 0,
+          "batch_digest": "229db7579f667164021fb74e76cd081026ee9c6f4df71ac4902ae0c964f3c901",
+          "coverage_exact": true,
+          "all_games_completed": true,
+          "valid_metadata": true
+        }
+      }
+    ]
+  },
+  "census": {
+    "expected_source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1",
+    "source_before": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "runs": [
+      {
+        "hashseed": 0,
+        "command": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.error_census",
+          "--seeds",
+          "1-20",
+          "--strict",
+          "--out",
+          "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/census-hash0.json"
+        ],
+        "exit_code": 0,
+        "source_after": {
+          "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "dirty": true,
+          "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+        },
+        "stdout_path": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/census-hash0.stdout.txt",
+        "stderr_path": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/census-hash0.stderr.txt",
+        "json_path": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/census-hash0.json"
+      },
+      {
+        "hashseed": 7,
+        "command": [
+          "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+          "-m",
+          "fs_bot.tools.error_census",
+          "--seeds",
+          "1-20",
+          "--strict",
+          "--out",
+          "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/census-hash7.json"
+        ],
+        "exit_code": 0,
+        "source_after": {
+          "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "dirty": true,
+          "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+        },
+        "stdout_path": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/census-hash7.stdout.txt",
+        "stderr_path": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/census-hash7.stderr.txt",
+        "json_path": "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/census-hash7.json"
+      }
+    ],
+    "source_after": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "source_unchanged": true,
+    "records_accepted": true,
+    "json_bytes_identical": true,
+    "json_complete_identical": true,
+    "stdout_identical": true,
+    "json_sha256": [
+      "0456703b3255ffc182ddb75ed3bcec0baa01841779da32d583cc37788ffed700",
+      "0456703b3255ffc182ddb75ed3bcec0baa01841779da32d583cc37788ffed700"
+    ],
+    "stdout_sha256": [
+      "2e5369a557df33c15109d1ec0736844b36c5f3b4bf5af69c75525220bad18543",
+      "2e5369a557df33c15109d1ec0736844b36c5f3b4bf5af69c75525220bad18543"
+    ],
+    "accepted": true
+  },
+  "baseline": {
+    "command": [
+      "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+      "-m",
+      "fs_bot.tools.run_batch",
+      "--seeds",
+      "1-20",
+      "--card-edition",
+      "legacy",
+      "--workers",
+      "4",
+      "--out",
+      "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/baseline-legacy"
+    ],
+    "exit_code": 0,
+    "source_before": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "source_after": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "source_stable": true,
+    "expected_games": 100,
+    "recorded_games": 100,
+    "coverage_exact": true,
+    "findings": [],
+    "changed_records": 17,
+    "changed_winners": 13,
+    "changes": [
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 10,
+        "before": {
+          "cards": 62,
+          "winner": "Belgae"
+        },
+        "after": {
+          "winner": "Aedui",
+          "cards": 62
+        }
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 5,
+        "before": {
+          "cards": 46,
+          "winner": "Belgae"
+        },
+        "after": {
+          "winner": "Arverni",
+          "cards": 46
+        }
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 11,
+        "before": {
+          "cards": 47,
+          "winner": "Arverni"
+        },
+        "after": {
+          "winner": "Belgae",
+          "cards": 47
+        }
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 15,
+        "before": {
+          "cards": 47,
+          "winner": "Romans"
+        },
+        "after": {
+          "winner": "Arverni",
+          "cards": 47
+        }
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 3,
+        "before": {
+          "cards": 45,
+          "winner": "Aedui"
+        },
+        "after": {
+          "winner": "Germans",
+          "cards": 45
+        }
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 6,
+        "before": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "after": {
+          "winner": "Germans",
+          "cards": 43
+        }
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 8,
+        "before": {
+          "cards": 46,
+          "winner": "Aedui"
+        },
+        "after": {
+          "winner": "Romans",
+          "cards": 46
+        }
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 14,
+        "before": {
+          "cards": 46,
+          "winner": "Aedui"
+        },
+        "after": {
+          "winner": "Romans",
+          "cards": 46
+        }
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 18,
+        "before": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "after": {
+          "winner": "Belgae",
+          "cards": 43
+        }
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 3,
+        "before": {
+          "cards": 72,
+          "winner": "Romans"
+        },
+        "after": {
+          "winner": "Romans",
+          "cards": 103
+        }
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 5,
+        "before": {
+          "cards": 70,
+          "winner": "Belgae"
+        },
+        "after": {
+          "winner": "Romans",
+          "cards": 105
+        }
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 6,
+        "before": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "after": {
+          "winner": "Arverni",
+          "cards": 70
+        }
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 8,
+        "before": {
+          "cards": 88,
+          "winner": "Belgae"
+        },
+        "after": {
+          "winner": "Belgae",
+          "cards": 102
+        }
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 12,
+        "before": {
+          "cards": 67,
+          "winner": "Romans"
+        },
+        "after": {
+          "winner": "Romans",
+          "cards": 65
+        }
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 14,
+        "before": {
+          "cards": 102,
+          "winner": "Romans"
+        },
+        "after": {
+          "winner": "Romans",
+          "cards": 46
+        }
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 16,
+        "before": {
+          "cards": 101,
+          "winner": "Aedui"
+        },
+        "after": {
+          "winner": "Romans",
+          "cards": 101
+        }
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 18,
+        "before": {
+          "cards": 70,
+          "winner": "Arverni"
+        },
+        "after": {
+          "winner": "Belgae",
+          "cards": 70
+        }
+      }
+    ],
+    "rates": {
+      "Pax Gallica?": {
+        "Romans": {
+          "before": 16,
+          "after": 16,
+          "before_rate": 0.8,
+          "after_rate": 0.8,
+          "percentage_point_change": 0
+        },
+        "Arverni": {
+          "before": 1,
+          "after": 1,
+          "before_rate": 0.05,
+          "after_rate": 0.05,
+          "percentage_point_change": 0
+        },
+        "Aedui": {
+          "before": 1,
+          "after": 1,
+          "before_rate": 0.05,
+          "after_rate": 0.05,
+          "percentage_point_change": 0
+        },
+        "Belgae": {
+          "before": 2,
+          "after": 2,
+          "before_rate": 0.1,
+          "after_rate": 0.1,
+          "percentage_point_change": 0
+        }
+      },
+      "Reconquest of Gaul": {
+        "Romans": {
+          "before": 11,
+          "after": 11,
+          "before_rate": 0.55,
+          "after_rate": 0.55,
+          "percentage_point_change": 0
+        },
+        "Arverni": {
+          "before": 3,
+          "after": 3,
+          "before_rate": 0.15,
+          "after_rate": 0.15,
+          "percentage_point_change": 0
+        },
+        "Aedui": {
+          "before": 3,
+          "after": 4,
+          "before_rate": 0.15,
+          "after_rate": 0.2,
+          "percentage_point_change": 5
+        },
+        "Belgae": {
+          "before": 3,
+          "after": 2,
+          "before_rate": 0.15,
+          "after_rate": 0.1,
+          "percentage_point_change": -5
+        }
+      },
+      "The Great Revolt": {
+        "Romans": {
+          "before": 7,
+          "after": 6,
+          "before_rate": 0.35,
+          "after_rate": 0.3,
+          "percentage_point_change": -5
+        },
+        "Arverni": {
+          "before": 8,
+          "after": 9,
+          "before_rate": 0.4,
+          "after_rate": 0.45,
+          "percentage_point_change": 5
+        },
+        "Aedui": {
+          "before": 1,
+          "after": 1,
+          "before_rate": 0.05,
+          "after_rate": 0.05,
+          "percentage_point_change": 0
+        },
+        "Belgae": {
+          "before": 4,
+          "after": 4,
+          "before_rate": 0.2,
+          "after_rate": 0.2,
+          "percentage_point_change": 0
+        }
+      },
+      "Ariovistus": {
+        "Romans": {
+          "before": 9,
+          "after": 9,
+          "before_rate": 0.45,
+          "after_rate": 0.45,
+          "percentage_point_change": 0
+        },
+        "Aedui": {
+          "before": 4,
+          "after": 1,
+          "before_rate": 0.2,
+          "after_rate": 0.05,
+          "percentage_point_change": -15
+        },
+        "Belgae": {
+          "before": 2,
+          "after": 3,
+          "before_rate": 0.1,
+          "after_rate": 0.15,
+          "percentage_point_change": 5
+        },
+        "Germans": {
+          "before": 5,
+          "after": 7,
+          "before_rate": 0.25,
+          "after_rate": 0.35,
+          "percentage_point_change": 10
+        }
+      },
+      "The Gallic War": {
+        "Romans": {
+          "before": 11,
+          "after": 12,
+          "before_rate": 0.55,
+          "after_rate": 0.6,
+          "percentage_point_change": 5
+        },
+        "Arverni": {
+          "before": 3,
+          "after": 3,
+          "before_rate": 0.15,
+          "after_rate": 0.15,
+          "percentage_point_change": 0
+        },
+        "Aedui": {
+          "before": 1,
+          "after": 0,
+          "before_rate": 0.05,
+          "after_rate": 0.0,
+          "percentage_point_change": -5
+        },
+        "Belgae": {
+          "before": 5,
+          "after": 5,
+          "before_rate": 0.25,
+          "after_rate": 0.25,
+          "percentage_point_change": 0
+        }
+      }
+    },
+    "legal_declines": 967
+  },
+  "strategy": {
+    "classification": "functional policy smoke, not a strategy ranking study",
+    "source_before": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "source_after": {
+      "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+      "dirty": true,
+      "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+    },
+    "source_stable": true,
+    "commands": [
+      [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "fs_bot.tools.heuristic_selfplay",
+        "--scenario",
+        "The Great Revolt",
+        "--seeds",
+        "1",
+        "--profiles",
+        "R-PACIFY,R-HUNT,A-DEVASTATE,A-BATTLE,AE-SUBORN,AE-ARMY,B-CONTROL,B-RAMPAGE,AE-DEEP",
+        "--card-edition",
+        "second-edition",
+        "--out",
+        "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/strategy-base.jsonl"
+      ],
+      [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "fs_bot.tools.heuristic_selfplay",
+        "--scenario",
+        "Ariovistus",
+        "--seeds",
+        "1",
+        "--profiles",
+        "G-GROW,G-BATTLE",
+        "--card-edition",
+        "second-edition",
+        "--out",
+        "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/strategy-expansion.jsonl"
+      ],
+      [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "fs_bot.tools.heuristic_selfplay",
+        "--scenario",
+        "The Gallic War",
+        "--seeds",
+        "1-3",
+        "--profiles",
+        "G-GROW,G-BATTLE,RANDOM:Germans",
+        "--card-edition",
+        "second-edition",
+        "--out",
+        "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/strategy-interlude.jsonl"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "games": 20,
+    "failures": [],
+    "actual_interlude_handovers": [
+      {
+        "label": "G-GROW",
+        "seed": 3,
+        "decisions": {
+          "Arverni": 11,
+          "Germans": 22
+        }
+      },
+      {
+        "label": "G-BATTLE",
+        "seed": 3,
+        "decisions": {
+          "Arverni": 11,
+          "Germans": 21
+        }
+      }
+    ]
+  },
+  "package": {
+    "source_freeze_sha256_before": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1",
+    "source_freeze_sha256_after": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1",
+    "engine": {
+      "source_sha256": "abe9c33a27c2102eaba68d7c432204bbeacc84293316a119d0c1ab94ac403b03",
+      "version": "0.1.0"
+    },
+    "git_head": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+    "git_dirty": true,
+    "artifacts": [
+      {
+        "name": "falling_sky_bot-0.1.0.tar.gz",
+        "size": 726201,
+        "sha256": "9beeed2d55b15d139bb3dd2e6c729f29407d4d0d5ca5aba0dab9809e0aed4fc7"
+      },
+      {
+        "name": "falling_sky_bot-0.1.0-py3-none-any.whl",
+        "size": 824531,
+        "sha256": "03edb13111a505730b1ede440da8c8623c212a69cf29ae4da09d3fd2113ef848"
+      }
+    ],
+    "unchanged_references": [
+      {
+        "path": "Ariovistus/A Card Reference",
+        "sha256": "4f841a103cc5bd7fb5ad06260bb37e81180e3ffc9a38605d5e7dbe384f580786"
+      },
+      {
+        "path": "Ariovistus/A New Terms Index",
+        "sha256": "138d8fb7f08205609a5db78a0aae8d44cb4f9d0704a7315c8a6b41930fe23b09"
+      },
+      {
+        "path": "Ariovistus/A Scenario - Ariovistus",
+        "sha256": "ea0bdbebf0f6a590054c0aba85940f1e90aaba80f3e3f1a70a2eb80e91e4d948"
+      },
+      {
+        "path": "Ariovistus/A Scenario - The Gallic War",
+        "sha256": "0afc2f478138e2ef9b4dd53288934292bf1e6aed213b9a2828adf86f1c20943f"
+      },
+      {
+        "path": "Ariovistus/A Setup",
+        "sha256": "5c0bb327c21f0a727a7a0c4b34903628d9c77d8d98f06b20caeac442c23b0c76"
+      },
+      {
+        "path": "Ariovistus/Chapter A1",
+        "sha256": "447f9b6d9c6b94b1910a2c4a1d9c49c87a177a5f5a01234498c9f1d0759126d1"
+      },
+      {
+        "path": "Ariovistus/Chapter A2",
+        "sha256": "c391ac07dc9222fd495301cc67f2b8f8aeb0c6afd332fa270757d9320289ea33"
+      },
+      {
+        "path": "Ariovistus/Chapter A3",
+        "sha256": "391aa7284a1f5e3cc3738bacf51c9ff8fcd8f3a1dad9c0df78c3cc49ad4602d0"
+      },
+      {
+        "path": "Ariovistus/Chapter A4",
+        "sha256": "29e74b2a386f118a6b5f9759af271d5fd3f91aab177b4005e9bee4cf7a4ecfd7"
+      },
+      {
+        "path": "Ariovistus/Chapter A5",
+        "sha256": "3cf130eee4a20d6d0474d9d087d2d1599b1544f9b620c4c2e8f291c57ecbcd33"
+      },
+      {
+        "path": "Ariovistus/Chapter A6",
+        "sha256": "fbfd6d1f7cc5e14502b14cbbaa0c966136ea8d19820cc71508974b7914082d8e"
+      },
+      {
+        "path": "Ariovistus/Chapter A7",
+        "sha256": "6bc032fbeac255736b00a7dabc33fbc09349a77d5b01808ccc74dd4e511d3cfb"
+      },
+      {
+        "path": "Ariovistus/Chapter A8",
+        "sha256": "310d6c052d4f9d63d7bb4db4424b4e848755db2cde08b22fe1b9a282f06ae780"
+      },
+      {
+        "path": "Ariovistus/aedui_bot_event_instructions_ariovistus.txt",
+        "sha256": "55bfeccde9396c33fc93b57713f6f06eb37525cea0b4d07279d4fad159b30bf3"
+      },
+      {
+        "path": "Ariovistus/arverni_and_other_celts.txt",
+        "sha256": "860909c9ec3ed7d56f3474e8448bb00344a655de45f442ad37103518a711c7b7"
+      },
+      {
+        "path": "Ariovistus/available_forces_ariovistus.txt",
+        "sha256": "a87a8d519747d71d18d7c984a82a68c3b0a3f4b8232f2baa04586c1d9d1af711"
+      },
+      {
+        "path": "Ariovistus/belgae_bot_event_instructions_ariovistus.txt",
+        "sha256": "30c42e5c332f57fff4f414e77f2a6809f02b6b7d368e31e0f976736ce10478ec"
+      },
+      {
+        "path": "Ariovistus/german_bot_event_instructions_ariovistus.txt",
+        "sha256": "fb970268f404357dab4c9be582d678680a8ac7df2d61d8f6ddff293fbdb9d1db"
+      },
+      {
+        "path": "Ariovistus/german_bot_flowchart.txt",
+        "sha256": "f0d243b1adcf318004d72b04402c34a3b2563ffd2091c4ab594f9dd3387f72ad"
+      },
+      {
+        "path": "Ariovistus/non_player_guidelines_summary_ariovistus.txt",
+        "sha256": "4fbb9b96c77fe25644703558e142602f70838b3520462cc9cf7450182e6da577"
+      },
+      {
+        "path": "Ariovistus/roman_bot_event_instructions_ariovistus.txt",
+        "sha256": "e9c258b4959e20214ce793728e14690dbfbb68193469ad94cb53ce27b094ec03"
+      },
+      {
+        "path": "Card Reference",
+        "sha256": "1891c8efba0919d64d81d76878a576756f2cb28205811179da1b34b8cbabe1c4"
+      },
+      {
+        "path": "Chapter 1",
+        "sha256": "9a3f295c4c19217ef02e5a1ee705151a9fa15c0f17bc12c5d71aeb87c2405a0c"
+      },
+      {
+        "path": "Chapter 2",
+        "sha256": "0a7a228bfc5b0adcf2377bb8c05e2ad0163026bdaa928eb2576d1998c8e99c9f"
+      },
+      {
+        "path": "Chapter 3",
+        "sha256": "fe43cb12b735a377d377b1f6d7e3de9326dbf93524c1ad9ace9415678369d015"
+      },
+      {
+        "path": "Chapter 4",
+        "sha256": "5498e6ff17d7ba2ed029d57c0308b3c7b6c5f1b7d51caeef579a47e3dde9058d"
+      },
+      {
+        "path": "Chapter 5",
+        "sha256": "ee0c35698e567c40881013b563ad24e0dbee3b680aafb1568b66c8a56012cb6e"
+      },
+      {
+        "path": "Chapter 6",
+        "sha256": "2b48293d55157ee9068c575b0e37c6234659bea5a98362e8c58546e600badaeb"
+      },
+      {
+        "path": "Chapter 7",
+        "sha256": "1b8ed858fc4cc1c833121cec25f3913588b406f83db4c730b735cb1e6a712949"
+      },
+      {
+        "path": "Chapter 8",
+        "sha256": "455c6b98086f0e06205659da74bc6fcfb01100fa83c04cfc57b586f577c770ef"
+      },
+      {
+        "path": "Key Terms Index",
+        "sha256": "d17af0f7067f511d6ce1599e23d8c1c00499a4ef423fa04c74b1b1a9d6db3980"
+      },
+      {
+        "path": "Map Transcription",
+        "sha256": "fa1caf6df2a8489e9fec4de9ddf08689414d5db1fb760e1b5a7b371a82fe63ff"
+      },
+      {
+        "path": "Scenario - Pax Gallica",
+        "sha256": "2e69e6de202e1745d748951933126a963d5ae656c8df0ec57bc861ed8259023f"
+      },
+      {
+        "path": "Scenario - Reconquest of Gaul",
+        "sha256": "4b16a7b042eb4f88bd4144ef9a47319660ca6afb7fc180c49eea0815e3a2fd6e"
+      },
+      {
+        "path": "Scenario - The Great Revolt",
+        "sha256": "f678508342070edf716894d6f86690c87b2225c649bedc318a2025d33393b4df"
+      },
+      {
+        "path": "Setup",
+        "sha256": "d82e97d0c6be775427a4d740da94e348c8b678e649c4ba8dac90436a1e2deaa7"
+      },
+      {
+        "path": "aedui_bot_event_instructions.txt",
+        "sha256": "8468dd649fe50fdd548ad53548cedba17ab9159d2f4d161639f1b77071ca4681"
+      },
+      {
+        "path": "aedui_bot_flowchart.txt",
+        "sha256": "95f84399d0b3a9d8f013d87e86a9206df2268139587b1cab38ced180c11cde13"
+      },
+      {
+        "path": "arverni_bot_event_instructions.txt",
+        "sha256": "9af7c57381c509d8d4d92a813acae31cf4c077a6b52104f8dcb677613b58014e"
+      },
+      {
+        "path": "arverni_bot_flowchart.txt",
+        "sha256": "a3a17e15b6353d86c722da79d00d915e0cba73af8787016919eb686bfda0d8bd"
+      },
+      {
+        "path": "available_forces.txt",
+        "sha256": "3d58705f9a08e0f2b677d656cf74fe8120e6a18485743beee382682b9edb95aa"
+      },
+      {
+        "path": "battle_procedure_flowchart.txt",
+        "sha256": "6a2cc7b5760e4d22225efa31b6a41ffa47e21897a287b31d77efa97386cb157a"
+      },
+      {
+        "path": "belgae_bot_event_instructions.txt",
+        "sha256": "4efb2f59016dc1303738ac35306075e3fdf236e28ba3f826ca6cb3b70625e06c"
+      },
+      {
+        "path": "belgae_bot_flowchart.txt",
+        "sha256": "263df62c411a8a7bb017be71671953b73a0d17fe7fd006ac74b48eb1ed5877c7"
+      },
+      {
+        "path": "non_player_guidelines_summary.txt",
+        "sha256": "16cf0d3bb885aa3ce35193cc75e7bd2c32fa9cf5ed5560e2a21dc0240e1fe7e2"
+      },
+      {
+        "path": "roman_bot_event_instructions.txt",
+        "sha256": "a79e4d0a66bb48e210dacfa8ebb0013f2928efd466b3c7a76d9f23f5dade88ce"
+      },
+      {
+        "path": "roman_bot_flowchart.txt",
+        "sha256": "54faf2fdf54959cdfbbb04fe5db137f558821f9189f2bf5f80f3388d2983f8a0"
+      }
+    ],
+    "balance_baseline_sha256": "29149c3e5d01c7cf18a27ab7c18fbb528f7f23b43aa81fa1f986c4316281eb54",
+    "install_index_disabled": true,
+    "runtime_dependencies_installed": [],
+    "installed_smoke": "passed",
+    "optional_diviciacus_smoke": "passed",
+    "commands": [
+      [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "build",
+        "--no-isolation",
+        "--outdir",
+        "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/package/dist"
+      ],
+      [
+        "/tmp/fsbot-final-package-_elztug7/env/bin/python",
+        "-m",
+        "pip",
+        "install",
+        "--no-index",
+        "--no-deps",
+        "/workspace/scratch/534c265c65f4/followup-final-validation-20261024-r3/package/dist/falling_sky_bot-0.1.0-py3-none-any.whl"
+      ],
+      [
+        "/tmp/fsbot-final-package-_elztug7/env/bin/python",
+        "-I",
+        "/workspace/scratch/534c265c65f4/fs-bot/scripts/smoke_installed.py"
+      ]
+    ]
+  },
+  "source_after": {
+    "commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+    "dirty": true,
+    "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1"
+  },
+  "verification_scope": "Accepted local frozen-source R3 matrix. Remote CI conclusions are attached to the publication commits in GitHub Actions.",
+  "publication_source": {
+    "source_commit": "53d795ccee5a85e69b19062091b70010a59f0e97",
+    "source_sha256": "c9a6e890ede62f6315234a1b7a4ef9b5f97d256b735171bf468aef741482c7a1",
+    "matches_validated_source": true,
+    "reference_documents_unchanged": true
+  },
+  "windows_checkout": {
+    "accepted": true,
+    "git_core_autocrlf": true,
+    "files_checked": 326,
+    "mismatches": [],
+    "generator_sha256": "2423f59b84c1f2de419ec032115d86a11cacf1faf7e3bace4aab9c7e06f615be",
+    "attributes": "fs_bot/tests/fixtures/compatibility_8ef88e2/generate.py: text: set\nfs_bot/tests/fixtures/compatibility_8ef88e2/generate.py: eol: lf\nReference Documents/Chapter 1: text: unset\nReference Documents/Chapter 1: eol: unspecified\nfs_bot/tests/fixtures/compatibility_8ef88e2/pending-card-turn.json: text: unset\nfs_bot/tests/fixtures/compatibility_8ef88e2/pending-card-turn.json: eol: unspecified\n"
+  },
+  "pre_commit_tests": {
+    "gameplay-commit-tests.xml": {
+      "passed": 4272,
+      "failures": 0,
+      "errors": 0
+    },
+    "validation-commit-tests.xml": {
+      "passed": 4417,
+      "failures": 0,
+      "errors": 0
+    },
+    "package-commit-tests.xml": {
+      "passed": 4431,
+      "failures": 0,
+      "errors": 0
+    },
+    "windows-checkout-commit-tests.xml": {
+      "passed": 4431,
+      "failures": 0,
+      "errors": 0
+    },
+    "final-documentation-commit-tests.xml": {
+      "passed": 4431,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "evidence_archive": {
+    "path": "docs/reviews/followup-repairs-2026-10-24-evidence.zip",
+    "bytes": 15439119,
+    "sha256": "3205227b90a0157aa437a66a9b23ebf52cf28471586b352e0addb013ff285e1d",
+    "files": 664
+  },
+  "remote_workflows": [
+    "https://github.com/FeeSimple1/fs-bot/actions/workflows/ci.yml",
+    "https://github.com/FeeSimple1/fs-bot/actions/workflows/package.yml"
+  ]
+}

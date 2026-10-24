@@ -17,11 +17,16 @@ references and canonical constants remain read-only.
 | [Developer instructions](../CLAUDE.md) | Source hierarchy, implementation constraints, tests, and commit discipline |
 | [Maintenance roadmap](../BUILD_PLAN.md) | Existing components and further validation work |
 | [Self-play workflow](../SELFPLAY_PLAYBOOK.md) | Reproducible bot batches, mixed-seat fuzzing, census, and reviewed baselines |
+| [Release guide](../RELEASES.md) | Local installation, distribution builds, historical save fixtures, and engine identity |
+| [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
 
 | Document or artifact | Scope |
 |---|---|
+| [24 October follow-up repairs](reviews/followup-repairs-2026-10-24.md) | Accepted follow-up repairs: 4,431 tests, 2,500 bot games, 90 optional-setup games, mixed-seat replay, installation and compatibility |
+| [24 October results JSON](reviews/followup-repairs-2026-10-24-results.json) | Machine-readable final acceptance and scenario/edition summaries |
+| [24 October evidence archive](reviews/followup-repairs-2026-10-24-evidence.zip) | Raw outcomes, rejected attempts, source manifests, replay/census results and package checks |
 | [23 October fixes and validation](reviews/outstanding-fixes-2026-10-23.md) | Accepted 1,000-game rerun, corrections, outcomes, exact tested revision, and CI |
 | [23 October results JSON](reviews/outstanding-fixes-2026-10-23-results.json) | Machine-readable acceptance, per-scenario statistics, commands, and hashes |
 | [23 October evidence archive](reviews/outstanding-fixes-2026-10-23-evidence.zip) | All three attempts, diagnostics, replay/census results, baseline changes, and JUnit files |
@@ -31,7 +36,11 @@ references and canonical constants remain read-only.
 | [9 October outcome audit](outcome-audit-2026-10-09.md) | Earlier March-cost, Tribe-identity, scoring, and execution repairs |
 | [Historical strategy notes](../selfplay-strategy-notes.md) | Older heuristic experiments, with revision and harness caveats |
 
-The accepted October batch contains 200 games per scenario. The committed
+The 24 October default-setup matrix separates the 200-game-per-scenario
+legacy sample from three held-out 100-game-per-scenario edition samples.
+The optional-Diviciacus sample and hash-seed repeats remain separate. The
+accepted 23 October batch contains 200 games per scenario on its older source.
+The committed
 balance guardrail instead uses seeds 1–20 in each scenario, for 100 games
 total. The historical strategy-profile matrices are a third experiment;
 their results should not be combined with either of those samples.

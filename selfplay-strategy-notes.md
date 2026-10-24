@@ -1,34 +1,47 @@
 # Falling Sky — Self-Play Strategy & Balance Notes
 
-## Current reading guide — 23 October 2026
+## Current reading guide — 24 October 2026
 
 This is a **historical experiment journal**. The June study and every addendum
 below describe earlier engine revisions. Their measured numbers are preserved;
 their explanations of faction strength, remaining defects, completed audits and
 closed questions are not statements about the current implementation.
 
-The accepted current bot-only sample is in the
+The earlier accepted bot-only checkpoint is in the
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md):
 1,000 completed games, 200 in each of five scenarios, with no crashes, rejected
 actions or integrity/ranking/hash findings. It records the tested commit,
 `legacy` card profile, per-scenario win rates, Interlude timing, commands and
-raw evidence. The reviewed 100-game baseline changed 23 winners after the
+raw evidence. The 100-game baseline reviewed at that checkpoint changed 23 winners after the
 corrections; earlier outcome distributions cannot be carried forward unchanged.
 See [current status](docs/current-status.md) for the six unresolved source
 questions and [SELFPLAY_PLAYBOOK.md](SELFPLAY_PLAYBOOK.md) for the current workflow.
 
-The October validation did **not** rerun and establish the historical heuristic
-strategy rankings below. The current experimental `heuristic_selfplay` harness
-also leaves its policy-controlled seat classified as non-player, so its results
-cannot establish human-seat performance under NP-sensitive rules. Its default
-profile matrix covers base factions only. Actual mixed-seat fuzzing and terminal
-journeys are separate tests, documented in the validation report.
+The [24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md)
+records the newer harness repairs and their revision-specific validation.
+The 23 October validation did **not** rerun and establish the historical heuristic
+strategy rankings below. The historical `heuristic_selfplay` harness left its
+policy-controlled seat classified as non-player, accepted partially successful
+plans with rejected sub-actions, and could resume obsolete or failed results.
+Its default profiles covered base factions only. Those limitations apply to the
+older measurements even after the tool is repaired.
+
+The current runner uses actual human-seat classification, scenario-valid
+profiles, explicit German-to-Arverni policy handover, selectable card editions,
+audited outcomes, and source/policy-compatible resume with retryable failures.
+It adds `G-GROW` and `G-BATTLE` profiles and records policy/default reactive
+choices separately. This restores a usable experiment framework; it does not
+establish new strategy rankings. The policies still use coarse targeting and
+documented reactive defaults. See the
+[current workflow](SELFPLAY_PLAYBOOK.md#experimental-strategy-policies) for
+those limits and fresh-output commands. Actual mixed-seat fuzzing and terminal
+journeys remain separate human-path tests.
 
 There are unreconciled internal inconsistencies in the original June narrative:
 the listed Pax bot-only counts sum to 22 despite the stated 20-seed denominator,
 and the prose's "20/20 in every configuration" conflicts with its own 95%/90%
 Arverni rows. Those original numbers have not been guessed or silently repaired.
-Do not use them for quantitative comparisons with the accepted October sample.
+Do not use them for quantitative comparisons with the accepted 23 October sample.
 The old approximate noise-band and runtime statements likewise belong to that
 study, not to current benchmark or statistical guarantees.
 

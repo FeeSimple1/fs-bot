@@ -77,6 +77,25 @@ Command, selecting different Regions, with the accompanying Special
 Activity between them. March and Battle currently support before/after
 timing; their Command-wide movement and Battle bookkeeping is not split.
 
+Diviciacus cooperation is requested through `details.diviciacus_regions`
+for a Command and `details.diviciacus_sa_regions` for a Special Activity.
+Use `engine.diviciacus.eligible_regions(state, faction, phase)` to find
+eligible Regions (`command` or `special_ability`); explicit `[]` declines.
+Human plans do not silently request loans when these fields are absent.
+The other Faction's consent is obtained during execution. A preview can
+show a conditional plan assuming human consent; it never consumes that
+human's actual decision. Original card 38 covers Commands and defense;
+the Leader's A1.4 effect also covers Special Activities within its range.
+
+Suborn uses `details.suborn_plan`, with a list of Region entries containing
+`region` and ordered `actions`. Each canonical action has `action` (`place`
+or `remove`), `faction`, `piece_type`, and `physical_owner` matching the
+Faction; removals can specify `piece_state`, and Allies specify `tribe`.
+Use `commands.sa_suborn.legal_suborn_operations(state, region)` and
+`suborn_preview(state, region, operations)` to build a cumulative legal
+sequence. Explicit physical owners retain their printed colour during
+Diviciacus cooperation. Existing bot action labels remain supported.
+
 The Sequence-of-Play engine persists progress through the current card in
 the state. An interruption rolls back only the unfinished action or phase,
 including its RNG changes. Frontends with external queues/logs can attach
@@ -113,6 +132,7 @@ inventing pieces, regions, owners, or internal grant flags.
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add a third `physical_owner` field; hard pieces still roll |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
 | `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
+| `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `AGREEMENT` | `request_type, requesting_faction, context` | `bool` (agree?) — `request_type` in {`retreat_into_control`, `supply_line`, ...} |
 | `free_action` | `request_type` plus the Event's scope; ordinary grants may carry `allowed_commands, allowed_regions, max_regions, with_sa, free, allow_decline`; standalone SAs use `allowed_sas` | ordinary action or subtype-specific response below; decline only when permitted |
 | `kinship` | A65; `attackers, regions_by_faction` | `{"faction": attacker, "regions": [...]}`, decline, or explicit default |
@@ -125,6 +145,15 @@ inventing pieces, regions, owners, or internal grant flags.
 The file-based frontend accepts `{"use_default":true}` for a non-turn
 request only as an explicit decision. An omitted or invalid response remains
 pending. A normal turn still requires a legal `action` and its plan.
+
+Diviciacus uses `AGREEMENT` with `request_type: "diviciacus"` for the
+other Faction's consent. Its context identifies the phase, selected Regions,
+Command/Special Activity and targets. A human defender first receives
+`request_type: "diviciacus_defense"` to choose whether to request cooperation.
+Fixed Event Battles use `request_type: "diviciacus_command"` for the
+acting human's opt-in before requesting the lender's agreement.
+Both replies are booleans. Loss-order entries retain physical owners even
+when borrowed pieces fight as the other type; copy the offered entries.
 
 ### Harassment and physical March pieces
 

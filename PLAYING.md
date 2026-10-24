@@ -17,6 +17,10 @@ internet needed.
   tick **"Add python.exe to PATH"** during setup.
 - macOS/Linux: `python3` is usually already present.
 
+You can also install this checkout with `python -m pip install .` and use
+`fs-bot --save autosave.json` outside the source directory. See
+[RELEASES.md](RELEASES.md) for local distribution and compatibility checks.
+
 ## Starting a game
 
 **Windows**: double-click **`play.bat`**.
@@ -48,6 +52,13 @@ original versions in base scenarios and revised versions in Ariovistus.
 Explicit editions remain unchanged through the Gallic War Interlude;
 `legacy` continues to follow the current scenario. Older saves without a
 choice use `legacy`. A loaded game cannot change editions.
+
+To use the published optional Diviciacus Leader rule in an original
+scenario, add `--diviciacus-option` when starting the game. It replaces
+card 38 with O38; Diviciacus starts off-map and can be placed by that Event.
+This is separate from the five-card edition choice. It does not change the
+Gallic War Interlude's existing A38 replacement. The option cannot change
+when loading or replaying a game.
 
 ## How a turn works
 
@@ -82,6 +93,21 @@ also distinguish piece visibility and specific Allied Tribes when relevant.
 March subset and drop-off prompts let you choose the actual Hidden/Revealed
 pieces from the selected group; pieces already in the destination remain
 separate.
+
+Suborn offers each legal physical owner, piece type, visibility and Allied
+Tribe. Choices update the remaining Resources and pieces as you build the
+plan; you can undo a choice or cancel. Convictolitavis can permit a second
+Region, and unshaded Vergobret permits a fourth piece, including a second
+Ally, in each Region.
+
+When Diviciacus permits cooperation, the menus offer Regions in which to
+request it. Planning shows the possible combined forces; the other human
+Faction agrees or refuses when the action resolves. Commands and eligible
+Special Activities have their own selections. Defense also offers an
+explicit request. Roman Auxilia and Aedui Warbands keep their physical
+owners, and the board identifies their temporary treatment separately.
+When selecting a subset or placing pieces, prompts distinguish their
+physical owners as well as visibility where relevant.
 
 When saving is enabled, Ctrl-C also saves between decisions on the same
 card. Completed faction actions stay completed. If interrupted while

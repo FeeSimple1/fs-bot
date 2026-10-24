@@ -106,6 +106,13 @@ sources excluding tests, plus supplied reference bytes. It is independent
 of installation location and is cached for the running process. Restart
 after changing code. `load_game()` still returns `(state, meta, log)`.
 
+Git attributes require LF checkouts for Python sources and disable text
+conversion for `Reference Documents/**` and archived compatibility JSON.
+This keeps byte-level source and fixture identities stable when Git uses
+`core.autocrlf=true` on Windows. Preserve that checkout policy; changing a
+manifest hash to accommodate converted source would hide a provenance
+mismatch rather than repair it.
+
 Older valid version-1 saves without writer identity still load. Different
 engine identities are not automatically rejected: a source digest identifies
 the writer, while the save-format and board validators govern whether a file

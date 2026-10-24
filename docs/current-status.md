@@ -8,11 +8,40 @@ their game outcomes are not a baseline for a later rules revision.
 [Documentation index](README.md) · [Playing guide](../PLAYING.md) ·
 [Current question index](../QUESTIONS.md#current-open-source-questions)
 
-The corrections below describe the 23 October 2026 implementation review.
-Later documentation updates preserve the original validation report’s
-revision, source digest, and outcome evidence.
+This page includes the 24 October follow-up repairs and the earlier
+23 October implementation review. Each dated report preserves its own
+revision, source digest, and outcome evidence. The
+[follow-up report](reviews/followup-repairs-2026-10-24.md) records the newer
+work and its validation status.
 
-## Corrections in this review
+## Follow-up repairs
+
+The following changes follow that checkpoint; its 1,000-game outcomes are
+historical evidence for the earlier mechanics, not measurements of these
+changes.
+
+| Area | Follow-up behavior | Coverage |
+|---|---|---|
+| Diviciacus cooperation | Consenting Roman Auxilia and Aedui Warbands act as the other type for the permitted Command, Leader Special Activity, or defense. Physical owners, inventories and Control remain distinct; human consent and exact piece choices are exposed. | Diviciacus engine, interface and terminal journey regressions |
+| Cooperating March cohorts | Native-only groups and native survivors retain the physical-owner context across later steps after borrowed pieces leave or are lost; transit residents are not silently added. | `test_diviciacus_forces.py` and Reconquest seed 148 |
+| Cooperation planning and casualties | Bots plan with eligible borrowed forces and replan from the same RNG position after refusal. Diviciacus is the last possible casualty; borrowed Scouted Warbands lose their marker and remain Revealed when Roman March would hide them. | Consent, loss-legality and March-visibility regressions |
+| Suborn and Vergobret | Human menus expose native owners and exact visibility. Complete ordered plans validate before mutation; capability limits permit four pieces and two Allies. Non-player Ally priorities follow §8.6.3. Both A38 sides replace/remove correctly and old modifier-only saves remain readable. | Suborn interface, atomicity, bot limits and Vergobret regressions |
+| Event cooperation | Fixed Event Battles obtain the acting human's opt-in and lender's agreement. Camulogenus uses its printed selected force, single destination and movement range without flipping stationary pieces. | Event Battle and Camulogenus cooperation regressions |
+| Capability selection | Shifting Loyalties offers actual active capabilities, including legacy A38, instead of Region names. The board and change display use the same effective capability list. | Legacy capability display and parameter-schema regressions |
+| Roman Quarters destinations | The default planner checks the same eligible host factions as the validator before requesting consent. Human German agreement cannot authorize a prohibited Roman destination. | `test_roman_quarters_host_eligibility.py` and Gallic War seed 7 mixed-seat replay |
+| Supply-Line agreements | Accepted consent holds for the Command or Event. Recruit's preliminary budget check and actual execution share the same answer, preventing duplicate prompts and contradictory costs. | Supply agreement regressions and mixed-seat replays |
+| Optional Diviciacus setup | Original scenarios can select O38 and the Leader separately from card edition; setup, saves, replay, display and Roman bot restrictions retain that choice. The canonical Interlude A38 replacement remains unchanged. | `test_diviciacus_option.py` |
+| Strategy experiments | Correct human-seat classification; scenario-valid German policies and Interlude handover; error/integrity/diagnostic checks; versioned compatible resume that retries failures. | `test_strategy_harness.py`, `test_selfplay_tools.py` |
+| Outcome acceptance | Rejected actions fail audited batches and cannot count as validated wins. Output directories cannot silently overwrite earlier evidence. | `test_outcome_runner.py` |
+| Fuzz and census acceptance | Unfinished games and replay-only failures fail explicitly. Determinism includes the full state, RNG and returned trajectory, including Available pools, eligibility, deck and capabilities. | `test_validation_integrity.py` |
+| Editions and seeds | Full-game batch, census, fuzz and synchronization tools expose and record card editions and held-out seed ranges. CI exercises all three edition profiles. | `test_validation_options.py` and edition CI jobs |
+| Human journeys | Real terminal March, Battle, both SA orders, multi-human reactions, pending resume and replay, plus forced Interlude handover. | `test_cli_decision_journeys.py`, `test_diviciacus_journeys.py` |
+| Installation and compatibility | A local installable distribution includes unchanged runtime references. Saves identify their writer; fixtures from unmodified earlier source cover pending decisions and Interlude states. Fresh-process import cycles and hash-dependent Trade detail ordering are repaired. Git attributes preserve source/reference/fixture bytes on Windows checkouts. | Package workflow, `test_import_order.py`, `test_release_compatibility.py`, `test_trade_determinism.py` |
+
+See [release checks](../RELEASES.md) and the [self-play workflow](../SELFPLAY_PLAYBOOK.md)
+for reproduction commands and compatibility limits.
+
+## Corrections in the 23 October review
 
 | Area | Corrected behavior | Regression coverage |
 |---|---|---|
@@ -107,13 +136,20 @@ strategy. Protected references and `rules_consts.py` are unchanged.
 
 ## Verification and limits
 
-The [23 October validation report](reviews/outstanding-fixes-2026-10-23.md)
-records the tested revision, completed checks, outcome statistics, and
-reproducible evidence. Its accepted batch contains 1,000 completed bot
-games across all five scenarios, with no crashes, rejected actions, or
-integrity/ranking/hash findings. The local full suite has 4,067 passing
-tests. Read the report for the exact scope of determinism and mixed-seat
-checks and the separate remote CI results.
+The [24 October follow-up report](reviews/followup-repairs-2026-10-24.md)
+records the accepted frozen source: 4,431 passing tests, 2,500 accepted
+bot games across scenario/edition profiles, 90 optional-Diviciacus games,
+75 matching bot hash-seed repeats and 1,000 completed mixed-seat executions
+with replay. The main bot matrix has no crashes, illegal diagnostics,
+integrity failures or ranking/hash findings. Mixed-seat runs have no hard
+findings and disclose one repeatable partial plan from an intentionally
+injected Resource gift. Strict census, reviewed balance and isolated
+installation checks also pass. Consult the report for exact source identity,
+seeds, denominators and separately reported remote CI status.
+
+The historical [23 October validation report](reviews/outstanding-fixes-2026-10-23.md)
+retains its original 4,067-test and 1,000-game checkpoint; those measurements
+have not been relabeled as results of these repairs.
 
 The full-game terminal tests exercise real menus, invalid input, the `board`
 command, Commands and exact replay across all twenty scenario/seat pairs.
@@ -127,24 +163,25 @@ published rule is correct. Win-rate baselines are refreshed only after
 explaining rules-driven changes; no bot priorities are tuned to obtain
 preferred faction win rates.
 
-The CI matrix covers Ubuntu Python 3.10/3.12, Windows Python 3.12 and macOS
-Python 3.12. Linux also runs synchronization, nested Event/Winter census, mixed-seat
-determinism and balance checks. Local results and remote CI results must be reported
-separately.
+The configured CI matrix covers Ubuntu Python 3.10/3.12, Windows Python
+3.12 and macOS Python 3.12. Linux also runs synchronization, nested
+Event/Winter census, mixed-seat determinism, balance checks and all three
+card-edition profiles. A separate package workflow builds and checks installed
+play on Linux, Windows and macOS. Local results and remote CI conclusions
+are reported separately for the exact tested commit.
 
-## Strategy-harness limits
+## Strategy-study limits
 
-The historical `heuristic_selfplay` tool overrides the selected faction's
-turn plans but retains that seat in `non_player_factions`. It therefore
-still uses non-player-sensitive rules and opponent treatment, unlike the
-human-seat paths exercised by `player_fuzz` and terminal playthroughs.
-Its built-in heuristic profile set also has no German profile. Old profile
-win rates cannot establish human strategy strength or expansion coverage.
+The current runner repairs the former non-player classification, missing
+German participation, weak resume identity and false-success behavior.
+Experimental policies still use their documented reactive defaults and
+limited plan builders; their results are not expert human strategy or a
+uniform sample of every legal choice. New comparisons need fresh,
+revision-specific runs and record-level acceptance.
 
-The historical runner's resume key omits the engine revision and policy
-version, and its process exit status alone does not certify error-free
-games. Fresh strategy studies need corrected/explicit seat semantics,
-revision-specific output, and record-level acceptance checks. See the
-[self-play workflow](../SELFPLAY_PLAYBOOK.md) and
-[historical strategy notes](../selfplay-strategy-notes.md). The accepted
-1,000-game bot batch used `run_batch`, not this profile runner.
+Those repairs do not retroactively validate the
+[historical strategy notes](../selfplay-strategy-notes.md). Their original
+runner retained the overridden seat in `non_player_factions`, omitted
+German profiles and could reuse old or failed records. The earlier accepted
+1,000-game bot batch used `run_batch`, independently of that runner. See the
+[self-play workflow](../SELFPLAY_PLAYBOOK.md) for current contracts.

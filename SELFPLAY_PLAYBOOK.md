@@ -2,7 +2,7 @@
 
 Use this workflow to investigate rules defects and compare explicitly defined
 experimental policies. Start with [current status](docs/current-status.md) and
-the [23 October 2026 validation report](docs/reviews/outstanding-fixes-2026-10-23.md).
+the [24 October 2026 follow-up report](docs/reviews/followup-repairs-2026-10-24.md).
 The [strategy notes](selfplay-strategy-notes.md) preserve earlier studies; their
 win rates and strategic interpretations do not describe the corrected engine.
 See the [documentation index](docs/README.md) for the other project guides.
@@ -21,21 +21,23 @@ before extending them.
 
 | Tool | Purpose | Important limit |
 |---|---|---|
-| `fs_bot.tools.run_batch` | Audited zero-human outcomes across all five scenarios; JSONL records, summary, revision and source digest | `--games N` means N **per scenario**. Requires hash seed 0; overwrites its output files and does not resume. Exit 0 alone does not certify clean diagnostics or complete engine rankings. |
+| `fs_bot.tools.run_batch` | Audited zero-human outcomes across all five scenarios; JSONL records, summary, revision and source digest | `--games N` means seeds 1–N **per scenario**; `--seeds N-M` selects another range. Requires hash seed 0; refuses an output directory containing prior files and does not resume. Nonlegal diagnostics now fail the audit and exit status. Inspect ranking output and exact coverage too. |
 | `fs_bot.tools.error_census` | Classifies nested Command, Event and Winter results | Use `--strict`; inspect all severities, including `other-refused`. `legal-decline` is allowed. |
 | `fs_bot.tools.player_fuzz` | Mixed human/bot seats, randomized reactions and Event parameters, preview/live checks, replay | Leave reactions, Events and determinism enabled. Randomly generated partial or refused plans are separate from hard engine findings. |
 | `fs_bot.tools.sync_check` | Tribe/piece synchronization across complete games | Select a scenario explicitly; its default is only Reconquest. |
 | `fs_bot.tools.balance_smoke` | Fixed-seed winner-rate drift against the reviewed baseline | A passing rate check is not a rule-compliance proof and does not require every individual winner to stay unchanged. |
 | `fs_bot.tools.play_quality` | Command/resource telemetry for investigating mechanisms | Informational output; it is not an acceptance gate by itself. |
-| `fs_bot.tools.heuristic_selfplay` | Experimental policy comparisons with resumable JSONL records | Read the policy and seat-classification limitations below before interpreting results. |
+| `fs_bot.tools.heuristic_selfplay` | Experimental human-policy seats against bots, with audited outcomes and compatible resume | Scenario-valid profiles and explicit Interlude handover; failed attempts remain recorded and retryable. Reactive defaults and coarse strategy limits remain disclosed below. |
 | `fs_bot.tools.llm_seat` | Human/assistant decisions, saved sessions and exact replay | Follow [AGENT_INTERFACE.md](AGENT_INTERFACE.md) and [CHATGPT_README.md](CHATGPT_README.md); do not substitute defaults for an unanswered human choice. |
 
-The batch, heuristic and balance CLIs use the default `legacy` card edition;
-they currently expose no edition selector. This profile uses the original
-versions of the five optional revised cards in base scenarios and revised
-versions in Ariovistus, following the scenario after the Interlude. Record that
-profile with the results. An explicit-edition study requires a separately
-identified harness change; do not label these commands as Second Edition runs.
+The batch, census, mixed-seat fuzz, synchronization and heuristic runners accept
+`--card-edition legacy`, `original`, or `second-edition` and record the selected
+profile. `legacy` remains the default: it uses the original versions of the five
+optional revised cards in base scenarios and revised versions in Ariovistus,
+following the scenario after the Interlude. Explicit profiles persist through
+the transition. The balance guardrail still checks its reviewed `legacy`
+baseline; telemetry also defaults to that profile. Keep different editions in
+separate output directories and summaries.
 
 ## Establish and preserve a reproducible run
 
@@ -45,7 +47,7 @@ identified harness change; do not label these commands as Second Edition runs.
 2. Use a fresh output directory for each engine revision or policy change.
    Preserve failed attempts. Do not overwrite evidence or combine results from
    different mechanics into one table.
-3. Freeze the Python source during an accepted matrix. The October evidence
+3. Freeze the Python source during an accepted matrix. The 23 October evidence
    archive contains `orchestrate.py` and `extract_results.py`, which verify
    source digests, exact coverage, outcomes and cross-hash agreement. Follow
    the archive's README to copy these into a fresh directory beside the repo.
@@ -69,6 +71,22 @@ PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz --seeds 1-40 > new-validatio
 python -m fs_bot.tools.balance_smoke --seeds 1-20
 ```
 
+To extend coverage beyond the old seeds 1–200, use an explicit edition and a
+held-out range. For example, repeat this pair for `legacy`, `original`, and
+`second-edition`, using a different directory for each:
+
+```bash
+PYTHONHASHSEED=0 python -m fs_bot.tools.run_batch --seeds 201-220 --card-edition second-edition --workers 4 --out new-validation/second-edition-bots
+PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 201-220 --card-edition second-edition --out new-validation/second-edition-fuzz0.json > new-validation/second-edition-fuzz0.txt
+PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz --seeds 201-220 --card-edition second-edition --out new-validation/second-edition-fuzz7.json > new-validation/second-edition-fuzz7.txt
+```
+
+The batch also accepts `--scenario` for one scenario. Otherwise each command
+above covers all five. Census and synchronization accept the same edition
+selector. JSON output includes source identity and exact seeds; the fuzz JSON
+also retains individual case records. The examples prescribe checks, not
+completed-run statistics.
+
 Check every command's exit status. Compare the census JSON and fuzz output
 between hash seeds; saving both files is not itself a comparison. If piping a
 command through `tee`, enable Bash `set -o pipefail` so failures propagate.
@@ -86,8 +104,10 @@ python -m fs_bot.tools.play_quality --seeds 1-20
 
 ## Acceptance and interpretation
 
-For the October-sized batch, require exactly 1,000 unique `(scenario, seed)`
-records: seeds 1–200 in each of the five scenarios. Check every game for all
+For the historical October-sized batch, require exactly 1,000 unique
+`(scenario, seed)` records: seeds 1–200 in each of the five scenarios. For new
+matrices, require the exact requested `(scenario, seed, card_edition)` keys;
+do not pool different editions into one winner distribution. Check every game for all
 three completion flags (`completed`, `game_completed`, `audit_completed`),
 errors, integrity findings and a nonempty final-state hash. Require a four-entry
 `final_ranking`, `engine_ranking_output_missing == false`, and
@@ -149,46 +169,76 @@ for an unexplained failure or evidence that the old baseline passed. Prefer
 writing a candidate with `--baseline` to a separate file, reviewing it against
 the committed baseline, and only then replacing the reviewed records.
 
-The October refresh changed 26 records and 23 winners while retaining all 100
+The 23 October refresh changed 26 records and 23 winners while retaining all 100
 keys and the same threshold. Those changes and the subsequent unchanged-baseline
 check are preserved in the validation evidence. Do not infer a new target win
-rate from that refresh.
+rate from that refresh. The 24 October follow-up refresh changes 17 records
+and 13 winners relative to `8ef88e2`, with the same 100 keys and unchanged
+15-point threshold. The subsequent balance run matches every reviewed winner
+and card count. Both comparisons remain tied to their own source revisions.
 
 ## Experimental strategy policies
 
-The current `heuristic_selfplay` runner defaults to nine named profiles for
-Romans, Arverni, Aedui and Belgae, plus a `RANDOM` policy per base faction and
-`BOTS`. It has no named German profile and no `FIRST` policy. Its random policy
-samples command builders; it is not uniform over every legal move. Use the base
-scenarios for that default matrix. Expansion-specific strategy experiments need
-explicit active-seat and policy handling, including the Gallic War transition.
+The repaired `heuristic_selfplay` runner removes the policy-controlled seat from
+`non_player_factions`; opponent targeting and NP-sensitive rules therefore see
+an actual human seat. Its defaults include only profiles whose factions are
+playable in the selected scenario, plus a `RANDOM` policy for each playable seat
+and `BOTS`. An explicit ineligible profile is rejected before play, preventing
+an Arverni profile from producing an Ariovistus result without taking a turn.
 
-A significant current limitation is that `heuristic_selfplay.play_game` leaves
-the overridden seat in `non_player_factions`. The policy changes its own-turn
-plans, but NP-sensitive rules and targeting still see it as a non-player.
-Its results therefore do not demonstrate genuine human-seat strength. Use
-`player_fuzz`, assistant sessions and terminal journeys for human-path validation;
-correct and validate the experimental harness before making new human-strategy
-claims from it.
+Eleven named profiles exist across the two rule sets. The two German profiles,
+`G-GROW` and `G-BATTLE`, are simple growth and Battle hypotheses. During the
+Gallic War Interlude their player changes to Arverni and explicitly adopts
+`A-DEVASTATE` or `A-BATTLE`, respectively. `RANDOM:Germans` continues its generic
+random policy as Arverni. Records identify the ending seat and count decisions
+by faction, so second-half wins can be attributed to the original player.
+The random policy samples command builders; it is not uniform over every legal
+move. No `FIRST` policy is implemented.
+
+These policies remain experiments, not expert human play. They do not have an
+Event-aware strategy, and Special Activity targeting is coarse. Their reactive
+policy takes the first offered Retreat destination, refuses agreement requests,
+and explicitly defers other choices to the raw callback's engine defaults.
+Records count policy and default reactive responses separately. A real human
+session must still wait for its user's answer; this experiment's defaults do not
+change the durable assistant interface.
 
 Policies in `fs_bot/agents/heuristic.py` build typed plans and validate them through
 `moves.validate_player_action`; they do not need to scrape terminal wording.
+The validator's `ok` flag means an action had some legal effect, so policies also
+inspect nested diagnostics and reject candidates containing refused sub-actions
+or ineffective attached Special Activities. Partial success alone no longer
+qualifies a candidate as clean.
 Define each proposed strategy as a falsifiable command/SA/target preference and
 keep the experimental policy separate from the published bot flowcharts. A
 heuristic's fallback to Pass must not conceal a rejected published-bot action or
 silently answer a real human decision.
 
-For a deliberately scoped experiment after reviewing those limitations:
+For deliberately scoped experiments:
 
 ```bash
 PYTHONHASHSEED=0 python -m fs_bot.tools.heuristic_selfplay --scenario "The Great Revolt" --seeds 1-20 --profiles BOTS,R-PACIFY,R-HUNT,RANDOM:Romans --out new-validation/roman-experiment.jsonl
+PYTHONHASHSEED=0 python -m fs_bot.tools.heuristic_selfplay --scenario "The Gallic War" --seeds 201-220 --card-edition second-edition --profiles BOTS,G-GROW,G-BATTLE,RANDOM:Germans --out new-validation/german-experiment.jsonl
 ```
 
-The runner skips existing `(label, scenario, seed)` keys, including error records;
-its resume key contains no source or policy identity. Use a fresh file after any
-change and retain the old one. It catches game exceptions into records but can
-still exit 0, so check every `error`, winner, key and expected count yourself.
-Do not use this experimental runner as a substitute for the audited batch gate.
+Each output has an adjacent `.jsonl.manifest.json` file. The manifest and records
+identify the engine commit/source digest, Python version, policy version,
+scenario, edition, human-seat semantics, reactive defaults and named Interlude
+handover. Resume requires compatible identities; Git's dirty flag is retained as
+provenance but does not alone make identical source bytes incompatible.
+
+Only successful audited `(label, scenario, seed)` records are skipped. Failed
+attempts are preserved and retried, and any new unsuccessful attempt makes the
+command exit nonzero. Success requires a completed game, an eligible winner,
+actual policy participation when a policy is selected, valid state/rankings,
+and no diagnostic severity except `legal-decline`. A final-state digest supports
+repeat comparisons. Historical unversioned logs, incompatible manifests and
+malformed records are refused without rewriting them; use a fresh output path.
+
+When analyzing a retried log, retain every attempt but count each requested key
+only once in the accepted sample. Check exact coverage rather than counting
+lines. Repairs to this tool do not retroactively validate the old strategy
+tables, and its policy comparisons remain separate from zero-human bot studies.
 
 ## Publishing and ongoing checks
 
@@ -200,7 +250,9 @@ Keep reproducible evidence with the corresponding review, as the October archive
 does, while leaving disposable exploratory output outside the tracked tree.
 
 The per-push CI runs four OS/Python test jobs plus synchronization, strict census,
-mixed-seat cross-hash replay and balance checks. The separately configured
+mixed-seat cross-hash replay and balance checks. Its edition matrix adds bot
+games and mixed-seat replay for `legacy`, `original`, and `second-edition` on
+held-out seeds across all five scenarios. The separately configured
 [deep-soak workflow](.github/workflows/deep-soak.yml) schedules larger census/fuzz
 runs and informational telemetry, and also supports manual dispatch. A workflow's
 configuration is not proof it ran successfully; cite its actual run and revision.

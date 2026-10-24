@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from fs_bot.bots.bot_common import is_no_faction_event
+from fs_bot.bots.bot_common import is_no_faction_event, get_dual_use_preference
 from fs_bot.cards import card_text
 from fs_bot.cards.bot_instructions import (
     NO_EVENT, PLAY_EVENT, SPECIFIC_INSTRUCTION, get_bot_instruction,
@@ -18,6 +18,7 @@ from fs_bot.cards.card_data import get_card, get_np_symbols
 from fs_bot.cli.display import format_card
 from fs_bot.rules_consts import (
     AEDUI, BELGAE, GERMANS, ROMANS,
+    EVENT_SHADED,
     NP_SYMBOL_LAURELS, NP_SYMBOL_SWORDS,
     SCENARIO_ARIOVISTUS, SCENARIO_PAX_GALLICA,
 )
@@ -83,3 +84,16 @@ def test_base_cards_with_same_numbers_keep_their_own_cues():
     assert get_np_symbols(24, SCENARIO_PAX_GALLICA)[BELGAE] == NP_SYMBOL_LAURELS
     assert get_np_symbols(70, SCENARIO_PAX_GALLICA) == {
         AEDUI: NP_SYMBOL_LAURELS}
+
+
+def test_provisional_orgetorix_ruling_keeps_ordinary_belgic_event_handling():
+    """PR-01 ignores extra physical-card laurels without inventing a directive."""
+    assert BELGAE not in get_np_symbols("A30", SCENARIO_ARIOVISTUS)
+    instruction = get_bot_instruction("A30", BELGAE, SCENARIO_ARIOVISTUS)
+    assert instruction.action == PLAY_EVENT
+    assert instruction.instruction is None
+    assert not is_no_faction_event("A30", BELGAE, SCENARIO_ARIOVISTUS)
+    assert get_dual_use_preference(
+        BELGAE, SCENARIO_ARIOVISTUS, "A30") == EVENT_SHADED
+    text = card_text.get_card_text("A30", SCENARIO_ARIOVISTUS)
+    assert text.splitlines()[0] == "A30. Orgetorix Ge L Ae L Be Ro"

@@ -50,13 +50,25 @@ Diviciacus Leader rules. The choice is saved with the game.
 | Play with an AI assistant | [Assistant guide](CHATGPT_README.md) |
 | Integrate a human or software agent | [Agent interface](AGENT_INTERFACE.md) |
 | Review fixes and remaining limitations | [Current engineering status](docs/current-status.md) |
-| Inspect outcomes and reproducible evidence | [24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md) |
-| Find source questions and prior decisions | [Question ledger](QUESTIONS.md#current-open-source-questions) |
+| Inspect outcomes and reproducible evidence | [Provisional-ruling validation](docs/reviews/provisional-rulings-2026-10-24.md), [earlier follow-up report](docs/reviews/followup-repairs-2026-10-24.md) |
+| Review adopted provisional rulings | [Six project rulings](docs/provisional-rulings.md), [question ledger](QUESTIONS.md#current-open-source-questions) |
 | Develop and validate changes | [Developer instructions](CLAUDE.md), [maintenance roadmap](BUILD_PLAN.md), [self-play workflow](SELFPLAY_PLAYBOOK.md) |
 | Install or check a release | [Release guide](RELEASES.md), [change history](CHANGELOG.md) |
 | Browse all project documentation | [Documentation index](docs/README.md) |
 
-## Verified checkpoint
+## Current validation
+
+The [provisional-ruling validation report](docs/reviews/provisional-rulings-2026-10-24.md)
+records **4,481 passing tests**, **200 audited bot games**, **320 mixed-seat
+executions with replay**, and **40 strict-census executions** on the adopted
+implementation. All completed without defect findings; mixed-seat and census
+reports matched across hash seeds. The 100-game balance check passed without
+changing its baseline. The report gives exact source identities and scope.
+
+All [six adopted project rulings](docs/provisional-rulings.md) remain subject
+to possible later correction if an authoritative source is found.
+
+## Earlier verified checkpoint
 
 The [24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md)
 records **4,431 passing tests**, **2,500 accepted bot games** across the
@@ -69,9 +81,12 @@ seeds, outcome statistics, installation checks and remote CI status.
 The [23 October report](docs/reviews/outstanding-fixes-2026-10-23.md)
 preserves the earlier checkpoint. Results apply to their tested revision
 and paths; they do not establish that every possible position is correct.
-Six source questions remain documented. Historical strategy studies use
-older mechanics and have additional harness limitations; consult their
-dated caveats before using their numbers as play advice.
+The owner subsequently adopted [six provisional project rulings](docs/provisional-rulings.md).
+Each is subject to possible later correction if an authoritative source is
+found. The earlier checkpoint measurements do not validate that later
+adoption. Historical strategy studies use older mechanics and have additional
+harness limitations; consult their dated caveats before using their numbers
+as play advice.
 
 ## Development
 
@@ -85,5 +100,6 @@ python -m pytest -q
 Read [CLAUDE.md](CLAUDE.md) before editing. `Reference Documents/**` and
 `fs_bot/rules_consts.py` are protected, read-only sources. Project guides,
 reports, and strategy notes describe the implementation; they do not replace
-the supplied rules. The [self-play workflow](SELFPLAY_PLAYBOOK.md) documents
+the supplied rules. The six expressly adopted provisional rulings govern
+their listed source gaps until corrected. The [self-play workflow](SELFPLAY_PLAYBOOK.md) documents
 batch, census, determinism, and balance checks.

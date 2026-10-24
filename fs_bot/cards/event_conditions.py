@@ -24,7 +24,7 @@ def np_event_available(state, card_id, faction, shaded):
         return bool(np_choices(state, faction))
     if not ((card_id in (6, 11, 17, 25, 36) and not shaded)
             or (card_id in (21, 45, 58) and shaded)
-            or card_id in (26, 62, 64, 'A20', 'A21')
+            or card_id in (26, 62, 64, 'A20', 'A21', 'A28')
             or (card_id == 'A37' and (shaded or faction == rc.AEDUI))
             or (card_id in ('A17', 'A65') and not shaded)
             or (card_id in ('A19', 'A45') and shaded and faction == rc.GERMANS)):
@@ -42,6 +42,12 @@ def _available(trial, card_id, faction, shaded):
     from fs_bot.engine import execute as ex
     from fs_bot.board.pieces import count_pieces, get_available
     from fs_bot.board.control import is_controlled_by
+    if card_id == 'A28':
+        # PR-02: use the same native contribution test and guaranteed NP
+        # loans as live A28 planning. Human consent is never queried here.
+        from fs_bot.cards.admagetobriga import _default_plan
+        return (trial['scenario'] in rc.ARIOVISTUS_SCENARIOS
+                and bool(_default_plan(trial, faction)))
     if card_id == 'A17' and not shaded:
         if trial['scenario'] not in rc.ARIOVISTUS_SCENARIOS:
             return False

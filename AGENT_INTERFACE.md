@@ -4,8 +4,10 @@ This engine can be driven by an external **agent** (a human or an LLM) that
 plays a Faction by its own judgment instead of the built-in NP bot flowcharts.
 The standard frontends dispatch bot seats to the built-in non-player logic;
 a custom turn callback must dispatch those seats explicitly. See [current status](docs/current-status.md) for revision-specific
-verification and remaining source questions, and the [documentation
-index](docs/README.md) for the other guides.
+verification and adopted provisional rulings, and the [documentation
+index](docs/README.md) for the other guides. The owner-adopted
+[PR-01 through PR-06](docs/provisional-rulings.md) are subject to possible
+later correction if an authoritative source is found.
 
 There are **two integration points**, because a Faction makes two kinds of
 decisions:
@@ -170,6 +172,14 @@ Return one offered value, for example `{"choice":"roll"}` only when
 `"roll"` is in `options`. The engine makes the roll and requests any resulting
 casualty separately. Later harassers see earlier losses. Choosing whether to
 Harass is a separate `AGREEMENT` request with `request_type: "harassment"`.
+Under provisional PR-05, Ariovistus uses the printed faction order with
+Germans in their printed slot, then automatic Arverni last. PR-06 retains the
+last actually played non-Winter card's order throughout Winter, including
+all-pass cards. The engine derives that order from saved `played_cards`; it
+does not replace `current_card` or use the upcoming card. If no preceding
+Event can be recovered, the compatibility fallback uses card 63/A63's
+scenario-appropriate order, then the game-run faction. See the
+[ruling register](docs/provisional-rulings.md#pr-06) for scope and status.
 
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
 or when leaving part of the carried group behind (`dropoff`). For a request
@@ -272,8 +282,11 @@ Romans choose the order of Recruit, March, and one Special Ability; each may
 be used at most once. After each action, the next request shows the updated
 board and remaining allowance. The Roman personal treasury is reserved.
 NP Aedui supply half their Resources only to NP Romans (A8.6.6), and none to
-human Romans. Unused transferred funds retain the legacy Roman disposition;
-the narrower player-text ambiguity is recorded in `QUESTIONS.md`.
+human Romans. Under provisional [PR-03](docs/provisional-rulings.md#pr-03),
+Romans retain unused transferred funds subject to the normal cap. The result
+field `unused_policy` keeps the historical string `legacy_roman_retention`
+for compatibility; it now describes an adopted project ruling. No automatic
+refund occurs. Any negotiated return remains an explicit normal transfer.
 `engine.frumentum.validate_response` validates both request kinds without
 spending live resources or RNG or consuming any human reaction.
 
@@ -376,6 +389,10 @@ Command+SA plan (two actions); `{decline:true}` ends the capability's actions.
 Ambush/Besiege must be paired with Battle. Cards 63/A63 permit other SAs
 independently of their usual accompanying Commands and pay normal costs.
 A single action resolves before the second decision is requested.
+Provisional [PR-04](docs/provisional-rulings.md#pr-04) resolves German-owned
+A63 during the Interlude before the scenario transition, then retains German
+ownership with no later activations in the base-game half. It does not
+transfer to the Arverni seat. Aedui/Belgic ownership continues to activate.
 `engine.winter_campaign.validate_human_plan` checks both the action budget
 and normal paid execution on a copy. Unaffordable, malformed, and ineffective
 human plans leave the same decision pending; the terminal offers another plan

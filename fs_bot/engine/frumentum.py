@@ -1,8 +1,9 @@
 """A53: Aedui fund distinct paid Roman actions in any selected order.
 
-Card A53 and A8.6.6 govern the amount and actions. Unused funds retain the
-legacy transfer-to-Romans disposition; QUESTIONS.md records the narrow
-unresolved distinction between the player text and the NP 'Transfer' wording.
+Card A53 and A8.6.6 govern the amount and actions. User-adopted provisional
+ruling PR-03 treats the allocation as a transfer: Romans retain unused funds.
+See docs/provisional-rulings.md; an authoritative clarification may supersede
+this ruling. Ordinary negotiated transfers remain separate from this grant.
 """
 from contextlib import contextmanager
 from copy import deepcopy
@@ -233,8 +234,9 @@ def resolve_frumentum(state):
                             "spent": spent, "result": result})
             errors = []
     finally:
-        # Preserve the legacy disposition explicitly; it is not a new ruling
-        # on the player's less-specific 'spend them' text (see QUESTIONS).
+        # Provisional PR-03: the allocation is transferred, with no automatic
+        # refund. Keep the historical unused_policy result label for saved
+        # logs/controllers; authoritative clarification may change the ruling.
         state["resources"][ROMANS] = min(MAX_RESOURCES, treasury + allowance)
         state.pop("_frumentum_budget", None)
     return [{"flag": "card_A53", "event_action": "frumentum", "allocated": amount,

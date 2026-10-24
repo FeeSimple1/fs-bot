@@ -6,7 +6,7 @@ phases; those phase labels are an architectural map, not a list of unbuilt
 features or a certification that every rule interaction is correct.
 
 Start with [current engineering status](docs/current-status.md) for corrected
-behavior and open source questions, and the
+behavior and adopted provisional rulings, and the
 [24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md)
 for the newer repairs and their validation status. The earlier
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
@@ -57,6 +57,7 @@ The 23 October review tested source commit
   scenarios, retaining the 15-percentage-point drift threshold.
 
 The report preserves the failing earlier runs as well as the accepted run.
+Both checkpoints predate the later adoption of PR-01 through PR-06.
 These checks establish the tested positions and paths. They do not establish
 exhaustive rules compliance or human-game balance. New code revisions need
 their own relevant checks; old counts must not be relabeled as new evidence.
@@ -70,14 +71,14 @@ and historical save fixtures. These are now implemented maintenance items;
 the [current status](docs/current-status.md#follow-up-repairs) distinguishes
 them from the older validation checkpoint above.
 
-1. **Resolve the six source questions when authoritative answers are available.**
-   [Current status](docs/current-status.md#source-conflicts-still-open) links
-   their dispositions; [QUESTIONS.md](QUESTIONS.md) holds the source wording
-   and alternatives. They concern A30's missing Belgic instruction,
-   A8.6.6/A28 agreements, unspent human A53 funding, German-owned A63 after
-   Interlude, automatic Arverni Harassment order, and Winter Harassment order.
-   Existing documented policies remain until clarified. Fixing the surrounding
-   mechanics does not settle those questions.
+1. **Revisit the six provisional rulings if authoritative answers are found.**
+   The owner adopted [PR-01 through PR-06](docs/provisional-rulings.md) on
+   24 October 2026. These govern A30's Belgic cue, A28 lending by both
+   non-player factions, unused A53 funding, German-owned A63 after Interlude,
+   Arverni-last Harassment, and the preceding Event's order during Winter.
+   Each is subject to possible later correction if an authoritative source
+   is found. [QUESTIONS.md](QUESTIONS.md) retains the source conflicts;
+   they are not current implementation blockers or designer-confirmed rules.
 2. **Extend position and interaction coverage as defects or gaps are found.**
    Prioritize multiple-faction human decisions, scoped Event combinations,
    physical piece ownership/visibility, and interruptions within Winter or
@@ -110,7 +111,8 @@ them from the older validation checkpoint above.
   A specifically authorized external comparison does not make that source a
   substitute for the supplied rules or authorize broader research.
 - If the sources are ambiguous, record the exact question and alternatives,
-  leave that issue unresolved, and continue independent work.
+  leave that issue unresolved, and continue independent work unless an
+  expressly adopted owner ruling already covers it.
 - Use canonical labels, piece helpers, and seeded game RNG. Check both sides
   of scenario-dependent behavior, including after the Gallic War Interlude.
 - Add a regression for each bug and run the full suite before every commit.

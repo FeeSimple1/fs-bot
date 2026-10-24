@@ -5,7 +5,7 @@ The Gallic Revolt Against Caesar** (2nd Edition) and the
 **Ariovistus** expansion, with non-player bots for every faction.
 You pick any seat (or several); the bots play the rest using the
 published non-player flowcharts. See [current status](docs/current-status.md)
-for verified fixes, test coverage, and unresolved source conflicts. The
+for verified fixes, test coverage, and provisional source interpretations. The
 [documentation index](docs/README.md) also links assistant play and API guides.
 
 ## Requirements
@@ -123,8 +123,23 @@ The full rulebook transcriptions ship in `Reference Documents/`
 flowcharts), including transcribed errata marked as `[ERRATA ...]` notes.
 The implementation follows these supplied references and the rulings
 recorded in QUESTIONS.md. That file is a historical decision ledger;
-[current status](docs/current-status.md) identifies the remaining source
-conflicts and supersedes older completion claims.
+[current status](docs/current-status.md) supersedes older completion claims.
+The owner adopted [six provisional rulings](docs/provisional-rulings.md),
+all subject to possible later correction if an authoritative source is found:
+
+- A30 has no special Belgic instruction; bots use their normal shaded Event procedure.
+- For A28, non-player Aedui and Belgae lend only where the executor contributes
+  its own participating pieces. Human consent remains your choice.
+- Romans retain unused Frumentum funding, subject to the Resource cap.
+- German-owned A63 activates at the Interlude, then remains German-owned and
+  dormant in the base-game half.
+- Ariovistus Harassment follows printed faction order, with Arverni last.
+- Winter Harassment uses the last non-Winter card actually played, including
+  a card on which everyone passed. The game-run faction remains last.
+
+These are project interpretations, not official errata. The ruling register
+explains each source gap and the fallback for older saves without usable
+card history.
 
 ## Scenarios
 

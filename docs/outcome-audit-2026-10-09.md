@@ -4,7 +4,9 @@
 identified in this report. They are not current win rates or proof of the
 current engine's behavior. See [current engineering status](current-status.md)
 and the [23 October validation report](reviews/outstanding-fixes-2026-10-23.md)
-for the later fixes, six remaining source questions, and accepted evidence.
+for later fixes and accepted evidence. The [six provisional project
+rulings](provisional-rulings.md) record the subsequently adopted policies
+for the remaining source questions.
 Original measurements and source digests below are retained.
 
 ## Baseline and scope

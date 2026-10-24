@@ -10,7 +10,10 @@ No external game references. Do not consult BoardGameGeek, other COIN games, oth
 Read [README.md](README.md) for entry points and
 [docs/README.md](docs/README.md) for the documentation map. Current fixes,
 known limits, and the six source questions are in
-[docs/current-status.md](docs/current-status.md). The
+[docs/current-status.md](docs/current-status.md). The owner adopted
+[PR-01 through PR-06](docs/provisional-rulings.md) on 24 October 2026; apply
+those provisional decisions to their specified gaps, subject to possible
+later correction if an authoritative source is found. The
 [24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md)
 tracks the newer repairs; the
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
@@ -25,7 +28,10 @@ owner-authorized rulings and scoped external comparisons; they do not grant
 blanket permission to introduce other source material.
 
 ## Source of Truth (Strict Hierarchy)
-These are read-only. Never modify them. All other code must conform to them.
+These are read-only. Never modify them. All other code must conform to them,
+with the six expressly owner-adopted interpretations in
+[docs/provisional-rulings.md](docs/provisional-rulings.md) governing only their
+listed unresolved cases. These project rulings are not official errata.
 1. fs_bot/rules_consts.py — Canonical Labels
 Every string label for factions, pieces, markers, leaders, regions, tribes, and space IDs used anywhere in the codebase must come from this file. If a label doesn't exist here, it is wrong.
 If you encounter a string literal in the code that doesn't match a constant from rules_consts.py (e.g., "warband", "legion", "auxilia" used as a piece tag, "fort", etc.), it is a bug. Replace it with the correct constant.
@@ -51,7 +57,8 @@ If a file exists in Reference Documents/ and is not listed above, it is still au
 
 Critical Rules
 Never Guess
-If the Reference Documents are ambiguous, contradictory, or silent on a question:
+If the Reference Documents are ambiguous, contradictory, or silent on a question
+and no explicit owner ruling already covers it:
 
 STOP working on that specific issue.
 Document the question in QUESTIONS.md, including:
@@ -63,7 +70,10 @@ What options you see
 
 
 Move on to other work.
-Do not implement a "best guess" — wait for the user to answer.
+Do not implement a "best guess" — wait for the user to answer. The owner has
+already answered the six cases in [the provisional ruling register](docs/provisional-rulings.md);
+do not re-block those cases. Preserve their provisional status and revisit
+them if an authoritative clarification appears.
 
 Rules-Accurate Over Simple
 When faced with a choice between a simpler implementation and one that faithfully follows the rules, always choose rules-accurate. The flowcharts are complex on purpose. Do not simplify tie-breaking logic, do not skip edge cases, do not collapse decision branches that the flowchart keeps separate.
@@ -149,7 +159,8 @@ process exit status alone is not a sufficient acceptance check for every
 historical tool. Never overwrite earlier failed runs or combine results
 from different source revisions. The current balance guardrail uses seeds
 1–20 in all five scenarios and a 15-percentage-point band. Refresh it only
-after explaining intended, source-supported changes on the same seed set;
+after explaining intended changes supported by the sources or an expressly
+adopted project ruling on the same seed set;
 do not tune the bots or widen the threshold to obtain preferred win rates.
 
 ## Human-interface requirements
@@ -178,5 +189,7 @@ change the byte-level source digest. Do not relabel old outcomes as new runs.
 
 Rules fidelity remains the priority. Consult the supplied references before
 changing behavior and leave unresolved source conflicts explicitly recorded.
+For adopted provisional rulings, record both the governing project decision
+and its continuing susceptibility to authoritative correction.
 
 Card Key Suffixes: In CARD_NAMES_ARIOVISTUS, some A-prefix card keys end with "C" (e.g., "A15C"). The trailing "C" represents the carynx symbol printed on those cards in the physical game. It is part of the card's identity, not a typo or encoding artifact. Do not strip, rename, or "normalize" these suffixes.

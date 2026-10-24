@@ -142,11 +142,11 @@ def winter_campaign_after_harvest(state):
             if owner is not None and owner != ROMANS:
                 from fs_bot.engine.game_engine import get_sop_factions
                 if owner not in get_sop_factions(state):
-                    # The sources preserve Germanic capabilities in place but
-                    # do not transfer their ownership to the new Arverni seat.
-                    # Keep that unresolved owner's existing behavior (no
-                    # player activation), without silently reassigning A63.
-                    # See QUESTIONS.md: German-owned A63 after the Interlude.
+                    # User-adopted provisional PR-04: after its final German
+                    # activation during the Interlude, German-owned A63 stays
+                    # with Germans but is dormant in the base-game half.
+                    # See docs/provisional-rulings.md; an authoritative
+                    # clarification may supersede this ownership/use ruling.
                     continue
                 return resolve_winter_campaign(state, owner, card_id)
     return None

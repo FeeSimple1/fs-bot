@@ -7,8 +7,11 @@ with no package installation or internet connection required.
 
 See the [documentation index](docs/README.md), [current engineering
 status](docs/current-status.md), and [terminal play guide](PLAYING.md).
-The status document identifies verified fixes and unresolved source questions;
-passing tests is not a claim of complete rules compliance.
+The status document identifies verified fixes and source questions. The
+owner adopted [six provisional project rulings](docs/provisional-rulings.md),
+all subject to possible later correction if an authoritative source is found.
+Apply them when playing; they are not official errata. Passing tests is not
+a claim of complete rules compliance.
 
 ## Quick start (for the assistant)
 

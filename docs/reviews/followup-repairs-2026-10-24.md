@@ -1,5 +1,11 @@
 # Follow-up repairs and validation — 24 October 2026
 
+**Later disposition, 24 October 2026:** the owner subsequently adopted
+[six provisional project rulings](../provisional-rulings.md), all subject to
+possible later authoritative correction. This report's original source,
+measurements, and then-open question dispositions remain historical evidence;
+they do not validate that later adoption.
+
 This review follows the [23 October checkpoint](outstanding-fixes-2026-10-23.md).
 It covers the remaining Diviciacus mechanics and human choices, Suborn,
 validation tools, installation, and saved-game compatibility. The earlier

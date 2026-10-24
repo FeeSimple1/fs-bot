@@ -4,6 +4,23 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — provisional rulings adopted 24 October 2026
+
+- Adopt [PR-01 through PR-06](docs/provisional-rulings.md) as explicit project
+  policies, each subject to possible later correction if an authoritative
+  source is found. Protected source documents remain unchanged.
+- Permit A28 lending by both non-player Aedui and Belgae only where the
+  executor contributes its own participating pieces; preserve human consent
+  and the Roman refusal rule.
+- Resolve Ariovistus Harassment in printed faction order with Arverni last.
+  During Winter use the last actually played non-Winter card, recovered from
+  saved history; document a deterministic fallback for missing history.
+- Retain the existing A30 ordinary Belgic handling, Roman ownership of unused
+  A53 funding, and post-Interlude dormancy of German-owned A63, now supported
+  by the owner's provisional rulings.
+- Preserve earlier validation measurements as evidence for their original
+  revisions; they do not measure these later rulings.
+
 ## 0.1.0 — initial local distribution
 
 - Implement Diviciacus cooperation for Commands, permitted Special Activities,

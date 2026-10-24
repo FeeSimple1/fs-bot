@@ -210,6 +210,10 @@ _ARIOVISTUS_FACTION_TOKENS = {
     "A27": "Ge Ae S Ro S Be",
     "A28": "Ge L Ae Be L Ro",
     "A29": "Ge Ae Be S Ro L",
+    # Provisional PR-01: ignore the physical card's extra Belgic laurels.
+    # The playbook and supplied Belgic instructions imply ordinary Event
+    # handling. Subject to authoritative correction; see
+    # docs/provisional-rulings.md#pr-01.
     "A30": "Ge L Ae L Be Ro",
     30:    "Ar C Ae Be L Ro",
     "A31": "Ge Be S Ro Ae",

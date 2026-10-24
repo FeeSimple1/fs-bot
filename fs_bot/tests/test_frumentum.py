@@ -71,7 +71,7 @@ def test_humans_choose_all_six_paid_orders_without_eligibility_changes(order):
     assert result['spent'] == 2  # Recruit's normal Supply-Line discount remains legal.
     assert result['unused'] == 4
     assert state['resources'][rc.AEDUI] == 4
-    assert state['resources'][rc.ROMANS] == 11  # explicit legacy unused-transfer retention
+    assert state['resources'][rc.ROMANS] == 11  # provisional PR-03 transfer retention
     assert state['eligibility'] == eligibility
     assert [len(req['remaining_actions']) for req in requests] == [3, 2, 1]
     assert '_frumentum_budget' not in state and '_free_action_factions' not in state
@@ -99,6 +99,30 @@ def test_recruit_without_supply_and_build_charge_allocation_not_roman_treasury()
     assert [entry['spent'] for entry in result['actions']] == [2, 2]
     assert state['resources'][rc.ROMANS] == 7
     assert state['resources'][rc.AEDUI] == 6
+
+
+@pytest.mark.parametrize('treasury,allocation,roman_total', [
+    (7, 0, 7), (7, 8, 15), (43, 8, rc.MAX_RESOURCES),
+])
+def test_provisional_transfer_retention_when_roman_declines_all_actions(
+        treasury, allocation, roman_total):
+    """PR-03: allocated funds are not refunded; the normal cap still applies."""
+    state = _state()
+    state['resources'][rc.ROMANS] = treasury
+    state['decision_agent'] = lambda board, faction, request: (
+        {'amount': allocation} if request['kind'] == 'frumentum_amount'
+        else {'decline': True})
+
+    result = resolve_frumentum(state)[0]
+
+    assert state['resources'][rc.AEDUI] == 10 - allocation
+    assert state['resources'][rc.ROMANS] == roman_total
+    assert result['spent'] == 0
+    assert result['unused'] == allocation
+    assert result['actions'] == []
+    # Retain this public result label for historical logs and controllers.
+    assert result['unused_policy'] == 'legacy_roman_retention'
+    assert '_frumentum_budget' not in state
 
 
 @pytest.mark.parametrize('romans_np,expected', [(True, 10), (False, 0)])

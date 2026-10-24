@@ -1,0 +1,341 @@
+{
+  "report_version": 1,
+  "date": "2026-10-24",
+  "rulings": {
+    "ids": [
+      "PR-01",
+      "PR-02",
+      "PR-03",
+      "PR-04",
+      "PR-05",
+      "PR-06"
+    ],
+    "status": "owner-adopted provisional; subject to correction if an authoritative source is found"
+  },
+  "tested_source": {
+    "commit": "aea03e574868499eece5a11070b9b09f9b50b76b",
+    "dirty": true,
+    "source_sha256": "647b8bcf316d536f1b4ea6a1b81b692a473f824d244c6dac53e3a48c198a5e46"
+  },
+  "pytest": {
+    "passed": 4481,
+    "seconds": 115.35,
+    "exit_code": 0
+  },
+  "audited_bots": {
+    "games": 200,
+    "completed": 200,
+    "findings": [],
+    "batches": {
+      "legacy": {
+        "expected_records": 100,
+        "actual_records": 100,
+        "exact_coverage": true,
+        "returncode": 0,
+        "stderr_bytes": 0,
+        "completed": 100,
+        "cards": 4102,
+        "decisions": 7630,
+        "legal_declines": 967,
+        "interlude_completed": 12,
+        "outcomes": {
+          "Pax Gallica?": {
+            "wins": {
+              "Romans": 16,
+              "Belgae": 2,
+              "Arverni": 1,
+              "Aedui": 1
+            },
+            "terminations": {
+              "threshold": 19,
+              "final-winter-margin": 1
+            }
+          },
+          "Reconquest of Gaul": {
+            "wins": {
+              "Romans": 11,
+              "Arverni": 3,
+              "Belgae": 2,
+              "Aedui": 4
+            },
+            "terminations": {
+              "optimates": 1,
+              "threshold": 16,
+              "final-winter-margin": 3
+            }
+          },
+          "The Great Revolt": {
+            "wins": {
+              "Belgae": 4,
+              "Aedui": 1,
+              "Romans": 6,
+              "Arverni": 9
+            },
+            "terminations": {
+              "final-winter-margin": 11,
+              "threshold": 8,
+              "optimates": 1
+            }
+          },
+          "Ariovistus": {
+            "wins": {
+              "Belgae": 3,
+              "Romans": 9,
+              "Germans": 7,
+              "Aedui": 1
+            },
+            "terminations": {
+              "threshold": 8,
+              "final-winter-margin": 12
+            }
+          },
+          "The Gallic War": {
+            "wins": {
+              "Belgae": 5,
+              "Romans": 12,
+              "Arverni": 3
+            },
+            "terminations": {
+              "threshold": 17,
+              "final-winter-margin": 2,
+              "optimates": 1
+            }
+          }
+        },
+        "summary_matches_independent_recalculation": true
+      },
+      "original": {
+        "expected_records": 50,
+        "actual_records": 50,
+        "exact_coverage": true,
+        "returncode": 0,
+        "stderr_bytes": 0,
+        "completed": 50,
+        "cards": 2147,
+        "decisions": 3986,
+        "legal_declines": 506,
+        "interlude_completed": 7,
+        "outcomes": {
+          "Pax Gallica?": {
+            "wins": {
+              "Romans": 7,
+              "Arverni": 1,
+              "Belgae": 2
+            },
+            "terminations": {
+              "threshold": 10
+            }
+          },
+          "Reconquest of Gaul": {
+            "wins": {
+              "Belgae": 1,
+              "Aedui": 3,
+              "Romans": 6
+            },
+            "terminations": {
+              "threshold": 9,
+              "final-winter-margin": 1
+            }
+          },
+          "The Great Revolt": {
+            "wins": {
+              "Belgae": 4,
+              "Aedui": 2,
+              "Arverni": 4
+            },
+            "terminations": {
+              "threshold": 3,
+              "final-winter-margin": 7
+            }
+          },
+          "Ariovistus": {
+            "wins": {
+              "Romans": 3,
+              "Germans": 5,
+              "Aedui": 2
+            },
+            "terminations": {
+              "threshold": 3,
+              "final-winter-margin": 7
+            }
+          },
+          "The Gallic War": {
+            "wins": {
+              "Romans": 5,
+              "Aedui": 1,
+              "Arverni": 2,
+              "Belgae": 2
+            },
+            "terminations": {
+              "threshold": 7,
+              "final-winter-margin": 3
+            }
+          }
+        },
+        "summary_matches_independent_recalculation": true
+      },
+      "second-edition": {
+        "expected_records": 50,
+        "actual_records": 50,
+        "exact_coverage": true,
+        "returncode": 0,
+        "stderr_bytes": 0,
+        "completed": 50,
+        "cards": 2169,
+        "decisions": 4026,
+        "legal_declines": 512,
+        "interlude_completed": 8,
+        "outcomes": {
+          "Pax Gallica?": {
+            "wins": {
+              "Romans": 6,
+              "Arverni": 1,
+              "Belgae": 2,
+              "Aedui": 1
+            },
+            "terminations": {
+              "threshold": 10
+            }
+          },
+          "Reconquest of Gaul": {
+            "wins": {
+              "Belgae": 1,
+              "Aedui": 3,
+              "Romans": 6
+            },
+            "terminations": {
+              "threshold": 9,
+              "final-winter-margin": 1
+            }
+          },
+          "The Great Revolt": {
+            "wins": {
+              "Belgae": 4,
+              "Aedui": 2,
+              "Arverni": 4
+            },
+            "terminations": {
+              "threshold": 3,
+              "final-winter-margin": 7
+            }
+          },
+          "Ariovistus": {
+            "wins": {
+              "Romans": 3,
+              "Germans": 5,
+              "Aedui": 2
+            },
+            "terminations": {
+              "final-winter-margin": 8,
+              "threshold": 2
+            }
+          },
+          "The Gallic War": {
+            "wins": {
+              "Arverni": 3,
+              "Belgae": 3,
+              "Romans": 4
+            },
+            "terminations": {
+              "final-winter-margin": 3,
+              "threshold": 7
+            }
+          }
+        },
+        "summary_matches_independent_recalculation": true
+      }
+    }
+  },
+  "mixed_seat": {
+    "unique_scenario_seed_edition_cases": 80,
+    "hashseed_runs": 160,
+    "executions_with_replay": 320,
+    "completed": 320,
+    "hard_findings": 0,
+    "soft_partial": 0,
+    "comparisons": [
+      {
+        "edition": "legacy",
+        "seeds": "1-10",
+        "json_bytes_equal": true,
+        "stdout_bytes_equal": true,
+        "stderr_bytes_equal": true,
+        "complete_json_equal": true
+      },
+      {
+        "edition": "original",
+        "seeds": "201-203",
+        "json_bytes_equal": true,
+        "stdout_bytes_equal": true,
+        "stderr_bytes_equal": true,
+        "complete_json_equal": true
+      },
+      {
+        "edition": "second-edition",
+        "seeds": "201-203",
+        "json_bytes_equal": true,
+        "stdout_bytes_equal": true,
+        "stderr_bytes_equal": true,
+        "complete_json_equal": true
+      }
+    ]
+  },
+  "strict_census": {
+    "hashseeds": [
+      0,
+      7
+    ],
+    "seeds": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "scenarios": [
+      "Pax Gallica?",
+      "The Great Revolt",
+      "Reconquest of Gaul",
+      "Ariovistus",
+      "The Gallic War"
+    ],
+    "source_sha256": "647b8bcf316d536f1b4ea6a1b81b692a473f824d244c6dac53e3a48c198a5e46",
+    "games_total": 40,
+    "completed_total": 40,
+    "failed_games_total": 0,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "reports_equal": true,
+    "bytes_equal": true,
+    "report_sha256": [
+      "3da1a58f8d9ab3942603f008d1590e49b0a8ccab455cc78099ff428452c5cc4a",
+      "3da1a58f8d9ab3942603f008d1590e49b0a8ccab455cc78099ff428452c5cc4a"
+    ],
+    "by_severity_per_run": [
+      {
+        "legal-decline": 143
+      },
+      {
+        "legal-decline": 143
+      }
+    ]
+  },
+  "balance": {
+    "games": 100,
+    "seeds": "1-20",
+    "all_five_scenarios": true,
+    "exit_code": 0,
+    "baseline_unchanged": true,
+    "winner_and_card_count_changes": []
+  },
+  "protected_references_unchanged": true,
+  "remote_ci": "Not included in this pre-push local report; inspect Actions on the introducing commit.",
+  "evidence": {
+    "file": "provisional-rulings-2026-10-24-evidence.zip",
+    "files": 55,
+    "bytes": 115282,
+    "sha256": "7bf2ab56f07147c709a7486e541f1b3b6a3fb75f2bf58ba5a726444ab39b3884",
+    "manifest": "MANIFEST.json"
+  }
+}

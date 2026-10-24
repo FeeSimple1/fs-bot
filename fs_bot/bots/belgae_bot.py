@@ -2036,7 +2036,8 @@ def node_b_agreements(state, requesting_faction, request_type, context=None):
     - Never transfer or agree to Supply Line, Retreat, Quarters.
     - Always Harass Romans.
 
-    Per A8.6.6 (Ariovistus only):
+    Provisional project ruling PR-02 (Ariovistus only; subject to later
+    authoritative correction, docs/provisional-rulings.md#pr-02):
     - For the unshaded Ariovistus Event Admagetobriga (card A28), NP Belgae
       agree to use of their Warbands only where the executing Faction has
       pieces (that will also be in the Battle). The Belgae do NOT agree to
@@ -2061,23 +2062,13 @@ def node_b_agreements(state, requesting_faction, request_type, context=None):
             return True
         return False
 
-    # A8.6.6: Admagetobriga Warband-use agreement — only where executing
-    # faction has pieces in the Region (that will be in the Battle).
+    # Share PR-02's physical attacking-piece test with the Aedui and Event.
     if request_type == "admagetobriga_warbands":
-        scenario = state.get("scenario")
-        if scenario not in ARIOVISTUS_SCENARIOS:
-            # A8.6.6 is Ariovistus-only; in base game default to refusing.
-            return False
+        from fs_bot.cards.admagetobriga import nonplayer_warband_agreement
         ctx = context or {}
-        region = ctx.get("region")
-        executing_faction = ctx.get("executing_faction")
-        if not region or not executing_faction:
-            # Without context we cannot evaluate the rule — refuse.
-            return False
-        # NP Belgae agree iff the executing Faction has at least one piece
-        # in the named Region (will also be in the Battle per A8.6.6).
-        from fs_bot.board.pieces import count_pieces
-        return count_pieces(state, region, executing_faction) > 0
+        return nonplayer_warband_agreement(
+            state, ctx.get("executing_faction", requesting_faction),
+            ctx.get("region"))
 
     # Never agree to anything else — §8.4.2
     return False

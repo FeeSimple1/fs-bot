@@ -5155,25 +5155,16 @@ def _iter_harassers(state, region, target_faction, group, *, stop_when_empty=Fal
     later human harassers see earlier casualties (§3.2.2 / §3.2.3).
     """
     from fs_bot.rules_consts import (
-        FACTIONS, ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS, VERCINGETORIX,
+        ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS, VERCINGETORIX,
         LEADER, WARBAND, AUXILIA, LEGION, ALLY, FORT, HIDDEN,
-        BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, WINTER_CARD,
+        BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     )
-    from fs_bot.engine.game_engine import get_sop_factions, get_faction_order
+    from fs_bot.engine.game_engine import get_sop_factions, get_harassment_order
     scenario = state["scenario"]
     has_verc = (scenario in BASE_SCENARIOS and target_faction == ARVERNI
                 and bool(group) and group.get(LEADER) == VERCINGETORIX)
-    order = FACTIONS
-    # Winter Campaign runs after Harvest with the Winter marker current.
-    # That marker has no Event metadata/order. Keep the legacy fallback;
-    # the supplied sources do not specify Winter Harassment ordering.
-    if (scenario in BASE_SCENARIOS
-            and state.get("current_card") not in (None, WINTER_CARD)):
-        card_order = get_faction_order(state)
-        if card_order:
-            order = (*card_order, GERMANS)
-    # Expansion automatic Arverni ordering is not specified by the supplied
-    # sources; retain its existing order pending the recorded source question.
+    # Includes provisional PR-05/PR-06; see docs/provisional-rulings.md.
+    order = get_harassment_order(state)
     for f in order:
         if stop_when_empty:
             if group is not None and not _group_has_pieces(group):

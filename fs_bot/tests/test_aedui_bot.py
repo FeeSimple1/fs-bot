@@ -1100,22 +1100,22 @@ class TestAgreements:
         result = node_a_agreements(state, ROMANS, "frumentum_transfer")
         assert result is False
 
-    def test_admagetobriga_belgae_agree_with_pieces(self):
-        """Per A8.6.6: Belgae agree to Admagetobriga if executor has pieces."""
+    def test_admagetobriga_aedui_agree_with_executor_pieces(self):
+        """Provisional PR-02: Aedui lend when the executor joins Battle."""
         state = _make_state(scenario=SCENARIO_ARIOVISTUS)
-        _place_aedui_force(state, MANDUBII, warbands=2)
+        _place_roman_force(state, MANDUBII, auxilia=2)
         result = node_a_agreements(
-            state, BELGAE, "admagetobriga_warbands",
-            context={"region": MANDUBII, "executing_faction": AEDUI})
+            state, ROMANS, "admagetobriga_warbands",
+            context={"region": MANDUBII, "executing_faction": ROMANS})
         assert result is True
 
-    def test_admagetobriga_belgae_refuse_without_pieces(self):
-        """Per A8.6.6: Belgae refuse Admagetobriga if no executor pieces."""
+    def test_admagetobriga_aedui_refuse_without_executor_pieces(self):
+        """Provisional PR-02: Aedui refuse when the executor is absent."""
         state = _make_state(scenario=SCENARIO_ARIOVISTUS)
-        # No Aedui pieces in Mandubii
+        # No Roman pieces in Mandubii
         result = node_a_agreements(
-            state, BELGAE, "admagetobriga_warbands",
-            context={"region": MANDUBII, "executing_faction": AEDUI})
+            state, ROMANS, "admagetobriga_warbands",
+            context={"region": MANDUBII, "executing_faction": ROMANS})
         assert result is False
 
     def test_refuse_germans_retreat_in_ariovistus(self):

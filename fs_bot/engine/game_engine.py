@@ -225,7 +225,11 @@ def get_faction_order(state):
         Tuple of faction constants in card initiative order,
         containing only SoP factions.
     """
-    card_id = state["current_card"]
+    return _faction_order_for_card(state, state["current_card"])
+
+
+def _faction_order_for_card(state, card_id):
+    """Apply the scenario's printed-symbol mapping without changing the card."""
     scenario = state["scenario"]
     sop = set(get_sop_factions(state))
 
@@ -247,6 +251,36 @@ def get_faction_order(state):
 
     # Filter to only SoP factions, preserving card order
     return tuple(f for f in raw_order if f in sop)
+
+
+def get_harassment_order(state):
+    """Return printed card order, followed by the automatic faction.
+
+    Provisional user rulings PR-05/PR-06, subject to authoritative correction:
+    docs/provisional-rulings.md#pr-05 and #pr-06. In Ariovistus use the
+    current Event's order with the normal A2.3.2 symbol mapping, then Arverni.
+    During Winter use the last actually played non-Winter Event (including
+    an all-pass card). Existing persisted played_cards supplies that history;
+    neither current_card nor eligibility is changed to obtain the order.
+
+    An incomplete legacy/manual state with no preceding Event uses its
+    scenario's Winter Campaign card (63 or A63) as a compatibility fallback.
+    This is a fixed order, not a reconstruction of missing game history.
+    """
+    scenario = state["scenario"]
+
+    def is_event(card_id):
+        return (card_id is not None and card_id != WINTER_CARD
+                and not get_card(card_id, scenario).is_winter)
+
+    card_id = state.get("current_card")
+    if not is_event(card_id):
+        card_id = next((played for played in reversed(state.get("played_cards", []))
+                        if is_event(played)), None)
+    if card_id is None:
+        card_id = "A63" if scenario in ARIOVISTUS_SCENARIOS else 63
+    automatic = ARVERNI if scenario in ARIOVISTUS_SCENARIOS else GERMANS
+    return (*_faction_order_for_card(state, card_id), automatic)
 
 
 def get_eligible_factions(state):

@@ -1,18 +1,20 @@
 # Current engineering status
 
 This document supersedes older completion claims in `QUESTIONS.md` and the
-build plan. It distinguishes verified engineering fixes from unresolved
-source conflicts. The historical audit reports retain their original results;
+build plan. It distinguishes verified engineering fixes, adopted provisional
+project rulings, and unresolved external source questions. The historical audit reports retain their original results;
 their game outcomes are not a baseline for a later rules revision.
 
 [Documentation index](README.md) · [Playing guide](../PLAYING.md) ·
 [Current question index](../QUESTIONS.md#current-open-source-questions)
 
-This page includes the 24 October follow-up repairs and the earlier
-23 October implementation review. Each dated report preserves its own
-revision, source digest, and outcome evidence. The
-[follow-up report](reviews/followup-repairs-2026-10-24.md) records the newer
-work and its validation status.
+This page includes the 24 October adoption of six
+[provisional rulings](provisional-rulings.md), the preceding follow-up
+repairs, and the 23 October implementation review. The
+[provisional-ruling report](reviews/provisional-rulings-2026-10-24.md)
+records validation of the adopted implementation. Each dated report keeps
+its own revision, source digest and outcome evidence; earlier checkpoint
+measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
@@ -93,51 +95,45 @@ for reproduction commands and compatibility limits.
 | Balance checks | All five scenarios and all eligible winners are covered; missing baseline games fail explicitly. Exact threshold comparisons avoid rejecting an allowed 15% change because of floating-point rounding. | `test_balance_guardrail_coverage.py` |
 | Event selection | Non-players check actual eligible targets and the supplied instructions before choosing Mons Cevenna, Assembly of Gaul, or Sabis. | `test_event_conditional_declines.py` |
 
-## Source conflicts still open
+<a id="source-conflicts-still-open"></a>
 
-Full source quotations and dispositions are indexed in the
-[question ledger](../QUESTIONS.md#current-open-source-questions).
+## Adopted provisional rulings
 
-1. **A30 Orgetorix:** the Vassal card face shows Belgic laurels, while the
-   supplied Belgic Event instructions contain no corresponding instruction.
-   An icon does not establish the missing targeting or No Event rule. The
-   implementation retains the supplied behavior pending an authoritative
-   instruction or correction of the icon.
-2. **A8.6.6 and A28 agreements:** the heading names non-player Aedui, while
-   the body names non-player Belgae. Applying that policy to both factions
-   would invent a ruling. The unambiguous Roman refusal, human choices and
-   combined-force mechanics are implemented independently of this conflict.
-3. **A53 Frumentum's unused human allocation:** the card says Romans may
-   spend an amount specified by the Aedui, while the non-player instruction
-   explicitly describes a transfer. The human text does not settle who
-   retains an unspent allocation. The existing disposition (Romans retain
-   the unused transferred amount) remains a documented legacy policy;
-   it is not presented as a new source-derived ruling.
+On 24 October 2026 (America/Chicago), the owner adopted the following
+project policies. **Each is subject to possible later correction if an
+authoritative source is found.** The [ruling register](provisional-rulings.md)
+records their exact scope and rationale; the
+[question ledger](../QUESTIONS.md#current-open-source-questions) preserves
+the source ambiguities. Adoption settles implementation policy without
+claiming official errata or designer confirmation.
 
-4. **German-owned A63 after the Interlude:** the sources transfer the player
-   seat to Arverni but preserve Germanic capabilities in place. They do not
-   specify whether ownership of this neutral benefit follows the player or
-   how the now game-run Germans use its paid actions. Existing ownership and
-   non-activation are preserved; the clear Aedui/Belgic carry-over is fixed.
-5. **Ariovistus Harassment order:** playable Germans acquire a card-order
-   position, while automatic Arverni Harassment has no stated insertion
-   point. The base game's card-order-then-Germans rule is fixed; expansion
-   timing retains the existing fixed faction order pending clarification.
-   Eligibility, casualty choices and sequential resolution are corrected
-   independently.
+| Ruling | Current behavior |
+|---|---|
+| [PR-01: A30 Orgetorix](provisional-rulings.md#pr-01) | Ignore the extra Belgic laurels and use the ordinary shaded Event procedure, with no invented special instruction. |
+| [PR-02: A28 agreements](provisional-rulings.md#pr-02) | Non-player Aedui and Belgae lend only in selected Battles where the executor contributes its own participating pieces. Non-player Romans refuse; humans choose; Arverni participation is automatic. |
+| [PR-03: A53 funding](provisional-rulings.md#pr-03) | Romans retain unused transferred funding, subject to the normal Resource cap. No automatic refund. |
+| [PR-04: German-owned A63](provisional-rulings.md#pr-04) | Resolve its Interlude activation before transition, retain German ownership afterward, and leave it dormant in the base-game half. |
+| [PR-05: Ariovistus Harassment](provisional-rulings.md#pr-05) | Follow printed faction order with Germans in their proper slot, then automatic Arverni last. |
+| [PR-06: Winter Harassment](provisional-rulings.md#pr-06) | Retain the last actually played non-Winter card's order, including all-pass cards; keep the game-run faction last. |
 
-6. **Winter Campaign Harassment order:** Card 63/A63 allows actions after
-   Harvest, when the current Winter card has no faction symbols. The
-   references do not specify a substitute order. The lookup crash is fixed;
-   the existing fixed faction order is preserved pending clarification.
-
-These are source questions, not reasons to silently substitute a preferred
-strategy. Protected references and `rules_consts.py` are unchanged.
+PR-06 recovers the order from saved `played_cards` without changing
+`current_card`. A state with no recoverable preceding Event uses the current
+scenario's Winter Campaign card order (63/A63) as a documented compatibility
+fallback. Protected references and `rules_consts.py` are unchanged.
 
 ## Verification and limits
 
+The [provisional-ruling report](reviews/provisional-rulings-2026-10-24.md)
+records 4,481 passing tests, 200 audited bot games, 320 mixed-seat executions
+with replay, and 40 strict-census executions on the adopted implementation.
+All completed without defect findings. Mixed-seat outputs and census reports
+matched byte-for-byte between hash seeds 0 and 7. The 100-game balance check
+passed with every win rate unchanged; the baseline was not updated. Exact
+coverage, source identities and the local/remote validation boundary are in
+that report.
+
 The [24 October follow-up report](reviews/followup-repairs-2026-10-24.md)
-records the accepted frozen source: 4,431 passing tests, 2,500 accepted
+preserves the preceding accepted source: 4,431 passing tests, 2,500 accepted
 bot games across scenario/edition profiles, 90 optional-Diviciacus games,
 75 matching bot hash-seed repeats and 1,000 completed mixed-seat executions
 with replay. The main bot matrix has no crashes, illegal diagnostics,

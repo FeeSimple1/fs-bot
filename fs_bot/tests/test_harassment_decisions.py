@@ -471,6 +471,80 @@ def test_base_harassers_announce_and_inflict_in_card_order_after_previous_losses
     assert count_pieces(st, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 0
 
 
+@pytest.mark.parametrize('marching', [True, False])
+@pytest.mark.parametrize('auxilia', [1, 4])
+@pytest.mark.parametrize('card,order', [
+    (4, [rc.GERMANS, rc.BELGAE, rc.AEDUI, rc.ARVERNI]),
+    ('A63', [rc.BELGAE, rc.GERMANS, rc.AEDUI, rc.ARVERNI]),
+])
+def test_ariovistus_harassment_announces_printed_order_then_automatic_arverni(
+        marching, auxilia, card, order):
+    # Provisional PR-05: normal mapping of original card symbols, automatic
+    # Arverni last. Later humans see the losses inflicted by earlier factions.
+    st = board()
+    st['current_card'] = card
+    st['non_player_factions'] = set()
+    origin = rc.PROVINCIA if marching else rc.SEQUANI
+    romans(st, origin, aux=auxilia, legions=0, leader=False)
+    for faction in order:
+        place_piece(st, rc.SEQUANI, faction, rc.WARBAND, 3)
+    seen = []
+    def agent(state, faction, request):
+        if request.get('request_type') == 'harassment':
+            seen.append((faction, count_pieces(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA)))
+            return True
+        return None
+    st['decision_agent'] = agent
+    if marching:
+        assert _march_with_harassment(st, rc.ROMANS, origin,
+                                       [rc.SEQUANI, rc.AEDUI_REGION]) == rc.SEQUANI
+    else:
+        result = _resolve_seize_harassment(st, rc.SEQUANI)
+        assert [loss['by'] for loss in result] == order[:auxilia]
+    assert seen == list(zip(order[:min(auxilia, 3)], range(auxilia, 0, -1)))
+    assert count_pieces(st, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 0
+
+
+def test_winter_harassment_order_resumes_between_factions_and_replays_exactly(tmp_path):
+    # Provisional PR-06 must remain stable across a live Winter decision,
+    # transactional rollback, persistence, and recorded response replay.
+    def initial():
+        st = board()
+        st['current_card'] = rc.WINTER_CARD
+        st['played_cards'] = [1, 4, rc.WINTER_CARD]
+        romans(st, aux=3, legions=1, leader=False)
+        for faction in (rc.GERMANS, rc.BELGAE, rc.ARVERNI):
+            place_piece(st, rc.SEQUANI, faction, rc.WARBAND, 3)
+        return st
+    st = initial()
+    session = SeatSession(st, {'seat': rc.ROMANS}, [], HumanTurnDisplay(StringIO()))
+    st['decision_agent'] = session.reactive
+    session.import_inbox([{'response': {'choice': rc.AUXILIA}}])
+    before = encode(board_copy(st))
+    with pytest.raises(DecisionPending):
+        with _action_transaction(st, driver(session)):
+            _resolve_seize_harassment(st, rc.SEQUANI)
+    assert encode(board_copy(st)) == before
+    assert decode(session.data['pending']['request'])['harasser'] == rc.BELGAE
+    path = tmp_path / 'winter-harassment.json'
+    save_game(st, path, meta=session.meta, log=session.log)
+    restored, meta, log = load_game(path, validate=True)
+    resumed = SeatSession(restored, meta, log, HumanTurnDisplay(StringIO()))
+    restored['decision_agent'] = resumed.reactive
+    resumed.import_inbox([{'response': {'choice': rc.AUXILIA}}] * 2)
+    with _action_transaction(restored, driver(resumed)):
+        result = _resolve_seize_harassment(restored, rc.SEQUANI)
+    resumed.finish()
+    assert [loss['by'] for loss in result] == [rc.GERMANS, rc.BELGAE, rc.ARVERNI]
+    assert restored['current_card'] == rc.WINTER_CARD
+    replay = initial()
+    seen = answers(replay, [decode(entry['assistant_response'])['choice'] for entry in log])
+    _resolve_seize_harassment(replay, rc.SEQUANI)
+    assert [dict(request, faction=faction) for faction, request in seen] == [
+        decode(entry['assistant_request']) for entry in log]
+    assert encode(board_copy(replay)) == encode(board_copy(restored))
+
+
 @pytest.mark.parametrize('scenario,automatic', [
     (rc.SCENARIO_GREAT_REVOLT, rc.GERMANS),
     (rc.SCENARIO_ARIOVISTUS, rc.ARVERNI),

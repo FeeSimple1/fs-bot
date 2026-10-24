@@ -8,24 +8,26 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
-As of the 23 October 2026 validation checkpoint, these six source questions
-remain open. Their surrounding implemented mechanics are covered in
-[current status](docs/current-status.md); historical OPEN/CLOSED labels
-below describe earlier stages and do not replace this index.
+The owner adopted the following six provisional project rulings on
+24 October 2026 (America/Chicago). They settle current engine behavior while
+the underlying source questions remain open. **Each is subject to possible
+later correction if an authoritative source is found.** They are not official
+errata or designer-confirmed answers.
 
-| Question | Current disposition |
+| Question | Current provisional disposition |
 |---|---|
-| [A30 Orgetorix Belgic instruction](#open-a30) | Preserve the supplied behavior until the missing instruction or icon is clarified. |
-| [A8.6.6 / A28 agreement policy](#open-a28) | Do not infer which non-player faction the contradictory wording governs. |
-| [A53 unused human funding](#open-a53) | Preserve the documented legacy Roman retention policy. |
-| [German-owned A63 after Interlude](#open-a63) | Preserve ownership and existing non-activation after the seat transition. |
-| [Ariovistus automatic Arverni Harassment order](#open-ariovistus-harassment) | Preserve the existing expansion fallback order. |
-| [After-Harvest Winter Harassment order](#open-winter-harassment) | Preserve the existing Winter fallback without looking up Winter as an Event. |
+| [A30 Orgetorix Belgic instruction](#open-a30) | [PR-01](docs/provisional-rulings.md#pr-01): ignore extra Belgic laurels; ordinary shaded Event procedure. |
+| [A8.6.6 / A28 agreement policy](#open-a28) | [PR-02](docs/provisional-rulings.md#pr-02): both non-player Aedui and Belgae lend only where the executor contributes its own participating pieces. |
+| [A53 unused human funding](#open-a53) | [PR-03](docs/provisional-rulings.md#pr-03): Romans retain unused funding, subject to the normal Resource cap. |
+| [German-owned A63 after Interlude](#open-a63) | [PR-04](docs/provisional-rulings.md#pr-04): final Interlude activation, then retained German ownership and dormancy. |
+| [Ariovistus automatic Arverni Harassment order](#open-ariovistus-harassment) | [PR-05](docs/provisional-rulings.md#pr-05): printed faction order, then automatic Arverni last. |
+| [After-Harvest Winter Harassment order](#open-winter-harassment) | [PR-06](docs/provisional-rulings.md#pr-06): retain the last actually played non-Winter card's order, including all-pass cards. |
 
-The [validation report](docs/reviews/outstanding-fixes-2026-10-23.md) records
-the corrected defects and accepted rerun. This ledger records source
-interpretations; it is not a guarantee that all possible positions or
-independent harnesses have been verified.
+The [ruling register](docs/provisional-rulings.md) records exact scope,
+reasoning, source links, compatibility behavior, and correction policy.
+Historical OPEN/CLOSED labels below describe earlier stages and do not replace
+this index. Earlier validation reports retain their original revisions and
+measurements; they do not validate these later adopted rulings.
 
 ---
 
@@ -2718,26 +2720,35 @@ answered in the rules/reference documents. Four were. Dispositions:
    ruling.
 5. A28 agreements: A8.8.8 unambiguously says Non-player Romans
    NEVER agree to use of their Auxilia. The A8.6.6 Aedui/Belgae
-   policy remains blocked by the source conflict below. The Event's
+   policy was blocked at this checkpoint; the later owner-adopted PR-02
+   below supersedes that disposition. The Event's
    Warband/Auxilia force, Counterattack losses, Reveal, multiple
    eligible Regions, and explicit human consent/targets are implemented.
 
 <a id="open-a28"></a>
 
-## [OPEN] A8.6.6 / A28 — non-player agreement policy
+## [PROVISIONAL PR-02] A8.6.6 / A28 — non-player agreement policy
 
-**Source conflict (still open):** our Chapter A8 transcription reads "A8.6.6
+**Source conflict:** our Chapter A8 transcription reads "A8.6.6
 Non-Player AEDUI Agreements. For the unshaded Ariovistus Event
 Admagetobriga, Non-player BELGAE agree to use of their Warbands
 only where..." — header names the Aedui, body names the Belgae.
-Please check the printed rulebook: is the body a typo for Aedui, does
-the printed A8.6.6 really state the Belgae policy, and is there a
-separate parallel rule for the other Faction? Until answered, the
-A28 implementation does not infer an agreement policy for either
-Non-player Aedui or Belgae. Such an unanswered request is reported as
-an unresolved agreement; those pieces are not lent without a settled
-rule. Human factions make their own explicit choice. Automatic Arverni
-participation and all other source-clear parts of the Event still resolve.
+Owner-authorized research confirmed that the published English rulebook and
+GMT's Spanish translation repeat this contradiction. It is not merely a
+repository transcription error.
+
+**Adopted project ruling, 24 October 2026:** apply the condition to both
+non-player Aedui and non-player Belgae. Either lends Warbands only in a
+selected Battle Region where the executor contributes its own pieces that
+actually participate. Non-player Romans refuse; human factions choose;
+game-run Arverni participation remains automatic. This supersedes the prior
+implementation's unresolved-agreement refusal for both factions.
+
+**Status:** [PR-02](docs/provisional-rulings.md#pr-02) is provisional and
+subject to possible later correction if an authoritative source is found.
+Applying the condition to both factions is an owner-adopted interpretation,
+not a designer-confirmed correction. The source question remains which
+faction or factions the original rule intended to govern.
 
 
 ## [RESOLVED SOURCE CONFLICT] Vassal comparison — A24/A70 NP symbols
@@ -2765,7 +2776,7 @@ change to bot behavior. Protected reference files remain unchanged.
 
 <a id="open-a30"></a>
 
-## [OPEN] Vassal comparison — A30 Orgetorix Belgic laurels
+## [PROVISIONAL PR-01] Vassal comparison — A30 Orgetorix Belgic laurels
 
 **Behavior:** the Belgic NP cue and any special instruction for A30.
 
@@ -2777,13 +2788,16 @@ Belgic Event Instructions, base §8.2.1 and A8.2.1; physical
 header has no Belgic symbol and the supplied Belgic instructions contain
 no Orgetorix entry. Laurels indicate an instruction; they do not define it.
 
-**Options and consequences:** retain the supplied header/instructions, as
-currently implemented, or correct the cue after obtaining the corresponding
-printed instruction or clarification that the laurels are erroneous. Merely
-adding an icon cannot justify inventing a targeting rule or No Event test.
+**Adopted project ruling, 24 October 2026:** ignore the extra Belgic laurels.
+Non-player Belgae use their ordinary shaded Event procedure and standard
+Event priorities; no special Orgetorix instruction or No Event condition is
+invented. The published playbook's card list also omits Belgic laurels.
+This retains the existing generic handling as an explicit project decision.
 
-**Blocked:** choosing a different cue or specific Belgic Event behavior.
-Existing generic Event handling remains unchanged; unrelated work proceeds.
+**Status:** [PR-01](docs/provisional-rulings.md#pr-01) is provisional and
+subject to possible later correction if an authoritative source is found.
+Whether the printed symbol is erroneous or an instruction is missing remains
+an external source question.
 
 ## [RESOLVED] Vassal comparison — original versus Second Edition card policy
 
@@ -2818,7 +2832,7 @@ without silently changing an existing game's rules. Regression coverage:
 
 <a id="open-a53"></a>
 
-## [OPEN] A53 Frumentum — unused player-specified allocation
+## [PROVISIONAL PR-03] A53 Frumentum — unused player-specified allocation
 
 **Clear rules implemented:** A Card Reference A53 (lines 238–243) says:
 "Aedui specify an amount of their Resources. Romans then spend them as
@@ -2833,16 +2847,19 @@ return of a transfer.
 amount specified but not spent remains Aedui-owned, becomes a Roman transfer,
 or must be returned. The explicit NP "Transfer" wording supports Roman
 retention for that case, but does not expressly settle the disposition for
-two players. No default negotiation or permanent gift should be invented
-from "as desired" alone.
+two players. The project therefore distinguishes the following adopted
+interpretation from a definitive answer supplied by that text.
 
-**Legacy behavior preserved pending clarification:** deduct the specified
-amount from Aedui, reserve it for the three paid Roman actions, and retain
-unused funds with Romans (normal Resource cap applies). This is the previous
-engine's transfer disposition, explicitly labeled `legacy_roman_retention`
-in the result; it is not a new ruling. The corrections to the amount,
-actual costs, human choices, distinct actions, ordering and eligibility do
-not depend on resolving this narrower policy.
+**Adopted project ruling, 24 October 2026:** the specified amount is
+transferred funding. Deduct it from Aedui, reserve it for the granted Roman
+actions, and retain unused funds with Romans subject to the normal Resource
+cap. There is no automatic refund; any negotiated return is an explicit
+normal transfer. Unrelated Roman funds remain reserved during the grant.
+
+**Compatibility and status:** the result retains the historical
+`unused_policy: "legacy_roman_retention"` label for consumers. It now
+implements [PR-03](docs/provisional-rulings.md#pr-03), which is provisional
+and subject to possible later correction if an authoritative source is found.
 
 **Question:** when human Aedui allocate Resources under A53, who owns any
 portion that the Romans do not spend during the Event?
@@ -2851,7 +2868,7 @@ portion that the Romans do not spend during the Event?
 
 <a id="open-a63"></a>
 
-## [OPEN] German-owned A63 after the Gallic War Interlude
+## [PROVISIONAL PR-04] German-owned A63 after the Gallic War Interlude
 
 **Clear behavior implemented:** the Interlude's Winter Events step resolves
 Winter Uprising! and shaded Winter Campaign in that order, before adjusting
@@ -2877,10 +2894,15 @@ German ownership and specify how the game-run Germans use its two actions;
 or retain the card with no usable benefit to a seated Faction. The references
 do not explicitly select among these outcomes.
 
-**Legacy behavior preserved:** German ownership is retained; A63 does not
-silently activate Arverni or call the Ariovistus German bot in the base game.
-This does not block the clear Aedui/Belgae carry-over or the pre-transition
-German Winter Campaign activation during the Interlude itself.
+**Adopted project ruling, 24 October 2026:** resolve the final German-owned
+A63 activation during the Interlude's Winter Events step, then retain German
+ownership with no later activations in the base-game half. The capability
+becomes dormant and does not transfer to Arverni. Aedui/Belgic carry-over
+continues to activate normally.
+
+**Status:** [PR-04](docs/provisional-rulings.md#pr-04) is provisional and
+subject to possible later correction if an authoritative source is found.
+Dormancy itself is an adopted interpretation, not an express source rule.
 
 **Question:** how should German-owned shaded A63 be owned and used after
 the Interlude?
@@ -2889,7 +2911,7 @@ the Interlude?
 
 <a id="open-ariovistus-harassment"></a>
 
-## [OPEN] Ariovistus automatic Arverni Harassment order
+## [PROVISIONAL PR-05] Ariovistus automatic Arverni Harassment order
 
 **Behavior under review:** the order of Harassment announcements and Losses
 when multiple factions can Harass Roman March or Seize in Ariovistus.
@@ -2910,12 +2932,15 @@ Arverni replace base Germans-last, but that is not an explicit supplied rule.
 **Options:** resolve automatic Arverni last; assign another position relative
 to the card order; or supply an omitted timing rule or erratum.
 
-**Disposition:** base-game card order followed by Germans is corrected.
-Until the expansion timing is clarified, Ariovistus retains its existing
-fixed faction order (Romans, Arverni, Aedui, Belgae, Germans). This is a
-documented legacy policy, not a source-derived ruling. Correct harasser
-eligibility, mandatory game-run Harassment, victim choices, and sequential
-announcement/loss resolution are implemented independently.
+**Adopted project ruling, 24 October 2026:** use printed faction order,
+with Germans in the position assigned by A2.3.2, then automatic Arverni last.
+This supersedes the former fixed expansion fallback. Base-game card order
+followed by Germans remains unchanged. Eligibility, mandatory game-run
+Harassment, human choices, and sequential losses still apply.
+
+**Status:** [PR-05](docs/provisional-rulings.md#pr-05) is provisional and
+subject to possible later correction if an authoritative source is found.
+The Arverni-last insertion is the owner's interpretation of the source gap.
 
 **Question:** where does automatic Arverni Harassment resolve relative to
 the four factions printed on the current Event card in Ariovistus?
@@ -2925,10 +2950,11 @@ the four factions printed on the current Event card in Ariovistus?
 
 <a id="open-winter-harassment"></a>
 
-## [OPEN] Harassment order during after-Harvest Winter Campaign actions
+## [PROVISIONAL PR-06] Harassment order during after-Harvest Winter Campaign actions
 
 **Behavior under review:** the order of multiple factions' Harassment during
-a March or Seize granted by shaded Card 63/A63 after Harvest.
+shaded Card 63/A63 actions after Harvest, such as Vercingetorix's two-step
+March. Winter Campaign cannot be owned by Romans.
 
 **Sources:** Chapter 6 begins: "As each Winter card is played, conduct a
 Winter Round in the sequence of phases below." Card 63 says: "After each
@@ -2943,12 +2969,22 @@ order for this boundary.
 or upcoming Event's order; or specify a separate Winter order. The supplied
 references do not select one of these possibilities.
 
-**Disposition:** the engine no longer attempts to look up the Winter marker
-as an Event. It preserves its existing fixed faction order (Romans,
-Arverni, Aedui, Belgae, Germans) for Winter, without changing the current
-card or inferring another card's order. This compatibility fallback is not
-claimed as a source-derived ruling. Actual after-Harvest Harassment and
-all three full-game crash seeds have regression coverage.
+**Adopted project ruling, 24 October 2026:** retain the last actually played
+non-Winter card's faction order throughout Winter, including a card on which
+all factions passed. Use the appropriate game-run faction last (Germans in
+the base game; Arverni in Ariovistus under PR-05). The Interlude uses its
+first-half order before changing scenarios. This supersedes the former
+fixed Winter fallback.
+
+Recover the order read-only from saved `played_cards`; keep `current_card`
+as Winter. If no preceding Event can be recovered from an older or manual
+state, use the scenario's Winter Campaign card order (63/A63), followed by
+the game-run faction. This compatibility fallback does not reconstruct
+missing history or use an unplayed upcoming card.
+
+**Status:** [PR-06](docs/provisional-rulings.md#pr-06) is provisional and
+subject to possible later correction if an authoritative source is found.
+The timing convention and missing-history fallback are project policies.
 
 **Question:** which faction order governs Harassment during shaded Card
 63/A63 actions after Harvest, when the currently played card is Winter?

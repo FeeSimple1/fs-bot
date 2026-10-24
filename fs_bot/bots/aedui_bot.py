@@ -1716,10 +1716,10 @@ def node_a_agreements(state, requesting_faction, request_type, *,
     - To NP Roman: Always.
 
     Per A8.6.6 (Ariovistus):
-    - Admagetobriga: NP Belgae agree to use of their Warbands only where
-      the executing Faction has pieces. (A Belgae agreement rule; this
-      function delegates the "admagetobriga_warbands" request to
-      belgae_bot.node_b_agreements.)
+    - Admagetobriga: under provisional project ruling PR-02, both NP Aedui
+      and Belgae lend only where the executor contributes native attacking
+      pieces. Subject to later authoritative correction; see
+      docs/provisional-rulings.md#pr-02.
     - Frumentum: Transfer half of Aedui's total Resources to NP Romans
       only (none to player Romans).
 
@@ -1772,18 +1772,14 @@ def node_a_agreements(state, requesting_faction, request_type, *,
         # Never transfer to Arverni or Belgae — §8.6.6
         return False
 
-    # Per A8.6.6: Admagetobriga — the rule governs NP Belgae agreement to
-    # use of their Warbands. The Aedui bot is not the rules-owner; defer to
-    # the Belgae bot for any request directed at Belgae, and refuse for
-    # any other faction (Aedui never agree to Admagetobriga Warband use of
-    # their own pieces per §8.4.2 default refusal).
+    # PR-02: this is the Aedui lender's policy, not a request to a different
+    # bot. The shared test ignores borrowed and non-attacking pieces.
     if request_type == "admagetobriga_warbands":
-        if requesting_faction == BELGAE:
-            from fs_bot.bots.belgae_bot import node_b_agreements
-            return node_b_agreements(
-                state, requesting_faction, request_type, context=context
-            )
-        return False
+        from fs_bot.cards.admagetobriga import nonplayer_warband_agreement
+        ctx = context or {}
+        return nonplayer_warband_agreement(
+            state, ctx.get("executing_faction", requesting_faction),
+            ctx.get("region"))
 
     # Per A8.6.6: Frumentum — Transfer half of Aedui's total Resources
     # to NP Romans only (none to player Romans).

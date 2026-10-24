@@ -2,11 +2,13 @@
 
 The Event owns the scope and obtains each human lender's consent. The Battle
 engine then sees the combined force through battle.combined, while physical
-owners retain all counters and Available pools. The A8.6.6 Aedui/Belgae
-agreement conflict remains explicitly unresolved in QUESTIONS.md.
+owners retain all counters and Available pools. Provisional project ruling
+PR-02 applies the A8.6.6 participation condition to both non-player Aedui and
+Belgae; it is subject to correction by an authoritative source. See
+docs/provisional-rulings.md#pr-02.
 """
 from fs_bot import rules_consts as rc
-from fs_bot.board.pieces import count_pieces
+from fs_bot.board.pieces import count_pieces, get_leader_in_region
 from fs_bot.engine.agent import consult_agent, AGREEMENT
 from fs_bot.map.map_data import get_adjacent, get_playable_regions
 from fs_bot.battle.combined import combined_force, TYPES
@@ -26,39 +28,108 @@ def _automatic_owners(faction):
     return [] if faction == rc.ARVERNI else [rc.ARVERNI]
 
 
+def nonplayer_warband_agreement(state, executing_faction, region):
+    """PR-02: both NP Aedui and Belgae require a native attacking piece.
+
+    Read physical counters: automatic Arverni or already-lent pieces cannot
+    satisfy the executor's contribution. Allies, Forts, Citadels and
+    Settlements do not join an attacking force. This adopted provisional
+    ruling may be corrected by later authoritative clarification.
+    """
+    if (state.get('scenario') not in rc.ARIOVISTUS_SCENARIOS
+            or executing_faction not in rc.FACTIONS
+            or region not in allowed_regions(state)):
+        return False
+    pieces = state['spaces'].get(region, {}).get('pieces', {}).get(
+        executing_faction, {})
+    return (pieces.get(rc.LEADER) is not None
+            or pieces.get(rc.LEGION, 0) > 0
+            or any(pieces.get(visibility, {}).get(piece, 0) > 0
+                   for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
+                   for piece in TYPES))
+
+
+def _possible_owners(state, faction, region, target, *, include_humans=False):
+    """Known NP loans, plus optional human loans only for human menus."""
+    owners = _automatic_owners(faction)
+    nonplayers = state.get('non_player_factions', set())
+    for owner in rc.FACTIONS:
+        if owner in (faction, rc.ARVERNI, target) or not _mobile(state, region, owner):
+            continue
+        if owner in nonplayers:
+            if (owner in (rc.AEDUI, rc.BELGAE)
+                    and nonplayer_warband_agreement(state, faction, region)):
+                owners.append(owner)
+        elif include_humans:
+            owners.append(owner)
+    return owners
+
+
 def target_options(state, faction):
-    """Human candidate targets, including attacks using only a borrowed force."""
+    """Human targets include every force its owners could legally lend."""
     from fs_bot.engine.execute import _attacker_has_force
     options = {}
     for region in allowed_regions(state):
-        owners = _automatic_owners(faction)
-        with combined_force(state, faction, {region: owners}):
-            own_force = _attacker_has_force(state, region, faction)
-            enemies = [enemy for enemy in rc.FACTIONS
-                       if enemy != faction and count_pieces(state, region, enemy)]
-        # A human may request another player's pieces even without an own
-        # force. Consent is obtained during resolution, before any Battle.
-        enemies = [enemy for enemy in enemies if own_force or any(
-            _mobile(state, region, other) for other in rc.FACTIONS
-            if other not in (faction, enemy))]
+        enemies = []
+        for target in rc.FACTIONS:
+            if target == faction:
+                continue
+            owners = _possible_owners(state, faction, region, target,
+                                      include_humans=True)
+            with combined_force(state, faction, {region: owners}):
+                if (_attacker_has_force(state, region, faction)
+                        and count_pieces(state, region, target)):
+                    enemies.append(target)
         if enemies:
             options[region] = enemies
     return options
 
 
 def _default_plan(state, faction):
-    from fs_bot.engine.execute import _choose_free_battle
-    result = []
-    remaining = set(allowed_regions(state))
-    with combined_force(state, faction, {
-            region: _automatic_owners(faction) for region in remaining}):
-        while remaining:
-            region, target = _choose_free_battle(state, faction, remaining)
-            if region is None:
-                break
-            result.append({'region': region, 'target_faction': target})
-            remaining.remove(region)
-    return result
+    """Apply the existing free-Battle priorities with guaranteed NP loans.
+
+    The defender cannot lend its own Warbands. Evaluate the actual force for
+    each candidate separately so borrowing neither removes a candidate from
+    consideration nor makes a refused loan look like a viable attack.
+    Human agreements remain live decisions, never guessed in this preview.
+    """
+    from fs_bot.engine.execute import (
+        _attacker_has_force, _predicted_legion_losses, _german_warband_floor_ok,
+    )
+    candidates = []
+    for region in allowed_regions(state):
+        best = None
+        for target in rc.FACTIONS:
+            if target == faction or (faction == rc.BELGAE and target != rc.ROMANS):
+                continue
+            owners = _possible_owners(state, faction, region, target)
+            with combined_force(state, faction, {region: owners}):
+                if (not _attacker_has_force(state, region, faction)
+                        or not count_pieces(state, region, target)):
+                    continue
+                if faction == rc.BELGAE:
+                    score = _predicted_legion_losses(state, region, faction)
+                    if score <= 0:
+                        continue
+                    defender_priority = (score,)
+                else:
+                    score = sum(count_pieces(state, region, target, piece)
+                                for piece in (rc.WARBAND, rc.LEGION, rc.AUXILIA))
+                    defender_priority = (
+                        bool(get_leader_in_region(state, region, target)), score,
+                        sum(count_pieces(state, region, target, piece)
+                            for piece in (rc.ALLY, rc.CITADEL)))
+                floor_ok = (faction != rc.GERMANS
+                            or _german_warband_floor_ok(state, region, faction, target))
+                if best is None or defender_priority > best[0]:
+                    best = (defender_priority, score, target, floor_ok)
+        if best is not None and best[3]:
+            candidates.append((best[1], region, best[2]))
+    # Stable sorting retains sorted Region order for equal priorities, as in
+    # the existing repeated free-Battle chooser, without consuming RNG.
+    candidates.sort(key=lambda candidate: -candidate[0])
+    return [{'region': region, 'target_faction': target}
+            for _, region, target in candidates]
 
 
 def _validate_plan(state, faction, plan):
@@ -77,9 +148,9 @@ def _validate_plan(state, faction, plan):
             raise ValueError('A28 selects each eligible Sequani/adjacent Region once with an opposing target')
         lenders = entry.get('allied_factions')
         if lenders is not None and (not isinstance(lenders, list)
-                or any(owner not in rc.FACTIONS or owner in (faction, rc.ARVERNI)
+                or any(owner not in rc.FACTIONS or owner in (faction, rc.ARVERNI, target)
                        for owner in lenders) or len(set(lenders)) != len(lenders)):
-            raise ValueError('A28 allied_factions must name distinct other player factions')
+            raise ValueError('A28 allied_factions must name distinct other player factions excluding the defender')
         normalized.append({'region': region, 'target': target,
                            'allied_factions': lenders})
         seen.add(region)
@@ -91,7 +162,7 @@ def _agreement(state, faction, owner, region, target):
         if owner == rc.ROMANS:
             return False, None  # A8.8.8: never lend Auxilia.
         if owner in (rc.AEDUI, rc.BELGAE):
-            return False, 'A8.6.6 names Aedui in its heading and Belgae in its text; agreement policy unresolved'
+            return nonplayer_warband_agreement(state, faction, region), None
         from fs_bot.bots.german_bot import node_g_agreements
         return bool(node_g_agreements(state, faction, 'admagetobriga_warbands')), None
     reply = consult_agent(state, owner, {

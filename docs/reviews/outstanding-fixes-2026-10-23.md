@@ -1,5 +1,11 @@
 # Outstanding fixes and validation — 23 October 2026
 
+**Later disposition, 24 October 2026:** the owner subsequently adopted
+[six provisional project rulings](../provisional-rulings.md), all subject to
+possible later authoritative correction. This report's original source,
+measurements, and then-open question dispositions remain historical evidence;
+they do not validate that later adoption.
+
 This review continues the rules, human-interface, Vassal comparison, and
 automated-game work. The [current engineering status](../current-status.md)
 lists the corrected behavior and regression files. Earlier audit reports

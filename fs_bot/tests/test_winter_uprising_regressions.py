@@ -188,10 +188,54 @@ def test_retained_german_a63_does_not_silently_transfer_to_arverni():
     state["interlude_completed"] = True
     state["capabilities"]["A63"] = rc.EVENT_SHADED
     state["capability_owners"] = {"A63": rc.GERMANS}
-    # Preserve the unresolved case's prior semantics pending the question in
-    # QUESTIONS.md, while the Aedui/Belgae carry-over is source-defined.
+    # Provisional PR-04 preserves German ownership while making the retained
+    # capability dormant; authoritative clarification may supersede this.
     assert winter_campaign_after_harvest(state) is None
     assert state["capability_owners"]["A63"] == rc.GERMANS
+
+
+def test_provisional_german_campaign_acts_during_interlude_then_stays_dormant(tmp_path):
+    """PR-04 permits the final paid German activation before the seat changes."""
+    from fs_bot.state.serialize import save_game, load_game
+
+    state = build_initial_state(rc.SCENARIO_GALLIC_WAR, seed=8)
+    state["resources"][rc.GERMANS] = 10
+    place_piece(state, rc.NERVII, rc.GERMANS, rc.WARBAND, 4)
+    state["executing_faction"] = rc.GERMANS
+    execute_card_A63(state, shaded=True)
+    state.pop("executing_faction")
+    requests = []
+
+    def decide(board, faction, request):
+        if request["kind"] != "winter_campaign":
+            return None
+        assert board["scenario"] == rc.SCENARIO_GALLIC_WAR
+        assert faction == rc.GERMANS
+        requests.append((request["remaining_actions"], board["resources"][faction]))
+        origin, destination = ((rc.NERVII, rc.ATREBATES) if len(requests) == 1
+                               else (rc.ATREBATES, rc.NERVII))
+        return {"command": rc.CMD_MARCH, "sa": "No SA", "regions": [],
+                "details": {"origins": [origin], "destinations": [destination],
+                            "routes": {origin: [destination]}}}
+
+    state["decision_agent"] = decide
+    result = run_interlude(state, britannia_decision=False)
+    campaign = result["step1_winter_events"]["winter_campaign"]
+    assert requests == [(2, 10), (1, 9)]
+    assert campaign["owner"] == rc.GERMANS
+    assert campaign["remaining_actions"] == 0
+    assert state["scenario"] == rc.SCENARIO_PAX_GALLICA
+    assert state["capability_owners"]["A63"] == rc.GERMANS
+    assert state["capabilities"]["A63"] == rc.EVENT_SHADED
+    assert winter_campaign_after_harvest(state) is None
+
+    path = tmp_path / "german-campaign-after-interlude.json"
+    save_game(state, path)
+    resumed, _, _ = load_game(path, validate=True)
+    resumed["decision_agent"] = lambda *_: pytest.fail("Dormant A63 prompted a player")
+    assert winter_campaign_after_harvest(resumed) is None
+    assert resumed["capability_owners"]["A63"] == rc.GERMANS
+    assert resumed["capabilities"]["A63"] == rc.EVENT_SHADED
 
 
 @pytest.mark.parametrize("scenario,seed", [

@@ -12,8 +12,9 @@ references and canonical constants remain read-only.
 | [Playing](../PLAYING.md) | Human decisions, action order, board display, card editions, saves and resume |
 | [Assistant play](../CHATGPT_README.md) | File-based pending decisions, responses, board inspection, and replay |
 | [Agent interface](../AGENT_INTERFACE.md) | Turn plans, typed decision requests, validation, and session contracts |
-| [Current status](current-status.md) | Corrected behavior, regression coverage, unresolved source questions, and limits |
-| [Question ledger](../QUESTIONS.md#current-open-source-questions) | Current open-question index followed by the historical decision record |
+| [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
+| [Provisional rulings](provisional-rulings.md) | Six owner-adopted interpretations, each subject to later authoritative correction |
+| [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
 | [Developer instructions](../CLAUDE.md) | Source hierarchy, implementation constraints, tests, and commit discipline |
 | [Maintenance roadmap](../BUILD_PLAN.md) | Existing components and further validation work |
 | [Self-play workflow](../SELFPLAY_PLAYBOOK.md) | Reproducible bot batches, mixed-seat fuzzing, census, and reviewed baselines |
@@ -24,6 +25,9 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [24 October provisional-ruling validation](reviews/provisional-rulings-2026-10-24.md) | Adopted policies: 4,481 tests, 200 audited bot games, 320 mixed-seat executions, strict census and unchanged balance baseline |
+| [Provisional-ruling results JSON](reviews/provisional-rulings-2026-10-24-results.json) | Machine-readable acceptance checks, exact coverage and source identity |
+| [Provisional-ruling evidence archive](reviews/provisional-rulings-2026-10-24-evidence.zip) | Commands, logs, per-game records, source identities and independent audits |
 | [24 October follow-up repairs](reviews/followup-repairs-2026-10-24.md) | Accepted follow-up repairs: 4,431 tests, 2,500 bot games, 90 optional-setup games, mixed-seat replay, installation and compatibility |
 | [24 October results JSON](reviews/followup-repairs-2026-10-24-results.json) | Machine-readable final acceptance and scenario/edition summaries |
 | [24 October evidence archive](reviews/followup-repairs-2026-10-24-evidence.zip) | Raw outcomes, rejected attempts, source manifests, replay/census results and package checks |
@@ -36,7 +40,10 @@ references and canonical constants remain read-only.
 | [9 October outcome audit](outcome-audit-2026-10-09.md) | Earlier March-cost, Tribe-identity, scoring, and execution repairs |
 | [Historical strategy notes](../selfplay-strategy-notes.md) | Older heuristic experiments, with revision and harness caveats |
 
-The 24 October default-setup matrix separates the 200-game-per-scenario
+The 24 October provisional-ruling matrix contains 100 legacy games (seeds
+1–20 per scenario) and 50 each with original and second-edition cards
+(seeds 201–210 per scenario). It is separate from the earlier follow-up
+report's default-setup matrix, which separates the 200-game-per-scenario
 legacy sample from three held-out 100-game-per-scenario edition samples.
 The optional-Diviciacus sample and hash-seed repeats remain separate. The
 accepted 23 October batch contains 200 games per scenario on its older source.
@@ -51,7 +58,8 @@ their results should not be combined with either of those samples.
   change. Check examples against implementation and regression coverage.
 - Keep current dispositions in [current status](current-status.md). Record
   source quotations, uncertainty, and eventual rulings in the
-  [question ledger](../QUESTIONS.md).
+  [question ledger](../QUESTIONS.md). Keep the [provisional rulings](provisional-rulings.md)
+  identified as owner-adopted policies subject to later authoritative correction.
 - Keep historical measurements and evidence intact. Add a dated correction
   or supersession notice when later work changes their interpretation.
 - Record the commit, scenario/edition, seeds, coverage, failures, and

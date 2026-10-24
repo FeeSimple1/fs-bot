@@ -1,0 +1,37 @@
+{
+  "source_commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+  "source_sha256": "56f041efb20a1d90f3b713973911ce0ba1216dc0a1aa1d4173ef6238c125c024",
+  "generator_sha256": "2423f59b84c1f2de419ec032115d86a11cacf1faf7e3bace4aab9c7e06f615be",
+  "comparison": "Exact continued board including RNG/cursors; assistant fixture also compares metadata and decision log. Excludes unpersisted diagnostic order.",
+  "origin": "Generated using an unmodified archive of the specified commit; controlled positions, not user saves.",
+  "fixtures": {
+    "pending-card-turn.json": {
+      "kind": "pending-card-turn",
+      "file_sha256": "69ee16ce7e194537f172a577c322652515759b693988eaf4be669abfaa42494a",
+      "continued_sha256": "a02ab0602edaae4155b3a59296db448530d477a56a85c232873bc78da2f500ab",
+      "scenario": "Pax Gallica?",
+      "seed": 42
+    },
+    "pending-frumentum.json": {
+      "kind": "pending-frumentum",
+      "file_sha256": "c1392ab6b2639edca99298a88667f20f6e757494a46ce86d712380515510779d",
+      "continued_sha256": "5d9aaecfe5f7addc0113b1d461894ef91e3b5a121cc82ea5eb95009ecf905c90",
+      "scenario": "Ariovistus",
+      "seed": 17
+    },
+    "pre-interlude.json": {
+      "kind": "pre-interlude",
+      "file_sha256": "1a540f03f52cc631f2223b9a9d5d5f9d6eefb55c107ee8c3ce5539c858662d02",
+      "continued_sha256": "0404c326d763ab138b871e7f327c0cbcabe986a47249d3cd7f21b4edd97d8316",
+      "scenario": "The Gallic War",
+      "seed": 3
+    },
+    "post-interlude.json": {
+      "kind": "post-interlude",
+      "file_sha256": "0e461fe9be9807967c96020939b5f483bb5648364c13437eeacdc1395d99f27a",
+      "continued_sha256": "78c281c4c8e4b8d8c38b2d2593391c852ceec49bd4c9a362ca3b6c6d55cd36d7",
+      "scenario": "Pax Gallica?",
+      "seed": 3
+    }
+  }
+}

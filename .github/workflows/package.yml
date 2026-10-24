@@ -1,0 +1,45 @@
+name: Package installation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-play:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build
+      # Default build makes the wheel from the sdist, checking that neither
+      # archive depends on files left behind in a developer's checkout.
+      - run: python -m build
+      - name: Install and play outside the checkout
+        shell: python
+        run: |
+          from pathlib import Path
+          import os
+          import subprocess
+          import tempfile
+          import venv
+          root = Path.cwd()
+          with tempfile.TemporaryDirectory() as temporary:
+              directory = Path(temporary)
+              venv.EnvBuilder(with_pip=True).create(directory / "env")
+              python = directory / "env" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+              wheel = next((root / "dist").glob("*.whl"))
+              subprocess.run([str(python), "-m", "pip", "install", "--no-index", "--no-deps", str(wheel)], check=True, cwd=directory)
+              subprocess.run([str(python), "-I", str(root / "scripts/smoke_installed.py")], check=True, cwd=directory)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-distribution-${{ matrix.os }}
+          path: dist/*

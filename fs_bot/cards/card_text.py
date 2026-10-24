@@ -11,6 +11,7 @@ import os
 import re
 
 from fs_bot.cards.edition import uses_second_edition
+from fs_bot.version import reference_directory
 
 _CACHE = None
 
@@ -34,9 +35,7 @@ def _card_id(header_id):
 
 
 def _reference_dir():
-    here = os.path.dirname(os.path.abspath(__file__))
-    root = os.path.dirname(os.path.dirname(here))
-    return os.path.join(root, "Reference Documents")
+    return str(reference_directory())
 
 
 def _parse_file(path, header_re, id_fn):

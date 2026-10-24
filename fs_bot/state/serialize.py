@@ -17,15 +17,20 @@ Encoding: containers needing it are tagged —
 on load.
 
 Save-file shape (SAVE_VERSION 1):
-  {"fsbot_save": 1, "meta": {...}, "log": [...], "state": {...}}
+  {"fsbot_save": 1, "engine": {...}, "meta": {...}, "log": [...], "state": {...}}
 ``meta`` records scenario / seed / faction_modes; ``log`` is the CLI's
 decision + reactive-response log (see cli/app.py) used by --replay.
+The optional ``engine`` envelope field identifies the writer's version and
+source digest. Older saves without it remain readable; it does not change
+game state or assert replay compatibility with a different engine.
 """
 
 import json
 import os
 import random
 import tempfile
+
+from fs_bot.version import engine_identity
 
 SAVE_VERSION = 1
 
@@ -98,6 +103,7 @@ def save_game(state, path, *, meta=None, log=None):
     """Write ``state`` (minus decision_agent) + meta + log to ``path``."""
     to_save = {k: v for k, v in state.items() if k != "decision_agent"}
     payload = {"fsbot_save": SAVE_VERSION,
+               "engine": engine_identity(),
                "meta": meta or {},
                "log": log or [],
                "state": encode(to_save)}
@@ -139,6 +145,15 @@ def load_game(path, *, validate=False):
                              f"(expected {SAVE_VERSION})")
         if "state" not in payload:
             raise ValueError("Save has no game state")
+        if "engine" in payload:
+            identity = payload["engine"]
+            if (not isinstance(identity, dict)
+                    or not isinstance(identity.get("version"), str)
+                    or not identity["version"]
+                    or not isinstance(identity.get("source_sha256"), str)
+                    or len(identity["source_sha256"]) != 64
+                    or any(c not in "0123456789abcdef" for c in identity["source_sha256"])):
+                raise ValueError("Engine provenance must contain a version and SHA-256 digest")
         state = decode(payload["state"])
         if not isinstance(state, dict):
             raise ValueError("Saved state must be an object")

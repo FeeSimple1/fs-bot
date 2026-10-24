@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "falling-sky-bot"
+dynamic = ["version"]
+description = "Falling Sky and Ariovistus non-player engine and human interfaces"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+fs-bot = "fs_bot.cli.app:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "fs_bot.version.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["fs_bot*"]
+exclude = ["fs_bot.tests*"]
+
+[tool.setuptools.package-data]
+"fs_bot.tools" = ["balance_baseline.json"]

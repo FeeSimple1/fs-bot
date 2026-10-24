@@ -20,9 +20,9 @@ import argparse
 import os
 import re
 from collections import defaultdict
+from fs_bot.version import reference_directory
 
-DOC_DIR = os.path.join(os.path.dirname(__file__), "..", "..",
-                       "Reference Documents")
+DOC_DIR = str(reference_directory())
 
 CHAPTERS = [("Chapter %d" % i, "") for i in range(1, 9)] + \
            [(os.path.join("Ariovistus", "Chapter A%d" % i), "A")

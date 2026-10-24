@@ -1,0 +1,3 @@
+recursive-include Reference* *
+include scripts/smoke_installed.py
+include RELEASES.md CHANGELOG.md

@@ -5,7 +5,8 @@ Run from the repository root with::
     PYTHONHASHSEED=0 python -m fs_bot.tools.run_batch --games 200 --workers 4 --out results
 
 ``game_completed`` describes the engine result. ``completed`` additionally
-requires all audit/serialization stages to succeed and no integrity findings.
+requires all audit/serialization stages to succeed, no integrity findings,
+and no diagnostic severity other than a legal decline.
 An errored record is never counted as a validated win. Diagnostic occurrences
 cover returned cards only; a failing card is identified by the crash context.
 """
@@ -19,7 +20,6 @@ import json
 import os
 import platform
 import statistics
-import subprocess
 import time
 import traceback
 from collections import Counter
@@ -35,15 +35,23 @@ from fs_bot.engine.victory import determine_final_ranking, check_victory
 from fs_bot.cli.dispatcher import make_decision_func
 from fs_bot.tools.error_census import census_result, _severity
 from fs_bot.state.serialize import encode
+from fs_bot.cards.edition import CARD_EDITIONS
+from fs_bot.tools.validation_metadata import parse_seed_range, validation_metadata
 
 SCENARIOS = (rc.SCENARIO_PAX_GALLICA, rc.SCENARIO_RECONQUEST,
              rc.SCENARIO_GREAT_REVOLT, rc.SCENARIO_ARIOVISTUS,
              rc.SCENARIO_GALLIC_WAR)
 
 
+def _task_settings(task):
+    # Two-item tasks remain supported for existing callers and regressions.
+    scenario, seed, *edition = task
+    return scenario, seed, edition[0] if edition else "legacy"
+
+
 def _new_record(task):
-    scenario, seed = task
-    return dict(scenario=scenario, seed=seed, completed=False,
+    scenario, seed, card_edition = _task_settings(task)
+    return dict(scenario=scenario, seed=seed, card_edition=card_edition, completed=False,
                 game_completed=False, audit_completed=False, errors=[],
                 diagnostics=[], diagnostic_occurrences=[], integrity_findings=[],
                 decisions=0, commands=[], special_activities=[], cards=0, winters=0,
@@ -62,7 +70,7 @@ def _record_error(result, stage, exc):
 
 def play_one(task):
     """Return one record even if setup, gameplay, or postprocessing raises."""
-    scenario, seed = task
+    scenario, seed, card_edition = _task_settings(task)
     began = time.monotonic()
     result = _new_record(task)
     state = None
@@ -83,7 +91,7 @@ def play_one(task):
 
     try:
         with contextlib.redirect_stdout(io.StringIO()):
-            state = setup_scenario(scenario, seed=seed)
+            state = setup_scenario(scenario, seed=seed, card_edition=card_edition)
             state['non_player_factions'] = set(get_sop_factions(state))
             stage = 'bot-initialization'
             bot = make_decision_func({}, stdin=io.StringIO(),
@@ -129,16 +137,19 @@ def play_one(task):
                            'threshold' if winner and qualifiers else
                            'final-winter-margin' if winner and winter.get('is_final') else
                            'deck-exhausted' if last.get('game_over') else 'unfinished')
-            result.update(winner=winner, ending_scenario=state['scenario'],
+            result.update(winner=winner, cards=len(cards), ending_scenario=state['scenario'],
                           interlude_completed=bool(state.get('interlude_completed')),
                           termination=termination, ended_on_final_winter=bool(winter.get('is_final')),
-                          final_ranking=ranks, threshold_qualifiers=qualifiers,
+                          final_ranking=ranks, engine_final_ranking=last.get('final_ranking'),
+                          threshold_qualifiers=qualifiers,
                           highest_margin_leader=ranks[0][0] if ranks else None,
                           winner_differs_from_highest_margin=bool(winner and ranks and winner != ranks[0][0]),
                           engine_ranking_output_missing=bool(winner and last.get('final_ranking') is None),
                           final_resources=dict(state['resources']))
             if len(ranks) != 4:
                 faults[('ranking', 'size')] = dict(kind='ranking', message=str(ranks))
+            for issue in _outcome_issues(result):
+                faults[('outcome', issue)] = dict(kind='outcome', message=issue)
             for faction, margin in ranks:
                 if (margin > 0) != check_victory(state, faction):
                     faults[('victory', faction)] = dict(kind='victory', message=f'{faction} margin/threshold mismatch')
@@ -167,20 +178,73 @@ def play_one(task):
                 json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
         except Exception as exc:
             _record_error(result, 'serialization', exc)
-    result['audit_completed'] = not result['errors'] and not faults
+    result['audit_completed'] = (not result['errors'] and not faults
+                                 and not _has_nonlegal_diagnostics(result))
     result['completed'] = result['game_completed'] and result['audit_completed']
     result['seconds'] = round(time.monotonic() - began, 4)
     return result
 
 
+def _has_nonlegal_diagnostics(record):
+    return any(d.get("severity") != "legal-decline"
+               for d in record.get("diagnostics", []))
+
+
+def _outcome_issues(record):
+    """Validate an all-NP outcome independently of a stored completed flag."""
+    issues = []
+    if record.get('game_completed') is not True:
+        issues.append('Engine did not report a completed game with a winner')
+    if type(record.get('cards')) is not int or record['cards'] < 1:
+        issues.append('A completed study needs at least one resolved card')
+    ending = record.get('ending_scenario')
+    if ending not in rc.ALL_SCENARIOS:
+        return issues + ['Unknown ending scenario']
+    eligible = set(get_sop_factions({'scenario': ending}))
+
+    def valid_ranking(ranking):
+        return (isinstance(ranking, (list, tuple)) and len(ranking) == 4
+                and all(isinstance(row, (list, tuple)) and len(row) == 2
+                        and isinstance(row[0], str) and row[0] in eligible
+                        and type(row[1]) is int for row in ranking)
+                and {row[0] for row in ranking} == eligible)
+
+    ranks = record.get('final_ranking')
+    emitted = record.get('engine_final_ranking')
+    if not valid_ranking(ranks):
+        issues.append('Recomputed ranking must contain the four eligible factions exactly once')
+    if not valid_ranking(emitted):
+        issues.append('Engine must emit a complete ranking of the four eligible factions')
+    elif valid_ranking(ranks) and [tuple(row) for row in emitted] != [tuple(row) for row in ranks]:
+        issues.append('Engine ranking differs from the recomputed final ranking')
+    winner = record.get('winner')
+    if not isinstance(winner, str) or winner not in eligible:
+        issues.append('Winner is not eligible in the ending scenario')
+    elif valid_ranking(ranks) and winner != ranks[0][0]:
+        # Every playable faction is NP in this tool. Mixed human/NP priority
+        # at an early Victory Phase belongs to a different experiment.
+        issues.append('All-NP winner differs from the first-ranked faction')
+    if record.get('engine_ranking_output_missing'):
+        issues.append('Engine ranking output is missing')
+    if record.get('winner_differs_from_highest_margin'):
+        issues.append('Stored winner/ranking disagreement')
+    return issues
+
+
 def summarize(records):
+    if len({r.get("source_sha256") for r in records}) > 1:
+        raise ValueError("Cannot combine different or unidentified engine sources in one outcome summary")
+    if len({r.get("card_edition", "legacy") for r in records}) > 1:
+        raise ValueError("Cannot combine different card editions in one outcome summary")
     output = {}
     for scenario in SCENARIOS:
         rows = [r for r in records if r['scenario'] == scenario]
         if not rows:
             continue
-        completed = [r for r in rows if r.get('completed') and not r.get('error')
-                     and not r.get('errors') and not r.get('integrity_findings')]
+        completed = [r for r in rows if r.get('completed') is True
+                     and r.get('audit_completed') is True and not r.get('error')
+                     and not r.get('errors') and not r.get('integrity_findings')
+                     and not _has_nonlegal_diagnostics(r) and not _outcome_issues(r)]
         diagnostics, diagnostic_games = Counter(), Counter()
         for record in rows:
             found = set()
@@ -189,6 +253,7 @@ def summarize(records):
                 found.add(diagnostic['severity'])
             diagnostic_games.update(found)
         output[scenario] = dict(
+            card_edition=rows[0].get("card_edition", "legacy"),
             attempted=len(rows), completed=len(completed),
             engine_completed=sum(r.get('game_completed', False) for r in rows),
             crashes=sum(bool(r.get('error') or r.get('errors')) for r in rows),
@@ -220,36 +285,38 @@ def collect_future(future, task):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--games', type=int, default=200)
+    sample = parser.add_mutually_exclusive_group()
+    sample.add_argument('--games', type=int, default=None,
+                        help='seeds 1-N per scenario (default: 200)')
+    sample.add_argument('--seeds', type=parse_seed_range,
+                        help='explicit seed or inclusive range, e.g. 201-220')
+    parser.add_argument('--scenario', choices=SCENARIOS, default=None,
+                        help='single scenario (default: all five)')
+    parser.add_argument('--card-edition', choices=CARD_EDITIONS, default='legacy')
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args(argv)
-    if args.games < 1 or args.workers < 1:
+    if (args.games is not None and args.games < 1) or args.workers < 1:
         parser.error('--games and --workers must be positive')
+    seeds = args.seeds if args.seeds is not None else list(range(1, (args.games or 200) + 1))
+    scenarios = (args.scenario,) if args.scenario else SCENARIOS
     if os.environ.get('PYTHONHASHSEED') != '0':
         parser.error('Launch with PYTHONHASHSEED=0 for reproducibility')
     args.out.mkdir(parents=True, exist_ok=True)
-    root = Path(__file__).resolve().parents[2]
-    try:
-        commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
-        dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root, text=True).strip())
-    except (OSError, subprocess.CalledProcessError):
-        commit, dirty = None, None
-    # A source digest identifies uncommitted tested content as well as the Git ref.
-    digest = hashlib.sha256()
-    for path in sorted((root / 'fs_bot').rglob('*.py')):
-        digest.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
-    meta = dict(commit=commit, dirty=dirty, source_sha256=digest.hexdigest(),
+    if any(args.out.iterdir()):
+        parser.error('output already contains a study; choose a fresh --out directory')
+    meta = validation_metadata('run_batch', scenarios, seeds, args.card_edition,
                 started_utc=datetime.now(timezone.utc).isoformat(), python=platform.python_version(),
-                hash_seed=0, seeds=[1, args.games], games_per_scenario=args.games,
-                scenarios=SCENARIOS, workers=args.workers, all_factions_bots=True)
+                hash_seed=0, games_per_scenario=len(seeds),
+                workers=args.workers, all_factions_bots=True)
     (args.out / 'metadata.json').write_text(json.dumps(meta, indent=2) + '\n')
-    tasks = [(s, seed) for s in SCENARIOS for seed in range(1, args.games + 1)]
+    tasks = [(s, seed, args.card_edition) for s in scenarios for seed in seeds]
     records = []
     with ProcessPoolExecutor(max_workers=args.workers) as pool, (args.out / 'games.jsonl').open('w') as log:
         futures = {pool.submit(play_one, task): task for task in tasks}
         for future in as_completed(futures):
             record = collect_future(future, futures[future])
+            record.update(source_sha256=meta["source_sha256"], commit=meta["commit"])
             records.append(record)
             log.write(json.dumps(record) + '\n')
             log.flush()

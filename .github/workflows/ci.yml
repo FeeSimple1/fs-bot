@@ -88,3 +88,38 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - name: Scenario win rates must stay within the reviewed drift band
         run: python -m fs_bot.tools.balance_smoke --seeds 1-20
+
+  card-edition-games:
+    name: Full games (${{ matrix.card_edition }})
+    strategy:
+      fail-fast: false
+      matrix:
+        card_edition: [legacy, original, second-edition]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - name: Held-out bot games and mixed-seat replay in every scenario
+        env:
+          CARD_EDITION: ${{ matrix.card_edition }}
+        run: |
+          set -o pipefail
+          PYTHONHASHSEED=0 python -m fs_bot.tools.run_batch \
+            --seeds 201-203 --card-edition "$CARD_EDITION" --workers 2 --out edition-bots
+          PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz \
+            --seeds 201-203 --card-edition "$CARD_EDITION" --out edition-fuzz0.json | tee edition-fuzz0.txt
+          PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz \
+            --seeds 201-203 --card-edition "$CARD_EDITION" --out edition-fuzz7.json | tee edition-fuzz7.txt
+          diff edition-fuzz0.txt edition-fuzz7.txt
+          diff edition-fuzz0.json edition-fuzz7.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: card-edition-${{ matrix.card_edition }}
+          path: |
+            edition-bots/
+            edition-fuzz*

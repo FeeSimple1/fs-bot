@@ -10,6 +10,7 @@ from fs_bot.engine.execute import _execute_recruit, execute_decision
 from fs_bot.engine.moves import validate_player_action
 from fs_bot.state.serialize import encode
 from fs_bot.state.state_schema import build_initial_state
+from fs_bot.tools.player_fuzz import play_game
 
 
 def _state(resources=4):
@@ -136,3 +137,11 @@ def test_interrupted_supply_query_does_not_leak_cache_or_consume_next_command():
     _no_cache(state)
 
 
+@pytest.mark.parametrize('scenario,seed', [
+    (rc.SCENARIO_ARIOVISTUS, 12), (rc.SCENARIO_GALLIC_WAR, 7)])
+def test_real_mixed_seat_recruit_failures_complete_and_replay(scenario, seed):
+    first = play_game(scenario, seed, card_edition='legacy')
+    assert first['game_completed'] and first['findings'] == [], first
+    assert first['partial'] == 0, first
+    second = play_game(scenario, seed, card_edition='legacy')
+    assert second == first

@@ -7,6 +7,8 @@ import fs_bot.rules_consts as rc
 from fs_bot.tools import run_batch as runner
 from fs_bot.tools.error_census import census_result
 
+RANKS = [(rc.ROMANS, 1), (rc.ARVERNI, 0), (rc.AEDUI, 0), (rc.BELGAE, 0)]
+
 
 @pytest.fixture
 def synthetic_game(monkeypatch):
@@ -16,11 +18,11 @@ def synthetic_game(monkeypatch):
     monkeypatch.setattr(runner, 'make_decision_func', lambda *a, **k: None)
     monkeypatch.setattr(runner, 'start_game', lambda state: None)
     monkeypatch.setattr(runner, 'play_card', lambda *a, **k:
-                        {'game_over': True, 'winner': rc.ROMANS, 'final_ranking': [(rc.ROMANS, 1)]})
+                        {'game_over': True, 'winner': rc.ROMANS, 'final_ranking': RANKS})
     monkeypatch.setattr(runner, 'validate_state', lambda state: [])
     monkeypatch.setattr(runner, 'check_structural_integrity', lambda state: [])
     monkeypatch.setattr(runner, 'determine_final_ranking', lambda state:
-                        [(rc.ROMANS, 1), (rc.ARVERNI, 0), (rc.AEDUI, 0), (rc.BELGAE, 0)])
+                        RANKS)
     monkeypatch.setattr(runner, 'check_victory', lambda state, faction: faction == rc.ROMANS)
     monkeypatch.setattr(runner, 'encode', lambda state: {})
 
@@ -72,6 +74,99 @@ def test_old_contradictory_completed_and_error_record_not_counted(synthetic_game
     summary = runner.summarize([record])[rc.SCENARIO_PAX_GALLICA]
     assert summary['completed'] == 0 and summary['crashes'] == 1
     assert summary['wins'] == {}
+
+
+@pytest.mark.parametrize('execution,severity', [
+    ({'executed': True, 'errors': ['invalid target']}, 'illegal'),
+    ({'executed': False, 'reason': 'event not applicable'}, 'ineffective-event'),
+    ({'executed': False, 'reason': 'unrecognized refusal'}, 'other-refused'),
+    ({'executed': True, 'sa_execution': {'executed': False}}, 'wasteful-sa'),
+    ({'executed': False, 'declined': True, 'reason': 'no legal target'}, 'legal-decline'),
+])
+def test_diagnostics_gate_validation_without_hiding_engine_completion(
+        synthetic_game, monkeypatch, execution, severity):
+    monkeypatch.setattr(runner, 'play_card', lambda *a, **k: {
+        'game_over': True, 'winner': rc.ROMANS, 'card': 1, 'final_ranking': RANKS,
+        'turn_result': {'actions_taken': {rc.ROMANS: {
+            'bot_action': {'command': rc.CMD_BATTLE}, 'execution': execution}}}})
+    record = runner.play_one((rc.SCENARIO_PAX_GALLICA, 1))
+    assert record['game_completed']
+    assert record['diagnostics'][0]['severity'] == severity
+    assert len(record['diagnostic_occurrences']) == 1
+    accepted = severity == 'legal-decline'
+    assert record['audit_completed'] is accepted
+    assert record['completed'] is accepted
+    summary = runner.summarize([record])[rc.SCENARIO_PAX_GALLICA]
+    assert summary['completed'] == int(accepted)
+    assert summary['crashes'] == 0
+    assert summary['wins'] == ({rc.ROMANS: 1} if accepted else {})
+    assert summary['diagnostic_incidents'] == {severity: 1}
+
+
+@pytest.mark.parametrize('winner,ranking', [
+    (rc.GERMANS, RANKS), (rc.AEDUI, RANKS),
+    (rc.ROMANS, None), (rc.ROMANS, RANKS[:1]),
+    (rc.ROMANS, [RANKS[0]] * 4),
+    (rc.ROMANS, [RANKS[0], RANKS[2], RANKS[1], RANKS[3]]),
+    (rc.ROMANS, [(rc.ROMANS, 999), *RANKS[1:]]),
+])
+def test_invalid_engine_outcome_is_never_a_validated_win(synthetic_game, monkeypatch, winner, ranking):
+    monkeypatch.setattr(runner, 'play_card', lambda *a, **k: {
+        'game_over': True, 'winner': winner, 'final_ranking': ranking})
+    record = runner.play_one((rc.SCENARIO_PAX_GALLICA, 1))
+    assert record['game_completed']  # raw engine claim remains visible
+    assert not record['audit_completed'] and not record['completed']
+    assert any(f['kind'] == 'outcome' for f in record['integrity_findings'])
+    assert runner.summarize([record])[rc.SCENARIO_PAX_GALLICA]['wins'] == {}
+
+
+@pytest.mark.parametrize('changes', [
+    {'winner': rc.GERMANS}, {'winner': rc.AEDUI}, {'game_completed': False},
+    {'audit_completed': False}, {'cards': 0}, {'cards': None},
+    {'engine_final_ranking': None}, {'engine_final_ranking': RANKS[:1]},
+    {'final_ranking': [RANKS[0]] * 4}, {'engine_ranking_output_missing': True},
+    {'winner_differs_from_highest_margin': True},
+])
+def test_summary_rechecks_outcome_despite_old_completed_flag(synthetic_game, changes):
+    record = runner.play_one((rc.SCENARIO_PAX_GALLICA, 1))
+    assert record['completed']
+    record.update(changes)
+    summary = runner.summarize([record])[rc.SCENARIO_PAX_GALLICA]
+    assert summary['completed'] == 0 and summary['wins'] == {}
+
+
+def test_empty_engine_run_is_not_complete(synthetic_game, monkeypatch):
+    monkeypatch.setattr(runner, 'start_game', lambda state: state.update(current_card=None))
+    record = runner.play_one((rc.SCENARIO_PAX_GALLICA, 1))
+    assert record['cards'] == 0 and not record['completed']
+    assert not record['audit_completed']
+    assert runner.summarize([record])[rc.SCENARIO_PAX_GALLICA]['wins'] == {}
+
+
+def test_old_completed_record_with_illegal_action_is_not_a_validated_win(synthetic_game):
+    record = runner.play_one((rc.SCENARIO_PAX_GALLICA, 1))
+    record['diagnostics'] = [{'severity': 'illegal', 'count': 1}]
+    summary = runner.summarize([record])[rc.SCENARIO_PAX_GALLICA]
+    assert summary['completed'] == 0
+    assert summary['wins'] == {}
+
+
+def test_summary_does_not_pool_card_editions(synthetic_game):
+    original = runner.play_one((rc.SCENARIO_PAX_GALLICA, 1, 'original'))
+    revised = runner.play_one((rc.SCENARIO_PAX_GALLICA, 1, 'second-edition'))
+    with pytest.raises(ValueError, match='different card editions'):
+        runner.summarize([original, revised])
+
+
+@pytest.mark.parametrize('earlier_hash', [None, 'old-engine'])
+def test_summary_does_not_pool_different_or_unknown_sources(synthetic_game, earlier_hash):
+    old = runner.play_one((rc.SCENARIO_PAX_GALLICA, 1))
+    new = runner.play_one((rc.SCENARIO_PAX_GALLICA, 2))
+    if earlier_hash is not None:
+        old['source_sha256'] = earlier_hash
+    new['source_sha256'] = 'new-engine'
+    with pytest.raises(ValueError, match='engine sources'):
+        runner.summarize([old, new])
 
 
 def test_diagnostics_keep_distinct_causes_and_every_raw_occurrence():

@@ -1,6 +1,7 @@
 # Deep soak — thousands of games on a schedule, not per push.
 #
-# Two deeper checks plus informational telemetry (default seed ranges):
+# Two deeper checks per card edition, plus informational telemetry.
+# The counts below are per edition (legacy, original, second-edition):
 #   census-soak : bot-only legality (all nonlegal severities must be zero)
 #                 across 2,500 games per hash seed, byte-identical under
 #                 two PYTHONHASHSEED values (5,000 executions total).
@@ -29,6 +30,13 @@ on:
 
 jobs:
   census-soak:
+    strategy:
+      fail-fast: false
+      matrix:
+        card_edition: [legacy, original, second-edition]
+    env:
+      CARD_EDITION: ${{ matrix.card_edition }}
+      CENSUS_SEEDS: ${{ inputs.census_seeds || '1-500' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -39,20 +47,26 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - name: Bot-only census, two hashseeds, strict + determinism diff
         run: |
-          SEEDS="${{ inputs.census_seeds || '1-500' }}"
           PYTHONHASHSEED=0 python -m fs_bot.tools.error_census \
-            --seeds "$SEEDS" --strict > census0.txt
+            --seeds "$CENSUS_SEEDS" --card-edition "$CARD_EDITION" --strict > census0.txt
           PYTHONHASHSEED=7 python -m fs_bot.tools.error_census \
-            --seeds "$SEEDS" --strict > census7.txt
+            --seeds "$CENSUS_SEEDS" --card-edition "$CARD_EDITION" --strict > census7.txt
           cat census0.txt
           diff census0.txt census7.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: census-soak
+          name: census-soak-${{ matrix.card_edition }}
           path: census*.txt
 
   fuzz-soak:
+    strategy:
+      fail-fast: false
+      matrix:
+        card_edition: [legacy, original, second-edition]
+    env:
+      CARD_EDITION: ${{ matrix.card_edition }}
+      FUZZ_SEEDS: ${{ inputs.fuzz_seeds || '1-300' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -63,17 +77,16 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - name: Player-surface fuzz, two hashseeds, determinism diff
         run: |
-          SEEDS="${{ inputs.fuzz_seeds || '1-300' }}"
           PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz \
-            --seeds "$SEEDS" > fuzz0.txt
+            --seeds "$FUZZ_SEEDS" --card-edition "$CARD_EDITION" > fuzz0.txt
           PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz \
-            --seeds "$SEEDS" > fuzz7.txt
+            --seeds "$FUZZ_SEEDS" --card-edition "$CARD_EDITION" > fuzz7.txt
           cat fuzz0.txt
           diff fuzz0.txt fuzz7.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fuzz-soak
+          name: fuzz-soak-${{ matrix.card_edition }}
           path: fuzz*.txt
 
   telemetry:

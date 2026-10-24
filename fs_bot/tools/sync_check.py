@@ -14,6 +14,7 @@ import argparse
 import collections
 import contextlib
 import io
+import json
 
 import fs_bot.rules_consts as rc
 from fs_bot.state.setup import setup_scenario
@@ -23,6 +24,8 @@ from fs_bot.engine.victory import TRIBE_TO_REGION
 from fs_bot.board.pieces import count_pieces
 from fs_bot.bots.bot_dispatch import dispatch_bot_turn
 from fs_bot.cli.dispatcher import _translate_bot_action
+from fs_bot.cards.edition import CARD_EDITIONS
+from fs_bot.tools.validation_metadata import parse_seed_range, validation_metadata
 
 
 def desyncs(state):
@@ -65,19 +68,22 @@ def _bot_func(state, faction, options, position):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", default=rc.SCENARIO_RECONQUEST)
-    ap.add_argument("--seeds", default="1-5")
+    ap.add_argument("--scenario", choices=rc.ALL_SCENARIOS, default=rc.SCENARIO_RECONQUEST)
+    ap.add_argument("--seeds", type=parse_seed_range, default="1-5")
+    ap.add_argument("--card-edition", choices=CARD_EDITIONS, default="legacy")
     args = ap.parse_args(argv)
-    lo, _, hi = args.seeds.partition("-")
+    metadata = validation_metadata("sync_check", [args.scenario], args.seeds, args.card_edition)
+    print("metadata=" + json.dumps(metadata, sort_keys=True))
 
     by_card = collections.defaultdict(set)
-    for seed in range(int(lo), int(hi or lo) + 1):
-        st = setup_scenario(args.scenario, seed=seed)
+    for seed in args.seeds:
+        st = setup_scenario(args.scenario, seed=seed, card_edition=args.card_edition)
         st["non_player_factions"] = set(get_sop_factions(st))
         with contextlib.redirect_stdout(io.StringIO()):
             start_game(st)
         prev = desyncs(st)
         if prev:
+            by_card["SETUP"].update((seed,) + d for d in prev)
             print(f"[seed {seed}] desyncs AT SETUP: {sorted(prev)}")
         while st["current_card"] is not None:
             cid = st["current_card"]

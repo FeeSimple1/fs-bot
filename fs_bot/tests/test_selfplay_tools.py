@@ -13,15 +13,17 @@ _BASELINE = Path(__file__).resolve().parents[1] / "tools" / "balance_baseline.js
 
 
 def test_every_profile_finishes_a_game():
-    """Each heuristic profile completes a Great Revolt game and never wedges."""
-    from fs_bot.agents.heuristic import plan_turn
+    """Each real profile occupies a human seat in an appropriate scenario."""
+    from fs_bot.tools.heuristic_selfplay import _make
     for name, prof in PROFILES.items():
-        fac = prof["faction"]
-        r = play_game(rc.SCENARIO_GREAT_REVOLT, seed=1, agent_faction=fac,
-                      planner=lambda s, f, o, p, _pr=prof:
-                      plan_turn(s, f, _pr, o, p))
+        fac, planner = _make(name, 1)
+        scenario = (rc.SCENARIO_ARIOVISTUS if fac == rc.GERMANS
+                    else rc.SCENARIO_GREAT_REVOLT)
+        r = play_game(scenario, seed=1, agent_faction=fac, planner=planner)
         assert r["winner"] is not None, f"{name} produced no winner"
         assert r["cards"] >= 1
+        assert r["decisions"] > 0
+        assert r["completed"], (name, r)
 
 
 def test_random_plan_policy_finishes():
@@ -168,37 +170,11 @@ def test_self_play_maintains_structural_integrity():
     over-placement): every bot-only game must keep the board structurally
     sound (one Citadel/Region, Tribe<->piece allegiance sync, fresh Control
     flags, non-negative pools) at every turn boundary."""
-    import contextlib
-    import io
-    from fs_bot.state.setup import setup_scenario
-    from fs_bot.engine.game_engine import run_game, ACTION_EVENT, get_sop_factions
-    from fs_bot.bots.bot_dispatch import dispatch_bot_turn
-    from fs_bot.cli.dispatcher import _translate_bot_action
-    from fs_bot.state.state_schema import check_structural_integrity
-
     scenarios = (rc.SCENARIO_PAX_GALLICA, rc.SCENARIO_GREAT_REVOLT,
                  rc.SCENARIO_RECONQUEST, rc.SCENARIO_ARIOVISTUS,
                  rc.SCENARIO_GALLIC_WAR)
-    violations = []
-    for sc in scenarios:
+    for scenario in scenarios:
         for seed in (1, 2):
-            st = setup_scenario(sc, seed=seed)
-            st["non_player_factions"] = set(get_sop_factions(st))
-
-            def decision_func(state, faction, options, position):
-                errs = check_structural_integrity(state)
-                if errs:
-                    violations.append((sc, seed, state.get("current_card"),
-                                       errs[0]))
-                state["current_card_id"] = state.get("current_card")
-                state["is_second_eligible"] = (position == "2nd_eligible")
-                state["can_play_event"] = (ACTION_EVENT in options)
-                return {"action": _translate_bot_action(
-                    dispatch_bot_turn(state, faction), options)}
-
-            with contextlib.redirect_stdout(io.StringIO()):
-                try:
-                    run_game(st, decision_func=decision_func, execute=True)
-                except Exception:
-                    pass
-    assert violations == [], violations[:5]
+            result = play_game(scenario, seed)
+            assert result["completed"], (scenario, seed, result)
+            assert result["integrity_findings"] == []

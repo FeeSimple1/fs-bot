@@ -6,9 +6,9 @@ InsideGMT faction-strategy articles -- used for strategy priors only, never for
 rules decisions) as a plan-building policy that occupies a "human" seat via
 ``decision_func`` while the NP bots play the other Factions.
 
-Every candidate plan is dry-run through ``moves.validate_player_action`` before
-being committed; on failure the policy degrades (next command, drop the SA,
-finally Pass), so a profile can never wedge a game.
+Every candidate plan is dry-run through ``moves.validate_player_action`` and
+its nested diagnostics are checked before committing it. On failure the
+policy tries another candidate or drops the SA, falling back to Pass.
 """
 from __future__ import annotations
 
@@ -250,12 +250,49 @@ PROFILES = {
         "battle_pref": (rc.ROMANS, rc.AEDUI),
         "march_foe": rc.ROMANS,
     },
+    # Simple expansion hypotheses, not replacements for the printed bot.
+    # Gallic War studies explicitly identify the second-half policy.
+    "G-GROW": {
+        "faction": rc.GERMANS,
+        "commands": ["Rally", "Raid", "March", "Battle"],
+        "rally_allies": True, "battle_edge": 3,
+        "battle_pref": (rc.ROMANS, rc.AEDUI), "march_foe": rc.ROMANS,
+        "interlude_profile": "A-DEVASTATE",
+    },
+    "G-BATTLE": {
+        "faction": rc.GERMANS,
+        "commands": ["Battle", "Rally", "March", "Raid"],
+        "sa": "Ambush", "rally_allies": False, "battle_edge": 0,
+        "battle_pref": (rc.ROMANS, rc.AEDUI), "march_foe": rc.ROMANS,
+        "interlude_profile": "A-BATTLE",
+    },
 }
 
 
 # --------------------------------------------------------------------------- #
 # Policy: candidate plans -> validate -> degrade -> Pass
 # --------------------------------------------------------------------------- #
+def _validated_candidate(state, faction, candidate):
+    """A partially successful Command may still contain rejected sub-actions.
+
+    The public validator deliberately returns whether *anything* executed.
+    Experimental policies must also inspect its returned diagnostics before
+    treating a whole proposed plan as a clean sample.
+    """
+    from collections import Counter
+    from fs_bot.tools.error_census import _walk, _severity
+    try:
+        ok, info = moves.validate_player_action(state, faction, candidate)
+    except Exception:
+        return False
+    if not ok or not isinstance(info, dict):
+        return False
+    counts, examples = Counter(), {}
+    _walk(info, faction, candidate.get("command"), candidate.get("sa"),
+          counts, examples, state["scenario"], None, state.get("current_card"))
+    return not any(_severity(k[2], k[3]) != "legal-decline" for k in counts)
+
+
 def plan_turn(state, faction, profile, options, position):
     """Return a decision dict for decision_func."""
     from fs_bot.engine.game_engine import ACTION_PASS, ACTION_COMMAND, \
@@ -288,11 +325,7 @@ def plan_turn(state, faction, profile, options, position):
                              ACTION_COMMAND_SA))
         attempts.append(({**pa, "sa": "No SA", "sa_regions": []}, cmd_action))
         for cand, act in attempts:
-            try:
-                ok, info = moves.validate_player_action(state, faction, cand)
-            except Exception:
-                ok = False
-            if ok:
+            if _validated_candidate(state, faction, cand):
                 return {"action": act, "player_action": cand}
     return {"action": ACTION_PASS}
 
@@ -325,11 +358,7 @@ class RandomPlanPolicy:
             if pa is None:
                 continue
             pa = {**pa, "sa": "No SA", "sa_regions": []}
-            try:
-                ok, _ = moves.validate_player_action(state, faction, pa)
-            except Exception:
-                ok = False
-            if ok:
+            if _validated_candidate(state, faction, pa):
                 return {"action": cmd_action, "player_action": pa}
         return {"action": ACTION_PASS}
 
@@ -621,11 +650,7 @@ def plan_turn_aedui_deep(state, faction, options, position):
         attempts.append(({**cand, "sa": "No SA", "sa_regions": []},
                          cmd_action))
         for pa, act in attempts:
-            try:
-                ok, _info = moves.validate_player_action(state, rc.AEDUI, pa)
-            except Exception:
-                ok = False
-            if ok:
+            if _validated_candidate(state, rc.AEDUI, pa):
                 return {"action": act, "player_action": pa}
     return {"action": ACTION_PASS}
 

@@ -6,6 +6,7 @@ from fs_bot.board.pieces import place_piece
 from fs_bot.bots.roman_bot import build_np_winter_relocations
 from fs_bot.engine.quarters import validate_quarters_plan
 from fs_bot.state.state_schema import build_initial_state
+from fs_bot.tools.player_fuzz import play_game
 
 
 @pytest.mark.parametrize('scenario,host,allowed', [
@@ -43,3 +44,7 @@ def test_roman_planner_checks_host_eligibility_before_requesting_agreement(
         assert plan[rc.ROMANS + '_quartering'][rc.MORINI] == {'pay': 1}
 
 
+def test_gallic_war_seed7_mixed_seats_finish_after_roman_default_quarters():
+    result = play_game(rc.SCENARIO_GALLIC_WAR, 7, card_edition='legacy')
+    assert result['game_completed'], result['findings']
+    assert result['findings'] == []

@@ -33,6 +33,8 @@ from fs_bot.state.setup import setup_scenario
 from fs_bot.engine.game_engine import run_game, ACTION_EVENT, get_sop_factions
 from fs_bot.bots.bot_dispatch import dispatch_bot_turn
 from fs_bot.cli.dispatcher import _translate_bot_action
+from fs_bot.cards.edition import CARD_EDITIONS
+from fs_bot.tools.validation_metadata import parse_seed_range, validation_metadata
 
 ALL_SCENARIOS = (rc.SCENARIO_PAX_GALLICA, rc.SCENARIO_GREAT_REVOLT,
                  rc.SCENARIO_RECONQUEST, rc.SCENARIO_ARIOVISTUS,
@@ -46,8 +48,31 @@ def _norm(msg):
     return str(msg)
 
 
-def play_game(scenario, seed):
-    st = setup_scenario(scenario, seed=seed)
+def game_completion_error(result, ending_scenario):
+    """Return why a claimed full game did not reach a valid terminal result.
+
+    ``run_game.game_over`` alone is insufficient: it is also set when an
+    empty or prematurely exhausted deck ends the loop.
+    """
+    if not isinstance(result, dict):
+        return "Game result is not an object"
+    cards = result.get("card_results")
+    if not isinstance(cards, list) or not cards or not all(isinstance(c, dict) for c in cards):
+        return "Game has no complete card-result sequence"
+    if result.get("game_over") is not True or cards[-1].get("game_over") is not True:
+        return "Game did not reach a terminal card"
+    count = result.get("total_cards_played")
+    if type(count) is not int or count != len(cards):
+        return "Reported card count differs from resolved cards"
+    if ending_scenario not in rc.ALL_SCENARIOS:
+        return "Game has an unknown ending scenario"
+    if cards[-1].get("winner") not in get_sop_factions({"scenario": ending_scenario}):
+        return "Terminal card has no eligible winner"
+    return None
+
+
+def play_game(scenario, seed, *, card_edition="legacy"):
+    st = setup_scenario(scenario, seed=seed, card_edition=card_edition)
     st["non_player_factions"] = set(get_sop_factions(st))
 
     def decision_func(state, faction, options, position):
@@ -59,6 +84,8 @@ def play_game(scenario, seed):
 
     with contextlib.redirect_stdout(io.StringIO()):
         res = run_game(st, decision_func=decision_func, execute=True)
+    if isinstance(res, dict):
+        res["ending_scenario"] = st["scenario"]
     return res
 
 
@@ -220,9 +247,10 @@ def _severity(kind, msg):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", default=None,
+    ap.add_argument("--scenario", choices=ALL_SCENARIOS, default=None,
                     help="single scenario (default: all five)")
-    ap.add_argument("--seeds", default="1-10")
+    ap.add_argument("--seeds", type=parse_seed_range, default="1-10")
+    ap.add_argument("--card-edition", choices=CARD_EDITIONS, default="legacy")
     ap.add_argument("--out", default=None, help="write JSON detail here")
     ap.add_argument("--top", type=int, default=60)
     ap.add_argument("--illegal-only", action="store_true",
@@ -233,17 +261,31 @@ def main(argv=None) -> int:
                          "CI soak gating; legal-decline never fails")
     args = ap.parse_args(argv)
 
-    lo, _, hi = args.seeds.partition("-")
-    seeds = range(int(lo), int(hi or lo) + 1)
+    seeds = args.seeds
     scenarios = (args.scenario,) if args.scenario else ALL_SCENARIOS
 
+    metadata = validation_metadata("error_census", scenarios, seeds, args.card_edition,
+                                   strict=args.strict)
+    print("metadata=" + json.dumps(metadata, sort_keys=True))
     counts = Counter()
     examples = {}
-    games = 0
+    games, completed = 0, 0
+    failures = []
     for sc in scenarios:
         for seed in seeds:
-            census_result(play_game(sc, seed), counts, examples, sc, seed)
             games += 1
+            try:
+                result = play_game(sc, seed, card_edition=args.card_edition)
+                ending = result.get("ending_scenario", sc) if isinstance(result, dict) else sc
+                error = game_completion_error(result, ending)
+                if error:
+                    raise ValueError(error)
+                census_result(result, counts, examples, sc, seed)
+            except Exception as exc:
+                failures.append(dict(scenario=sc, seed=seed,
+                                     error=f"{type(exc).__name__}: {exc}"))
+            else:
+                completed += 1
 
     total = sum(counts.values())
 
@@ -253,11 +295,13 @@ def main(argv=None) -> int:
         by_sev[_severity(key[2], key[3])] += n
     illegal = by_sev.get("illegal", 0)
 
-    print(f"games={games}  total_incidents={total}  "
+    print(f"games={games}  completed={completed}  failed-games={len(failures)}  total_incidents={total}  "
           f"illegal={illegal}  (defects to drive to zero)")
     print("severity: " + "  ".join(
         f"{sev}={by_sev.get(sev, 0)}" for sev in _SEVERITY_ORDER
         if by_sev.get(sev, 0)))
+    for failure in failures:
+        print(f"  [game-failure] {failure['scenario']} seed={failure['seed']}: {failure['error']}")
 
     # Optionally restrict the detailed list to genuine defects.
     items = counts.most_common()
@@ -273,7 +317,9 @@ def main(argv=None) -> int:
         print(f"        e.g. {sc} seed={seed} card={card}: {raw[:110]}")
     if args.out:
         with open(args.out, "w") as f:
-            json.dump({"games": games, "total": total,
+            json.dump({"metadata": metadata, "games": games, "total": total,
+                       "completed": completed, "failed_games": len(failures),
+                       "failures": failures,
                        "by_severity": dict(by_sev),
                        "illegal": illegal,
                        "counts": [{"faction": k[0], "command": k[1],
@@ -286,8 +332,8 @@ def main(argv=None) -> int:
         defects = (by_sev.get("illegal", 0) + by_sev.get("wasteful-sa", 0)
                    + by_sev.get("ineffective-event", 0)
                    + by_sev.get("other-refused", 0))
-        return min(defects, 250)
-    return 0
+        return min(defects + len(failures), 250)
+    return min(len(failures), 250)
 
 
 if __name__ == "__main__":

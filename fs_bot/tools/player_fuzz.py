@@ -82,6 +82,8 @@ from fs_bot.bots.bot_dispatch import dispatch_bot_turn
 from fs_bot.cli.dispatcher import _translate_bot_action
 from fs_bot.agents.heuristic import RandomPlanPolicy
 from fs_bot.state.state_schema import check_structural_integrity
+from fs_bot.cards.edition import CARD_EDITIONS
+from fs_bot.tools.validation_metadata import parse_seed_range, validation_metadata
 
 ALL_SCENARIOS = (rc.SCENARIO_PAX_GALLICA, rc.SCENARIO_GREAT_REVOLT,
                  rc.SCENARIO_RECONQUEST, rc.SCENARIO_ARIOVISTUS,
@@ -107,6 +109,7 @@ def make_random_reactive(seats, rng):
         (exercises the engine's fill-in default for unlisted pieces).
     AGREEMENT: coin flip (exercises both branches of every negotiation).
     HARASSMENT_LOSS: uniformly choose among the current legal options.
+    DIVICIACUS_PIECES: random legal counts of each physical owner's counters.
     """
     def reactive(state, faction, request):
         if faction not in seats:
@@ -128,16 +131,18 @@ def make_random_reactive(seats, rng):
             rng.shuffle(pieces)
             maximum = min(request["max_removals"], len(pieces))
             return {"targets": pieces[:rng.randrange(1, maximum + 1)]}
-        if kind == "march_cohort":
+        from fs_bot.engine.diviciacus import DIVICIACUS_PIECES
+        if kind in ("march_cohort", DIVICIACUS_PIECES):
             from fs_bot.engine.march_choices import VISIBILITIES
             available = request["available"]
-            states = [ps for ps in VISIBILITIES if available.get(ps, 0)]
+            order = VISIBILITIES if kind == "march_cohort" else sorted(available)
+            groups = [key for key in order if available.get(key, 0)]
             remaining, counts = request["count"], {}
-            for index, ps in enumerate(states):
-                minimum = max(0, remaining - sum(available[s] for s in states[index + 1:]))
-                n = rng.randint(minimum, min(remaining, available[ps]))
+            for index, key in enumerate(groups):
+                minimum = max(0, remaining - sum(available[k] for k in groups[index + 1:]))
+                n = rng.randint(minimum, min(remaining, available[key]))
                 if n:
-                    counts[ps] = n
+                    counts[key] = n
                 remaining -= n
             return {"counts": counts}
         if kind == HARASSMENT_LOSS:
@@ -176,19 +181,26 @@ def _sanitize(obj):
 
 
 def _digest(state, res):
-    """Order-independent digest of the end position + game trajectory."""
-    body = {
-        "spaces": _sanitize(state.get("spaces")),
-        "tribes": _sanitize(state.get("tribes")),
-        "resources": _sanitize(state.get("resources")),
-        "markers": _sanitize(state.get("markers")),
-        "cards": None if res is None else res.get("total_cards_played"),
-        "winters": None if res is None else res.get("winter_count"),
-    }
-    if res is not None:
-        for cr in res.get("card_results", ()):
-            if cr.get("winner"):
-                body["winner"] = cr["winner"]
+    """Hash the complete saved state, RNG position, and returned trajectory.
+
+    Tagged encoding preserves non-string keys and tuple/set identity. Sort
+    encoded dictionary entries as well as ordinary JSON keys so insertion
+    order cannot manufacture cross-process differences.
+    """
+    from fs_bot.state.serialize import encode
+
+    def canonical(value):
+        if isinstance(value, list):
+            return [canonical(v) for v in value]
+        if isinstance(value, dict):
+            result = {k: canonical(v) for k, v in value.items()}
+            if set(result) == {"__dict__"}:
+                result["__dict__"].sort(key=lambda pair: json.dumps(pair[0], sort_keys=True))
+            return result
+        return value
+
+    persistent = {k: v for k, v in state.items() if k != "decision_agent"}
+    body = canonical(encode({"state": persistent, "trajectory": res}))
     blob = json.dumps(body, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
@@ -384,9 +396,9 @@ def _compare_dry_vs_live(res, seats, expected):
     return divergences, partial
 
 
-def play_game(scenario, seed, *, reactive=True, events=True):
+def play_game(scenario, seed, *, reactive=True, events=True, card_edition="legacy"):
     """One fuzzed game. Returns a result dict incl. findings and digest."""
-    st = setup_scenario(scenario, seed=seed)
+    st = setup_scenario(scenario, seed=seed, card_edition=card_edition)
     sop = sorted(get_sop_factions(st))
     frng = random.Random(f"player_fuzz|{scenario}|{seed}")
     seats = _pick_seats(sop, frng)
@@ -582,25 +594,42 @@ def play_game(scenario, seed, *, reactive=True, events=True):
             crash = f"{type(exc).__name__}: {exc}"
     if crash:
         findings.append(("crash", st.get("current_card"), crash))
+    from fs_bot.tools.error_census import game_completion_error
+    completion_error = game_completion_error(res, st["scenario"])
+    if completion_error and not crash:
+        findings.append(("incomplete-game", st.get("current_card"), completion_error))
     for e in check_structural_integrity(st)[:3]:
         findings.append(("structural", "end", e))
-    divergences, partial = _compare_dry_vs_live(res, seats, expected)
+    comparable = res if (isinstance(res, dict)
+                         and isinstance(res.get("card_results"), list)
+                         and all(isinstance(c, dict) for c in res["card_results"])) else None
+    divergences, partial = _compare_dry_vs_live(comparable, seats, expected)
     for f, card, msg in divergences:
         findings.append(("divergence", card, f"{f}: {msg}"))
+    try:
+        digest = _digest(st, res)
+    except (TypeError, ValueError) as exc:
+        findings.append(("serialization", "end", str(exc)))
+        digest = None
 
     return {"scenario": scenario, "seed": seed, "seats": seats,
+            "card_edition": card_edition,
+            "game_completed": not crash and completion_error is None,
+            "ending_scenario": st["scenario"],
             "human_turns": human_turns[0], "event_turns": event_turns[0],
             "events_ok": events_ok[0],
             "rejected": sum(rejected.values()),
             "findings": findings, "partial": partial,
-            "digest": _digest(st, res)}
+            "digest": digest}
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", default=None,
+    ap.add_argument("--scenario", choices=ALL_SCENARIOS, default=None,
                     help="single scenario (default: all five)")
-    ap.add_argument("--seeds", default="1-10")
+    ap.add_argument("--seeds", type=parse_seed_range, default="1-10")
+    ap.add_argument("--card-edition", choices=CARD_EDITIONS, default="legacy")
+    ap.add_argument("--out", default=None, help="write settings, summary and per-game findings as JSON")
     ap.add_argument("--no-reactive", action="store_true",
                     help="skip the randomized reactive decision agent")
     ap.add_argument("--no-events", action="store_true",
@@ -609,10 +638,14 @@ def main(argv=None) -> int:
                     help="skip the replay determinism double-run")
     args = ap.parse_args(argv)
 
-    lo, _, hi = args.seeds.partition("-")
-    seeds = range(int(lo), int(hi or lo) + 1)
+    seeds = args.seeds
     scenarios = (args.scenario,) if args.scenario else ALL_SCENARIOS
 
+    metadata = validation_metadata("player_fuzz", scenarios, seeds, args.card_edition,
+                                   reactive=not args.no_reactive, events=not args.no_events,
+                                   replay=not args.no_determinism)
+    print("metadata=" + json.dumps(metadata, sort_keys=True))
+    records = []
     games, turns, ev_turns, ev_ok, partial = 0, 0, 0, 0, 0
     by_kind = Counter()
     examples = []
@@ -620,7 +653,7 @@ def main(argv=None) -> int:
     for sc in scenarios:
         for seed in seeds:
             r = play_game(sc, seed, reactive=not args.no_reactive,
-                          events=not args.no_events)
+                          events=not args.no_events, card_edition=args.card_edition)
             games += 1
             turns += r["human_turns"]
             ev_turns += r["event_turns"]
@@ -628,16 +661,20 @@ def main(argv=None) -> int:
             partial += r["partial"]
             if not args.no_determinism:
                 r2 = play_game(sc, seed, reactive=not args.no_reactive,
-                               events=not args.no_events)
+                               events=not args.no_events, card_edition=args.card_edition)
+                for kind, card, message in r2["findings"]:
+                    if (kind, card, message) not in r["findings"]:
+                        r["findings"].append(("replay-" + kind, card, message))
                 if r2["digest"] != r["digest"]:
                     r["findings"].append(
                         ("nondeterminism", "-",
                          f"replay digest {r['digest']} != {r2['digest']}"))
+            records.append(r)
             for kind, card, msg in r["findings"]:
                 by_kind[kind] += 1
                 if len(examples) < 40:
                     examples.append((sc, seed, r["seats"], kind, card, msg))
-            batch.update(f"{sc}|{seed}|{r['digest']}".encode())
+            batch.update(f"{sc}|{seed}|{args.card_edition}|{r['digest']}".encode())
 
     hard = sum(by_kind.values())
     print(f"games={games}  human-turns={turns}  event-turns={ev_turns}  "
@@ -650,6 +687,13 @@ def main(argv=None) -> int:
     for sc, seed, seats, kind, card, msg in examples:
         print(f"  [{kind}] {sc} seed={seed} seats={','.join(seats)} "
               f"card={card}: {str(msg)[:140]}")
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as stream:
+            json.dump({"metadata": metadata, "games": games, "human_turns": turns,
+                       "event_turns": ev_turns, "events_ok": ev_ok, "partial": partial,
+                       "hard_findings": hard, "by_kind": dict(by_kind),
+                       "batch_digest": batch.hexdigest(), "records": records}, stream, indent=2)
+            stream.write("\n")
     return min(hard, 250)
 
 

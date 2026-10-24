@@ -53,6 +53,45 @@ def test_sig_distinguishes_outcomes():
     assert _sig("not a dict") is None
 
 
+@pytest.mark.parametrize('phase', ['placement', 'removal', 'march'])
+def test_random_diviciacus_choices_cover_native_borrowed_and_mixed_counts(phase):
+    import random
+    from fs_bot.engine.diviciacus import DIVICIACUS_PIECES, validate_response
+    request = {'kind': DIVICIACUS_PIECES, 'phase': phase,
+               'region': rc.CARNUTES, 'piece_type': rc.AUXILIA, 'count': 3,
+               'available': {rc.ROMANS: 4, rc.AEDUI: 3}}
+    observed, responses = set(), []
+    agent = make_random_reactive([rc.ROMANS], random.Random(38))
+    for _ in range(64):
+        response = agent({}, rc.ROMANS, request)
+        assert validate_response(request, response) == response
+        observed.add((response['counts'].get(rc.ROMANS, 0),
+                      response['counts'].get(rc.AEDUI, 0)))
+        responses.append(response)
+    assert observed == {(0, 3), (1, 2), (2, 1), (3, 0)}
+    # The same seeded choices survive either request dictionary order.
+    replay = make_random_reactive([rc.ROMANS], random.Random(38))
+    reordered = dict(request, available={rc.AEDUI: 3, rc.ROMANS: 4})
+    assert [replay({}, rc.ROMANS, reordered) for _ in range(64)] == responses
+
+
+@pytest.mark.parametrize('available,count', [
+    ({rc.ROMANS: 1, rc.AEDUI: 4}, 4),
+    ({rc.ROMANS: 0, rc.AEDUI: 2}, 2),
+    ({rc.ROMANS: 2, rc.AEDUI: 0}, 1),
+    ({rc.ROMANS: 2, rc.AEDUI: 3}, 5),
+])
+def test_random_diviciacus_choices_reserve_enough_pieces_for_remaining_owner(available, count):
+    import random
+    from fs_bot.engine.diviciacus import DIVICIACUS_PIECES, validate_response
+    request = {'kind': DIVICIACUS_PIECES, 'count': count, 'available': available}
+    agent = make_random_reactive([rc.AEDUI], random.Random(70))
+    for _ in range(32):
+        response = agent({}, rc.AEDUI, request)
+        assert validate_response(request, response) == response
+    assert agent({}, rc.ROMANS, request) is None
+
+
 def test_fuzzed_games_clean_and_replay_deterministic():
     """Smoke: fuzzed mixed player/bot games finish with zero hard findings
     and identical digests on in-process replay (base + Ariovistus). The
@@ -125,8 +164,12 @@ def test_rejected_plans_replan_boundedly_without_hiding_divergence(
     assert after == before + 2  # Exactly one accepted Pass, no failed costs.
     assert turn["passes"] == [rc.ROMANS]
     assert turn["actions_taken"][rc.ROMANS]["action"] == ge.ACTION_PASS
+    # This injected runner deliberately stops after one nonterminal card.
+    # The completion oracle must flag that without hiding refusal findings.
+    assert sum(f[0] == "incomplete-game" for f in result["findings"]) == 1
+    action_findings = [f for f in result["findings"] if f[0] != "incomplete-game"]
     if different_live_result:
-        assert len(result["findings"]) == fuzz._MAX_REJECTED_PLANS
-        assert all(f[0] == "divergence" for f in result["findings"])
+        assert len(action_findings) == fuzz._MAX_REJECTED_PLANS
+        assert all(f[0] == "divergence" for f in action_findings)
     else:
-        assert result["findings"] == []
+        assert action_findings == []

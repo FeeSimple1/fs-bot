@@ -1,0 +1,6 @@
+# Keep Python source and recorded generator identities stable on Windows.
+*.py text eol=lf
+
+# These authoritative inputs and archived saves have byte-level provenance.
+"Reference Documents/**" -text
+fs_bot/tests/fixtures/compatibility_8ef88e2/*.json -text

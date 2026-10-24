@@ -32,6 +32,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind == "diviciacus_pieces":
+                from fs_bot.cli.diviciacus import collect_pieces
+                return collect_pieces(state, faction, request, stdin, stdout)
             if kind == "march_cohort":
                 from fs_bot.cli.march_choices import collect_march_cohort
                 return collect_march_cohort(state, faction, request, stdin, stdout)
@@ -132,6 +135,35 @@ def make_cli_reactive(human_factions, stdin, stdout):
                 rf = request.get("requesting_faction")
                 ctx = request.get("context") or {}
                 where = f" in {ctx['region']}" if ctx.get("region") else ""
+                if rt == "diviciacus_defense":
+                    return prompt_yes_no(
+                        stdin, stdout,
+                        f"\n{faction}: request Diviciacus cooperation to defend "
+                        f"against {ctx.get('attacker')}{where}? Cooperating "
+                        "forces can affect Ambush and absorb Battle losses.",
+                        default=False)
+                if rt == "diviciacus_command":
+                    regions = ", ".join(ctx.get("regions") or [])
+                    targets = ", ".join(dict.fromkeys(
+                        enemy for enemies in (ctx.get("targets") or {}).values()
+                        for enemy in enemies))
+                    return prompt_yes_no(
+                        stdin, stdout,
+                        f"\n{faction}: request Diviciacus cooperation for "
+                        f"card {ctx.get('card_id')}'s {ctx.get('command')} "
+                        f"against {targets} in {regions}? Cooperating forces "
+                        "fight and can absorb losses as your pieces. The "
+                        "other Faction must also agree.", default=False)
+                if rt == "diviciacus":
+                    regions = ", ".join(ctx.get("regions") or [])
+                    phase = ctx.get("phase", "command").replace("_", " ")
+                    return prompt_yes_no(
+                        stdin, stdout,
+                        f"\n{faction}: agree to Diviciacus cooperation with {rf} "
+                        f"for this {phase} in {regions}? Roman Auxilia and "
+                        "Aedui Warbands can act as the other type, move and "
+                        "take losses while keeping their physical owners.",
+                        default=False)
                 if rt == "admagetobriga_warbands":
                     return prompt_yes_no(
                         stdin, stdout,

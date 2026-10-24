@@ -2209,7 +2209,8 @@ def execute_card_50(state, shaded=False):
         deactivate_capability(state, target_capability)
     else:
         # Auto-select: remove first active capability
-        active = state.get("capabilities", {})
+        from fs_bot.cards.capabilities import get_active_capabilities
+        active = get_active_capabilities(state)
         if active:
             first_cap = next(iter(active))
             deactivate_capability(state, first_cap)
@@ -4027,7 +4028,7 @@ def execute_card_A37(state, shaded=False):
 
 
 def execute_card_A38(state, shaded=False):
-    """Card A38: Vergobret — Suborn enhancement / CAPABILITY restriction.
+    """Card A38: Vergobret — two sides of a persistent Capability.
 
     Unshaded: Suborn can pay to place/remove 1 more piece per Region
     and places Auxilia at 0 cost.
@@ -4036,11 +4037,10 @@ def execute_card_A38(state, shaded=False):
 
     Source: A Card Reference, card A38
     """
+    activate_capability(state, "A38", EVENT_SHADED if shaded else EVENT_UNSHADED)
     if not shaded:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A38_suborn_enhanced"] = True
-    else:
-        activate_capability(state, "A38", EVENT_SHADED)
 
 def execute_card_A40(state, shaded=False):
     """Card A40: Alpine Tribes — Place pieces near Cisalpina.
@@ -4668,12 +4668,11 @@ def execute_card_A69(state, shaded=False):
             state["event_modifiers"]["card_A69_loss_per_warband"] = to_place
 
 def execute_card_O38(state, shaded=False):
-    """Card O38: Diviciacus (2nd Ed) — The Gallic War second half's
-    replacement for base card 38 (A2.1 Deck).
+    """Card O38: optional original-scenario Diviciacus Leader (A Setup).
 
     Unshaded ("Caesar's druid"): Place the Diviciacus piece in any Region;
-    the Ariovistus Diviciacus Leader rules apply (A1.4). The Interlude
-    removed Diviciacus from play — this is the Event that may return him.
+    the Ariovistus Diviciacus Leader rules apply (A1.4). The option keeps
+    him off-map until this Event; he is never Available (A1.4.1).
     Shaded ("Pro-Roman sidelined", CAPABILITY): Romans and Aedui may not
     transfer Resources to one another — identical to base 38 shaded, so it
     activates the SAME capability id (38) and every existing consumer
@@ -4683,14 +4682,17 @@ def execute_card_O38(state, shaded=False):
     """
     from fs_bot.rules_consts import DIVICIACUS, LEADER
     if not shaded:
-        if state.get("diviciacus_in_play"):
+        if state.get("diviciacus_in_play") or find_leader(state, AEDUI) is not None:
             raise ValueError("card O38: Diviciacus is already in play")
         params = state.get("event_params", {})
         region = params.get("region")
         if not region:
             raise ValueError("card O38: requires event_params['region']")
-        # Diviciacus returns FROM the removed pool (the Interlude put him
-        # there: "It may return by Event") — keep conservation exact.
+        from fs_bot.map.map_data import get_playable_regions
+        if region not in get_playable_regions(state["scenario"], state.get("capabilities")):
+            raise ValueError("card O38: Diviciacus requires a playable Region")
+        # The optional Leader waits in the removed pool, never Available.
+        # This also preserves the existing removed-piece Event pathway.
         rp = state.setdefault("removed_pieces", {}).setdefault(AEDUI, {})
         if rp.get(LEADER, 0) < 1:
             raise ValueError(
@@ -4902,8 +4904,7 @@ def execute_event(state, card_id, shaded=False):
     """
     from fs_bot.cards.edition import uses_second_edition
 
-    # String card ids: A-prefix (Ariovistus-only) and O38 (The Gallic War
-    # second half's 2nd-Ed Diviciacus replacement).
+    # String card ids include expansion cards and optional original-game O38.
     if isinstance(card_id, str):
         if card_id in _ARIOVISTUS_HANDLERS:
             return _ARIOVISTUS_HANDLERS[card_id](state, shaded)

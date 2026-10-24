@@ -48,6 +48,10 @@ from fs_bot.battle.losses import (calculate_losses, resolve_losses,
                                   card30_arverni_legion_warbands)
 
 
+from fs_bot.engine.diviciacus import defensive_battle
+
+
+@defensive_battle
 def resolve_battle(state, region, attacking_faction, defending_faction,
                    *, is_ambush=False, besiege_target=None,
                    retreat_declaration=None, retreat_region=None,

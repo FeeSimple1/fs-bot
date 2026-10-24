@@ -221,6 +221,12 @@ def _parse_args(argv):
         ),
     )
     p.add_argument(
+        "--diviciacus-option", action=argparse.BooleanOptionalAction,
+        default=None,
+        help=("Use the optional Diviciacus Leader and replacement card 38 "
+              "in an original scenario. Saved games retain this choice."),
+    )
+    p.add_argument(
         "--save", default=None, metavar="FILE",
         help="Autosave the game to FILE after every card.",
     )
@@ -302,6 +308,12 @@ def main(argv=None, stdin=None, stdout=None):
             stdout.write(f"Cannot load game from {save_path}: {exc}\n")
             return 2
         card_edition = state.get("card_edition", "legacy")
+        diviciacus_option = state.get("diviciacus_option", False)
+        if (args.diviciacus_option is not None
+                and args.diviciacus_option != diviciacus_option):
+            stdout.write("Cannot change --diviciacus-option when loading or "
+                         "replaying a game; start a new game to change it.\n")
+            return 2
         if args.card_edition is not None and args.card_edition != card_edition:
             stdout.write("Cannot change --card-edition when loading or replaying "
                          "a game; start a new game to choose a different profile.\n")
@@ -321,7 +333,8 @@ def main(argv=None, stdin=None, stdout=None):
             faction_modes = dict(meta.get("initial_faction_modes")
                                  or faction_modes)
             state = setup_scenario(scenario, seed=seed,
-                                   card_edition=card_edition)
+                                   card_edition=card_edition,
+                                   diviciacus_option=diviciacus_option)
         elif state.get("interlude_completed") and GERMANS in faction_modes:
             # Older snapshots saved the original seats after the Interlude.
             faction_modes[ARVERNI] = faction_modes.pop(GERMANS)
@@ -352,14 +365,19 @@ def main(argv=None, stdin=None, stdout=None):
         # Explicit seed always, so every game is saveable/replayable.
         seed = (args.seed if args.seed is not None
                 else _random.randrange(2 ** 31))
+        if args.diviciacus_option and scenario not in BASE_SCENARIOS:
+            stdout.write("--diviciacus-option applies only to original scenarios.\n")
+            return 2
         state = setup_scenario(scenario, seed=seed,
-                               card_edition=args.card_edition or "legacy")
+                               card_edition=args.card_edition or "legacy",
+                               diviciacus_option=bool(args.diviciacus_option))
 
     initial_modes = dict(meta.get("initial_faction_modes") or faction_modes)
     if state.get("interlude_completed") and GERMANS not in initial_modes:
         initial_modes[GERMANS] = initial_modes.pop(ARVERNI, "bot")
     meta.update({"scenario": scenario, "seed": seed,
                  "card_edition": state.get("card_edition", "legacy"),
+                 "diviciacus_option": state.get("diviciacus_option", False),
                  "initial_faction_modes": initial_modes,
                  "faction_modes": dict(faction_modes)})
     # Non-player factions = bots (the engine uses this for tiebreak;

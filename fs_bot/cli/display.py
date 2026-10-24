@@ -52,6 +52,7 @@ from fs_bot.rules_consts import (
 from fs_bot.cards.card_data import (
     get_card, get_np_symbols, get_faction_order, card_has_carnyx_trigger,
 )
+from fs_bot.cards.capabilities import get_active_capabilities
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available
 from fs_bot.map.map_data import (
     get_playable_regions_for_state, get_tribes_in_region,
@@ -83,7 +84,8 @@ def _physical_piece_view(state):
     from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
     from fs_bot.battle.combined import COMBINED_KEY
     from fs_bot.battle.excluded_leader import EXCLUDED_LEADER_KEY
-    contexts = (BORROW_KEY, FREE_FORCE_KEY, COMBINED_KEY, EXCLUDED_LEADER_KEY)
+    contexts = (BORROW_KEY, FREE_FORCE_KEY, COMBINED_KEY, EXCLUDED_LEADER_KEY,
+                "_diviciacus_force")
     if not any(key in state for key in contexts):
         return state
     return {key: value for key, value in state.items() if key not in contexts}
@@ -94,6 +96,17 @@ def _active_force_context(state):
     from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY
     from fs_bot.battle.combined import COMBINED_KEY, TYPES
     lines = []
+
+    cooperation = state.get("_diviciacus_force")
+    if cooperation:
+        for region, counts in sorted(cooperation.get("pieces", {}).items()):
+            total = sum(counts.values())
+            if total:
+                lines.append(
+                    f"  Diviciacus in {region}: {cooperation['faction']} use "
+                    f"{total} {cooperation['lender']} {cooperation['physical_type']} "
+                    f"as {cooperation['piece_type']} for this "
+                    f"{cooperation.get('phase', 'command').replace('_', ' ')}.")
 
     def selected_warbands(counts):
         return (f"{sum(counts.values())} {WARBAND} "
@@ -249,7 +262,7 @@ def _format_legions_track_inline(state):
 
 def _format_capabilities(state):
     """Render active capabilities — §5.3."""
-    caps = state.get("capabilities") or {}
+    caps = get_active_capabilities(state)
     if not caps:
         return "(none)"
     from fs_bot.rules_consts import (CARD_NAMES_BASE,
@@ -290,6 +303,8 @@ def format_state_summary(state):
     lines.append(f"Scenario: {scenario}")
     from fs_bot.cards.edition import card_edition_label
     lines.append(f"Cards 11/30/39/44/54: {card_edition_label(state)}")
+    if state.get("diviciacus_option"):
+        lines.append("Diviciacus Leader option: enabled (card O38)")
     lines.append(SEP)
 
     # Cards
@@ -312,6 +327,8 @@ def format_state_summary(state):
     lines.append(f"Frost: {'YES' if frost else 'no'}")
     if scenario in ARIOVISTUS_SCENARIOS:
         lines.append(f"At War (Arverni): {'YES' if state.get('at_war') else 'no'}")
+    if (scenario in ARIOVISTUS_SCENARIOS or state.get("diviciacus_option")
+            or state.get("diviciacus_in_play")):
         lines.append(f"Diviciacus in play: "
                      f"{'YES' if state.get('diviciacus_in_play') else 'no'}")
 
@@ -737,12 +754,13 @@ def format_board(state):
                  if k not in ("pieces", "control") and v}
         if extra:
             parts.append(f"  {region}: {_visible_value(extra)}")
-    if state.get("capabilities"):
+    capabilities = get_active_capabilities(state)
+    if capabilities:
         from fs_bot.cards.card_text import format_card_text
         parts.append("ACTIVE CAPABILITY CARD TEXT")
-        for card_id in sorted(state["capabilities"], key=str):
+        for card_id in sorted(capabilities, key=str):
             parts.append(f"  Card {card_id}: "
-                         f"{state['capabilities'][card_id]}")
+                         f"{capabilities[card_id]}")
             printed = format_card_text(card_id, indent="  | ",
                                        scenario=state["scenario"],
                                        card_edition=state.get("card_edition"))
@@ -797,7 +815,7 @@ def snapshot_state(state):
                    if k not in ("pieces", "control"))},
         "senate": dict(state.get("senate") or {}),
         "fallen": state.get("fallen_legions", 0),
-        "capabilities": dict(state.get("capabilities", {})),
+        "capabilities": get_active_capabilities(state),
     }
     for field, _label in _PUBLIC_FIELDS:
         snapshot[field] = copy.deepcopy(state.get(field))

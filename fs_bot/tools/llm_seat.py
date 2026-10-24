@@ -55,6 +55,8 @@ def cmd_init(args):
     setup_args = {"seed": args.seed}
     if getattr(args, "card_edition", "legacy") != "legacy":
         setup_args["card_edition"] = args.card_edition
+    if getattr(args, "diviciacus_option", False):
+        setup_args["diviciacus_option"] = True
     st = setup_scenario(args.scenario, **setup_args)
     factions = set(get_sop_factions(st))
     if args.seat not in factions:
@@ -66,6 +68,7 @@ def cmd_init(args):
     meta = {"scenario": args.scenario, "seed": args.seed, "seat": args.seat,
             "initial_seat": args.seat,
             "card_edition": st.get("card_edition", "legacy"),
+            "diviciacus_option": st.get("diviciacus_option", False),
             "initial_faction_modes": {f: "human" if f == args.seat else "bot"
                                       for f in factions},
             "human_snapshots": encode(display.snapshots)}
@@ -242,7 +245,8 @@ def cmd_replay(args):
     replay_meta = {"scenario": meta["scenario"], "seed": meta.get("seed"),
                    "seat": saved["origin_seat"],
                    "initial_seat": meta.get("initial_seat", saved["origin_seat"]),
-                   "card_edition": meta.get("card_edition", "legacy")}
+                   "card_edition": meta.get("card_edition", "legacy"),
+                   "diviciacus_option": origin.get("diviciacus_option", False)}
     view = HumanTurnDisplay(sys.stdout)
     view.remember(origin, [replay_meta["seat"]])
     replay_meta["human_snapshots"] = encode(view.snapshots)
@@ -283,6 +287,8 @@ def main(argv=None):
     pi.add_argument("--dir", default="llm_play")
     pi.add_argument("--card-edition", choices=("legacy", "original", "second-edition"),
                     default="legacy")
+    pi.add_argument("--diviciacus-option", action="store_true",
+                    help="Enable the optional Leader in an original scenario")
     pi.set_defaults(func=cmd_init)
     pp = sub.add_parser("play")
     pp.add_argument("--dir", default="llm_play")

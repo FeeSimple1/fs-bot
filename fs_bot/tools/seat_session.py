@@ -50,6 +50,9 @@ def validate_response(state, request, response):
     if kind == "march_cohort":
         from fs_bot.engine.march_choices import validate_response as validate_cohort
         return validate_cohort(request, response)
+    if kind == "diviciacus_pieces":
+        from fs_bot.engine.diviciacus import validate_response as validate_pieces
+        return validate_pieces(request, response)
     if kind == HARASSMENT_LOSS:
         from fs_bot.commands.march import validate_harassment_response
         return validate_harassment_response(request, response)

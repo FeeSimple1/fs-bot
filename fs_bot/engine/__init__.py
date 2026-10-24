@@ -8,35 +8,7 @@ Modules:
   game_engine — Sequence of Play orchestrator (§2.0-§2.4, A2.0-A2.3.9)
 """
 
-from fs_bot.engine.victory import (
-    calculate_victory_score,
-    check_victory,
-    calculate_victory_margin,
-    check_any_victory,
-    determine_final_ranking,
-)
-
-from fs_bot.engine.winter import run_winter_round
-
-from fs_bot.engine.game_engine import (
-    start_game,
-    draw_card,
-    advance_to_next_card,
-    is_winter_card,
-    is_frost,
-    get_sop_factions,
-    get_faction_order,
-    get_eligible_factions,
-    determine_eligible_order,
-    get_first_eligible_options,
-    get_second_eligible_options,
-    execute_pass,
-    adjust_eligibility,
-    resolve_card_turn,
-    resolve_winter_card,
-    play_card,
-    run_game,
-)
+from importlib import import_module
 
 __all__ = [
     "calculate_victory_score",
@@ -63,3 +35,21 @@ __all__ = [
     "play_card",
     "run_game",
 ]
+
+
+def __getattr__(name):
+    # Preserve convenience exports without loading Winter/Battle while one
+    # of their dependencies is only partially initialized.
+    if name not in __all__:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    if name in {"calculate_victory_score", "check_victory",
+                "calculate_victory_margin", "check_any_victory",
+                "determine_final_ranking"}:
+        module = "victory"
+    elif name == "run_winter_round":
+        module = "winter"
+    else:
+        module = "game_engine"
+    value = getattr(import_module(f"{__name__}.{module}"), name)
+    globals()[name] = value
+    return value

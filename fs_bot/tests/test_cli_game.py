@@ -210,7 +210,7 @@ def test_suborn_collector_builds_executor_plan():
     refresh_all_control(st)
     st["resources"][rc.AEDUI] = 10
     out = io.StringIO()
-    player = ScriptedPlayer(out, prefer="(done)")
+    player = _Script(region, "place a Warband", "(done)")
     regions, extra = _collect_suborn(st, rc.AEDUI, player, out)
     assert regions and extra
     plan = extra["suborn_plan"]

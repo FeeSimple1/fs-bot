@@ -2078,8 +2078,10 @@ def test_card70_roman_march_battle_to_named_region():
         WARBAND, AUXILIA, LEGION, EVENT_UNSHADED, ATREBATES, CARNUTES, MANDUBII)
     st = setup_scenario(SCENARIO_GALLIC_WAR, seed=40)
     st["current_card"] = 70
-    for T in (ATREBATES, CARNUTES, MANDUBII):
-        _clear_region_mobiles(st, T)
+    # The printed Tip permits two/three-step origins. Isolate this fixture's
+    # intended origin so a stronger pre-set force elsewhere is not preferred.
+    for region in st["spaces"]:
+        _clear_region_mobiles(st, region)
     place_piece(st, CARNUTES, ARVERNI, WARBAND, 5)
     src = get_adjacent(CARNUTES, SCENARIO_GALLIC_WAR)[0]
     _clear_region_mobiles(st, src)

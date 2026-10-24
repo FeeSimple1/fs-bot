@@ -56,6 +56,7 @@ def validate_player_action(state, faction, player_action):
     validation never re-enters the agent.
     """
     sim = copy.deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    sim["_diviciacus_preview"] = True
     try:
         res = execute_decision(sim, faction, {"player_action": player_action})
     except Exception as exc:  # never raise out of a validation probe
@@ -77,8 +78,11 @@ def preview_player_action(state, faction, player_action):
     a driver can inspect the board the action WOULD produce. Returns
     ``(ok, info, resulting_state)``."""
     sim = copy.deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    sim["_diviciacus_preview"] = True
     try:
         res = execute_decision(sim, faction, {"player_action": player_action})
         return (bool(res.get("executed")), res, sim)
     except Exception as exc:
         return (False, repr(exc), sim)
+    finally:
+        sim.pop("_diviciacus_preview", None)

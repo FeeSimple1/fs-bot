@@ -566,7 +566,21 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
       Allies from Cities last, then Citadels — A3.2.4
     """
     if loss_order is not None:
-        return loss_order
+        if get_leader_in_region(state, region, faction) != DIVICIACUS:
+            return loss_order
+        # A1.4/A3.2.4 is a restriction, not merely an NP preference.
+        # Explicit priorities cannot make Diviciacus absorb a Loss while
+        # another piece can do so, nor repeatedly select a removed piece.
+        legal = _build_loss_priority(state, region, faction,
+                                     is_retreat=is_retreat)
+        for preferred in loss_order:
+            for candidate in legal:
+                if (preferred[0] == candidate[0]
+                        and (preferred[1] is None or preferred[1] == candidate[1])
+                        and (len(preferred) < 3 or
+                             (len(candidate) == 3 and preferred[2] == candidate[2]))):
+                    return [candidate]
+        return legal
 
     scenario = state["scenario"]
     space = state["spaces"][region]
@@ -670,7 +684,15 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
     from fs_bot.commands.sa_enlist import borrowed_loss_choices
     result = borrowed_loss_choices(state, region, faction, result)
     from fs_bot.battle.combined import loss_choices
-    return loss_choices(state, region, faction, result)
+    result = loss_choices(state, region, faction, result)
+    from fs_bot.engine.diviciacus import loss_choices as diviciacus_losses
+    result = diviciacus_losses(state, region, faction, result)
+    # Humans choose among the offered pieces, so putting Diviciacus last
+    # does not enforce "last possible piece". Do not offer him at all until
+    # every other eligible piece, including cooperating Auxilia, is gone.
+    if is_diviciacus and any(entry[0] != LEADER for entry in result):
+        result = [entry for entry in result if entry[0] != LEADER]
+    return result
 
 
 def _filter_to_present(state, region, faction, piece_list):

@@ -49,16 +49,19 @@ from fs_bot.map.map_data import (
 )
 
 
-def build_initial_state(scenario, seed=None):
+def build_initial_state(scenario, seed=None, *, diviciacus_option=False):
     """Create an empty game state with correct pools for the scenario.
 
     This creates a state with all pieces in Available pools (or on the
     Legions track for Legions), all resources at 0, empty map. Scenario
-    setup (setup.py) then places pieces and sets values.
+    setup (setup.py) then places pieces and sets values. The optional
+    original-scenario Diviciacus waits off-map in the removed pool; he is
+    never Available (A1.4.1).
 
     Args:
         scenario: Scenario identifier from rules_consts.
         seed: Optional RNG seed for deterministic replay.
+        diviciacus_option: Add only the optional original-scenario Leader.
 
     Returns:
         Game state dictionary.
@@ -68,6 +71,10 @@ def build_initial_state(scenario, seed=None):
     """
     if scenario not in ALL_SCENARIOS:
         raise ValueError(f"Unknown scenario: {scenario}")
+    if type(diviciacus_option) is not bool:
+        raise ValueError("diviciacus_option must be true or false")
+    if diviciacus_option and scenario not in BASE_SCENARIOS:
+        raise ValueError("The Diviciacus Leader option applies only to original scenarios")
 
     caps = CAPS_ARIOVISTUS if scenario in ARIOVISTUS_SCENARIOS else CAPS_BASE
 
@@ -130,6 +137,7 @@ def build_initial_state(scenario, seed=None):
 
     state = {
         "scenario": scenario,
+        "diviciacus_option": diviciacus_option,
         "spaces": spaces,
         "available": available,
         "resources": resources,
@@ -144,8 +152,9 @@ def build_initial_state(scenario, seed=None):
         # piece type. Used by the Gallic War Interlude (A2.1) to track
         # the Germanic Leader, 15 Germanic Warbands, Settlements, and
         # Diviciacus that are removed-from-play (not to Available).
+        # The optional original-scenario Diviciacus also waits here for O38.
         # validate_state() counts these toward each cap.
-        "removed_pieces": {},
+        "removed_pieces": {AEDUI: {LEADER: 1}} if diviciacus_option else {},
         "eligibility": eligibility,
         "capabilities": {},
         "markers": {},  # Per-region/tribe markers (Devastated, etc.)
@@ -186,13 +195,10 @@ def validate_state(state):
     """
     errors = []
     scenario = state["scenario"]
-    caps = CAPS_ARIOVISTUS if scenario in ARIOVISTUS_SCENARIOS else CAPS_BASE
-    if state.get("scenario_phase") == "second_half":
-        # Gallic War second half (A2.1): German inventory and the Aedui
-        # Diviciacus Leader remain Ariovistus components (see
-        # board.pieces._second_half_caps).
-        from fs_bot.board.pieces import _second_half_caps
-        caps = _second_half_caps(caps, state)
+    # The optional original-scenario Diviciacus and carried Interlude
+    # components use exactly the same inventory limits as piece operations.
+    from fs_bot.board.pieces import _get_caps
+    caps = _get_caps(state)
 
     for faction in FACTIONS:
         faction_caps = caps.get(faction, {})

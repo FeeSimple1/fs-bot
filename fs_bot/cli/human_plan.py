@@ -559,62 +559,106 @@ def _enemy_ally_tribes(state, region, faction):
 # --------------------------------------------------------------------- #
 
 def _collect_suborn(state, faction, stdin, stdout, *, pending=None):
-    """Aedui Suborn (Sec.4.4.2): up to 3 pieces in one Region, max 1 Ally."""
-    regions = _regions_with_pieces(state, faction)
-    if not regions:
-        return None, None
-    region = _pick_regions(stdin, stdout, "Suborn in which Region?",
-                           regions, single=True)
-    if not region:
-        return None, None
-    region = region[0]
-    actions, ally_used = [], False
-    while len(actions) < 3:
-        opts = []
-        subdued = _subdued_tribes(state, region)
-        if not ally_used and subdued:
-            opts.append(("place your Ally at a Subdued Tribe",
-                         "place_ally"))
-        enemy_allies = _enemy_ally_tribes(state, region, faction)
-        if not ally_used and enemy_allies:
-            opts.append(("remove an enemy Ally", "remove_ally"))
-        opts.append(("place a Warband", "place_warband"))
-        for f in _enemies_in_region(state, region, faction):
-            if count_pieces(state, region, f, WARBAND) > 0:
-                opts.append((f"remove a {f} Warband",
-                             ("remove_warband", f)))
-            if count_pieces(state, region, f, AUXILIA) > 0:
-                opts.append((f"remove a {f} Auxilia",
-                             ("remove_auxilia", f)))
-        if actions:
-            opts.append(("(done)", None))
-        pick = prompt_choice(stdin, stdout,
-                             f"Suborn action {len(actions) + 1} of up to 3:",
-                             opts)
-        if pick is None:
+    """Choose all legal §4.4.2 native pieces, with A38/43 and exact states."""
+    from fs_bot.rules_consts import ALLY
+    from fs_bot.commands.sa_suborn import (
+        legal_suborn_operations, suborn_limits, suborn_region_limit,
+        suborn_preview, validate_suborn_region)
+    sim = _planning_copy(state)
+    plan, selected = [], []
+    maximum = suborn_region_limit(sim)
+    max_pieces, max_allies = suborn_limits(sim)
+
+    def grouped(operations):
+        groups = {}
+        for operation in operations:
+            action, owner, piece = (operation[key] for key in
+                                     ("action", "faction", "piece_type"))
+            if piece == ALLY and action == "remove" and owner != faction:
+                label = "remove an enemy Ally"
+            elif piece == ALLY and action == "place" and owner == faction:
+                label = "place your Ally at a Subdued Tribe"
+            elif piece == WARBAND and action == "place" and owner == faction:
+                label = "place a Warband"
+            elif piece == ALLY and action == "remove":
+                label = "remove your Ally"
+            elif piece == ALLY and action == "place":
+                label = f"place a {owner} Ally at a Subdued Tribe"
+            else:
+                label = f"{action} a {owner} {piece}"
+            groups.setdefault(label, []).append(operation)
+        # Keep the existing common shortcuts, followed by every other legal
+        # Faction/type combination. This order never removes a legal choice.
+        labels = [label for label in ("place your Ally at a Subdued Tribe",
+                  "remove an enemy Ally", "place a Warband") if label in groups]
+        labels.extend(label for label in groups if label not in labels)
+        return [(label, groups[label]) for label in labels]
+
+    while len(plan) < maximum:
+        regions = [region for region in _regions_with_pieces(sim, faction)
+                   if region not in selected and validate_suborn_region(sim, region)[0]
+                   and legal_suborn_operations(sim, region)]
+        if not regions:
             break
-        if pick == "place_ally":
-            tribe = prompt_choice(stdin, stdout, "Ally which Tribe?",
-                                  [(t, t) for t in subdued])
-            actions.append({"action": "place_ally", "tribe": tribe})
-            ally_used = True
-        elif pick == "remove_ally":
-            tribe, owner = prompt_choice(
-                stdin, stdout, "Remove which enemy Ally?",
-                [(f"{t} ({owner})", (t, owner)) for t, owner in
-                 enemy_allies])
-            actions.append({"action": "remove_ally", "tribe": tribe,
-                            "target_faction": owner})
-            ally_used = True
-        elif pick == "place_warband":
-            actions.append({"action": "place_warband"})
-        else:
-            act, target = pick
-            actions.append({"action": act, "target_faction": target})
-    if not actions:
+        choices = [(region, region) for region in regions]
+        choices.append(("(done)", None))
+        region = prompt_choice(stdin, stdout, "Suborn in which Region?", choices)
+        if region is None:
+            break
+        # Test the Hidden/Leader gates once on selecting this Region. A later
+        # operation may legally remove the last Hidden Aedui Warband here.
+        region_start = sim
+        operations, cancelled = [], False
+        while len(operations) < max_pieces:
+            ally_count = sum(op["piece_type"] == ALLY for op in operations)
+            available = [op for op in legal_suborn_operations(sim, region)
+                         if op["piece_type"] != ALLY or ally_count < max_allies]
+            options = grouped(available)
+            options.append(("(done)", None))
+            if operations:
+                options.append(("(undo last operation)", "undo"))
+            options.append(("(cancel this Region)", "cancel"))
+            if not available and not operations:
+                break
+            pick = prompt_choice(stdin, stdout,
+                f"Suborn action {len(operations) + 1} of up to {max_pieces}:", options)
+            if pick is None:
+                break
+            if pick == "cancel":
+                sim, operations, cancelled = region_start, [], True
+                break
+            if pick == "undo":
+                operations.pop()
+                sim, _ = suborn_preview(region_start, region, operations)
+                continue
+            if pick[0]["piece_type"] == ALLY:
+                placing = pick[0]["action"] == "place"
+                operation = prompt_choice(stdin, stdout,
+                    "Ally which Tribe?" if placing else "Remove which Ally?",
+                    [(op["tribe"] if placing else
+                      f"{op['tribe']} ({op['faction']})", op) for op in pick]
+                    + [("(back)", None)])
+            elif len(pick) > 1:
+                operation = prompt_choice(stdin, stdout,
+                    f"Remove which {pick[0]['faction']} {pick[0]['piece_type']}?",
+                    [(op["piece_state"], op) for op in pick]
+                    + [("(back)", None)])
+            else:
+                operation = pick[0]
+            if operation is None:
+                continue
+            operations.append(operation)
+            sim, _ = suborn_preview(region_start, region, operations)
+        if operations:
+            selected.append(region)
+            plan.append({"region": region, "actions": operations})
+        elif not cancelled:
+            # Explicitly finishing an empty Region finishes this SA; the
+            # cancel choice above instead returns to Region selection.
+            break
+    if not plan:
         return None, None
-    return [region], {"suborn_plan": [{"region": region,
-                                       "actions": actions}]}
+    return selected, {"suborn_plan": plan}
 
 
 def _collect_entreat(state, faction, stdin, stdout, *, pending=None):
@@ -1009,10 +1053,16 @@ def _collect_command_plan(state, faction, cmd, stdin, stdout, single=False,
         if state["_cli_command_max_regions"] == 0:
             return None
     collector = _COMMAND_COLLECTORS.get(cmd)
-    details = (collector(state, faction, stdin, stdout, single, excluded=excluded)
-               if collector else None)
+    from fs_bot.cli.diviciacus import choose_regions, planning_scope
+    cooperation = choose_regions(state, faction, "command", stdin, stdout,
+                                 excluded=excluded)
+    with planning_scope(state, faction, cooperation, "command"):
+        details = (collector(state, faction, stdin, stdout, single, excluded=excluded)
+                   if collector else None)
     if details is None:
         return None
+    if cooperation is not None:
+        details["diviciacus_regions"] = cooperation
     action = {"command": cmd, "regions": [], "sa": _SA_NONE,
               "sa_regions": [], "details": {}}
     if cmd == "Seize":
@@ -1023,7 +1073,9 @@ def _collect_command_plan(state, faction, cmd, stdin, stdout, single=False,
 
 def _planning_copy(state):
     from copy import deepcopy
-    return deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    result = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    result["_diviciacus_preview"] = True
+    return result
 
 
 def _preview_command(state, faction, action):
@@ -1059,6 +1111,16 @@ def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
         # These SAs modify the coming Battle; an unmodified preview must not
         # remove their targets or attackers from the selection menu.
         state = before_state
+    from fs_bot.cli.diviciacus import choose_regions, planning_scope
+    cooperation = choose_regions(state, faction, "special_ability", stdin, stdout)
+    if cooperation is not None:
+        action["details"]["diviciacus_sa_regions"] = cooperation
+    with planning_scope(state, faction, cooperation, "special_ability"):
+        return _collect_sa_details(state, faction, action, stdin, stdout, sa,
+                                   before_state)
+
+
+def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state):
     collector = _SA_COLLECTORS.get(sa)
     if collector is not None:
         kwargs = {"before_state": before_state} if sa == "Enlist" else {}
@@ -1244,6 +1306,12 @@ def _kind_options(state, kind, spec):
                                              SENATE_DOWN)]
     if kind == "count":
         return [(str(v), v) for v in vals]
+    if kind == "capability":
+        from fs_bot.cards.card_data import get_card
+        from fs_bot.cards.capabilities import get_active_capabilities
+        active = get_active_capabilities(state)
+        return [(f"{card_id}: {get_card(card_id, state['scenario']).title} "
+                 f"({active[card_id]})", card_id) for card_id in vals]
     return [((str(v) if v is not None else "(none)"), v) for v in vals]
 
 

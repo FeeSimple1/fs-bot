@@ -10,6 +10,9 @@ Reference: §3.2.1 (Recruit), §3.3.1 (Rally), §3.4.1 (Germanic Rally),
            A3.2.1, A3.3.1, A3.4.1
 """
 
+from contextlib import contextmanager
+from functools import wraps
+
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -73,6 +76,48 @@ from fs_bot.commands.common import (CommandError, _is_devastated, _is_intimidate
 # ============================================================================
 # SUPPLY LINE (§3.2.1, A3.2.1)
 # ============================================================================
+
+@contextmanager
+def supply_agreement_scope(state):
+    """Keep accepted Supply agreements through one Command/Event (§1.5.2)."""
+    key = '_supply_line_agreements'
+    if key in state:
+        yield
+        return
+    state[key] = {}
+    try:
+        yield
+    finally:
+        state.pop(key, None)
+
+
+def preserve_supply_agreements(function):
+    """Share an outer action's accepted agreements with nested execution."""
+    @wraps(function)
+    def wrapped(state, *args, **kwargs):
+        with supply_agreement_scope(state):
+            return function(state, *args, **kwargs)
+    return wrapped
+
+
+@contextmanager
+def supply_query_scope(state):
+    """One Recruit entry's precheck and execution use the same replies.
+
+    A refusal is not binding on distinct later requests. Only accepted
+    agreements are retained by the enclosing Command/Event scope.
+    """
+    key = '_supply_line_query'
+    previous = state.get(key)
+    state[key] = {}
+    try:
+        yield
+    finally:
+        if previous is None:
+            state.pop(key, None)
+        else:
+            state[key] = previous
+
 
 def _borders_cisalpina_or_provincia(region, scenario):
     """Check if a region borders Cisalpina and/or Provincia for Supply Line.
@@ -150,14 +195,24 @@ def _region_allows_supply_line(state, region, faction, agreements=None):
     # Agent hook: a human/LLM-controlled controlling Faction decides whether to
     # agree to the Supply Line through its Region (§3.2.1/§1.5.2).
     from fs_bot.engine.agent import consult_agent, AGREEMENT
+    key = (faction, controlling_faction, region)
+    accepted = state.get('_supply_line_agreements')
+    queries = state.get('_supply_line_query')
+    if accepted is not None and key in accepted:
+        return True
+    if queries is not None and key in queries:
+        return queries[key]
     _a = consult_agent(state, controlling_faction, {
         "kind": AGREEMENT, "request_type": "supply_line",
         "requesting_faction": faction, "context": {"region": region}})
-    if _a is not None:
-        return bool(_a)
-
-    # Default: other factions agree (caller can override)
-    return True
+    # Default: other factions agree (caller can override). Record the
+    # resolved answer, not a second consult on an unchanged board.
+    answer = True if _a is None else bool(_a)
+    if queries is not None:
+        queries[key] = answer
+    if answer and accepted is not None:
+        accepted[key] = True
+    return answer
 
 
 def has_supply_line(state, region, faction=ROMANS, agreements=None):
@@ -704,7 +759,9 @@ def recruit_in_region(state, region, action, *, tribe=None, free=False,
             )
 
         cap = _count_recruit_auxilia_cap(state, region)
-        available = get_available(state, ROMANS, AUXILIA)
+        from fs_bot.engine.diviciacus import placement_available
+        available = placement_available(state, region, ROMANS, AUXILIA,
+                                        get_available(state, ROMANS, AUXILIA))
         to_place = min(cap, available)
 
         if to_place <= 0:
@@ -1014,7 +1071,9 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
             if region in home:
                 cap = max(cap, 1)
 
-        available = get_available(state, faction, WARBAND)
+        from fs_bot.engine.diviciacus import placement_available
+        available = placement_available(state, region, faction, WARBAND,
+                                        get_available(state, faction, WARBAND))
         to_place = min(cap, available)
         if home_bonus:
             to_place = min(to_place, max(0, available - 1))

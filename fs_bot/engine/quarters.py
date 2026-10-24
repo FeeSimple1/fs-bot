@@ -43,6 +43,19 @@ def quarters_factions(state):
             else (rc.BELGAE, rc.AEDUI, rc.GERMANS, rc.ROMANS))
 
 
+def eligible_quarters_host(state, guest, host):
+    """Control required for the adjacent Quarters step, before consent.
+
+    §6.3.3 excludes German Control even in Ariovistus: A6.3.3 retains
+    Roman Quartering unchanged. The game-run faction cannot host either.
+    """
+    excluded = ({rc.GERMANS} if state['scenario'] in rc.BASE_SCENARIOS
+                else {rc.ARVERNI})
+    if guest == rc.ROMANS:
+        excluded.add(rc.GERMANS)
+    return host in rc.FACTIONS and host not in excluded
+
+
 def _host_agrees(state, guest, host, region, request_type):
     if guest == host:
         return True
@@ -170,10 +183,7 @@ def preview_relocations(state, faction, moves, *, confirm=False):
               'Quarters relocation must be to an adjacent Region')
         _need(not _is_devastated(sim, destination), 'Quarters destination is Devastated')
         host = _controller(sim, destination)
-        excluded = ({rc.GERMANS} if sim['scenario'] in rc.BASE_SCENARIOS
-                    else ({rc.ARVERNI, rc.GERMANS} if faction == rc.ROMANS
-                          else {rc.ARVERNI}))
-        _need(host is not None and host not in excluded,
+        _need(eligible_quarters_host(sim, faction, host),
               'Quarters destination must have eligible faction Control')
         _need(count <= remaining[origin, piece], 'Cannot relocate unavailable pieces or move arrivals again')
         if confirm and host != faction:

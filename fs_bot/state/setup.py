@@ -63,7 +63,7 @@ from fs_bot.rules_consts import (
     # Eligibility
     ELIGIBLE,
     # Cards
-    CARD_NAMES_BASE, CARD_NAMES_ARIOVISTUS,
+    CARD_NAMES_BASE, CARD_NAMES_ARIOVISTUS, CARD_O38,
     WINTER_CARD, WINTER_CARD_COUNT,
     SECOND_EDITION_CARDS,
     # Tribe status
@@ -159,7 +159,8 @@ def _build_base_deck(state, num_events, winter_positions):
     rng = state["rng"]
 
     # All base event card numbers
-    all_events = list(CARD_NAMES_BASE.keys())
+    all_events = [CARD_O38 if card == 38 and state.get("diviciacus_option") else card
+                  for card in CARD_NAMES_BASE]
     rng.shuffle(all_events)
 
     # Take only the needed events
@@ -926,12 +927,15 @@ _SETUP_FUNCTIONS = {
 }
 
 
-def setup_scenario(scenario, seed=None, *, card_edition="legacy"):
+def setup_scenario(scenario, seed=None, *, card_edition="legacy",
+                   diviciacus_option=False):
     """Set up a scenario and return the initial game state.
 
     Args:
         scenario: Scenario identifier from rules_consts.
         seed: Optional RNG seed for deterministic replay.
+        card_edition: Saved selection for the five optional revised cards.
+        diviciacus_option: Use O38 and its Leader in an original scenario.
 
     Returns:
         Complete game state dictionary, validated.
@@ -945,7 +949,8 @@ def setup_scenario(scenario, seed=None, *, card_edition="legacy"):
 
     from fs_bot.cards.edition import validate_card_edition
     validate_card_edition(card_edition)
-    state = build_initial_state(scenario, seed=seed)
+    state = build_initial_state(scenario, seed=seed,
+                                diviciacus_option=diviciacus_option)
     state["card_edition"] = card_edition
     _SETUP_FUNCTIONS[scenario](state)
 

@@ -64,8 +64,12 @@ def loss_choices(state, region, faction, choices):
         tied = []
         for owner in (faction, *context['owners'][region]):
             for piece in TYPES:
-                tied.extend([(piece, visibility, owner)] *
-                            physical.get(owner, {}).get(visibility, {}).get(piece, 0))
+                number = physical.get(owner, {}).get(visibility, {}).get(piece, 0)
+                converted = state.get('_diviciacus_force', {})
+                if (converted.get('faction') == faction and converted.get('lender') == owner
+                        and converted.get('physical_type') == piece):
+                    number -= converted.get('pieces', {}).get(region, {}).get(visibility, 0)
+                tied.extend([(piece, visibility, owner)] * number)
         if faction in state.get('non_player_factions', set()):
             state['rng'].shuffle(tied)  # Equal mobile losses: §8.3.4/§8.4.1.
         mobile.extend(tied)
@@ -99,7 +103,12 @@ def operate(state, region, faction, piece_type, count, operation, *, owner=None,
     for physical_owner in ((owner,) if owner is not None else allowed):
         raw = state['spaces'][region].get('pieces', {}).get(physical_owner, {})
         for ps in states:
-            number = min(remaining, raw.get(ps, {}).get(piece_type, 0))
+            available = raw.get(ps, {}).get(piece_type, 0)
+            converted = state.get('_diviciacus_force', {})
+            if (converted.get('faction') == faction and converted.get('lender') == physical_owner
+                    and converted.get('physical_type') == piece_type):
+                available -= converted.get('pieces', {}).get(region, {}).get(ps, 0)
+            number = min(remaining, available)
             if number:
                 allocations.append((physical_owner, ps, number))
                 remaining -= number

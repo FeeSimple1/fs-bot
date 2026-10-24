@@ -322,6 +322,16 @@ def _flip_origin_pieces(state, origin, faction):
                        count=revealed_auxilia,
                        from_state=REVEALED, to_state=HIDDEN)
             result["flipped_to_hidden"] = revealed_auxilia
+        # Card 38/A1.4 can make Scouted Aedui Warbands act as Auxilia.
+        # The physical Scouted marker still delays hiding (§4.2.2): clear
+        # it after the other Revealed pieces hide, leaving these Revealed.
+        scouted_auxilia = count_pieces_by_state(
+            state, origin, ROMANS, AUXILIA, SCOUTED)
+        if scouted_auxilia > 0:
+            flip_piece(state, origin, ROMANS, AUXILIA,
+                       count=scouted_auxilia,
+                       from_state=SCOUTED, to_state=REVEALED)
+            result["scouted_to_revealed"] = scouted_auxilia
 
     elif faction in GALLIC_FACTIONS or (
             faction == GERMANS and scenario in ARIOVISTUS_SCENARIOS):
@@ -589,8 +599,11 @@ def _resolve_one_harassment_loss(state, region, marching_faction,
         departing_pieces[soft_target] -= 1
         if carried is not None:
             carried[visibility] -= 1
+        from fs_bot.engine.diviciacus import march_casualty_owner
+        owner = march_casualty_owner(state, marching_faction, region,
+                                     departing_pieces, visibility)
         remove_piece(state, region, marching_faction, soft_target, 1,
-                     piece_state=visibility)
+                     piece_state=visibility, physical_owner=owner)
         return (soft_target, 1, None)
 
     roll = state["rng"].randint(DIE_MIN, DIE_MAX)
@@ -827,15 +840,17 @@ def _move_group_to(state, from_region, to_region, faction, group):
     # are de-Scouted to REVEALED (§3.3.2/§4.2.2) and March Revealed — so the
     # group can legally contain Revealed pieces. Forcing HIDDEN here raised
     # "Only 0 Hidden Warband in <R>, need N" for a group of de-Scouted pieces.
+    from fs_bot.engine.diviciacus import move_march_group
+    converted = move_march_group(state, faction, from_region, to_region, group)
     auxilia_count = group.get(AUXILIA, 0)
     visibility = group.setdefault("_march_visibility", {})
-    if auxilia_count > 0:
+    if auxilia_count > 0 and converted != AUXILIA:
         visibility[AUXILIA] = _move_flippable_preserving_state(
             state, from_region, to_region, faction, AUXILIA, auxilia_count,
             visibility=visibility.get(AUXILIA))
 
     warband_count = group.get(WARBAND, 0)
-    if warband_count > 0:
+    if warband_count > 0 and converted != WARBAND:
         if "german_warbands" in group:
             from fs_bot.rules_consts import BELGAE
             german = group["german_warbands"]

@@ -116,12 +116,29 @@ class TestCard43Convictolitavis:
             {"region": ATREBATES, "actions": [
                 {"action": "remove_warband", "target_faction": BELGAE}]},
         ]}}
+        from fs_bot.state.serialize import encode
+        before = encode(st)
         res = _execute_suborn(st, AEDUI, plan)
-        assert len(res["regions"]) == 1          # base: 1 Region max
+        assert not res["executed"]              # base: 1 Region max
+        assert res["errors"]
+        assert encode(st) == before             # reject the full invalid plan
         activate_capability(st, 43, EVENT_UNSHADED)
-        place_piece(st, MANDUBII, BELGAE, WARBAND, 1)
         res = _execute_suborn(st, AEDUI, plan)
         assert len(res["regions"]) == 2          # card 43: 2 Regions
+        assert st["resources"][AEDUI] == 18
+
+    def test_shaded_does_not_double_special_activity_cost(self):
+        from fs_bot.engine.execute import _execute_suborn
+        st = _state()
+        st["resources"][AEDUI] = 1
+        place_piece(st, MANDUBII, AEDUI, WARBAND)
+        place_piece(st, MANDUBII, BELGAE, WARBAND)
+        activate_capability(st, 43, EVENT_SHADED)
+        res = _execute_suborn(st, AEDUI, {"details": {"suborn_plan": [
+            {"region": MANDUBII, "actions": [
+                {"action": "remove_warband", "target_faction": BELGAE}]}]}})
+        assert res["executed"], res
+        assert st["resources"][AEDUI] == 0
 
 
 class TestCard13BalearicSlingersShaded:

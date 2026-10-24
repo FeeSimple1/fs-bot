@@ -63,7 +63,14 @@ def _get_caps(state):
     """Get the piece caps dict for the current scenario."""
     if state["scenario"] in ARIOVISTUS_SCENARIOS:
         return CAPS_ARIOVISTUS
-    return _second_half_caps(CAPS_BASE, state)
+    caps = _second_half_caps(CAPS_BASE, state)
+    if state.get("diviciacus_option"):
+        # A Setup/A1.4: the optional original-scenario Leader adds only
+        # Diviciacus, not the other Ariovistus components or rules.
+        caps = dict(caps)
+        caps[AEDUI] = dict(caps[AEDUI])
+        caps[AEDUI][LEADER] = CAPS_ARIOVISTUS[AEDUI][LEADER]
+    return caps
 
 
 def _get_faction_cap(state, faction, piece_type):
@@ -191,6 +198,10 @@ def get_effective_faction_pieces(state, region, faction):
     raw = leader_view(state, region, faction, raw)
     from fs_bot.battle.combined import effective_pieces
     combined = effective_pieces(state, region, faction, raw)
+    from fs_bot.engine.diviciacus import effective_pieces as diviciacus_view
+    borrowed = diviciacus_view(state, region, faction, combined if combined is not None else raw)
+    if borrowed is not None:
+        return borrowed
     if combined is not None:
         return combined
     free = state.get(FREE_FORCE_KEY)
@@ -868,6 +879,10 @@ _place_piece_inner = place_piece
 
 
 def place_piece(state, region, faction, piece_type, count=1, **kwargs):
+    from fs_bot.engine.diviciacus import place_converted
+    if place_converted(state, region, faction, piece_type, count, **kwargs):
+        _refresh_region_control(state, region)
+        return
     result = _place_piece_inner(state, region, faction, piece_type, count,
                                 **kwargs)
     _refresh_region_control(state, region)
@@ -886,6 +901,10 @@ def _enlist_operation(state, region, faction, piece_type, count, operation,
     Returns True when the operation was handled. The board and Available
     pools always retain each counter's actual colour, even during prompts.
     """
+    from fs_bot.engine.diviciacus import operate as diviciacus_operation
+    if diviciacus_operation(state, region, faction, piece_type, count, operation,
+                             owner=owner, **kwargs):
+        return True
     from fs_bot.battle.combined import operate
     if operate(state, region, faction, piece_type, count, operation,
                owner=owner, **kwargs):

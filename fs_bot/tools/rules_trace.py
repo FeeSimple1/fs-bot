@@ -96,7 +96,6 @@ NOT_APPLICABLE = {
     "3.1.1": "physical pawns marking selected Regions (plans carry lists)",
     "8.1.3": "how to read the printed flowchart sheets",
     "A1.0": "chapter introduction",
-    "A1.4.1": "physical Available Forces display layout",
     "A1.5.1": "three-player seating (no player runs two Factions here; "
               "see commands/transfer.py on the 4-Resource cap)",
     "A2.2": "physical Eligibility cylinder colour swap",

@@ -30,6 +30,7 @@ _CAPABILITY_MODIFIERS = {
                               "card_A31_cancel_german_benefits"),
     ("A63", EVENT_UNSHADED): ("card_A63_quarters_devastated_only",),
     ("A22", EVENT_UNSHADED): ("card_A22_no_intimidate_romans",),
+    ("A38", EVENT_UNSHADED): ("card_A38_suborn_enhanced",),
 }
 
 
@@ -67,9 +68,13 @@ def activate_capability(state, card_id, shaded_or_unshaded):
     _ensure_capabilities(state)
     # §5.1.2 Dueling Events: replacing the other side clears that side's
     # companion modifiers.
-    prev = state["capabilities"].get(card_id)
+    prev = get_active_capabilities(state).get(card_id)
     if prev is not None and prev != shaded_or_unshaded:
         _clear_companion_modifiers(state, card_id, prev)
+    if card_id == "A38" and shaded_or_unshaded == EVENT_SHADED:
+        # Older saves could retain the unshaded modifier alongside the
+        # shaded capability. Replaying the shaded side must clear it too.
+        _clear_companion_modifiers(state, card_id, EVENT_UNSHADED)
     state["capabilities"][card_id] = shaded_or_unshaded
 
 
@@ -100,9 +105,12 @@ def deactivate_capability(state, card_id):
     """
     _ensure_capabilities(state)
     state.get("capability_owners", {}).pop(card_id, None)
-    side = state["capabilities"].pop(card_id, None)
+    side = get_active_capabilities(state).get(card_id)
+    state["capabilities"].pop(card_id, None)
     if side is not None:
         _clear_companion_modifiers(state, card_id, side)
+    if card_id == "A38":
+        _clear_companion_modifiers(state, card_id, EVENT_UNSHADED)
     return side
 
 
@@ -119,12 +127,12 @@ def is_capability_active(state, card_id, shaded_or_unshaded=None):
     Returns:
         bool
     """
-    _ensure_capabilities(state)
-    if card_id not in state["capabilities"]:
+    active = get_active_capabilities(state)
+    if card_id not in active:
         return False
     if shaded_or_unshaded is None:
         return True
-    return state["capabilities"][card_id] == shaded_or_unshaded
+    return active[card_id] == shaded_or_unshaded
 
 
 def get_active_capabilities(state):
@@ -133,8 +141,14 @@ def get_active_capabilities(state):
     Returns:
         dict {card_id: EVENT_SHADED or EVENT_UNSHADED}
     """
-    _ensure_capabilities(state)
-    return dict(state["capabilities"])
+    active = dict(state.get("capabilities", {}))
+    # Before the Vergobret lifecycle fix its unshaded Capability was saved
+    # only as this modifier. Interpret those saves without rewriting them;
+    # an explicit side always takes precedence over a stale modifier.
+    if ("A38" not in active and state.get("event_modifiers", {}).get(
+            "card_A38_suborn_enhanced")):
+        active["A38"] = EVENT_UNSHADED
+    return active
 
 
 def is_valid_capability(card_id, scenario=None):

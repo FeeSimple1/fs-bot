@@ -12,6 +12,8 @@ Node functions return an action dict describing what the bot decided to do.
 The dispatch loop calls execute_aedui_turn(state) which walks the flowchart.
 """
 
+from fs_bot.engine.diviciacus_planning import planning_sa_view, planning_event_view
+
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -36,7 +38,6 @@ from fs_bot.rules_consts import (
     # Die
     DIE_MIN, DIE_MAX,
     # Suborn limits
-    SUBORN_MAX_PIECES, SUBORN_MAX_ALLIES,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
@@ -373,6 +374,7 @@ def node_a2(state):
     return "Yes" if state.get("can_play_event", False) else "No"
 
 
+@planning_event_view
 def node_a3(state):
     """A3: Event Ineffective, Capability in final year, or 'No Aedui'?
 
@@ -710,6 +712,7 @@ def _get_enemy_with_most_allies_citadels(state, scenario):
 # PROCESS NODES
 # ============================================================================
 
+@planning_event_view
 def node_a_event(state):
     """A_EVENT: Execute Event.
 
@@ -1241,7 +1244,12 @@ def _check_ambush(state, battle_plan, scenario):
         enemy = bp["target"]
 
         from fs_bot.commands.sa_ambush import validate_ambush_region
-        if not validate_ambush_region(state, region, AEDUI, enemy)[0]:
+        from fs_bot.engine.diviciacus_planning import _sa_planning_view
+        # Eligibility is a Special Ability check. Attack Losses below still
+        # use the Command's agreed forces, including original Card 38.
+        with _sa_planning_view(state):
+            ambush_valid = validate_ambush_region(state, region, AEDUI, enemy)[0]
+        if not ambush_valid:
             continue
 
         should_ambush = False
@@ -1287,6 +1295,7 @@ def _determine_battle_sa(state, battle_plan, scenario):
     return (sa, sa_regions, sa_details)
 
 
+@planning_sa_view
 def _determine_trade_sa(state, scenario, *, battled=False, allowed_regions=None):
     """A_TRADE: Determine if Aedui should Trade.
 
@@ -1404,6 +1413,7 @@ def _get_trade_regions(state, scenario):
     return get_controlled_regions(state, AEDUI)
 
 
+@planning_sa_view
 def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
     """A_SUBORN: Determine Suborn action.
 
@@ -1417,7 +1427,7 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
     Per §4.4.2: "remove and/or place a total of up to three such pieces in
     the Suborn Region (in any combination). A maximum of one of the three
     pieces removed or placed in the Region may be an Allied Tribe."
-    Cap: 3 pieces total per region, 1 Ally max per region.
+    Vergobret (A38) unshaded increases these limits to 4 pieces and 2 Allies.
 
     Note: Suborn costs (2 Resources per Ally, 1 per Warband/Auxilia — §4.4.2)
     are tracked by the execution layer, not the planning layer.
@@ -1436,17 +1446,15 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
     non_players = state.get("non_player_factions", set())
-    capabilities = state.get("capabilities", {})
-
-    # Check Convictolitavis unshaded — allows 2 regions (card 43)
-    from fs_bot.cards.capabilities import is_capability_active
-    from fs_bot.rules_consts import EVENT_UNSHADED
-    max_regions = 1
-    if is_capability_active(state, 43, EVENT_UNSHADED):
-        max_regions = 2
+    from fs_bot.commands.sa_suborn import (
+        suborn_limits, suborn_region_limit, suborn_tribes)
+    from fs_bot.rules_consts import TRIBE_FACTION_RESTRICTION
+    max_pieces, max_allies = suborn_limits(state)
+    max_regions = suborn_region_limit(state)
 
     suborn_plan = []
     regions_used = 0
+    removed_allies = {}
 
     avail_allies = get_available(state, AEDUI, ALLY)
     avail_warbands = get_available(state, AEDUI, WARBAND)
@@ -1483,17 +1491,20 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
             continue
 
         region_actions = []
-        # Per §4.4.2: max 3 pieces total, max 1 Ally per region
+        # Printed limits, extended by A38 unshaded when active.
         pieces_affected = 0
         allies_affected = 0
 
         # Step 1: Place Aedui Ally — §8.6.3
         ally_placed = False
         if (avail_allies > 0
-                and pieces_affected < SUBORN_MAX_PIECES
-                and allies_affected < SUBORN_MAX_ALLIES):
-            tribes = get_tribes_in_region(region, scenario)
+                and pieces_affected < max_pieces
+                and allies_affected < max_allies):
+            tribes = suborn_tribes(state, region)
             for tribe in tribes:
+                if (avail_allies == 0 or pieces_affected >= max_pieces
+                        or allies_affected >= max_allies):
+                    break
                 tribe_info = state["tribes"].get(tribe, {})
                 # Subdued = unallied AND no Dispersed/Razed status marker
                 # (§1.7) — the mechanic rejects non-Subdued Tribes.
@@ -1502,9 +1513,8 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
                     # §1.4.2: cannot place an Aedui Ally at a Tribe restricted
                     # to another Faction (e.g. Suebi -> Germans). The executor
                     # refuses it; skip such Tribes here.
-                    td = get_tribe_data(tribe)
-                    if (td.faction_restriction is not None
-                            and td.faction_restriction != AEDUI):
+                    restriction = TRIBE_FACTION_RESTRICTION.get(tribe)
+                    if restriction is not None and restriction != AEDUI:
                         continue
                     cost = _affordable("place_ally")
                     if cost is None:
@@ -1518,63 +1528,59 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
                     ally_placed = True
                     pieces_affected += 1
                     allies_affected += 1
-                    break
 
-        # Step 2: If no Ally placed, remove enemy Ally — §8.6.3
-        if (not ally_placed
-                and pieces_affected < SUBORN_MAX_PIECES
-                and allies_affected < SUBORN_MAX_ALLIES):
-            # Remove from faction with most AC, NP Romans last
+        # Step 2: If no Ally placed, remove enemy Allies — §8.6.3.
+        # With Vergobret, continue until no more Allies can be affected.
+        removed_here = set()
+        while (not ally_placed
+               and pieces_affected < max_pieces
+               and allies_affected < max_allies):
             best_target = None
-            best_ac = -1
-            tribes = get_tribes_in_region(region, scenario)
-
-            # Build priority: faction with most AC total, NP Romans last
-            targeting = get_faction_targeting_order(AEDUI, scenario)
-            for target_faction in targeting:
+            best_priority = None
+            tribes = suborn_tribes(state, region)
+            for target_faction in get_faction_targeting_order(AEDUI, scenario):
                 if target_faction == AEDUI:
                     continue
-                # NP Romans last — §8.6.3
-                faction_ac = _count_enemy_allies_citadels(
-                    state, target_faction)
-                # Deprioritize NP Romans
-                priority = faction_ac
-                if target_faction == ROMANS and ROMANS in non_players:
-                    priority = -1
-
-                # §4.4.2: Suborn can remove an Ally disc but NOT a Citadel.
-                # allied_faction is set by EITHER an Ally or a Citadel, so a
-                # City tribe holding the faction's Citadel is allied but has
-                # no removable Ally disc (§1.4.2). Require an actual Ally piece
-                # in the Region and name an Ally-backed (non-Citadel) tribe,
-                # mirroring board.pieces.clear_allied_tribe.
+                faction_ac = (_count_enemy_allies_citadels(state, target_faction)
+                              - removed_allies.get(target_faction, 0))
+                # §8.6.3: most Allies + Citadels first; *within that
+                # priority*, prefer another enemy over Non-player Romans.
+                priority = (faction_ac,
+                            not (target_faction == ROMANS
+                                 and ROMANS in non_players))
                 if count_pieces(state, region, target_faction, ALLY) < 1:
                     continue
                 citadel_here = (
                     count_pieces(state, region, target_faction, CITADEL) > 0)
                 for tribe in tribes:
+                    if tribe in removed_here:
+                        continue
                     tribe_info = state["tribes"].get(tribe, {})
                     if tribe_info.get("allied_faction") != target_faction:
                         continue
                     if tribe in TRIBE_TO_CITY and citadel_here:
-                        continue  # represented by the Citadel, not an Ally
-                    if priority > best_ac:
-                        best_ac = priority
+                        continue
+                    if best_priority is None or priority > best_priority:
+                        best_priority = priority
                         best_target = {
                             "action": "remove_ally",
                             "tribe": tribe,
                             "target_faction": target_faction,
                         }
-
-            if best_target and _affordable("remove_ally") is not None:
-                region_actions.append(best_target)
-                budget -= _affordable("remove_ally") or 0
-                pieces_affected += 1
-                allies_affected += 1
+            cost = _affordable("remove_ally")
+            if best_target is None or cost is None:
+                break
+            region_actions.append(best_target)
+            budget -= cost
+            removed_here.add(best_target["tribe"])
+            target = best_target["target_faction"]
+            removed_allies[target] = removed_allies.get(target, 0) + 1
+            pieces_affected += 1
+            allies_affected += 1
 
         # Step 3: Place all Aedui Warbands able — §8.6.3
         # Capped by remaining piece slots — §4.4.2
-        while avail_warbands > 0 and pieces_affected < SUBORN_MAX_PIECES:
+        while avail_warbands > 0 and pieces_affected < max_pieces:
             cost = _affordable("place_warband")
             if cost is None:
                 break
@@ -1593,11 +1599,11 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
             wb_remove_order = (ARVERNI, BELGAE, GERMANS)
 
         for target_faction in wb_remove_order:
-            if pieces_affected >= SUBORN_MAX_PIECES:
+            if pieces_affected >= max_pieces:
                 break
             enemy_wb = count_pieces(state, region, target_faction, WARBAND)
             for _ in range(enemy_wb):
-                if pieces_affected >= SUBORN_MAX_PIECES:
+                if pieces_affected >= max_pieces:
                     break
                 cost = _affordable("remove_warband")
                 if cost is None:
@@ -1612,12 +1618,12 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
         # Step 5: Remove Auxilia — §8.6.3
         # Capped by remaining piece slots — §4.4.2
         for target_faction in get_faction_targeting_order(AEDUI, scenario):
-            if pieces_affected >= SUBORN_MAX_PIECES:
+            if pieces_affected >= max_pieces:
                 break
             enemy_aux = count_pieces(
                 state, region, target_faction, AUXILIA)
             for _ in range(enemy_aux):
-                if pieces_affected >= SUBORN_MAX_PIECES:
+                if pieces_affected >= max_pieces:
                     break
                 cost = _affordable("remove_auxilia")
                 if cost is None:
@@ -1849,8 +1855,9 @@ def node_a_diviciacus(state, context):
     Returns:
         True if Diviciacus agreement applies.
     """
-    capabilities = state.get("capabilities", {})
-    if not capabilities.get("diviciacus_unshaded", False):
+    from fs_bot.engine.diviciacus import enabled
+    phase = "special_ability" if context.get("special_ability") else "command"
+    if not enabled(state, phase):
         return False
 
     non_players = state.get("non_player_factions", set())

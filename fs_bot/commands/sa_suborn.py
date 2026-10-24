@@ -16,11 +16,14 @@ Procedure:
   - Any Faction's pieces may be involved.
   - Place Allies only at Subdued Tribes (faction-restricted tribes apply).
 
-Convictolitavis Capability (§5.3, Card 43): Expands to 6 pieces total
-(max 2 Allies) across 2 regions.
+Convictolitavis (§5.3, Card 43): up to 2 Regions, each with its own limits.
+Vergobret (A38): one additional piece per Region, which may be an Ally.
 
 Reference: §4.4.2, §1.4.2, A4.4
 """
+
+from contextlib import contextmanager
+from copy import deepcopy
 
 from fs_bot.rules_consts import (
     # Factions
@@ -29,7 +32,7 @@ from fs_bot.rules_consts import (
     # Piece types
     WARBAND, AUXILIA, ALLY,
     # Piece states
-    HIDDEN,
+    HIDDEN, REVEALED, SCOUTED,
     # Leaders
     DIVICIACUS,
     # Costs
@@ -47,7 +50,7 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import (
-    is_adjacent, get_tribes_in_region, get_tribe_data,
+    is_adjacent, get_tribes_in_region,
 )
 from fs_bot.commands.common import action_cost, CommandError
 
@@ -65,6 +68,9 @@ def validate_suborn_region(state, region):
     Returns:
         (True, "") if valid, (False, reason) if not.
     """
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    if region not in get_playable_regions_for_state(state):
+        return False, "Suborn must select a playable Region"
     # Must have Hidden Aedui Warband
     hidden_wb = count_pieces_by_state(
         state, region, AEDUI, WARBAND, HIDDEN
@@ -80,8 +86,7 @@ def validate_suborn_region(state, region):
         # Must be within 1 of Diviciacus
         if region != leader_region and not is_adjacent(region, leader_region):
             return (False,
-                    "Region must be within 1 of Diviciacus for Suborn "
-                    "in Ariovistus")
+                    "Region must be within 1 of Diviciacus for Suborn")
 
     # Card A38 (Vergobret) shaded CAPABILITY: "Suborn only at Diviciacus.
     # If no Diviciacus, Suborn and Trade only within 1 Region of Bibracte."
@@ -104,116 +109,187 @@ def validate_suborn_region(state, region):
     return (True, "")
 
 
-def suborn(state, region, operations):
-    """Execute Suborn — remove and/or place pieces.
+def suborn_limits(state):
+    """Printed per-Region piece/Ally limits, including Vergobret's extra Ally."""
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_UNSHADED
+    enhanced = is_capability_active(state, "A38", EVENT_UNSHADED)
+    return (SUBORN_MAX_PIECES + bool(enhanced),
+            SUBORN_MAX_ALLIES + bool(enhanced))
 
-    §4.4.2: "Pay two Aedui Resources per Ally and one Aedui Resource per
-    Warband or Auxilia to remove and/or place a total of up to three such
-    pieces in the Suborn Region."
 
-    Args:
-        state: Game state dict. Modified in place.
-        region: Region where Suborn occurs.
-        operations: List of dicts, each with:
-            "action": "remove" or "place"
-            "faction": Faction of the piece.
-            "piece_type": WARBAND, AUXILIA, or ALLY.
-            "tribe": For Ally placement, the tribe name.
-            "piece_state": For remove of flippable, the state.
+def suborn_region_limit(state):
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_UNSHADED
+    return 2 if is_capability_active(state, 43, EVENT_UNSHADED) else 1
 
-    Returns:
-        dict with:
-            "removed": List of (faction, piece_type, count).
-            "placed": List of (faction, piece_type, count).
-            "cost": Total resources spent.
 
-    Raises:
-        CommandError: If operation violates rules.
+def suborn_tribes(state, region):
+    """Printed Tribes plus Card 71's additional Colony Tribe in this Region."""
+    tribes = list(get_tribes_in_region(region, state['scenario']))
+    tribes.extend(tribe for tribe, info in state.get('tribes', {}).items()
+                  if tribe not in TRIBE_TO_REGION and info.get('region') == region)
+    return tribes
+
+
+def suborn_operation_cost(state, operation):
+    if operation["piece_type"] == ALLY:
+        cost = SUBORN_COST_PER_ALLY
+    elif (suborn_limits(state)[0] > SUBORN_MAX_PIECES
+          and operation.get("action") == "place"
+          and operation["piece_type"] == AUXILIA):
+        cost = 0
+    else:
+        cost = SUBORN_COST_PER_PIECE
+    return action_cost(state, AEDUI, cost)
+
+
+@contextmanager
+def _operation_view(state, region, operation):
+    """Explicit physical counters never change colour under cooperation.
+
+    Legacy effective-type plans may still use Diviciacus conversion. New
+    native-owner operations name physical_owner explicitly; update any active
+    loan ledger after their physical mutation so subsequent operations see it.
     """
-    result = {"removed": [], "placed": [], "cost": 0}
+    owner = operation.get("physical_owner")
+    if owner is None:
+        yield
+        return
+    if owner != operation.get("faction"):
+        raise CommandError("Suborn physical_owner must match the named Faction")
+    from fs_bot.engine.diviciacus import KEY, STATES
+    context = state.pop(KEY, None)
+    try:
+        yield
+    finally:
+        if context is not None:
+            if owner == context['lender'] and region in context['pieces']:
+                raw = state['spaces'][region].get('pieces', {}).get(owner, {})
+                context['pieces'][region] = {
+                    ps: raw.get(ps, {}).get(context['physical_type'], 0)
+                    for ps in STATES}
+            state[KEY] = context
 
-    # A38 Vergobret: Suborn may pay to place/remove 1 more piece per Region.
-    _a38 = state.get("event_modifiers", {}).get("card_A38_suborn_enhanced")
-    max_pieces = SUBORN_MAX_PIECES + (1 if _a38 else 0)
-    if len(operations) > max_pieces:
-        raise CommandError(
-            f"Suborn allows at most {max_pieces} pieces, "
-            f"got {len(operations)}"
-        )
 
-    # Count Allies in operations
-    ally_ops = sum(1 for op in operations if op["piece_type"] == ALLY)
-    if ally_ops > SUBORN_MAX_ALLIES:
-        raise CommandError(
-            f"Suborn allows at most {SUBORN_MAX_ALLIES} Ally operations, "
-            f"got {ally_ops}"
-        )
-
-    # Calculate total cost
-    total_cost = 0
-    for op in operations:
-        if op["piece_type"] == ALLY:
-            total_cost += SUBORN_COST_PER_ALLY
-        elif (_a38 and op.get("action") == "place"
-              and op["piece_type"] == AUXILIA):
-            # A38: Suborn places Auxilia at 0 cost.
-            pass
-        else:
-            total_cost += SUBORN_COST_PER_PIECE
-
-    total_cost = action_cost(state, AEDUI, total_cost)
-    # Check Resources
-    resources = state["resources"].get(AEDUI, 0)
-    if resources < total_cost:
-        raise CommandError(
-            f"Not enough Resources ({resources}) for Suborn "
-            f"(need {total_cost})"
-        )
-
-    # Validate all operations first
-    for op in operations:
-        _validate_suborn_operation(state, region, op)
-
-    # Pay cost
-    state["resources"][AEDUI] -= total_cost
-    result["cost"] = total_cost
-
-    # Execute operations
-    for op in operations:
-        action = op["action"]
-        faction = op["faction"]
-        piece_type = op["piece_type"]
-
-        if action == "remove":
-            piece_state = op.get("piece_state")
-            remove_piece(state, region, faction, piece_type, 1,
-                         piece_state=piece_state)
-            result["removed"].append((faction, piece_type, 1))
-
-            # If removing an Ally, update tribe status — with the
-            # validated tribe when named, else via the deterministic
-            # piece<->tribe pairing helper.
-            if piece_type == ALLY:
-                tribe = op.get("tribe")
-                if tribe:
-                    state["tribes"][tribe]["allied_faction"] = None
-                    if state["tribes"][tribe].get("status") == "Allied":
-                        state["tribes"][tribe]["status"] = None
-                else:
-                    from fs_bot.board.pieces import clear_allied_tribe
-                    clear_allied_tribe(state, region, faction, ALLY)
-
-        elif action == "place":
-            if piece_type == ALLY:
-                tribe = op["tribe"]
-                place_piece(state, region, faction, ALLY)
-                state["tribes"][tribe]["allied_faction"] = faction
+def _apply_suborn_operation(state, region, operation):
+    action, faction, piece_type = (operation[key] for key in
+                                    ("action", "faction", "piece_type"))
+    if action == "remove":
+        remove_piece(state, region, faction, piece_type, 1,
+                     piece_state=operation.get("piece_state"))
+        if piece_type == ALLY:
+            tribe = operation.get("tribe")
+            if tribe:
+                state["tribes"][tribe]["allied_faction"] = None
+                from fs_bot.rules_consts import ALLIED
+                if state["tribes"][tribe].get("status") == ALLIED:
+                    state["tribes"][tribe]["status"] = None
             else:
-                place_piece(state, region, faction, piece_type, 1,
-                            piece_state=HIDDEN)
-            result["placed"].append((faction, piece_type, 1))
+                from fs_bot.board.pieces import clear_allied_tribe
+                clear_allied_tribe(state, region, faction, ALLY)
+    elif piece_type == ALLY:
+        place_piece(state, region, faction, ALLY)
+        state["tribes"][operation["tribe"]]["allied_faction"] = faction
+    else:
+        place_piece(state, region, faction, piece_type, piece_state=HIDDEN)
 
-    refresh_all_control(state)
+
+def legal_suborn_operations(state, region):
+    """Every currently affordable native-counter operation in one Region."""
+    from fs_bot.engine.diviciacus import KEY
+    physical = {key: value for key, value in state.items() if key != KEY}
+    operations = []
+    tribes = suborn_tribes(state, region)
+    for faction in FACTIONS:
+        for piece_type in (WARBAND, AUXILIA, ALLY):
+            placements = ([{"tribe": tribe} for tribe in tribes]
+                          if piece_type == ALLY else [{}])
+            removals = ([{"tribe": tribe} for tribe, info in state["tribes"].items()
+                         if (info.get("region") or TRIBE_TO_REGION.get(tribe)) == region]
+                        if piece_type == ALLY else
+                        [{"piece_state": ps} for ps in (HIDDEN, REVEALED, SCOUTED)])
+            for action, choices in (("place", placements), ("remove", removals)):
+                for extra in choices:
+                    operation = {"action": action, "faction": faction,
+                                 "piece_type": piece_type,
+                                 "physical_owner": faction, **extra}
+                    try:
+                        _validate_suborn_operation(physical, region, operation)
+                    except CommandError:
+                        continue
+                    if suborn_operation_cost(physical, operation) <= physical["resources"].get(AEDUI, 0):
+                        operations.append(operation)
+    return operations
+
+
+def suborn_preview(state, region, operations):
+    """Validate the entire ordered sequence on a detached board.
+
+    Selection eligibility belongs to the Region's start, not to each piece:
+    removing the last Hidden Aedui does not cancel the remaining operations.
+    This preview reserves pools, exact pieces, tribes and Resources cumulatively.
+    """
+    if not isinstance(operations, (list, tuple)):
+        raise CommandError("Suborn operations must be a list")
+    max_pieces, max_allies = suborn_limits(state)
+    if len(operations) > max_pieces:
+        raise CommandError(f"Suborn allows at most {max_pieces} pieces, got {len(operations)}")
+    if any(not isinstance(op, dict) for op in operations):
+        raise CommandError("Each Suborn operation must be an object")
+    ally_ops = sum(op.get("piece_type") == ALLY for op in operations)
+    if ally_ops > max_allies:
+        raise CommandError(f"Suborn allows at most {max_allies} Ally operations, got {ally_ops}")
+    sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    sim['_diviciacus_preview'] = True
+    cost = 0
+    for operation in operations:
+        with _operation_view(sim, region, operation):
+            _validate_suborn_operation(sim, region, operation)
+            charge = suborn_operation_cost(sim, operation)
+            stock = sim["resources"].get(AEDUI, 0)
+            if stock < charge:
+                raise CommandError(f"Not enough Resources ({stock}) for Suborn (need {charge})")
+            sim["resources"][AEDUI] -= charge
+            cost += charge
+            _apply_suborn_operation(sim, region, operation)
+    refresh_all_control(sim)
+    return sim, cost
+
+
+def suborn(state, region, operations):
+    """Apply an atomic ordered sequence of up to 3 pieces (4 with A38).
+
+    Each operation names action (place/remove), faction, piece_type and,
+    where relevant, tribe or removal piece_state. An explicit physical_owner
+    equal to faction requests that native counter even under Diviciacus.
+    """
+    _, cost = suborn_preview(state, region, operations)
+    result = {"removed": [], "placed": [], "cost": cost}
+    keys = ("spaces", "tribes", "available", "resources", "_diviciacus_force")
+    before = {key: deepcopy(state[key]) for key in keys if key in state}
+    try:
+        state["resources"][AEDUI] -= cost
+        for operation in operations:
+            with _operation_view(state, region, operation):
+                _validate_suborn_operation(state, region, operation)
+                _apply_suborn_operation(state, region, operation)
+            result["removed" if operation["action"] == "remove" else "placed"].append(
+                (operation["faction"], operation["piece_type"], 1))
+        refresh_all_control(state)
+    except BaseException:
+        # Invalid later operations or a pending owner choice cannot leave a
+        # partially paid Suborn. Outer action transactions own frontend replay.
+        for key in keys:
+            if key in before:
+                if isinstance(state.get(key), dict):
+                    state[key].clear()
+                    state[key].update(before[key])
+                else:
+                    state[key] = before[key]
+            else:
+                state.pop(key, None)
+        raise
     return result
 
 
@@ -223,9 +299,23 @@ def _validate_suborn_operation(state, region, op):
     Raises:
         CommandError: If operation is invalid.
     """
+    if not isinstance(op, dict) or not all(key in op for key in ("action", "faction", "piece_type")):
+        raise CommandError("Suborn operation requires action, faction and piece_type")
     action = op["action"]
     faction = op["faction"]
     piece_type = op["piece_type"]
+    if not isinstance(faction, str) or faction not in FACTIONS:
+        raise CommandError("Unknown Suborn Faction")
+    if not isinstance(region, str) or region not in state["spaces"]:
+        raise CommandError("Unknown Suborn Region")
+    if op.get("tribe") is not None and not isinstance(op["tribe"], str):
+        raise CommandError("Suborn Tribe must be named")
+    if op.get("count", 1) != 1 or type(op.get("count", 1)) is not int:
+        raise CommandError("Each Suborn operation affects exactly one piece")
+    if op.get("piece_state") not in (None, HIDDEN, REVEALED, SCOUTED):
+        raise CommandError("Unknown Suborn piece visibility")
+    if action == "place" and op.get("piece_state") not in (None, HIDDEN):
+        raise CommandError("Suborn places Warbands and Auxilia Hidden")
 
     # Only Warbands, Auxilia, or Allies — no Citadels
     if piece_type not in (WARBAND, AUXILIA, ALLY):
@@ -252,15 +342,16 @@ def _validate_suborn_operation(state, region, op):
             tribe = op.get("tribe")
             if tribe is not None:
                 ti = state.get("tribes", {}).get(tribe, {})
+                from fs_bot.board.pieces import tribe_has_ally_disc
                 if ti.get("allied_faction") != faction:
                     raise CommandError(
                         f"Tribe {tribe} is not a {faction} Ally"
                     )
                 treg = ti.get("region") or TRIBE_TO_REGION.get(tribe)
                 if treg != region:
-                    raise CommandError(
-                        f"Tribe {tribe} is not in {region}"
-                    )
+                    raise CommandError(f"Tribe {tribe} is not in {region}")
+                if not tribe_has_ally_disc(state, region, tribe, faction):
+                    raise CommandError("Suborn cannot remove a Citadel as an Ally")
         else:
             if piece_state:
                 avail = count_pieces_by_state(
@@ -280,7 +371,7 @@ def _validate_suborn_operation(state, region, op):
                 raise CommandError("Must specify tribe for Ally placement")
 
             # Tribe must be in region
-            tribes = get_tribes_in_region(region, state["scenario"])
+            tribes = suborn_tribes(state, region)
             if tribe not in tribes:
                 raise CommandError(f"Tribe {tribe} is not in {region}")
 
@@ -295,12 +386,11 @@ def _validate_suborn_operation(state, region, op):
                 raise CommandError(f"Tribe {tribe} is not Subdued")
 
             # Check stacking restriction — §1.4.2
-            td = get_tribe_data(tribe)
-            if (td.faction_restriction is not None
-                    and td.faction_restriction != faction):
+            restriction = TRIBE_FACTION_RESTRICTION.get(tribe)
+            if restriction is not None and restriction != faction:
                 raise CommandError(
                     f"Cannot place {faction} Ally at {tribe} — restricted "
-                    f"to {td.faction_restriction}"
+                    f"to {restriction}"
                 )
 
             # Check Available
@@ -309,7 +399,9 @@ def _validate_suborn_operation(state, region, op):
                 raise CommandError(f"No {faction} Allies Available")
         else:
             # Check Available for Warband/Auxilia
-            avail = get_available(state, faction, piece_type)
+            from fs_bot.engine.diviciacus import placement_available
+            avail = placement_available(state, region, faction, piece_type,
+                                        get_available(state, faction, piece_type))
             if avail < 1:
                 raise CommandError(
                     f"No {faction} {piece_type} Available"

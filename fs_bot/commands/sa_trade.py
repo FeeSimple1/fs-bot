@@ -142,7 +142,11 @@ def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None):
 
     total = 0
 
-    for region in supply_line_regions:
+    # The membership set must not determine the order of the visible/replayed
+    # earnings breakdown. Use the board's stable Region order.
+    for region in get_playable_regions(scenario, state.get("capabilities")):
+        if region not in supply_line_regions:
+            continue
         # Aedui Allied Tribes and Citadels — §4.4.1
         space = state["spaces"][region]
         aedui_pieces = space.get("pieces", {}).get(AEDUI, {})

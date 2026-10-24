@@ -876,6 +876,9 @@ def get_event_flags(card_id, shaded=False, scenario=None, card_edition=None):
         KeyError if card_id not found in any flag table.
     """
     idx = 1 if shaded else 0
+    from fs_bot.rules_consts import CARD_O38
+    if card_id == CARD_O38:
+        return (_BASE_FLAGS[38][1] if shaded else frozenset({PLACES_LEADER}))
 
     # A-prefix cards
     if isinstance(card_id, str) and card_id.startswith("A"):
@@ -966,7 +969,8 @@ def _any_active_capabilities(state):
     """Check if any Capabilities are currently active. state["capabilities"]
     maps each active Capability's card_id to the side in play (a string), so a
     non-empty dict means at least one Capability is active."""
-    return bool(state.get("capabilities", {}))
+    from fs_bot.cards.capabilities import get_active_capabilities
+    return bool(get_active_capabilities(state))
 
 
 def is_event_effective(state, card_id, shaded=False):
@@ -985,6 +989,12 @@ def is_event_effective(state, card_id, shaded=False):
         True if the event would have an effect, False if ineffective.
     """
     scenario = state.get("scenario")
+
+    from fs_bot.rules_consts import CARD_O38, LEADER
+    if card_id == CARD_O38 and not shaded:
+        from fs_bot.board.pieces import find_leader
+        return (find_leader(state, AEDUI) is None
+                and state.get("removed_pieces", {}).get(AEDUI, {}).get(LEADER, 0) > 0)
 
     # Capability cards are always effective per §8.1.1
     # ("Adding or removing a Capability is an effect")
@@ -1149,7 +1159,7 @@ def is_event_effective(state, card_id, shaded=False):
 # Capability in final year check
 # ---------------------------------------------------------------------------
 
-def is_capability_final_year(state, card_id):
+def is_capability_final_year(state, card_id, shaded=None):
     """Check if this is a Capability card and the next Winter is the last.
 
     Per §8.1.1: Non-players decline Capabilities during the last year.
@@ -1163,6 +1173,11 @@ def is_capability_final_year(state, card_id):
         False otherwise.
     """
     scenario = state.get("scenario")
+    from fs_bot.rules_consts import CARD_O38
+    # O38's unshaded side places a piece; only its shaded side is a
+    # Capability (A Card Reference). A card-level query remains supported.
+    if card_id == CARD_O38 and shaded is False:
+        return False
     if not is_capability_card(card_id, scenario):
         return False
 
@@ -1212,7 +1227,7 @@ def should_skip_event(state, card_id, faction):
         pass
 
     # Check Capability in final year
-    if is_capability_final_year(state, card_id):
+    if is_capability_final_year(state, card_id, shaded=shaded):
         return True
 
     # Check if event is ineffective

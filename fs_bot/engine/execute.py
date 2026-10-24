@@ -27,6 +27,7 @@ Design notes:
 """
 
 from fs_bot.rules_consts import EVENT_SHADED
+from fs_bot.engine.diviciacus import command_scope as _diviciacus_command_scope
 from fs_bot.commands.common import CommandError, free_action
 from fs_bot.board.pieces import PieceError
 from fs_bot.commands.seize import seize_in_region, get_dispersible_tribes
@@ -34,7 +35,8 @@ from fs_bot.commands.raid import raid_in_region, max_raiders_per_region
 from fs_bot.commands.rally import rally_in_region
 from fs_bot.battle.resolve import resolve_battle
 from fs_bot.commands.sa_besiege import get_besiege_targets
-from fs_bot.commands.rally import recruit_in_region
+from fs_bot.commands.rally import (
+    recruit_in_region, preserve_supply_agreements, supply_query_scope)
 from fs_bot.commands.march import march_group, _flip_origin_pieces
 from fs_bot.board.pieces import count_pieces, get_leader_in_region
 from fs_bot.map.map_data import get_playable_regions, get_playable_regions_for_state
@@ -155,6 +157,7 @@ def _sa_runs_before_command(command, sa):
     return False
 
 
+@preserve_supply_agreements
 def execute_decision(state, faction, decision):
     """Execute a decision, rolling back a human turn that executes no Command.
 
@@ -164,7 +167,13 @@ def execute_decision(state, faction, decision):
     """
     action = decision.get("player_action") if not decision.get("bot_action") else None
     if action is None:
-        return _execute_decision(state, faction, decision)
+        from fs_bot.engine.diviciacus_planning import clear_confirmation
+        try:
+            return _execute_decision(state, faction, decision)
+        finally:
+            # A skipped or interrupted NP Command must not leave an old
+            # agreement available for a later, independently chosen action.
+            clear_confirmation(state, faction)
     from fs_bot.engine.action_validation import validate_human_structure
     error = validate_human_structure(state, faction, action)
     if error:
@@ -598,49 +607,68 @@ def _resolve_free_command(state, faction, allowed_regions=None,
         if response.get("decline"):
             return {"executed": False, "command": None, "reason": "free Command declined"}
         return execute_free_action_plan(state, faction, request, response)
-    planning_state = _free_command_planning_state(
-        state, faction, allowed_regions, exclude_commands, with_sa=with_sa)
-    try:
-        bot_action = (_planner(planning_state) if _planner is not None
-                      else dispatch_bot_turn(planning_state, faction))
-        if not isinstance(bot_action, dict):
-            raise ValueError("flowchart did not return an action")
-        cmd = bot_action.get("command")
-        if cmd == "Pass":
-            _commit_planning_rng(state, planning_state)
-            return {"executed": False, "command": None,
-                    "declined_no_effect": True,
-                    "reason": "no applicable free Command after flowchart priorities"}
-        if cmd in (None, _CMD_EVENT) or cmd in set(exclude_commands or ()):
-            raise ValueError(f"flowchart selected a disallowed free Command: {cmd!r}")
-        if allowed_regions is not None:
-            bot_action = _constrain_bot_action(
-                bot_action, set(allowed_regions), state=planning_state, faction=faction)
-            if bot_action is None:
-                raise ValueError("scoped flowchart selected no action in the allowed Regions")
-        if limited:
-            # Normalize implicit March origins even without a geographic grant.
-            if bot_action.get("command") == _CMD_MARCH and allowed_regions is None:
-                bot_action = _constrain_bot_action(
-                    bot_action, set(get_playable_regions_for_state(planning_state, faction)),
-                    state=planning_state, faction=faction, constrain_sa=False)
-            # Choose the first Region AFTER intersecting the Event scope.
-            primary = _primary_command_region(bot_action)
-            if primary is not None:
-                if cmd in (_CMD_RALLY, _CMD_RECRUIT):
-                    planning_state, bot_action = _replan_placement_regions(
-                        planning_state, faction, cmd, {primary}, bot_action)
-                else:
+    from fs_bot.engine.diviciacus import force_scope
+    from fs_bot.engine.diviciacus_planning import (
+        plan_with_diviciacus, confirm_plan, clear_confirmation)
+    denied_regions = set()
+    while True:
+        planning_state = _free_command_planning_state(
+            state, faction, allowed_regions, exclude_commands, with_sa=with_sa)
+        planning_state['_diviciacus_refused'] = {faction: sorted(denied_regions)}
+        try:
+            bot_action = (plan_with_diviciacus(planning_state, faction, _planner) if _planner is not None
+                          else dispatch_bot_turn(planning_state, faction))
+            if not isinstance(bot_action, dict):
+                raise ValueError("flowchart did not return an action")
+            cmd = bot_action.get("command")
+            if cmd == "Pass":
+                _commit_planning_rng(state, planning_state)
+                return {"executed": False, "command": None,
+                        "declined_no_effect": True,
+                        "reason": "no applicable free Command after flowchart priorities"}
+            if cmd in (None, _CMD_EVENT) or cmd in set(exclude_commands or ()):
+                raise ValueError(f"flowchart selected a disallowed free Command: {cmd!r}")
+            with force_scope(planning_state, faction,
+                             (bot_action.get("details") or {}).get("diviciacus_regions", [])):
+                if allowed_regions is not None:
                     bot_action = _constrain_bot_action(
-                        bot_action, {primary}, state=planning_state, faction=faction,
-                        constrain_sa=False)
-        if bot_action is None:
-            raise ValueError("flowchart selected an empty Limited Command")
-    except Exception as exc:
-        return {"executed": False, "command": None, "reason": repr(exc)}
+                        bot_action, set(allowed_regions), state=planning_state, faction=faction)
+                    if bot_action is None:
+                        raise ValueError("scoped flowchart selected no action in the allowed Regions")
+                if limited:
+                    # Normalize implicit March origins even without a geographic grant.
+                    if bot_action.get("command") == _CMD_MARCH and allowed_regions is None:
+                        bot_action = _constrain_bot_action(
+                            bot_action, set(get_playable_regions_for_state(planning_state, faction)),
+                            state=planning_state, faction=faction, constrain_sa=False)
+                    # Choose the first Region AFTER intersecting the Event scope.
+                    primary = _primary_command_region(bot_action)
+                    if primary is not None:
+                        if cmd in (_CMD_RALLY, _CMD_RECRUIT):
+                            planning_state, bot_action = _replan_placement_regions(
+                                planning_state, faction, cmd, {primary}, bot_action)
+                        else:
+                            bot_action = _constrain_bot_action(
+                                bot_action, {primary}, state=planning_state, faction=faction,
+                                constrain_sa=False)
+                if bot_action is None:
+                    raise ValueError("flowchart selected an empty Limited Command")
+        except Exception as exc:
+            return {"executed": False, "command": None, "reason": repr(exc)}
+        # Live agreement belongs to this concrete, already-scoped grant. A
+        # refusal reruns the same grant from its original RNG, before costs or
+        # pieces change. Detached previews never consume a human response.
+        refused = confirm_plan(state, faction, bot_action)
+        new_refusals = set(refused) - denied_regions
+        if not new_refusals:
+            break
+        denied_regions.update(new_refusals)
     _commit_planning_rng(state, planning_state)
-    with _command_execution_scope(state, allowed_regions, with_sa):
-        res = _execute_bot_command(state, faction, bot_action, with_sa=with_sa)
+    try:
+        with _command_execution_scope(state, allowed_regions, with_sa):
+            res = _execute_bot_command(state, faction, bot_action, with_sa=with_sa)
+    finally:
+        clear_confirmation(state, faction, bot_action)
     if res is None:
         return {"executed": False, "command": cmd,
                 "reason": "chosen Command not executable"}
@@ -662,6 +690,7 @@ def _free_command_planning_state(state, faction, allowed_regions=None,
     planning["is_second_eligible"] = False
     planning["is_limited"] = False
     planning["_planning_free_command"] = True
+    planning["_diviciacus_preview"] = True
     planning["_free_action_factions"] = set(planning.get("_free_action_factions", ())) | {faction}
     planning["_command_region_scope"] = (None if allowed_regions is None
                                          else set(allowed_regions))
@@ -820,37 +849,52 @@ def _resolve_free_rally_default(state, faction, allowed_regions=None,
                 "reason": "no Rally node for Faction"}
     import importlib
     command = _CMD_RECRUIT if faction == _ROMANS_F else _CMD_RALLY
-    planning = _free_command_planning_state(
-        state, faction, allowed_regions, forced_command=command)
-    try:
-        node = getattr(importlib.import_module(spec[0]), spec[1])
-        bot_action = node(planning)
-        if not isinstance(bot_action, dict):
-            raise ValueError("Rally node did not return an action")
-        cmd = bot_action.get("command")
-        if cmd not in (_CMD_RALLY, _CMD_RECRUIT):
-            if cmd not in (_CMD_BATTLE, _CMD_MARCH, _CMD_RAID, _CMD_SEIZE, "Pass"):
-                raise ValueError(f"Rally node returned an invalid action: {cmd!r}")
-            # The forced Rally process's IF NONE means its placement
-            # priorities were exhausted; do not execute its other Command.
-            _commit_planning_rng(state, planning)
-            return {"executed": False, "command": command,
-                    "declined_no_effect": True,
-                    "reason": "no placement available for the granted Rally"}
-        if allowed_regions is not None:
-            bot_action = _constrain_bot_action(bot_action, set(allowed_regions),
-                                               state=planning, faction=faction)
-            if bot_action is None:
-                raise ValueError("scoped Rally node selected no allowed Region")
-        if max_regions is not None:
-            order = _plan_region_order(bot_action)
-            if len(order) > max_regions:
-                planning, bot_action = _replan_placement_regions(
-                    planning, faction, command, set(order[:max_regions]), bot_action)
-    except Exception as exc:
-        return {"executed": False, "command": command, "reason": repr(exc)}
+    from fs_bot.engine.diviciacus import force_scope
+    from fs_bot.engine.diviciacus_planning import (
+        plan_with_diviciacus, confirm_plan, clear_confirmation)
+    denied_regions = set()
+    while True:
+        planning = _free_command_planning_state(
+            state, faction, allowed_regions, forced_command=command)
+        planning['_diviciacus_refused'] = {faction: sorted(denied_regions)}
+        try:
+            node = getattr(importlib.import_module(spec[0]), spec[1])
+            bot_action = plan_with_diviciacus(planning, faction, node)
+            if not isinstance(bot_action, dict):
+                raise ValueError("Rally node did not return an action")
+            cmd = bot_action.get("command")
+            if cmd != command:
+                if cmd not in (_CMD_BATTLE, _CMD_MARCH, _CMD_RAID, _CMD_SEIZE, "Pass"):
+                    raise ValueError(f"Rally node returned an invalid action: {cmd!r}")
+                # The forced Rally process's IF NONE means its placement
+                # priorities were exhausted; do not execute its other Command.
+                _commit_planning_rng(state, planning)
+                return {"executed": False, "command": command,
+                        "declined_no_effect": True,
+                        "reason": "no placement available for the granted Rally"}
+            with force_scope(planning, faction,
+                             (bot_action.get("details") or {}).get("diviciacus_regions", [])):
+                if allowed_regions is not None:
+                    bot_action = _constrain_bot_action(bot_action, set(allowed_regions),
+                                                       state=planning, faction=faction)
+                    if bot_action is None:
+                        raise ValueError("scoped Rally node selected no allowed Region")
+                if max_regions is not None:
+                    order = _plan_region_order(bot_action)
+                    if len(order) > max_regions:
+                        planning, bot_action = _replan_placement_regions(
+                            planning, faction, command, set(order[:max_regions]), bot_action)
+        except Exception as exc:
+            return {"executed": False, "command": command, "reason": repr(exc)}
+        refused = set(confirm_plan(state, faction, bot_action)) - denied_regions
+        if not refused:
+            break
+        denied_regions.update(refused)
     _commit_planning_rng(state, planning)
-    res = _execute_bot_command(state, faction, bot_action)
+    try:
+        res = _execute_bot_command(state, faction, bot_action)
+    finally:
+        clear_confirmation(state, faction, bot_action)
     return res if res is not None else {"executed": False, "command": cmd,
                                         "reason": "Rally not executable"}
 
@@ -1004,6 +1048,32 @@ def _choose_free_battle(state, faction, allowed_regions):
         if best is None or enemy_mobile > best[2]:
             best = (region, defender, enemy_mobile)
     return (best[0], best[1]) if best else (None, None)
+
+
+def _plan_free_battle_command(state, faction, allowed_regions, *,
+                              no_retreat=False, second=False):
+    """Finalize one Event Battle with the pieces its owners actually lend."""
+    from fs_bot.engine.diviciacus_planning import plan_with_diviciacus
+    allowed_regions = set(allowed_regions)
+    def planner(sim):
+        if second:
+            region = next(iter(sorted(allowed_regions)), None)
+            defender = _second_battle_worthwhile(sim, faction, region) if region else None
+        else:
+            region, defender = _choose_free_battle(sim, faction, allowed_regions)
+        if region is None or defender is None:
+            return {"command": "Pass"}
+        details = {"battle_plan": [{"region": region, "target": defender}]}
+        if no_retreat:
+            details["no_retreat"] = True
+        return {"command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
+                "regions": [region], "sa_regions": [], "details": details}
+    with _command_execution_scope(state, allowed_regions, False):
+        action = plan_with_diviciacus(state, faction, planner)
+    if action.get("command") != _CMD_BATTLE:
+        return None
+    _request_event_diviciacus(state, faction, action, state.get("current_card"))
+    return action
 
 
 def _within1_of(state, region):
@@ -1179,20 +1249,17 @@ def _resolve_free_actions_scoped(state, faction):
         if not mods.get(flag):
             continue
         allowed = _free_battle_region_set(state, flag)
-        region, defender = _choose_free_battle(state, faction, allowed)
-        if region is None:
+        action = _plan_free_battle_command(state, faction, allowed, no_retreat=True)
+        if action is None:
             results.append({"free_action": "battle", "flag": flag,
                             "executed": False, "reason": "no valid target",
                             **({"declined_no_effect": True}
                                if flag == "card_A21_first_no_retreat" else {})})
             continue
-        from fs_bot.rules_consts import ARVERNI as _ARVERNI
-        _details = {"battle_plan": [{"region": region, "target": defender}],
-                    "no_retreat": True}
+        chosen = action["details"]["battle_plan"][0]
+        region, defender = chosen["region"], chosen["target"]
         try:
-            res = _execute_battle(state, faction, {
-                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
-                "sa_regions": [], "details": _details})
+            res = _execute_battle(state, faction, action)
         except _EXEC_ERRORS as exc:
             results.append({"free_action": "battle", "flag": flag,
                             "executed": False, "reason": repr(exc)})
@@ -1203,14 +1270,12 @@ def _resolve_free_actions_scoped(state, faction):
         # Optional second Battle in the same Region (Retreat allowed).
         dbl = _DOUBLE_BATTLE_FLAG.get(flag)
         if dbl and mods.get(dbl):
-            second = _second_battle_worthwhile(state, faction, region)
-            if second is not None:
+            second_action = _plan_free_battle_command(
+                state, faction, {region}, second=True)
+            if second_action is not None:
+                second = second_action["details"]["battle_plan"][0]["target"]
                 try:
-                    res2 = _execute_battle(state, faction, {
-                        "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
-                        "sa_regions": [],
-                        "details": {"battle_plan": [{"region": region,
-                                                     "target": second}]}})
+                    res2 = _execute_battle(state, faction, second_action)
                     results.append({"free_action": "battle_second",
                                     "flag": dbl, "region": region,
                                     "defender": second, "result": res2})
@@ -1803,27 +1868,83 @@ def _card25_battle_target(state, region, faction):
     return _rank_free_battle_defender(state, region, faction)
 
 
+def _plan_fixed_event_battle(state, faction, card_id, allowed_regions, select_target):
+    """Plan a specially modified Battle with explicit human cooperation."""
+    from fs_bot.engine.diviciacus_planning import plan_with_diviciacus
+    from fs_bot.engine.diviciacus import eligible_regions
+    def planner(sim):
+        region, defender = select_target(sim)
+        if region is None or defender is None:
+            return {"command": "Pass"}
+        return {"command": _CMD_BATTLE, "regions": [region],
+                "details": {"battle_plan": [{"region": region, "target": defender}]}}
+    with _command_execution_scope(state, set(allowed_regions), False):
+        action = plan_with_diviciacus(state, faction, planner)
+    if action.get("command") != _CMD_BATTLE:
+        return None
+    _request_event_diviciacus(state, faction, action, card_id)
+    return action
+
+
+def _request_event_diviciacus(state, faction, action, card_id):
+    """A human explicitly opts into a loan for a default Event Command."""
+    from fs_bot.engine.diviciacus import eligible_regions, _targets
+    from fs_bot.engine.action_validation import command_regions
+    if faction in state.get("non_player_factions", set()):
+        return
+    action.setdefault("details", {})["diviciacus_regions"] = []
+    regions = sorted(set(command_regions(action)) & set(eligible_regions(state, faction)))
+    if state.get("_diviciacus_preview") or not regions:
+        return
+    from fs_bot.engine.agent import AGREEMENT, consult_agent
+    response = consult_agent(state, faction, {
+        "kind": AGREEMENT, "request_type": "diviciacus_command",
+        "requesting_faction": faction,
+        "context": {"command": action["command"], "card_id": card_id,
+                    "regions": regions,
+                    "targets": {region: _targets(action, region) for region in regions}}})
+    if response is True or (isinstance(response, dict) and response.get("agree") is True):
+        action["details"]["diviciacus_regions"] = regions
+
+
+@_diviciacus_command_scope
+def _resolve_fixed_event_battle(state, faction, action, **options):
+    """Preserve Event Battle modifiers inside the actual Command scope."""
+    from fs_bot.engine.diviciacus import defense_scope
+    from fs_bot.battle.resolve import resolve_battle
+    entry = action["details"]["battle_plan"][0]
+    region, defender = entry["region"], entry["target"]
+    with defense_scope(state, region, faction, defender):
+        if "retreat_declaration" not in options:
+            rd, rr = _decide_defender_retreat(state, region, faction, defender, False)
+            options.update(retreat_declaration=rd, retreat_region=rr)
+        return resolve_battle(state, region, faction, defender, **options)
+
+
 def _resolve_card25_battle(state, faction, region, extra):
     """Card 25 Aquitani (unshaded): free Battle in Pictones/Arverni with
     ``extra`` extra Losses and 1 Ally (not Citadel) removed first."""
-    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.engine.diviciacus_planning import clear_confirmation
     if region is None:
         return [{"free_action": "battle", "flag": "card_25", "executed": False,
                  "declined_no_effect": True,
                  "reason": "no Pictones/Arverni Battle target"}]
-    defender = _card25_battle_target(state, region, faction)
-    if defender is None:
+    action = _plan_fixed_event_battle(
+        state, faction, 25, {region},
+        lambda sim: (region, _card25_battle_target(sim, region, faction)))
+    if action is None:
         return [{"free_action": "battle", "flag": "card_25", "executed": False,
                  "declined_no_effect": True,
                  "reason": "no enemy in Region"}]
-    rd, rr = _decide_defender_retreat(state, region, faction, defender, False)
+    defender = action["details"]["battle_plan"][0]["target"]
     try:
-        res = resolve_battle(state, region, faction, defender,
-                             extra_losses=extra, ally_first=True,
-                             retreat_declaration=rd, retreat_region=rr)
+        res = _resolve_fixed_event_battle(state, faction, action,
+                                         extra_losses=extra, ally_first=True)
     except _EXEC_ERRORS as exc:
         return [{"free_action": "battle", "flag": "card_25",
                  "executed": False, "reason": repr(exc)}]
+    finally:
+        clear_confirmation(state, faction, action)
     return [{"free_action": "battle", "flag": "card_25", "region": region,
              "defender": defender, "result": res}]
 
@@ -1857,21 +1978,28 @@ def _card36_battle_target(state, faction):
 
 def _resolve_card36_battle(state, faction):
     """Card 36: Battle a Gallic Faction, without Retreat/Counterattack/Citadel."""
-    from fs_bot.battle.resolve import resolve_battle
-    best = _card36_battle_target(state, faction)
-    if best is None:
+    from fs_bot.engine.diviciacus_planning import clear_confirmation
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    def select(sim):
+        best = _card36_battle_target(sim, faction)
+        return best[:2] if best else (None, None)
+    action = _plan_fixed_event_battle(
+        state, faction, 36, get_playable_regions_for_state(state), select)
+    if action is None:
         return [{"free_action": "battle", "flag": "card_36", "executed": False,
                  "declined_no_effect": True,
                  "reason": "no Gallic Faction to Battle"}]
-    R, d, _m = best
+    R, d = (action["details"]["battle_plan"][0][key] for key in ("region", "target"))
     try:
-        res = resolve_battle(state, R, faction, d,
+        res = _resolve_fixed_event_battle(state, faction, action,
                              retreat_declaration=False,
                              no_counterattack=True, ignore_citadel=True,
                              attacker_stays_hidden=True)
     except _EXEC_ERRORS as exc:
         return [{"free_action": "battle", "flag": "card_36",
                  "executed": False, "reason": repr(exc)}]
+    finally:
+        clear_confirmation(state, faction, action)
     return [{"free_action": "battle", "flag": "card_36", "region": R,
              "defender": d, "result": res}]
 
@@ -2501,102 +2629,142 @@ def _resolve_card72_hidden_march_battle(state, faction):
     return resolve_impetuosity(state, faction)
 
 
+def _card70_route(state, origin, destination, max_steps):
+    """Shortest legal route reaches the sole destination without early stops."""
+    from collections import deque
+    from fs_bot.rules_consts import ROMANS
+    from fs_bot.map.map_data import get_adjacent_for_state, get_playable_regions_for_state
+    from fs_bot.commands.march import _check_crossing_stop
+    playable = set(get_playable_regions_for_state(state, ROMANS))
+    queue = deque([(origin, [])])
+    seen = {origin}
+    while queue:
+        current, path = queue.popleft()
+        if len(path) >= max_steps:
+            continue
+        for region in sorted(get_adjacent_for_state(state, current, ROMANS)):
+            if region not in playable or region in seen:
+                continue
+            route = path + [region]
+            if region == destination:
+                return route
+            if not _check_crossing_stop(state, current, region, ROMANS)[0]:
+                seen.add(region)
+                queue.append((region, route))
+    return None
+
+
 def _resolve_card70_march_battle(state, target_regions, legion_limit):
-    """Card 70 Camulogenus (unshaded): "Romans may free March up to 4 Legions
-    & any Auxilia to Atrebates, Carnutes, or Mandubii Region and free Battle
-    there." Pick the named Region with the best Roman Battle target (8.8.1)
-    that has an adjacent Roman group; March <= legion_limit Legions and all
-    Auxilia from the strongest adjacent source in; free Battle there (no
-    double Auxilia)."""
-    from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA
-    from fs_bot.board.pieces import count_pieces, move_piece
-    from fs_bot.board.control import refresh_all_control
+    """Card 70: a bounded free Roman March, then a separate free Battle."""
+    from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA, LEADER, CAESAR
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     from fs_bot.bots.roman_bot import _rank_battle_targets
     from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.engine.diviciacus_planning import plan_with_diviciacus, clear_confirmation
     scen = state["scenario"]
     playable = set(get_playable_regions(scen, state.get("capabilities")))
     targets = [r for r in (target_regions or []) if r in playable]
 
-    # Rank the named Regions by best available Roman Battle target there or
-    # reachable: choose the (T, source) maximizing enemy mobile force in T.
-    best = None  # (enemy_mobile, T, src, defender)
-    for T in targets:
-        defenders = _rank_battle_targets(state, T, scen)
-        # Source: an adjacent Region with Roman Legions/Auxilia.
-        src_best = None
-        for src in get_adjacent(T, scen):
-            leg = count_pieces(state, src, ROMANS, LEGION)
-            aux = count_pieces(state, src, ROMANS, AUXILIA)
-            if leg + aux <= 0:
+    def march_planner(sim):
+        # Retain the existing target/source priorities, but evaluate and move
+        # the actual agreed cohort through the ordinary March machinery.
+        best = None
+        for target in targets:
+            defenders = _rank_battle_targets(sim, target, scen)
+            source = None
+            for origin in sorted(playable - {target}):
+                mobile = count_pieces(sim, origin, ROMANS, LEGION) + count_pieces(sim, origin, ROMANS, AUXILIA)
+                leader = get_leader_in_region(sim, origin, ROMANS)
+                route = _card70_route(sim, origin, target, 3 if leader == CAESAR else 2)
+                if route and mobile > 0 and (source is None or mobile > source[1]):
+                    source = (origin, mobile, route, leader if leader == CAESAR else None)
+            mobile_enemy = 0
+            if defenders:
+                mobile_enemy = sum(count_pieces(sim, target, defenders[0], piece)
+                                   for piece in ("Warband", AUXILIA, LEGION))
+            if source is None and not _attacker_has_force(sim, target, ROMANS):
                 continue
-            if src_best is None or (leg + aux) > src_best[1]:
-                src_best = (src, leg + aux)
-        # Enemy force already in T (for ranking) — Battle is fought after March.
-        em = 0
-        if defenders:
-            d = defenders[0]
-            em = (count_pieces(state, T, d, "Warband")
-                  + count_pieces(state, T, d, AUXILIA)
-                  + count_pieces(state, T, d, LEGION))
-        # Need either an enemy already in T or pieces to bring + an enemy.
-        if src_best is None and not defenders:
-            continue
-        if best is None or em > best[0]:
-            best = (em, T, src_best[0] if src_best else None,
-                    defenders[0] if defenders else None)
-    if best is None:
-        return [{"free_action": "march_battle", "flag":
-                 "card_70_roman_march_battle", "executed": False,
-                 "reason": "no named Region with a Roman group or target"}]
+            if best is None or mobile_enemy > best[0]:
+                best = (mobile_enemy, target, source)
+        if best is None:
+            return {"command": "Pass"}
+        _, target, source_data = best
+        if source_data is None:
+            return {"command": "Pass", "details": {"card70_target": target}}
+        source, _, route, leader = source_data
+        group = {LEGION: min(legion_limit, count_pieces(sim, source, ROMANS, LEGION)),
+                 AUXILIA: count_pieces(sim, source, ROMANS, AUXILIA), LEADER: leader}
+        return {"command": _CMD_MARCH, "sa": SA_ACTION_NONE_LABEL,
+                "regions": [source], "details": {
+                    "card70_target": target, "origins": [source],
+                    "destinations": [target], "routes": {source: route},
+                    "groups": {source: group}}}
 
-    _em, T, src, _d = best
+    action = plan_with_diviciacus(state, ROMANS, march_planner)
+    target = (action.get("details") or {}).get("card70_target")
+    if target is None:
+        return [{"free_action": "march_battle", "flag": "card_70_roman_march_battle",
+                 "executed": False, "reason": "no named Region with a Roman group or target"}]
     moved = {"legions": 0, "auxilia": 0}
-    if src is not None:
-        leg = count_pieces(state, src, ROMANS, LEGION)
-        aux = count_pieces(state, src, ROMANS, AUXILIA)
-        move_leg = min(legion_limit, leg)
-        if move_leg:
-            move_piece(state, src, T, ROMANS, LEGION, count=move_leg)
-            moved["legions"] = move_leg
-        if aux:
-            moved["auxilia"] = _move_roman_aux(state, src, T, aux)
-        refresh_all_control(state)
-    defenders = _rank_battle_targets(state, T, scen)
-    if not defenders:
+    if action.get("command") == _CMD_MARCH:
+        _request_event_diviciacus(state, ROMANS, action, 70)
+        source = action["details"]["origins"][0]
+        group = action["details"]["groups"][source]
+        if ROMANS not in state.get("non_player_factions", set()):
+            from fs_bot.engine.diviciacus import force_scope
+            with force_scope(state, ROMANS, action["details"].get("diviciacus_regions", [])):
+                group[AUXILIA] = count_pieces(state, source, ROMANS, AUXILIA)
+        try:
+            march = _execute_march(state, ROMANS, action, free=True, moving_only=True)
+        finally:
+            clear_confirmation(state, ROMANS, action)
+        if not march["executed"]:
+            return [{"free_action": "march", "flag": "card_70_roman_march_battle",
+                     "region": target, "result": march}]
+        moved = {"legions": group[LEGION], "auxilia": group[AUXILIA]}
+        if not any(entry.get("final_region") == target for entry in march["marches"]):
+            return [{"free_action": "march", "flag": "card_70_roman_march_battle",
+                     "region": target, "moved": moved, "result": march,
+                     "battle": None, "reason": "moving cohort could not reach the Battle destination"}]
+
+    def select_battle(sim):
+        defenders = _rank_battle_targets(sim, target, scen)
+        return target, defenders[0] if defenders else None
+    action = _plan_fixed_event_battle(state, ROMANS, 70, {target}, select_battle)
+    if action is None:
         return [{"free_action": "march", "flag": "card_70_roman_march_battle",
-                 "region": T, "moved": moved, "battle": None,
+                 "region": target, "moved": moved, "battle": None,
                  "reason": "no Battle target in T after March"}]
-    defender = defenders[0]
-    rd, rr = _decide_defender_retreat(state, T, ROMANS, defender, False)
+    defender = action["details"]["battle_plan"][0]["target"]
     try:
-        res = resolve_battle(state, T, ROMANS, defender,
-                             retreat_declaration=rd, retreat_region=rr)
+        res = _resolve_fixed_event_battle(state, ROMANS, action)
     except _EXEC_ERRORS as exc:
-        return [{"free_action": "march_battle",
-                 "flag": "card_70_roman_march_battle", "region": T,
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "march_battle",
-             "flag": "card_70_roman_march_battle", "region": T,
-             "defender": defender, "moved": moved, "result": res}]
+        return [{"free_action": "march_battle", "flag": "card_70_roman_march_battle",
+                 "region": target, "executed": False, "reason": repr(exc)}]
+    finally:
+        clear_confirmation(state, ROMANS, action)
+    return [{"free_action": "march_battle", "flag": "card_70_roman_march_battle",
+             "region": target, "defender": defender, "moved": moved, "result": res}]
 
 
 def _resolve_card2_battle(state, faction, region):
     """Card 2 Legiones (shaded): the acting Faction free Battles the Romans in
     ``region`` with auto_legion_loss (the first Roman Loss removes a Legion)."""
     from fs_bot.rules_consts import ROMANS
-    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.engine.diviciacus_planning import clear_confirmation
     if region is None or faction == ROMANS:
         return [{"free_action": "battle", "flag": "card_2", "executed": False,
                  "reason": "no battle region or Roman actor"}]
-    rd, rr = _decide_defender_retreat(state, region, faction, ROMANS, False)
+    action = _plan_fixed_event_battle(
+        state, faction, 2, {region}, lambda sim: (region, ROMANS))
     try:
-        res = resolve_battle(state, region, faction, ROMANS,
-                             auto_legion_loss=True,
-                             retreat_declaration=rd, retreat_region=rr)
+        res = _resolve_fixed_event_battle(state, faction, action,
+                                         auto_legion_loss=True)
     except _EXEC_ERRORS as exc:
         return [{"free_action": "battle", "flag": "card_2",
                  "executed": False, "reason": repr(exc)}]
+    finally:
+        clear_confirmation(state, faction, action)
     return [{"free_action": "battle", "flag": "card_2", "region": region,
              "defender": ROMANS, "result": res}]
 
@@ -2608,17 +2776,21 @@ def _free_double_aux_battle(state, region, auxilia_only=False):
     restricts the attack to Auxilia (card 11 Ariovistus)."""
     from fs_bot.rules_consts import ROMANS
     from fs_bot.bots.roman_bot import _rank_battle_targets
-    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.engine.diviciacus_planning import clear_confirmation
     if region is None:
         return None
-    targets = _rank_battle_targets(state, region, state["scenario"])
-    if not targets:
+    def select(sim):
+        targets = _rank_battle_targets(sim, region, sim["scenario"])
+        return region, targets[0] if targets else None
+    action = _plan_fixed_event_battle(
+        state, ROMANS, "11a" if auxilia_only else 11, {region}, select)
+    if action is None:
         return None
-    defender = targets[0]
-    rd, rr = _decide_defender_retreat(state, region, ROMANS, defender, False)
-    return resolve_battle(state, region, ROMANS, defender,
-                          double_auxilia=True, auxilia_only_attack=auxilia_only,
-                          retreat_declaration=rd, retreat_region=rr)
+    try:
+        return _resolve_fixed_event_battle(state, ROMANS, action,
+            double_auxilia=True, auxilia_only_attack=auxilia_only)
+    finally:
+        clear_confirmation(state, ROMANS, action)
 
 
 def _resolve_double_aux_battle_card(state, region, flag):
@@ -2688,8 +2860,10 @@ def _resolve_card6_scout_battle(state):
                     "reason": "free Battle declined"})
         return out
     if battle_plan is None:
-        battle_plan = _card6_battle_plan(state)
-        if battle_plan is None:
+        from fs_bot.engine.diviciacus_planning import plan_with_diviciacus
+        battle_plan = plan_with_diviciacus(state, ROMANS,
+            lambda sim: _card6_battle_plan(sim) or {"command": "Pass"})
+        if battle_plan.get("command") != _CMD_BATTLE:
             out.append({"free_action": "battle", "flag": "card_6",
                         "executed": False, "declined_no_effect": True,
                         "reason": "no valid Battle Region"})
@@ -3061,14 +3235,12 @@ def _resolve_a58_battle_seize(state, faction):
         return out
     belgica = set(BELGICA_REGIONS)
     # Free Battle in Belgica (Retreat allowed — the card sets no no-Retreat).
-    region, defender = _choose_free_battle(state, faction, belgica)
-    if region is not None:
+    action = _plan_free_battle_command(state, faction, belgica)
+    if action is not None:
+        chosen = action["details"]["battle_plan"][0]
+        region, defender = chosen["region"], chosen["target"]
         try:
-            res = _execute_battle(state, faction, {
-                "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
-                "sa_regions": [],
-                "details": {"battle_plan": [{"region": region,
-                                             "target": defender}]}})
+            res = _execute_battle(state, faction, action)
             out.append({"free_action": "battle", "flag":
                         "card_A58_roman_battle_seize", "region": region,
                         "defender": defender, "result": res})
@@ -3179,6 +3351,7 @@ def _execute_event(state, faction, bot_action, *, human=False):
     return result
 
 
+@_diviciacus_command_scope
 def _execute_seize(state, faction, bot_action):
     """Execute a Seize Command — §3.2.3, target priorities §8.8.5.
 
@@ -3235,6 +3408,7 @@ def _execute_seize(state, faction, bot_action):
     }
 
 
+@_diviciacus_command_scope
 def _execute_raid(state, faction, bot_action):
     """Execute a Raid Command — §3.3.3.
 
@@ -3295,6 +3469,7 @@ def _execute_raid(state, faction, bot_action):
     }
 
 
+@_diviciacus_command_scope
 def _execute_rally(state, faction, bot_action):
     """Execute a Rally Command — §3.3.1 (Gallic) / A8.7.4 (German).
 
@@ -3379,6 +3554,7 @@ def _execute_rally(state, faction, bot_action):
     }
 
 
+@_diviciacus_command_scope
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _full_loss_warbands=0, _double_auxilia=False, _ambush_anywhere=False,
                     _battle_observer=None):
@@ -3484,6 +3660,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
 
     battles = []
     errors = []
+    diviciacus_blocks = []
     for entry in battle_plan:
         region = entry.get("region")
         if region is None:
@@ -3496,140 +3673,152 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             defender = targets[0] if targets else None
         if defender is None:
             continue
-        # A Battle requires the defender to actually be present in the Region
-        # (§3.x) — skip a no-target entry rather than resolving a no-op.
-        if count_pieces(state, region, defender) <= 0:
-            errors.append({"region": region, "defender": defender,
-                           "error": "defender not present"})
-            continue
-
-        # §3.2.4 / §3.3.4 / A3.4.4: pay once for the selected Battle
-        # Region, before any Battle effects or defender decisions. Event
-        # actions waive the cost through their scoped §5.4 grant.
-        from fs_bot.commands.common import battle_cost
-        cost = 0 if region in _paid_regions else battle_cost(state, region, faction)
-        if state["resources"].get(faction, 0) < cost:
-            errors.append({"region": region, "defender": defender,
-                           "error": f"Not enough Resources for Battle (need {cost})"})
-            continue
-        state["resources"][faction] = state["resources"].get(faction, 0) - cost
-
-        is_ambush = sa == _SA_AMBUSH and region in sa_regions
-        if is_ambush and not _ambush_anywhere:
-            from fs_bot.commands.sa_ambush import validate_ambush_region
-            valid, reason = validate_ambush_region(
-                state, region, faction, defender,
-                allied_factions=allied_factions)
-            if not valid:
-                errors.append({"region": region, "sa": sa, "error": reason})
-                is_ambush = False
-
-        besiege_target = None
-        if sa == _SA_BESIEGE and region in sa_regions:
-            from fs_bot.commands.sa_besiege import validate_besiege_region
-            valid, reason = validate_besiege_region(state, region, defender)
-            if valid:
-                options = get_besiege_targets(state, region, defender)
-                if options:
-                    besiege_target = options[0]  # Citadel > Ally > Settlement
-            else:
-                errors.append({"region": region, "sa": sa, "error": reason})
-
-        # Card 13 unshaded pre-fire: Roman Auxilia inflict 1/2 each on the
-        # attacker BEFORE the Battle resolves in the chosen Region.
-        if _c13_region == region:
-            from fs_bot.battle.losses import resolve_losses as _rl13
-            _aux = count_pieces(state, region, _RO_B, _AUX_B)
-            _pre = int(_aux * 0.5)
-            if _pre > 0:
-                _rl13(state, region, faction, _pre)
-            _c13_region = None  # once per Command
-
-        # Card 27 shaded (Massed Gallic Archers): at the start of Battles
-        # with 6+ Arverni Warbands, the other side first absorbs 1 extra
-        # Loss (attacking or defending — card Tip).
-        from fs_bot.rules_consts import (ARVERNI as _ARV_B, PROVINCIA,
-                                         WARBAND as _WB_B)
-        if _ica_b(state, 27, _ES_B):
-            from fs_bot.battle.losses import resolve_losses as _rl27
-            if (faction == _ARV_B
-                    and count_pieces(state, region, _ARV_B, _WB_B) >= 6
-                    and count_pieces(state, region, defender) > 0):
-                _rl27(state, region, defender, 1)
-            elif (defender == _ARV_B
-                    and count_pieces(state, region, _ARV_B, _WB_B) >= 6
-                    and count_pieces(state, region, faction) > 0):
-                _rl27(state, region, faction, 1)
-            # If the absorption emptied the defender, skip the battle.
+        from fs_bot.engine.diviciacus import defense_scope
+        with defense_scope(state, region, faction, defender):
+            # A Battle requires the defender to actually be present in the Region
+            # (§3.x) — skip a no-target entry rather than resolving a no-op.
             if count_pieces(state, region, defender) <= 0:
-                if _battle_observer is not None:
-                    _battle_observer('before', state, region, defender, None)
-                battles.append({"region": region, "defender": defender,
-                                "is_ambush": is_ambush,
-                                "besiege": besiege_target,
-                                "result": {"card27_wiped": True}})
+                errors.append({"region": region, "defender": defender,
+                               "error": "defender not present"})
                 continue
 
-        # A31 shaded: "Event effects harming Germans in Battle are
-        # cancelled" — an event's no-retreat does not bind a German
-        # defender (BGG thread 2079436 reading).
-        _no_retreat_here = no_retreat
-        if (no_retreat and defender == _GE_A31):
-            from fs_bot.cards.capabilities import (
-                is_capability_active as _ica31s)
-            from fs_bot.rules_consts import EVENT_SHADED as _ES31s
-            if _ica31s(state, "A31", _ES31s):
-                _no_retreat_here = False
+            # §3.2.4 / §3.3.4 / A3.4.4: pay once for the selected Battle
+            # Region, before any Battle effects or defender decisions. Event
+            # actions waive the cost through their scoped §5.4 grant.
+            from fs_bot.commands.common import battle_cost
+            cost = 0 if region in _paid_regions else battle_cost(state, region, faction)
+            if state["resources"].get(faction, 0) < cost:
+                errors.append({"region": region, "defender": defender,
+                               "error": f"Not enough Resources for Battle (need {cost})"})
+                continue
+            state["resources"][faction] = state["resources"].get(faction, 0) - cost
 
-        if _battle_observer is not None:
-            _battle_observer('before', state, region, defender, None)
-        try:
-            if _no_retreat_here:
-                retreat_decl, retreat_region = (False, None)
-            elif force_retreat:
-                _d, _dest = _decide_defender_retreat(
-                    state, region, faction, defender, is_ambush)
-                retreat_decl, retreat_region = (True, _dest)
-            else:
-                retreat_decl, retreat_region = _decide_defender_retreat(
-                    state, region, faction, defender, is_ambush)
-            res = resolve_battle(
-                state, region, faction, defender,
-                is_ambush=is_ambush, besiege_target=besiege_target,
-                retreat_declaration=retreat_decl,
-                retreat_region=retreat_region,
-                allied_factions=allied_factions,
-                warband_full_loss=warband_full_loss,
-                full_loss_warbands=_full_loss_warbands,
-                double_auxilia=_double_auxilia,
-                ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
-                             and faction == _ARV_B and region == PROVINCIA),
-            )
-        except _EXEC_ERRORS as exc:
-            errors.append({"region": region, "defender": defender,
-                           "error": str(exc)})
-            continue
-        if _battle_observer is not None:
-            _battle_observer('after', state, region, defender, res)
-        # Card 10 shaded (Ballistae): the owning Gallic Faction "after
-        # Ambush may remove defending Fort or Citadel" — NP: always,
-        # Citadel first (higher value; Q13 tribe sync applied).
-        if (is_ambush and _ica_b(state, 10, _ES_B)
-                and _gco_b(state, 10) == faction):
-            from fs_bot.rules_consts import (CITADEL as _CIT10,
-                                             FORT as _F10)
-            from fs_bot.board.pieces import (
-                clear_allied_tribe as _cat10, remove_piece as _rp10)
-            if count_pieces(state, region, defender, _CIT10) > 0:
-                _rp10(state, region, defender, _CIT10)
-                _cat10(state, region, defender, _CIT10)
-            elif count_pieces(state, region, defender, _F10) > 0:
-                _rp10(state, region, defender, _F10)
+            is_ambush = sa == _SA_AMBUSH and region in sa_regions
+            if is_ambush and not _ambush_anywhere:
+                from fs_bot.commands.sa_ambush import validate_ambush_region
+                from fs_bot.engine.diviciacus import ambush_scope
+                with ambush_scope(state, faction, bot_action, region):
+                    valid, reason = validate_ambush_region(
+                        state, region, faction, defender,
+                        allied_factions=allied_factions)
+                if not valid:
+                    # A1.4 explicitly lets a defender's new agreement block
+                    # an otherwise planned Ambush. This is a legal reaction.
+                    context = state.get("_diviciacus_force", {})
+                    if (context.get("phase") == "defense" and
+                            context.get("faction") == defender and
+                            "Hidden pieces" in reason):
+                        diviciacus_blocks.append(region)
+                    else:
+                        errors.append({"region": region, "sa": sa, "error": reason})
+                    is_ambush = False
 
-        battles.append({"region": region, "defender": defender,
-                        "is_ambush": is_ambush,
-                        "besiege": besiege_target,
-                        "result": res})
+            besiege_target = None
+            if sa == _SA_BESIEGE and region in sa_regions:
+                from fs_bot.commands.sa_besiege import validate_besiege_region
+                valid, reason = validate_besiege_region(state, region, defender)
+                if valid:
+                    options = get_besiege_targets(state, region, defender)
+                    if options:
+                        besiege_target = options[0]  # Citadel > Ally > Settlement
+                else:
+                    errors.append({"region": region, "sa": sa, "error": reason})
+
+            # Card 13 unshaded pre-fire: Roman Auxilia inflict 1/2 each on the
+            # attacker BEFORE the Battle resolves in the chosen Region.
+            if _c13_region == region:
+                from fs_bot.battle.losses import resolve_losses as _rl13
+                _aux = count_pieces(state, region, _RO_B, _AUX_B)
+                _pre = int(_aux * 0.5)
+                if _pre > 0:
+                    _rl13(state, region, faction, _pre)
+                _c13_region = None  # once per Command
+
+            # Card 27 shaded (Massed Gallic Archers): at the start of Battles
+            # with 6+ Arverni Warbands, the other side first absorbs 1 extra
+            # Loss (attacking or defending — card Tip).
+            from fs_bot.rules_consts import (ARVERNI as _ARV_B, PROVINCIA,
+                                             WARBAND as _WB_B)
+            if _ica_b(state, 27, _ES_B):
+                from fs_bot.battle.losses import resolve_losses as _rl27
+                if (faction == _ARV_B
+                        and count_pieces(state, region, _ARV_B, _WB_B) >= 6
+                        and count_pieces(state, region, defender) > 0):
+                    _rl27(state, region, defender, 1)
+                elif (defender == _ARV_B
+                        and count_pieces(state, region, _ARV_B, _WB_B) >= 6
+                        and count_pieces(state, region, faction) > 0):
+                    _rl27(state, region, faction, 1)
+                # If the absorption emptied the defender, skip the battle.
+                if count_pieces(state, region, defender) <= 0:
+                    if _battle_observer is not None:
+                        _battle_observer('before', state, region, defender, None)
+                    battles.append({"region": region, "defender": defender,
+                                    "is_ambush": is_ambush,
+                                    "besiege": besiege_target,
+                                    "result": {"card27_wiped": True}})
+                    continue
+
+            # A31 shaded: "Event effects harming Germans in Battle are
+            # cancelled" — an event's no-retreat does not bind a German
+            # defender (BGG thread 2079436 reading).
+            _no_retreat_here = no_retreat
+            if (no_retreat and defender == _GE_A31):
+                from fs_bot.cards.capabilities import (
+                    is_capability_active as _ica31s)
+                from fs_bot.rules_consts import EVENT_SHADED as _ES31s
+                if _ica31s(state, "A31", _ES31s):
+                    _no_retreat_here = False
+
+            if _battle_observer is not None:
+                _battle_observer('before', state, region, defender, None)
+            try:
+                if _no_retreat_here:
+                    retreat_decl, retreat_region = (False, None)
+                elif force_retreat:
+                    _d, _dest = _decide_defender_retreat(
+                        state, region, faction, defender, is_ambush)
+                    retreat_decl, retreat_region = (True, _dest)
+                else:
+                    retreat_decl, retreat_region = _decide_defender_retreat(
+                        state, region, faction, defender, is_ambush)
+                res = resolve_battle(
+                    state, region, faction, defender,
+                    is_ambush=is_ambush, besiege_target=besiege_target,
+                    retreat_declaration=retreat_decl,
+                    retreat_region=retreat_region,
+                    allied_factions=allied_factions,
+                    warband_full_loss=warband_full_loss,
+                    full_loss_warbands=_full_loss_warbands,
+                    double_auxilia=_double_auxilia,
+                    ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
+                                 and faction == _ARV_B and region == PROVINCIA),
+                )
+            except _EXEC_ERRORS as exc:
+                errors.append({"region": region, "defender": defender,
+                               "error": str(exc)})
+                continue
+            if _battle_observer is not None:
+                _battle_observer('after', state, region, defender, res)
+            # Card 10 shaded (Ballistae): the owning Gallic Faction "after
+            # Ambush may remove defending Fort or Citadel" — NP: always,
+            # Citadel first (higher value; Q13 tribe sync applied).
+            if (is_ambush and _ica_b(state, 10, _ES_B)
+                    and _gco_b(state, 10) == faction):
+                from fs_bot.rules_consts import (CITADEL as _CIT10,
+                                                 FORT as _F10)
+                from fs_bot.board.pieces import (
+                    clear_allied_tribe as _cat10, remove_piece as _rp10)
+                if count_pieces(state, region, defender, _CIT10) > 0:
+                    _rp10(state, region, defender, _CIT10)
+                    _cat10(state, region, defender, _CIT10)
+                elif count_pieces(state, region, defender, _F10) > 0:
+                    _rp10(state, region, defender, _F10)
+
+            battles.append({"region": region, "defender": defender,
+                            "is_ambush": is_ambush,
+                            "besiege": besiege_target,
+                            "result": res})
 
     # Clear the per-Command card 59 region flags.
     for _k59 in ("card59_unshaded_region", "card59_shaded_region"):
@@ -3643,9 +3832,12 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                                   for b in battles if not b.get("result", {}).get("card27_wiped")),
         "count": len(battles),
         "errors": errors,
+        "ambush_blocked_by_diviciacus": diviciacus_blocks,
     }
 
 
+@_diviciacus_command_scope
+@preserve_supply_agreements
 def _execute_recruit(state, faction, bot_action):
     """Execute a Roman Recruit — §3.2.1 / §8.8.4.
 
@@ -3664,70 +3856,71 @@ def _execute_recruit(state, faction, bot_action):
     errors = []
     superseded = []
     for entry in plan:
-        region = entry.get("region")
-        action = entry.get("action")
-        if region is None or action is None:
-            continue
-        tribe = entry.get("tribe")
-        if action == "place_ally" and tribe is not None:
-            # The Build SA resolves BEFORE this Recruit (§8.8.4 'Build
-            # before Recruit') and may itself have allied the planned
-            # tribe. Re-derive against the current board: keep the planned
-            # tribe if still eligible, substitute another eligible Subdued
-            # Tribe there, or drop the entry as superseded (not an error —
-            # the piece the entry wanted is already on the map).
-            from fs_bot.commands.rally import _find_subdued_tribe_for_ally
-            eligible_now = _find_subdued_tribe_for_ally(state, region,
-                                                        _ROMANS_F) or []
-            if tribe not in eligible_now:
-                replacement = next(
-                    (t for t in eligible_now
-                     if not any(p.get("tribe") == t for p in placed)), None)
-                if replacement is None:
+        with supply_query_scope(state):
+            region = entry.get("region")
+            action = entry.get("action")
+            if region is None or action is None:
+                continue
+            tribe = entry.get("tribe")
+            if action == "place_ally" and tribe is not None:
+                # The Build SA resolves BEFORE this Recruit (§8.8.4 'Build
+                # before Recruit') and may itself have allied the planned
+                # tribe. Re-derive against the current board: keep the planned
+                # tribe if still eligible, substitute another eligible Subdued
+                # Tribe there, or drop the entry as superseded (not an error —
+                # the piece the entry wanted is already on the map).
+                from fs_bot.commands.rally import _find_subdued_tribe_for_ally
+                eligible_now = _find_subdued_tribe_for_ally(state, region,
+                                                            _ROMANS_F) or []
+                if tribe not in eligible_now:
+                    replacement = next(
+                        (t for t in eligible_now
+                         if not any(p.get("tribe") == t for p in placed)), None)
+                    if replacement is None:
+                        superseded.append({"region": region, "tribe": tribe})
+                        continue
+                    tribe = replacement
+                # The Build SA (§8.8.4 'Build before Recruit') may have placed the
+                # Allies this Recruit planned, emptying the shared Ally pool. "Place
+                # all Allies ABLE" — once none are Available, skip the entry as
+                # superseded rather than letting the executor refuse it.
+                from fs_bot.board.pieces import get_available as _get_avail
+                from fs_bot.rules_consts import ALLY as _ALLY_C
+                if _get_avail(state, _ROMANS_F, _ALLY_C) < 1:
                     superseded.append({"region": region, "tribe": tribe})
                     continue
-                tribe = replacement
-            # The Build SA (§8.8.4 'Build before Recruit') may have placed the
-            # Allies this Recruit planned, emptying the shared Ally pool. "Place
-            # all Allies ABLE" — once none are Available, skip the entry as
-            # superseded rather than letting the executor refuse it.
-            from fs_bot.board.pieces import get_available as _get_avail
-            from fs_bot.rules_consts import ALLY as _ALLY_C
-            if _get_avail(state, _ROMANS_F, _ALLY_C) < 1:
-                superseded.append({"region": region, "tribe": tribe})
-                continue
-        # Budget pre-check — "Place all Allies/Auxilia ABLE": entries the
-        # Romans can no longer afford (e.g. card 13 shaded removed the
-        # Supply-Line discount mid-plan) are skipped as unaffordable, not
-        # errors — the rule's own 'able' qualifier, not a refused proposal.
-        from fs_bot.commands.rally import recruit_cost as _rcost
-        if state["resources"].get(_ROMANS_F, 0) < _rcost(state, region):
-            superseded.append({"region": region, "action": action,
-                               "reason": "unaffordable"})
-            continue
-        # Presence pre-check for Auxilia — §3.2.1 requires a Roman
-        # Leader, Ally, or Fort there (or card 55's Belgica carve-out);
-        # the Build SA resolves first and the plan may be stale.
-        if action == "place_auxilia":
-            from fs_bot.rules_consts import (FORT as _F_R, ALLY as _AL_R)
-            from fs_bot.board.pieces import (
-                get_leader_in_region as _glr_r)
-            from fs_bot.commands.rally import (
-                _commius_unshaded_recruit as _c55_r)
-            if not (_glr_r(state, region, _ROMANS_F) is not None
-                    or count_pieces(state, region, _ROMANS_F, _AL_R) > 0
-                    or count_pieces(state, region, _ROMANS_F, _F_R) > 0
-                    or _c55_r(state, region)):
+            # Budget pre-check — "Place all Allies/Auxilia ABLE": entries the
+            # Romans can no longer afford (e.g. card 13 shaded removed the
+            # Supply-Line discount mid-plan) are skipped as unaffordable, not
+            # errors — the rule's own 'able' qualifier, not a refused proposal.
+            from fs_bot.commands.rally import recruit_cost as _rcost
+            if state["resources"].get(_ROMANS_F, 0) < _rcost(state, region):
                 superseded.append({"region": region, "action": action,
-                                   "reason": "no Leader/Ally/Fort"})
+                                   "reason": "unaffordable"})
                 continue
-        try:
-            res = recruit_in_region(state, region, action, tribe=tribe)
-            placed.append({"region": region, "action": action,
-                           "tribe": tribe})
-        except _EXEC_ERRORS as exc:
-            errors.append({"region": region, "action": action,
-                           "error": str(exc)})
+            # Presence pre-check for Auxilia — §3.2.1 requires a Roman
+            # Leader, Ally, or Fort there (or card 55's Belgica carve-out);
+            # the Build SA resolves first and the plan may be stale.
+            if action == "place_auxilia":
+                from fs_bot.rules_consts import (FORT as _F_R, ALLY as _AL_R)
+                from fs_bot.board.pieces import (
+                    get_leader_in_region as _glr_r)
+                from fs_bot.commands.rally import (
+                    _commius_unshaded_recruit as _c55_r)
+                if not (_glr_r(state, region, _ROMANS_F) is not None
+                        or count_pieces(state, region, _ROMANS_F, _AL_R) > 0
+                        or count_pieces(state, region, _ROMANS_F, _F_R) > 0
+                        or _c55_r(state, region)):
+                    superseded.append({"region": region, "action": action,
+                                       "reason": "no Leader/Ally/Fort"})
+                    continue
+            try:
+                res = recruit_in_region(state, region, action, tribe=tribe)
+                placed.append({"region": region, "action": action,
+                               "tribe": tribe})
+            except _EXEC_ERRORS as exc:
+                errors.append({"region": region, "action": action,
+                               "error": str(exc)})
 
     result = {
         "executed": len(placed) > 0,
@@ -3890,16 +4083,19 @@ def march_plan_has_effect(state, faction, plan):
     return bool(selected)
 
 
-def _execute_march(state, faction, bot_action, *, free=False, before_move=None):
+@_diviciacus_command_scope
+def _execute_march(state, faction, bot_action, *, free=False, before_move=None,
+                   moving_only=False):
     """Pay once per selected origin; movement-only helpers remain free."""
     moves, deferred = _collect_march_moves(state, faction, bot_action)
     result = _execute_march_moves(state, faction, moves, free=free,
-                                  before_move=before_move)
+                                  before_move=before_move, moving_only=moving_only)
     result["deferred_origins"] = deferred + result["deferred_origins"]
     return result
 
 
-def _execute_march_moves(state, faction, moves, *, free=False, before_move=None):
+def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
+                         moving_only=False):
     """Bill origins once, before moving; a threat-March SA runs after payment.
 
     Only affordable origins with an actual mobile group and adjacent route
@@ -3919,7 +4115,8 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None)
         try:
             final = _march_with_harassment(state, faction, origin, move["path"],
                                            group_cap=move.get("group"),
-                                           flipped_origins=flipped_origins)
+                                           flipped_origins=flipped_origins,
+                                           moving_only=moving_only)
             if final != origin:
                 entry = {k: v for k, v in move.items() if k not in ("path", "group")}
                 entry["final_region"] = final
@@ -3981,9 +4178,42 @@ def _bfs_march_path(origin, dest, playable):
     return None
 
 
+def _flip_selected_march_group(state, faction, origin, group):
+    """Card70 hides only its moving cohort, retaining physical loan owners."""
+    from fs_bot import rules_consts as rc
+    from fs_bot.board.pieces import count_pieces_by_state, flip_piece
+    from fs_bot.engine.march_choices import choose_visibility, select_origin_visibility
+    select_origin_visibility(state, faction, origin, group)
+    owners = group.get("_diviciacus_owners")
+    physical_owners = owners is not None
+    piece = rc.AUXILIA if faction == rc.ROMANS else rc.WARBAND
+    if owners is None:
+        selected = group.get("_march_visibility", {}).get(piece)
+        if selected is None:
+            available = {ps: count_pieces_by_state(state, origin, faction, piece, ps)
+                         for ps in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)}
+            selected = choose_visibility(state, faction, origin, piece, group.get(piece, 0),
+                                         available, phase="formation")
+        owners = {faction: selected}
+    combined = {}
+    for owner, selected in owners.items():
+        updated = {}
+        for visibility, count in list(selected.items()):
+            target = {rc.REVEALED: rc.HIDDEN, rc.SCOUTED: rc.REVEALED}.get(visibility, visibility)
+            if count and target != visibility:
+                flip_piece(state, origin, faction, piece, count,
+                           from_state=visibility, to_state=target,
+                           **({"physical_owner": owner} if physical_owners else {}))
+            updated[target] = updated.get(target, 0) + count
+            combined[target] = combined.get(target, 0) + count
+        selected.clear()
+        selected.update(updated)
+    group.setdefault("_march_visibility", {})[piece] = combined
+
+
 def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
                            harassers_by_region=None, dropoffs_by_region=None,
-                           flipped_origins=None):
+                           flipped_origins=None, moving_only=False):
     """March a faction's mobile group origin -> ... -> path[-1], one step
     at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
     enters and then leaves. Returns the final Region reached.
@@ -4019,13 +4249,16 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
     # Validate the whole group's route before changing any visibility state.
     # §3.2.2/3.3.2 flip once per selected origin, even when it forms multiple
     # groups. Re-flipping would Hide the remaining de-Scouted Warbands.
-    if flipped_origins is None or origin not in flipped_origins:
-        _flip_origin_pieces(state, origin, faction)
-        if flipped_origins is not None:
-            flipped_origins.add(origin)
-    if path:
-        from fs_bot.engine.march_choices import select_origin_visibility
-        select_origin_visibility(state, faction, origin, group)
+    if moving_only:
+        _flip_selected_march_group(state, faction, origin, group)
+    else:
+        if flipped_origins is None or origin not in flipped_origins:
+            _flip_origin_pieces(state, origin, faction)
+            if flipped_origins is not None:
+                flipped_origins.add(origin)
+        if path:
+            from fs_bot.engine.march_choices import select_origin_visibility
+            select_origin_visibility(state, faction, origin, group)
     current = origin
     for i, nxt in enumerate(path):
         if not _group_has_pieces(group):
@@ -4074,6 +4307,7 @@ def _sa_detail(bot_action, key):
     return (d.get("sa_details") or {}).get(key)
 
 
+@_diviciacus_command_scope(phase="special_ability")
 def _execute_sa(state, faction, bot_action):
     """Execute a standalone Special Activity accompanying a Command.
 
@@ -4462,67 +4696,96 @@ def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
 
 
 def _execute_suborn(state, faction, bot_action):
-    """Aedui Suborn (§4.4.2 / §8.6.3).
+    """Validate and execute a complete ordered Suborn plan (§4.4.2/A38).
 
-    The bot's ``suborn_plan`` is a list of ``{region, actions}`` where each
-    action is one of place_ally / remove_ally / place_warband /
-    remove_warband / remove_auxilia. We translate these to the suborn()
-    operation schema ({action: place|remove, faction, piece_type, tribe,
-    piece_state}) and call suborn() once per region. Removed pieces use
-    piece_state=None (any state); placed Aedui pieces use the Aedui faction.
+    Canonical operations specify native physical owners; older bot plans retain
+    their effective-type operation labels, including agreed Diviciacus pieces.
     """
-    from fs_bot.rules_consts import AEDUI as _AEDUI, ALLY as _ALLY,         WARBAND as _WARBAND, AUXILIA as _AUXILIA
+    from copy import deepcopy
+    from fs_bot.rules_consts import AEDUI, ALLY, WARBAND, AUXILIA
+    from fs_bot.commands.sa_suborn import (
+        suborn_region_limit, suborn_preview, validate_suborn_region)
     plan = _sa_detail(bot_action, "suborn_plan") or []
-
-    # §4.4.2 Suborn selects one Region; card 43 unshaded (Convictolitavis)
-    # expands it: "Suborn is maximum 2 Regions."
-    from fs_bot.cards.capabilities import is_capability_active as _ica43
-    from fs_bot.rules_consts import EVENT_UNSHADED as _EU43
-    _max_r = 2 if _ica43(state, 43, _EU43) else 1
-
-    done, errors = [], []
-    for sp in plan:
-        region = sp.get("region")
-        if len(done) >= _max_r:
-            errors.append({"region": region,
-                           "error": "Suborn is maximum %d Region(s) "
-                                    "(§4.4.2 / card 43)" % _max_r})
-            continue
-        ops = []
-        for a in sp.get("actions", []) or []:
-            act = a.get("action")
-            if act == "place_ally":
-                ops.append({"action": "place", "faction": _AEDUI,
-                            "piece_type": _ALLY, "tribe": a.get("tribe")})
-            elif act == "place_warband":
-                ops.append({"action": "place", "faction": _AEDUI,
-                            "piece_type": _WARBAND})
-            elif act == "remove_ally":
-                ops.append({"action": "remove",
-                            "faction": a.get("target_faction"),
-                            "piece_type": _ALLY,
-                            "tribe": a.get("tribe")})
-            elif act == "remove_warband":
-                ops.append({"action": "remove",
-                            "faction": a.get("target_faction"),
-                            "piece_type": _WARBAND, "piece_state": None})
-            elif act == "remove_auxilia":
-                ops.append({"action": "remove",
-                            "faction": a.get("target_faction"),
-                            "piece_type": _AUXILIA, "piece_state": None})
-        if not ops:
-            continue
-        try:
-            from fs_bot.commands.sa_suborn import validate_suborn_region
+    result = {"executed": False, "sa": _SA_SUBORN, "regions": [], "errors": []}
+    region = None
+    try:
+        if faction != AEDUI:
+            raise CommandError("Only Aedui may Suborn")
+        if not isinstance(plan, list):
+            raise CommandError("Suborn plan must be a list of Regions")
+        if len(plan) > suborn_region_limit(state):
+            raise CommandError(f"Suborn is maximum {suborn_region_limit(state)} Region(s) (§4.4.2 / card 43)")
+        steps, used = [], set()
+        for entry in plan:
+            if not isinstance(entry, dict):
+                raise CommandError("Suborn Region entry must be an object")
+            region = entry.get("region")
+            if not isinstance(region, str):
+                raise CommandError("Suborn Region must be named")
+            if region in used:
+                raise CommandError("Suborn may select each Region only once")
+            used.add(region)
             valid, reason = validate_suborn_region(state, region)
             if not valid:
                 raise CommandError(reason)
-            _sa_suborn(state, region, ops)
-            done.append(region)
-        except _EXEC_ERRORS as exc:
-            errors.append({"region": region, "error": str(exc)})
-    return {"executed": len(done) > 0, "sa": _SA_SUBORN,
-            "regions": done, "errors": errors}
+            operations = []
+            actions = entry.get("actions", [])
+            if not isinstance(actions, list):
+                raise CommandError("Suborn actions must be a list")
+            for action in actions:
+                if not isinstance(action, dict):
+                    raise CommandError("Suborn action must be an object")
+                name = action.get("action")
+                if name in ("place", "remove"):
+                    operations.append(dict(action))
+                    continue
+                types = {"place_ally": ALLY, "place_warband": WARBAND,
+                         "place_auxilia": AUXILIA, "remove_ally": ALLY,
+                         "remove_warband": WARBAND, "remove_auxilia": AUXILIA}
+                if name not in types:
+                    raise CommandError(f"Unknown Suborn action: {name}")
+                placing = name.startswith("place_")
+                operation = {"action": "place" if placing else "remove",
+                             "faction": action.get("faction", AEDUI) if placing else
+                                         action.get("target_faction", action.get("faction")),
+                             "piece_type": types[name]}
+                for key in ("tribe", "piece_state", "physical_owner"):
+                    if key in action:
+                        operation[key] = action[key]
+                operations.append(operation)
+            if operations:
+                steps.append((region, operations))
+        sim = state
+        for region, operations in steps:
+            sim, _ = suborn_preview(sim, region, operations)
+    except _EXEC_ERRORS as exc:
+        result["errors"].append({"region": region, "error": str(exc)})
+        return result
+
+    # Full validation precedes any live mutation. Preserve that atomicity if
+    # a later human allocation makes a formerly affordable conversion fail.
+    keys = ("spaces", "tribes", "available", "resources", "_diviciacus_force")
+    before = {key: deepcopy(state[key]) for key in keys if key in state}
+    try:
+        for region, operations in steps:
+            _sa_suborn(state, region, operations)
+            result["regions"].append(region)
+    except BaseException as exc:
+        for key in keys:
+            if key in before:
+                if isinstance(state.get(key), dict):
+                    state[key].clear()
+                    state[key].update(before[key])
+                else:
+                    state[key] = before[key]
+            else:
+                state.pop(key, None)
+        if not isinstance(exc, _EXEC_ERRORS):
+            raise
+        result["regions"] = []
+        result["errors"].append({"region": region, "error": str(exc)})
+    result["executed"] = bool(result["regions"])
+    return result
 
 
 def _execute_build(state, faction, bot_action):

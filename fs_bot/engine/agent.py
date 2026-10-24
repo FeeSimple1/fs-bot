@@ -62,6 +62,13 @@ Request kinds
                                §8.4.2 table remains the NP default).
                                requesting_faction is the marching/seizing
                                Faction being harassed.
+    "diviciacus"             — card 38/A1.4 cooperation for one Command,
+                               Special Ability (Leader only), or defense.
+                               context includes phase, regions and action.
+  ``diviciacus_pieces`` requests an allocation of a count between physical
+  Roman/Aedui owners for placement, March formation, drop-off or a casualty. Respond
+  with {"counts": {owner: count, ...}}, totaling the requested count and
+  respecting the offered ``available`` counts.
   Voluntary Resource transfers (§1.5.2) are explicit ``details.transfers``
   entries on the acting Faction's plan, not a separate reactive request.
   See AGENT_INTERFACE.md for their response format and scope.

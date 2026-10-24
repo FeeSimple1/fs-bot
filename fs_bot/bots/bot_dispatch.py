@@ -78,10 +78,12 @@ def dispatch_bot_turn(state, faction):
             f"Current NPs: {non_players}"
         )
 
+    from fs_bot.engine.diviciacus_planning import plan_with_diviciacus
+
     # Dispatch to the appropriate bot module
     if faction == ROMANS:
         from fs_bot.bots.roman_bot import execute_roman_turn
-        return execute_roman_turn(state)
+        return plan_with_diviciacus(state, faction, execute_roman_turn)
 
     if faction == BELGAE:
         from fs_bot.bots.belgae_bot import execute_belgae_turn
@@ -89,7 +91,7 @@ def dispatch_bot_turn(state, faction):
 
     if faction == AEDUI:
         from fs_bot.bots.aedui_bot import execute_aedui_turn
-        return execute_aedui_turn(state)
+        return plan_with_diviciacus(state, faction, execute_aedui_turn)
 
     if faction == ARVERNI:
         from fs_bot.bots.arverni_bot import execute_arverni_turn

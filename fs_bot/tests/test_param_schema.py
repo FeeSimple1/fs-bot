@@ -87,6 +87,10 @@ def test_generate_params_typed_and_complete():
             if spec["kind"] == "omit":
                 assert key not in params
                 continue
+            if spec["kind"] == "capability" and not kind_values(st, "capability"):
+                # Shifting Loyalties cannot name a target when none is active.
+                assert key not in params
+                continue
             assert key in params
             if spec["kind"] == "entries":
                 for e in params[key]:

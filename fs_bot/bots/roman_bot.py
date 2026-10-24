@@ -9,6 +9,8 @@ Node functions return an action dict describing what the bot decided to do.
 The dispatch loop calls execute_roman_turn(state) which walks the flowchart.
 """
 
+from fs_bot.engine.diviciacus_planning import planning_sa_view, planning_event_view
+
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -272,9 +274,10 @@ def _rank_battle_targets(state, region, scenario):
             continue
 
         # A8.8.1: Only Battle Aedui (Diviciacus) if Aedui at 0+ victory
-        if (scenario in ARIOVISTUS_SCENARIOS
-                and enemy == AEDUI
-                and get_leader_in_region(state, region, AEDUI) is not None):
+        # A Setup extends this restriction to the original-scenario
+        # Diviciacus Leader option; it follows the actual named piece.
+        if (enemy == AEDUI
+                and get_leader_in_region(state, region, AEDUI) == DIVICIACUS_LEADER):
             try:
                 aedui_margin = calculate_victory_margin(state, AEDUI)
                 if aedui_margin < 0:
@@ -514,6 +517,7 @@ def node_r3(state):
     return "Yes" if state.get("can_play_event", False) else "No"
 
 
+@planning_event_view
 def node_r4(state):
     """R4: Event Ineffective, Capability in final year, or 'No Romans'?
 
@@ -560,6 +564,7 @@ def node_r5(state):
 # PROCESS NODES
 # ============================================================================
 
+@planning_event_view
 def node_r_event(state):
     """R_EVENT: Execute Event.
 
@@ -1187,6 +1192,7 @@ def node_r_besiege(state, battle_regions):
     return []
 
 
+@planning_sa_view
 def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
     """R_BUILD: Build after March/Seize or before Recruit.
 
@@ -1581,6 +1587,7 @@ def _scout_auxilia_moves(state, *, scouts=None, allowed_regions=None):
     return moves
 
 
+@planning_sa_view
 def node_r_scout(state, *, allowed_regions=None):
     """R_SCOUT: Scout per Command.
 
@@ -1763,6 +1770,9 @@ def _quarters_host_agrees(state, host_faction, region):
     Consults the decision agent first (AGREEMENT hook), then the host's
     NP agreements node.
     """
+    from fs_bot.engine.quarters import eligible_quarters_host
+    if not eligible_quarters_host(state, ROMANS, host_faction):
+        return False
     if host_faction == ROMANS:
         return True
     from fs_bot.engine.agent import consult_agent, AGREEMENT
@@ -1970,6 +1980,10 @@ def node_r_diviciacus(state, context):
         True if Romans agree to Diviciacus.
     """
     scenario = state["scenario"]
+    from fs_bot.engine.diviciacus import enabled
+    phase = "special_ability" if context.get("special_ability") else "command"
+    if not enabled(state, phase):
+        return False
 
     # A8.8.8: Admagetobriga — never agree
     if (scenario in ARIOVISTUS_SCENARIOS
@@ -1984,7 +1998,8 @@ def node_r_diviciacus(state, context):
             return False
         # Not if Aedui Battling or Raiding Romans
         aedui_action = context.get("aedui_action", "")
-        if aedui_action in ("battle", "raid"):
+        if (aedui_action in ("battle", "raid")
+                and context.get("target") == ROMANS):
             return False
         return True
 

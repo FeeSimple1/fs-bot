@@ -59,11 +59,14 @@ def validate_saved_game(state, meta, log):
     for name in ("current_card", "next_card"):
         _require(name in state, f"state.{name} is missing")
         _card(state[name], f"state.{name}", nullable=True)
-    for name in ("at_war", "diviciacus_in_play", "interlude_completed",
+    for name in ("at_war", "diviciacus_in_play", "diviciacus_option", "interlude_completed",
                  "first_senate_after_interlude_pending",
                  "first_harvest_after_interlude_pending"):
         if name in state:
             _require(type(state[name]) is bool, f"state.{name} must be true or false")
+    if state.get("diviciacus_option"):
+        _require(state["scenario"] in rc.BASE_SCENARIOS,
+                 "The Diviciacus Leader option applies only to original scenarios")
     if "scenario_phase" in state:
         _require(state["scenario_phase"] in ("first_half", "second_half"),
                  "state.scenario_phase is invalid")

@@ -85,6 +85,9 @@ def choose_visibility(state, faction, region, piece, count, available, *,
 
 def select_origin_visibility(state, faction, origin, group):
     """Record human-selected visibility after all origin pieces have flipped."""
+    from fs_bot.engine.diviciacus import select_march_group
+    if select_march_group(state, faction, origin, group):
+        return
     from fs_bot.engine.game_engine import get_sop_factions
     chooser = _chooser(state, faction)
     if (chooser not in get_sop_factions(state)
@@ -124,6 +127,9 @@ def select_origin_visibility(state, faction, origin, group):
 
 def drop_visibility(state, faction, region, group, piece, count):
     """Remove only the selected dropped pieces from the moving cohort."""
+    from fs_bot.engine.diviciacus import drop_march_group
+    if drop_march_group(state, faction, region, group, piece, count):
+        return
     visibility = group.get("_march_visibility", {}).get(piece)
     if visibility is not None:
         dropped = choose_visibility(state, faction, region, piece, count,

@@ -1,5 +1,5 @@
 """
-test_cards.py — Tests for card data, capabilities, and card effect stubs.
+test_cards.py — Tests for card data, capabilities, and Event handler coverage.
 
 Verifies:
 - Every base card (1-72) has metadata
@@ -9,7 +9,7 @@ Verifies:
 - Winter cards have correct properties
 - Capability tracker: activate/deactivate/query round-trip,
   shaded vs unshaded tracking, §5.1.2 override behavior
-- Card effect stubs: dispatcher raises NotImplementedError for every card
+- Every published Event and optional revised card has a callable handler
 """
 
 import pytest
@@ -401,59 +401,38 @@ class TestCapabilityTracker:
 
 
 # ===================================================================
-# Card Effect Stub Tests
+# Event Handler Coverage
 # ===================================================================
 
-class TestCardEffectStubs:
-    """Tests that the dispatcher raises NotImplementedError for unimplemented cards."""
+class TestCardEffectCoverage:
+    """Published card catalogs must have complete executable registrations.
 
-    # Cards that have been implemented (no longer stubs).
-    # Updated as cards are implemented in card_effects.py.
-    _IMPLEMENTED_BASE = set(range(1, 73))  # All 72 base cards implemented
-    _IMPLEMENTED_ARIOVISTUS = {  # All A-prefix card IDs (str)
-        "A5", "A17", "A18", "A19", "A20", "A21", "A22", "A23",
-        "A24", "A25", "A26", "A27", "A28", "A29", "A30", "A31",
-        "A32", "A33", "A34", "A35", "A36", "A37", "A38", "A40",
-        "A43", "A45", "A51", "A53", "A56", "A57", "A58", "A60",
-        "A63", "A64", "A65", "A66", "A67", "A69", "A70",
-    }
-    _IMPLEMENTED_2ND_ED = {11, 30, 39, 44, 54}  # All 2nd edition cards
+    The old stub tests skipped every implemented card and could pass without
+    checking any handler. These assertions fail if a published card loses its
+    registration, independently of its behavior-specific regression tests.
+    """
 
     def _make_state(self, scenario=None):
         return {"scenario": scenario or SCENARIO_PAX_GALLICA}
 
-    def test_unimplemented_base_cards_raise(self):
-        """Dispatcher raises NotImplementedError for unimplemented base cards."""
-        state = self._make_state()
-        for card_id in range(1, 73):
-            if card_id in self._IMPLEMENTED_BASE:
-                continue
-            with pytest.raises(NotImplementedError):
-                execute_event(state, card_id, shaded=False)
-            with pytest.raises(NotImplementedError):
-                execute_event(state, card_id, shaded=True)
+    def test_every_base_event_has_a_handler(self):
+        from fs_bot.cards.card_effects import _BASE_HANDLERS
+        assert set(_BASE_HANDLERS) == set(CARD_NAMES_BASE)
+        assert all(callable(handler) for handler in _BASE_HANDLERS.values())
 
-    def test_unimplemented_ariovistus_cards_raise(self):
-        """Dispatcher raises NotImplementedError for unimplemented A-prefix cards."""
-        state = self._make_state(SCENARIO_ARIOVISTUS)
-        a_prefix_ids = [k for k in CARD_NAMES_ARIOVISTUS
-                        if isinstance(k, str) and k.startswith("A")]
-        for card_id in a_prefix_ids:
-            if card_id in self._IMPLEMENTED_ARIOVISTUS:
-                continue
-            with pytest.raises(NotImplementedError):
-                execute_event(state, card_id, shaded=False)
-            with pytest.raises(NotImplementedError):
-                execute_event(state, card_id, shaded=True)
+    def test_every_expansion_event_and_diviciacus_has_a_handler(self):
+        from fs_bot.rules_consts import CARD_O38
+        from fs_bot.cards.card_effects import _ARIOVISTUS_HANDLERS
+        published = {card for card in get_ariovistus_event_card_ids()
+                     if isinstance(card, str)} | {CARD_O38}
+        assert set(_ARIOVISTUS_HANDLERS) == published
+        assert all(callable(handler) for handler in _ARIOVISTUS_HANDLERS.values())
 
-    def test_unimplemented_second_edition_cards_raise(self):
-        """2nd Edition text-change cards raise in Ariovistus context."""
-        state = self._make_state(SCENARIO_ARIOVISTUS)
-        for card_id in SECOND_EDITION_CARDS:
-            if card_id in self._IMPLEMENTED_2ND_ED:
-                continue
-            with pytest.raises(NotImplementedError):
-                execute_event(state, card_id, shaded=False)
+    def test_every_optional_second_edition_card_has_a_handler(self):
+        from fs_bot.cards.card_effects import _ARIOVISTUS_TEXT_CHANGE_HANDLERS
+        assert set(_ARIOVISTUS_TEXT_CHANGE_HANDLERS) == set(SECOND_EDITION_CARDS)
+        assert all(callable(handler)
+                   for handler in _ARIOVISTUS_TEXT_CHANGE_HANDLERS.values())
 
     def test_invalid_card_raises_key_error(self):
         state = self._make_state()
@@ -462,7 +441,7 @@ class TestCardEffectStubs:
 
     def test_get_all_card_ids(self):
         ids = get_all_card_ids()
-        # Should have 72 base + 37 A-prefix
+        # Include all 72 base cards plus every expansion/optional identity.
         base_count = sum(1 for i in ids if isinstance(i, int))
         a_count = sum(1 for i in ids if isinstance(i, str))
         assert base_count == 72

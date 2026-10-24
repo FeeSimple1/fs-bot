@@ -63,6 +63,8 @@ def infer_kind(name, default_node=None):
             return "count"
     if "direction" in k:
         return "direction"
+    if "capability" in k:
+        return "capability"
     if "factions" in k:
         return "factions"
     if "regions" in k:
@@ -361,6 +363,9 @@ def kind_values(state, kind, spec=None):
         return list(PIECE_STATES)
     if kind == "leader_name":
         return list(LEADER_NAMES)
+    if kind == "capability":
+        from fs_bot.cards.capabilities import get_active_capabilities
+        return sorted(get_active_capabilities(state), key=str)
     return region_pool(state, None)     # "value" fallback
 
 
@@ -404,5 +409,7 @@ def generate_params(state, card_id, rng, *, include_p=0.9):
             params[key] = picks
         else:
             vals = kind_values(state, kind, spec)
+            if kind == "capability" and not vals:
+                continue
             params[key] = vals[rng.randrange(len(vals))]
     return params

@@ -838,21 +838,29 @@ class TestNodeRDiviciacus:
 
     def test_agree_during_aedui_command(self):
         state = _make_state()
+        from fs_bot.cards.card_effects import execute_event
+        execute_event(state, 38)
         result = node_r_diviciacus(state, {"during": "aedui_command"})
         assert result is True
 
     def test_refuse_during_aedui_defense(self):
         state = _make_state()
+        from fs_bot.cards.card_effects import execute_event
+        execute_event(state, 38)
         result = node_r_diviciacus(state, {"during": "aedui_defense"})
         assert result is False
 
     def test_agree_during_roman_defense(self):
         state = _make_state()
+        from fs_bot.cards.card_effects import execute_event
+        execute_event(state, 38)
         result = node_r_diviciacus(state, {"during": "roman_defense"})
         assert result is True
 
     def test_refuse_recruit_during_roman_command(self):
         state = _make_state()
+        from fs_bot.cards.card_effects import execute_event
+        execute_event(state, 38)
         result = node_r_diviciacus(state, {
             "during": "roman_command", "is_recruit": True,
         })

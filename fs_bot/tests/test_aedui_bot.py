@@ -1167,7 +1167,8 @@ class TestDiviciacus:
     def test_agrees_during_roman_command_low_score(self):
         """Agrees during Roman Command when victory < 13."""
         state = _make_state()
-        state["capabilities"] = {"diviciacus_unshaded": True}
+        from fs_bot.cards.card_effects import execute_event
+        execute_event(state, 38)
         # Roman victory = subdued + dispersed + roman_allies — §7.2
         # In empty state all tribes are subdued (score ~30), so we need to
         # give most tribes an allied_faction to reduce subdued count below 13.
@@ -1184,7 +1185,8 @@ class TestDiviciacus:
     def test_refuses_during_roman_command_high_score(self):
         """Refuses during Roman Command when victory >= 13."""
         state = _make_state()
-        state["capabilities"] = {"diviciacus_unshaded": True}
+        from fs_bot.cards.card_effects import execute_event
+        execute_event(state, 38)
         # Set many tribes to subdued/dispersed/allied to push Roman score up
         # Roman score = subdued + dispersed + roman_allies
         # We need >= 13
@@ -1200,7 +1202,8 @@ class TestDiviciacus:
     def test_refuses_when_scouting_aedui(self):
         """Refuses when Romans are Scouting Aedui."""
         state = _make_state()
-        state["capabilities"] = {"diviciacus_unshaded": True}
+        from fs_bot.cards.card_effects import execute_event
+        execute_event(state, 38)
         assert node_a_diviciacus(
             state, {"phase": "roman_command",
                     "action": "scout", "target": AEDUI}) is False

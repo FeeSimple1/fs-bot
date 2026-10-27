@@ -1231,17 +1231,20 @@ class TestDispersedStatusHandling:
 
     def test_card37_unshaded_no_ally_on_dispersed_tribe(self):
         from fs_bot.rules_consts import (AEDUI, ALLY, DISPERSED, TRIBE_TO_REGION,
-                                         SCENARIO_GREAT_REVOLT)
+                                         SCENARIO_GREAT_REVOLT, TRIBE_SENONES,
+                                         AEDUI_REGION, WARBAND)
         from fs_bot.state.state_schema import build_initial_state
         st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
-        st["tribes"]["Senones"]["allied_faction"] = None
-        st["tribes"]["Senones"]["status"] = DISPERSED
+        place_piece(st, AEDUI_REGION, AEDUI, WARBAND)
+        st["tribes"][TRIBE_SENONES]["allied_faction"] = None
+        st["tribes"][TRIBE_SENONES]["status"] = DISPERSED
         st["event_params"] = {"place_faction": AEDUI, "placements": [
-            {"region": TRIBE_TO_REGION["Senones"], "piece_type": ALLY,
-             "tribe": "Senones"}]}
-        execute_event(st, 37, shaded=False)
+            {"region": TRIBE_TO_REGION[TRIBE_SENONES], "piece_type": ALLY,
+             "tribe": TRIBE_SENONES}]}
+        with pytest.raises(ValueError, match='Subdued Tribe'):
+            execute_event(st, 37, shaded=False)
         # "Place Allies at Subdued Tribes only" — a Dispersed Tribe is excluded.
-        assert st["tribes"]["Senones"]["allied_faction"] is None
+        assert st["tribes"][TRIBE_SENONES]["allied_faction"] is None
 
     def test_card60_shaded_clears_dispersed_status(self):
         from fs_bot.rules_consts import DISPERSED, SCENARIO_GREAT_REVOLT

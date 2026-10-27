@@ -8,7 +8,7 @@ surfaced; each gets a regression test here:
    shaded, 35 unshaded) was clobbered by the Sec.2.3.6 end-of-card reset —
    the exact mirror of the "Ineligible through next card" bug found via
    the live-playtest transcript audit. Fixed via state["stay_eligible"],
-   consumed by adjust_eligibility (forced_ineligible wins conflicts).
+   consumed by adjust_eligibility (printed executor exceptions apply).
 2. Card 35 unshaded benefited the *executing* Faction; the card's text and
    Tip make the Romans the beneficiary regardless of who executes it.
 3. Card 34 Acco: "free Rallies or Recruits in any 3 Regions" ran the
@@ -83,14 +83,14 @@ class TestStayEligible:
         adjust_eligibility(st, {AEDUI: {"action": ACTION_EVENT}})
         assert st["eligibility"][AEDUI] == ELIGIBLE
 
-    def test_forced_ineligibility_beats_stay_eligible(self):
-        """If the same Faction is under an explicit 'Ineligible through
-        next card' clause, the specific penalty wins the conflict."""
+    def test_roman_executor_gets_card14_eligibility_exception(self):
+        """Card14's last clause and Tip keep its executor Eligible,
+        including a Roman executor; there is no printed exclusion."""
         st = _np_state(206, card=14)
         st["executing_faction"] = ROMANS
         _play(st, ROMANS, 14, shaded=True)
         adjust_eligibility(st, {ROMANS: {"action": ACTION_EVENT}})
-        assert st["eligibility"][ROMANS] == INELIGIBLE
+        assert st["eligibility"][ROMANS] == ELIGIBLE
 
 
 class TestCard35Beneficiary:

@@ -181,6 +181,59 @@ def build_initial_state(scenario, seed=None, *, diviciacus_option=False):
     return state
 
 
+def _piece_count_errors(state):
+    """Check count domains before conservation or Control does arithmetic.
+
+    Physical inventories (§1.4.1, A1.4) require whole, nonnegative pieces.
+    Conservation alone misses a negative map count offset by extra Available
+    pieces, and Python treats booleans as integers unless checked explicitly.
+    Leaders on the map store names, not numeric counts.
+    """
+    errors = []
+
+    def mapping(value, label):
+        if not isinstance(value, dict):
+            errors.append(f"{label} must be a mapping")
+            return {}
+        return value
+
+    def count(value, label):
+        if type(value) is not int or value < 0:
+            errors.append(f"{label} must be a nonnegative integer (got {value!r})")
+            return False
+        return True
+
+    spaces = mapping(state.get("spaces", {}), "spaces")
+    for region, space in spaces.items():
+        space = mapping(space, f"space {region}")
+        pieces = mapping(space.get("pieces", {}), f"pieces in {region}")
+        for faction, faction_pieces in pieces.items():
+            label = f"{region}/{faction}"
+            for kind, value in mapping(faction_pieces, label).items():
+                if kind == LEADER:
+                    continue
+                if kind in (HIDDEN, REVEALED, SCOUTED):
+                    for piece, number in mapping(value, f"{label}/{kind}").items():
+                        count(number, f"{label}/{kind}/{piece}")
+                else:
+                    count(value, f"{label}/{kind}")
+
+    for name in ("available", "removed_pieces"):
+        for faction, pool in mapping(state.get(name, {}), name).items():
+            label = f"{name}/{faction}"
+            for piece, number in mapping(pool, label).items():
+                count(number, f"{label}/{piece}")
+
+    track = mapping(state.get("legions_track", {}), "legions_track")
+    for row, number in track.items():
+        label = f"legions_track/{row}"
+        if count(number, label) and number > LEGIONS_PER_ROW:
+            errors.append(f"{label} has {number} Legions (max {LEGIONS_PER_ROW})")
+    for name in ("fallen_legions", "removed_legions", "winter_track_legions"):
+        count(state.get(name, 0), name)
+    return errors
+
+
 def validate_state(state):
     """Validate state integrity: piece counts reconcile with caps.
 
@@ -193,7 +246,12 @@ def validate_state(state):
     Returns:
         List of error strings. Empty list means valid.
     """
-    errors = []
+    errors = _piece_count_errors(state)
+    if errors:
+        # Invalid domains already establish corruption. Do not try to sum
+        # strings, lists, or other malformed counts and hide the diagnosis
+        # behind an unrelated arithmetic exception.
+        return errors
     scenario = state["scenario"]
     # The optional original-scenario Diviciacus and carried Interlude
     # components use exactly the same inventory limits as piece operations.
@@ -322,10 +380,26 @@ def check_structural_integrity(state):
       2. Tribe allegiance <-> backing piece: in each Region, the number of
          Tribes allied to a Faction equals that Faction's Ally + Citadel
          pieces there (the Q13 desync class, both directions).
-      3. Resources are non-negative.
-      4. Available pools are non-negative.
+      3. Resources are nonnegative integers within the Resource limit.
+      4. Map and off-map piece counts are nonnegative integers, with at
+         most four Legions per Legions-track row (§1.4.1).
     """
-    errors = []
+    errors = _piece_count_errors(state)
+    invalid_piece_counts = bool(errors)
+    resources = state.get("resources", {})
+    if not isinstance(resources, dict):
+        errors.append("resources must be a mapping")
+    else:
+        for fac, res in resources.items():
+            if type(res) is not int:
+                errors.append(f"{fac} Resources must be a nonnegative integer ({res!r})")
+            elif res < 0:
+                errors.append(f"{fac} Resources negative ({res})")
+            elif res > MAX_RESOURCES:
+                errors.append(f"{fac} Resources exceed the limit ({res} > {MAX_RESOURCES})")
+    if invalid_piece_counts:
+        # The following stacking and Control checks require numeric counts.
+        return errors
     spaces = state.get("spaces", {})
 
     # 1. One Citadel per Region (any Faction), and one Roman Fort per Region.
@@ -400,16 +474,5 @@ def check_structural_integrity(state):
             errors.append(
                 f"{region}: control flag '{stored}' but recompute is "
                 f"'{fresh}' (stale)")
-
-    # 4. Resources non-negative.
-    for fac, res in (state.get("resources") or {}).items():
-        if res < 0:
-            errors.append(f"{fac} Resources negative ({res})")
-
-    # 5. Available pools non-negative.
-    for fac, pool in (state.get("available") or {}).items():
-        for pt, n in (pool or {}).items():
-            if n < 0:
-                errors.append(f"{fac} {pt} Available negative ({n})")
 
     return errors

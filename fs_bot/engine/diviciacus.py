@@ -493,7 +493,9 @@ def place_converted(state, region, faction, piece_type, count, **kwargs):
         physical_type = piece_type if owner == faction else ctx['physical_type']
         board._place_piece_inner(state, region, owner, physical_type, n, **kwargs)
         if owner != faction:
-            ps = kwargs.get('piece_state', rc.HIDDEN)
+            # Match place_piece's default for omitted or explicit None.
+            # The borrowed ledger must track the physical Hidden counters.
+            ps = kwargs.get('piece_state') or rc.HIDDEN
             ctx['pieces'][region][ps] = ctx['pieces'][region].get(ps, 0) + n
     return True
 

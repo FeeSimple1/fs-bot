@@ -2605,6 +2605,11 @@ hashseed-identical; canary within band; fuzz seeds 1-20 clean.
 
 ## TRANSCRIPT-AUDIT FIND — "Ineligible through next card" clobbered (July 2026)
 
+**27 October correction:** the historical claim below that A19/A23 were
+current-card-only was incorrect. Their supplied card text says "through next
+card". The [first-batch repairs](docs/reviews/first-batch-2026-10-27.md) add
+those missing grants and test the actual next-card decision sequence.
+
 A live playtest transcript audit (the owner pasted a full two-card
 sequence and asked for a correctness check) found that card 18 Rhenus
 Bridge shaded docked Rome -6 Resources correctly but Rome was offered
@@ -2627,6 +2632,15 @@ charged 0 for a two-origin March; every score movement explained
 mystery Mandubii Auxilia loss was the Arverni Entreat.
 
 ## KNOCK-ON AUDIT — every persistent/timed card effect swept (Aug 2026)
+
+**27 October correction:** this was not exhaustive coverage. The blanket
+eligibility-conflict claim in item 1 below was also incorrect: the final
+"Executing Faction Eligible" clause of cards 6/14/A53 preserves the executing
+Faction, including Romans (and Aedui for A53). Card 14's supplied Tip confirms
+that the executing cylinder stays Eligible. The
+[first-batch repairs](docs/reviews/first-batch-2026-10-27.md) correct those
+handlers and add end-of-card and following-card regressions. Historical
+measurements below remain tied to their earlier revision.
 
 The owner asked for a systematic hunt for more bugs of the class the
 playtests kept surfacing: card effects that set state and never apply.

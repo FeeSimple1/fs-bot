@@ -70,6 +70,22 @@ Optional `details.transfers` (`[{"to": faction, "amount": integer}]`, §1.5.2)
 ride an action. The helpers below provide validation; the source plan builders
 remain the detailed reference for each Command and Special Activity.
 
+Boii (37) unshaded accepts `place_faction` (Romans or Aedui) and
+`placements`: entries contain `region`, `piece_type`, and positive integer
+`count`; an Ally entry also names its `tribe` and has count 1. The complete
+plan must place the legal available portion of two Allies and two native
+troops, within one Region of Aedui Control. Shaded `replacements` contains
+one or two distinct `{"tribe": name}` entries within one Region of Arverni
+Control when targets exist. Invalid complete plans are rejected before
+mutation; pool shortages allow the partial execution required by §5.1.3.
+
+Parley (A23) accepts `meeting_region` and `who_moves` (`"caesar"`,
+`"ariovistus"`, or `"both"`). Use `cards.parley.meeting_choices(state)`
+for legal pairs. Adjacent named Leaders can meet in either one's Region;
+Leaders two Regions apart must both move to a common adjacent Region.
+An omitted meeting is rejected when a legal meeting exists. When no meeting
+is possible, the independent next-card ineligibility still applies.
+
 Human plans may set `sa_timing` to `"before"` or `"after"` (default).
 This controls resolution, independently of the timing required by the bot
 flowcharts. Ambush and Besiege are Battle modifiers and resolve within the

@@ -31,7 +31,13 @@ _CAPABILITY_MODIFIERS = {
     ("A63", EVENT_UNSHADED): ("card_A63_quarters_devastated_only",),
     ("A22", EVENT_UNSHADED): ("card_A22_no_intimidate_romans",),
     ("A38", EVENT_UNSHADED): ("card_A38_suborn_enhanced",),
+    ("A33", EVENT_UNSHADED): ("card_A33_no_german_retreat",
+                              "card_A33_remove_outnumbered"),
+    ("A70", EVENT_UNSHADED): ("card_A70_no_belgae_retreat",),
 }
+
+# These unshaded capabilities were formerly saved only as modifiers.
+_LEGACY_MODIFIER_CAPABILITIES = ("A33", "A38", "A70")
 
 
 def _clear_companion_modifiers(state, card_id, side):
@@ -71,10 +77,12 @@ def activate_capability(state, card_id, shaded_or_unshaded):
     prev = get_active_capabilities(state).get(card_id)
     if prev is not None and prev != shaded_or_unshaded:
         _clear_companion_modifiers(state, card_id, prev)
-    if card_id == "A38" and shaded_or_unshaded == EVENT_SHADED:
-        # Older saves could retain the unshaded modifier alongside the
-        # shaded capability. Replaying the shaded side must clear it too.
-        _clear_companion_modifiers(state, card_id, EVENT_UNSHADED)
+    # Old saves can contain modifiers from a superseded side even when
+    # their registry already records the new side. Clear the opposite
+    # side unconditionally so replaying a capability repairs that state.
+    opposite = (EVENT_UNSHADED if shaded_or_unshaded == EVENT_SHADED
+                else EVENT_SHADED)
+    _clear_companion_modifiers(state, card_id, opposite)
     state["capabilities"][card_id] = shaded_or_unshaded
 
 
@@ -107,10 +115,9 @@ def deactivate_capability(state, card_id):
     state.get("capability_owners", {}).pop(card_id, None)
     side = get_active_capabilities(state).get(card_id)
     state["capabilities"].pop(card_id, None)
-    if side is not None:
-        _clear_companion_modifiers(state, card_id, side)
-    if card_id == "A38":
-        _clear_companion_modifiers(state, card_id, EVENT_UNSHADED)
+    # Remove both sides' companions, including stale old-save modifiers.
+    for removed_side in (EVENT_UNSHADED, EVENT_SHADED):
+        _clear_companion_modifiers(state, card_id, removed_side)
     return side
 
 
@@ -142,12 +149,15 @@ def get_active_capabilities(state):
         dict {card_id: EVENT_SHADED or EVENT_UNSHADED}
     """
     active = dict(state.get("capabilities", {}))
-    # Before the Vergobret lifecycle fix its unshaded Capability was saved
-    # only as this modifier. Interpret those saves without rewriting them;
+    # Older unshaded Capabilities were saved only as modifiers.
+    # Interpret those saves without rewriting them;
     # an explicit side always takes precedence over a stale modifier.
-    if ("A38" not in active and state.get("event_modifiers", {}).get(
-            "card_A38_suborn_enhanced")):
-        active["A38"] = EVENT_UNSHADED
+    mods = state.get("event_modifiers", {})
+    for card in _LEGACY_MODIFIER_CAPABILITIES:
+        if card not in active and any(
+                mods.get(key) for key in _CAPABILITY_MODIFIERS[
+                    (card, EVENT_UNSHADED)]):
+            active[card] = EVENT_UNSHADED
     return active
 
 

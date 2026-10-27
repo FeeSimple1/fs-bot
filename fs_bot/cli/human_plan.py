@@ -1360,6 +1360,12 @@ def _prompt_event_param(state, key, spec, stdin, stdout):
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
+    if card_id == 37:
+        from fs_bot.cards.boii import collect_params
+        return collect_params(state, faction, shaded, stdin, stdout)
+    if card_id == "A23":
+        from fs_bot.cards.parley import collect_params
+        return collect_params(state, stdin, stdout)
     if card_id == "A37":
         from fs_bot.cards.all_gaul_gathers import collect_params
         return collect_params(state, faction, shaded, stdin, stdout)

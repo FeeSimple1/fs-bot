@@ -68,11 +68,12 @@ def _shuffle_sort(state, values, key):
 
 def _high_value_forced(state, region, enemy):
     """A4, with the granted normal Battle's possible Retreat and no Ambush."""
+    from fs_bot.cards.capabilities import is_capability_active
     high = {rc.LEADER, rc.LEGION, rc.ALLY, rc.CITADEL, rc.SETTLEMENT}
     choices = [False]
     if (enemy != rc.ARVERNI and count_mobile_pieces(state, region, enemy)
-            and not (enemy == rc.BELGAE and state.get('event_modifiers', {}).get(
-                'card_A70_no_belgae_retreat'))):
+            and not (enemy == rc.BELGAE and is_capability_active(
+                state, 'A70', rc.EVENT_UNSHADED))):
         choices.append(True)
     for retreat in choices:
         losses = calculate_losses(state, region, rc.GERMANS, enemy, is_retreat=retreat)

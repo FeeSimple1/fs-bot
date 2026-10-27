@@ -4,7 +4,34 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
-## Unreleased — provisional rulings adopted 24 October 2026
+## Unreleased — Event integrity repairs, 27 October 2026
+
+- Reject malformed piece quantities before changing inventory, including
+  converted or borrowed forces; rejected placements, removals and movement
+  preserve the board and pools. Runtime checks now reject invalid count
+  domains even when their totals appear to conserve pieces.
+- Validate Boii's complete placement/replacement plan against its printed
+  limits, native piece types and geographic scope. Expose legal human choices
+  and supply the missing non-player plans; execute legal pool shortages
+  partially without allowing excess placements.
+- Preserve Event eligibility through card cleanup, including the executor
+  exception in shaded Marcus Antonius, Clodius Pulcher and Frumentum.
+- Register both sides of Wailing Women and Nervii as capabilities, clear
+  removed/replaced effects, and interpret earlier modifier-only saves.
+- Repair Parley's legal meeting choices, movement, non-player conditions and
+  next-card ineligibility, including Scouted Warbands and Gallia Togata's
+  Cisalpina stacking restriction.
+- Correct Diviciacus's physical-piece ledger when placement explicitly uses
+  the default visibility. Distinguish Ariovistus from a Successor when
+  applying Wailing Women's post-Counterattack removals.
+- Apply shaded German Phalanx's cancellation to Wailing Women's harmful
+  Battle effects; removing or replacing the suppressing capability restores
+  the underlying effects.
+
+Validation and remaining comparison findings are recorded in the
+[first-batch repair report](docs/reviews/first-batch-2026-10-27.md).
+
+## Provisional rulings adopted 24 October 2026
 
 - Adopt [PR-01 through PR-06](docs/provisional-rulings.md) as explicit project
   policies, each subject to possible later correction if an authoritative

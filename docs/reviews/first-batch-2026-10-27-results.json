@@ -1,0 +1,339 @@
+{
+  "accepted_attempt": 3,
+  "balance": {
+    "band_percentage_points": 15,
+    "baseline_updated": false,
+    "passed": true,
+    "scenarios": {
+      "Ariovistus": {
+        "after": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Germans": 6,
+          "Romans": 8
+        },
+        "before": {
+          "Aedui": 1,
+          "Belgae": 3,
+          "Germans": 7,
+          "Romans": 9
+        },
+        "changed_winner_seeds": [
+          8,
+          11,
+          13,
+          18
+        ],
+        "percentage_point_change": {
+          "Aedui": 10.0,
+          "Belgae": 0.0,
+          "Germans": -5.0,
+          "Romans": -5.0
+        }
+      },
+      "Pax Gallica?": {
+        "after": {
+          "Arverni": 1,
+          "Belgae": 3,
+          "Romans": 16
+        },
+        "before": {
+          "Aedui": 1,
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 16
+        },
+        "changed_winner_seeds": [
+          14,
+          20
+        ],
+        "percentage_point_change": {
+          "Aedui": -5.0,
+          "Arverni": 0.0,
+          "Belgae": 5.0,
+          "Romans": 0.0
+        }
+      },
+      "Reconquest of Gaul": {
+        "after": {
+          "Aedui": 4,
+          "Arverni": 3,
+          "Belgae": 1,
+          "Romans": 12
+        },
+        "before": {
+          "Aedui": 4,
+          "Arverni": 3,
+          "Belgae": 2,
+          "Romans": 11
+        },
+        "changed_winner_seeds": [
+          1,
+          3,
+          5,
+          7,
+          11,
+          12,
+          15
+        ],
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": -5.0,
+          "Romans": 5.0
+        }
+      },
+      "The Gallic War": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 3,
+          "Belgae": 4,
+          "Romans": 11
+        },
+        "before": {
+          "Arverni": 3,
+          "Belgae": 5,
+          "Romans": 12
+        },
+        "changed_winner_seeds": [
+          3,
+          5,
+          8,
+          10,
+          11,
+          12,
+          13,
+          20
+        ],
+        "percentage_point_change": {
+          "Aedui": 10.0,
+          "Arverni": 0.0,
+          "Belgae": -5.0,
+          "Romans": -5.0
+        }
+      },
+      "The Great Revolt": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 11,
+          "Belgae": 4,
+          "Romans": 3
+        },
+        "before": {
+          "Aedui": 1,
+          "Arverni": 9,
+          "Belgae": 4,
+          "Romans": 6
+        },
+        "changed_winner_seeds": [
+          7,
+          9,
+          11,
+          13
+        ],
+        "percentage_point_change": {
+          "Aedui": 5.0,
+          "Arverni": 10.0,
+          "Belgae": 0.0,
+          "Romans": -15.0
+        }
+      }
+    }
+  },
+  "bot_batches": {
+    "legacy": {
+      "accepted": 100,
+      "games": 100,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Germans": 6,
+          "Romans": 8
+        },
+        "Pax Gallica?": {
+          "Arverni": 1,
+          "Belgae": 3,
+          "Romans": 16
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 4,
+          "Arverni": 3,
+          "Belgae": 1,
+          "Romans": 12
+        },
+        "The Gallic War": {
+          "Aedui": 2,
+          "Arverni": 3,
+          "Belgae": 4,
+          "Romans": 11
+        },
+        "The Great Revolt": {
+          "Aedui": 2,
+          "Arverni": 11,
+          "Belgae": 4,
+          "Romans": 3
+        }
+      }
+    },
+    "original": {
+      "accepted": 50,
+      "games": 50,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Germans": 5,
+          "Romans": 5
+        },
+        "Pax Gallica?": {
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 6
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 2,
+          "Belgae": 2,
+          "Romans": 6
+        },
+        "The Gallic War": {
+          "Arverni": 5,
+          "Belgae": 1,
+          "Romans": 4
+        },
+        "The Great Revolt": {
+          "Arverni": 4,
+          "Belgae": 6
+        }
+      }
+    },
+    "second-edition": {
+      "accepted": 50,
+      "games": 50,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Germans": 5,
+          "Romans": 5
+        },
+        "Pax Gallica?": {
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 7
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 2,
+          "Belgae": 2,
+          "Romans": 6
+        },
+        "The Gallic War": {
+          "Arverni": 5,
+          "Belgae": 1,
+          "Romans": 4
+        },
+        "The Great Revolt": {
+          "Arverni": 4,
+          "Belgae": 6
+        }
+      }
+    }
+  },
+  "mixed_seats": {
+    "batch_digest": "279fa31b71500c56b20fac917cf86cf98f155f5a80234e590d477a4be669a635",
+    "cross_hash_equal": true,
+    "executions_including_replay": 80,
+    "hard_findings": 0,
+    "hash_seeds": [
+      0,
+      7
+    ],
+    "partial": 0,
+    "rejected_random_plans_per_hash": 7,
+    "unique_cases": 20
+  },
+  "pytest": {
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "4715",
+    "time": "399.723"
+  },
+  "source": {
+    "commit": "538c13d097eda535b54dd0ecee0e7a9d2404bda7",
+    "dirty": true,
+    "source_sha256": "7228099f14b047788c81189f97f0eb434a321dc7e47f835ba548695920bc711f"
+  },
+  "strict_census": {
+    "by_severity_per_hash": {
+      "legal-decline": 217
+    },
+    "cross_hash_equal": true,
+    "defects": 0,
+    "executions": 50,
+    "unique_cases": 25
+  }
+}

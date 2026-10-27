@@ -77,6 +77,13 @@ request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
 
+Boii has dedicated menus for its beneficiary, Allied Tribes and troop
+placements. The remaining allowance follows each choice across Regions.
+Parley offers complete legal meetings, including either direction when the
+named Leaders are adjacent. Wailing Women and Nervii appear in the active
+capability list on either side, including in older saves that recorded their
+unshaded effects only as internal modifiers.
+
 Before your decisions, the display shows the current and upcoming card
 texts and changes since your previous decision. Type **`b`** or **`board`**
 at a menu or yes/no prompt to inspect the full board, including piece

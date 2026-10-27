@@ -25,6 +25,9 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [27 October first repair batch](reviews/first-batch-2026-10-27.md) | Event integrity/lifecycle repairs, related discoveries, 4,715 tests, 200 bot games, mixed-seat replay, strict census and remaining comparison findings |
+| [First-batch results JSON](reviews/first-batch-2026-10-27-results.json) | Exact accepted coverage, source digest, diagnostic/replay checks and unchanged balance-band comparison |
+| [First-batch evidence archive](reviews/first-batch-2026-10-27-evidence.zip) | Accepted and superseded attempts, raw records, JUnit, logs and independent verification scripts |
 | [24 October provisional-ruling validation](reviews/provisional-rulings-2026-10-24.md) | Adopted policies: 4,481 tests, 200 audited bot games, 320 mixed-seat executions, strict census and unchanged balance baseline |
 | [Provisional-ruling results JSON](reviews/provisional-rulings-2026-10-24-results.json) | Machine-readable acceptance checks, exact coverage and source identity |
 | [Provisional-ruling evidence archive](reviews/provisional-rulings-2026-10-24-evidence.zip) | Commands, logs, per-game records, source identities and independent audits |

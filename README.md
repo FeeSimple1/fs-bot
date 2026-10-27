@@ -58,6 +58,15 @@ Diviciacus Leader rules. The choice is saved with the game.
 
 ## Current validation
 
+The [27 October first-batch report](docs/reviews/first-batch-2026-10-27.md)
+records **4,715 passing tests**, **200 audited bot games**, **80 mixed-seat
+executions including replay**, and **50 strict-census executions** on the
+Event integrity repairs. Cross-hash reports match and the unchanged balance
+guardrail passes. The report also identifies the confirmed human-interface
+and Spring-placement findings still outstanding.
+
+## Earlier validation
+
 The [provisional-ruling validation report](docs/reviews/provisional-rulings-2026-10-24.md)
 records **4,481 passing tests**, **200 audited bot games**, **320 mixed-seat
 executions with replay**, and **40 strict-census executions** on the adopted

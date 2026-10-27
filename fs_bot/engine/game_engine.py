@@ -421,7 +421,7 @@ def execute_pass(state, faction):
 def adjust_eligibility(state, actions_taken):
     """Sec.2.3.6 adjustment + event-imposed persistence: several Events
     make a Faction "Ineligible through next card" (6, 14, 18, 23, 46,
-    A17, A18). The plain reset clobbered that when the Faction had not
+    A17, A18, A19, A23, A53). The plain reset clobbered that when the Faction had not
     acted (found via a live playtest transcript audit: Rhenus Bridge
     docked Rome 6 Resources but Rome was offered the very next card).
     state["forced_ineligible"] = {faction: remaining_cards}.
@@ -440,8 +440,11 @@ def adjust_eligibility(state, actions_taken):
     # Eligible" on 6/14 shaded, "Stay Eligible" on 46 shaded, the
     # "or be Eligible" choice on 35 unshaded). The plain reset clobbered
     # these exactly as it clobbered "Ineligible through next card".
-    # An explicit "Ineligible" clause on the same Faction wins the
-    # conflict (the specific penalty beats the general retention).
+    # Handlers resolve their printed executor exceptions (6/14/A53) before
+    # registering these grants. One-card forced grants have been consumed
+    # above; their board eligibility lasts until the next adjustment or a
+    # later Event changes it (§5.1.2). Do not infer a blanket rule that a
+    # penalty defeats a later Event's eligibility benefit.
     stay = state.pop("stay_eligible", None)
     if stay:
         from fs_bot.rules_consts import ELIGIBLE

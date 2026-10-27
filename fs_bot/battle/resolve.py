@@ -24,7 +24,7 @@ from fs_bot.rules_consts import (
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     MOBILE_PIECES, FLIPPABLE_PIECES,
     # Piece states
-    HIDDEN, REVEALED, SCOUTED,
+    HIDDEN, REVEALED, SCOUTED, EVENT_UNSHADED, EVENT_SHADED,
     # Leaders
     CAESAR, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
     # Scenarios
@@ -42,6 +42,7 @@ from fs_bot.board.pieces import (
     move_piece, flip_piece, remove_piece, clear_allied_tribe,
 )
 from fs_bot.board.control import refresh_all_control
+from fs_bot.cards.capabilities import is_capability_active
 from fs_bot.map.map_data import get_adjacent, is_adjacent
 from fs_bot.battle.losses import (calculate_losses, resolve_losses,
                                   _remove_battle_piece,
@@ -138,11 +139,13 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         # either voluntarily or when they are forced to by combat"
         can_retreat = False
     elif (defending_faction == GERMANS
-          and state.get("event_modifiers", {}).get("card_A33_no_german_retreat")):
-        # A33 Wailing Women: Germans never Retreat.
+          and is_capability_active(state, "A33", EVENT_UNSHADED)
+          and not is_capability_active(state, "A31", EVENT_SHADED)):
+        # A33 Wailing Women: Germans never Retreat, unless A31 shaded
+        # cancels this harmful Event effect in Battle.
         can_retreat = False
     elif (defending_faction == BELGAE
-          and state.get("event_modifiers", {}).get("card_A70_no_belgae_retreat")):
+          and is_capability_active(state, "A70", EVENT_UNSHADED)):
         # A70: Belgae never Retreat.
         can_retreat = False
     elif (defending_faction == ARVERNI
@@ -418,10 +421,12 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         # A33 Wailing Women: unless Ariovistus is on the map, remove the
         # Germans' outnumbered Warbands after they Counterattack.
         if (defending_faction == GERMANS
-                and state.get("event_modifiers", {}).get(
-                    "card_A33_remove_outnumbered")):
+                and is_capability_active(state, "A33", EVENT_UNSHADED)
+                and not is_capability_active(state, "A31", EVENT_SHADED)):
             from fs_bot.board.pieces import find_leader as _find_leader
-            ario_on_map = _find_leader(state, GERMANS) is not None
+            leader_region = _find_leader(state, GERMANS)
+            ario_on_map = (leader_region is not None and get_leader_in_region(
+                state, leader_region, GERMANS) == ARIOVISTUS_LEADER)
             g_wb = count_pieces(state, region, GERMANS, WARBAND)
             atk_mobile = (count_pieces(state, region, attacking_faction, WARBAND)
                           + count_pieces(state, region, attacking_faction, AUXILIA)

@@ -12,6 +12,12 @@ from fs_bot import rules_consts as rc
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 37:
+        from fs_bot.cards.boii_np import np_available
+        return np_available(state, faction, shaded)
+    if card_id == 'A23' and faction in (rc.ROMANS, rc.GERMANS):
+        from fs_bot.cards.parley import np_choices
+        return bool(np_choices(state, faction))
     if card_id == 72 and not shaded and faction == rc.ROMANS:
         from fs_bot.cards.impetuosity_unshaded import roman_plan
         trial = deepcopy({key: value for key, value in state.items() if key != 'decision_agent'})

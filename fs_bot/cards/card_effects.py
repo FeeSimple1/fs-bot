@@ -519,7 +519,8 @@ def execute_card_6(state, shaded=False):
         # consumed by adjust_eligibility (else clobbered).
         state.setdefault("forced_ineligible", {})[ROMANS] = 1
         executing = state.get("executing_faction")
-        if executing and executing != ROMANS:
+        if executing:
+            state["forced_ineligible"].pop(executing, None)
             state["eligibility"][executing] = ELIGIBLE
             # "Executing Faction Eligible" survives the Sec.2.3.6 reset
             # (else clobbered — the mirror of forced_ineligible).
@@ -748,7 +749,8 @@ def execute_card_14(state, shaded=False):
         state.setdefault("forced_ineligible", {})[ROMANS] = 1
         # Executing Faction stays Eligible
         executing = state.get("executing_faction")
-        if executing and executing != ROMANS:
+        if executing:
+            state["forced_ineligible"].pop(executing, None)
             state["eligibility"][executing] = ELIGIBLE
             # Survives the Sec.2.3.6 reset (mirror of forced_ineligible).
             state.setdefault("stay_eligible", []).append(executing)
@@ -1769,34 +1771,8 @@ def execute_card_37(state, shaded=False):
 
     Source: Card Reference, card 37
     """
-    from fs_bot.rules_consts import TRIBE_TO_REGION
-    params = state.get("event_params", {})
-    if not shaded:
-        # Place 2 Allies + 2 Warbands/Auxilia at/adjacent to Aedui Control
-        faction = params.get("place_faction", AEDUI)
-        placements = params.get("placements", [])
-        for p in placements:
-            region = p["region"]
-            piece_type = p["piece_type"]
-            cnt = p.get("count", 1)
-            if piece_type == ALLY:
-                tribe = p.get("tribe")
-                if _tribe_region(state, tribe) == region:
-                    _ally_tribe(state, tribe, faction)
-            elif piece_type in (WARBAND, AUXILIA):
-                if get_available(state, faction, piece_type) >= cnt:
-                    place_piece(state, region, faction, piece_type, count=cnt)
-    else:
-        # Replace 1-2 Aedui Allies with Arverni Allies at/adjacent Arverni Control
-        replacements = params.get("replacements", [])
-        for r in replacements:
-            tribe = r["tribe"]
-            tribe_info = state.get("tribes", {}).get(tribe)
-            if (tribe_info and tribe_info.get("allied_faction") == AEDUI
-                    and _tribe_piece_type(state, tribe) == ALLY):
-                # "(not Citadels)" — only Ally discs are replaced
-                _unally_tribe(state, tribe)
-                _ally_tribe(state, tribe, ARVERNI)
+    from fs_bot.cards.boii import execute
+    execute(state, shaded)
 
 def execute_card_38(state, shaded=False):
     """Card 38: Diviciacus — CAPABILITY (both sides).
@@ -1886,6 +1862,7 @@ def execute_card_40(state, shaded=False):
         # Stay Eligible
         if faction:
             state["eligibility"][faction] = ELIGIBLE
+            state.setdefault("stay_eligible", []).append(faction)
 
 def execute_card_41(state, shaded=False):
     """Card 41: Avaricum — Place pieces near Avaricum / gain Resources.
@@ -2092,6 +2069,7 @@ def execute_card_48(state, shaded=False):
     # Executing faction stays Eligible
     if faction:
         state["eligibility"][faction] = ELIGIBLE
+        state.setdefault("stay_eligible", []).append(faction)
 
 def execute_card_49(state, shaded=False):
     """Card 49: Drought — Halve Resources, Devastate, remove pieces.
@@ -3336,6 +3314,7 @@ def execute_card_A19(state, shaded=False):
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A19_march_romans"] = True
         state["eligibility"][ROMANS] = INELIGIBLE
+        state.setdefault("forced_ineligible", {})[ROMANS] = 1
 
 def execute_card_A20(state, shaded=False):
     """Card A20: Morbihan — Veneti operations.
@@ -3408,45 +3387,50 @@ def execute_card_A22(state, shaded=False):
 def execute_card_A23(state, shaded=False):
     """Card A23: Parley — Move Caesar/Ariovistus together.
 
-    Both sides: Move Caesar group or Ariovistus group to other's
-    Region (or meet in between). Romans and Germans Ineligible.
+    Both sides: Adjacent named Leaders meet in either one's Region;
+    if two Regions apart, both groups meet in a common adjacent Region.
+    Romans and Germans are Ineligible through the next card.
 
     Source: A Card Reference, card A23
     """
-    params = state.get("event_params", {})
-    caesar_loc = find_leader(state, ROMANS)
-    ario_loc = find_leader(state, GERMANS)
-    if caesar_loc is None or ario_loc is None:
-        state["eligibility"][ROMANS] = INELIGIBLE
-        state["eligibility"][GERMANS] = INELIGIBLE
-        return
+    from fs_bot.cards.parley import meeting_choices, named_leaders
+
+    params = state.get("event_params") or {}
+    caesar_loc, ario_loc = named_leaders(state)
+    choices = meeting_choices(state)
     target = params.get("meeting_region")
     who_moves = params.get("who_moves")  # "caesar", "ariovistus", "both"
-    if target and who_moves:
+    if choices:
+        if (target, who_moves) not in choices:
+            # A selectable meeting cannot be skipped under §5.1.3. Keep an
+            # incomplete/illegal human plan a visible error, never an automatic
+            # substitute choice or a successful eligibility-only Event.
+            raise ValueError("card A23: choose a legal meeting_region and who_moves")
         if who_moves in ("caesar", "both") and caesar_loc != target:
-            move_piece(state, caesar_loc, target, ROMANS, LEADER,
-                       leader_name=CAESAR)
+            move_piece(state, caesar_loc, target, ROMANS, LEADER)
             cnt = count_pieces(state, caesar_loc, ROMANS, LEGION)
             if cnt > 0:
                 move_piece(state, caesar_loc, target, ROMANS, LEGION,
                            count=cnt)
-            for ps in (HIDDEN, REVEALED):
+            for ps in (HIDDEN, REVEALED, SCOUTED):
                 c = count_pieces_by_state(state, caesar_loc, ROMANS,
                                           AUXILIA, ps)
                 if c > 0:
                     move_piece(state, caesar_loc, target, ROMANS, AUXILIA,
                                count=c, piece_state=ps)
         if who_moves in ("ariovistus", "both") and ario_loc != target:
-            move_piece(state, ario_loc, target, GERMANS, LEADER,
-                       leader_name=ARIOVISTUS_LEADER)
-            for ps in (HIDDEN, REVEALED):
+            move_piece(state, ario_loc, target, GERMANS, LEADER)
+            for ps in (HIDDEN, REVEALED, SCOUTED):
                 c = count_pieces_by_state(state, ario_loc, GERMANS,
                                           WARBAND, ps)
                 if c > 0:
                     move_piece(state, ario_loc, target, GERMANS, WARBAND,
                                count=c, piece_state=ps)
-    state["eligibility"][ROMANS] = INELIGIBLE
-    state["eligibility"][GERMANS] = INELIGIBLE
+    # §5.1.3: this independent clause still applies when a meeting is
+    # impossible (missing named Leader, same Region, or too far apart).
+    for faction in (ROMANS, GERMANS):
+        state["eligibility"][faction] = INELIGIBLE
+        state.setdefault("forced_ineligible", {})[faction] = 1
 
 def execute_card_A24(state, shaded=False):
     """Card A24: Seduni Uprising! — Arverni Allies + Arverni Phase.
@@ -3830,7 +3814,7 @@ def execute_card_A32(state, shaded=False):
     state["event_modifiers"]["card_A32_arverni_phase"] = True
 
 def execute_card_A33(state, shaded=False):
-    """Card A33: Wailing Women — German Retreat/CAPABILITY.
+    """Card A33: Wailing Women — CAPABILITY (both sides).
 
     Unshaded: Germans never Retreat; unless Ariovistus on map, remove
     outnumbered Warbands after Counterattack.
@@ -3843,6 +3827,7 @@ def execute_card_A33(state, shaded=False):
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A33_no_german_retreat"] = True
         state["event_modifiers"]["card_A33_remove_outnumbered"] = True
+        activate_capability(state, "A33", EVENT_UNSHADED)
     else:
         activate_capability(state, "A33", EVENT_SHADED)
 
@@ -4103,6 +4088,7 @@ def execute_card_A40(state, shaded=False):
         _cap_resources(state, ROMANS, -5 * drain)
         if faction:
             state["eligibility"][faction] = ELIGIBLE
+            state.setdefault("stay_eligible", []).append(faction)
 
 def execute_card_A43(state, shaded=False):
     """Card A43: Dumnorix — Replace Arverni pieces / Remove+place Arverni.
@@ -4294,8 +4280,14 @@ def execute_card_A53(state, shaded=False):
         _cap_resources(state, ROMANS, -4)
         state["eligibility"][AEDUI] = INELIGIBLE
         state["eligibility"][ROMANS] = INELIGIBLE
+        forced = state.setdefault("forced_ineligible", {})
+        forced[AEDUI] = forced[ROMANS] = 1
         if faction:
+            # The last, executor-specific clause is an exception to "Both
+            # Ineligible" when a Roman or Aedui player executes this side.
+            forced.pop(faction, None)
             state["eligibility"][faction] = ELIGIBLE
+            state.setdefault("stay_eligible", []).append(faction)
 
 def execute_card_A56(state, shaded=False):
     """Card A56: Galba — Belgae surrender / King placement.
@@ -4711,7 +4703,7 @@ def execute_card_O38(state, shaded=False):
 
 
 def execute_card_A70(state, shaded=False):
-    """Card A70: Nervii — No Belgae Retreat / CAPABILITY.
+    """Card A70: Nervii — CAPABILITY (both sides).
 
     Unshaded: Belgae never Retreat.
     Shaded (CAPABILITY): If Nervii Subdued at end of any Faction's
@@ -4722,6 +4714,7 @@ def execute_card_A70(state, shaded=False):
     if not shaded:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A70_no_belgae_retreat"] = True
+        activate_capability(state, "A70", EVENT_UNSHADED)
     else:
         activate_capability(state, "A70", EVENT_SHADED)
 

@@ -4917,7 +4917,7 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
     """
     from fs_bot.rules_consts import (
         ROMANS, GERMANS, ARVERNI, BELGAE, LEGION, AUXILIA, WARBAND, CITADEL,
-        FORT, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+        FORT, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, EVENT_UNSHADED, EVENT_SHADED,
     )
     from fs_bot.battle.losses import calculate_losses
 
@@ -4928,12 +4928,13 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
         return (False, None)  # §3.2.4: Germans never Retreat (base)
     if defender == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
         return (False, None)  # A3.2.4: Arverni never Retreat
-    mods = state.get("event_modifiers") or {}
-    if defender == BELGAE and mods.get("card_A70_no_belgae_retreat"):
+    from fs_bot.cards.capabilities import is_capability_active
+    if defender == BELGAE and is_capability_active(state, "A70", EVENT_UNSHADED):
         # A70 unshaded: "Belgae never Retreat" — no choice exists, so the
         # agent is not consulted (the battle mechanic refuses regardless).
         return (False, None)
-    if defender == GERMANS and mods.get("card_A33_no_german_retreat"):
+    if (defender == GERMANS and is_capability_active(state, "A33", EVENT_UNSHADED)
+            and not is_capability_active(state, "A31", EVENT_SHADED)):
         return (False, None)  # A33 Wailing Women: Germans never Retreat
 
     # Legal Retreat destinations (adjacent Regions the defender Controls, or
@@ -5396,6 +5397,9 @@ def _derive_event_params(state, faction, card_id, shaded):
     per-card workstream; those remain reported as 'needs parameters' rather
     than guessed.
     """
+    if card_id == "A23":
+        from fs_bot.cards.parley import derive_params
+        return derive_params(state, faction, shaded)
     fn = _EVENT_PARAM_DERIVERS.get(card_id)
     if fn is None:
         return None
@@ -6277,9 +6281,11 @@ def _derive_card_62(state, faction, shaded):
 
 
 from fs_bot.cards.ally_events import derive_gobannitio, derive_correus
+from fs_bot.cards.boii_np import derive_boii
 
 
 _EVENT_PARAM_DERIVERS = {
+    37: derive_boii,
     26: derive_gobannitio,
     64: derive_correus,
     "O38": _derive_o38_region,

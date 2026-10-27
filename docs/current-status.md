@@ -18,6 +18,32 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 27 October Event integrity batch
+
+The [first-batch report](reviews/first-batch-2026-10-27.md) records the repairs
+from the owner-authorized Liberty or Death engineering comparison. Falling
+Sky's supplied references govern every gameplay change; the other project
+provided testing ideas, not game rules.
+
+This batch addresses piece-operation/count validation, Boii's bounded plans,
+Event eligibility at card cleanup, A33/A70 capability lifetimes, Parley's
+meeting execution and planning, and related Diviciacus/Ariovistus defects.
+
+The comparison also confirmed work **still outstanding after this batch**:
+
+- The Province and Ambacti human menus, and Chieftains' Council's human
+  beneficiaries, information and decisions.
+- Spring Leader placement priorities, legal destinations, human choices
+  and randomized non-player ties.
+- Optional Recruit/Rally quantities and Vercingetorix's combined Rally menu.
+- Human voluntary own-piece removal/reclamation under §1.4.1.
+- A source-derived inventory of every printed human choice, independent of
+  the implementation's existing hooks.
+
+Earlier passing batches did not establish completeness in these areas.
+
+### Earlier follow-up repairs
+
 The following changes follow that checkpoint; its 1,000-game outcomes are
 historical evidence for the earlier mechanics, not measurements of these
 changes.
@@ -122,6 +148,15 @@ scenario's Winter Campaign card order (63/A63) as a documented compatibility
 fallback. Protected references and `rules_consts.py` are unchanged.
 
 ## Verification and limits
+
+The [27 October first-batch report](reviews/first-batch-2026-10-27.md)
+records 4,715 passing tests, 200 accepted bot games across three card
+editions, 80 mixed-seat executions including replay, and 50 strict-census
+executions. Cross-hash reports match. The unchanged balance band passes;
+25 individual legacy-game winners changed, with a maximum faction rate
+movement of exactly 15 percentage points. The report distinguishes rejected
+random plans and the remaining confirmed human-play gaps from accepted
+engine validation.
 
 The [provisional-ruling report](reviews/provisional-rulings-2026-10-24.md)
 records 4,481 passing tests, 200 audited bot games, 320 mixed-seat executions

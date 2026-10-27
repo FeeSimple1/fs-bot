@@ -42,6 +42,22 @@ class PieceError(Exception):
     pass
 
 
+def _validate_count(count):
+    """Physical counters cannot be negative, fractional, or boolean."""
+    if type(count) is not int or count < 0:
+        raise PieceError("Piece count must be a nonnegative integer")
+
+
+def _validate_visibility(piece_state):
+    if piece_state is not None and piece_state not in (HIDDEN, REVEALED, SCOUTED):
+        raise PieceError(f"Unknown piece state: {piece_state}")
+
+
+def _validate_region(state, region):
+    if region not in state["spaces"]:
+        raise PieceError(f"Unknown Region: {region}")
+
+
 def _second_half_caps(caps, state):
     """Gallic War second half (A2.1): the scenario id switched to
     Pax Gallica?, but two Ariovistus component sets stay in circulation —
@@ -295,6 +311,7 @@ def _ensure_faction_pieces_structure(state, region, faction):
     # Ensure flippable sub-dicts
     for ps in (HIDDEN, REVEALED, SCOUTED):
         f_pieces.setdefault(ps, {})
+    return f_pieces
 
 
 def place_piece(state, region, faction, piece_type, count=1, *,
@@ -317,9 +334,13 @@ def place_piece(state, region, faction, piece_type, count=1, *,
     Raises:
         PieceError: If placement violates game rules.
     """
+    _validate_count(count)
+    if count == 0:
+        return
+    _validate_region(state, region)
+    _validate_visibility(piece_state)
     _validate_piece_exists_in_scenario(state, faction, piece_type)
-    _ensure_faction_pieces_structure(state, region, faction)
-    f_pieces = state["spaces"][region]["pieces"][faction]
+    f_pieces = state["spaces"][region].get("pieces", {}).get(faction, {})
 
     if piece_type == LEADER:
         if count != 1:
@@ -332,10 +353,13 @@ def place_piece(state, region, faction, piece_type, count=1, *,
         avail = state["available"].get(faction, {}).get(LEADER, 0)
         if avail < 1:
             raise PieceError(f"No {faction} Leader Available")
-        state["available"][faction][LEADER] = avail - 1
         # Place leader — leader_name determines symbol end
         if leader_name is None:
             raise PieceError("leader_name required when placing a Leader")
+        if leader_name != SUCCESSOR and LEADER_FACTION.get(leader_name) != faction:
+            raise PieceError(f"Invalid Leader for {faction}: {leader_name}")
+        f_pieces = _ensure_faction_pieces_structure(state, region, faction)
+        state["available"][faction][LEADER] = avail - 1
         f_pieces[LEADER] = leader_name
         return
 
@@ -350,6 +374,8 @@ def place_piece(state, region, faction, piece_type, count=1, *,
                 )
             state["fallen_legions"] -= count
         elif from_legions_track:
+            if _count_on_legions_track(state) < count:
+                raise PieceError(f"Not enough Legions on track (need {count})")
             # Remove from track, top rows first
             remaining = count
             for row in reversed(LEGIONS_ROWS):
@@ -359,15 +385,12 @@ def place_piece(state, region, faction, piece_type, count=1, *,
                 remaining -= take
                 if remaining == 0:
                     break
-            if remaining > 0:
-                raise PieceError(
-                    f"Not enough Legions on track (need {count})"
-                )
         else:
             raise PieceError(
                 "Must specify from_legions_track=True or from_fallen=True "
                 "when placing Legions — Legions are not in Available (§1.4.1)"
             )
+        f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         f_pieces[LEGION] = f_pieces.get(LEGION, 0) + count
         return
 
@@ -382,6 +405,7 @@ def place_piece(state, region, faction, piece_type, count=1, *,
         avail = get_available(state, faction, FORT)
         if avail < count:
             raise PieceError(f"Only {avail} Forts Available, need {count}")
+        f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         _set_available(state, faction, FORT, avail - count)
         f_pieces[FORT] = current_forts + count
         return
@@ -404,6 +428,7 @@ def place_piece(state, region, faction, piece_type, count=1, *,
             raise PieceError(
                 f"Only {avail} Settlements Available, need {count}"
             )
+        f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         _set_available(state, faction, SETTLEMENT, avail - count)
         f_pieces[SETTLEMENT] = current + count
         return
@@ -414,6 +439,7 @@ def place_piece(state, region, faction, piece_type, count=1, *,
             raise PieceError(
                 f"Only {avail} {faction} Allies Available, need {count}"
             )
+        f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         _set_available(state, faction, ALLY, avail - count)
         f_pieces[ALLY] = f_pieces.get(ALLY, 0) + count
         return
@@ -436,6 +462,7 @@ def place_piece(state, region, faction, piece_type, count=1, *,
             raise PieceError(
                 f"Only {avail} {faction} Citadels Available, need {count}"
             )
+        f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         _set_available(state, faction, CITADEL, avail - count)
         f_pieces[CITADEL] = f_pieces.get(CITADEL, 0) + count
         return
@@ -448,6 +475,7 @@ def place_piece(state, region, faction, piece_type, count=1, *,
             raise PieceError(
                 f"Only {avail} {faction} {piece_type} Available, need {count}"
             )
+        f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         _set_available(state, faction, piece_type, avail - count)
         f_pieces[ps][piece_type] = f_pieces[ps].get(piece_type, 0) + count
         return
@@ -477,6 +505,11 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
     Raises:
         PieceError: If removal violates game rules.
     """
+    _validate_count(count)
+    if count == 0:
+        return
+    _validate_region(state, region)
+    _validate_visibility(piece_state)
     space = state["spaces"].get(region, {})
     f_pieces = space.get("pieces", {}).get(faction, {})
 
@@ -511,6 +544,11 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
             raise PieceError(
                 f"Only {current} Legions in {region}, need {count}"
             )
+        if to_track and not to_fallen:
+            capacity = sum(LEGIONS_PER_ROW - state["legions_track"].get(row, 0)
+                           for row in LEGIONS_ROWS)
+            if capacity < count:
+                raise PieceError(f"Not enough room on Legions track (need {count})")
         f_pieces[LEGION] = current - count
         if to_fallen:
             state["fallen_legions"] = state.get("fallen_legions", 0) + count
@@ -573,6 +611,13 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
             # Remove Hidden first, then Revealed, then Scouted
             states_to_check = [HIDDEN, REVEALED, SCOUTED]
 
+        available = sum(f_pieces.get(ps, {}).get(piece_type, 0)
+                        for ps in states_to_check)
+        if available < count:
+            raise PieceError(
+                f"Only {available} {faction} {piece_type} in {region}, "
+                f"need {count}"
+            )
         for ps in states_to_check:
             current = f_pieces.get(ps, {}).get(piece_type, 0)
             take = min(current, count - removed)
@@ -582,11 +627,6 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
             if removed >= count:
                 break
 
-        if removed < count:
-            raise PieceError(
-                f"Only {removed} {faction} {piece_type} in {region}, "
-                f"need {count}"
-            )
         if to_available:
             avail = get_available(state, faction, piece_type)
             _set_available(state, faction, piece_type, avail + count)
@@ -611,18 +651,28 @@ def move_piece(state, from_region, to_region, faction, piece_type, count=1,
     Raises:
         PieceError: If move violates rules.
     """
+    _validate_count(count)
+    if count == 0:
+        return
+    _validate_region(state, from_region)
+    _validate_region(state, to_region)
+    _validate_visibility(piece_state)
     if piece_type == LEADER:
+        if count != 1:
+            raise PieceError("Can only move 1 Leader at a time")
         # Remove then place leader, preserving identity
         space = state["spaces"].get(from_region, {})
         f_pieces = space.get("pieces", {}).get(faction, {})
         leader_name = f_pieces.get(LEADER)
         if leader_name is None:
             raise PieceError(f"No {faction} Leader in {from_region}")
-        f_pieces[LEADER] = None
-        _ensure_faction_pieces_structure(state, to_region, faction)
-        dest = state["spaces"][to_region]["pieces"][faction]
+        if from_region == to_region:
+            return
+        dest = state["spaces"][to_region].get("pieces", {}).get(faction, {})
         if dest.get(LEADER) is not None:
             raise PieceError(f"{faction} already has a Leader in {to_region}")
+        dest = _ensure_faction_pieces_structure(state, to_region, faction)
+        f_pieces[LEADER] = None
         dest[LEADER] = leader_name
         return
 
@@ -657,6 +707,15 @@ def move_piece(state, from_region, to_region, faction, piece_type, count=1,
                 raise PieceError(
                     "Cannot remove the permanent Fort from Provincia"
                 )
+        if from_region != to_region and piece_type in (FORT, CITADEL, SETTLEMENT):
+            destination_total = sum(
+                fp.get(piece_type, 0)
+                for fp in state["spaces"][to_region].get("pieces", {}).values()
+            )
+            limit = (MAX_FORTS_PER_REGION if piece_type == FORT else
+                     MAX_SETTLEMENTS_PER_REGION if piece_type == SETTLEMENT else 1)
+            if destination_total + count > limit:
+                raise PieceError(f"Too many {piece_type} in {to_region}")
         src[piece_type] = current - count
         _ensure_faction_pieces_structure(state, to_region, faction)
         dest = state["spaces"][to_region]["pieces"][faction]
@@ -702,6 +761,12 @@ def flip_piece(state, region, faction, piece_type, count=1, *,
     Raises:
         PieceError: If flip violates rules.
     """
+    _validate_count(count)
+    if count == 0:
+        return
+    _validate_region(state, region)
+    _validate_visibility(from_state)
+    _validate_visibility(to_state)
     if piece_type not in FLIPPABLE_PIECES:
         raise PieceError(f"{piece_type} cannot be flipped")
     if from_state is None or to_state is None:
@@ -879,6 +944,11 @@ _place_piece_inner = place_piece
 
 
 def place_piece(state, region, faction, piece_type, count=1, **kwargs):
+    _validate_count(count)
+    if count == 0:
+        return
+    _validate_region(state, region)
+    _validate_visibility(kwargs.get("piece_state"))
     from fs_bot.engine.diviciacus import place_converted
     if place_converted(state, region, faction, piece_type, count, **kwargs):
         _refresh_region_control(state, region)
@@ -971,6 +1041,11 @@ def _enlist_operation(state, region, faction, piece_type, count, operation,
 
 
 def remove_piece(state, region, faction, piece_type, count=1, **kwargs):
+    _validate_count(count)
+    if count == 0:
+        return
+    _validate_region(state, region)
+    _validate_visibility(kwargs.get("piece_state"))
     owner = kwargs.pop("physical_owner", None)
     if _enlist_operation(state, region, faction, piece_type, count, "remove",
                           owner=owner, **kwargs):
@@ -989,6 +1064,12 @@ _move_piece_inner = move_piece
 
 def move_piece(state, from_region, to_region, faction, piece_type, count=1,
                **kwargs):
+    _validate_count(count)
+    if count == 0:
+        return
+    _validate_region(state, from_region)
+    _validate_region(state, to_region)
+    _validate_visibility(kwargs.get("piece_state"))
     owner = kwargs.pop("physical_owner", None)
     if _enlist_operation(state, from_region, faction, piece_type, count, "move",
                           owner=owner, destination=to_region, **kwargs):
@@ -1007,6 +1088,12 @@ _flip_piece_inner = flip_piece
 
 
 def flip_piece(state, region, faction, piece_type, count=1, **kwargs):
+    _validate_count(count)
+    if count == 0:
+        return
+    _validate_region(state, region)
+    _validate_visibility(kwargs.get("from_state"))
+    _validate_visibility(kwargs.get("to_state"))
     owner = kwargs.pop("physical_owner", None)
     if _enlist_operation(state, region, faction, piece_type, count, "flip",
                           owner=owner, **kwargs):

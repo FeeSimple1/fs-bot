@@ -77,6 +77,27 @@ request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
 
+The Province offers its printed Auxilia or Resources choice, showing the
+Available pool and Resource-cap limits. Ambacti asks for its removal choice
+after showing the die roll, then lets you select the exact Auxilia by Region
+and visibility. Its unshaded menu offers Regions containing Roman pieces;
+only the named Caesar increases the placement from four to six.
+
+Chieftains' Council lets the executor select a qualifying Region and at
+least two participating player Factions there. Each participant acts in the
+card's initiative order, sees the next two face-down cards, and may choose
+a free Limited Command anywhere, become Eligible, or decline. The look
+skips the already face-up upcoming card. Private prompts name their
+recipient; people sharing one terminal must manage who can see that screen.
+
+Winter Uprising records who took the card. After a normal Quarters Phase,
+its human holder can activate it or keep it for a later Quarters Phase.
+The Gallic War Interlude requires activation. The selected beneficiary
+chooses the printed Allies and Warbands within one Region of the marker;
+for Arverni, the holder chooses their placements. Menus show the full held
+card and allow Warbands to be split among legal Regions. The following
+Command is required when possible, with normal Special Activity ordering.
+
 Boii has dedicated menus for its beneficiary, Allied Tribes and troop
 placements. The remaining allowance follows each choice across Regions.
 Parley offers complete legal meetings, including either direction when the

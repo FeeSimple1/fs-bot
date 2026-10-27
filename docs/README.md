@@ -25,6 +25,9 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [27 October second repair batch](reviews/second-batch-2026-10-27.md) | Province, Ambacti, Council and Winter Uprising choices; Aedui/final-year bot instructions; exact validation and outcome-drift investigation |
+| [Second-batch results JSON](reviews/second-batch-2026-10-27-results.json) | Final source identity, matrix acceptance, replay/diagnostic checks and baseline disposition |
+| [Second-batch evidence archive](reviews/second-batch-2026-10-27-evidence.zip) | Raw games, JUnit, commands, causal traces and preserved superseded validation |
 | [27 October first repair batch](reviews/first-batch-2026-10-27.md) | Event integrity/lifecycle repairs, related discoveries, 4,715 tests, 200 bot games, mixed-seat replay, strict census and remaining comparison findings |
 | [First-batch results JSON](reviews/first-batch-2026-10-27-results.json) | Exact accepted coverage, source digest, diagnostic/replay checks and unchanged balance-band comparison |
 | [First-batch evidence archive](reviews/first-batch-2026-10-27-evidence.zip) | Accepted and superseded attempts, raw records, JUnit, logs and independent verification scripts |

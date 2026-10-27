@@ -29,7 +29,7 @@ from fs_bot.rules_consts import (
     VERCINGETORIX, CAESAR,
     HARASSMENT_WARBANDS_PER_LOSS,
     # Regions
-    AEDUI_REGION, BRITANNIA,
+    AEDUI_REGION, BRITANNIA, PROVINCIA,
     # Events
     EVENT_SHADED,
     # Die
@@ -238,7 +238,11 @@ def _can_battle_in_region(state, region, scenario, enemy):
     # Enemy Fort/Citadel halves Attack Losses inflicted — §3.3.4
     enemy_fort = count_pieces(state, region, enemy, FORT)
     enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    if enemy_fort > 0 or enemy_citadel > 0:
+    # The Province's scoped free Battle is "as if no Fort". Apply its
+    # exception to the flowchart's Loss comparison as well as execution.
+    ignore_fort = (region == PROVINCIA
+                   and state.get('event_modifiers', {}).get('card_21_no_fort'))
+    if (enemy_fort > 0 and not ignore_fort) or enemy_citadel > 0:
         attack_raw = attack_raw / 2
 
     losses_inflicted = int(attack_raw)

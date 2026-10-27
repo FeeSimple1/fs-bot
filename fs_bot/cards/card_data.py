@@ -27,7 +27,7 @@ from fs_bot.rules_consts import (
     # Winter
     WINTER_CARD,
     # 2nd Edition replacement keys (for text lookup only, not deck composition)
-    SECOND_EDITION_CARDS,
+    SECOND_EDITION_CARDS, CARD_O38,
 )
 
 # ---------------------------------------------------------------------------
@@ -435,6 +435,11 @@ def is_capability_card(card_id, scenario=None):
 
     For Ariovistus scenarios, checks both base and Ariovistus capability sets.
     """
+    # O38 is optional base-scenario content, outside the ordinary deck sets.
+    # Its shaded side is a Capability. Side-aware callers preserve the existing
+    # unshaded exemption pending the source question Q-O38.
+    if card_id == CARD_O38:
+        return True
     if scenario is not None and scenario in ARIOVISTUS_SCENARIOS:
         return (card_id in CAPABILITY_CARDS or
                 card_id in CAPABILITY_CARDS_ARIOVISTUS)

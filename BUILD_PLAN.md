@@ -1,14 +1,14 @@
 # Build plan and maintenance roadmap
 
-Updated 24 October 2026. The original pre-implementation plan is retained in
+Updated 27 October 2026. The original pre-implementation plan is retained in
 Git history. The engine now has implementations for all eight original build
 phases; those phase labels are an architectural map, not a list of unbuilt
 features or a certification that every rule interaction is correct.
 
 Start with [current engineering status](docs/current-status.md) for corrected
 behavior and adopted provisional rulings, and the
-[24 October follow-up report](docs/reviews/followup-repairs-2026-10-24.md)
-for the newer repairs and their validation status. The earlier
+[27 October second-batch report](docs/reviews/second-batch-2026-10-27.md)
+for the latest Event-choice repairs and their validation status. The earlier
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
 retains its exact tested revision and reproducible results. Use
 [PLAYING.md](PLAYING.md) for terminal play and

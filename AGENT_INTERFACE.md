@@ -79,6 +79,35 @@ one or two distinct `{"tribe": name}` entries within one Region of Arverni
 Control when targets exist. Invalid complete plans are rejected before
 mutation; pool shortages allow the partial execution required by §5.1.3.
 
+The Province (21) unshaded accepts `province_choice: "auxilia"` or
+`"resources"`; omission retains the Auxilia default. Both require only Roman
+pieces in Provincia. Available pools and the Resource cap limit the actual
+benefit. The shaded side asks the Arverni for its scoped Raid/Battle after
+placement when applicable, independently of who played the Event.
+
+Ambacti (16) unshaded accepts `target_region`, which must contain Roman
+pieces. Shaded human choices arrive after the actual die roll in the
+`ambacti_removal` request below. The legacy `removal_choice` and
+`auxilia_removal_regions: [[region, count], ...]` parameters remain available
+for direct callers without a decision agent; live human decisions take
+precedence over those pre-roll parameters.
+
+Chieftains' Council (47) accepts `region` and `target_factions` (at least
+two distinct player Factions with pieces there). The Region itself must
+contain at least two non-German Factions. In Ariovistus, game-run Arverni
+can contribute to that condition but cannot be selected; Germans can be
+selected and use the Arverni initiative position. The selected subset is
+fixed before any beneficiary acts. Omitted selections prompt the executor
+through `council_selection` in a durable session. A raw caller without an
+agent, or an explicit default, uses a seeded Region choice and all player
+Factions there. This compatibility default does not change the printed
+non-player instruction to decline selecting the Council Event.
+
+Winter Uprising (A66) requires a legal `region` for its marker. Missing,
+malformed or out-of-scenario targets reject before any delayed trigger is
+recorded. Human placement does not require own pieces; non-player Belgae
+and Germans use their respective printed geographic restrictions.
+
 Parley (A23) accepts `meeting_region` and `who_moves` (`"caesar"`,
 `"ariovistus"`, or `"both"`). Use `cards.parley.meeting_choices(state)`
 for legal pairs. Adjacent named Leaders can meet in either one's Region;
@@ -154,6 +183,11 @@ inventing pieces, regions, owners, or internal grant flags.
 | `AGREEMENT` | `request_type, requesting_faction, context` | `bool` (agree?) — `request_type` in {`retreat_into_control`, `supply_line`, ...} |
 | `free_action` | `request_type` plus the Event's scope; ordinary grants may carry `allowed_commands, allowed_regions, max_regions, with_sa, free, allow_decline`; standalone SAs use `allowed_sas` | ordinary action or subtype-specific response below; decline only when permitted |
 | `kinship` | A65; `attackers, regions_by_faction` | `{"faction": attacker, "regions": [...]}`, decline, or explicit default |
+| `ambacti_removal` | 16; `roll, removal_counts, targets` | `{"removal_choice":"roll"\|"three", "removals":[{"region":name,"piece_state":visibility,"count":integer}, ...]}` or explicit default |
+| `council_selection` | 47; `regions` maps qualifying Regions to player Factions present, `minimum_factions` | `{"region":name,"target_factions":[...]}` or explicit default |
+| `council_choice` | 47; `region, target_factions, private_cards` and the one-Region, free, no-SA Command scope | `{"choice":"eligible"}`, a complete ordinary Command plan, `{"decline":true}`, or explicit default |
+| `winter_uprising_timing` | A66; full `card_text`, `region, holder, forced` | `{"activate":true}` or `{"activate":false}`, or explicit default |
+| `winter_uprising_placement` | A66; full `card_text`, `region, holder, forced, beneficiary, regions, tribes, allies, warbands` | `{"allies":[tribe,...],"warbands":[{"region":name,"count":integer},...]}` or explicit default |
 | `quarters_plan` | `faction, errors` | relocation/payment object described below, or explicit default |
 | `winter_campaign` | `card_id, remaining_actions`, optional `errors` | one paid action, combined Command+SA, or decline; see the Winter section below |
 | `frumentum_amount` | A53; `available_resources` (Aedui) | `{"amount": integer}`, `{"decline":true}` (zero), or explicit default |
@@ -163,6 +197,9 @@ inventing pieces, regions, owners, or internal grant flags.
 The file-based frontend accepts `{"use_default":true}` for a non-turn
 request only as an explicit decision. An omitted or invalid response remains
 pending. A normal turn still requires a legal `action` and its plan.
+Free-action defaults and declines must be single-field objects containing
+Boolean `true`; numeric `1`, strings and mixed sentinel/action objects are
+invalid.
 
 Diviciacus uses `AGREEMENT` with `request_type: "diviciacus"` for the
 other Faction's consent. Its context identifies the phase, selected Regions,
@@ -210,6 +247,48 @@ The validators are `commands.march.validate_harassment_response` and
 pieces or consuming RNG.
 
 ### Scoped Event grants
+
+Winter Uprising's timing request belongs to its human holder. Deferring
+keeps the card, marker and delayed effect. Non-player holders activate at
+the earliest window; the Gallic War Interlude forces activation and skips
+the optional timing request. Belgae and Germans choose their own granted
+placements; the holder chooses Arverni placements before the automatic
+Arverni Phase. `allies` and `warbands` in the request are exact required
+totals after Available-pool and destination limits. Choose distinct offered
+Tribes and positive integer Warband allocations in offered Regions.
+
+The follow-on Belgae/German free Command has `allow_decline: false`; it
+retains the granted Special Activity and its ordinary ordering choices.
+Pending placement or Command input rolls back the activation until the
+transaction can finish. New saves retain the actual holder. If an older
+save contains no recoverable holder, the engine reports
+`legacy_holder_unknown: true` and preserves its earlier automatic timing;
+it does not invent a human owner. A known beneficiary still receives its
+placement and Command decisions.
+
+Council's `private_cards` contains only the next two face-down cards,
+excluding the public upcoming card, or fewer when the deck is short. Each
+entry includes `card_id`, `title`, full available `text`, scenario-mapped
+`faction_order` and `np_symbols`, `is_winter`, and `has_carnyx_trigger`. Each
+selected beneficiary receives its own request in printed initiative order.
+Peek data is absent from public board snapshots, change reports and Event
+results. Full saves, request journals and raw callbacks are trusted
+interfaces that already contain the deck; they are not access-control
+boundaries. Do not publish a participant's private request to other seats.
+
+The Council Command is free, selects at most one Region, permits Frost
+March, and has no Special Activity. Declining or executing an ineffective
+Command does not automatically grant Eligible. Non-player beneficiaries
+randomly choose Command or Eligible, then use their real limited flowchart
+when Command is selected. Choosing Eligible survives card cleanup.
+
+Ambacti's `removal_counts` gives the required total for each alternative,
+limited by the Auxilia on the map. Each `targets` entry provides a Region,
+physical `piece_state`, and `available` count. Submit exactly the selected
+total without exceeding an entry's availability. There is no decline option.
+An invalid or missing durable-session response leaves the same decision
+pending; saving and resuming does not reroll the die. Ordinary board output
+and the current/upcoming-card display remain available before the choice.
 
 Free-action requests describe an Event's scope. `event_command` and
 `event_rally` select a Command; `event_sa` selects only an SA. Optional

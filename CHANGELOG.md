@@ -6,6 +6,36 @@ verified. Revision-specific results remain in the validation reports.
 
 ## Unreleased — Event integrity repairs, 27 October 2026
 
+- Enforce A70 Nervii's Roman/Aedui non-player condition in both expansion
+  scenarios: decline when Belgae are non-player, including earlier years.
+- Add The Province's printed Auxilia/Resources menu and Ambacti's post-roll,
+  exact-piece removal decisions, including durable save/resume and replay.
+  Correct related Senate, Fort-prediction and non-player instruction defects.
+- Restore Chieftains' Council's executor selections, private card look and
+  beneficiary choices in scenario-correct order. Keep its Eligible benefit
+  through cleanup and its private card information out of public output.
+- Display Germans in the Arverni initiative and NP-symbol slot on retained
+  base cards in Ariovistus, including private Council card information.
+- Enforce the Aedui's conditional Event exclusions from both instruction
+  tables: flagged Events are declined when Romans are human or their
+  scenario-specific victory score exceeds 12. This includes the Ambacti
+  condition found while investigating the initial outcome drift.
+- Require a valid Winter Uprising marker location before recording its
+  delayed effect. Non-player placement follows Belgica/Germania instructions
+  even when the acting faction has no pieces on the map.
+- Add Winter Uprising's held-card timing and physical placement decisions,
+  including forced Interlude activation, correct decision ownership,
+  non-player placement priorities, mandatory follow-on Command, and durable
+  pause/save/replay. Preserve unknown ownership explicitly in legacy saves.
+- Derive last-year non-player restrictions from the live Winter cards,
+  including the Gallic War's continuation through Interlude, instead of
+  relying on an unset flag or inconsistent separate checks.
+- Preserve legal German Rally + Settle plans when an Event limits Regions,
+  including actions where only the Settlement is placed.
+- Reject numeric or malformed free-action defaults/declines while leaving
+  durable decisions pending. The
+  [second-batch report](docs/reviews/second-batch-2026-10-27.md) records the
+  validation and remaining human-play work.
 - Reject malformed piece quantities before changing inventory, including
   converted or borrowed forces; rejected placements, removals and movement
   preserve the board and pools. Runtime checks now reject invalid count

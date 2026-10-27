@@ -47,6 +47,9 @@ def validate_response(state, request, response):
                 response.get("player_action"), dict):
             raise ValueError("This action needs a player_action plan.")
         return response
+    if kind in ("council_selection", "council_choice"):
+        from fs_bot.cards.council import validate_response as validate_council
+        return validate_council(state, request, response)
     if kind == "march_cohort":
         from fs_bot.engine.march_choices import validate_response as validate_cohort
         return validate_cohort(request, response)
@@ -81,6 +84,12 @@ def validate_response(state, request, response):
         if type(response) is not bool:
             raise ValueError("An agreement or harassment response must be true or false.")
         return response
+    if kind in ("winter_uprising_timing", "winter_uprising_placement"):
+        from fs_bot.cards.winter_uprising_resolution import validate_response as validate_uprising
+        return validate_uprising(state, request, response)
+    if kind == "ambacti_removal":
+        from fs_bot.cards.ambacti import validate_response as validate_ambacti
+        return validate_ambacti(state, request, response)
     if kind == "raid_intimidate":
         from fs_bot.engine.raid_intimidate import validate_response as validate_raid
         validate_raid(state, request, response)

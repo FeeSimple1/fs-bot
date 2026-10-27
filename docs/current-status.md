@@ -18,6 +18,64 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 27 October human Event choices batch
+
+The [second-batch report](reviews/second-batch-2026-10-27.md) records the
+next repairs from the comparison: The Province, Ambacti and Chieftains'
+Council. It covers the printed human choices, decision ownership,
+information timing, and related non-player and execution defects. The
+supplied Falling Sky references remain the gameplay authority.
+
+The Province now offers Auxilia or Resources, applies a two-box Senate
+shift as a single Event when Firm, and carries its Fort exception into the
+Arverni Battle prediction. Roman bots enforce their full-five-Auxilia
+instruction. Ambacti asks after the actual roll, exposes exact physical
+removals, and preserves that pending decision through save/resume. Its
+non-player placement/removal priorities and Aedui's permitted Roman benefit
+are corrected.
+
+Council now exposes the executor's Region and beneficiary subset, private
+face-down card information, and each selected faction's Command, Eligible
+or decline choice in scenario-correct initiative order. Eligible survives
+card cleanup. Private peek data is kept out of public board/change output
+and results. Shared free-action validation also rejects numeric defaults
+and declines instead of treating them as explicit Boolean answers.
+Public card summaries now map retained base-card initiative and non-player
+symbols to the German player seat in Ariovistus.
+The Aedui's conditional Event exclusions now apply to every flagged entry
+in the current scenario's instruction table. Those bots decline when Romans
+are human or the Roman victory score exceeds 12, including the expansion's
+Settlement subtraction. Human Event choices retain their printed freedom.
+The later bot-game run also exposed Winter Uprising's markerless trigger.
+Its required Region now validates before mutation, and bots follow their
+printed geographic target instructions without requiring existing pieces.
+Last-year restrictions use the live Winter calendar and preserve the
+Gallic War's pre-Interlude continuation.
+Winter Uprising also records its holder, permits human deferral after normal
+Quarters, forces activation at Interlude, and exposes exact within-one-Region
+Allied Tribe and Warband placements to the proper chooser. Non-player
+placements follow their priorities, and the subsequent Command is required
+when possible. These decisions support full held-card text, board inspection,
+pending input, save/resume and replay.
+Scoped Event planning now preserves legal German Rally + Settle plans that
+place only a Settlement, rather than discarding those fields as an empty
+Rally.
+
+Roman and Aedui bots also enforce Nervii's separate printed restriction: decline
+A70 when Belgae are non-player, including before the final year. Human Events
+and choices against player Belgae remain available.
+
+The optional O38 shaded Capability now receives the same final-year check.
+Its unshaded classification remains [Q-O38](../QUESTIONS.md#q-o38--optional-diviciacus-capability-label-27-october-2026): the flat
+source transcription does not settle the label's placement. Existing
+unshaded bot behavior is preserved, without introducing a new project ruling.
+
+The remaining comparison work is Spring Leader placement, optional
+Recruit/Rally quantities and Vercingetorix's combined Rally menu, voluntary
+own-piece reclamation, and a source-derived inventory of every printed
+human choice. Passing this batch does not establish completeness in those
+areas.
+
 ### 27 October Event integrity batch
 
 The [first-batch report](reviews/first-batch-2026-10-27.md) records the repairs
@@ -29,7 +87,7 @@ This batch addresses piece-operation/count validation, Boii's bounded plans,
 Event eligibility at card cleanup, A33/A70 capability lifetimes, Parley's
 meeting execution and planning, and related Diviciacus/Ariovistus defects.
 
-The comparison also confirmed work **still outstanding after this batch**:
+The comparison confirmed the following gaps at the first-batch checkpoint:
 
 - The Province and Ambacti human menus, and Chieftains' Council's human
   beneficiaries, information and decisions.
@@ -40,7 +98,8 @@ The comparison also confirmed work **still outstanding after this batch**:
 - A source-derived inventory of every printed human choice, independent of
   the implementation's existing hooks.
 
-Earlier passing batches did not establish completeness in these areas.
+The three Event gaps are addressed by the second batch above. Earlier
+passing batches did not establish completeness in these areas.
 
 ### Earlier follow-up repairs
 
@@ -148,6 +207,16 @@ scenario's Winter Campaign card order (63/A63) as a documented compatibility
 fallback. Protected references and `rules_consts.py` are unchanged.
 
 ## Verification and limits
+
+The [27 October second-batch report](reviews/second-batch-2026-10-27.md)
+records 5,112 passing tests, 200 audited bot games across three editions,
+80 mixed-seat executions including replay, and 50 strict-census executions.
+Cross-hash reports match, with no hard or partial mixed-seat findings and
+zero diagnostic defects. Two rejected random plans per hash and 245 legal
+census declines per hash are recorded separately. The report preserves
+superseded runs, exact causal replays and the original failed balance
+comparison. The reviewed baseline refresh keeps the same 100 seeds/scenarios
+and 15-point limit. Superseded outcomes are not pooled with the final matrix.
 
 The [27 October first-batch report](reviews/first-batch-2026-10-27.md)
 records 4,715 passing tests, 200 accepted bot games across three card

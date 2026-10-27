@@ -383,7 +383,7 @@ def _step1_winter_events(state):
     if uprising_active:
         from fs_bot.engine.execute import _resolve_winter_uprising
         result["events_resolved"].append("Winter Uprising!")
-        result["winter_uprising"] = _resolve_winter_uprising(state)
+        result["winter_uprising"] = _resolve_winter_uprising(state, forced=True)
 
     # Shaded Winter Campaign — card 63 (base) or A63 (Ariovistus).
     from fs_bot.rules_consts import EVENT_SHADED

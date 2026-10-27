@@ -29,6 +29,31 @@ Historical OPEN/CLOSED labels below describe earlier stages and do not replace
 this index. Earlier validation reports retain their original revisions and
 measurements; they do not validate these later adopted rulings.
 
+### Q-O38 — optional Diviciacus Capability label (27 October 2026)
+
+**Open; no new owner ruling.** The final-year review found inconsistent
+classification of optional O38. Its shaded effect is a Capability and now
+receives the non-player last-year restriction. The existing unshaded
+exemption remains unchanged pending clarification.
+
+`Reference Documents/Ariovistus/A Card Reference`, O38, places the standalone
+word **CAPABILITY** between the unshaded Leader-placement paragraph and the
+shaded Resource-transfer prohibition. The unshaded rationale discusses the
+optional Leader rules. `Reference Documents/Chapter 5`, §5.3, says that a
+boundary label applies to both sides:
+
+> “CAPABILITY” marked on the boundary between unshaded and shaded Dual-use text (5.2) means that both versions are Capabilities.
+
+The flat transcription does not establish the label's physical placement.
+
+Two interpretations remain: the boundary label covers both sides, requiring
+non-players to decline unshaded O38 in the last year too; or the label applies
+only to the shaded side, preserving the existing unshaded exemption. A
+reliable printed card image or authoritative clarification is needed. The
+27 October repair does not adopt either interpretation as a new rule.
+Actual unshaded bot routing was compared with `04b4b70` across 72 cases and
+remained unchanged. This question is separate from PR-01 through PR-06.
+
 ---
 
 ## [RESOLVED] German bot — G_MARCH_THREAT "at victory" threshold for Aedui/Belgae

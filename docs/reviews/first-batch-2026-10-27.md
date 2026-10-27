@@ -76,6 +76,10 @@ commit; this report does not predeclare its outcome.
 
 ## Remaining comparison findings
 
+Subsequent checkpoint: the [second repair batch](second-batch-2026-10-27.md)
+addresses The Province, Ambacti and Chieftains' Council. The measurements
+and remaining-work list below describe this first batch's original scope.
+
 This batch does not claim complete human-play coverage. The following
 confirmed findings remain for later batches:
 

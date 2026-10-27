@@ -32,12 +32,23 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind in ("council_selection", "council_choice"):
+                from fs_bot.cli.council import collect_selection, collect_choice
+                collect = collect_selection if kind == "council_selection" else collect_choice
+                return collect(state, faction, request, stdin, stdout)
             if kind == "diviciacus_pieces":
                 from fs_bot.cli.diviciacus import collect_pieces
                 return collect_pieces(state, faction, request, stdin, stdout)
             if kind == "march_cohort":
                 from fs_bot.cli.march_choices import collect_march_cohort
                 return collect_march_cohort(state, faction, request, stdin, stdout)
+            if kind in ("winter_uprising_timing", "winter_uprising_placement"):
+                from fs_bot.cli.winter_uprising import collect_timing, collect_placement
+                collector = collect_timing if kind == "winter_uprising_timing" else collect_placement
+                return collector(state, faction, request, stdin, stdout)
+            if kind == "ambacti_removal":
+                from fs_bot.cli.ambacti import collect_removal
+                return collect_removal(state, faction, request, stdin, stdout)
             if kind == "raid_intimidate":
                 from fs_bot.cli.raid_intimidate import collect_raid_intimidate
                 return collect_raid_intimidate(state, faction, request, stdin, stdout)

@@ -737,6 +737,34 @@ def _count_winter_cards_in_game(state):
                                         state.get("winter_count", 0))
 
 
+def next_winter_is_final(state):
+    """Read the live deck for NP final-year decisions (§8.1.1, A66).
+
+Like Winter resolution, the Gallic War's first half continues into its
+Interlude instead of ending on the third Winter. After that reset, resolved
+Winter counts may exceed the rebuilt played-card pile; use the same counting
+helper as the Winter engine. An old explicit flag remains useful to raw
+callers that supply no Winter cards, but never overrides a populated deck.
+"""
+    from fs_bot.rules_consts import SCENARIO_GALLIC_WAR
+    if (state["scenario"] == SCENARIO_GALLIC_WAR
+            and not state.get("interlude_completed", False)):
+        return False
+    deck = state.get("deck", [])
+    if any(is_winter_card(card) for card in deck):
+        return state.get("winter_count", 0) + 1 >= _count_winter_cards_in_game(state)
+    # The metadata API and older direct-call fixtures use W1-W5 identities;
+    # live scenario decks use the canonical WINTER_CARD sentinel instead.
+    legacy_winters = sum(card in ("W1", "W2", "W3", "W4", "W5") for card in deck)
+    if legacy_winters:
+        return legacy_winters == 1
+    if "final_year" in state:
+        return bool(state["final_year"])
+    # Preserve the evaluator's exhausted-deck convention, while an empty
+    # pre-setup state without cards has not entered its final year.
+    return bool(deck or state.get("played_cards") or state.get("winter_count", 0))
+
+
 # ============================================================================
 # GAME LOOP — §2.0
 # ============================================================================

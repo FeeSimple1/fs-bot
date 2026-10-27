@@ -50,13 +50,23 @@ Diviciacus Leader rules. The choice is saved with the game.
 | Play with an AI assistant | [Assistant guide](CHATGPT_README.md) |
 | Integrate a human or software agent | [Agent interface](AGENT_INTERFACE.md) |
 | Review fixes and remaining limitations | [Current engineering status](docs/current-status.md) |
-| Inspect outcomes and reproducible evidence | [Provisional-ruling validation](docs/reviews/provisional-rulings-2026-10-24.md), [earlier follow-up report](docs/reviews/followup-repairs-2026-10-24.md) |
+| Inspect outcomes and reproducible evidence | [Latest Event-choice repairs](docs/reviews/second-batch-2026-10-27.md), [first comparison batch](docs/reviews/first-batch-2026-10-27.md) |
 | Review adopted provisional rulings | [Six project rulings](docs/provisional-rulings.md), [question ledger](QUESTIONS.md#current-open-source-questions) |
 | Develop and validate changes | [Developer instructions](CLAUDE.md), [maintenance roadmap](BUILD_PLAN.md), [self-play workflow](SELFPLAY_PLAYBOOK.md) |
 | Install or check a release | [Release guide](RELEASES.md), [change history](CHANGELOG.md) |
 | Browse all project documentation | [Documentation index](docs/README.md) |
 
 ## Current validation
+
+The [27 October second-batch report](docs/reviews/second-batch-2026-10-27.md)
+records **5,112 passing tests**, **200 audited bot games**, **80 mixed-seat
+executions including replay**, and **50 strict-census executions** for the
+Province, Ambacti, Council and Winter Uprising repairs. It preserves the
+superseded failures, the bugs found through game traces, and the separate
+reviewed baseline refresh at the unchanged 15-point limit. Cross-hash replay
+and diagnostic reports match.
+
+## First comparison checkpoint
 
 The [27 October first-batch report](docs/reviews/first-batch-2026-10-27.md)
 records **4,715 passing tests**, **200 audited bot games**, **80 mixed-seat

@@ -177,6 +177,14 @@ and 13 winners relative to `8ef88e2`, with the same 100 keys and unchanged
 15-point threshold. The subsequent balance run matches every reviewed winner
 and card count. Both comparisons remain tied to their own source revisions.
 
+The [27 October second repair batch](docs/reviews/second-batch-2026-10-27.md)
+refreshes 50 records, 43 winners and 32 card counts after source-backed
+Event-selection and Winter Uprising corrections. It preserves the original
+Great Revolt Aedui +20-point failure and the earlier superseded attempts.
+The final refresh retains all 100 keys and the 15-point threshold; its
+source digest, causal review and fresh verification are recorded separately
+from the original failed comparison.
+
 ## Experimental strategy policies
 
 The repaired `heuristic_selfplay` runner removes the policy-controlled seat from

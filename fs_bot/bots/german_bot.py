@@ -547,12 +547,8 @@ def node_g3b(state):
         return "Yes"
 
     # Capabilities in the game's final year — §8.1.1, A8.7.2
-    from fs_bot.rules_consts import (
-        CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
-    )
-    is_cap = (card_id in CAPABILITY_CARDS
-              or card_id in CAPABILITY_CARDS_ARIOVISTUS)
-    if is_cap and state.get("final_year", False):
+    from fs_bot.bots.bot_common import is_final_year_capability
+    if is_final_year_capability(state, card_id, shaded=True):
         return "Yes"
 
     from fs_bot.cards.event_conditions import np_event_available
@@ -614,7 +610,8 @@ def _instruction_says_no_germans(state, card_id, instr):
     if "if belgae non-player" in text:
         return BELGAE in non_players
     if "if next winter is the last" in text:
-        return state.get("final_year", False)
+        from fs_bot.engine.game_engine import next_winter_is_final
+        return next_winter_is_final(state)
     return False
 
 

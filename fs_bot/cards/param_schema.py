@@ -243,6 +243,14 @@ def card_param_schema(card_id, scenario, card_edition=None):
 # violation). Offering/generating only these keeps humans out of dead ends
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
+    # Shaded choices are requested only after the actual die roll. The old
+    # removal_choice/value and (Region,count) list never belonged in generic
+    # pre-roll Region menus.
+    16: {"target_region": {"kind": "region", "region_pool": "card16_romans"}},
+    21: {"province_choice": {"kind": "value", "values": ("auxilia", "resources")}},
+    47: {"region": {"kind": "region", "region_pool": "card47_council"},
+         "target_factions": {"kind": "factions"}},
+    "A66": {"region": {"kind": "region", "region_pool": "cardA66_uprising"}},
     "A23": {"who_moves": {"kind": "value",
                            "values": ("caesar", "ariovistus", "both")}},
     37: {
@@ -336,6 +344,15 @@ def region_pool(state, name):
     """Named region pools for constrained cards."""
     from fs_bot.map.map_data import get_playable_regions_for_state
     playable = set(get_playable_regions_for_state(state))
+    if name == "card16_romans":
+        from fs_bot.cards.ambacti import eligible_regions
+        return eligible_regions(state)
+    if name == "card47_council":
+        from fs_bot.cards.council import eligible_regions
+        return list(eligible_regions(state))
+    if name == "cardA66_uprising":
+        from fs_bot.cards.winter_uprising import placement_regions
+        return placement_regions(state)
     if name == "card32_mainland":
         return sorted(playable - {BRITANNIA})
     if name == "card62_coastal":
@@ -419,7 +436,7 @@ def generate_params(state, card_id, rng, *, include_p=0.9):
             params[key] = picks
         else:
             vals = kind_values(state, kind, spec)
-            if kind == "capability" and not vals:
+            if not vals:
                 continue
             params[key] = vals[rng.randrange(len(vals))]
     return params

@@ -799,11 +799,11 @@ _ARIOVISTUS_FLAGS = {
             frozenset({REMOVES_WARBANDS, REMOVES_ALLIES,
                        PLACES_WARBANDS, PLACES_ALLIES})),
 
-    # A66: Winter Uprising! — Capability
+    # A66: Winter Uprising! — delayed marker Event, not a Capability (A5.1.4)
     # Un: Place Uprising marker
     # Sh: (same — single effect, marker + later effects)
-    "A66": (frozenset({PLACES_MARKERS, IS_CAPABILITY}),
-            frozenset({PLACES_MARKERS, IS_CAPABILITY})),
+    "A66": (frozenset({PLACES_MARKERS}),
+            frozenset({PLACES_MARKERS})),
 
     # A67: Arduenna (Ariovistus) — same effect both sides
     # Non-Arverni free March into Nervii/Treveri; free Command; flip Hidden
@@ -1174,21 +1174,16 @@ def is_capability_final_year(state, card_id, shaded=None):
     """
     scenario = state.get("scenario")
     from fs_bot.rules_consts import CARD_O38
-    # O38's unshaded side places a piece; only its shaded side is a
-    # Capability (A Card Reference). A card-level query remains supported.
+    # Preserve the existing O38 unshaded exemption while Q-O38 remains
+    # unresolved: the supplied CAPABILITY boundary does not settle its scope.
+    # Its shaded Capability and card-level queries remain supported.
     if card_id == CARD_O38 and shaded is False:
         return False
     if not is_capability_card(card_id, scenario):
         return False
 
-    # Check if next Winter is the last
-    # The deck contains Winter cards; if only 1 remains, this is final year
-    deck = state.get("deck", [])
-    winter_count = sum(
-        1 for cid in deck
-        if isinstance(cid, str) and cid.startswith("W")
-    )
-    return winter_count <= 1
+    from fs_bot.engine.game_engine import next_winter_is_final
+    return next_winter_is_final(state)
 
 
 # ---------------------------------------------------------------------------
@@ -1213,6 +1208,10 @@ def should_skip_event(state, card_id, faction):
         True if the bot should skip the event, False if it should play it.
     """
     scenario = state.get("scenario")
+
+    if card_id == "A66":
+        from fs_bot.cards.winter_uprising import np_regions
+        return not bool(np_regions(state, faction))
 
     # Determine which side the faction would use (§8.2.2)
     # Romans and Aedui: unshaded; Arverni, Belgae, Germans: shaded

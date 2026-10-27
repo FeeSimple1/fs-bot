@@ -779,64 +779,8 @@ def execute_card_16(state, shaded=False):
 
     Source: Card Reference, card 16
     """
-    if not shaded:
-        # Unshaded: Place 4 Auxilia (or 6 if Caesar in region)
-        # Region must have at least one Roman Forces piece (Tip: "Romans"
-        # means any Roman Forces piece — Leader, Legion, Auxilia, Fort, Ally)
-        params = state.get("event_params", {})
-        target = params.get("target_region")
-        if target is None:
-            return  # No target specified
-        # Validate region has Roman pieces
-        if count_pieces(state, target, ROMANS) == 0:
-            return  # No Roman Forces in this region — event ineffective
-        # Check if Caesar is in the region — 6 Auxilia if so, else 4
-        leader = get_leader_in_region(state, target, ROMANS)
-        num_auxilia = 6 if leader == CAESAR else 4
-        avail = get_available(state, ROMANS, AUXILIA)
-        to_place = min(num_auxilia, avail)
-        if to_place > 0:
-            place_piece(state, target, ROMANS, AUXILIA, count=to_place)
-    else:
-        # Shaded: Roll a die; executing faction chooses to remove either
-        # 3 or the die roll number of Auxilia from anywhere.
-        # Per Card Reference: "remove either 3 or that number" — a choice.
-        from fs_bot.rules_consts import DIE_MIN, DIE_MAX
-        roll = state["rng"].randint(DIE_MIN, DIE_MAX)
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_16_die_roll"] = roll
-        params = state.get("event_params", {})
-        # Executing faction chooses: "roll" or "three" (default: max for bot)
-        choice = params.get("removal_choice", "max")
-        if choice == "roll":
-            to_remove = roll
-        elif choice == "three":
-            to_remove = 3
-        else:
-            # Default bot behavior: remove as many as possible to hurt Romans
-            to_remove = max(roll, 3)
-        removal_regions = params.get("auxilia_removal_regions", [])
-        removed = 0
-        for region, count in removal_regions:
-            actual = min(count, to_remove - removed,
-                         count_pieces(state, region, ROMANS, AUXILIA))
-            if actual > 0:
-                remove_piece(state, region, ROMANS, AUXILIA, count=actual)
-                removed += actual
-            if removed >= to_remove:
-                break
-        # Auto-remove from anywhere if not enough specified
-        if removed < to_remove:
-            for region in list(state["spaces"].keys()):
-                if removed >= to_remove:
-                    break
-                avail_in_region = count_pieces(
-                    state, region, ROMANS, AUXILIA)
-                actual = min(avail_in_region, to_remove - removed)
-                if actual > 0:
-                    remove_piece(state, region, ROMANS, AUXILIA,
-                                 count=actual)
-                    removed += actual
+    from fs_bot.cards.ambacti import execute
+    return execute(state, shaded)
 
 def execute_card_17(state, shaded=False):
     """Card 17: Germanic Chieftains — March Germans / Germans Phase.
@@ -1012,17 +956,16 @@ def execute_card_21(state, shaded=False):
     Source: Card Reference, card 21
     """
     if not shaded:
-        # Unshaded: If only Roman pieces in Provincia
-        only_roman = True
-        for faction in FACTIONS:
-            if faction == ROMANS:
-                continue
-            if count_pieces(state, PROVINCIA, faction) > 0:
-                only_roman = False
-                break
-        if only_roman and count_pieces(state, PROVINCIA, ROMANS) > 0:
-            params = state.get("event_params", {})
-            choice = params.get("province_choice", "auxilia")
+        from fs_bot.cards.province import unshaded_available
+        params = state.get("event_params")
+        if params is None:
+            params = {}
+        if not isinstance(params, dict):
+            raise ValueError("The Province choices must be an object")
+        choice = params.get("province_choice", "auxilia")
+        if choice not in ("auxilia", "resources"):
+            raise ValueError("The Province province_choice must be 'auxilia' or 'resources'")
+        if unshaded_available(state):
             if choice == "resources":
                 _cap_resources(state, ROMANS, 10)
             else:
@@ -1034,9 +977,12 @@ def execute_card_21(state, shaded=False):
     else:
         # Shaded: Check Arverni Control of Provincia
         if is_controlled_by(state, PROVINCIA, ARVERNI):
-            # Shift Senate 2 boxes up
+            # One two-box Event shift: Firm flips instead of moving,
+            # regardless of the number of boxes (§5.1.1).
+            was_firm = state["senate"]["firm"]
             _apply_senate_shift(state, SENATE_UP)
-            _apply_senate_shift(state, SENATE_UP)
+            if not was_firm:
+                _apply_senate_shift(state, SENATE_UP)
         else:
             # Arverni place 4 Warbands in Provincia
             avail = get_available(state, ARVERNI, WARBAND)
@@ -2047,9 +1993,21 @@ def execute_card_47(state, shaded=False):
 
     Source: Card Reference, card 47
     """
-    state.setdefault("event_modifiers", {})
-    state["event_modifiers"]["card_47_council"] = True
-    # Region selection and faction actions deferred to bot/CLI layer
+    params = state.get("event_params")
+    if params is None:
+        params = {}
+    if not isinstance(params, dict):
+        raise ValueError("Council event_params must be an object.")
+    # Only public executor selections travel through Event modifiers. The
+    # resolver puts future cards solely in each beneficiary's private request.
+    selection = None
+    if "region" in params or "target_factions" in params:
+        selection = {"region": params.get("region"),
+                     "target_factions": params.get("target_factions")}
+        from fs_bot.cards.council import validate_selection
+        validate_selection(state, selection)
+    state.setdefault("event_modifiers", {})["card_47_council"] = {
+        "selection": selection}
 
 def execute_card_48(state, shaded=False):
     """Card 48: Druids — Gallic Factions execute free Commands.
@@ -4559,15 +4517,27 @@ def execute_card_A66(state, shaded=False):
     Source: A Card Reference, card A66
     """
     from fs_bot.rules_consts import MARKER_WINTER_UPRISING
+    from fs_bot.cards.winter_uprising import validate_region
     params = state.get("event_params", {})
+    if not isinstance(params, dict):
+        raise ValueError("Winter Uprising choices must include a marker Region.")
     region = params.get("region")
+    # The marker and its delayed trigger are one effect. Reject a missing or
+    # nonplayable target before installing either half of that effect.
+    validate_region(state, region)
+    _add_region_marker(state, region, MARKER_WINTER_UPRISING)
     state.setdefault("event_modifiers", {})
     state["event_modifiers"]["card_A66_winter_uprising"] = True
-    if region:
-        markers = state.setdefault("markers", {})
-        region_markers = markers.setdefault(region, {})
-        region_markers[MARKER_WINTER_UPRISING] = True
-        state["event_modifiers"]["card_A66_uprising_region"] = region
+    state["event_modifiers"]["card_A66_uprising_region"] = region
+    # "Take this card": its holder controls the later Quarters window,
+    # independently of the geographic beneficiary. Never infer a holder
+    # for legacy/direct calls that did not record an executing Faction.
+    from fs_bot.cards.winter_uprising_resolution import HOLDER_KEY
+    owner = state.get("executing_faction")
+    state["event_modifiers"].pop(HOLDER_KEY, None)
+    state.get("capability_owners", {}).pop("A66", None)
+    if owner in FACTIONS:
+        state["event_modifiers"][HOLDER_KEY] = owner
 
 def execute_card_A67(state, shaded=False):
     """Card A67: Arduenna — March + Command in Nervii/Treveri, Hidden.

@@ -124,23 +124,33 @@ def execute_free_action_plan(state, faction, request, action):
                                        with_sa=request.get('with_sa', False))
 
 
+def _explicit_sentinel(response, key):
+    """JSON numeric 1 is not an explicitly accepted boolean decision."""
+    return (isinstance(response, dict) and set(response) == {key}
+            and response[key] is True)
+
+
 def validate_free_action_response(state, faction, request, response):
     """Return a useful validation error, or None for a legal explicit response."""
     if not isinstance(response, dict):
         return 'Return a full action, decline, or use_default.'
+    decline = _explicit_sentinel(response, 'decline')
+    use_default = _explicit_sentinel(response, 'use_default')
+    if (set(response) & {'decline', 'use_default'}) and not (decline or use_default):
+        return 'Decline or use_default must be a single field set to boolean true.'
     if request.get('request_type') == 'impetuosity_enemy_battle':
-        if response == {'use_default': True}:
+        if use_default:
             return None
         if set(response) != {'attacker'} or response['attacker'] not in request['attackers']:
             return 'Choose one of the available Arverni or Belgic attackers.'
         return None
-    if request.get('request_type') == 'impetuosity_unshaded_march' and response == {'decline': True}:
+    if request.get('request_type') == 'impetuosity_unshaded_march' and decline:
         from fs_bot.cards.impetuosity_unshaded import origins_by_destination
         if origins_by_destination(state, faction):
             return 'Impetuosity requires an adjacent March when one is possible.'
-    if response == {'decline': True} and not request.get('allow_decline', True):
+    if decline and not request.get('allow_decline', True):
         return 'This follow-on action must be carried out when possible.'
-    if response == {'decline': True} or response == {'use_default': True}:
+    if decline or use_default:
         return None
     try:
         if request.get("request_type") == "impetuosity_unshaded_march":
@@ -282,9 +292,11 @@ def consult_free_action(state, faction, request):
     """None uses the existing NP default; an explicit action is always checked."""
     from fs_bot.engine.agent import consult_agent
     response = consult_agent(state, faction, request)
-    if response is None or response == {'use_default': True}:
+    if response is None:
         return None
     error = validate_free_action_response(state, faction, request, response)
     if error:
         raise ValueError(error)
+    if _explicit_sentinel(response, 'use_default'):
+        return None
     return response

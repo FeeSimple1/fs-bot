@@ -517,6 +517,16 @@ def _constrain_bot_action(bot_action, allowed, *, state=None, faction=None,
         rp = d.get("rally_plan") or {}
         new = {k: [e for e in (rp.get(k) or []) if reg_of(e) in allowed]
                for k in ("citadels", "allies", "warbands")}
+        # A8.7.4 selects German Rally + Settle when EITHER places pieces.
+        # A scoped grant must retain an in-scope Settlement-only plan just
+        # as the live executor does, without admitting an empty Rally or an
+        # SA whose only destinations lie outside this grant.
+        if (_sa_survives_empty_command(faction, cmd, bot_action.get("sa"))
+                and (state is None or state.get("_command_with_sa", True))):
+            for key in ("settlements_before", "settlements_after"):
+                new[key] = [entry for entry in (rp.get(key) or [])
+                            if reg_of(entry) in allowed
+                            and reg_of(entry) in (bot_action.get("sa_regions") or [])]
         if not any(new.values()):
             return None
         d["rally_plan"] = new
@@ -577,7 +587,7 @@ def _constrain_bot_action(bot_action, allowed, *, state=None, faction=None,
 @free_action
 def _resolve_free_command(state, faction, allowed_regions=None,
                           exclude_commands=None, limited=False, with_sa=False,
-                          _planner=None):
+                          _planner=None, _consult=True, allow_decline=True):
     """Execute one *free* Command for ``faction`` using its real flowchart.
 
     Event cards that grant "a free Command" (e.g. card 9 Mons Cevenna, card 70
@@ -602,7 +612,12 @@ def _resolve_free_command(state, faction, allowed_regions=None,
                "allowed_regions": sorted(allowed_regions) if allowed_regions is not None else None,
                "max_regions": 1 if limited else None, "with_sa": with_sa,
                "free": True}
-    response = consult_free_action(state, faction, request)
+    if not allow_decline:
+        request["allow_decline"] = False
+    # A caller may already have accepted an explicit interface default (for
+    # example Council). Skip only this initial choice; actual Command reactions
+    # still use the live decision agent normally.
+    response = consult_free_action(state, faction, request) if _consult else None
     if response is not None:
         if response.get("decline"):
             return {"executed": False, "command": None, "reason": "free Command declined"}
@@ -1396,7 +1411,7 @@ def _resolve_free_actions_scoped(state, faction):
         results.extend(_resolve_card48_druids(
             state, mods.get("card_48_target_factions")))
     if mods.get("card_47_council"):
-        results.extend(_resolve_card47_council(state))
+        results.extend(_resolve_card47_council(state, faction))
     if mods.get("card_62_war_fleet"):
         results.extend(_resolve_card62_war_fleet(state, faction))
     if (mods.get("card_A24_arverni_phase") or mods.get("card_A27_arverni_phase")
@@ -1697,107 +1712,10 @@ def _resolve_event_arverni_phase(state):
              "executed": res is not None, "result": res}]
 
 
-def _place_uprising_allies(state, faction, regions, n):
-    """Place up to ``n`` Allies for ``faction`` on Subdued tribes within the
-    given Regions (Card A66). Returns the number placed."""
-    from fs_bot.board.pieces import get_available, place_piece
-    from fs_bot.map.map_data import get_tribes_in_region
-    from fs_bot.rules_consts import ALLY
-    placed = 0
-    scenario = state["scenario"]
-    for region in regions:
-        if placed >= n:
-            break
-        for tribe in get_tribes_in_region(region, scenario):
-            if placed >= n:
-                break
-            t = state.get("tribes", {}).get(tribe)
-            if not t:
-                continue
-            if (t.get("allied_faction") is None and t.get("status") is None
-                    and get_available(state, faction, ALLY) > 0):
-                place_piece(state, region, faction, ALLY)
-                t["allied_faction"] = faction
-                placed += 1
-    return placed
-
-
-def _place_uprising_warbands(state, faction, region, n):
-    """Place up to ``n`` Warbands for ``faction`` in ``region`` (Card A66)."""
-    from fs_bot.board.pieces import get_available, place_piece
-    from fs_bot.rules_consts import WARBAND
-    avail = get_available(state, faction, WARBAND)
-    to_place = min(n, avail)
-    if to_place > 0:
-        place_piece(state, region, faction, WARBAND, count=to_place)
-    return to_place
-
-
-def _resolve_winter_uprising(state):
-    """Card A66 Winter Uprising: after any Quarters Phase, remove the Uprising
-    marker and resolve the placement + free Command/Arverni Phase — A66.
-
-    If the marker is in Belgica, the Belgae place 2 Allies and 4 Warbands and
-    execute a free Command + Special Activity within 1 Region of the marker; if
-    in Germania, the Germans do so; otherwise place 4 Arverni Allies and 8
-    Arverni Warbands within 1 Region of the marker and conduct an Arverni Phase
-    as if At War.
-    """
-    from fs_bot.rules_consts import MARKER_WINTER_UPRISING
-    mods = state.get("event_modifiers", {})
-    region = mods.get("card_A66_uprising_region")
-    if region is None:
-        # Old saves may retain only the physical marker. "Uprising" was
-        # the former noncanonical label; consume it as well when loading one.
-        region = next((r for r, markers in state.get("markers", {}).items()
-                       if isinstance(markers, (dict, set))
-                       and (MARKER_WINTER_UPRISING in markers
-                            or "Uprising" in markers)), None)
-    # Consume the trigger so it fires exactly once.
-    mods.pop("card_A66_winter_uprising", None)
-    mods.pop("card_A66_uprising_region", None)
-    # A5.1.4 identifies A66 as a marker Event, not a permanent Capability.
-    # Clear the legacy capability representation when consuming the marker.
-    state.get("capabilities", {}).pop("A66", None)
-    state.get("capability_owners", {}).pop("A66", None)
-    if region:
-        rm = state.get("markers", {}).get(region)
-        if isinstance(rm, dict):
-            rm.pop(MARKER_WINTER_UPRISING, None)
-            rm.pop("Uprising", None)
-        elif isinstance(rm, set):
-            rm.discard(MARKER_WINTER_UPRISING)
-            rm.discard("Uprising")
-    if not region:
-        return [{"free_action": "winter_uprising", "executed": False,
-                 "reason": "no Uprising marker region"}]
-    from fs_bot.rules_consts import (
-        REGION_TO_GROUP, BELGICA, GERMANIA, BELGAE, GERMANS, ARVERNI,
-    )
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    group = REGION_TO_GROUP.get(region)
-    playable = set(get_playable_regions(state["scenario"]))
-    within1 = ({region} | set(get_adjacent(region, state["scenario"]))) \
-        & playable
-    if group == BELGICA:
-        faction, n_ally, n_wb = BELGAE, 2, 4
-    elif group == GERMANIA:
-        faction, n_ally, n_wb = GERMANS, 2, 4
-    else:
-        faction, n_ally, n_wb = ARVERNI, 4, 8
-    allies = _place_uprising_allies(state, faction, [region] + sorted(
-        within1 - {region}), n_ally)
-    warbands = _place_uprising_warbands(state, faction, region, n_wb)
-    results = [{"free_action": "winter_uprising", "faction": faction,
-                "region": region, "allies": allies, "warbands": warbands}]
-    if faction == ARVERNI:
-        results.extend(_resolve_event_arverni_phase(state))
-    else:
-        results.append(
-            _resolve_free_command(state, faction, allowed_regions=within1,
-                                  with_sa=True)
-        )
-    return results
+def _resolve_winter_uprising(state, *, forced=False):
+    """A66: holder-selected Quarters timing; mandatory at Gallic War Interlude."""
+    from fs_bot.cards.winter_uprising_resolution import resolve
+    return resolve(state, forced=forced)
 
 
 def _gallic_np_factions(state):
@@ -1819,39 +1737,12 @@ def _resolve_card48_druids(state, target_factions):
     return out
 
 
-def _resolve_card47_council(state):
-    """Card 47 Chieftains' Council: in a Region with >=2 non-German Factions'
-    pieces, those Factions (in initiative order) each either execute a free
-    Limited Command (anywhere) or become Eligible (the peek informs the choice;
-    we take the Command if effective, else stay Eligible)."""
-    from fs_bot.rules_consts import (ROMANS, ARVERNI, AEDUI, BELGAE, ELIGIBLE)
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.map.map_data import get_playable_regions
-    order = (ROMANS, ARVERNI, AEDUI, BELGAE)
-    # Pick a Region with the most distinct non-German Factions (>=2).
-    best, best_n = None, 1
-    for R in get_playable_regions(state["scenario"], state.get("capabilities")):
-        present = [f for f in order if count_pieces(state, R, f) > 0]
-        if len(present) >= 2 and len(present) > best_n:
-            best, best_n = (R, present), len(present)
-    if best is None:
-        return [{"free_action": "council", "flag": "card_47", "executed": False,
-                 "reason": "no Region with 2+ non-German Factions"}]
-    R, present = best
-    out = []
-    nps = state.get("non_player_factions", set())
-    for fac in present:
-        if fac not in nps:
-            continue
-        res = _resolve_free_command(state, fac, limited=True)
-        if res.get("executed"):
-            out.append({"free_action": "free_command", "flag": "card_47",
-                        "region": R, "faction": fac, "result": res})
-        else:
-            state.setdefault("eligibility", {})[fac] = ELIGIBLE
-            out.append({"free_action": "stay_eligible", "flag": "card_47",
-                        "faction": fac, "executed": True})
-    return out
+def _resolve_card47_council(state, faction=None):
+    """Resolve the selected Council's private beneficiary choices in card order."""
+    from fs_bot.cards.council import resolve_council
+    grant = state.get("event_modifiers", {}).get("card_47_council")
+    selection = grant.get("selection") if isinstance(grant, dict) else None
+    return resolve_council(state, faction or state.get("executing_faction"), selection)
 
 
 def _resolve_card62_war_fleet(state, faction):
@@ -3287,6 +3178,12 @@ def _execute_event(state, faction, bot_action, *, human=False):
     details = bot_action.get("details") or {}
     card_id = details.get("card_id", state.get("current_card"))
     shaded = details.get("text_preference") == EVENT_SHADED
+
+    if (card_id in (47, "A66") and human and "event_params" in details
+            and not isinstance(details["event_params"], dict)):
+        return {"executed": False, "command": _CMD_EVENT,
+                "card_id": card_id, "shaded": shaded,
+                "reason": f"Card {card_id} event_params must be an object."}
 
     # Populate event_params before resolving; restore afterwards. For a bot,
     # derive the NP choice (§8.2.3/§8.3.1). For a human, take the player's own
@@ -5397,6 +5294,10 @@ def _derive_event_params(state, faction, card_id, shaded):
     per-card workstream; those remain reported as 'needs parameters' rather
     than guessed.
     """
+    if card_id == 47:
+        # Every NP sheet declines Council. Do not preselect its human executor's
+        # Region or guests; missing selections are requested during resolution.
+        return None
     if card_id == "A23":
         from fs_bot.cards.parley import derive_params
         return derive_params(state, faction, shaded)
@@ -5846,16 +5747,9 @@ def _derive_card_A64(state, faction, shaded):
 
 
 def _derive_card_A66(state, faction, shaded):
-    """Card A66 (Winter Uprising!): place the Uprising marker in a Region the
-    acting Faction has pieces in (where it will benefit from the later
-    placement+Command)."""
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.rules_consts import MARKER_WINTER_UPRISING
-    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
-    cands = [r for r in sorted(playable) if count_pieces(state, r, faction) > 0
-             and not {MARKER_WINTER_UPRISING, "Uprising"}.intersection(
-                 state.get("markers", {}).get(r) or {})]
-    return {"region": sorted(cands)[0]} if cands else None
+    """A66 NP sheets: Belgica for Belgae, Germania for Germans; then §8.3.4."""
+    from fs_bot.cards.winter_uprising import derive_params
+    return derive_params(state, faction)
 
 
 def _derive_card_A17(state, faction, shaded):
@@ -6078,25 +5972,11 @@ def _derive_card_25(state, faction, shaded):
 
 
 def _derive_card_16(state, faction, shaded):
-    """Card 16 Ambacti (unshaded): place 4 Auxilia in a Region with Romans, or
-    6 with Caesar. Prefer Caesar's Region (6); else the Region with the most
-    Roman pieces. Shaded (die-roll removal) is handled in the card."""
-    from fs_bot.rules_consts import ROMANS, AUXILIA
-    from fs_bot.board.pieces import find_leader, count_pieces, get_available
-    if shaded or faction != ROMANS:
+    """Card 16: place the most Auxilia; shaded choices follow the live roll."""
+    if shaded:
         return None
-    from fs_bot.map.map_data import get_playable_regions
-    if get_available(state, ROMANS, AUXILIA) <= 0:
-        return None
-    caesar = find_leader(state, ROMANS)
-    if caesar is not None and count_pieces(state, caesar, ROMANS) > 0:
-        return {"target_region": caesar}
-    best = None
-    for r in get_playable_regions(state["scenario"], state.get("capabilities")):
-        rp = count_pieces(state, r, ROMANS)
-        if rp > 0 and (best is None or rp > best[1]):
-            best = (r, rp)
-    return {"target_region": best[0]} if best else None
+    from fs_bot.cards.ambacti_np import derive_unshaded
+    return derive_unshaded(state, faction)
 
 
 def _derive_card_44(state, faction, shaded):

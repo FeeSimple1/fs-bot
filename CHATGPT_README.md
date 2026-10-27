@@ -83,6 +83,21 @@ You are about to PLAY one faction against the built-in bots.
    - Kinship (A65): `{"faction":"Belgae","regions":["Nervii"]}` chooses
      an offered attacker and its eligible Battle Regions; consult the request
      before choosing Regions. This Event also permits an explicit decline.
+   - Ambacti (16): read the actual `roll`, choose `"roll"` or `"three"` in
+     `removal_choice`, and submit `removals` with each offered `region`,
+     `piece_state` and positive integer `count`. The total must match that
+     choice's `removal_counts`. Saving or retrying does not reroll the die.
+   - Council (47): answer `council_selection` with `region` and at least two
+     offered `target_factions`. A selected beneficiary then receives
+     `council_choice`, including private face-down card information, and can
+     answer `{"choice":"eligible"}`, `{"decline":true}`, or a complete free
+     Limited Command plan. Keep that private request with its recipient.
+   - Winter Uprising (A66): a holder answers `winter_uprising_timing` with
+     `{"activate":true}` or `{"activate":false}`. The Interlude forces it
+     without that prompt. For `winter_uprising_placement`, provide the
+     exact offered Ally total as distinct Tribe names in `allies`, and
+     the Warband total as `{"region":name,"count":integer}` entries in
+     `warbands`. The following granted Command is required when possible.
    - Quarters: your faction's relocation/payment object (see AGENT_INTERFACE).
    - Winter Campaign: one Command, one standalone SA, a Command+SA using both
      actions, or `{"decline":true}`. A second single action is requested after

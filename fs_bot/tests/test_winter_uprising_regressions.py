@@ -16,6 +16,7 @@ from fs_bot.engine.interlude import _step1_winter_events, run_interlude
 from fs_bot.engine.winter_campaign import winter_campaign_after_harvest
 from fs_bot.state.setup import setup_scenario
 from fs_bot.state.state_schema import build_initial_state
+from fs_bot.map.map_data import get_adjacent_for_state
 
 
 def _uprising(state, region=rc.CISALPINA):
@@ -42,7 +43,10 @@ def test_actual_a66_without_at_war_targets_finishes_available_phase_steps(scenar
     assert phase["result"]["march"]["warbands_flipped"] == 2
     assert count_pieces_by_state(state, rc.NERVII, rc.ARVERNI,
                                  rc.WARBAND, rc.HIDDEN) == 2
-    assert count_pieces(state, rc.CISALPINA, rc.ARVERNI, rc.WARBAND) == 8
+    within_one = {rc.CISALPINA, *get_adjacent_for_state(state, rc.CISALPINA)}
+    assert sum(count_pieces(state, region, rc.ARVERNI, rc.WARBAND)
+               for region in within_one) == 8
+    assert all(entry['region'] in within_one for entry in result[0]['placements']['warbands'])
     assert "card_A66_winter_uprising" not in state["event_modifiers"]
     assert rc.MARKER_WINTER_UPRISING not in state["markers"][rc.CISALPINA]
 
@@ -91,7 +95,9 @@ def test_interlude_executes_paid_campaign_after_uprising_before_force_adjustment
             return None
         assert board["scenario"] == rc.SCENARIO_GALLIC_WAR
         assert "card_A66_winter_uprising" not in board["event_modifiers"]
-        assert count_pieces(board, rc.CISALPINA, rc.ARVERNI, rc.WARBAND) == 8
+        within_one = {rc.CISALPINA, *get_adjacent_for_state(board, rc.CISALPINA)}
+        assert sum(count_pieces(board, region, rc.ARVERNI, rc.WARBAND)
+                   for region in within_one) == 8
         assert faction == rc.AEDUI
         requests.append(request["remaining_actions"])
         origin, destination = ((rc.NERVII, rc.ATREBATES) if len(requests) == 1
@@ -130,11 +136,14 @@ def test_uprising_offers_the_printed_command_plus_special_ability(region, owner)
 
     def decide(board, faction, request):
         assert faction == owner
+        if request['kind'] == 'winter_uprising_placement':
+            return {'use_default': True}
         assert request["kind"] == "free_action"
         assert request["with_sa"] is True
+        assert request['allow_decline'] is False
         assert region in request["allowed_regions"]
         grants.append(request)
-        return {"decline": True}
+        return {"use_default": True}
 
     state["decision_agent"] = decide
     _resolve_winter_uprising(state)

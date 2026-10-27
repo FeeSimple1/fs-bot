@@ -1234,7 +1234,8 @@ def run_winter_round(state, is_final=False,
 
     # Card A66 Winter Uprising: after any Quarters Phase, resolve the
     # Uprising (remove marker, place pieces, free Command / Arverni Phase).
-    if state.get("event_modifiers", {}).get("card_A66_winter_uprising"):
+    from fs_bot.cards.winter_uprising_resolution import active as uprising_active
+    if uprising_active(state):
         from fs_bot.engine.execute import _resolve_winter_uprising
         result["phases"]["winter_uprising"] = _resolve_winter_uprising(state)
 

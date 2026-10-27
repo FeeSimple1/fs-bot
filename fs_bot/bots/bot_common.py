@@ -186,7 +186,7 @@ def is_no_faction_event(card_id, faction, scenario):
     return instr.action == NO_EVENT
 
 
-def is_final_year_capability(state, card_id):
+def is_final_year_capability(state, card_id, shaded=None):
     """Check if a card adds a Capability during the game's final year.
 
     Per §8.1.1: NPs decline "Capabilities (5.3) during the last year of
@@ -199,12 +199,16 @@ def is_final_year_capability(state, card_id):
     Returns:
         True if this is a Capability card and it's the final year.
     """
-    from fs_bot.rules_consts import CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS
+    from fs_bot.rules_consts import CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS, CARD_O38
+    if card_id == CARD_O38 and shaded is False:
+        return False
     is_capability = (card_id in CAPABILITY_CARDS
-                     or card_id in CAPABILITY_CARDS_ARIOVISTUS)
+                     or card_id in CAPABILITY_CARDS_ARIOVISTUS
+                     or card_id == CARD_O38)
     if not is_capability:
         return False
-    return state.get("final_year", False)
+    from fs_bot.engine.game_engine import next_winter_is_final
+    return next_winter_is_final(state)
 
 
 def mons_cevenna_cannot_affect_theatre(state, faction):
@@ -291,6 +295,18 @@ def should_decline_event(state, card_id, faction):
     if is_no_faction_event(card_id, faction, scenario):
         return True
 
+    # Both supplied Aedui instruction tables mark the same conditional
+    # restriction explicitly: these Events are No Aedui when Romans are a
+    # player or their current victory score exceeds 12. Use the scenario's
+    # typed flag and score formula (including Settlements in Ariovistus),
+    # rather than treating the instruction as display-only text.
+    if faction == AEDUI:
+        instruction = get_event_instruction(card_id, faction, scenario)
+        if (instruction and instruction.conditional_no_event
+                and (ROMANS not in state.get("non_player_factions", set())
+                     or calculate_victory_score(state, ROMANS) > 12)):
+            return True
+
     # Both supplied Aedui instruction tables make Remi Influence
     # conditional on Remi already being their Ally.
     if card_id == 68 and faction == AEDUI:
@@ -325,8 +341,18 @@ def should_decline_event(state, card_id, faction):
                 or faction == GERMANS and BELGAE in state.get("non_player_factions", set())):
             return True
 
-    # Capability in final year — §8.1.1
-    if is_final_year_capability(state, card_id):
+    # Both expansion Roman/Aedui instruction sheets say Nervii is
+    # "No [Faction]" when Belgae are Non-player. This seat condition
+    # applies in every year, independently of the Capability decline.
+    if (card_id == "A70" and scenario in ARIOVISTUS_SCENARIOS
+            and faction in (ROMANS, AEDUI)
+            and BELGAE in state.get("non_player_factions", set())):
+        return True
+
+    # Capability in final year — §8.1.1. Preserve the existing O38 unshaded
+    # opportunity pending Q-O38; its shaded Capability is declined.
+    shaded = get_dual_use_preference(faction, scenario, card_id) == EVENT_SHADED
+    if is_final_year_capability(state, card_id, shaded=shaded):
         return True
 
     if card_id == 9 and mons_cevenna_cannot_affect_theatre(state, faction):
@@ -338,7 +364,6 @@ def should_decline_event(state, card_id, faction):
 
     # Ineffective Event — §8.1.1 (no effect, or merely Revealing own pieces).
     from fs_bot.cards.event_eval import is_event_effective
-    shaded = get_dual_use_preference(faction, scenario, card_id) == EVENT_SHADED
     from fs_bot.cards.event_conditions import np_event_available
     if np_event_available(state, card_id, faction, shaded) is False:
         return True

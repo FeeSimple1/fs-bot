@@ -1,0 +1,631 @@
+{
+  "acceptance": "Source-backed repairs, clean implementation matrix, independently reviewed baseline refresh, and fresh unchanged-band verification.",
+  "accepted_attempt": "attempt5",
+  "bot_batches": {
+    "legacy": {
+      "accepted": 100,
+      "games": 100,
+      "interlude_completed": 13,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Germans": 4,
+          "Romans": 10
+        },
+        "Pax Gallica?": {
+          "Aedui": 2,
+          "Arverni": 1,
+          "Belgae": 3,
+          "Romans": 14
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 6,
+          "Arverni": 1,
+          "Belgae": 1,
+          "Romans": 12
+        },
+        "The Gallic War": {
+          "Arverni": 4,
+          "Belgae": 7,
+          "Romans": 9
+        },
+        "The Great Revolt": {
+          "Aedui": 5,
+          "Arverni": 7,
+          "Belgae": 4,
+          "Romans": 4
+        }
+      }
+    },
+    "original": {
+      "accepted": 50,
+      "games": 50,
+      "interlude_completed": 7,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Aedui": 3,
+          "Belgae": 1,
+          "Germans": 3,
+          "Romans": 3
+        },
+        "Pax Gallica?": {
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 7
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Romans": 4
+        },
+        "The Gallic War": {
+          "Aedui": 1,
+          "Belgae": 5,
+          "Romans": 4
+        },
+        "The Great Revolt": {
+          "Aedui": 1,
+          "Arverni": 2,
+          "Belgae": 5,
+          "Romans": 2
+        }
+      }
+    },
+    "second-edition": {
+      "accepted": 50,
+      "games": 50,
+      "interlude_completed": 7,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Aedui": 3,
+          "Belgae": 1,
+          "Germans": 3,
+          "Romans": 3
+        },
+        "Pax Gallica?": {
+          "Aedui": 1,
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 6
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 4,
+          "Belgae": 2,
+          "Romans": 4
+        },
+        "The Gallic War": {
+          "Aedui": 2,
+          "Belgae": 2,
+          "Romans": 6
+        },
+        "The Great Revolt": {
+          "Aedui": 1,
+          "Arverni": 2,
+          "Belgae": 5,
+          "Romans": 2
+        }
+      }
+    }
+  },
+  "evidence_archive": "second-batch-2026-10-27-evidence.zip",
+  "fresh_balance_games": 100,
+  "limits": [
+    "Original guardrail failure remains failed and preserved.",
+    "Diagnostic traces and superseded attempts are not pooled with the accepted matrix.",
+    "First behavioral divergence is not proof that it alone determines a winner.",
+    "Census records aggregate success rather than individual successful-game rows.",
+    "These checks do not establish exhaustive human-choice or rules coverage.",
+    "Q-O38 remains unresolved; prior unshaded behavior and six provisional rulings remain unchanged."
+  ],
+  "matrix_bot_games": 200,
+  "matrix_plus_fresh_balance_bot_executions": 300,
+  "mixed_seats": {
+    "batch_digest": "da6c4209cf2ffc1c56639d91b9f09d778d6ef9aba920dc6d3862b56960be9891",
+    "cross_hash_equal": true,
+    "executions_including_replay": 80,
+    "hard_findings": 0,
+    "hash_seeds": [
+      0,
+      7
+    ],
+    "limitation": "Rejected random plans are disclosed separately; completion is not complete human-choice coverage.",
+    "partial": 0,
+    "rejected_random_plans_per_hash": 2,
+    "unique_cases": 20
+  },
+  "original_balance": {
+    "band_percentage_points": 15,
+    "baseline_updated": false,
+    "changed_winner_count": 43,
+    "changed_winners": [
+      "Pax Gallica?|4",
+      "Pax Gallica?|5",
+      "Pax Gallica?|12",
+      "Pax Gallica?|14",
+      "Pax Gallica?|16",
+      "Pax Gallica?|20",
+      "Reconquest of Gaul|1",
+      "Reconquest of Gaul|3",
+      "Reconquest of Gaul|5",
+      "Reconquest of Gaul|7",
+      "Reconquest of Gaul|11",
+      "Reconquest of Gaul|12",
+      "Reconquest of Gaul|16",
+      "Reconquest of Gaul|19",
+      "The Great Revolt|2",
+      "The Great Revolt|5",
+      "The Great Revolt|9",
+      "The Great Revolt|11",
+      "The Great Revolt|12",
+      "The Great Revolt|13",
+      "The Great Revolt|14",
+      "The Great Revolt|15",
+      "The Great Revolt|16",
+      "The Great Revolt|19",
+      "Ariovistus|1",
+      "Ariovistus|6",
+      "Ariovistus|8",
+      "Ariovistus|10",
+      "Ariovistus|11",
+      "Ariovistus|12",
+      "Ariovistus|13",
+      "Ariovistus|14",
+      "Ariovistus|16",
+      "The Gallic War|1",
+      "The Gallic War|3",
+      "The Gallic War|5",
+      "The Gallic War|6",
+      "The Gallic War|8",
+      "The Gallic War|11",
+      "The Gallic War|12",
+      "The Gallic War|13",
+      "The Gallic War|18",
+      "The Gallic War|20"
+    ],
+    "exact_band": "3/20",
+    "maximum_absolute_drift": "1/5",
+    "passed": false,
+    "scenarios": {
+      "Ariovistus": {
+        "after": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Germans": 4,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 1,
+          "Belgae": 3,
+          "Germans": 7,
+          "Romans": 9
+        },
+        "changed_winner_seeds": [
+          1,
+          6,
+          8,
+          10,
+          11,
+          12,
+          13,
+          14,
+          16
+        ],
+        "exact_rate_change": {
+          "Aedui": "1/10",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "-3/20",
+          "Romans": "1/20"
+        },
+        "percentage_point_change": {
+          "Aedui": 10.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": -15.0,
+          "Romans": 5.0
+        }
+      },
+      "Pax Gallica?": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 1,
+          "Belgae": 3,
+          "Romans": 14
+        },
+        "before": {
+          "Aedui": 1,
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 16
+        },
+        "changed_winner_seeds": [
+          4,
+          5,
+          12,
+          14,
+          16,
+          20
+        ],
+        "exact_rate_change": {
+          "Aedui": "1/20",
+          "Arverni": "0",
+          "Belgae": "1/20",
+          "Germans": "0",
+          "Romans": "-1/10"
+        },
+        "percentage_point_change": {
+          "Aedui": 5.0,
+          "Arverni": 0.0,
+          "Belgae": 5.0,
+          "Germans": 0.0,
+          "Romans": -10.0
+        }
+      },
+      "Reconquest of Gaul": {
+        "after": {
+          "Aedui": 6,
+          "Arverni": 1,
+          "Belgae": 1,
+          "Romans": 12
+        },
+        "before": {
+          "Aedui": 4,
+          "Arverni": 3,
+          "Belgae": 2,
+          "Romans": 11
+        },
+        "changed_winner_seeds": [
+          1,
+          3,
+          5,
+          7,
+          11,
+          12,
+          16,
+          19
+        ],
+        "exact_rate_change": {
+          "Aedui": "1/10",
+          "Arverni": "-1/10",
+          "Belgae": "-1/20",
+          "Germans": "0",
+          "Romans": "1/20"
+        },
+        "percentage_point_change": {
+          "Aedui": 10.0,
+          "Arverni": -10.0,
+          "Belgae": -5.0,
+          "Germans": 0.0,
+          "Romans": 5.0
+        }
+      },
+      "The Gallic War": {
+        "after": {
+          "Arverni": 4,
+          "Belgae": 7,
+          "Romans": 9
+        },
+        "before": {
+          "Arverni": 3,
+          "Belgae": 5,
+          "Romans": 12
+        },
+        "changed_winner_seeds": [
+          1,
+          3,
+          5,
+          6,
+          8,
+          11,
+          12,
+          13,
+          18,
+          20
+        ],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "1/20",
+          "Belgae": "1/10",
+          "Germans": "0",
+          "Romans": "-3/20"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 5.0,
+          "Belgae": 10.0,
+          "Germans": 0.0,
+          "Romans": -15.0
+        }
+      },
+      "The Great Revolt": {
+        "after": {
+          "Aedui": 5,
+          "Arverni": 7,
+          "Belgae": 4,
+          "Romans": 4
+        },
+        "before": {
+          "Aedui": 1,
+          "Arverni": 9,
+          "Belgae": 4,
+          "Romans": 6
+        },
+        "changed_winner_seeds": [
+          2,
+          5,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          19
+        ],
+        "exact_rate_change": {
+          "Aedui": "1/5",
+          "Arverni": "-1/10",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "-1/10"
+        },
+        "percentage_point_change": {
+          "Aedui": 20.0,
+          "Arverni": -10.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": -10.0
+        }
+      }
+    }
+  },
+  "original_verification_failures": [
+    "balance/The Great Revolt/Aedui: drift 1/5 exceeds unchanged 3/20 band"
+  ],
+  "original_verification_passed": false,
+  "original_verification_path": "attempt5/results.json",
+  "passed": true,
+  "post_refresh_balance": {
+    "argv": [
+      "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+      "-m",
+      "fs_bot.tools.balance_smoke",
+      "--seeds",
+      "1-20"
+    ],
+    "band_changed": false,
+    "band_percentage_points": 15,
+    "baseline_sha256": "15dd335d71fb38288348651c158462a1db8ca42868393ac4fcee4ce682c364bf",
+    "checks": {
+      "all_winners_and_card_counts_match": true,
+      "baseline_unchanged": true,
+      "exact_100_keys": true,
+      "exit_zero": true,
+      "source_unchanged": true,
+      "tool_reports_pass": true
+    },
+    "cwd": "/workspace/scratch/534c265c65f4/fs-bot",
+    "elapsed_seconds": 66.67701274000137,
+    "environment": {
+      "PYTHONHASHSEED": "0"
+    },
+    "exit_code": 0,
+    "passed": true,
+    "source": {
+      "commit": "04b4b70bedae78a07723340aa4ed401b3a77dd29",
+      "dirty": true,
+      "source_sha256": "071485179ff2949ba9e2163ca48f6761c52f617084f90a0a60ee521f35926d8b"
+    },
+    "source_after": {
+      "commit": "04b4b70bedae78a07723340aa4ed401b3a77dd29",
+      "dirty": true,
+      "source_sha256": "071485179ff2949ba9e2163ca48f6761c52f617084f90a0a60ee521f35926d8b"
+    }
+  },
+  "post_refresh_pytest": {
+    "elapsed_seconds": 90.15482936099943,
+    "errors": 0,
+    "exit_code": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 5112
+  },
+  "pytest": {
+    "errors": 0,
+    "exit_code": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 5112,
+    "time": 174.741
+  },
+  "reviewed_baseline_refresh": {
+    "band_changed": false,
+    "band_percentage_points": 15,
+    "candidate_integrity_review": "independent-candidate-review.json",
+    "changed_card_counts": 32,
+    "changed_records": 50,
+    "changed_winners_vs_stored_baseline": 43,
+    "final_source_chain_review": "a70-causal-review/independent-a70-source-chain-review.json",
+    "final_source_delta_cases": [
+      "a70-causal-review/ariovistus-05/comparison.json",
+      "a70-causal-review/the-gallic-war-05/comparison.json",
+      "a70-causal-review/the-gallic-war-12/comparison.json"
+    ],
+    "fresh_balance_check": "post-baseline/balance.status.json",
+    "fresh_full_suite": "post-baseline/tests.status.json",
+    "historical_causal_mechanisms": {
+      "a66-marker-target": 6,
+      "final-year-capability": 9,
+      "mandatory-ambacti-placement": 2,
+      "typed-no-aedui": 20
+    },
+    "historical_causal_review": "../attempt4/drift-review/independent-all-changed-winner-source-review.json",
+    "historical_causal_source_sha256": "6155e2b5be0d2910ad47aacab2ae8489962375ed8091ed54a503cfe6165ae352",
+    "historical_paired_changed_winners": 37,
+    "limits": [
+      "Prior traces retain their original source identity and are not counted in the final matrix.",
+      "Identical final hashes establish identical outcomes, not identical paths.",
+      "A first behavioral difference does not establish that it alone determines the final winner.",
+      "The original guardrail failure remains preserved separately from refreshed-baseline checks."
+    ],
+    "new_baseline_sha256": "15dd335d71fb38288348651c158462a1db8ca42868393ac4fcee4ce682c364bf",
+    "old_baseline_sha256": "29149c3e5d01c7cf18a27ab7c18fbb528f7f23b43aa81fa1f986c4316281eb54",
+    "original_balance_passed": false,
+    "original_failure": [
+      "balance/The Great Revolt/Aedui: drift 1/5 exceeds unchanged 3/20 band"
+    ],
+    "original_results_sha256": "b6e5804b3c0d2b8a10b5b74be3acf4938395f989c8dbfd0ed63e6a01a57412ab",
+    "rationale": "Prior source-backed Event, final-year and A66 corrections explain the preserved 37-case predecessor review. Fresh final-source runs reproduce 97 predecessor full final states; the three changed states first diverge at the exact printed A70 No Aedui restriction with NP Belgae, before any state/RNG divergence. Independent data review validates all 100 final candidate records. The first-batch report preserves earlier differences from the stored baseline. No bot priorities or target win rates were tuned.",
+    "reviewed_utc": "2026-10-27T17:35:43.653677+00:00",
+    "same_100_keys": true,
+    "source": {
+      "commit": "04b4b70bedae78a07723340aa4ed401b3a77dd29",
+      "dirty": true,
+      "source_sha256": "071485179ff2949ba9e2163ca48f6761c52f617084f90a0a60ee521f35926d8b"
+    },
+    "status": "accepted after reviewed refresh and fresh unchanged-band/full-suite checks",
+    "unchanged_full_final_states_vs_previous_attempt": 97
+  },
+  "runner": {
+    "job_exit_codes": {
+      "bots-legacy": 0,
+      "bots-original": 0,
+      "bots-second-edition": 0,
+      "census0": 0,
+      "census7": 0,
+      "fuzz0": 0,
+      "fuzz7": 0
+    },
+    "passed": true
+  },
+  "schema_version": 1,
+  "source": {
+    "commit": "04b4b70bedae78a07723340aa4ed401b3a77dd29",
+    "dirty": true,
+    "source_sha256": "071485179ff2949ba9e2163ca48f6761c52f617084f90a0a60ee521f35926d8b"
+  },
+  "strict_census": {
+    "by_severity_per_hash": {
+      "legal-decline": 245
+    },
+    "coverage_evidence": "Exact tool metadata plus aggregate completion; the census tool does not emit per-game success records.",
+    "cross_hash_equal": true,
+    "defects": 0,
+    "executions": 50,
+    "hash_seeds": [
+      0,
+      7
+    ],
+    "unique_cases": 25
+  },
+  "superseded_attempts": [
+    {
+      "accepted": false,
+      "attempt": "attempt1",
+      "disposition_file": "attempt1/disposition.json",
+      "source": {
+        "commit": "04b4b70bedae78a07723340aa4ed401b3a77dd29",
+        "dirty": true,
+        "source_sha256": "6a104c1fd391446cd9485aa20adc3c94862923e4fa624e5d48c68a99dd475b64"
+      }
+    },
+    {
+      "accepted": false,
+      "attempt": "attempt2",
+      "disposition_file": "attempt2/disposition.json",
+      "source": {
+        "commit": "04b4b70bedae78a07723340aa4ed401b3a77dd29",
+        "dirty": true,
+        "source_sha256": "642435abc92b12f7286afeb7fe4f21545f69e3baa397cdd3679e4f5f8ad58710"
+      }
+    },
+    {
+      "accepted": false,
+      "attempt": "attempt3",
+      "disposition_file": "attempt3/disposition.json",
+      "source": {
+        "commit": "04b4b70bedae78a07723340aa4ed401b3a77dd29",
+        "dirty": true,
+        "source_sha256": "e3d8795d5922cd93a9192f9393d821902e4c428c0ee57b60dc64ac65c2296e74"
+      }
+    },
+    {
+      "accepted": false,
+      "attempt": "attempt4",
+      "disposition_file": "attempt4/disposition.json",
+      "source": {
+        "commit": "04b4b70bedae78a07723340aa4ed401b3a77dd29",
+        "dirty": true,
+        "source_sha256": "6155e2b5be0d2910ad47aacab2ae8489962375ed8091ed54a503cfe6165ae352"
+      }
+    }
+  ]
+}

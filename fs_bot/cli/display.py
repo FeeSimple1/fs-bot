@@ -199,13 +199,18 @@ def format_card(card_id, scenario, *, include_text=False, card_edition=None):
     except KeyError:
         return f"Card #{card_id} (unknown)"
 
+    # A2.3.2: on retained base cards Germans use the printed Arverni symbol.
+    # Keep immutable card metadata unchanged; display the active player seat.
+    def seat(faction):
+        return GERMANS if scenario in ARIOVISTUS_SCENARIOS and faction == ARVERNI else faction
+
     lines = [f"Card #{card_id}: {card.title}"]
     if card.faction_order:
-        order = " > ".join(_FACTION_SHORT.get(f, f) for f in card.faction_order)
+        order = " > ".join(_FACTION_SHORT.get(seat(f), seat(f)) for f in card.faction_order)
         lines.append(f"  Faction order: {order}")
     syms = card.np_symbols or {}
     if syms:
-        sym_strs = [f"{_FACTION_SHORT.get(f, f)}={s}" for f, s in syms.items()]
+        sym_strs = [f"{_FACTION_SHORT.get(seat(f), seat(f))}={s}" for f, s in syms.items()]
         lines.append(f"  NP symbols:    {', '.join(sym_strs)}")
     if scenario in ARIOVISTUS_SCENARIOS and card_has_carnyx_trigger(card_id, scenario):
         lines.append("  Arverni carnyx trigger (A2.3.9): check At War")

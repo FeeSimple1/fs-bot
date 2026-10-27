@@ -12,6 +12,21 @@ from fs_bot import rules_consts as rc
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 'A66':
+        from fs_bot.cards.winter_uprising import np_regions
+        return bool(np_regions(state, faction))
+    if (card_id == 21 and not shaded and faction == rc.ROMANS
+            and state['scenario'] in rc.BASE_SCENARIOS):
+        # Base Roman instructions: place all five Auxilia or No Romans.
+        # This NP prerequisite does not restrict a human's partial placement
+        # or printed Resources alternative (§5.1.3).
+        from fs_bot.cards.province import unshaded_available
+        from fs_bot.board.pieces import get_available
+        return (unshaded_available(state)
+                and get_available(state, rc.ROMANS, rc.AUXILIA) >= 5)
+    if card_id == 16:
+        from fs_bot.cards.ambacti_np import np_available
+        return np_available(state, faction, shaded)
     if card_id == 37:
         from fs_bot.cards.boii_np import np_available
         return np_available(state, faction, shaded)

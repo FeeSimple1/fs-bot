@@ -72,7 +72,7 @@ def validate_build_region(state, region, agreements=None):
 
     # Check Roman Ally OR Supply Line + Roman piece
     has_ally = _has_roman_ally(state, region)
-    has_supply = (
+    has_supply = not has_ally and (
         has_supply_line(state, region, ROMANS, agreements)
         and _has_any_roman_piece(state, region)
     )

@@ -672,16 +672,8 @@ def _reveal_survivors(state, region, attacking_faction, defending_faction):
                 flip_piece(state, region, faction, piece_type,
                            count=hidden_count,
                            from_state=HIDDEN, to_state=REVEALED)
-            # Scouted pieces also become Revealed — they're already
-            # Revealed with a Scouted marker. The Scouted state becomes
-            # just Revealed (marker removed implicitly).
-            scouted_count = count_pieces_by_state(
-                state, region, faction, piece_type, SCOUTED
-            )
-            if scouted_count > 0:
-                flip_piece(state, region, faction, piece_type,
-                           count=scouted_count,
-                           from_state=SCOUTED, to_state=REVEALED)
+            # Scouted Warbands are already Revealed. §4.2.2 removes their
+            # marker only when they would hide, or at the end of Winter.
 
 
 def _execute_retreat(state, region, defending_faction, attacking_faction,

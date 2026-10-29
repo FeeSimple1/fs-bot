@@ -4186,10 +4186,17 @@ def test_card_A53_unshaded_grants_recruit_march_and_sa():
     from fs_bot.state.setup import setup_scenario
     from fs_bot.engine.execute import _execute_event
     from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, ROMANS,
-                                     EVENT_UNSHADED)
+                                     EVENT_UNSHADED, ATREBATES, FORT)
+    from fs_bot.board.pieces import place_piece
+    from fs_bot.board.control import refresh_all_control
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
     st["non_player_factions"] = {ROMANS, AEDUI}
     st["resources"][AEDUI] = 12
+    # §8.8.4 still requires two Allies or six pieces for Event Recruit.
+    # This Fort gains Roman Control and enables a second Ally Region;
+    # Recruit cannot count Auxilia after its own Ally in one Region.
+    place_piece(st, ATREBATES, ROMANS, FORT)
+    refresh_all_control(st)
     res = _execute_event(st, AEDUI, {
         "command": "Event", "sa": "No SA", "sa_regions": [],
         "details": {"card_id": "A53",
@@ -4201,3 +4208,33 @@ def test_card_A53_unshaded_grants_recruit_march_and_sa():
         'Recruit', 'March', 'Special Ability'}
     assert grant['spent'] == sum(entry['spent'] for entry in grant['actions'])
     assert grant['spent'] > 0
+
+
+def test_card_A53_np_declines_recruit_below_printed_threshold_in_original_seed8():
+    """A8.2.3 retains §8.8.4's conditions within the paid Event grant."""
+    from fs_bot.state.setup import setup_scenario
+    from fs_bot.engine.execute import _execute_event
+    from fs_bot.bots.roman_bot import node_r_recruit
+    from fs_bot.engine.frumentum import spending_scope
+    from fs_bot.rules_consts import SCENARIO_ARIOVISTUS, AEDUI, ROMANS, EVENT_UNSHADED
+    st = setup_scenario(SCENARIO_ARIOVISTUS, seed=8)
+    st['non_player_factions'] = {ROMANS, AEDUI}
+    st['resources'][AEDUI] = 12
+    result = _execute_event(st, AEDUI, {
+        'command': 'Event', 'sa': 'No SA', 'sa_regions': [],
+        'details': {'card_id': 'A53', 'text_preference': EVENT_UNSHADED}}, human=False)
+    grant = next(entry for entry in result['free_actions'] if entry.get('flag') == 'card_A53')
+    assert [entry['action'] for entry in grant['actions']] == ['March', 'Special Ability']
+    assert grant['allocated'] == 6 and grant['spent'] == 2 and grant['unused'] == 4
+    with spending_scope(st, grant['unused']):
+        assert node_r_recruit(st)['command'] != 'Recruit'
+        # Expose the same legal plan solely to measure the rejected threshold.
+        st['_planning_forced_command'] = 'Recruit'
+        try:
+            plan = node_r_recruit(st)
+        finally:
+            st.pop('_planning_forced_command')
+    assert plan['details']['potential_allies'] == 1
+    assert plan['details']['potential_auxilia'] == 2
+    regions = [entry['region'] for entry in plan['details']['recruit_plan']]
+    assert len(regions) == len(set(regions))

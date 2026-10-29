@@ -176,8 +176,9 @@ def test_terminal_rally_uses_german_home_minimum_at_zero_resources():
     st = state()
     out = StringIO()
     plan = collect_free_action(st, rc.ROMANS, _request(rc.CMD_RALLY),
-        StringIO('Plan the action\nRally\n' + rc.SUGAMBRI + '\n(done)\nWarbands\n'), out)
-    assert plan['details']['rally_plan']['warbands'] == [rc.SUGAMBRI]
+        StringIO('Plan the action\nRally\n' + rc.SUGAMBRI + '\n(done)\nWarbands\n1\n'), out)
+    assert plan['details']['rally_plan']['steps'] == [
+        {'region': rc.SUGAMBRI, 'action': 'place_warbands', 'count': 1}]
     assert 'using Germans pieces' in out.getvalue()
 
 
@@ -188,10 +189,11 @@ def test_terminal_base_germans_may_place_warbands_after_new_ally():
     out = StringIO()
     plan = collect_free_action(st, rc.ROMANS, _request(rc.CMD_RALLY),
         StringIO('Plan the action\nRally\n' + rc.NERVII
-                 + '\n(done)\nan Ally at a Subdued Tribe\n' + tribe + '\ny\n'), out)
-    assert plan['details']['rally_plan']['allies'] == [{'region': rc.NERVII, 'tribe': tribe}]
-    assert plan['details']['rally_plan']['warbands'] == [rc.NERVII]
-    assert 'Also place Warbands after this Ally?' in out.getvalue()
+                 + '\n(done)\nan Ally at a Subdued Tribe\n' + tribe + '\nWarbands\n1\n'), out)
+    assert plan['details']['rally_plan']['steps'] == [
+        {'region': rc.NERVII, 'action': 'place_ally', 'tribe': tribe},
+        {'region': rc.NERVII, 'action': 'place_warbands', 'count': 1}]
+    assert 'Finish this Region' in out.getvalue()
 
 
 def test_roman_rally_chooses_required_march_origin_before_other_rally_options():
@@ -236,6 +238,6 @@ def test_terminal_ariovistus_german_rally_keeps_one_option_per_region():
     plan = collect_free_action(st, rc.ROMANS, _request(rc.CMD_RALLY),
         StringIO('Plan the action\nRally\n' + rc.NERVII
                  + '\n(done)\nan Ally at a Subdued Tribe\n' + tribe + '\n'), out)
-    assert plan['details']['rally_plan']['allies'] == [{'region': rc.NERVII, 'tribe': tribe}]
-    assert plan['details']['rally_plan']['warbands'] == []
-    assert 'Also place Warbands after this Ally?' not in out.getvalue()
+    assert plan['details']['rally_plan']['steps'] == [
+        {'region': rc.NERVII, 'action': 'place_ally', 'tribe': tribe}]
+    assert 'Finish this Region' not in out.getvalue()

@@ -13,6 +13,12 @@ all subject to possible later correction if an authoritative source is found.
 Apply them when playing; they are not official errata. Passing tests is not
 a claim of complete rules compliance.
 
+Recruit/Rally plans can specify exact troop `count` values. Use
+`rally_plan.steps` to preserve Vercingetorix's two placement orders, and
+`placement_owners` to reserve exact Roman/Aedui pieces during agreed
+Diviciacus cooperation. The [agent interface](AGENT_INTERFACE.md) defines
+the fields, mandatory bonuses, Region limits and remaining interruption gap.
+
 ## Quick start (for the assistant)
 
 You are about to PLAY one faction against the built-in bots.

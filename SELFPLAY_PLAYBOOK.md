@@ -224,6 +224,11 @@ The validator's `ok` flag means an action had some legal effect, so policies als
 inspect nested diagnostics and reject candidates containing refused sub-actions
 or ineffective attached Special Activities. Partial success alone no longer
 qualifies a candidate as clean.
+The synthetic Roman policy also checks Recruit with a refused Aedui Supply
+declaration when permission requires the uncertain score-10–12 die. It keeps
+plans that can still pay and execute after refusal, without rolling or reading
+a future die. This is a conservative policy choice; the human validator still
+allows players to propose a Command that depends on seeking agreement.
 Define each proposed strategy as a falsifiable command/SA/target preference and
 keep the experimental policy separate from the published bot flowcharts. A
 heuristic's fallback to Pass must not conceal a rejected published-bot action or

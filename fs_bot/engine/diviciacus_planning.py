@@ -106,7 +106,12 @@ def plan_with_diviciacus(state, faction, planner):
             action.setdefault('details', {})['diviciacus_regions'] = regions
         elif 'diviciacus_regions' in (action.get('details') or {}):
             action['details']['diviciacus_regions'] = []
-        if not state.get('_diviciacus_preview'):
+        from fs_bot.engine.recruit_planning import REQUESTS
+        if (not state.get('_diviciacus_preview')
+                and not (action.get('details') or {}).get(REQUESTS)):
+            # Supply declarations may change Recruit versus its Seize
+            # fallback. That planner confirms a loan only after the Supply
+            # branch is settled, rather than asking for a discarded action.
             refused = confirm_plan(state, faction, action)
             if set(refused) - denied:
                 denied.update(refused)

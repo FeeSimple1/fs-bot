@@ -1353,11 +1353,11 @@ class TestEdgeCases:
         # After battle, control should be recalculated
         # Arverni should control if they have more pieces
 
-    def test_scouted_pieces_revealed(self):
-        """Scouted pieces flip to Revealed during Reveal step."""
+    def test_scouted_survivors_keep_markers(self):
+        """Step5 reveals Hidden survivors; §4.2.2 leaves Scouted unchanged."""
         state = make_state()
         setup_battle(state, MORINI, ARVERNI, BELGAE,
-                     attacker_pieces={(WARBAND, HIDDEN): 6},
+                     attacker_pieces={(WARBAND, HIDDEN): 2},
                      defender_pieces={
                          (WARBAND, HIDDEN): 2,
                          (WARBAND, SCOUTED): 2,
@@ -1366,11 +1366,11 @@ class TestEdgeCases:
             state, MORINI, ARVERNI, BELGAE,
             retreat_declaration=False,
         )
-        # After reveal, all surviving should be Revealed
+        # One Hidden defender is lost. Its Scouted survivors keep markers.
         assert count_pieces_by_state(
             state, MORINI, ARVERNI, WARBAND, SCOUTED) == 0
         assert count_pieces_by_state(
-            state, MORINI, BELGAE, WARBAND, SCOUTED) == 0
+            state, MORINI, BELGAE, WARBAND, SCOUTED) == 2
         assert count_pieces_by_state(
             state, MORINI, BELGAE, WARBAND, HIDDEN) == 0
 

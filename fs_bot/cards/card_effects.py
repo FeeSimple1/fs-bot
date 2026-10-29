@@ -1228,6 +1228,14 @@ def execute_card_25(state, shaded=False):
     if shaded:
         # CAPABILITY: Rally bonus in Pictones and Arverni
         activate_capability(state, 25, EVENT_SHADED)
+        # "Your Rally" belongs to the Faction that played this Event.
+        # Raw legacy calls may lack that provenance; never infer an owner.
+        from fs_bot.cards.capabilities import set_capability_owner
+        owner = state.get("executing_faction")
+        if owner in FACTIONS:
+            set_capability_owner(state, 25, owner)
+        else:
+            state.get("capability_owners", {}).pop(25, None)
     else:
         # Unshaded: Free Battle with 3 extra Losses
         # The battle itself needs to be invoked by the caller

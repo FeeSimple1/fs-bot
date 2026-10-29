@@ -9,11 +9,13 @@ No external game references. Do not consult BoardGameGeek, other COIN games, oth
 
 Read [README.md](README.md) for entry points and
 [docs/README.md](docs/README.md) for the documentation map. Current fixes,
-known limits, and the six source questions are in
+known limits, and source questions are in
 [docs/current-status.md](docs/current-status.md). The owner adopted
 [PR-01 through PR-06](docs/provisional-rulings.md) on 24 October 2026; apply
 those provisional decisions to their specified gaps, subject to possible
 later correction if an authoritative source is found. The
+[29 October Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md)
+tracks exact quantities, ordered placements and related source corrections. The
 [28 October Spring report](docs/reviews/spring-leaders-2026-10-28.md)
 tracks Leader placement repairs and the remaining mid-action entry gap;
 the [27 October second-batch report](docs/reviews/second-batch-2026-10-27.md)

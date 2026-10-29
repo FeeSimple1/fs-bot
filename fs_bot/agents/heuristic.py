@@ -272,7 +272,7 @@ PROFILES = {
 # --------------------------------------------------------------------------- #
 # Policy: candidate plans -> validate -> degrade -> Pass
 # --------------------------------------------------------------------------- #
-def _validated_candidate(state, faction, candidate):
+def _clean_candidate_preview(state, faction, candidate):
     """A partially successful Command may still contain rejected sub-actions.
 
     The public validator deliberately returns whether *anything* executed.
@@ -291,6 +291,34 @@ def _validated_candidate(state, faction, candidate):
     _walk(info, faction, candidate.get("command"), candidate.get("sa"),
           counts, examples, state["scenario"], None, state.get("current_card"))
     return not any(_severity(k[2], k[3]) != "legal-decline" for k in counts)
+
+
+def _validated_candidate(state, faction, candidate):
+    """Synthetic policies avoid Recruit plans dependent on an uncertain yes.
+
+    Real human previews retain the possible §8.6.6 Aedui agreement. These
+    experimental profiles instead require the selected Recruit to remain
+    legal and affordable if that uncertain declaration is refused. They do
+    not roll or inspect a future die, and retain already confirmed replies.
+    """
+    if not _clean_candidate_preview(state, faction, candidate):
+        return False
+    if (faction != rc.ROMANS or candidate.get('command') != rc.CMD_RECRUIT
+            or rc.ROMANS in state.get('non_player_factions', ())
+            or rc.AEDUI not in state.get('non_player_factions', ())):
+        return True
+    from fs_bot.engine.victory import calculate_victory_score
+    if not 10 <= calculate_victory_score(state, rc.ROMANS) <= 12:
+        return True
+    from fs_bot.engine.recruit_planning import ANSWERS
+    # validate_player_action detaches this overlay before applying effects.
+    # Keep any real accepted agreement/known response; only the unresolved
+    # Aedui answers receive the conservative hypothetical refusal.
+    refused = dict(state)
+    refused[ANSWERS] = dict(state.get(ANSWERS, {}))
+    for region in state['spaces']:
+        refused[ANSWERS].setdefault((rc.ROMANS, rc.AEDUI, region), False)
+    return _clean_candidate_preview(refused, faction, candidate)
 
 
 def plan_turn(state, faction, profile, options, position):

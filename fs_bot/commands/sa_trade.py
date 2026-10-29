@@ -19,6 +19,9 @@ Procedure:
 Reference: §4.4.1, A4.4
 """
 
+from contextlib import contextmanager, nullcontext
+from copy import deepcopy
+
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, AEDUI,
@@ -41,7 +44,66 @@ from fs_bot.map.map_data import (
     is_adjacent, get_tribes_in_region, get_playable_regions,
 )
 from fs_bot.commands.common import CommandError
-from fs_bot.commands.rally import has_supply_line
+from fs_bot.commands.rally import (has_supply_line, supply_agreement_scope,
+                                    supply_query_scope)
+
+
+_ROMAN_DECLARATION = (AEDUI, ROMANS, None)
+
+
+@contextmanager
+def trade_declarations(state):
+    """Share one Trade's declarations across its threshold check and effects."""
+    with supply_agreement_scope(state):
+        scope = (nullcontext() if '_supply_line_query' in state
+                 else supply_query_scope(state))
+        with scope:
+            yield
+
+
+def roman_agreement(state):
+    """The §4.4.1 Roman declaration governs both Supply and the Trade rate."""
+    accepted = state.get('_supply_line_agreements', {})
+    replies = state.get('_supply_line_query', {})
+    if accepted.get(_ROMAN_DECLARATION):
+        return True
+    if _ROMAN_DECLARATION in replies:
+        return replies[_ROMAN_DECLARATION]
+    if ROMANS in state.get('non_player_factions', ()):
+        from fs_bot.bots.bot_common import np_agrees_to_supply_line
+        answer = np_agrees_to_supply_line(ROMANS, AEDUI, state)
+    else:
+        from fs_bot.engine.agent import consult_agent, AGREEMENT
+        response = consult_agent(state, ROMANS, {
+            'kind': AGREEMENT, 'request_type': 'trade_roman_agreement',
+            'requesting_faction': AEDUI, 'context': {}})
+        if response is not None and type(response) is not bool:
+            raise ValueError('Roman Trade agreement requires true or false')
+        answer = True if response is None else response
+    replies[_ROMAN_DECLARATION] = answer
+    if answer:
+        accepted[_ROMAN_DECLARATION] = True
+    return answer
+
+
+def forecast_trade(state, *, allowed_regions=None, confirm=False):
+    """Calculate the exact yield on a copy; confirm only at actual SA time."""
+    with trade_declarations(state) if confirm else nullcontext():
+        sim = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
+        if confirm:
+            # These are real declarations, before any Resources change.
+            # The callback sees the live board, while Trade changes a copy.
+            from fs_bot.engine.agent import consult_agent
+            sim['_supply_line_query'] = state['_supply_line_query']
+            sim['_supply_line_agreements'] = state['_supply_line_agreements']
+            sim['decision_agent'] = lambda _board, faction, request: consult_agent(
+                state, faction, request)
+        else:
+            sim['_diviciacus_preview'] = True
+        with trade_declarations(sim):
+            agreed = roman_agreement(sim)
+            return trade(sim, roman_agreed=agreed,
+                         allowed_regions=allowed_regions)['resources_gained']
 
 
 def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None):
@@ -64,6 +126,22 @@ def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None):
     Raises:
         CommandError: On rule violations.
     """
+    with trade_declarations(state):
+        agreed = (state['_supply_line_agreements'].get(_ROMAN_DECLARATION)
+                  or roman_agreed)
+        # Rome declares even without Control. The same reply applies to
+        # every Roman-controlled Region and to the +1/+2 yield (§4.4.1).
+        state['_supply_line_query'][_ROMAN_DECLARATION] = agreed
+        for region in state['spaces']:
+            state['_supply_line_query'][(AEDUI, ROMANS, region)] = agreed
+        if agreed:
+            state['_supply_line_agreements'][_ROMAN_DECLARATION] = True
+        if agreements is not None:
+            agreements = dict(agreements, **{ROMANS: agreed})
+        return _trade(state, agreements, agreed, allowed_regions=allowed_regions)
+
+
+def _trade(state, agreements, roman_agreed, *, allowed_regions):
     scenario = state["scenario"]
     result = {"resources_gained": 0, "per_item": []}
 
@@ -86,7 +164,7 @@ def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None):
         # Revised card 39 removes Supply Lines, rather than retaining the
         # original card's guaranteed +2 for blue pieces. Normal Roman
         # agreement still determines the +1/+2 yield (A Card Reference 39).
-        if revised_commerce or has_supply_line(state, region, ROMANS, agreements):
+        if revised_commerce or has_supply_line(state, region, AEDUI, agreements):
             supply_line_regions.add(region)
 
     if allowed_regions is not None:
@@ -172,7 +250,7 @@ def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None):
                 tribe_info = state["tribes"].get(tribe, {})
                 allied_faction = tribe_info.get("allied_faction")
 
-                if allied_faction is None:
+                if allied_faction is None and tribe_info.get('status') is None:
                     # Subdued Tribe
                     gain = base_value
                     total += gain

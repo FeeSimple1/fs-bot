@@ -926,12 +926,27 @@ def _select_march_origins(state, threat_regions, destinations, scenario):
 
 
 def node_r_recruit(state):
+    """Forecast the Recruit and record Supply dependencies without prompting."""
+    from fs_bot.engine.recruit_planning import forecast_supply, REQUESTS, CANDIDATE
+    from copy import deepcopy
+    planning = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
+    with forecast_supply(planning) as requests:
+        action = _node_r_recruit(planning)
+    if requests and (action.get('command') == ACTION_RECRUIT
+                     or CANDIDATE in (action.get('details') or {})):
+        action.setdefault('details', {})[REQUESTS] = requests
+    # A declined Recruit may use the flowchart's later randomized choices.
+    state['rng'].setstate(planning['rng'].getstate())
+    return action
+
+
+def _node_r_recruit(state):
     """R_RECRUIT: Recruit process.
 
     Per §8.8.4: Recruit if would add 2+ Allies or 6+ pieces total.
     (1) Place all Allies, first at Supply Line.
     (2) Place all Auxilia, first at Supply Line.
-    Build before Recruit, or Scout after.
+    Build before Recruit, or Scout before if no Build is possible.
 
     If wouldn't place enough → Seize.
 
@@ -941,101 +956,108 @@ def node_r_recruit(state):
     if not command_is_allowed(state, ACTION_RECRUIT):
         return node_r_seize(state)
 
-    from fs_bot.commands.rally import has_rally_control
-    scenario = state["scenario"]
-
-    # Check if Recruit would place enough pieces
-    avail_allies = get_available(state, ROMANS, ALLY)
-    avail_auxilia = get_available(state, ROMANS, AUXILIA)
-
     # §8.8.4: Recruit only if it would actually ADD 2+ Allies or 6+ pieces.
-    # Build the concrete plan and count what can really be placed — region
-    # eligibility, Subdued Tribes, and Auxilia caps all gate placement.
+    # §8.1 retains §3.2.1's one option per Region: the later Auxilia priority
+    # cannot reuse a Region in which this Command already placed an Ally.
+    # Resolve a detached preview so mandatory Gallia Auxilia, Resource costs,
+    # and shared Available pools are counted exactly once by the mechanics.
+    from copy import deepcopy
+    from fs_bot.commands.common import CommandError
+    from fs_bot.board.pieces import PieceError
     from fs_bot.commands.rally import (
         validate_recruit_region, has_supply_line,
-        _find_subdued_tribe_for_ally, _count_recruit_auxilia_cap, can_recruit_auxilia,
+        _find_subdued_tribe_for_ally, recruit_in_region,
     )
+    planning = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    # Keep the forecast recorder shared across all detached Build/Recruit
+    # trials; copies of the board must not lose their Supply dependencies.
+    from fs_bot.engine.recruit_planning import QUERIES
+    if QUERIES in state:
+        planning[QUERIES] = state[QUERIES]
+    planning["_diviciacus_preview"] = True
+    # §8.8.8: this NP plan never Recruits Aedui Warbands, including when a
+    # human explicitly requests the bot default while a loan is available.
+    planning["non_player_factions"] = set(planning.get("non_player_factions", ())) | {ROMANS}
+    if command_sa_allowed(state):
+        # §8.8.4 evaluates Recruit with its preceding Build (or Scout).
+        # Use the actual executor: new bases, Control, costs and Available
+        # pieces affect the Recruit, but the SA's own placements do not
+        # count toward the two-Allies/six-Recruit-pieces threshold.
+        from fs_bot.engine.execute import _execute_sa
+        _execute_sa(planning, ROMANS, _make_action(
+            ACTION_RECRUIT, sa=SA_ACTION_BUILD))
     playable = command_region_candidates(
         state, get_playable_regions_for_state(state, ROMANS))
-    eligible = [r for r in playable if validate_recruit_region(state, r)[0]]
+    eligible = [r for r in playable if validate_recruit_region(planning, r)[0]]
     # Supply-Line Regions first (to save Resources), then a stable order.
-    eligible.sort(key=lambda r: (0 if has_supply_line(state, r) else 1, r))
+    eligible.sort(key=lambda r: (0 if has_supply_line(planning, r) else 1, r))
 
-    # The plan must be executor-legal ("one rule, one implementation"):
-    # recruit_in_region charges recruit_cost per sub-action, gates place_ally
-    # on Roman Control or Caesar (§3.2.1), and gates place_auxilia on a Roman
-    # Leader/Ally/Fort. Mirror those checks and a sequential Resource budget
-    # here so the executor never refuses a planned component.
-    from fs_bot.commands.rally import recruit_cost
-    from fs_bot.rules_consts import CAESAR as _CAESAR
-    budget = state.get("resources", {}).get(ROMANS, 0)
-
-    # (1) Place all Allies able (one per Subdued Tribe, capped by Available).
     recruit_plan = []
-    rem_allies = avail_allies
-    new_ally_in = {}
-    used_tribes = set()
-    for r in eligible:
-        if rem_allies <= 0:
-            break
-        # place_ally gate — §3.2.1: Roman Control or Caesar in the Region.
-        if not (has_rally_control(state, r, ROMANS)
-                or get_leader_in_region(state, r, ROMANS) == _CAESAR):
-            continue
-        cost = recruit_cost(state, r, ROMANS)
-        if cost > budget:
-            continue
-        # _find_subdued_tribe_for_ally returns the LIST of eligible Tribes;
-        # take the first not already targeted (recruit_in_region needs a single
-        # Tribe name, not the list).
-        eligible_tribes = _find_subdued_tribe_for_ally(state, r, ROMANS) or []
-        tribe = next((tt for tt in eligible_tribes if tt not in used_tribes),
-                     None)
+    selected_regions = set()
+    placed_allies = placed_auxilia = 0
+
+    def project(region, action, tribe=None):
+        nonlocal planning, placed_allies, placed_auxilia
+        trial = deepcopy(planning)
+        if QUERIES in planning:
+            trial[QUERIES] = planning[QUERIES]
+        try:
+            result = recruit_in_region(trial, region, action, tribe=tribe)
+        except (CommandError, PieceError):
+            return False
+        pieces = result["pieces_placed"]
+        if not any(pieces.values()):
+            return False
+        planning = trial
+        entry = {"region": region, "action": action}
         if tribe is not None:
-            recruit_plan.append({"region": r, "action": "place_ally",
-                                 "tribe": tribe})
-            used_tribes.add(tribe)
-            rem_allies -= 1
-            budget -= cost
-            new_ally_in[r] = new_ally_in.get(r, 0) + 1
-    placed_allies = avail_allies - rem_allies
+            entry["tribe"] = tribe
+        recruit_plan.append(entry)
+        selected_regions.add(region)
+        placed_allies += pieces.get(ALLY, 0)
+        placed_auxilia += pieces.get(AUXILIA, 0)
+        return True
 
-    # (2) Place all Auxilia able — each Region up to its cap (which counts the
-    # Allies just placed, since Allies recruit before Auxilia), capped by
-    # Available. place_auxilia gate — §3.2.1: Roman Leader, Ally, or Fort.
-    placed_auxilia = 0
-    rem_aux = avail_auxilia
+    # (1) Place all Allies able, one per selected Region.
     for r in eligible:
-        if rem_aux <= 0:
+        if get_available(planning, ROMANS, ALLY) <= 0:
             break
-        has_base = can_recruit_auxilia(state, r) or new_ally_in.get(r, 0) > 0
-        if not has_base:
-            continue
-        cost = recruit_cost(state, r, ROMANS)
-        if cost > budget:
-            continue
-        cap = _count_recruit_auxilia_cap(state, r) + new_ally_in.get(r, 0)
-        take = min(cap, rem_aux)
-        if take > 0:
-            recruit_plan.append({"region": r, "action": "place_auxilia"})
-            rem_aux -= take
-            placed_auxilia += take
-            budget -= cost
+        tribes = _find_subdued_tribe_for_ally(planning, r, ROMANS)
+        if tribes:
+            project(r, "place_ally", tribes[0])
 
+    # (2) Place all Auxilia able in the remaining Regions. A separate Build
+    # before Recruit may create bases; Recruit's own Ally cannot do both.
+    for r in eligible:
+        if get_available(planning, ROMANS, AUXILIA) <= 0:
+            break
+        if r in selected_regions:
+            continue
+        project(r, "place_auxilia")
+
+    candidate = _make_action(
+        ACTION_RECRUIT,
+        sa=(SA_ACTION_BUILD if command_sa_allowed(state) else SA_ACTION_NONE),
+        details={
+            "potential_allies": placed_allies,
+            "potential_auxilia": placed_auxilia,
+            "recruit_plan": recruit_plan,
+        },
+    )
     forced = state.get("_planning_forced_command") == ACTION_RECRUIT
     if (placed_allies >= 2 or (placed_allies + placed_auxilia) >= 6
             or (forced and recruit_plan)):
-        return _make_action(
-            ACTION_RECRUIT,
-            sa=(SA_ACTION_BUILD if command_sa_allowed(state) else SA_ACTION_NONE),
-            details={
-                "potential_allies": placed_allies,
-                "potential_auxilia": placed_auxilia,
-                "recruit_plan": recruit_plan,
-            },
-        )
+        return candidate
 
-    return node_r_seize(state)
+    fallback = node_r_seize(state)
+    if state.get(QUERIES):
+        # Agreement can change which Allies Build consumes: a refused
+        # Supply Line may leave two Allies available for paid Recruit.
+        # Confirm the Recruit process even when its optimistic threshold
+        # fails; this is not consent to the alternative Seize Command.
+        from fs_bot.engine.recruit_planning import CANDIDATE
+        fallback.setdefault('details', {})[CANDIDATE] = candidate
+    return fallback
 
 
 def node_r_seize(state):
@@ -1224,8 +1246,14 @@ def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
     # Roman piece). validate_build_region encodes this exactly.
     from fs_bot.commands.sa_build import validate_build_region
 
+    eligibility = {}
+
     def _eligible(region):
-        return validate_build_region(state, region)[0]
+        # The Fort/Subdue/Ally passes inspect the same unchanged proposal.
+        # In particular, do not reroll an NP Aedui refusal for that Region.
+        if region not in eligibility:
+            eligibility[region] = validate_build_region(state, region)[0]
+        return eligibility[region]
 
     build_plan = {
         "forts": [],
@@ -1233,26 +1261,21 @@ def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
         "allies": [],
     }
 
-    # Per §8.8.1 [Ch8]: "spending no more Resources once Roman Resources
-    # drop below six." Resource floor = 6: do not spend if already below 6,
-    # or if spending would drop below 6.
-    RESOURCE_FLOOR = 6
+    # §8.8.1: stop spending once Resources drop below six. Spending from
+    # six is allowed; the next paid Build must stop after crossing below.
+    STOP_THRESHOLD = 6
     resources = state.get("resources", {}).get(ROMANS, 0)
 
     def _can_spend(cost):
-        """Check if spending cost would violate the Resource floor."""
+        """Check the current spending threshold and actual affordability."""
         nonlocal resources
-        from fs_bot.commands.common import is_free_action
+        from fs_bot.commands.common import action_cost, is_free_action
         if is_free_action(state, ROMANS):
             return True
-        if resources < RESOURCE_FLOOR:
-            return False
-        if resources - cost < RESOURCE_FLOOR:
-            return False
-        return True
+        return resources >= STOP_THRESHOLD and resources >= action_cost(state, ROMANS, cost)
 
     def _spend(cost):
-        """Track spending against the Resource floor."""
+        """Track actual spending before selecting the next Build action."""
         nonlocal resources
         from fs_bot.commands.common import action_cost
         resources -= action_cost(state, ROMANS, cost)

@@ -30,6 +30,26 @@ def fingerprint(value):
                                      separators=(",", ":")).encode()).hexdigest()
 
 
+def _decision_signatures(state, request):
+    """Accept old empty Supply scopes without ignoring any actual agreement.
+
+    An absent cache and an empty dictionary both mean no accepted Supply
+    promises. Older writers used both shapes, depending on the enclosing
+    action. Keep their signatures replayable; every nonempty cache, other
+    board field and request field still has to match exactly.
+    """
+    board = board_copy(state)
+    key = "_supply_line_agreements"
+    if key not in board or (type(board[key]) is dict and not board[key]):
+        board.pop(key, None)
+        signature = fingerprint({"board": board, "request": request})
+        with_empty = dict(board, **{key: {}})
+        return signature, (signature, fingerprint({
+            "board": with_empty, "request": request}))
+    signature = fingerprint({"board": board, "request": request})
+    return signature, (signature,)
+
+
 def validate_response(state, request, response):
     """Reject malformed human input instead of falling back to bot choices."""
     kind = request["kind"]
@@ -46,6 +66,14 @@ def validate_response(state, request, response):
         if response["action"] != ACTION_PASS and not isinstance(
                 response.get("player_action"), dict):
             raise ValueError("This action needs a player_action plan.")
+        if response["action"] != ACTION_PASS:
+            from fs_bot.engine.action_validation import validate_human_structure
+            from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
+            error = validate_human_structure(
+                state, request["faction"], response["player_action"],
+                limited=response["action"] == ACTION_LIMITED_COMMAND)
+            if error:
+                raise ValueError(error)
         return response
     if kind == "spring_leader":
         from fs_bot.engine.spring import validate_response as validate_spring
@@ -229,11 +257,11 @@ class SeatSession:
 
     def ask(self, state, faction, request):
         request = dict(request, faction=faction)
-        signature = fingerprint({"board": board_copy(state), "request": request})
+        signature, compatible_signatures = _decision_signatures(state, request)
         journal = self.data["journal"]
         if self.cursor < len(journal):
             entry = journal[self.cursor]
-            if entry["assistant_signature"] != signature:
+            if entry["assistant_signature"] not in compatible_signatures:
                 self.error = "Saved decision no longer matches its board/request; replay stopped."
                 raise DecisionPending()
             self.cursor += 1
@@ -241,9 +269,13 @@ class SeatSession:
 
         decision_id = f"d{len(self.log) + self.cursor + 1:06d}"
         for expected in self.data.get("expected", []):
-            if expected["id"] == decision_id and expected["signature"] != signature:
-                self.error = "Replay request differs from the recorded board/request."
-                raise DecisionPending()
+            if expected["id"] == decision_id:
+                if expected["signature"] not in compatible_signatures:
+                    self.error = "Replay request differs from the recorded board/request."
+                    raise DecisionPending()
+                # Replaying an accepted decision retains its original record,
+                # including the older writer's equivalent empty-cache shape.
+                signature = expected["signature"]
         self.display.before_decision(state, faction)
         pending = {"id": decision_id, "request": encode(request),
                    "board": encode(board_copy(state))}

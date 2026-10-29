@@ -241,7 +241,7 @@ def enlist_rally_mix(state, region, requested, cap):
     ctx = state.get(BORROW_KEY)
     if not ctx or region not in ctx["regions"]:
         raise CommandError("German placement requires Enlist in the Rally Region")
-    if not 0 < sum(mix.values()) <= cap:
+    if not 0 <= sum(mix.values()) <= cap:
         raise CommandError("Rally composition exceeds the Belgic placement limit")
     if any(n > get_available(state, f, WARBAND) for f, n in mix.items()):
         raise CommandError("Not enough physical Warbands Available")

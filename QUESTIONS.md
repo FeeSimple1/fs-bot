@@ -29,6 +29,73 @@ Historical OPEN/CLOSED labels below describe earlier stages and do not replace
 this index. Earlier validation reports retain their original revisions and
 measurements; they do not validate these later adopted rulings.
 
+### Q-SUPPLY-AEDUI-DIE-SCOPE — agreement across multiple Regions (29 October 2026)
+
+**Open; no new owner ruling.** When human Romans have a victory score of
+10–12 and need permission through several Aedui-controlled Regions, the
+supplied rules do not explicitly define the number or geographic scope
+of non-player Aedui agreement dice.
+
+`Reference Documents/Chapter 8`, §8.6.6, says that Aedui agreement applies
+to Supply Lines “in Aedui-Controlled Regions during Roman actions” and,
+at these scores, “only on a die roll of 1–4”. It permits the Romans to
+rechoose the current action after a 5 or 6. Chapter 1, §1.5.2, binds an
+agreement during the action. These passages do not explicitly distinguish
+one roll for the declared action, one for each declared Supply Line, or
+one for each Region needing permission.
+
+The current implementation retains its existing Region-keyed declaration
+and caching structure. The consent repair tests actual single-Region dice
+and their RNG effects; it does not settle the multi-Region granularity.
+An authoritative clarification or explicit owner decision is needed before
+changing that scope. This question is separate from PR-01 through PR-06.
+
+### Q-A20-ORIGIN — Counterattack losses among projected origins (29 October 2026)
+
+**Open; no new owner ruling.** A20's temporary projection can combine
+Warbands from several physical Regions. The Scouted-marker repair preserves
+their visibility when survivors return, but does not select a new geographic
+priority for Counterattack casualties.
+
+`Reference Documents/Ariovistus/A Card Reference`, A20, says “Arverni
+Warbands within 1 Region Ambush Romans in a Region within 1 as if there.”
+`Reference Documents/Ariovistus/Chapter A3`, A3.2.4, says “Arverni suffering
+Losses in Battle remove their Scouted Warbands, then other Revealed Warbands,
+then Hidden Warbands; then their Allies, from Cities last; finally their
+Citadels.” The visibility priority is explicit. Neither passage identifies
+an origin chooser or priority when only some Warbands of the same visibility
+survive a Counterattack. Section 8.3.4's equal-Region selection does not
+expressly address these projected casualty origins.
+
+Possible resolutions are an executing-faction choice, equal-chance selection
+among tied origins or counters, or an explicit fixed origin priority. The
+existing deterministic source-allocation convention remains pending
+clarification; this repair does not establish it as an authoritative rule.
+This question is separate from PR-01 through PR-06.
+
+### Q-RALLY-BONUS-TIMING — additions before ordinary placement (29 October 2026)
+
+**Open; no new owner ruling.** The quantity review implements the printed
+mandatory additions for Aquitani (25 shaded), Nervii (A70 shaded), and
+Gallia Togata (A5 unshaded). It does not add a tactical choice to apply an
+addition before the ordinary option in order to establish Control and
+make a previously illegal Ally placement possible.
+
+`Reference Documents/Card Reference`, 25, says “Your Rally in Pictones and
+Arverni Regions places 2 extra Warbands each”; its Tip explicitly includes
+normal placement of zero. `Reference Documents/Ariovistus/A Card Reference`,
+A70, says “Belgic Rally at Nervii places +2 Warbands”; A5 says “Recruit
+there places +1 Auxilia.” These specify additional pieces but not their
+timing relative to the ordinary option. In contrast, A3.4.1 explicitly places
+the German Home addition “At the end”.
+
+Two possible interpretations require authoritative clarification: the
+ordinary option must already be legal before additions, or the player may
+apply an addition first and use its changed Control to qualify. The current
+implementation retains the former prerequisite check and does not claim to
+resolve the unprinted timing right. This question is separate from PR-01
+through PR-06 and does not block the stated additions or quantity choices.
+
 ### Q-O38 — optional Diviciacus Capability label (27 October 2026)
 
 **Open; no new owner ruling.** The final-year review found inconsistent

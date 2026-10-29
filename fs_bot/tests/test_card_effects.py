@@ -1385,21 +1385,28 @@ class TestAuditConditionFixes:
         assert len(got) >= 1
 
     def test_cardA70_rally_plus2_warbands_at_nervii(self):
-        from fs_bot.commands.rally import _gallic_warband_cap
+        from fs_bot.commands.rally import rally_count_limits, rally_in_region
         from fs_bot.cards.capabilities import activate_capability
         from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, BELGAE, NERVII,
-                                         ALLY, EVENT_SHADED)
-        from fs_bot.board.pieces import place_piece
+                                         ALLY, EVENT_SHADED, WARBAND, ATREBATES,
+                                         AEDUI, TRIBE_NERVII, TRIBE_EBURONES)
+        from fs_bot.board.pieces import count_pieces
+        from fs_bot.cards.card_effects import _ally_tribe
         from fs_bot.state.state_schema import build_initial_state
         st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
-        st["tribes"]["Nervii"]["allied_faction"] = BELGAE
-        place_piece(st, NERVII, BELGAE, ALLY)
-        base = _gallic_warband_cap(st, NERVII, BELGAE)
+        st["resources"][BELGAE] = 1
+        assert _ally_tribe(st, TRIBE_NERVII, BELGAE)
+        base = rally_count_limits(st, NERVII, BELGAE)['cap']
         activate_capability(st, "A70", EVENT_SHADED)
-        assert _gallic_warband_cap(st, NERVII, BELGAE) == base + 2
+        assert rally_count_limits(st, NERVII, BELGAE) == {
+            'min': 2, 'max': base + 2, 'cap': base + 2}
+        result = rally_in_region(st, NERVII, BELGAE, 'place_warbands')
+        assert result['pieces_placed'] == {WARBAND: base + 2}
+        assert count_pieces(st, NERVII, BELGAE, WARBAND) == base + 2
         # Not for Aedui, and not in other Regions.
-        assert _gallic_warband_cap(st, "Atrebates", BELGAE) == \
-            _gallic_warband_cap(st, "Atrebates", BELGAE)
+        assert rally_count_limits(st, ATREBATES, BELGAE) == {'min': 0, 'max': 1, 'cap': 1}
+        assert _ally_tribe(st, TRIBE_EBURONES, AEDUI)
+        assert rally_count_limits(st, NERVII, AEDUI) == {'min': 0, 'max': 1, 'cap': 1}
 
     def test_cardA70_places_belgic_ally_when_nervii_subdued(self):
         from fs_bot.engine.execute import _apply_end_of_action_capabilities

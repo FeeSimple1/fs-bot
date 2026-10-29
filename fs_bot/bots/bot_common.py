@@ -68,7 +68,7 @@ def command_sa_allowed(state):
 
 
 def estimate_scoped_rally(state, faction, planner):
-    """Measure a restricted/free Rally through its actual planner and executor.
+    """Measure an ordinary or Event-scoped Rally through its real mechanics.
 
     Entry conditions must reflect legal placement caps, one option per Region,
     available pieces, and free costs. Use detached state so estimates neither
@@ -84,16 +84,21 @@ def estimate_scoped_rally(state, faction, planner):
     if action.get("command") != CMD_RALLY:
         return result
     before_warbands = get_available(sim, faction, WARBAND)
+    # §8.6.8: cooperating NP Aedui may place Roman Auxilia as Warbands
+    # after their native pool empties. Count their actual physical placements.
+    before_auxilia = get_available(sim, ROMANS, AUXILIA) if faction == AEDUI else 0
     before_control = set(get_controlled_regions(sim, faction))
     execution = _execute_rally(sim, faction, action)
     if execution.get("errors"):
-        raise ValueError(f"Rally planner produced an invalid scoped plan: {execution['errors']}")
+        raise ValueError(f"Rally planner produced an invalid plan: {execution['errors']}")
     for placement in execution.get("placements", []):
         if placement["action"] == "place_citadel":
             result["citadels"] += 1
         elif placement["action"] == "place_ally":
             result["allies"] += 1
     result["warbands"] = before_warbands - get_available(sim, faction, WARBAND)
+    if faction == AEDUI:
+        result["warbands"] += before_auxilia - get_available(sim, ROMANS, AUXILIA)
     result["total"] = sum(result[key] for key in ("citadels", "allies", "warbands"))
     result["adds_control"] = bool(set(get_controlled_regions(sim, faction)) - before_control)
     return result
@@ -1283,7 +1288,8 @@ def prevalidate_rally_plan(state, faction, rally_plan, *, resources=None):
                 validate_rally_option(sim, region, faction, option, prior)
                 rally_in_region(sim, region, faction, option, tribe=tribe,
                                 free=bool(prior), warband_mix=mix,
-                                include_home_bonus=True)
+                                include_home_bonus=True, include_bonuses=not prior,
+                                count=entry.get('count') if isinstance(entry, dict) else None)
             except (CommandError, PieceError):
                 continue
             selected.setdefault(region, set()).add(option)

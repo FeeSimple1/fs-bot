@@ -18,6 +18,42 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 29 October Recruit and Rally choices
+
+The [Recruit/Rally report](reviews/recruit-rally-2026-10-29.md) closes the
+optional troop-quantity menus and Vercingetorix's combined Rally menu from
+the comparison backlog. It also records related bonus, Roman bot Recruit,
+Belgic Citadel, Enlist, physical ownership and Tribe-eligibility corrections.
+Ordered human plans preserve exact quantities, legal Region limits and
+shared pools through pending decisions, rollback, save/resume and replay.
+Validation also exposed overlapping A28/Diviciacus forces and Scouted-marker
+handling in Battle and A20; the report traces those related repairs.
+
+Two original implementation items remain: voluntary own-piece reclamation
+under §1.4.1 and Vercingetorix entry inside a resolving Command/Event. The
+source-derived completeness audit also remains. That review has confirmed
+another existing within-action limitation: an SA cannot yet interrupt the
+two Vercingetorix Rally options in the same Region; current interrupted
+Command portions use different Regions.
+The Trade review confirmed a second gap: human Aedui cannot select the
+single Trade Region under shaded River Commerce (Card 39); execution still
+uses a highest-yield proxy. That choice remains part of the completeness
+work. Four implementation gaps are now known, including the two original
+items above.
+
+Final local validation passes 5,622 tests, 150 audited bot games, 80
+mixed-seat executions with replay and 50 strict-census executions. The
+original 15-point outcome guardrail passes without a baseline refresh;
+the report retains the changed individual outcomes and failed candidates.
+Old Aquitani saves lacking an owner remain owner-unknown. The newly recorded
+[bonus-timing question](../QUESTIONS.md#q-rally-bonus-timing--additions-before-ordinary-placement-29-october-2026)
+asks whether printed additions can establish Control before an ordinary
+placement. [A20 casualty origins](../QUESTIONS.md#q-a20-origin--counterattack-losses-among-projected-origins-29-october-2026)
+are also unresolved when projected Warbands have equal visibility. Neither
+question changes the six adopted provisional rulings or Q-O38. The
+[Aedui Supply agreement question](../QUESTIONS.md#q-supply-aedui-die-scope--agreement-across-multiple-regions-29-october-2026)
+records the separate uncertainty about dice covering multiple Regions.
+
 ### 28 October Spring Leader placement
 
 The [Spring report](reviews/spring-leaders-2026-10-28.md) records mandatory
@@ -44,10 +80,12 @@ old-save expectation failure and all superseded verification evidence.
 
 Arbitrary Vercingetorix entry inside a resolving Command or Event remains a
 human-interface gap: action-boundary prompts do not fully implement the
-scenario's printed “at any time” right. Other remaining comparison work is
+scenario's printed “at any time” right. At this Spring checkpoint, other
+remaining comparison work was
 optional Recruit/Rally quantities, Vercingetorix's combined Rally menu,
 voluntary own-piece reclamation, and a source-derived inventory of every
-printed human choice. Q-O38 and the six provisional rulings retain their
+printed human choice. The 29 October entry above updates those dispositions.
+Q-O38 and the six provisional rulings retain their
 existing dispositions.
 
 ### 27 October human Event choices batch

@@ -66,8 +66,10 @@ def loss_choices(state, region, faction, choices):
             for piece in TYPES:
                 number = physical.get(owner, {}).get(visibility, {}).get(piece, 0)
                 converted = state.get('_diviciacus_force', {})
-                if (converted.get('faction') == faction and converted.get('lender') == owner
+                if (converted.get('lender') == owner
                         and converted.get('physical_type') == piece):
+                    # Converted counters belong to the Diviciacus cohort,
+                    # including when lent to the opposing defender.
                     number -= converted.get('pieces', {}).get(region, {}).get(visibility, 0)
                 tied.extend([(piece, visibility, owner)] * number)
         if faction in state.get('non_player_factions', set()):
@@ -105,7 +107,7 @@ def operate(state, region, faction, piece_type, count, operation, *, owner=None,
         for ps in states:
             available = raw.get(ps, {}).get(piece_type, 0)
             converted = state.get('_diviciacus_force', {})
-            if (converted.get('faction') == faction and converted.get('lender') == physical_owner
+            if (converted.get('lender') == physical_owner
                     and converted.get('physical_type') == piece_type):
                 available -= converted.get('pieces', {}).get(region, {}).get(ps, 0)
             number = min(remaining, available)

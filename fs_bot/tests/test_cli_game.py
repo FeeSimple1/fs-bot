@@ -251,7 +251,7 @@ def test_rampage_collector_targets_enemy():
                                                  rc.BELGAE)
 
 
-def test_prompt_action_validation_feedback_loop():
+def test_prompt_action_validation_feedback_loop(monkeypatch):
     """An uncollectable/invalid plan triggers the dry-run feedback: the
     player sees why, declines the re-plan, and the turn falls back
     safely. A valid plan passes through without extra prompts."""
@@ -274,8 +274,13 @@ def test_prompt_action_validation_feedback_loop():
     place_piece(st, region, rc.AEDUI, rc.WARBAND, 6, piece_state=rc.HIDDEN)
     st["current_card"] = 5
     out = io.StringIO()
-    # menu: action=Command; command=Rally; region pick; "(done)"?;
-    # place: Warbands; then validation fails -> "Re-plan?" -> n
+    # The menu now hides this illegal option. Inject a stale/external plan
+    # to retain the dry-run feedback regression independently of that filter.
+    from fs_bot.cli import human_plan
+    monkeypatch.setattr(human_plan, "collect_player_action", lambda *args, **kwargs: {
+        "command": "Rally", "regions": [], "sa": "No SA", "sa_regions": [],
+        "details": {"rally_plan": {"steps": [
+            {"region": region, "action": "place_warbands", "count": 1}]}}})
     lines = []
     class Feed:
         def readline(self):

@@ -316,86 +316,14 @@ def _check_caesar_ratio(state, region):
 
 
 def _estimate_rally_placements(state, scenario):
-    """Estimate how many pieces Rally would place (without Entreat).
+    """Count the actual Rally, without its accompanying Special Ability.
 
-    Per §8.7.3: Rally places Citadels, Allies, Warbands.
-
-    Returns:
-        Dict with "citadels", "allies", "warbands", "total" counts.
+    The ordinary and Event-scoped entry gates use the same legal quantities,
+    compulsory additions, one-option limits, Resource budget and shared pool.
+    This detached calculation leaves the live board, input and RNG untouched.
     """
-    if state.get("_planning_free_command") or state.get("_command_region_scope") is not None:
-        from fs_bot.bots.bot_common import estimate_scoped_rally
-        return estimate_scoped_rally(state, ARVERNI, node_v_rally)
-    playable = command_region_candidates(
-        state, get_playable_regions(scenario, state.get("capabilities")))
-    citadels = 0
-    allies = 0
-    warbands = 0
-
-    avail_citadels = get_available(state, ARVERNI, CITADEL)
-    avail_allies = get_available(state, ARVERNI, ALLY)
-    avail_warbands = get_available(state, ARVERNI, WARBAND)
-
-    # Step 1: Citadels — replace Allies in Cities with Citadels
-    for region in playable:
-        if avail_citadels <= 0:
-            break
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            if avail_citadels <= 0:
-                break
-            tribe_info = state["tribes"].get(tribe, {})
-            if (tribe_info.get("allied_faction") == ARVERNI
-                    and is_city_tribe(tribe)):
-                citadels += 1
-                avail_citadels -= 1
-                # This frees up an Ally
-                avail_allies += 1
-
-    # Step 2: Allies — place wherever possible
-    # Allies require Arverni Control or Home Region with pieces
-    for region in playable:
-        if avail_allies <= 0:
-            break
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            if avail_allies <= 0:
-                break
-            tribe_info = state["tribes"].get(tribe, {})
-            # Can place if tribe is subdued/empty and region has Arverni
-            # control or is a Rally region
-            if tribe_info.get("allied_faction") is None:
-                if count_pieces(state, region, ARVERNI) > 0:
-                    allies += 1
-                    avail_allies -= 1
-
-    # Step 3: Warbands — place most possible
-    for region in playable:
-        if avail_warbands <= 0:
-            break
-        # Can place Warbands in regions where Arverni have Control or
-        # an Ally/Citadel — standard Rally rules §3.3.1
-        has_ally_or_citadel = False
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") == ARVERNI:
-                has_ally_or_citadel = True
-                break
-        if count_pieces(state, region, ARVERNI, CITADEL) > 0:
-            has_ally_or_citadel = True
-
-        if has_ally_or_citadel or is_controlled_by(state, region, ARVERNI):
-            # Place Warbands here
-            warbands += 1
-            avail_warbands -= 1
-
-    return {
-        "citadels": citadels,
-        "allies": allies,
-        "warbands": warbands,
-        "total": citadels + allies + warbands,
-    }
+    from fs_bot.bots.bot_common import estimate_scoped_rally
+    return estimate_scoped_rally(state, ARVERNI, node_v_rally)
 
 
 def _would_raid_gain_enough(state, scenario, *, raiders=None):

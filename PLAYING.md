@@ -72,6 +72,33 @@ option allows Rally, Recruit, Raid, or Seize in some Regions, then the
 Special Activity, then the rest of that Command in other Regions.
 Ambush and Besiege resolve within their accompanying Battle.
 
+Recruit and Rally now ask how many Auxilia or Warbands to place. The
+quantity menu includes zero where the rules allow it, and includes any
+compulsory additions in the displayed total. Choosing zero still selects
+and pays for the Region; use **Skip this Region** to omit it. Later choices
+use the pieces and Resources left after your earlier placements.
+
+With named Vercingetorix, Rally can place an Ally or Citadel and Warbands
+in either order. Choose the first placement, then the second or **Finish
+this Region**. The Region costs Resources only once. A Successor does not
+have this ability. All three Gallic factions can choose a Citadel at a
+City where they have an Ally. Enlist's free German Rally also offers its
+legal quantities, including the base game's Warbands after placing an Ally.
+When using Diviciacus cooperation, choose the physical Roman/Aedui pieces
+before planning the next Region; this preserves the correct remaining pools.
+The current interruption menu still uses different Regions before and after
+the Special Activity. Splitting Vercingetorix's two placements in one Region
+around that activity remains an interface limitation.
+
+Another remaining choice gap affects shaded River Commerce (Card 39):
+Trade is limited to one Region, but the human menu does not yet let you
+select it. The current engine chooses a Region by its existing yield proxy.
+
+When a Roman bot needs your Supply Line permission for Recruit and its
+preceding activity, it asks before making changes. A refusal makes it
+reconsider the plan; accepted permissions hold for the Command or Event
+you agreed to. You can still inspect the board at the prompt.
+
 When an Event grants an action, its menu lets you plan the permitted action,
 request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,

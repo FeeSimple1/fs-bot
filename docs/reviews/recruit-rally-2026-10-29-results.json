@@ -1,0 +1,2658 @@
+{
+  "accepted": true,
+  "accepted_attempt": "attempt8",
+  "all_attempts": {
+    "attempt1": {
+      "all_file_hashes_verified": true,
+      "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "initial_full_suite": {
+        "errors": 0,
+        "failures": 9,
+        "passed": 5431,
+        "skipped": 0,
+        "tests": 5440
+      },
+      "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+      "python_files": 325,
+      "snapshot": "attempt1/python-source-recovered",
+      "source_sha256": "d3101143bbc436dd5fa9d544eb4c0ccc30830bd7767ca46f57fdac7c92a9d7c2"
+    },
+    "attempt2": {
+      "all_file_hashes_verified": true,
+      "disposition": {
+        "accepted": false,
+        "baseline_updated": false,
+        "candidate_installed": false,
+        "later_acceptance_rule": "A corrected source needs a fresh frozen attempt. Do not pool this attempt with later acceptance evidence.",
+        "recorded_utc": "2026-10-29T03:07:46.671657+00:00",
+        "source": {
+          "commit": "15417ff1b3e6f29b6bc3b6738efcbfb964bce10b",
+          "dirty": true,
+          "source_sha256": "58630cc9ad4b55cfa7ce0e3652f1502f9089981ac0953dd88b16909d03999416"
+        },
+        "status": "BLOCKED/SUPERSEDED: actual A28 physical-cohort execution defect; not an accepted matrix",
+        "total_bot_games_audited": 146,
+        "total_bot_games_completed": 150
+      },
+      "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "initial_full_suite": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 5447,
+        "skipped": 0,
+        "tests": 5447
+      },
+      "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+      "original_verification_failures": [
+        "runner did not pass",
+        "bots-original: nonzero exit or changed source",
+        "bots-second-edition: nonzero exit or changed source",
+        "bots-original/Ariovistus/205: completed is not true",
+        "bots-original/Ariovistus/205: audit_completed is not true",
+        "bots-original/Ariovistus/205: nonlegal diagnostics",
+        "bots-original/Ariovistus/205: nonlegal diagnostic_occurrences",
+        "bots-original/The Gallic War/205: completed is not true",
+        "bots-original/The Gallic War/205: audit_completed is not true",
+        "bots-original/The Gallic War/205: nonlegal diagnostics",
+        "bots-original/The Gallic War/205: nonlegal diagnostic_occurrences",
+        "bots-original/Ariovistus: summary completed disagrees with records",
+        "bots-original/Ariovistus: summary wins disagrees with records",
+        "bots-original/Ariovistus: summary highest_margin_leaders disagrees with records",
+        "bots-original/Ariovistus: summary terminations disagrees with records",
+        "bots-original/Ariovistus: summary cards_mean disagrees with records",
+        "bots-original/Ariovistus: summary cards_range disagrees with records",
+        "bots-original/Ariovistus: summary winters disagrees with records",
+        "bots-original/The Gallic War: summary completed disagrees with records",
+        "bots-original/The Gallic War: summary wins disagrees with records",
+        "bots-original/The Gallic War: summary highest_margin_leaders disagrees with records",
+        "bots-original/The Gallic War: summary terminations disagrees with records",
+        "bots-original/The Gallic War: summary cards_mean disagrees with records",
+        "bots-original/The Gallic War: summary cards_median disagrees with records",
+        "bots-original/The Gallic War: summary winters disagrees with records",
+        "bots-second-edition/Ariovistus/205: completed is not true",
+        "bots-second-edition/Ariovistus/205: audit_completed is not true",
+        "bots-second-edition/Ariovistus/205: nonlegal diagnostics",
+        "bots-second-edition/Ariovistus/205: nonlegal diagnostic_occurrences",
+        "bots-second-edition/The Gallic War/205: completed is not true",
+        "bots-second-edition/The Gallic War/205: audit_completed is not true",
+        "bots-second-edition/The Gallic War/205: nonlegal diagnostics",
+        "bots-second-edition/The Gallic War/205: nonlegal diagnostic_occurrences",
+        "bots-second-edition/Ariovistus: summary completed disagrees with records",
+        "bots-second-edition/Ariovistus: summary wins disagrees with records",
+        "bots-second-edition/Ariovistus: summary highest_margin_leaders disagrees with records",
+        "bots-second-edition/Ariovistus: summary terminations disagrees with records",
+        "bots-second-edition/Ariovistus: summary cards_mean disagrees with records",
+        "bots-second-edition/Ariovistus: summary cards_range disagrees with records",
+        "bots-second-edition/Ariovistus: summary winters disagrees with records",
+        "bots-second-edition/The Gallic War: summary completed disagrees with records",
+        "bots-second-edition/The Gallic War: summary wins disagrees with records",
+        "bots-second-edition/The Gallic War: summary highest_margin_leaders disagrees with records",
+        "bots-second-edition/The Gallic War: summary terminations disagrees with records",
+        "bots-second-edition/The Gallic War: summary cards_mean disagrees with records",
+        "bots-second-edition/The Gallic War: summary cards_median disagrees with records",
+        "bots-second-edition/The Gallic War: summary winters disagrees with records",
+        "balance/The Great Revolt/Belgae: drift 1/5 exceeds unchanged 3/20 band",
+        "balance/The Gallic War/Aedui: drift 1/5 exceeds unchanged 3/20 band"
+      ],
+      "original_verification_passed": false,
+      "python_files": 325,
+      "snapshot": "attempt2/python-source",
+      "source_sha256": "58630cc9ad4b55cfa7ce0e3652f1502f9089981ac0953dd88b16909d03999416"
+    },
+    "attempt3": {
+      "all_file_hashes_verified": true,
+      "disposition": {
+        "balance_candidate_created": false,
+        "baseline_changed": false,
+        "canonical_all_python_sha256": "0946a507986c4e223d11ccecb02a30d4f3e064d95b96699e0b3c33ecc89dd320",
+        "failed_case": "fs_bot/tests/test_event_grant_outcomes.py::test_a20_projects_all_warbands_between_opposite_veneti_neighbours",
+        "failure": "A20 projected Scouted Warbands remain at target after temporary battle resolution",
+        "full_suite": {
+          "child_exit": 1,
+          "errors": 0,
+          "failed": 1,
+          "passed": 5486,
+          "pytest_seconds": 69.22,
+          "runner_exit": 1,
+          "skipped": 0
+        },
+        "next_attempt": "attempt4 after explicit reviewed source freeze",
+        "notes": [
+          "Full Python snapshot was captured before this suite and independently verified after completion.",
+          "Separate illegal Scouted Auxilia fixture correction also required before next freeze.",
+          "This failed suite is preserved under its actual source identity and is not accepted coverage for later corrected sources."
+        ],
+        "python_files": 326,
+        "recorded_utc": "2026-10-29T03:33:43.410189+00:00",
+        "related_review": "full-suite-review.json",
+        "source_snapshot": "python-source",
+        "source_snapshot_complete": true,
+        "status": "FAILED/SUPERSEDED; no acceptance",
+        "validation_games_launched": 0
+      },
+      "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "initial_full_suite": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 5486,
+        "skipped": 0,
+        "tests": 5487
+      },
+      "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+      "python_files": 326,
+      "snapshot": "attempt3/python-source",
+      "source_sha256": "0946a507986c4e223d11ccecb02a30d4f3e064d95b96699e0b3c33ecc89dd320"
+    },
+    "attempt4": {
+      "all_file_hashes_verified": true,
+      "disposition": {
+        "accepted_for_final_revision": false,
+        "attempt": "attempt4",
+        "baseline_updated": false,
+        "bot_matrix": {
+          "attempted": 150,
+          "audited": 150,
+          "game_completed": 150
+        },
+        "candidate_created": false,
+        "canonical_python_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829",
+        "census_executions": 50,
+        "changed_winner_pairs": 44,
+        "discovered_by": "Independent comparison of exact parent/current traces against Chapter8 section8.8.4",
+        "disposition": "superseded",
+        "fuzz_executions": 80,
+        "original_balance_gate": "failed: GallicWarAedui+20pp and GreatRevoltBelgae+20pp",
+        "paired_captures": 88,
+        "reason": "Paired causal review found Roman Recruit threshold forecast omitted legal Build-before-Recruit effects. Ariovistus15 and GallicWar15 should Build FortAtrebates and AllyProvincia then Recruit6Auxilia, but pre-Build forecast selected Seize.",
+        "recorded_utc": "2026-10-29T03:46:39.437113+00:00",
+        "source_snapshots_and_raw_results_preserved": true,
+        "tests": {
+          "failures": 0,
+          "passed": 5491
+        }
+      },
+      "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "initial_full_suite": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 5491,
+        "skipped": 0,
+        "tests": 5491
+      },
+      "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+      "original_verification_failures": [
+        "balance/The Great Revolt/Belgae: drift 1/5 exceeds unchanged 3/20 band",
+        "balance/The Gallic War/Aedui: drift 1/5 exceeds unchanged 3/20 band"
+      ],
+      "original_verification_passed": false,
+      "python_files": 326,
+      "snapshot": "attempt4/python-source",
+      "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829",
+      "supplemental_disposition_resolution": {
+        "evidence": {
+          "bytes": 2597,
+          "path": "validation/attempt4/disposition-resolution.json",
+          "sha256": "1b7a6f4d42931250fbf65a0b595f096f6b21d956f841f4680537558ff14cb0ea"
+        },
+        "resolution": {
+          "archived_attempt_source": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829",
+          "attempt": "attempt4",
+          "disposition_still": "superseded; no baseline candidate or installation",
+          "findings": [
+            "Atrebates already has a Roman Ally, so Build there does not require Supply under \u00a74.2.1. Card12 unshaded removes the Leader-proximity requirement.",
+            "The post-Build six-piece Recruit is legal in the original all-NP state, but NP Belgae refuse Supply (\u00a78.4.2), so Atrebates Recruit costs two Resources (\u00a73.2.1). The original parent execution incorrectly omitted that cost.",
+            "The original all-domain equality proof therefore did not establish complete rules validity. The Build-before-Recruit threshold omission remains independently supported by \u00a78.8.4.",
+            "An explicitly identified human-consent variant preserves the original physical and Resource outcome; it changes seat ownership and is not relabeled as the archived all-NP game."
+          ],
+          "kind": "supplemental-source-qualification-original-record-preserved",
+          "original_disposition": {
+            "bytes": 1062,
+            "path": "attempt4/disposition.json",
+            "sha256": "4db5502d28ed38082bc3ce596d22f8a6db3f6936d34d4f070f319a6df178c892"
+          },
+          "preserved_boundaries": {
+            "baseline_updated": false,
+            "human_consent_variant_is_separate_from_archived_all_np_position": true,
+            "old44_paired_captures_remain_source55a_diagnostic_evidence": true,
+            "old_matrix_not_relabelled_final": true,
+            "original_disposition_unchanged": true
+          },
+          "qualification_evidence": {
+            "bytes": 14362,
+            "path": "build-forecast-repair/supply-qualification.json",
+            "sha256": "4232c2810a88ae3d119fc412b5bac19f8114706d3861f9ba36eb856098af88dd"
+          },
+          "qualification_source": {
+            "commit": "15417ff1b3e6f29b6bc3b6738efcbfb964bce10b",
+            "dirty": true,
+            "source_sha256": "df4912cf6b018797372ea8c391ba037adbdd46793c9cfc4d97d1bb58918b651d"
+          },
+          "recorded_utc": "2026-10-29T05:11:27.860843+00:00",
+          "resolution": "The Build-before-Recruit threshold omission remains supported by section8.8.4, and six Recruit Auxilia remain legal in both original all-NP seed15 positions. Later consent review corrects the cost claim: NP Belgae refuse Supply at Atrebates, so its Recruit costs two Resources; the prior parent execution omitted that cost.",
+          "source_references": {
+            "Reference Documents/Card Reference": "Card12 unshaded",
+            "Reference Documents/Chapter 3": "23\u201341",
+            "Reference Documents/Chapter 4": "43\u201354",
+            "Reference Documents/Chapter 8": "197\u2013203 and944\u2013954"
+          }
+        }
+      }
+    },
+    "attempt5": {
+      "all_file_hashes_verified": true,
+      "disposition": {
+        "attempt": "attempt5",
+        "baseline_updated": false,
+        "child_exit_code": 1,
+        "disposition": "full-suite-failed-no-matrix",
+        "fixtures_stable": true,
+        "matrix_games": 0,
+        "reason": "The real Gallic War policy handoff fixture (G-GROW seed7) no longer reaches Interlude. Exact ending under source review; no production conclusion inferred from assertion alone.",
+        "runner_exit_code": 1,
+        "source": {
+          "commit": "15417ff1b3e6f29b6bc3b6738efcbfb964bce10b",
+          "dirty": true,
+          "source_sha256": "6608afd6b4f50c42563b3cf2dd3270f8847593affb54b60b799a9ad1b70cf530"
+        },
+        "source_stable": true,
+        "tests": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 5499,
+          "skipped": 0,
+          "tests": 5500
+        }
+      },
+      "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "initial_full_suite": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 5499,
+        "skipped": 0,
+        "tests": 5500
+      },
+      "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+      "python_files": 327,
+      "snapshot": "attempt5/python-source",
+      "source_sha256": "6608afd6b4f50c42563b3cf2dd3270f8847593affb54b60b799a9ad1b70cf530",
+      "supplemental_disposition_resolution": {
+        "evidence": {
+          "bytes": 4409,
+          "path": "validation/attempt5/disposition-resolution.json",
+          "sha256": "4941a338a66432f51e4d89f5f8316052c4a6847c49f6be175bb1703de489daf0"
+        },
+        "resolution": {
+          "archived_attempt_source": "6608afd6b4f50c42563b3cf2dd3270f8847593affb54b60b799a9ad1b70cf530",
+          "attempt": "attempt5",
+          "checkpoint_coverage_limits": [
+            "The handoff test is a legacy saved-checkpoint continuation, not a newly generated second-edition full game traversing both halves.",
+            "The checkpoint test has no ordinary German turn before handoff; it observes a real German reaction that uses the documented raw callback default.",
+            "The saved historical first half was generated by all-bot play; G-GROW policy control is installed only when this test resumes it.",
+            "The existing checkpoint probe has stable before/after source hashes but does not record PYTHONHASHSEED.",
+            "These observations are scoped fixture-review evidence, not full matrix, balance, or final combined-source acceptance."
+          ],
+          "checkpoint_provenance": {
+            "card_edition": "legacy",
+            "current_card": "Winter",
+            "historical_generator_source_commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+            "historical_generator_source_sha256": "56f041efb20a1d90f3b713973911ce0ba1216dc0a1aa1d4173ef6238c125c024",
+            "interlude_completed": false,
+            "path": "/workspace/scratch/534c265c65f4/fs-bot/fs_bot/tests/fixtures/compatibility_8ef88e2/pre-interlude.json",
+            "pending_card_turn_present": false,
+            "provenance": "Historical generator captured a real all-bot game immediately before its automatic Interlude; this fixture is not a newly simulated G-GROW first half.",
+            "resolved_card_present": false,
+            "scenario": "The Gallic War",
+            "seed": 3,
+            "sha256": "1a540f03f52cc631f2223b9a9d5d5f9d6eefb55c107ee8c3ce5539c858662d02",
+            "verified_matches_manifest_hash": true,
+            "verified_unchanged_from_HEAD": true,
+            "winter_count": 2
+          },
+          "evidence": [
+            {
+              "bytes": 35288,
+              "path": "interlude-fixture-review/build-forecast/review.json",
+              "sha256": "a57457032856dac7719a8783d1dc1f2350553cf458d9d5b0895b2e8ca36dae58"
+            },
+            {
+              "bytes": 12328,
+              "path": "interlude-fixture-review/build-forecast/former-seed7.json.gz",
+              "sha256": "a763c418aa08c8ca2c3f4274b3da35432f6d93e805ddcd3d96006b76c4c90a95"
+            },
+            {
+              "bytes": 6771,
+              "path": "interlude-fixture-review/build-forecast/independent-checkpoint-review.json",
+              "sha256": "f762fdd660c31867e7728323c2d5b9611862dd994e19784b671da01f9549a9e1"
+            },
+            {
+              "bytes": 16040,
+              "path": "interlude-fixture-review/build-forecast/checkpoint-policy.json.gz",
+              "sha256": "b76fa40cf0bc65ae8def04c6fab1d98548382482e16e150649b2ae859b9172e0"
+            }
+          ],
+          "kind": "supplemental-resolution-original-record-preserved",
+          "original_disposition": {
+            "bytes": 713,
+            "path": "attempt5/disposition.json",
+            "sha256": "831bcdbda753a7299eecdc708a45cf8420b8ece44a8b585aada6f87a1c501930"
+          },
+          "qualification": "This resolves the fixture assumption and identifies bounded checkpoint coverage; it does not accept the superseded revision, prove every earlier game action correct, or relabel old captures as final-source validation.",
+          "recorded_utc": "2026-10-29T05:11:27.860843+00:00",
+          "resolution": "The failed handoff assertion assumed seed7 would reach Interlude. Source review confirms its captured terminal position meets a lawful first-half Roman Victory at the third Winter; the replacement handoff test explicitly resumes an unchanged historical checkpoint.",
+          "source_references": [
+            {
+              "finding": "Firsthalf uses Ariovistus. Interlude applies only if the game has not ended by thirdVictoryPhase.",
+              "lines": "11-17",
+              "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War"
+            },
+            {
+              "finding": "Victoryranking prefers NPthenRomans; Romans win when Subdued+Dispersed+RomanAllies-GermanSettlements exceeds15.",
+              "lines": "4-11",
+              "path": "Reference Documents/Ariovistus/Chapter A7"
+            }
+          ],
+          "terminal_finding": {
+            "final_sha256": "78a24e32527ae6e6dbe4f974f23bb074ef6e68222bdfa518c74a75ad2042724f",
+            "finding": "Lawful firsthalf RomanVictory at thirdWinter:47cards,score17,margin2,is_finalFalse,completed/auditclean.",
+            "trace": "former-seed7.json.gz"
+          },
+          "unchanged_disposition": {
+            "baseline_updated": false,
+            "failed_full_suite_remains_failed": true,
+            "matrix_games": 0,
+            "original_tests": {
+              "errors": 0,
+              "failures": 1,
+              "passed": 5499,
+              "skipped": 0,
+              "tests": 5500
+            }
+          }
+        }
+      }
+    },
+    "attempt6": {
+      "all_file_hashes_verified": true,
+      "disposition": {
+        "accepted": false,
+        "baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+        "disposition": "Full suite failed; preserve snapshot and results. No game matrix or baseline candidate was run. Repairs require a new source and numbered attempt.",
+        "failures": [
+          {
+            "class": "fs_bot.tests.test_aedui_bot.TestTrade",
+            "message": "assert 0 >= 4",
+            "test": "test_trade_estimate_assumes_player_roman_agreement"
+          },
+          {
+            "class": "fs_bot.tests.test_aedui_bot.TestTrade",
+            "message": "AssertionError: assert 'Suborn' == 'Trade'\n  \n  - Trade\n  + Suborn",
+            "test": "test_trade_triggers_with_player_rome_at_high_score"
+          },
+          {
+            "class": "fs_bot.tests.test_aedui_bot.TestTrade",
+            "message": "assert 0 > 0",
+            "test": "test_executed_trade_player_rome_consults_agent"
+          },
+          {
+            "class": "fs_bot.tests.test_winter",
+            "message": "fs_bot.engine.quarters.QuartersError: Nervii has no agreed Supply Line to Provincia",
+            "test": "test_player_rome_quarters_defaults_to_np_plan_not_roll_for_all"
+          }
+        ],
+        "fixture_bytes_unchanged": true,
+        "review": "Three Trade failures expose wrong Supply requester and Roman declaration integration; Winter Quarters exposes planner/validator disagreement under actual NPC consent policy. Both are assigned source-derived repairs; no expectations or archived fixtures are being relaxed.",
+        "source": {
+          "commit": "15417ff1b3e6f29b6bc3b6738efcbfb964bce10b",
+          "dirty": true,
+          "source_sha256": "df4912cf6b018797372ea8c391ba037adbdd46793c9cfc4d97d1bb58918b651d"
+        },
+        "source_changed": false,
+        "tests": {
+          "failed": 4,
+          "passed": 5584,
+          "runner_exit_code": 1
+        }
+      },
+      "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "initial_full_suite": {
+        "errors": 0,
+        "failures": 4,
+        "passed": 5584,
+        "skipped": 0,
+        "tests": 5588
+      },
+      "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+      "python_files": 332,
+      "snapshot": "attempt6/python-source",
+      "source_sha256": "df4912cf6b018797372ea8c391ba037adbdd46793c9cfc4d97d1bb58918b651d"
+    },
+    "attempt7": {
+      "all_file_hashes_verified": true,
+      "disposition": {
+        "accepted": false,
+        "baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+        "disposition": "Full suite failed; no matrix, causal captures or baseline candidate launched. Source and all eight fixture files preserved.",
+        "failures": [
+          {
+            "class": "fs_bot.tests.test_selfplay_tools",
+            "message": "fs_bot.engine.game_engine.ActionRejected: The chosen action produced no legal effect.",
+            "test": "test_every_profile_finishes_a_game"
+          }
+        ],
+        "fixture_bytes_unchanged": true,
+        "review": "Capture exact heuristic human-seat Recruit/Scout rejection in the unchanged Great Revolt seed1 profile loop, then source-derived repair. Do not skip profiles, change seeds or weaken rejection.",
+        "source": {
+          "commit": "15417ff1b3e6f29b6bc3b6738efcbfb964bce10b",
+          "dirty": true,
+          "source_sha256": "018042b77427cfc2a414558435d6496d11e2de1aea992b42c0786c0a65c0d59e"
+        },
+        "source_changed": false,
+        "tests": {
+          "failures": 1,
+          "passed": 5611,
+          "runner_exit_code": 1
+        }
+      },
+      "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "initial_full_suite": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 5611,
+        "skipped": 0,
+        "tests": 5612
+      },
+      "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+      "python_files": 334,
+      "snapshot": "attempt7/python-source",
+      "source_sha256": "018042b77427cfc2a414558435d6496d11e2de1aea992b42c0786c0a65c0d59e",
+      "supplemental_disposition_resolution": {
+        "evidence": {
+          "bytes": 1447,
+          "path": "validation/attempt7/disposition-resolution.json",
+          "sha256": "91ec4d5fbdc39b30d9defc5ca6e577c4bf02bd821dcbc807525b25667e4da905"
+        },
+        "resolution": {
+          "evidence": [
+            {
+              "path": "attempt7/disposition.json",
+              "sha256": "93d384c6d0cef505715c005840377cb154b04c2fae498b9df7a706f82b274feb"
+            },
+            {
+              "path": "attempt7-repair/r-hunt-seed1-before.json.gz",
+              "sha256": "876c6b60628da4cde2ee1c150bd4054bdbc420a831cde39fbc374a25c4de5f0f"
+            },
+            {
+              "path": "attempt7-repair/r-hunt-seed1-after.json",
+              "sha256": "31ab7e4855ae00c7998ea09d5d11783c3639c6a7decda953cc007c740316270e"
+            },
+            {
+              "path": "attempt7-repair/independent-final-review.json",
+              "sha256": "0094e328970cb8d6175176c395ed844a7ca5c840c4ba9e82f5bbb1bcd5cd792f"
+            }
+          ],
+          "limitations": "Focused repair and exact localization are not the attempt8 full suite, matrix or final acceptance; original attempt7 remains failed.",
+          "original_failed_source": "018042b77427cfc2a414558435d6496d11e2de1aea992b42c0786c0a65c0d59e",
+          "policy_version": 3,
+          "repaired_source": "49e26161e6b49b0f8a28921258e6ebf417d0f2040f8d0551f8f43f05c7c0a296",
+          "resolution": "The captured Recruit failure was legal NPC Aedui Supply refusal at Roman score10 and zero Resources. Bounded synthetic policy now requires Recruit viability under uncertain refusal, without dice peeking or live input; actual human validation and engine execution remain unchanged. Same profile/seed and all-profile completion test pass. Independent review approved the exact repaired source.",
+          "supersedes_original_disposition": false
+        }
+      }
+    },
+    "attempt8": {
+      "all_file_hashes_verified": true,
+      "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "initial_full_suite": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 5622,
+        "skipped": 0,
+        "tests": 5622
+      },
+      "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+      "original_verification_failures": [],
+      "original_verification_passed": true,
+      "python_files": 335,
+      "snapshot": "attempt8/python-source",
+      "source_sha256": "49e26161e6b49b0f8a28921258e6ebf417d0f2040f8d0551f8f43f05c7c0a296"
+    }
+  },
+  "baseline_disposition": {
+    "band_percentage_points": 15,
+    "disposition": "Original unchanged15-point gate passed; no candidate installation or additional fresh100 required.",
+    "fresh_check": null,
+    "installed_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+    "keys": 100,
+    "original_guardrail_passed": true,
+    "original_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+    "performed": false
+  },
+  "causal_review": {
+    "evidence": {
+      "bytes": 13076,
+      "path": "validation/attempt8/final-source-review.json",
+      "sha256": "bb2fa8b8e433893d99042ecade009625948831b30248aeada6b392918f6676bd"
+    },
+    "review": {
+      "approved": true,
+      "bot_records": {
+        "legacy": {
+          "accepted": 100,
+          "diagnostic_occurrences": 1118,
+          "nonlegal_diagnostics": 0,
+          "raw_sha256": "26f388ae0b8c620e8bb1a1f6261ab3b1a8f0414ab14fa929b51bb28b908d4aaa",
+          "records": 100,
+          "terminations": {
+            "final-winter-margin": 33,
+            "optimates": 4,
+            "threshold": 63
+          }
+        },
+        "original": {
+          "accepted": 25,
+          "diagnostic_occurrences": 264,
+          "nonlegal_diagnostics": 0,
+          "raw_sha256": "fdd4a2419bce608a0ca011c88fab32d2ea7687012d2d2c2ac33728884fadb352",
+          "records": 25,
+          "terminations": {
+            "final-winter-margin": 9,
+            "optimates": 1,
+            "threshold": 15
+          }
+        },
+        "second-edition": {
+          "accepted": 25,
+          "diagnostic_occurrences": 268,
+          "nonlegal_diagnostics": 0,
+          "raw_sha256": "df4ffb68c7e456a0c366fbf883e9355db66780bfe20d597d96ead5d36cb8f7a9",
+          "records": 25,
+          "terminations": {
+            "final-winter-margin": 8,
+            "optimates": 3,
+            "threshold": 14
+          }
+        }
+      },
+      "checks": 3219,
+      "failures": [],
+      "formerly_failing_A28_heldouts": [
+        {
+          "current_audit_completed": true,
+          "current_cards": 44,
+          "current_final_state_sha256": "a3842560ac1d7dc98eb08088aadcf20987fc625da43bdc3e92cd7d7fa726a1eb",
+          "current_nonlegal_diagnostics": [],
+          "current_winner": "Belgae",
+          "edition": "original",
+          "old_audit_completed": false,
+          "old_nonlegal": [
+            {
+              "command": "Battle",
+              "count": 1,
+              "example": [
+                "Ariovistus",
+                205,
+                "A28",
+                "{'region': 'Mandubii', 'defender': 'Romans', 'error': 'Only 2 Aedui Hidden Warband in Mandubii, need 4'}"
+              ],
+              "faction": "Aedui",
+              "kind": "command-error",
+              "message": "Only 2 Aedui Hidden Warband in Mandubii, need 4",
+              "severity": "illegal"
+            }
+          ],
+          "old_raw_sha256": "8fab3aef9061dcaeb446458b6c751aa89f7e206e1e4530f95051c1b0cb31eeb2",
+          "old_source": "58630cc9ad4b55cfa7ce0e3652f1502f9089981ac0953dd88b16909d03999416",
+          "scenario": "Ariovistus",
+          "seed": 205
+        },
+        {
+          "current_audit_completed": true,
+          "current_cards": 71,
+          "current_final_state_sha256": "7c9e61d822ea4b569678afe73c2b3db6e9ad14a9bc8094bda65e815829ab3488",
+          "current_nonlegal_diagnostics": [],
+          "current_winner": "Belgae",
+          "edition": "original",
+          "old_audit_completed": false,
+          "old_nonlegal": [
+            {
+              "command": "Battle",
+              "count": 1,
+              "example": [
+                "The Gallic War",
+                205,
+                "A28",
+                "{'region': 'Mandubii', 'defender': 'Romans', 'error': 'Only 2 Aedui Hidden Warband in Mandubii, need 4'}"
+              ],
+              "faction": "Aedui",
+              "kind": "command-error",
+              "message": "Only 2 Aedui Hidden Warband in Mandubii, need 4",
+              "severity": "illegal"
+            }
+          ],
+          "old_raw_sha256": "8fab3aef9061dcaeb446458b6c751aa89f7e206e1e4530f95051c1b0cb31eeb2",
+          "old_source": "58630cc9ad4b55cfa7ce0e3652f1502f9089981ac0953dd88b16909d03999416",
+          "scenario": "The Gallic War",
+          "seed": 205
+        },
+        {
+          "current_audit_completed": true,
+          "current_cards": 44,
+          "current_final_state_sha256": "7e7a3e71c362de97ceea33b1c07d9ea0109af78c511860c1c30576cce5dde980",
+          "current_nonlegal_diagnostics": [],
+          "current_winner": "Belgae",
+          "edition": "second-edition",
+          "old_audit_completed": false,
+          "old_nonlegal": [
+            {
+              "command": "Battle",
+              "count": 1,
+              "example": [
+                "Ariovistus",
+                205,
+                "A28",
+                "{'region': 'Mandubii', 'defender': 'Romans', 'error': 'Only 2 Aedui Hidden Warband in Mandubii, need 4'}"
+              ],
+              "faction": "Aedui",
+              "kind": "command-error",
+              "message": "Only 2 Aedui Hidden Warband in Mandubii, need 4",
+              "severity": "illegal"
+            }
+          ],
+          "old_raw_sha256": "24f6c38f0759640e3dd775de8aef3f2564cb9dffdcbb7b6526d23f8da816df87",
+          "old_source": "58630cc9ad4b55cfa7ce0e3652f1502f9089981ac0953dd88b16909d03999416",
+          "scenario": "Ariovistus",
+          "seed": 205
+        },
+        {
+          "current_audit_completed": true,
+          "current_cards": 87,
+          "current_final_state_sha256": "bea2a2866537ceb9f93ea353600141a814c627a8c5e5f8288a3b03d1e2ea1a3c",
+          "current_nonlegal_diagnostics": [],
+          "current_winner": "Belgae",
+          "edition": "second-edition",
+          "old_audit_completed": false,
+          "old_nonlegal": [
+            {
+              "command": "Battle",
+              "count": 1,
+              "example": [
+                "The Gallic War",
+                205,
+                "A28",
+                "{'region': 'Mandubii', 'defender': 'Romans', 'error': 'Only 2 Aedui Hidden Warband in Mandubii, need 4'}"
+              ],
+              "faction": "Aedui",
+              "kind": "command-error",
+              "message": "Only 2 Aedui Hidden Warband in Mandubii, need 4",
+              "severity": "illegal"
+            }
+          ],
+          "old_raw_sha256": "24f6c38f0759640e3dd775de8aef3f2564cb9dffdcbb7b6526d23f8da816df87",
+          "old_source": "58630cc9ad4b55cfa7ce0e3652f1502f9089981ac0953dd88b16909d03999416",
+          "scenario": "The Gallic War",
+          "seed": 205
+        }
+      ],
+      "full_suite": {
+        "errors": 0,
+        "exit_code": 0,
+        "failures": 0,
+        "junit_sha256": "fdc2255a7567fe26000ac22dd85af0130fd51867ed5c183424a941ec51d1013d",
+        "skipped": 0,
+        "status_sha256": "ea21a1b73da7fd9fff05e8e220a1d47ecff3e1a45fda1169c35ca227dcbc2298",
+        "tests": 5622
+      },
+      "limitations": [
+        "No per-winner causal claim:47 individual winners changed. Passing the unchanged aggregate15-percentage-point guard does not explain each outcome. No final paired traces were launched under the agreed conditional workflow.",
+        "Attempt4 source55a paired traces are superseded diagnostics, not evidence for final49e outcomes; earlier failures and source qualifications remain preserved.",
+        "Final rankings and winners were checked against all150 existing audited records, including scenario-eligible factions and tie precedence; final boards were not regenerated or independently rescored from absent board snapshots.",
+        "Batch diagnostics cover returned cards only. Separate strict nested census covers25 requested cases at each hash seed, not every nested operation across all150 bot records.",
+        "Mixed-seat completion includes seven rejected random plans per hash and does not establish exhaustive human-choice coverage.",
+        "Existing recorded rule/interface gaps remain open, including Q-A20-ORIGIN, NP Aedui multi-Region consent die scope, and shadedCard39 human Trade Region selection. This is bounded acceptance, not an exhaustive rules audit."
+      ],
+      "main_verifier": {
+        "checks": 5702,
+        "passed": true,
+        "report_sha256": "5f397f6b6551ca97962e002504d65c2457f063dbd77f23b2d493dc0fa75a3cdb"
+      },
+      "mixed": {
+        "cross_hash_full_json_equal": true,
+        "executions_including_replay": 80,
+        "hard_findings": 0,
+        "partial": 0,
+        "rejected_random_plans_per_hash": 7,
+        "unique_cases": 20
+      },
+      "original_balance_guard": {
+        "baseline_matches_live_frozen_original_commit": true,
+        "baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+        "baseline_updated": false,
+        "candidate_created": false,
+        "changed_card_counts": 42,
+        "changed_individual_winners": 47,
+        "changed_winner_or_cards_records": 63,
+        "independent_gate_review_sha256": "edfe34ab6af2a0610053eaacd2b8e62d7533dcfe0f14afe4b334529890c869d8",
+        "maximum_absolute_drift": "3/20",
+        "passed": true,
+        "threshold_percentage_points": 15
+      },
+      "raw_artifact_sha256": {
+        "bots-legacy/games.jsonl": "26f388ae0b8c620e8bb1a1f6261ab3b1a8f0414ab14fa929b51bb28b908d4aaa",
+        "bots-original/games.jsonl": "fdd4a2419bce608a0ca011c88fab32d2ea7687012d2d2c2ac33728884fadb352",
+        "bots-second-edition/games.jsonl": "df4ffb68c7e456a0c366fbf883e9355db66780bfe20d597d96ead5d36cb8f7a9",
+        "census0.json": "0d168d9bc4b76672dbbd2fb4a9bb72dd9734fef08e7835f6d1477c7e4138891c",
+        "census7.json": "0d168d9bc4b76672dbbd2fb4a9bb72dd9734fef08e7835f6d1477c7e4138891c",
+        "fuzz0.json": "abc858420bf5b813a9597f5f1f33e2549acb1dee045de8a3bba07ca82d817147",
+        "fuzz7.json": "abc858420bf5b813a9597f5f1f33e2549acb1dee045de8a3bba07ca82d817147"
+      },
+      "recorded_utc": "2026-10-29T05:39:03.033953+00:00",
+      "reviewer": "/root/council_spec_review",
+      "scope": "Read-only independent acceptance review of existing final attempt8 artifacts and applicable bounded source-repair reviews. No tests, games, causal captures, production edits, baseline edits or candidates were performed.",
+      "source": {
+        "exact_live_frozen_freeze_match": true,
+        "fixture_data_files": 9,
+        "fixture_inventory": {
+          "fs_bot/tests/fixtures/compatibility_8ef88e2/manifest.json": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+          "fs_bot/tests/fixtures/compatibility_8ef88e2/pending-card-turn.json": "69ee16ce7e194537f172a577c322652515759b693988eaf4be669abfaa42494a",
+          "fs_bot/tests/fixtures/compatibility_8ef88e2/pending-frumentum.json": "c1392ab6b2639edca99298a88667f20f6e757494a46ce86d712380515510779d",
+          "fs_bot/tests/fixtures/compatibility_8ef88e2/post-interlude.json": "0e461fe9be9807967c96020939b5f483bb5648364c13437eeacdc1395d99f27a",
+          "fs_bot/tests/fixtures/compatibility_8ef88e2/pre-interlude.json": "1a540f03f52cc631f2223b9a9d5d5f9d6eefb55c107ee8c3ce5539c858662d02",
+          "fs_bot/tests/fixtures/recruit_build_before/ariovistus-15.json.gz": "de8af3a36523c3416d603fc415d81faf7ba1c8c931c3eac23ebff7e07d5962f4",
+          "fs_bot/tests/fixtures/recruit_build_before/the-gallic-war-15.json.gz": "f65b6e8921e2f7167f737c7fee4b453ccd6f886d160e2af377581cb5c7404c80",
+          "fs_bot/tests/fixtures/recruit_supply_before/gallic-war-9.json.gz": "bd337f2a4bcfe1626d127f3df5ca6c13cafc275c51dc68516be9260ed0983b16",
+          "fs_bot/tests/fixtures/recruit_supply_before/great-revolt-r-hunt-1.json.gz": "7dc749e5d2b69a119d526fa279de78109b1c78e62bb2bb221cba8d060eec4624"
+        },
+        "protected_bytes_match_base_commit": true,
+        "protected_tracked_files_checked": 48,
+        "python_files": 335,
+        "sha256_after": "49e26161e6b49b0f8a28921258e6ebf417d0f2040f8d0551f8f43f05c7c0a296",
+        "sha256_before": "49e26161e6b49b0f8a28921258e6ebf417d0f2040f8d0551f8f43f05c7c0a296"
+      },
+      "source_repair_reviews": [
+        {
+          "applicability": "A28 physical cohorts, binding first loan and legal visibility; historical source55a proof, supported by final suite and four clean final heldouts.",
+          "path": "attempt2/a28-diagnostic/independent-final55a-legal-repair-review.json",
+          "sha256": "3262b3cf2098ddd79b131a7cb274fb04facf3560b23eece79a05bd6a85b32943"
+        },
+        {
+          "applicability": "A20 return of surviving Scouted counters; existing same-visibility origin convention remains unresolved Q-A20-ORIGIN.",
+          "path": "attempt3/a20-diagnostic/council-final-source-approval.json",
+          "sha256": "b9da7341ff54b4b622dfb99afea8d0dcd98b0ffeb28c7a92f3ab987887b688b8"
+        },
+        {
+          "applicability": "Supersedes unqualified parent source-validity claim: original NP Belgae refusal adds Recruit cost; explicit human-consent variant is distinct; Build-before threshold remains sourced.",
+          "path": "build-forecast-repair/supply-qualification.json",
+          "sha256": "4232c2810a88ae3d119fc412b5bac19f8114706d3861f9ba36eb856098af88dd"
+        },
+        {
+          "applicability": "Supply confirmation/replanning, binding Event versus canceled Command, preview/pending/RNG and signature compatibility;287 focused historical-source tests.",
+          "path": "supply-repair-review/final-independent-review.json",
+          "sha256": "3ef20438614dec19524c8d038b94b76c0fdf2a1e9076348183d150324f83d32e"
+        },
+        {
+          "applicability": "Actual-seat Trade request, one Roman route/rate declaration, live threshold and Quarters cache;232 focused tests at018042.",
+          "path": "attempt6-repair-independent-review/final-review.json",
+          "sha256": "df3fa0d26b185e8e78821538f42c36c1cd1915ce31ae6a0c282aae7889aebc20"
+        },
+        {
+          "applicability": "Synthetic R-HUNT uncertain-consent safety; ordinary human validation unchanged;10 independent tests at final49e.",
+          "path": "attempt7-repair/independent-final-review.json",
+          "sha256": "0094e328970cb8d6175176c395ed844a7ca5c840c4ba9e82f5bbb1bcd5cd792f"
+        },
+        {
+          "applicability": "Old44 paired traces remain diagnostic source55a records, superseded; no final causal acceptance.",
+          "path": "attempt4/disposition-resolution.json",
+          "sha256": "1b7a6f4d42931250fbf65a0b595f096f6b21d956f841f4680537558ff14cb0ea"
+        }
+      ],
+      "strict_census": {
+        "coverage_limit": "Requested exact metadata and aggregate completion; tool does not emit per-game success records.",
+        "cross_hash_full_json_equal": true,
+        "defects": 0,
+        "executions": 50,
+        "legal_declines_per_hash": 331,
+        "unique_cases": 25
+      }
+    }
+  },
+  "evidence_archive": {
+    "all_member_hashes_and_sizes_verified": true,
+    "all_members_read_back": true,
+    "bytes": 51662691,
+    "crc_verified": true,
+    "credential_pattern_scan": {
+      "decompressed_gzip_members": 136,
+      "findings": 0,
+      "pattern_categories": [
+        "aws_access_id",
+        "github_token",
+        "google_api_key",
+        "openai_style_key",
+        "private_key",
+        "slack_token"
+      ],
+      "scope": "All member bytes, decompressing gzip; high-confidence patterns, not a guarantee against arbitrary secret formats."
+    },
+    "excluded": [],
+    "inputs_unchanged_during_assembly": true,
+    "maximum_archive_bytes_exclusive": 100000000,
+    "members": 3879,
+    "path": "recruit-rally-2026-10-29-evidence.zip",
+    "payload_bytes": 113752188,
+    "sha256": "6340763f420f4a620cef4361bfcca00feabfa77f5be44fa912fe32cfac0c082b"
+  },
+  "final_acceptance": {
+    "accepted": true,
+    "accepted_by": "/root",
+    "additional_confirmed_interface_gaps": [
+      "Special Activity between Vercingetorix Rally options within one Region",
+      "Human Region choice for Trade under shaded River Commerce"
+    ],
+    "balance_band_percentage_points": 15,
+    "baseline_candidate_created": false,
+    "baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+    "bot_games": 150,
+    "changed_winners": 47,
+    "fixture_data_files": 9,
+    "independent_review": {
+      "path": "attempt8/final-source-review.json",
+      "sha256": "bb2fa8b8e433893d99042ecade009625948831b30248aeada6b392918f6676bd"
+    },
+    "maximum_absolute_drift": "3/20",
+    "mixed_seat_executions_including_replay": 80,
+    "original_baseline_preserved": true,
+    "other_remaining_work": [
+      "Source-derived completeness audit of all printed human choices",
+      "Recorded unresolved source questions; existing PR01\u201306 remain adopted provisionally"
+    ],
+    "per_winner_causal_attribution_claimed": false,
+    "post_refresh_rerun_required": false,
+    "preserved_failed_and_superseded_attempts": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "protected_inputs_unchanged": 48,
+    "recorded_utc": "2026-10-29T05:39:55.599264+00:00",
+    "remaining_original_implementation_items": [
+      "Voluntary own-piece reclamation under section1.4.1",
+      "Vercingetorix entry during a resolving Command/Event"
+    ],
+    "remote_ci_claimed_pass": false,
+    "scope": "Local acceptance of Recruit/Rally repair batch and related source-derived fixes; no claim of exhaustive rules or human-choice coverage.",
+    "source": {
+      "commit": "15417ff1b3e6f29b6bc3b6738efcbfb964bce10b",
+      "dirty": true,
+      "source_sha256": "49e26161e6b49b0f8a28921258e6ebf417d0f2040f8d0551f8f43f05c7c0a296"
+    },
+    "source_files": 335,
+    "strict_census_executions": 50,
+    "tests": {
+      "errors": 0,
+      "exit_code": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5622,
+      "time": 60.776
+    }
+  },
+  "final_acceptance_evidence": {
+    "bytes": 1967,
+    "path": "validation/attempt8/final-acceptance.json",
+    "sha256": "dc082e56c28a31270a537cc51cb33248a09714f8f249cbacc056923a0f33dacf"
+  },
+  "final_fixture_snapshot": {
+    "all_hashes_match_final_tests_and_live_files": true,
+    "files": {
+      "fs_bot/tests/fixtures/compatibility_8ef88e2/manifest.json": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+      "fs_bot/tests/fixtures/compatibility_8ef88e2/pending-card-turn.json": "69ee16ce7e194537f172a577c322652515759b693988eaf4be669abfaa42494a",
+      "fs_bot/tests/fixtures/compatibility_8ef88e2/pending-frumentum.json": "c1392ab6b2639edca99298a88667f20f6e757494a46ce86d712380515510779d",
+      "fs_bot/tests/fixtures/compatibility_8ef88e2/post-interlude.json": "0e461fe9be9807967c96020939b5f483bb5648364c13437eeacdc1395d99f27a",
+      "fs_bot/tests/fixtures/compatibility_8ef88e2/pre-interlude.json": "1a540f03f52cc631f2223b9a9d5d5f9d6eefb55c107ee8c3ce5539c858662d02",
+      "fs_bot/tests/fixtures/recruit_build_before/ariovistus-15.json.gz": "de8af3a36523c3416d603fc415d81faf7ba1c8c931c3eac23ebff7e07d5962f4",
+      "fs_bot/tests/fixtures/recruit_build_before/the-gallic-war-15.json.gz": "f65b6e8921e2f7167f737c7fee4b453ccd6f886d160e2af377581cb5c7404c80",
+      "fs_bot/tests/fixtures/recruit_supply_before/gallic-war-9.json.gz": "bd337f2a4bcfe1626d127f3df5ca6c13cafc275c51dc68516be9260ed0983b16",
+      "fs_bot/tests/fixtures/recruit_supply_before/great-revolt-r-hunt-1.json.gz": "7dc749e5d2b69a119d526fa279de78109b1c78e62bb2bb221cba8d060eec4624"
+    },
+    "path": "attempt8/fixture-source"
+  },
+  "final_full_suite": {
+    "errors": 0,
+    "evidence": {
+      "bytes": 3832,
+      "path": "validation/attempt8/tests.status.json",
+      "sha256": "ea21a1b73da7fd9fff05e8e220a1d47ecff3e1a45fda1169c35ca227dcbc2298"
+    },
+    "exit_code": 0,
+    "failures": 0,
+    "passed": 5622,
+    "skipped": 0,
+    "tests": 5622
+  },
+  "limits": [
+    "Original guardrail results retain their own failed or passed disposition; final acceptance is separate.",
+    "Superseded suites, matrices, probes, and traces are not pooled into the accepted final matrix.",
+    "Trace capture integrity does not establish causal attribution; use the separately identified final source review.",
+    "First source-backed divergence does not prove that mechanism alone determined the winner.",
+    "Sampled validation does not establish exhaustive human-choice or rules compliance."
+  ],
+  "local_validation_only": true,
+  "matrix": {
+    "bot_batches": {
+      "legacy": {
+        "accepted": 100,
+        "games": 100,
+        "interlude_completed": 13,
+        "scenarios": [
+          "Pax Gallica?",
+          "Reconquest of Gaul",
+          "The Great Revolt",
+          "Ariovistus",
+          "The Gallic War"
+        ],
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "winner_counts": {
+          "Ariovistus": {
+            "Aedui": 3,
+            "Belgae": 5,
+            "Germans": 5,
+            "Romans": 7
+          },
+          "Pax Gallica?": {
+            "Aedui": 6,
+            "Arverni": 2,
+            "Belgae": 2,
+            "Romans": 10
+          },
+          "Reconquest of Gaul": {
+            "Aedui": 4,
+            "Arverni": 1,
+            "Belgae": 2,
+            "Romans": 13
+          },
+          "The Gallic War": {
+            "Aedui": 2,
+            "Arverni": 2,
+            "Belgae": 6,
+            "Romans": 10
+          },
+          "The Great Revolt": {
+            "Aedui": 3,
+            "Arverni": 9,
+            "Belgae": 5,
+            "Romans": 3
+          }
+        }
+      },
+      "original": {
+        "accepted": 25,
+        "games": 25,
+        "interlude_completed": 2,
+        "scenarios": [
+          "Pax Gallica?",
+          "Reconquest of Gaul",
+          "The Great Revolt",
+          "Ariovistus",
+          "The Gallic War"
+        ],
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "winner_counts": {
+          "Ariovistus": {
+            "Aedui": 2,
+            "Belgae": 1,
+            "Germans": 1,
+            "Romans": 1
+          },
+          "Pax Gallica?": {
+            "Aedui": 2,
+            "Arverni": 1,
+            "Romans": 2
+          },
+          "Reconquest of Gaul": {
+            "Aedui": 2,
+            "Belgae": 1,
+            "Romans": 2
+          },
+          "The Gallic War": {
+            "Aedui": 1,
+            "Belgae": 1,
+            "Romans": 3
+          },
+          "The Great Revolt": {
+            "Arverni": 2,
+            "Belgae": 2,
+            "Romans": 1
+          }
+        }
+      },
+      "second-edition": {
+        "accepted": 25,
+        "games": 25,
+        "interlude_completed": 2,
+        "scenarios": [
+          "Pax Gallica?",
+          "Reconquest of Gaul",
+          "The Great Revolt",
+          "Ariovistus",
+          "The Gallic War"
+        ],
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "winner_counts": {
+          "Ariovistus": {
+            "Aedui": 2,
+            "Belgae": 1,
+            "Germans": 1,
+            "Romans": 1
+          },
+          "Pax Gallica?": {
+            "Aedui": 1,
+            "Arverni": 1,
+            "Romans": 3
+          },
+          "Reconquest of Gaul": {
+            "Aedui": 2,
+            "Romans": 3
+          },
+          "The Gallic War": {
+            "Aedui": 1,
+            "Belgae": 1,
+            "Romans": 3
+          },
+          "The Great Revolt": {
+            "Arverni": 1,
+            "Belgae": 2,
+            "Romans": 2
+          }
+        }
+      }
+    },
+    "mixed_seats": {
+      "batch_digest": "d0bfb7ce5c5c321c8a479539190f6a3b1165bebdec78d2b26c9d85ab1496ea78",
+      "cross_hash_equal": true,
+      "executions_including_replay": 80,
+      "hard_findings": 0,
+      "hash_seeds": [
+        0,
+        7
+      ],
+      "limitation": "Rejected random plans are disclosed separately; completion is not complete human-choice coverage.",
+      "partial": 0,
+      "rejected_random_plans_per_hash": 7,
+      "unique_cases": 20
+    },
+    "runner": {
+      "job_exit_codes": {
+        "bots-legacy": 0,
+        "bots-original": 0,
+        "bots-second-edition": 0,
+        "census0": 0,
+        "census7": 0,
+        "fuzz0": 0,
+        "fuzz7": 0
+      },
+      "passed": true
+    },
+    "strict_census": {
+      "by_severity_per_hash": {
+        "legal-decline": 331
+      },
+      "coverage_evidence": "Exact tool metadata plus aggregate completion; the census tool does not emit per-game success records.",
+      "cross_hash_equal": true,
+      "defects": 0,
+      "executions": 50,
+      "hash_seeds": [
+        0,
+        7
+      ],
+      "unique_cases": 25
+    }
+  },
+  "original_balance": {
+    "band_percentage_points": 15,
+    "baseline_updated": false,
+    "changed_winner_count": 47,
+    "changed_winners": [
+      "Pax Gallica?|2",
+      "Pax Gallica?|3",
+      "Pax Gallica?|4",
+      "Pax Gallica?|5",
+      "Pax Gallica?|8",
+      "Pax Gallica?|11",
+      "Pax Gallica?|14",
+      "Pax Gallica?|17",
+      "Reconquest of Gaul|1",
+      "Reconquest of Gaul|2",
+      "Reconquest of Gaul|7",
+      "Reconquest of Gaul|8",
+      "Reconquest of Gaul|10",
+      "Reconquest of Gaul|11",
+      "Reconquest of Gaul|15",
+      "The Great Revolt|2",
+      "The Great Revolt|3",
+      "The Great Revolt|5",
+      "The Great Revolt|7",
+      "The Great Revolt|11",
+      "The Great Revolt|12",
+      "The Great Revolt|13",
+      "The Great Revolt|14",
+      "The Great Revolt|15",
+      "The Great Revolt|16",
+      "The Great Revolt|19",
+      "Ariovistus|1",
+      "Ariovistus|3",
+      "Ariovistus|4",
+      "Ariovistus|6",
+      "Ariovistus|7",
+      "Ariovistus|8",
+      "Ariovistus|10",
+      "Ariovistus|13",
+      "Ariovistus|14",
+      "Ariovistus|15",
+      "Ariovistus|16",
+      "Ariovistus|17",
+      "The Gallic War|4",
+      "The Gallic War|8",
+      "The Gallic War|12",
+      "The Gallic War|13",
+      "The Gallic War|14",
+      "The Gallic War|15",
+      "The Gallic War|16",
+      "The Gallic War|17",
+      "The Gallic War|18"
+    ],
+    "exact_band": "3/20",
+    "maximum_absolute_drift": "3/20",
+    "passed": true,
+    "scenarios": {
+      "Ariovistus": {
+        "after": {
+          "Aedui": 3,
+          "Belgae": 5,
+          "Germans": 5,
+          "Romans": 7
+        },
+        "before": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Germans": 4,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [
+          1,
+          3,
+          4,
+          6,
+          7,
+          8,
+          10,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "1/10",
+          "Germans": "1/20",
+          "Romans": "-3/20"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 10.0,
+          "Germans": 5.0,
+          "Romans": -15.0
+        }
+      },
+      "Pax Gallica?": {
+        "after": {
+          "Aedui": 6,
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 3,
+          "Belgae": 4,
+          "Romans": 13
+        },
+        "changed_winner_seeds": [
+          2,
+          3,
+          4,
+          5,
+          8,
+          11,
+          14,
+          17
+        ],
+        "exact_rate_change": {
+          "Aedui": "3/20",
+          "Arverni": "1/10",
+          "Belgae": "-1/10",
+          "Germans": "0",
+          "Romans": "-3/20"
+        },
+        "percentage_point_change": {
+          "Aedui": 15.0,
+          "Arverni": 10.0,
+          "Belgae": -10.0,
+          "Germans": 0.0,
+          "Romans": -15.0
+        }
+      },
+      "Reconquest of Gaul": {
+        "after": {
+          "Aedui": 4,
+          "Arverni": 1,
+          "Belgae": 2,
+          "Romans": 13
+        },
+        "before": {
+          "Aedui": 6,
+          "Arverni": 1,
+          "Belgae": 1,
+          "Romans": 12
+        },
+        "changed_winner_seeds": [
+          1,
+          2,
+          7,
+          8,
+          10,
+          11,
+          15
+        ],
+        "exact_rate_change": {
+          "Aedui": "-1/10",
+          "Arverni": "0",
+          "Belgae": "1/20",
+          "Germans": "0",
+          "Romans": "1/20"
+        },
+        "percentage_point_change": {
+          "Aedui": -10.0,
+          "Arverni": 0.0,
+          "Belgae": 5.0,
+          "Germans": 0.0,
+          "Romans": 5.0
+        }
+      },
+      "The Gallic War": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 2,
+          "Belgae": 6,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 2,
+          "Belgae": 8,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [
+          4,
+          8,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "1/10",
+          "Belgae": "-1/10",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 10.0,
+          "Belgae": -10.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "The Great Revolt": {
+        "after": {
+          "Aedui": 3,
+          "Arverni": 9,
+          "Belgae": 5,
+          "Romans": 3
+        },
+        "before": {
+          "Aedui": 5,
+          "Arverni": 7,
+          "Belgae": 4,
+          "Romans": 4
+        },
+        "changed_winner_seeds": [
+          2,
+          3,
+          5,
+          7,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          19
+        ],
+        "exact_rate_change": {
+          "Aedui": "-1/10",
+          "Arverni": "1/10",
+          "Belgae": "1/20",
+          "Germans": "0",
+          "Romans": "-1/20"
+        },
+        "percentage_point_change": {
+          "Aedui": -10.0,
+          "Arverni": 10.0,
+          "Belgae": 5.0,
+          "Germans": 0.0,
+          "Romans": -5.0
+        }
+      }
+    }
+  },
+  "original_verification_failures": [],
+  "original_verification_passed": true,
+  "preserved_original_comparison": {
+    "bytes": 10060,
+    "path": "validation/attempt8/final-original-comparison.json",
+    "sha256": "5f397f6b6551ca97962e002504d65c2457f063dbd77f23b2d493dc0fa75a3cdb"
+  },
+  "protected_files_unchanged": 48,
+  "recorded_utc": "2026-10-29T05:40:08.475037+00:00",
+  "remote_ci_claimed_pass": false,
+  "schema_version": 1,
+  "source": {
+    "commit": "15417ff1b3e6f29b6bc3b6738efcbfb964bce10b",
+    "dirty": true,
+    "python_files": 335,
+    "source_sha256": "49e26161e6b49b0f8a28921258e6ebf417d0f2040f8d0551f8f43f05c7c0a296"
+  },
+  "trace_integrity": {
+    "pairs": [
+      {
+        "comparison": {
+          "bytes": 79255,
+          "path": "validation/attempt4/drift-review/ariovistus-01/comparison.json",
+          "sha256": "ac6d8ed6ef8987f3d1ba410021770d650921bfb201003b899c914eded10aa6b9"
+        },
+        "key": "Ariovistus|1",
+        "traces": [
+          {
+            "bytes": 432381,
+            "path": "validation/attempt4/drift-review/ariovistus-01/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 1,
+            "sha256": "880fcfbfba1d1f6240732cdbd164dd4b6bd8d0ac2f56f4fa3c98e4b50c3dd807",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 431013,
+            "path": "validation/attempt4/drift-review/ariovistus-01/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 1,
+            "sha256": "1b22b6bd49ec884dd1a27db6a7a0d814d37e247573161a60aac798b114b0fa27",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 90069,
+          "path": "validation/attempt4/drift-review/ariovistus-03/comparison.json",
+          "sha256": "9de593f885a04f28cf8327c06ac7224a33481935baea7d148380d07835a25ad7"
+        },
+        "key": "Ariovistus|3",
+        "traces": [
+          {
+            "bytes": 441045,
+            "path": "validation/attempt4/drift-review/ariovistus-03/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 3,
+            "sha256": "af8304ebce2cf115ce1d579382a5d8595eb7d4d30cbe0995974d99812839a96c",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 438721,
+            "path": "validation/attempt4/drift-review/ariovistus-03/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 3,
+            "sha256": "bdb3165f04ddca2bccf0472e9082ea20725dab9eebff5bd730c708cb026c9b42",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 79894,
+          "path": "validation/attempt4/drift-review/ariovistus-05/comparison.json",
+          "sha256": "7e707d504413e693ff4673cacaa391938aae4e91161f75675cb59ae4f2183df3"
+        },
+        "key": "Ariovistus|5",
+        "traces": [
+          {
+            "bytes": 445018,
+            "path": "validation/attempt4/drift-review/ariovistus-05/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 5,
+            "sha256": "da64deca1453e8bff1c4ed800f283208a8fa5c4840b7f8373bc3cf2839d350f0",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 440194,
+            "path": "validation/attempt4/drift-review/ariovistus-05/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 5,
+            "sha256": "a858f84e314692815b7f5b9e1cfc4b453be6c1dd554eba2b175f85b63e14e2fc",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 83667,
+          "path": "validation/attempt4/drift-review/ariovistus-06/comparison.json",
+          "sha256": "8f3c65b71929e15864b7a244aaf444537873f6ebaebcd0fbbf98a655ac5ef856"
+        },
+        "key": "Ariovistus|6",
+        "traces": [
+          {
+            "bytes": 409951,
+            "path": "validation/attempt4/drift-review/ariovistus-06/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 6,
+            "sha256": "bb2ee245257d7692aaaeaed285d99294ad0e9388fc0b3c7b53bd29d0c77b4f7f",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 138992,
+            "path": "validation/attempt4/drift-review/ariovistus-06/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 6,
+            "sha256": "8adcf95b3ae2a236a048fc5983b1bf624d4c99b0ef152fff9c0dde340f1d5cce",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 77300,
+          "path": "validation/attempt4/drift-review/ariovistus-07/comparison.json",
+          "sha256": "debd2f278d813edc55bb2000bc26b305e5ed7de49e98f3f0994e414f5221e24b"
+        },
+        "key": "Ariovistus|7",
+        "traces": [
+          {
+            "bytes": 99994,
+            "path": "validation/attempt4/drift-review/ariovistus-07/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 7,
+            "sha256": "bc7ee40b7c8de041e59b77d44fbae74f8956bbf41e7961616f9f3294ad11fc0b",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 446829,
+            "path": "validation/attempt4/drift-review/ariovistus-07/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 7,
+            "sha256": "5bdfdc2456928b4e3d8adb67d95d1eaf6038de06140cd22d0d561ae2e1a1aac7",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 80900,
+          "path": "validation/attempt4/drift-review/ariovistus-08/comparison.json",
+          "sha256": "8994f9083c7a6fd9c2912c5adbbb2f0521f7e091e58d13020a82d3f5efe42786"
+        },
+        "key": "Ariovistus|8",
+        "traces": [
+          {
+            "bytes": 437618,
+            "path": "validation/attempt4/drift-review/ariovistus-08/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 8,
+            "sha256": "5bff1086d818fb304519de623d9b1b83cb016f6db7818204771c470f6145da5d",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 431647,
+            "path": "validation/attempt4/drift-review/ariovistus-08/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 8,
+            "sha256": "12c50e7e171103cbd77d4418e0b2d919567033b1e2903d74a11e803e78defdda",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 77300,
+          "path": "validation/attempt4/drift-review/ariovistus-11/comparison.json",
+          "sha256": "3b5622b70fb95ccbe1fa9d5bf749d001a04b7c15ab07d004fabbfc4db2d6a42c"
+        },
+        "key": "Ariovistus|11",
+        "traces": [
+          {
+            "bytes": 461750,
+            "path": "validation/attempt4/drift-review/ariovistus-11/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 11,
+            "sha256": "bb800beebc0499bff9c38dbafec5c2d3f6f2353509e0972e0a888b364d2cec3c",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 447167,
+            "path": "validation/attempt4/drift-review/ariovistus-11/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 11,
+            "sha256": "0c94b2bdb92085f890f1d60c60864f0be472158b5c44dea6ed3efc8876cb624f",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 86136,
+          "path": "validation/attempt4/drift-review/ariovistus-13/comparison.json",
+          "sha256": "724c6595d6083dd494e7c43b301061e8075ab3b37026ae2c6735a6fef6c2f29f"
+        },
+        "key": "Ariovistus|13",
+        "traces": [
+          {
+            "bytes": 427528,
+            "path": "validation/attempt4/drift-review/ariovistus-13/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 13,
+            "sha256": "4f70734c2d9a43c49d05ad7043767dee94c922f8409c9101d9d2b574c8af34f4",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 423672,
+            "path": "validation/attempt4/drift-review/ariovistus-13/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 13,
+            "sha256": "36742bafee19251000ed83f4b0d223090117d0111861070ff3a2f7771fe32afd",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 74902,
+          "path": "validation/attempt4/drift-review/ariovistus-14/comparison.json",
+          "sha256": "802e9aff9963d5e32e7b14cd6d55bd35342e526fd33a23b5e4f8ca4f18a6040a"
+        },
+        "key": "Ariovistus|14",
+        "traces": [
+          {
+            "bytes": 467757,
+            "path": "validation/attempt4/drift-review/ariovistus-14/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 14,
+            "sha256": "b54c22c8cb39d63218a0dab40eb1b27646ac7e22b7c25f70f1f9952020d51e23",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 289699,
+            "path": "validation/attempt4/drift-review/ariovistus-14/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 14,
+            "sha256": "784836d15d6919e170aba3e5d9c8aa53b71035a2e5816642f6b4a7e714dbc14e",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 71305,
+          "path": "validation/attempt4/drift-review/ariovistus-15/comparison.json",
+          "sha256": "54197de815f3a99b2010aefc88b4151ce1547abeabf47369e6a4a00ee262c97d"
+        },
+        "key": "Ariovistus|15",
+        "traces": [
+          {
+            "bytes": 462587,
+            "path": "validation/attempt4/drift-review/ariovistus-15/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 15,
+            "sha256": "2397720a2dcdab844b8d9fd99b04594778dc5d2f74e230a33b20a78a1c66ae9a",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 448845,
+            "path": "validation/attempt4/drift-review/ariovistus-15/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 15,
+            "sha256": "23207fe328ee90fd1f77a604db6eb259fb8bfd29c94296187d6b139c07794678",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 90390,
+          "path": "validation/attempt4/drift-review/ariovistus-16/comparison.json",
+          "sha256": "f709b959dd12a52f67af6600f303763d5b72f1412b81722a758066a64825852d"
+        },
+        "key": "Ariovistus|16",
+        "traces": [
+          {
+            "bytes": 283469,
+            "path": "validation/attempt4/drift-review/ariovistus-16/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 16,
+            "sha256": "422c94519fe84b90c2009a7e66d8fe23087623a4233295c823e57c40c5085681",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 407286,
+            "path": "validation/attempt4/drift-review/ariovistus-16/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 16,
+            "sha256": "c514e239652773998dfb597a7e9ac3ad312513a263857da885459e7ce3ade688",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 75004,
+          "path": "validation/attempt4/drift-review/ariovistus-17/comparison.json",
+          "sha256": "5ce256a5ecfb0b2d3fec3e8b922df8656db8132ce8dec34d4647eca34c014bf3"
+        },
+        "key": "Ariovistus|17",
+        "traces": [
+          {
+            "bytes": 108949,
+            "path": "validation/attempt4/drift-review/ariovistus-17/baseline.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 17,
+            "sha256": "1d7738c16843ac73df1a84e24b2372ae972341694d51a47fc9109368eadb1c0b",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 445853,
+            "path": "validation/attempt4/drift-review/ariovistus-17/current.json.gz",
+            "scenario": "Ariovistus",
+            "seed": 17,
+            "sha256": "68797c896d3b2ebe18521296e3c72e11cfa497c3d7347220f5a5501b129ab46a",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 76599,
+          "path": "validation/attempt4/drift-review/pax-gallica-02/comparison.json",
+          "sha256": "7d64f02e2569eef5b793bd3639ea79757a1f0fbcdb4e93662a8f678b420aca4b"
+        },
+        "key": "Pax Gallica?|2",
+        "traces": [
+          {
+            "bytes": 232576,
+            "path": "validation/attempt4/drift-review/pax-gallica-02/baseline.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 2,
+            "sha256": "a98365e9e12b94afed82bd29daa3fd82ef1f568791a1365648d3fb0042af6c79",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 354684,
+            "path": "validation/attempt4/drift-review/pax-gallica-02/current.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 2,
+            "sha256": "bb4182326517d3ddc6add3a2480cea563fe835521e8e5607050f7807c868c4cb",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 76678,
+          "path": "validation/attempt4/drift-review/pax-gallica-03/comparison.json",
+          "sha256": "20927d88333756cffc1fe6fb61287e8c1bbc5a8cb38709fb9d3cba4a9e4e150c"
+        },
+        "key": "Pax Gallica?|3",
+        "traces": [
+          {
+            "bytes": 549274,
+            "path": "validation/attempt4/drift-review/pax-gallica-03/baseline.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 3,
+            "sha256": "5cee87887c2dd2c5c93b80ea9ce15d6b059a040d2a63cc426ccfe29616d4deeb",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 375497,
+            "path": "validation/attempt4/drift-review/pax-gallica-03/current.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 3,
+            "sha256": "71067fbff8d0d374c971070b0e988ab34e57ca4ea5cbb431213744df5838a814",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 81065,
+          "path": "validation/attempt4/drift-review/pax-gallica-05/comparison.json",
+          "sha256": "83160b1e8761d3b40f357a9f941c7f5534f6a6e9882af710badff1022e218e23"
+        },
+        "key": "Pax Gallica?|5",
+        "traces": [
+          {
+            "bytes": 394903,
+            "path": "validation/attempt4/drift-review/pax-gallica-05/baseline.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 5,
+            "sha256": "c9181971d2dc71d7c398c26d1e928b3413ef62f1940b81c68cf73d77adcb3e82",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 389451,
+            "path": "validation/attempt4/drift-review/pax-gallica-05/current.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 5,
+            "sha256": "e4ae57cee0c34f518c18c2a76312ca2662be35cb3d287e739aed152844e26ac2",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 76763,
+          "path": "validation/attempt4/drift-review/pax-gallica-13/comparison.json",
+          "sha256": "4aa6c4924f2a3d730d601e07b256244c52099f09d025a0140b9d27bb15450a40"
+        },
+        "key": "Pax Gallica?|13",
+        "traces": [
+          {
+            "bytes": 249498,
+            "path": "validation/attempt4/drift-review/pax-gallica-13/baseline.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 13,
+            "sha256": "bbc69d9dadd9cff2e8a770dce4f97da7d65c11a8e9def8b56cf7b23bb4d8b228",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 564210,
+            "path": "validation/attempt4/drift-review/pax-gallica-13/current.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 13,
+            "sha256": "86e0890f3631b087cbb3f4af86bd45e376e4351ff336e38ebd23ea40fd41db01",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 76245,
+          "path": "validation/attempt4/drift-review/pax-gallica-16/comparison.json",
+          "sha256": "7fb7b5a65bac078f3a4d96f2c90d60a07a3babbd5dc4f5d9f13a93cf37625a98"
+        },
+        "key": "Pax Gallica?|16",
+        "traces": [
+          {
+            "bytes": 369531,
+            "path": "validation/attempt4/drift-review/pax-gallica-16/baseline.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 16,
+            "sha256": "eea24bc20838e3b91b19e2b58d2ab0c4f712b37546584a46d723bd38631d1243",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 528691,
+            "path": "validation/attempt4/drift-review/pax-gallica-16/current.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 16,
+            "sha256": "d96c176c0f0358e023b1282a6b109e74e51157618add5f1c3cc55700832c95b3",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 75910,
+          "path": "validation/attempt4/drift-review/pax-gallica-20/comparison.json",
+          "sha256": "354e64ca814cf41afa8b64c4b61a5c41daae9e6fe66b8b41c8119acf1b798d65"
+        },
+        "key": "Pax Gallica?|20",
+        "traces": [
+          {
+            "bytes": 705596,
+            "path": "validation/attempt4/drift-review/pax-gallica-20/baseline.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 20,
+            "sha256": "5ef6d89c0e48def6d1ae20d66ae64a55724bf842c5b7479c68342274d9ddd49d",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 352161,
+            "path": "validation/attempt4/drift-review/pax-gallica-20/current.json.gz",
+            "scenario": "Pax Gallica?",
+            "seed": 20,
+            "sha256": "cb2a2baa0fe948c1064fc2eace3964b3309ba7382e0111f10c68a3ca345dcafb",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 85840,
+          "path": "validation/attempt4/drift-review/reconquest-of-gaul-08/comparison.json",
+          "sha256": "33cd6934a4b56abd1d4b4d416a0b8390d03dd148282f4e4b7c18615085747c2f"
+        },
+        "key": "Reconquest of Gaul|8",
+        "traces": [
+          {
+            "bytes": 438946,
+            "path": "validation/attempt4/drift-review/reconquest-of-gaul-08/baseline.json.gz",
+            "scenario": "Reconquest of Gaul",
+            "seed": 8,
+            "sha256": "0a12d21e4462b0190e324d34e8687dd6bff1d437ddb07122612b607e38ba860d",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 440107,
+            "path": "validation/attempt4/drift-review/reconquest-of-gaul-08/current.json.gz",
+            "scenario": "Reconquest of Gaul",
+            "seed": 8,
+            "sha256": "e14e871d1c6cef2ed8248375f206ff36d91e7f1a1e57688e0c45cb626f42ddba",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 77191,
+          "path": "validation/attempt4/drift-review/reconquest-of-gaul-10/comparison.json",
+          "sha256": "78b854f3e1f5dbccdbcfc66d29318bfe15df21eea7936c49379715dd8fe680a0"
+        },
+        "key": "Reconquest of Gaul|10",
+        "traces": [
+          {
+            "bytes": 605114,
+            "path": "validation/attempt4/drift-review/reconquest-of-gaul-10/baseline.json.gz",
+            "scenario": "Reconquest of Gaul",
+            "seed": 10,
+            "sha256": "ddd1dfa20bf7fc0d7975c492dccb042bd9ddda1e4ebbdc4008bcc4852387ebe8",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 595335,
+            "path": "validation/attempt4/drift-review/reconquest-of-gaul-10/current.json.gz",
+            "scenario": "Reconquest of Gaul",
+            "seed": 10,
+            "sha256": "02e785ab2db1313e72bf996872746ade462c99a242255448a73027b02492454e",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 89367,
+          "path": "validation/attempt4/drift-review/reconquest-of-gaul-11/comparison.json",
+          "sha256": "3565ab114a340c6c4a95475a2e85f4cfd95df8a7ba27aa235c6621f3fd5f3a36"
+        },
+        "key": "Reconquest of Gaul|11",
+        "traces": [
+          {
+            "bytes": 446779,
+            "path": "validation/attempt4/drift-review/reconquest-of-gaul-11/baseline.json.gz",
+            "scenario": "Reconquest of Gaul",
+            "seed": 11,
+            "sha256": "a20ef15a46387c2824bb70321217c741ffdaf3e0b21029ea897f0f205c382bcc",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 271672,
+            "path": "validation/attempt4/drift-review/reconquest-of-gaul-11/current.json.gz",
+            "scenario": "Reconquest of Gaul",
+            "seed": 11,
+            "sha256": "1a15dad221809f79ffa7f61d2efe355207b247a860d4c43377a4dacecd76e11f",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 80439,
+          "path": "validation/attempt4/drift-review/reconquest-of-gaul-14/comparison.json",
+          "sha256": "1529b8e5ac6b674de6243d2760e0a8fb463e7b017e4402cbc0f552cea868fd6b"
+        },
+        "key": "Reconquest of Gaul|14",
+        "traces": [
+          {
+            "bytes": 118964,
+            "path": "validation/attempt4/drift-review/reconquest-of-gaul-14/baseline.json.gz",
+            "scenario": "Reconquest of Gaul",
+            "seed": 14,
+            "sha256": "568b832ab3c5fccf70cb1934535b2afc21495373fe6192e16834c5c367e20cdb",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 434854,
+            "path": "validation/attempt4/drift-review/reconquest-of-gaul-14/current.json.gz",
+            "scenario": "Reconquest of Gaul",
+            "seed": 14,
+            "sha256": "2b1d079643c68f82673b8f3feb8baa175d3cc6e9231b84dfa1fdb1264b957b3b",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 75222,
+          "path": "validation/attempt4/drift-review/the-gallic-war-04/comparison.json",
+          "sha256": "5e4aa4ba0cec173f9ede589fe249afd22923a12166066c92eccdb60cf4e00375"
+        },
+        "key": "The Gallic War|4",
+        "traces": [
+          {
+            "bytes": 1089645,
+            "path": "validation/attempt4/drift-review/the-gallic-war-04/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 4,
+            "sha256": "77a658a3b68a02d5197a74f81236fb85fbe930a987e93df18ff1b9599fdcb2fe",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 668608,
+            "path": "validation/attempt4/drift-review/the-gallic-war-04/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 4,
+            "sha256": "e32583676a9513a02f2b0c6e5f1da7929866a6275b94ec0deec3cdc6a0b3883d",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 79926,
+          "path": "validation/attempt4/drift-review/the-gallic-war-05/comparison.json",
+          "sha256": "6fc445ed184ce713e9dbcefca8fefcd610de05389629b1599074bdf08e887bf5"
+        },
+        "key": "The Gallic War|5",
+        "traces": [
+          {
+            "bytes": 719118,
+            "path": "validation/attempt4/drift-review/the-gallic-war-05/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 5,
+            "sha256": "6e276b62d1b55502d663799a8b85912584e82cbd5bcec05f7fd32db7e9aa2f2b",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 940923,
+            "path": "validation/attempt4/drift-review/the-gallic-war-05/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 5,
+            "sha256": "8cc61e8faf5921e474bdc63e997e921e0c94da256a7265319a03d7adc48dba88",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 80933,
+          "path": "validation/attempt4/drift-review/the-gallic-war-08/comparison.json",
+          "sha256": "282b448c788568c9e99ae1605ea27bef9485fd0d253bc390ab1f6a0ec95693d6"
+        },
+        "key": "The Gallic War|8",
+        "traces": [
+          {
+            "bytes": 861784,
+            "path": "validation/attempt4/drift-review/the-gallic-war-08/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 8,
+            "sha256": "dab760c970e35dc17b21e265122f59bf120a07111ecba3b30686d49cd23e2bf6",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 1138874,
+            "path": "validation/attempt4/drift-review/the-gallic-war-08/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 8,
+            "sha256": "926c4f3aadfaa6baf0ec5817bf3da01fd1d34cdf933d7a6cc552c163a0a1a8ca",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 77332,
+          "path": "validation/attempt4/drift-review/the-gallic-war-11/comparison.json",
+          "sha256": "a968641820e95bbb544f61a131827b3c0f68bfc23b67a24b143544cc84f3825c"
+        },
+        "key": "The Gallic War|11",
+        "traces": [
+          {
+            "bytes": 460489,
+            "path": "validation/attempt4/drift-review/the-gallic-war-11/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 11,
+            "sha256": "65d8845f419e13d74ec8205231b50aeda81822e564e2a8594ae2c51f058e15fa",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 1013281,
+            "path": "validation/attempt4/drift-review/the-gallic-war-11/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 11,
+            "sha256": "0335c666d74cff41d747e798271f287cdcbb5951ed3e11aaa1bcfdf6f9b4b6e0",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 74981,
+          "path": "validation/attempt4/drift-review/the-gallic-war-12/comparison.json",
+          "sha256": "b7c5a8ec72597d6a98ecbdb85180b69f8885d5c6213c18a7133a1d04975fe4ac"
+        },
+        "key": "The Gallic War|12",
+        "traces": [
+          {
+            "bytes": 653932,
+            "path": "validation/attempt4/drift-review/the-gallic-war-12/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 12,
+            "sha256": "72be9ed579db5d4efc6d32f04129194bfa5d04c9a815c00fded76cb95da723b6",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 987099,
+            "path": "validation/attempt4/drift-review/the-gallic-war-12/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 12,
+            "sha256": "14af1cd9ae62272961a92a0956c5169321e17d458619d67eab95f23012842e3b",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 74934,
+          "path": "validation/attempt4/drift-review/the-gallic-war-14/comparison.json",
+          "sha256": "728d68e4e2e93ceefd781fa8698f57b95e7209ad101e20fc7fc8201bc6ff23ba"
+        },
+        "key": "The Gallic War|14",
+        "traces": [
+          {
+            "bytes": 1204832,
+            "path": "validation/attempt4/drift-review/the-gallic-war-14/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 14,
+            "sha256": "376ee09c31675fe9302fc1429de3d5da27bdedab9c4b5a45e41c89b6ce136005",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 289658,
+            "path": "validation/attempt4/drift-review/the-gallic-war-14/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 14,
+            "sha256": "0e368a33dccbf4a46459617e25ff153897de4c4c609ce5bd216c8a25b2e9769f",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 71337,
+          "path": "validation/attempt4/drift-review/the-gallic-war-15/comparison.json",
+          "sha256": "06430ea0122593fa8b8036337482ba95f935280b6bb64f470a84c01b123be1d9"
+        },
+        "key": "The Gallic War|15",
+        "traces": [
+          {
+            "bytes": 741357,
+            "path": "validation/attempt4/drift-review/the-gallic-war-15/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 15,
+            "sha256": "dbd2cd3de92f62df6e038aa19ca57163ed273c36abca036ddc4d23250db0f8df",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 697546,
+            "path": "validation/attempt4/drift-review/the-gallic-war-15/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 15,
+            "sha256": "bd11d72975c29eaadc586f5f8223f9ed218489ba9bbffee7f13fa0ae36472d36",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 90422,
+          "path": "validation/attempt4/drift-review/the-gallic-war-16/comparison.json",
+          "sha256": "e096a9b0b5d6c6457366246f9e8f64c38eb0dc1b4cbf3ca7f811a4bce511cde0"
+        },
+        "key": "The Gallic War|16",
+        "traces": [
+          {
+            "bytes": 283370,
+            "path": "validation/attempt4/drift-review/the-gallic-war-16/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 16,
+            "sha256": "7720d291a47e1ddb4d3fb30ce3ed26e4a36911d9a4b29a9804969c1195a572a2",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 1114739,
+            "path": "validation/attempt4/drift-review/the-gallic-war-16/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 16,
+            "sha256": "8c0864d5b5c309f1173d480cab48322484a2f5584075d21ee247281bda110edc",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 75037,
+          "path": "validation/attempt4/drift-review/the-gallic-war-17/comparison.json",
+          "sha256": "84d0fc47304cc6a66aeffbe214de5d19ab916d2c1cb0726d61e897d44fdbdc94"
+        },
+        "key": "The Gallic War|17",
+        "traces": [
+          {
+            "bytes": 108973,
+            "path": "validation/attempt4/drift-review/the-gallic-war-17/baseline.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 17,
+            "sha256": "f80dae109b1b1c62b3c4a3fde1a0c3818d1b844e645bfb2ba77def08f0edfc5c",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 1262940,
+            "path": "validation/attempt4/drift-review/the-gallic-war-17/current.json.gz",
+            "scenario": "The Gallic War",
+            "seed": 17,
+            "sha256": "ba6e248aaf9818aa6af4ea4685b9b500772cfda9790d7dd360460032da3bbcc6",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 76909,
+          "path": "validation/attempt4/drift-review/the-great-revolt-02/comparison.json",
+          "sha256": "7d16bf6758f54e008acf45bc561e0fda81ae50b16c3b9e75fff0a3efe82b3f19"
+        },
+        "key": "The Great Revolt|2",
+        "traces": [
+          {
+            "bytes": 415761,
+            "path": "validation/attempt4/drift-review/the-great-revolt-02/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 2,
+            "sha256": "9a9145e39c4f31a6254f4b109777811dadf9e28cdcaf04accd9a62ac30ec1c14",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 412206,
+            "path": "validation/attempt4/drift-review/the-great-revolt-02/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 2,
+            "sha256": "a36aaf69d92196134657c58586dab3a4e29e06515312b9e6ff9a40bdab46c02b",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 77668,
+          "path": "validation/attempt4/drift-review/the-great-revolt-03/comparison.json",
+          "sha256": "67a69ecaf0dfbdd5dc19013ec3ef8845359ab0a06f5caab85f1609cd1ae4b511"
+        },
+        "key": "The Great Revolt|3",
+        "traces": [
+          {
+            "bytes": 446103,
+            "path": "validation/attempt4/drift-review/the-great-revolt-03/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 3,
+            "sha256": "192c9f14aedf54a2fa6613ab04bf8424cfa6ad5fcb85fb8856fd2628d6b8106e",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 424584,
+            "path": "validation/attempt4/drift-review/the-great-revolt-03/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 3,
+            "sha256": "cd771bb95d8cd4b85a95d31ca2859a2f7dd84923206f14edabf63e7f1d11b15f",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 78121,
+          "path": "validation/attempt4/drift-review/the-great-revolt-04/comparison.json",
+          "sha256": "2e0281f40c0455afeba573e5c50d515c286a7fd6d6a44d7c7113328d23340db3"
+        },
+        "key": "The Great Revolt|4",
+        "traces": [
+          {
+            "bytes": 427272,
+            "path": "validation/attempt4/drift-review/the-great-revolt-04/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 4,
+            "sha256": "148235e70c17bc379265bb06151c066c771ba946bca89e36238a769b881db6f9",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 426099,
+            "path": "validation/attempt4/drift-review/the-great-revolt-04/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 4,
+            "sha256": "fe94fec96a5adc2323860fff4ab64ed7909687cca951fa4c7d94c22428e2ac1d",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 77903,
+          "path": "validation/attempt4/drift-review/the-great-revolt-07/comparison.json",
+          "sha256": "3110a0c79653424c3b285cd2718a6afebf124927020d2fb3df42c8413e2a6253"
+        },
+        "key": "The Great Revolt|7",
+        "traces": [
+          {
+            "bytes": 447708,
+            "path": "validation/attempt4/drift-review/the-great-revolt-07/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 7,
+            "sha256": "25717fd353b8488c38d35a94e0b4b397b7ba153008da77d2ce56449b7238f0b7",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 455445,
+            "path": "validation/attempt4/drift-review/the-great-revolt-07/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 7,
+            "sha256": "09745b54e26dc645689306dc507bae73494f0bc4b4c2f96e22b4b8465233bfa9",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 73997,
+          "path": "validation/attempt4/drift-review/the-great-revolt-08/comparison.json",
+          "sha256": "38c873e589af2aa88ffe7b4504145edd2ee2f0616d372a6b9ba4a5d5c62d4e49"
+        },
+        "key": "The Great Revolt|8",
+        "traces": [
+          {
+            "bytes": 288628,
+            "path": "validation/attempt4/drift-review/the-great-revolt-08/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 8,
+            "sha256": "9f8a148a29776adec45d7a22d14c45ec6e3514ad3ece34f94707c0d2cbc8d63a",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 433890,
+            "path": "validation/attempt4/drift-review/the-great-revolt-08/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 8,
+            "sha256": "ec27988ba2d27527424013569ba8989ea452668caf94840545d4711180ed65a2",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 79218,
+          "path": "validation/attempt4/drift-review/the-great-revolt-10/comparison.json",
+          "sha256": "99ab2f67a2a6a2cd49d202aa5f8f056430b2d231452cba280015d4f0a58ca559"
+        },
+        "key": "The Great Revolt|10",
+        "traces": [
+          {
+            "bytes": 444769,
+            "path": "validation/attempt4/drift-review/the-great-revolt-10/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 10,
+            "sha256": "4cbbccbeffbd7576f33247a2dd55f270c53238859735ea8e71e9977fa06c52be",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 440569,
+            "path": "validation/attempt4/drift-review/the-great-revolt-10/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 10,
+            "sha256": "4ecf849324fde87b206e259a05721d8a50b3a6b5d699f2e9b1926d687933b530",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 77626,
+          "path": "validation/attempt4/drift-review/the-great-revolt-11/comparison.json",
+          "sha256": "b61b0835653320adf5a13779741a116d627774b2044809e372176b3bb252966e"
+        },
+        "key": "The Great Revolt|11",
+        "traces": [
+          {
+            "bytes": 451357,
+            "path": "validation/attempt4/drift-review/the-great-revolt-11/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 11,
+            "sha256": "a22ca0b6a8707ebb806d38afa4ceed43eff67d93681375a18391d968341626a7",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 447399,
+            "path": "validation/attempt4/drift-review/the-great-revolt-11/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 11,
+            "sha256": "b5fca4617bb7c2fa8cfdc303e95ef5d74d5cdb7db4a9a30f905f6519c4a9058b",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 76616,
+          "path": "validation/attempt4/drift-review/the-great-revolt-12/comparison.json",
+          "sha256": "12e09ae44bbf95d56ff918fa198a7b051cbef6fda379a7f2660e15932ede9e87"
+        },
+        "key": "The Great Revolt|12",
+        "traces": [
+          {
+            "bytes": 415023,
+            "path": "validation/attempt4/drift-review/the-great-revolt-12/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 12,
+            "sha256": "ed9c639d9c87eda55035510c1d54255aa2bcf7f98f826d46a2b23175ae66ef44",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 411189,
+            "path": "validation/attempt4/drift-review/the-great-revolt-12/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 12,
+            "sha256": "4ae8769f8dc2f3268a3e2892a20cbd69840a575848e793cbe94807c8d0efb6c4",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 81931,
+          "path": "validation/attempt4/drift-review/the-great-revolt-13/comparison.json",
+          "sha256": "f2ed7a5b4774900eb760198b46503702ef25217936ae407d112dd33491c841fb"
+        },
+        "key": "The Great Revolt|13",
+        "traces": [
+          {
+            "bytes": 404418,
+            "path": "validation/attempt4/drift-review/the-great-revolt-13/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 13,
+            "sha256": "e690ccd1590c7acb033afc5429edaf081cf66f14d71f061ef27436436d1312df",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 298278,
+            "path": "validation/attempt4/drift-review/the-great-revolt-13/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 13,
+            "sha256": "82e774fde5551dff168934ee85070d015370f3d5c56f987d1714b78e3625cac9",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 85103,
+          "path": "validation/attempt4/drift-review/the-great-revolt-15/comparison.json",
+          "sha256": "6c2da11f54597835862e01bccec557ea239b8a64cef2cd8d1abafcf472012e5c"
+        },
+        "key": "The Great Revolt|15",
+        "traces": [
+          {
+            "bytes": 444713,
+            "path": "validation/attempt4/drift-review/the-great-revolt-15/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 15,
+            "sha256": "4c23fb4a10ecaf837a868edbc17ee32f9397e8e3bb9adf8c706f52f0d31cfe5e",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 451782,
+            "path": "validation/attempt4/drift-review/the-great-revolt-15/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 15,
+            "sha256": "ef7c5e464f47def3caef3a2553b24803c88dc5499b7ae9644af5231a45a4d1a2",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 80843,
+          "path": "validation/attempt4/drift-review/the-great-revolt-16/comparison.json",
+          "sha256": "ae3c031e8dadc9340d7893fb69efc04a640eb65403a075480e9c1f9e77d71361"
+        },
+        "key": "The Great Revolt|16",
+        "traces": [
+          {
+            "bytes": 403945,
+            "path": "validation/attempt4/drift-review/the-great-revolt-16/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 16,
+            "sha256": "8d3143b6989eaaeb424c0e4ff040a425108872b25e26cd58ac170be4e6afdc82",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 408918,
+            "path": "validation/attempt4/drift-review/the-great-revolt-16/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 16,
+            "sha256": "28d9f6a98cf158f30fabd405c06e7f8c400b049840411777e109cd6a846bef43",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 78937,
+          "path": "validation/attempt4/drift-review/the-great-revolt-18/comparison.json",
+          "sha256": "57e0cd3e43df03faaa1420881ea45cc3e81fdf4c79ccec247d5c94e69a51d3a7"
+        },
+        "key": "The Great Revolt|18",
+        "traces": [
+          {
+            "bytes": 417139,
+            "path": "validation/attempt4/drift-review/the-great-revolt-18/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 18,
+            "sha256": "7919e3e70445390eb51038854f8b1925afbdb3acd7bafc163bb52f556e98c3a4",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 401488,
+            "path": "validation/attempt4/drift-review/the-great-revolt-18/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 18,
+            "sha256": "b7cc1494095dcc5b7389604f8c4ca62c4bf66f7a361b45a6937e18f77797a818",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      },
+      {
+        "comparison": {
+          "bytes": 81413,
+          "path": "validation/attempt4/drift-review/the-great-revolt-19/comparison.json",
+          "sha256": "3a3e0a9b1114fce580e670795fd9f2ef45f666516c9a678636b948b21018f167"
+        },
+        "key": "The Great Revolt|19",
+        "traces": [
+          {
+            "bytes": 422590,
+            "path": "validation/attempt4/drift-review/the-great-revolt-19/baseline.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 19,
+            "sha256": "eb2148fb9f6f8f46f307b531f56c89528e4be7927eb50c61dfd4e7cbdcd466fc",
+            "side": "baseline",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+          },
+          {
+            "bytes": 424187,
+            "path": "validation/attempt4/drift-review/the-great-revolt-19/current.json.gz",
+            "scenario": "The Great Revolt",
+            "seed": 19,
+            "sha256": "a4814dbc6e745bc81fbd383627c5b7b310b27c7c7b24b22597a9fea728344070",
+            "side": "current",
+            "source_sha256": "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829"
+          }
+        ]
+      }
+    ],
+    "pairs_by_current_source": {
+      "55a2974400c54957f281bb0343fb899e4ae7389a76da5990330d90312b66d829": 44
+    },
+    "scope": "All stored comparisons retain their actual revision; no causal acceptance inferred."
+  }
+}

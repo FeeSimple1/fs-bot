@@ -349,120 +349,15 @@ def _estimate_battle_losses(state, region, scenario, enemy):
 
 
 def _estimate_rally_would_qualify(state, scenario):
-    """Check if Rally would add a Belgic Ally, Citadel, 3+ Belgic Warbands,
-    or Belgic Control.
+    """§8.5.3: an Ally, Citadel, three Warbands, or new Belgic Control.
 
-    Per §8.5.3: "they Rally if doing so would place a Belgic Ally, a Citadel,
-    or at least three Belgic Warbands total, or if it would add to Belgic
-    Control."
-
-    Per §8.5.3 NOTE: "If the Belgae have 0 Resources, a normal (not free, 5.4)
-    Rally would not place any pieces."
-
-    Returns:
-        True if Rally qualifies per §8.5.3.
+    Count the actual legal plan, including compulsory additions, one option
+    per Region, Resource costs and the remaining physical Available pool.
     """
-    if state.get("_planning_free_command") or state.get("_command_region_scope") is not None:
-        from fs_bot.bots.bot_common import estimate_scoped_rally
-        estimate = estimate_scoped_rally(state, BELGAE, node_b_rally)
-        return bool(estimate["citadels"] or estimate["allies"]
-                    or estimate["warbands"] >= 3 or estimate["adds_control"])
-    resources = state.get("resources", {}).get(BELGAE, 0)
-
-    # §8.5.3 NOTE: 0 Resources means Rally places nothing (not free)
-    from fs_bot.commands.common import is_free_action
-    if resources <= 0 and not is_free_action(state, BELGAE):
-        return False
-
-    playable = command_region_candidates(
-        state, get_playable_regions(scenario, state.get("capabilities")))
-
-    avail_citadels = get_available(state, BELGAE, CITADEL)
-    avail_allies = get_available(state, BELGAE, ALLY)
-    avail_warbands = get_available(state, BELGAE, WARBAND)
-
-    would_place_citadel = False
-    would_place_ally = False
-    warband_count = 0
-    would_add_control = False
-
-    # Step 1: Citadel — replace Ally in City
-    for region in playable:
-        if avail_citadels <= 0:
-            break
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            if avail_citadels <= 0:
-                break
-            tribe_info = state["tribes"].get(tribe, {})
-            if (tribe_info.get("allied_faction") == BELGAE
-                    and is_city_tribe(tribe)):
-                would_place_citadel = True
-                avail_citadels -= 1
-                avail_allies += 1  # Freed Ally
-
-    # Step 2: Allies — place wherever able
-    for region in playable:
-        if avail_allies <= 0:
-            break
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            if avail_allies <= 0:
-                break
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") is not None:
-                continue
-            # Rally requires Control or Ally/Citadel — §3.3.1
-            if (count_pieces(state, region, BELGAE) > 0
-                    or is_controlled_by(state, region, BELGAE)):
-                would_place_ally = True
-                avail_allies -= 1
-
-    # Step 3: Warbands — count how many we'd place
-    for region in playable:
-        if avail_warbands <= 0:
-            break
-        has_base = False
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") == BELGAE:
-                has_base = True
-                break
-        if count_pieces(state, region, BELGAE, CITADEL) > 0:
-            has_base = True
-        if is_controlled_by(state, region, BELGAE):
-            has_base = True
-
-        if has_base:
-            # Check if placing here would add Belgic Control
-            if not is_controlled_by(state, region, BELGAE):
-                would_add_control = True
-            warband_count += 1
-            avail_warbands -= 1
-
-    # Also check if placing Warbands anywhere would flip Control
-    # (even if we already counted them above)
-    if not would_add_control and warband_count > 0:
-        # Re-check: placing Warbands might add control somewhere
-        for region in playable:
-            if not is_controlled_by(state, region, BELGAE):
-                belgae_total = count_pieces(state, region, BELGAE)
-                if belgae_total > 0:
-                    # Would the Rally Warband tip control?
-                    would_add_control = True
-                    break
-
-    if would_place_citadel:
-        return True
-    if would_place_ally:
-        return True
-    if warband_count >= 3:
-        return True
-    if would_add_control:
-        return True
-
-    return False
+    from fs_bot.bots.bot_common import estimate_scoped_rally
+    estimate = estimate_scoped_rally(state, BELGAE, node_b_rally)
+    return bool(estimate["citadels"] or estimate["allies"]
+                or estimate["warbands"] >= 3 or estimate["adds_control"])
 
 
 def _would_raid_gain_enough(state, scenario, *, raiders=None):

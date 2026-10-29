@@ -82,8 +82,19 @@ def dispatch_bot_turn(state, faction):
 
     # Dispatch to the appropriate bot module
     if faction == ROMANS:
-        from fs_bot.bots.roman_bot import execute_roman_turn
-        return plan_with_diviciacus(state, faction, execute_roman_turn)
+        from fs_bot.bots.roman_bot import execute_roman_turn, node_r_recruit
+        from fs_bot.engine.recruit_planning import plan_with_recruit_supply, REQUESTS
+        from fs_bot.rules_consts import CMD_RECRUIT
+        action = plan_with_diviciacus(state, faction, execute_roman_turn)
+        if (action.get('command') == CMD_RECRUIT
+                or REQUESTS in (action.get('details') or {})):
+            # Confirm this process before its SA/effects, retaining earlier
+            # flowchart decisions. A refused Recruit falls through to Seize;
+            # it does not rerun R1 or change other Commands' live callbacks.
+            return plan_with_recruit_supply(
+                state, lambda planning: plan_with_diviciacus(
+                    planning, faction, node_r_recruit))
+        return action
 
     if faction == BELGAE:
         from fs_bot.bots.belgae_bot import execute_belgae_turn

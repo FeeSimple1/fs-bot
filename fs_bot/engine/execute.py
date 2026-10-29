@@ -157,6 +157,24 @@ def _sa_runs_before_command(command, sa):
     return False
 
 
+def _exact_human_placement(action):
+    """Whether any portion commits to exact Recruit/Rally selections."""
+    command = action.get('command')
+    if command == _CMD_RECRUIT:
+        return True
+    if command != _CMD_RALLY:
+        return False
+    from fs_bot.commands.rally import rally_plan_steps
+    from fs_bot.engine.action_validation import command_parts
+    for part in command_parts(action):
+        plan = (part.get('details') or {}).get('rally_plan') or {}
+        if 'steps' in plan or any(
+                any(key in step for key in ('count', 'placement_owners', 'warband_mix'))
+                for step in rally_plan_steps(plan)):
+            return True
+    return False
+
+
 @preserve_supply_agreements
 def execute_decision(state, faction, decision):
     """Execute a decision, rolling back a human turn that executes no Command.
@@ -168,16 +186,22 @@ def execute_decision(state, faction, decision):
     action = decision.get("player_action") if not decision.get("bot_action") else None
     if action is None:
         from fs_bot.engine.diviciacus_planning import clear_confirmation
+        from fs_bot.engine.recruit_planning import (
+            install_confirmed_supply, clear_supply_confirmation)
         try:
-            return _execute_decision(state, faction, decision)
+            with install_confirmed_supply(state, decision.get('bot_action') or {}):
+                return _execute_decision(state, faction, decision)
         finally:
             # A skipped or interrupted NP Command must not leave an old
             # agreement available for a later, independently chosen action.
             clear_confirmation(state, faction)
+            clear_supply_confirmation(state)
     from fs_bot.engine.action_validation import validate_human_structure
-    error = validate_human_structure(state, faction, action)
+    from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
+    error = validate_human_structure(state, faction, action,
+                                     limited=decision.get('action') == ACTION_LIMITED_COMMAND)
     if error:
-        return {"executed": False, "command": action.get("command"),
+        return {"executed": False, "command": action.get("command") if isinstance(action, dict) else None,
                 "reason": error, "errors": [{"error": error}]}
     from copy import deepcopy
     agent = state.get("decision_agent")
@@ -193,6 +217,12 @@ def execute_decision(state, faction, decision):
         if card_turn is not None:
             state["_card_turn"] = card_turn
         raise
+    # An interrupted Command can report one successful portion alongside a
+    # refused exact portion. That OR result cannot commit a partial human
+    # placement plan or the SA between its portions. SA-only errors retain
+    # their established separate result; these are Command-placement errors.
+    if _exact_human_placement(action) and result.get('errors'):
+        result['executed'] = False
     if not result.get("executed"):
         state.clear()
         state.update(snapshot)
@@ -271,6 +301,8 @@ def _execute_decision(state, faction, decision):
         return res
 
     handler = _COMMAND_HANDLERS.get(command)
+    if is_human and command == _CMD_RECRUIT:
+        handler = lambda board, actor, plan: _execute_recruit(board, actor, plan, _exact=True)
     if handler is not None:
         sa = bot_action.get("sa")
         from fs_bot.commands.sa_enlist import is_borrow_plan
@@ -463,6 +495,10 @@ def _primary_command_region(bot_action):
         return reg_of(plan[0]) if plan else None
     if cmd == _CMD_RALLY:
         rp = d.get("rally_plan") or {}
+        if 'steps' in rp:
+            from fs_bot.commands.rally import rally_plan_steps
+            steps = rally_plan_steps(rp)
+            return steps[0]['region'] if steps else None
         for k in ("citadels", "allies", "warbands"):
             if rp.get(k):
                 return reg_of(rp[k][0])
@@ -515,8 +551,12 @@ def _constrain_bot_action(bot_action, allowed, *, state=None, faction=None,
         d["recruit_plan"] = plan
     elif cmd == _CMD_RALLY:
         rp = d.get("rally_plan") or {}
-        new = {k: [e for e in (rp.get(k) or []) if reg_of(e) in allowed]
-               for k in ("citadels", "allies", "warbands")}
+        if 'steps' in rp:
+            from fs_bot.commands.rally import rally_plan_steps
+            new = {'steps': [entry for entry in rally_plan_steps(rp) if entry['region'] in allowed]}
+        else:
+            new = {k: [e for e in (rp.get(k) or []) if reg_of(e) in allowed]
+                   for k in ("citadels", "allies", "warbands")}
         # A8.7.4 selects German Rally + Settle when EITHER places pieces.
         # A scoped grant must retain an in-scope Settlement-only plan just
         # as the live executor does, without admitting an empty Rally or an
@@ -625,17 +665,34 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     from fs_bot.engine.diviciacus import force_scope
     from fs_bot.engine.diviciacus_planning import (
         plan_with_diviciacus, confirm_plan, clear_confirmation)
+    from fs_bot.engine.recruit_planning import (
+        CANDIDATE, confirm_supply_plan, install_confirmed_supply,
+        clear_supply_confirmation)
     denied_regions = set()
+    supply_answers = {}
     while True:
         planning_state = _free_command_planning_state(
             state, faction, allowed_regions, exclude_commands, with_sa=with_sa)
         planning_state['_diviciacus_refused'] = {faction: sorted(denied_regions)}
+        planning_state['_recruit_supply_answers'] = dict(supply_answers)
         try:
             bot_action = (plan_with_diviciacus(planning_state, faction, _planner) if _planner is not None
                           else dispatch_bot_turn(planning_state, faction))
             if not isinstance(bot_action, dict):
                 raise ValueError("flowchart did not return an action")
             cmd = bot_action.get("command")
+        except Exception as exc:
+            return {"executed": False, "command": None, "reason": repr(exc)}
+        # A declined hypothetical Build+Recruit can become viable when
+        # Supply is refused: Build leaves the Allies for Recruit instead.
+        # Resolve that candidate before discarding its fallback Pass or
+        # applying the grant's restrictions to a different Command.
+        if CANDIDATE in (bot_action.get("details") or {}):
+            if confirm_supply_plan(state, bot_action, supply_answers):
+                clear_confirmation(state, faction, bot_action)
+                clear_supply_confirmation(state)
+                continue
+        try:
             if cmd == "Pass":
                 _commit_planning_rng(state, planning_state)
                 return {"executed": False, "command": None,
@@ -673,17 +730,27 @@ def _resolve_free_command(state, faction, allowed_regions=None,
         # Live agreement belongs to this concrete, already-scoped grant. A
         # refusal reruns the same grant from its original RNG, before costs or
         # pieces change. Detached previews never consume a human response.
+        consent_rng = state['rng'].getstate()
+        supply_refused = confirm_supply_plan(state, bot_action, supply_answers)
+        if supply_refused:
+            clear_confirmation(state, faction, bot_action)
+            clear_supply_confirmation(state)
+            continue
         refused = confirm_plan(state, faction, bot_action)
         new_refusals = set(refused) - denied_regions
-        if not new_refusals:
+        if not new_refusals and not supply_refused and state['rng'].getstate() == consent_rng:
             break
         denied_regions.update(new_refusals)
+        clear_confirmation(state, faction, bot_action)
+        clear_supply_confirmation(state)
     _commit_planning_rng(state, planning_state)
     try:
-        with _command_execution_scope(state, allowed_regions, with_sa):
+        with install_confirmed_supply(state, bot_action), _command_execution_scope(
+                state, allowed_regions, with_sa):
             res = _execute_bot_command(state, faction, bot_action, with_sa=with_sa)
     finally:
         clear_confirmation(state, faction, bot_action)
+        clear_supply_confirmation(state)
     if res is None:
         return {"executed": False, "command": cmd,
                 "reason": "chosen Command not executable"}
@@ -744,6 +811,12 @@ def _replan_placement_regions(planning, faction, command, regions, original):
     details = dict(original.get("details") or {})
     plan_key = "recruit_plan" if command == _CMD_RECRUIT else "rally_plan"
     details[plan_key] = action["details"][plan_key]
+    if command == _CMD_RECRUIT:
+        # Consent belongs to the retained Recruit forecast, not discarded
+        # Regions from the wider pre-limit allocation.
+        details.pop("supply_line_requests", None)
+        if "supply_line_requests" in action["details"]:
+            details["supply_line_requests"] = action["details"]["supply_line_requests"]
     action["details"] = details
     return narrowed, action
 
@@ -809,8 +882,8 @@ def _plan_region_order(bot_action):
 
     rp = d.get("rally_plan")
     if isinstance(rp, dict):
-        seq = ((rp.get("citadels") or []) + (rp.get("allies") or [])
-               + (rp.get("warbands") or []))
+        from fs_bot.commands.rally import rally_plan_steps
+        seq = rally_plan_steps(rp)
     else:
         seq = d.get("recruit_plan") or []
     seen, order = set(), []
@@ -867,11 +940,15 @@ def _resolve_free_rally_default(state, faction, allowed_regions=None,
     from fs_bot.engine.diviciacus import force_scope
     from fs_bot.engine.diviciacus_planning import (
         plan_with_diviciacus, confirm_plan, clear_confirmation)
+    from fs_bot.engine.recruit_planning import (
+        confirm_supply_plan, install_confirmed_supply, clear_supply_confirmation)
     denied_regions = set()
+    supply_answers = {}
     while True:
         planning = _free_command_planning_state(
             state, faction, allowed_regions, forced_command=command)
         planning['_diviciacus_refused'] = {faction: sorted(denied_regions)}
+        planning['_recruit_supply_answers'] = dict(supply_answers)
         try:
             node = getattr(importlib.import_module(spec[0]), spec[1])
             bot_action = plan_with_diviciacus(planning, faction, node)
@@ -901,15 +978,25 @@ def _resolve_free_rally_default(state, faction, allowed_regions=None,
                             planning, faction, command, set(order[:max_regions]), bot_action)
         except Exception as exc:
             return {"executed": False, "command": command, "reason": repr(exc)}
+        consent_rng = state['rng'].getstate()
+        supply_refused = confirm_supply_plan(state, bot_action, supply_answers)
+        if supply_refused:
+            clear_confirmation(state, faction, bot_action)
+            clear_supply_confirmation(state)
+            continue
         refused = set(confirm_plan(state, faction, bot_action)) - denied_regions
-        if not refused:
+        if not refused and not supply_refused and state['rng'].getstate() == consent_rng:
             break
         denied_regions.update(refused)
+        clear_confirmation(state, faction, bot_action)
+        clear_supply_confirmation(state)
     _commit_planning_rng(state, planning)
     try:
-        res = _execute_bot_command(state, faction, bot_action)
+        with install_confirmed_supply(state, bot_action):
+            res = _execute_bot_command(state, faction, bot_action)
     finally:
         clear_confirmation(state, faction, bot_action)
+        clear_supply_confirmation(state)
     return res if res is not None else {"executed": False, "command": cmd,
                                         "reason": "Rally not executable"}
 
@@ -2814,9 +2901,9 @@ def _resolve_a20_arverni_ambush(state):
     Arverni Warbands within one Region of Veneti join the Ambush as
     if present: we gather those projecting Warbands into the Battle Region,
     resolve the standard Ambush (no Retreat, auto-remove; Step 5 Reveal flips
-    surviving Hidden Warbands), then return the projected Warbands — now
-    Revealed — to their home Regions. Surviving projected Warbands return
-    after any Caesar Counterattack.
+    surviving Hidden Warbands), then return the projected Warbands to their
+    home Regions, retaining any Scouted markers. Surviving projected
+    Warbands return after any Caesar Counterattack.
 
     A6.2.4 requires Hidden Arverni Warbands to outnumber the Defender's Hidden
     pieces and the Ambush to cause an enemy Loss. The Battle Region is chosen
@@ -2901,13 +2988,15 @@ def _resolve_a20_arverni_ambush(state):
         refresh_all_control(state)
         return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
                  "executed": False, "reason": repr(exc)}]
-    # Return projected Warbands (now Revealed by Step 5) to their Regions.
+    # Step 5 reveals Hidden survivors, but leaves Scouted markers intact.
+    # Keep the existing origin allocation within each surviving state.
     for (r, ps), n in moved.items():
-        avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, REVEALED)
+        returning_state = SCOUTED if ps == SCOUTED else REVEALED
+        avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, returning_state)
         take = min(n, avail)
         if take > 0:
             move_piece(state, B, r, ARVERNI, WARBAND, count=take,
-                       piece_state=REVEALED)
+                       piece_state=returning_state)
     refresh_all_control(state)
     return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
              "region": B, "defender": ROMANS, "projected_warbands": projected,
@@ -3366,89 +3455,80 @@ def _execute_raid(state, faction, bot_action):
     }
 
 
+def _placement_error(command, error):
+    return {'executed': False, 'command': command, 'placements': [],
+            'errors': [{'error': str(error)}]}
+
+
+def _atomic_placement_plan(state, execute):
+    """Exact player counts/order cannot survive as a partially applied plan."""
+    from copy import deepcopy
+    saved = deepcopy({key: value for key, value in state.items() if key != 'decision_agent'})
+    agent, had_agent = state.get('decision_agent'), 'decision_agent' in state
+    card_turn = state.get('_card_turn')
+    def restore():
+        state.clear()
+        state.update(saved)
+        if had_agent:
+            state['decision_agent'] = agent
+        if card_turn is not None:
+            state['_card_turn'] = card_turn
+    try:
+        result = execute()
+    except BaseException:
+        restore()
+        raise
+    if result.get('errors'):
+        restore()
+        result.update(executed=False, placements=[], rolled_back=True)
+    return result
+
+
 @_diviciacus_command_scope
 def _execute_rally(state, faction, bot_action):
-    """Execute a Rally Command — §3.3.1 (Gallic) / A8.7.4 (German).
+    """Resolve ordered human options or the unchanged legacy NP priority lists."""
+    from fs_bot.commands.rally import rally_plan_steps
+    plan = (bot_action.get('details') or {}).get('rally_plan') or {}
+    try:
+        steps = rally_plan_steps(plan)
+    except _EXEC_ERRORS as exc:
+        return _placement_error(_CMD_RALLY, exc)
+    execute = lambda: _execute_rally_steps(state, faction, steps)
+    if 'steps' in plan or any('count' in entry or 'placement_owners' in entry for entry in steps):
+        return _atomic_placement_plan(state, execute)
+    return execute()
 
-    The bot supplies ``details['rally_plan']`` with up to three sub-lists,
-    executed in flowchart order so freed Allies are available downstream:
-      1. ``citadels``: ``{"region", "tribe"}`` — replace an Allied City Tribe
-         with a Citadel (Gallic only; Germans have none).
-      2. ``allies``:   ``{"region", "tribe"[, "cost"]}`` — place an Ally at a
-         Subdued Tribe.
-      3. ``warbands``: either a region string (Gallic) or ``{"region", ...}``
-         (German) — place Warbands up to the region cap.
 
-    Each sub-action calls ``rally_in_region`` (which enforces caps, cost, and
-    prerequisites). Per-region CommandErrors are captured, not raised, so a
-    plan that outruns Resources resolves as far as it legally can.
-    """
-    details = bot_action.get("details") or {}
-    plan = details.get("rally_plan", {}) or {}
-
-    placed = []
-    errors = []
-    selected_options = {}
-    # One option per Region is a whole-Command constraint. Reject a malformed
-    # combination before placing its first Ally or spending any Resources.
+def _execute_rally_steps(state, faction, steps):
     from fs_bot.commands.rally import validate_rally_option
-    planned_options = {}
-    for key, option in (("citadels", "place_citadel"), ("allies", "place_ally"),
-                        ("warbands", "place_warbands")):
-        for entry in plan.get(key) or []:
-            region = entry if isinstance(entry, str) else entry.get("region")
-            try:
-                validate_rally_option(state, region, faction, option,
-                                      planned_options.get(region, set()))
-            except _EXEC_ERRORS as exc:
-                return {"executed": False, "command": _CMD_RALLY, "placements": [],
-                        "errors": [{"region": region, "action": option, "error": str(exc)}]}
-            planned_options.setdefault(region, set()).add(option)
-
-    def _do(region, action, tribe=None, warband_mix=None):
+    planned = {}
+    for entry in steps:
+        region, action = entry['region'], entry['action']
         try:
-            from fs_bot.commands.rally import validate_rally_option
-            prior = selected_options.get(region, set())
-            validate_rally_option(state, region, faction, action, prior)
-            res = rally_in_region(state, region, faction, action, tribe=tribe,
-                                   warband_mix=warband_mix, include_home_bonus=True,
-                                   free=bool(prior))
-            selected_options.setdefault(region, set()).add(action)
-            placed.append({"region": region, "action": action,
-                           "tribe": tribe})
+            validate_rally_option(state, region, faction, action, planned.get(region, set()))
         except _EXEC_ERRORS as exc:
-            errors.append({"region": region, "action": action,
-                           "error": str(exc)})
-
-    def _entry_parts(entry):
-        # Tolerate a plain region string (human/CLI shorthand, same as the
-        # warbands list): tribe=None lets rally_in_region validate/choose.
-        if isinstance(entry, str):
-            return entry, None
-        if isinstance(entry, dict):
-            return entry.get("region"), entry.get("tribe")
-        return None, None
-
-    for entry in plan.get("citadels", []) or []:
-        region, tribe = _entry_parts(entry)
-        if region is not None:
-            _do(region, "place_citadel", tribe)
-    for entry in plan.get("allies", []) or []:
-        region, tribe = _entry_parts(entry)
-        if region is not None:
-            _do(region, "place_ally", tribe)
-    for entry in plan.get("warbands", []) or []:
-        region = entry if isinstance(entry, str) else entry.get("region")
-        if region is not None:
-            _do(region, "place_warbands", warband_mix=(
-                entry.get("warband_mix") if isinstance(entry, dict) else None))
-
-    return {
-        "executed": len(placed) > 0,
-        "command": _CMD_RALLY,
-        "placements": placed,
-        "errors": errors,
-    }
+            return _placement_error(_CMD_RALLY, exc)
+        planned.setdefault(region, set()).add(action)
+    placed, errors, selected = [], [], {}
+    for entry in steps:
+        region, action = entry['region'], entry['action']
+        prior = selected.get(region, set())
+        try:
+            validate_rally_option(state, region, faction, action, prior)
+            from fs_bot.engine.diviciacus import placement_owner_scope
+            with placement_owner_scope(state, faction, region, entry.get('placement_owners')):
+                rally_in_region(state, region, faction, action, tribe=entry.get('tribe'),
+                    count=entry.get('count'), warband_mix=entry.get('warband_mix'),
+                    include_home_bonus=True, include_bonuses=not prior, free=bool(prior))
+            selected.setdefault(region, set()).add(action)
+            record = {'region': region, 'action': action, 'tribe': entry.get('tribe')}
+            if 'count' in entry:
+                record['count'] = entry['count']
+            placed.append(record)
+        except _EXEC_ERRORS as exc:
+            errors.append({'region': region, 'action': action, 'error': str(exc)})
+    return {'executed': bool(placed), 'command': _CMD_RALLY,
+            'placements': placed, 'errors': errors}
 
 
 @_diviciacus_command_scope
@@ -3735,7 +3815,18 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
 
 @_diviciacus_command_scope
 @preserve_supply_agreements
-def _execute_recruit(state, faction, bot_action):
+def _execute_recruit(state, faction, bot_action, *, _exact=False):
+    from fs_bot.commands.rally import recruit_plan_entries
+    try:
+        plan = recruit_plan_entries((bot_action.get('details') or {}).get('recruit_plan') or [])
+    except _EXEC_ERRORS as exc:
+        return _placement_error(_CMD_RECRUIT, exc)
+    exact = _exact or any('count' in entry or 'placement_owners' in entry for entry in plan)
+    execute = lambda: _execute_recruit_entries(state, faction, bot_action, exact=exact)
+    return _atomic_placement_plan(state, execute) if exact else execute()
+
+
+def _execute_recruit_entries(state, faction, bot_action, *, exact=False):
     """Execute a Roman Recruit — §3.2.1 / §8.8.4.
 
     The Roman bot now emits ``details['recruit_plan']`` as an ordered list of
@@ -3759,7 +3850,7 @@ def _execute_recruit(state, faction, bot_action):
             if region is None or action is None:
                 continue
             tribe = entry.get("tribe")
-            if action == "place_ally" and tribe is not None:
+            if not exact and action == "place_ally" and tribe is not None:
                 # The Build SA resolves BEFORE this Recruit (§8.8.4 'Build
                 # before Recruit') and may itself have allied the planned
                 # tribe. Re-derive against the current board: keep the planned
@@ -3791,28 +3882,24 @@ def _execute_recruit(state, faction, bot_action):
             # Supply-Line discount mid-plan) are skipped as unaffordable, not
             # errors — the rule's own 'able' qualifier, not a refused proposal.
             from fs_bot.commands.rally import recruit_cost as _rcost
-            if state["resources"].get(_ROMANS_F, 0) < _rcost(state, region):
+            if not exact and state["resources"].get(_ROMANS_F, 0) < _rcost(state, region):
                 superseded.append({"region": region, "action": action,
                                    "reason": "unaffordable"})
                 continue
             # Presence pre-check for Auxilia — §3.2.1 requires a Roman
             # Leader, Ally, or Fort there (or card 55's Belgica carve-out);
             # the Build SA resolves first and the plan may be stale.
-            if action == "place_auxilia":
-                from fs_bot.rules_consts import (FORT as _F_R, ALLY as _AL_R)
-                from fs_bot.board.pieces import (
-                    get_leader_in_region as _glr_r)
-                from fs_bot.commands.rally import (
-                    _commius_unshaded_recruit as _c55_r)
-                if not (_glr_r(state, region, _ROMANS_F) is not None
-                        or count_pieces(state, region, _ROMANS_F, _AL_R) > 0
-                        or count_pieces(state, region, _ROMANS_F, _F_R) > 0
-                        or _c55_r(state, region)):
+            if not exact and action == "place_auxilia":
+                from fs_bot.commands.rally import can_recruit_auxilia
+                if not can_recruit_auxilia(state, region):
                     superseded.append({"region": region, "action": action,
                                        "reason": "no Leader/Ally/Fort"})
                     continue
             try:
-                res = recruit_in_region(state, region, action, tribe=tribe)
+                from fs_bot.engine.diviciacus import placement_owner_scope
+                with placement_owner_scope(state, faction, region, entry.get('placement_owners')):
+                    res = recruit_in_region(state, region, action, tribe=tribe,
+                                            count=entry.get('count'))
                 placed.append({"region": region, "action": action,
                                "tribe": tribe})
             except _EXEC_ERRORS as exc:
@@ -4230,30 +4317,32 @@ def _execute_sa(state, faction, bot_action):
         # pre-Command Resources; e.g. a Rally can spend the Aedui below the
         # Suborn price between planning and resolution). Humans keep their
         # declared SA.
-        from fs_bot.bots.aedui_bot import (_determine_trade_sa,
-                                           SA_ACTION_NONE as _A_NONE,
-                                           SA_ACTION_TRADE as _A_TRADE)
-        battled = bot_action.get("command") == _CMD_BATTLE
-        new_sa, new_regions, new_details = _determine_trade_sa(
-            state, state["scenario"], battled=battled)
-        if new_sa == _A_NONE:
-            return {"executed": False, "sa": sa,
-                    "declined_no_effect": True,
-                    "reason": "no Trade or Suborn at SA time (§8.6.3 "
-                              "'at that moment'; if none, no SA)"}
-        if new_sa == _A_TRADE:
-            result = _execute_trade(state, faction)
+        from fs_bot.commands.sa_trade import trade_declarations
+        with trade_declarations(state):
+            from fs_bot.bots.aedui_bot import (_determine_trade_sa,
+                                               SA_ACTION_NONE as _A_NONE,
+                                               SA_ACTION_TRADE as _A_TRADE)
+            battled = bot_action.get("command") == _CMD_BATTLE
+            new_sa, new_regions, new_details = _determine_trade_sa(
+                state, state["scenario"], battled=battled, confirm=True)
+            if new_sa == _A_NONE:
+                return {"executed": False, "sa": sa,
+                        "declined_no_effect": True,
+                        "reason": "no Trade or Suborn at SA time (§8.6.3 "
+                                  "'at that moment'; if none, no SA)"}
+            if new_sa == _A_TRADE:
+                result = _execute_trade(state, faction)
+                result.setdefault("rederived_at_sa_time", True)
+                return result
+            rederived = dict(bot_action)
+            rederived["sa"] = new_sa
+            rederived["sa_regions"] = new_regions
+            d = dict(bot_action.get("details") or {})
+            d.update(new_details or {})
+            rederived["details"] = d
+            result = _execute_suborn(state, faction, rederived)
             result.setdefault("rederived_at_sa_time", True)
             return result
-        rederived = dict(bot_action)
-        rederived["sa"] = new_sa
-        rederived["sa_regions"] = new_regions
-        d = dict(bot_action.get("details") or {})
-        d.update(new_details or {})
-        rederived["details"] = d
-        result = _execute_suborn(state, faction, rederived)
-        result.setdefault("rederived_at_sa_time", True)
-        return result
 
     if sa == _SA_TRADE:
         return _execute_trade(state, faction)
@@ -4440,22 +4529,14 @@ def _trade_roman_agreement(state):
     """Resolve the Roman Trade-agreement declaration (§4.4.1) at SA time.
 
     §4.4.1: the Romans declare agreement when the Trade resolves (they
-    declare "regardless" of Control). NP Romans always agree (§8.6.3). A
-    player Rome decides live: consult the decision-agent AGREEMENT hook
+    declare "regardless" of Control). NP Romans agree for NP Aedui
+    (§8.6.3/§8.8.6). A player Rome decides live via the AGREEMENT hook
     (same channel _region_allows_supply_line uses for Supply Lines); if
     there is no agent or it defers, apply the alliance default — agree.
     See QUESTIONS.md (Aedui Trade — Roman agreement).
     """
-    if _ROMANS_F in state.get("non_player_factions", set()):
-        return True
-    from fs_bot.engine.agent import consult_agent, AGREEMENT
-    from fs_bot.rules_consts import AEDUI as _AED
-    resp = consult_agent(state, _ROMANS_F, {
-        "kind": AGREEMENT, "request_type": "trade_roman_agreement",
-        "requesting_faction": _AED, "context": {}})
-    if resp is not None:
-        return bool(resp)
-    return True
+    from fs_bot.commands.sa_trade import roman_agreement
+    return roman_agreement(state)
 
 
 def maybe_np_aedui_subsidy(state):
@@ -4486,14 +4567,16 @@ def maybe_np_aedui_subsidy(state):
 
 
 def _execute_trade(state, faction, *, allowed_regions=None):
-    """Aedui Trade (§4.4.2) — yields Resources; no targets."""
+    """Aedui Trade (§4.4.1), with one binding Roman declaration."""
     scope = state.get("_command_region_scope")
     if scope is not None:
         allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     try:
-        res = _sa_trade(state,
-                        roman_agreed=_trade_roman_agreement(state),
-                        allowed_regions=allowed_regions)
+        from fs_bot.commands.sa_trade import trade_declarations
+        with trade_declarations(state):
+            res = _sa_trade(state,
+                            roman_agreed=_trade_roman_agreement(state),
+                            allowed_regions=allowed_regions)
     except _EXEC_ERRORS as exc:
         return {"executed": False, "sa": _SA_TRADE, "error": str(exc)}
     return {"executed": True, "sa": _SA_TRADE, "result": res}
@@ -4685,7 +4768,16 @@ def _execute_suborn(state, faction, bot_action):
     return result
 
 
+@preserve_supply_agreements
 def _execute_build(state, faction, bot_action):
+    # One submitted Build may select both a Fort and a Tribe in a Region.
+    # Reuse its declaration for all checks, including a refusal (§3.2.1),
+    # rather than rerolling an NP Aedui answer within that same proposal.
+    with supply_query_scope(state):
+        return _execute_build_plan(state, faction, bot_action)
+
+
+def _execute_build_plan(state, faction, bot_action):
     """Roman Build (§4.2.1).
 
     The Roman bot's node_r_build computes a complete build_plan

@@ -5,6 +5,7 @@ these constraints concern the whole Command and cannot change mid-action.
 """
 
 from fs_bot.rules_consts import BRITANNIA, AEDUI
+from fs_bot.commands.common import CommandError
 
 
 SA_COMMANDS = {
@@ -31,12 +32,13 @@ def command_regions(action):
         plan = details.get("march_plan") or details
         return list(plan.get("origins") or [])
     if action.get("command") == "Rally":
-        plan = details.get("rally_plan") or {}
-        entries = [e for key in ("citadels", "allies", "warbands")
-                   for e in plan.get(key, [])]
+        from fs_bot.commands.rally import rally_plan_steps
+        entries = rally_plan_steps(details.get("rally_plan", {}))
+    elif action.get("command") == "Recruit":
+        from fs_bot.commands.rally import recruit_plan_entries
+        entries = recruit_plan_entries(details.get("recruit_plan", []))
     else:
-        key = {"Recruit": "recruit_plan", "Raid": "raid_plan",
-               "Battle": "battle_plan"}.get(action.get("command"))
+        key = {"Raid": "raid_plan", "Battle": "battle_plan"}.get(action.get("command"))
         entries = details.get(key, []) if key else []
     return list(dict.fromkeys(e if isinstance(e, str) else e.get("region")
                              for e in entries))
@@ -46,11 +48,13 @@ def command_parts(action):
     return (action.get("details") or {}).get("command_parts") or [action]
 
 
-def validate_human_structure(state, faction, action):
+def validate_human_structure(state, faction, action, *, limited=False):
     """Return an error for an illegal whole-action combination, else None."""
     from fs_bot.cli.human_plan import (_FACTION_COMMANDS,
                                        _faction_special_abilities)
     from fs_bot.engine.game_engine import is_frost
+    if not isinstance(action, dict):
+        return "The Command plan must be an object"
     command, sa = action.get("command"), action.get("sa")
     if command == "Event":
         return None  # Event-specific/free Commands are governed by their text.
@@ -59,6 +63,8 @@ def validate_human_structure(state, faction, action):
     if command == "March" and is_frost(state):
         return "No March Command during Frost (§2.3.8)"
     has_sa = sa and sa != "No SA"
+    if limited and has_sa:
+        return "A Limited Command cannot add a Special Ability (§4.1)"
     if has_sa:
         if sa not in _faction_special_abilities(faction, state["scenario"]):
             return f"{faction} cannot execute {sa} in this scenario"
@@ -66,7 +72,26 @@ def validate_human_structure(state, faction, action):
             return f"{sa} cannot accompany {command} (§4)"
         if sa == "Ambush" and faction == AEDUI and len(set(action.get("sa_regions") or [])) > 1:
             return "Aedui Ambush is limited to one Region (§4.4.3)"
+    details = action.get("details") or {}
+    if not isinstance(details, dict):
+        return "Command details must be an object"
+    if ("command_parts" in details
+            and not isinstance(details["command_parts"], list)):
+        return "Command portions must be a list"
     parts = command_parts(action)
+    if any(not isinstance(part, dict) for part in parts):
+        return "Each Command portion must be an object"
+    # Validate every placement entry before an SA or earlier Region can
+    # change the board. Ordered Vercingetorix steps still select one Region.
+    selected_regions = []
+    if limited or command in ("Rally", "Recruit"):
+        try:
+            for part in parts:
+                selected_regions.extend(command_regions(part))
+        except (ValueError, TypeError, AttributeError, KeyError, CommandError) as exc:
+            return f"Invalid Command plan: {exc}"
+    if limited and len(set(selected_regions)) > 1:
+        return "A Limited Command selects at most one Region (§2.3.5)"
     if len(parts) > 1:
         if command in ("March", "Battle"):
             return "Use before/after timing for March or Battle; their Command-wide resolution cannot be split"

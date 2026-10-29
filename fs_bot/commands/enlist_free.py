@@ -1,6 +1,7 @@
 """The free Germanic Limited Command option of Enlist (§4.5.1/A4.5.1)."""
 
 from contextlib import nullcontext
+from copy import deepcopy
 
 from fs_bot.rules_consts import (
     GERMANS, FACTIONS, WARBAND, AUXILIA, HIDDEN, REVEALED, SCOUTED,
@@ -133,19 +134,47 @@ def execute_free_enlist(state, plan):
             raise CommandError("Enlist Raid actions must be a list of action mappings")
         return raid_in_region(state, region, GERMANS, actions, free=True)
 
-    from fs_bot.commands.rally import rally_in_region
     place = plan.get("place", "warbands")
     if place not in ("ally", "warbands"):
         raise CommandError("Enlist Rally may place only German Allies or Warbands")
+    explicit_count = 'count' in plan
+    if explicit_count:
+        if type(plan['count']) is not int or plan['count'] < 0:
+            raise CommandError('Enlist Rally count must be a non-negative integer')
+        if place == 'ally' and not base:
+            raise CommandError('Ariovistus Ally Rally has only its mandatory Home bonus')
+    # In the base procedure the requested Warbands follow the Ally. An
+    # impossible quantity must not leave that preliminary placement behind.
+    snapshot = (deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
+                if explicit_count else None)
+    agent, card_turn = state.get('decision_agent'), state.get('_card_turn')
+    try:
+        return _execute_rally(state, plan, region, place, base)
+    except BaseException:
+        if snapshot is not None:
+            state.clear()
+            state.update(snapshot)
+            if agent is not None:
+                state['decision_agent'] = agent
+            if card_turn is not None:
+                state['_card_turn'] = card_turn
+        raise
+
+
+def _execute_rally(state, plan, region, place, base):
+    from fs_bot.commands.rally import rally_in_region
     action = "place_ally" if place == "ally" else "place_warbands"
     first = rally_in_region(state, region, GERMANS, action,
                             tribe=plan.get("tribe"), free=True,
                             include_home_bonus=True,
+                            count=plan.get('count') if place == 'warbands' else None,
                             max_pieces=None if base else ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS)
     result = {"rally": [first]}
     # §3.4.1 places Warbands after an Ally, even at the same Region. The
     # Ariovistus replacement instead chooses one option plus its Home bonus.
-    if base and place == "ally" and get_available(state, GERMANS, WARBAND):
+    if base and place == "ally" and (get_available(state, GERMANS, WARBAND)
+                                     or 'count' in plan):
         result["rally"].append(rally_in_region(
-            state, region, GERMANS, "place_warbands", free=True))
+            state, region, GERMANS, "place_warbands", free=True,
+            count=plan.get('count')))
     return result

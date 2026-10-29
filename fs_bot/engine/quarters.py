@@ -85,27 +85,55 @@ def _bot_host_agrees(state, guest, host, request_type):
     return bool(nodes[host](state, guest, request_type))
 
 
-@contextmanager
-def agreement_cache(state):
-    """Do not ask the same host twice while planning and applying Quarters."""
-    from fs_bot.engine.agent import AGREEMENT
-    original = state.get('decision_agent')
-    replies = {}
-    def agent(board, faction, request):
+class _QuartersAgreementCache:
+    """Trusted engine scope shared by planning and actual declarations."""
+    def __init__(self, original):
+        self.original = original
+        self.replies = {}
+
+    def __deepcopy__(self, memo):
+        # Detached Quarters validation uses the same live agreement scope.
+        return self
+
+    def __call__(self, board, faction, request):
+        from fs_bot.engine.agent import AGREEMENT
         if request.get('kind') != AGREEMENT:
-            return original(board, faction, request) if original else None
+            return self.original(board, faction, request) if self.original else None
         context = request.get('context') or {}
         key = (faction, request.get('requesting_faction'),
                request.get('request_type'),
                None if request.get('request_type') == 'supply_line' else context.get('region'))
-        if key not in replies:
-            response = original(board, faction, request) if original else None
-            if response is None:
-                response = _bot_host_agrees(board, request.get('requesting_faction'),
-                                           faction, request.get('request_type'))
-            replies[key] = response
-        return replies[key]
-    state['decision_agent'] = agent
+        if key not in self.replies:
+            if (request.get('request_type') == 'supply_line'
+                    and faction in board.get('non_player_factions', ())):
+                from fs_bot.bots.bot_common import np_agrees_to_supply_line
+                response = np_agrees_to_supply_line(
+                    faction, request.get('requesting_faction'), board)
+            else:
+                response = self.original(board, faction, request) if self.original else None
+                if response is None:
+                    response = _bot_host_agrees(board, request.get('requesting_faction'),
+                                               faction, request.get('request_type'))
+            self.replies[key] = response
+        return self.replies[key]
+
+
+def cached_np_supply_answer(state, guest, host, region):
+    """Use an engine-owned Quarters cache, never an external NP callback."""
+    agent = state.get('decision_agent')
+    if not isinstance(agent, _QuartersAgreementCache):
+        return None
+    from fs_bot.engine.agent import AGREEMENT
+    return agent(state, host, {
+        'kind': AGREEMENT, 'request_type': 'supply_line',
+        'requesting_faction': guest, 'context': {'region': region}})
+
+
+@contextmanager
+def agreement_cache(state):
+    """Do not ask the same host twice while planning and applying Quarters."""
+    original = state.get('decision_agent')
+    state['decision_agent'] = _QuartersAgreementCache(original)
     try:
         yield
     finally:

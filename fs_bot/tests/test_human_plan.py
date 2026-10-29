@@ -34,12 +34,13 @@ class TestHumanPlanCollection:
         st["resources"][AEDUI] = 10
         regions = _regions_with_pieces(st, AEDUI)
         region = regions[0]
-        # Rally(1); pick first Region(1); (done) if >1 Region; Warbands(1).
-        seq = ["1", "1"] + ([str(len(regions))] if len(regions) > 1 else []) + ["1", "n"]
+        # Rally(1); pick first Region(1); (done) if >1 Region; Warbands(1); maximum quantity(1).
+        seq = ["1", "1"] + ([str(len(regions))] if len(regions) > 1 else []) + ["1", "1", "n"]
         stdin, stdout = _io(seq)
         action = collect_player_action(st, AEDUI, ACTION_COMMAND, stdin, stdout)
         assert action["command"] == "Rally"
-        assert region in action["details"]["rally_plan"]["warbands"]
+        assert action["details"]["rally_plan"]["steps"][0]["region"] == region
+        assert action["details"]["rally_plan"]["steps"][0]["count"] == 1
         before = count_pieces(st, region, AEDUI, "Warband")
         res = execute_decision(st, AEDUI, {"player_action": action})
         assert res["executed"] is True
@@ -87,8 +88,8 @@ class TestHumanPlanCollection:
         st["resources"][AEDUI] = 10
         options = [ACTION_COMMAND, ACTION_EVENT]
         regions = _regions_with_pieces(st, AEDUI)
-        # Action=Command(1); Rally(1); first Region(1); (done) if >1; Warbands(1).
-        seq = ["1", "1", "1"] + ([str(len(regions))] if len(regions) > 1 else []) + ["1", "n"]
+        # Action=Command(1); Rally(1); first Region(1); (done) if >1; Warbands(1); maximum quantity(1).
+        seq = ["1", "1", "1"] + ([str(len(regions))] if len(regions) > 1 else []) + ["1", "1", "n"]
         stdin, stdout = _io(seq)
         decision = prompt_action(st, AEDUI, options, "1st_eligible", stdin, stdout)
         assert decision["action"] == ACTION_COMMAND

@@ -258,7 +258,46 @@ def test_a20_projects_all_warbands_between_opposite_veneti_neighbours():
     assert result[0]['projected_warbands'] == 4
     assert count_pieces(board, target, rc.ROMANS, rc.AUXILIA) == 2
     assert count_pieces(board, target, rc.ARVERNI, rc.WARBAND) == 0
-    assert count_pieces_by_state(board, source, rc.ARVERNI, rc.WARBAND, rc.REVEALED) == 4
+    assert count_pieces_by_state(board, source, rc.ARVERNI, rc.WARBAND, rc.REVEALED) == 1
+    assert count_pieces_by_state(board, source, rc.ARVERNI, rc.WARBAND, rc.SCOUTED) == 3
+    assert validate_state(board) == []
+
+
+@pytest.mark.parametrize('scenario', [rc.SCENARIO_ARIOVISTUS, rc.SCENARIO_GALLIC_WAR])
+@pytest.mark.parametrize('caesar', [False, True])
+def test_a20_returns_scouted_survivors_after_ambush_or_caesar_counterattack(scenario, caesar):
+    """A20's projected counters return home; Step5 never clears Scout markers."""
+    from fs_bot.cards.morbihan_display import PROJECTION_KEY
+    from fs_bot.map.map_data import get_adjacent
+    board = state(scenario)
+    source, target = sorted(get_adjacent(rc.VENETI, scenario))[:2]
+    place_piece(board, rc.VENETI, rc.ARVERNI, rc.ALLY)
+    board['tribes'][rc.TRIBE_VENETI]['allied_faction'] = rc.ARVERNI
+    place_piece(board, source, rc.ARVERNI, rc.WARBAND, 1)
+    place_piece(board, source, rc.ARVERNI, rc.WARBAND, 3, piece_state=rc.SCOUTED)
+    place_piece(board, target, rc.ARVERNI, rc.WARBAND, 2, piece_state=rc.REVEALED)
+    place_piece(board, target, rc.ROMANS, rc.AUXILIA, 6, piece_state=rc.REVEALED)
+    if caesar:
+        place_piece(board, target, rc.ROMANS, rc.LEADER, leader_name=rc.CAESAR)
+    available = get_available(board, rc.ARVERNI, rc.WARBAND)
+    rng = board['rng'].getstate()
+    result = ex._resolve_a20_arverni_ambush(board)
+    battle = result[0]['result']
+    assert result[0]['region'] == target
+    assert result[0]['projected_warbands'] == 6
+    assert count_pieces_by_state(board, source, rc.ARVERNI, rc.WARBAND, rc.REVEALED) == 1
+    assert count_pieces_by_state(board, source, rc.ARVERNI, rc.WARBAND, rc.SCOUTED) == (1 if caesar else 3)
+    assert count_pieces_by_state(board, target, rc.ARVERNI, rc.WARBAND, rc.REVEALED) == 2
+    assert count_pieces_by_state(board, target, rc.ARVERNI, rc.WARBAND, rc.SCOUTED) == 0
+    assert get_available(board, rc.ARVERNI, rc.WARBAND) == available + (2 if caesar else 0)
+    assert count_pieces(board, target, rc.ROMANS, rc.AUXILIA) == 3
+    if caesar:
+        assert battle['caesar_roll'] == (6, True)
+        assert battle['counterattack']['losses_taken'] == 2
+    else:
+        assert battle['counterattack'] is None
+        assert board['rng'].getstate() == rng
+    assert PROJECTION_KEY not in board and validate_state(board) == []
 
 
 def test_a20_and_a21_unavailable_specific_instructions_decline():

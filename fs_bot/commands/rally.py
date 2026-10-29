@@ -155,8 +155,7 @@ def _region_allows_supply_line(state, region, faction, agreements=None):
         region: Region to check.
         faction: The faction executing the Recruit.
         agreements: Dict of {faction: bool} for agreement declarations.
-            If None, assumes all factions other than Germans agree
-            (and Arverni in Ariovistus).
+            If None, use recorded replies, NP rules, or the player agent.
     """
     space = state["spaces"].get(region, {})
     control = space.get("control", NO_CONTROL)
@@ -200,14 +199,40 @@ def _region_allows_supply_line(state, region, faction, agreements=None):
     queries = state.get('_supply_line_query')
     if accepted is not None and key in accepted:
         return True
+    # Recruit forecasts record dependencies without consulting a human.
+    # Actual execution uses only the engine's confirmed replies for that
+    # concrete plan, including its preceding Build/Scout.
+    from fs_bot.engine.recruit_planning import forecast_answer
+    forecast = forecast_answer(state, faction, controlling_faction, region)
+    if forecast is not None:
+        return forecast
     if queries is not None and key in queries:
         return queries[key]
-    _a = consult_agent(state, controlling_faction, {
-        "kind": AGREEMENT, "request_type": "supply_line",
-        "requesting_faction": faction, "context": {"region": region}})
-    # Default: other factions agree (caller can override). Record the
-    # resolved answer, not a second consult on an unchanged board.
-    answer = True if _a is None else bool(_a)
+    if controlling_faction in state.get('non_player_factions', ()):
+        from fs_bot.bots.bot_common import np_agrees_to_supply_line
+        # A human plan preview may consider a possible Aedui agreement, but
+        # must not resolve its real §8.6.6 die or hide an option on that
+        # speculative result. Known answers above still take precedence.
+        from fs_bot.engine.victory import calculate_victory_score
+        uncertain = (state.get('_diviciacus_preview')
+                     and controlling_faction == AEDUI and faction == ROMANS
+                     and ROMANS not in state.get('non_player_factions', ())
+                     and 10 <= calculate_victory_score(state, ROMANS) <= 12)
+        if uncertain:
+            answer = True
+        else:
+            from fs_bot.engine.quarters import cached_np_supply_answer
+            answer = cached_np_supply_answer(state, faction, controlling_faction, region)
+            if answer is None:
+                answer = np_agrees_to_supply_line(controlling_faction, faction, state)
+    else:
+        _a = consult_agent(state, controlling_faction, {
+            "kind": AGREEMENT, "request_type": "supply_line",
+            "requesting_faction": faction, "context": {"region": region}})
+        # Raw callers without a player callback retain their default. A
+        # missing callback never overrides a Non-player's printed refusal.
+        answer = True if _a is None else bool(_a)
+    # Record the resolved answer, not a second consult on an unchanged board.
     if queries is not None:
         queries[key] = answer
     if answer and accepted is not None:
@@ -468,7 +493,8 @@ def validate_recruit_region(state, region):
 
     if not (has_roman_control or has_roman_leader
             or has_roman_ally or has_roman_fort
-            or _commius_unshaded_recruit(state, region)):
+            or _commius_unshaded_recruit(state, region)
+            or (region == CISALPINA and get_gallia_togata_card(state) is not None)):
         return False, "Region has no Roman Control, Leader, Ally, or Fort"
 
     return True, None
@@ -542,8 +568,13 @@ def validate_rally_region(state, region, faction):
         if count_pieces(state, region, GERMANS, SETTLEMENT) > 0:
             has_rally_symbol = True
 
+    # These normal prerequisites are expressly "to have effect" (§3.3.1).
+    # A printed addition can supply that effect even in an empty Region;
+    # the geography and marker restrictions above still apply (Card 25 tip).
+    has_event_addition = _rally_bonus(
+        state, region, faction, include_home_bonus=False, include_bonuses=True) > 0
     if not (has_control or has_ally or has_citadel
-            or has_leader or has_rally_symbol):
+            or has_leader or has_rally_symbol or has_event_addition):
         return (False,
                 f"Region has no {faction} Control, Ally, Citadel, "
                 f"Leader, or Rally symbol")
@@ -561,7 +592,7 @@ def can_recruit_auxilia(state, region):
             or count_pieces(state, region, ROMANS, ALLY) > 0
             or count_pieces(state, region, ROMANS, FORT) > 0
             or _commius_unshaded_recruit(state, region)
-            or (region == CISALPINA and get_gallia_togata_card(state) == 5))
+            or (region == CISALPINA and get_gallia_togata_card(state) is not None))
 
 
 def _count_recruit_auxilia_cap(state, region):
@@ -620,11 +651,18 @@ def _find_subdued_tribe_for_ally(state, region, faction):
         List of eligible tribe names.
     """
     scenario = state["scenario"]
-    tribes = get_tribes_in_region(region, scenario)
+    tribes = list(get_tribes_in_region(region, scenario))
+    # Card 71's player-named Colony is a real Tribe in its recorded Region,
+    # and remains recruitable/rallyable after its original Ally is removed.
+    tribes.extend(name for name, info in state.get('tribes', {}).items()
+                  if info.get('region') == region and name not in tribes)
     eligible = []
 
     for tribe_name in tribes:
-        tribe_info = get_tribe_data(tribe_name)
+        try:
+            tribe_info = get_tribe_data(tribe_name)
+        except KeyError:
+            tribe_info = None  # Card 71 player-named Colony, recorded above.
 
         # Check tribe status — must be Subdued (no existing Ally)
         tribe_state = state.get("tribes", {}).get(tribe_name, {})
@@ -636,12 +674,12 @@ def _find_subdued_tribe_for_ally(state, region, faction):
             continue
 
         # Check for Dispersed marker
-        from fs_bot.rules_consts import DISPERSED, DISPERSED_GATHERING
-        if status in (DISPERSED, DISPERSED_GATHERING):
+        from fs_bot.rules_consts import DISPERSED, DISPERSED_GATHERING, MARKER_RAZED
+        if status in (DISPERSED, DISPERSED_GATHERING, MARKER_RAZED):
             continue
 
         # Check faction restriction — §1.4.2
-        restriction = tribe_info.faction_restriction
+        restriction = tribe_info.faction_restriction if tribe_info is not None else None
         if restriction is not None and restriction != faction:
             continue
 
@@ -654,8 +692,98 @@ def _find_subdued_tribe_for_ally(state, region, faction):
     return eligible
 
 
+def _validate_count(count):
+    if type(count) is not int or count < 0:
+        raise CommandError('Placement count must be a non-negative integer')
+
+
+def _chosen_count(count, limits):
+    if count is None:
+        return limits['max']
+    _validate_count(count)
+    if not limits['min'] <= count <= limits['max']:
+        raise CommandError(f"Placement count must be between {limits['min']} and {limits['max']}")
+    return count
+
+
+def recruit_count_limits(state, region):
+    """Total Auxilia, including any compulsory Gallia addition; no mutations."""
+    from fs_bot.engine.diviciacus import placement_available
+    available = placement_available(state, region, ROMANS, AUXILIA,
+                                    get_available(state, ROMANS, AUXILIA))
+    cap = _count_recruit_auxilia_cap(state, region)
+    gallia = get_gallia_togata_card(state) if region == CISALPINA else None
+    minimum = 2 if gallia == 5 else (1 if gallia else 0)
+    return {'min': min(minimum, available), 'max': min(cap, available), 'cap': cap}
+
+
+def _validate_entry_count(entry, troop_action):
+    if 'placement_owners' in entry:
+        owners = entry['placement_owners']
+        if (not isinstance(owners, dict) or set(owners) - {ROMANS, AEDUI}
+                or any(type(number) is not int or number < 0 for number in owners.values())):
+            raise CommandError('Placement owners require non-negative Roman/Aedui counts')
+        if 'warband_mix' in entry:
+            raise CommandError('Choose Diviciacus owners or an Enlist mix, not both')
+    if 'count' in entry:
+        _validate_count(entry['count'])
+        if entry.get('action') != troop_action:
+            raise CommandError('A placement count is only valid for the troop option')
+        if 'warband_mix' in entry:
+            raise CommandError('Choose a count or a physical Warband mix, not both')
+
+
+def recruit_plan_entries(plan):
+    if not isinstance(plan, list):
+        raise CommandError('Recruit plan must be a list')
+    selected = set()
+    for entry in plan:
+        if (not isinstance(entry, dict) or not isinstance(entry.get('region'), str)
+                or entry.get('action') not in ('place_ally', 'place_auxilia')):
+            raise CommandError('Recruit entries require a Region and legal option')
+        _validate_entry_count(entry, 'place_auxilia')
+        if entry['region'] in selected:
+            raise CommandError('Recruit selects one option per Region')
+        selected.add(entry['region'])
+    return plan
+
+
+def rally_plan_steps(plan):
+    """Normalize ordered human steps or the legacy NP lists without changing order."""
+    if not isinstance(plan, dict):
+        raise CommandError('Rally plan must be an object')
+    if 'steps' in plan:
+        if set(plan) != {'steps'} or not isinstance(plan['steps'], list):
+            raise CommandError('Ordered Rally steps cannot be mixed with legacy lists')
+        steps = plan['steps']
+        for entry in steps:
+            if (not isinstance(entry, dict)
+                    or set(entry) - {'region', 'action', 'tribe', 'count', 'warband_mix', 'placement_owners'}):
+                raise CommandError('Invalid ordered Rally step')
+    else:
+        steps = []
+        for key, action in (('citadels', 'place_citadel'), ('allies', 'place_ally'),
+                            ('warbands', 'place_warbands')):
+            entries = plan.get(key) or []
+            if not isinstance(entries, list):
+                raise CommandError('Rally options must be lists')
+            for entry in entries:
+                if isinstance(entry, str):
+                    steps.append({'region': entry, 'action': action})
+                elif isinstance(entry, dict):
+                    steps.append(dict(entry, action=action))
+                else:
+                    raise CommandError('Invalid Rally option entry')
+    for entry in steps:
+        if (not isinstance(entry, dict) or not isinstance(entry.get('region'), str)
+                or entry.get('action') not in ('place_ally', 'place_citadel', 'place_warbands')):
+            raise CommandError('Rally entries require a Region and legal option')
+        _validate_entry_count(entry, 'place_warbands')
+    return steps
+
+
 def recruit_in_region(state, region, action, *, tribe=None, free=False,
-                      agreements=None):
+                      agreements=None, count=None):
     """Execute Roman Recruit in a single region.
 
     This is the mechanical execution. The caller decides which region
@@ -683,6 +811,10 @@ def recruit_in_region(state, region, action, *, tribe=None, free=False,
         CommandError: If the action violates rules.
     """
     scenario = state["scenario"]
+    if count is not None:
+        _validate_count(count)
+        if action != 'place_auxilia':
+            raise CommandError('A Recruit count is only valid for Auxilia')
 
     # Validate region
     valid, reason = validate_recruit_region(state, region)
@@ -762,7 +894,7 @@ def recruit_in_region(state, region, action, *, tribe=None, free=False,
         from fs_bot.engine.diviciacus import placement_available
         available = placement_available(state, region, ROMANS, AUXILIA,
                                         get_available(state, ROMANS, AUXILIA))
-        to_place = min(cap, available)
+        to_place = _chosen_count(count, recruit_count_limits(state, region))
 
         if to_place <= 0:
             # Deduct cost even if nothing placed (region was selected)
@@ -782,6 +914,16 @@ def recruit_in_region(state, region, action, *, tribe=None, free=False,
 
     else:
         raise CommandError(f"Unknown Recruit action: {action}")
+
+    # A5 adds an Auxilia to Recruit, including the Allied-Tribe option.
+    if action == 'place_ally' and region == CISALPINA and get_gallia_togata_card(state):
+        from fs_bot.engine.diviciacus import placement_available
+        bonus = min(2 if get_gallia_togata_card(state) == 5 else 1,
+                    placement_available(state, region, ROMANS, AUXILIA,
+                                          get_available(state, ROMANS, AUXILIA)))
+        if bonus:
+            place_piece(state, region, ROMANS, AUXILIA, bonus)
+            result['pieces_placed'][AUXILIA] = bonus
 
     # Refresh control
     refresh_all_control(state)
@@ -823,15 +965,7 @@ def _gallic_warband_cap(state, region, faction):
         )
         return allies + citadels + leader_count + ARVERNI_RALLY_EXTRA_WARBAND
     else:
-        # Aedui or Belgae
-        cap = allies + citadels
-        # A70 (Nervii, shaded): Belgic Rally at Nervii places +2 Warbands.
-        from fs_bot.cards.capabilities import is_capability_active
-        from fs_bot.rules_consts import BELGAE as _BE, NERVII as _NV, EVENT_SHADED as _ES
-        if (faction == _BE and region == _NV
-                and is_capability_active(state, "A70", _ES)):
-            cap += 2
-        return cap
+        return allies + citadels
 
 
 def _german_warband_cap(state, region):
@@ -852,6 +986,97 @@ def _german_warband_cap(state, region):
         settlements = count_pieces(state, region, GERMANS, SETTLEMENT)
         return allies + settlements
     return allies
+
+
+def _rally_bonus(state, region, faction, *, include_home_bonus, include_bonuses):
+    if not include_bonuses:
+        return 0
+    from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
+    from fs_bot.rules_consts import EVENT_SHADED, PICTONES, ARVERNI_REGION, NERVII
+    bonus = 0
+    if (is_capability_active(state, 25, EVENT_SHADED)
+            and get_capability_owner(state, 25) == faction
+            and region in (PICTONES, ARVERNI_REGION)):
+        bonus += 2
+    if faction == BELGAE and region == NERVII and is_capability_active(state, 'A70', EVENT_SHADED):
+        bonus += 2
+    if (include_home_bonus and faction == GERMANS and state['scenario'] in ARIOVISTUS_SCENARIOS
+            and (region in GERMANIA_REGIONS or count_pieces(state, region, faction, SETTLEMENT))):
+        bonus += 1
+    return bonus
+
+
+def _ordinary_rally_cap(state, region, faction, *, include_home_bonus, bonus):
+    scenario = state['scenario']
+    ally = count_pieces(state, region, faction, ALLY)
+    if faction == GERMANS:
+        settlement = (count_pieces(state, region, faction, SETTLEMENT)
+                      if scenario in ARIOVISTUS_SCENARIOS else 0)
+        home = region in _get_home_regions(faction, scenario) or bool(settlement)
+        cap = _german_warband_cap(state, region)
+        if not ally and not settlement and not home and not bonus:
+            raise CommandError('Place Warbands requires a Germanic Ally or Settlement')
+        if home and not (include_home_bonus and scenario in ARIOVISTUS_SCENARIOS):
+            cap = max(1, cap)
+        return cap
+    home = region in _get_home_regions(faction, scenario)
+    base = ally or count_pieces(state, region, faction, CITADEL)
+    if faction == ARVERNI:
+        base = base or get_leader_in_region(state, region, faction) is not None
+    if base:
+        cap = _gallic_warband_cap(state, region, faction)
+    elif home:
+        cap = 1
+    elif bonus:
+        cap = 0
+    else:
+        raise CommandError('Place Warbands requires an Ally or Citadel, eligible Leader, or Home Region')
+    return max(1, cap) if home else cap
+
+
+def rally_count_limits(state, region, faction, *, include_home_bonus=False,
+                       include_bonuses=True, max_pieces=None):
+    """Total Warbands for this option; cap excludes physical pool limits."""
+    if max_pieces is not None and (type(max_pieces) is not int or max_pieces < 1):
+        raise CommandError('Rally piece limit must be a positive integer')
+    from fs_bot.engine.diviciacus import placement_available
+    available = placement_available(state, region, faction, WARBAND,
+                                    get_available(state, faction, WARBAND))
+    bonus = _rally_bonus(state, region, faction, include_home_bonus=include_home_bonus,
+                         include_bonuses=include_bonuses)
+    ordinary = _ordinary_rally_cap(state, region, faction,
+        include_home_bonus=include_home_bonus, bonus=bonus)
+    cap = ordinary + bonus
+    if max_pieces is not None:
+        cap = min(cap, max_pieces)
+    minimum = bonus
+    if faction == GERMANS and state['scenario'] in BASE_SCENARIOS and region in GERMANIA_REGIONS:
+        minimum = max(1, minimum)
+    return {'min': min(minimum, available, cap), 'max': min(cap, available), 'cap': cap}
+
+
+def _place_rally_mix(state, region, mix, result):
+    from fs_bot.commands.sa_enlist import BORROW_KEY
+    for owner, number in mix.items():
+        if number:
+            place_piece(state, region, owner, WARBAND, number)
+    context = state[BORROW_KEY]
+    context['affected'] += mix[GERMANS]
+    if mix[GERMANS]:
+        ledger = context['pieces'].setdefault(region, {})
+        ledger[HIDDEN] = ledger.get(HIDDEN, 0) + mix[GERMANS]
+    result['warband_owners'] = mix
+
+
+def _mixed_warband_available(state):
+    """An Enlist placement cannot exceed the remaining four-piece allowance."""
+    from fs_bot.commands.sa_enlist import BORROW_KEY
+    from fs_bot.rules_consts import ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS
+    germans = get_available(state, GERMANS, WARBAND)
+    if state['scenario'] in ARIOVISTUS_SCENARIOS:
+        affected = state.get(BORROW_KEY, {}).get('affected', 0)
+        germans = min(germans, max(0, ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS - affected))
+    return get_available(state, BELGAE, WARBAND) + germans
 
 
 def validate_rally_option(state, region, faction, action, prior):
@@ -879,7 +1104,7 @@ def validate_rally_option(state, region, faction, action, prior):
 
 def rally_in_region(state, region, faction, action, *, tribe=None,
                     free=False, warband_mix=None, include_home_bonus=False,
-                    max_pieces=None):
+                    max_pieces=None, count=None, include_bonuses=True):
     """Execute Rally in a single region.
 
     This is the mechanical execution for ONE option in ONE region.
@@ -915,6 +1140,12 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
         CommandError: If the action violates rules.
     """
     scenario = state["scenario"]
+    if count is not None:
+        _validate_count(count)
+        if action != 'place_warbands':
+            raise CommandError('A Rally count is only valid for Warbands')
+        if warband_mix is not None:
+            raise CommandError('Choose a count or a physical Warband mix, not both')
 
     if max_pieces is not None and (type(max_pieces) is not int
                                     or max_pieces < 1):
@@ -922,10 +1153,24 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
     # A3.4.1's extra Warband belongs to the full German Rally, after its
     # chosen Ally/Warbands option. The low-level default remains a single
     # option for callers that explicitly orchestrate a whole procedure.
-    home_bonus = (include_home_bonus and faction == GERMANS
+    home_bonus = (include_bonuses and include_home_bonus and faction == GERMANS
                   and scenario in ARIOVISTUS_SCENARIOS
                   and (region in GERMANIA_REGIONS
                        or count_pieces(state, region, GERMANS, SETTLEMENT) > 0))
+    bonus_count = _rally_bonus(state, region, faction,
+        include_home_bonus=include_home_bonus, include_bonuses=include_bonuses)
+    static_mix = None
+    if warband_mix is not None and action != 'place_warbands':
+        from fs_bot.commands.sa_enlist import enlist_rally_mix
+        if faction != BELGAE or action not in ('place_ally', 'place_citadel'):
+            raise CommandError('A physical Warband mix requires a Belgic Rally option')
+        available = _mixed_warband_available(state)
+        required = min(bonus_count, available)
+        if max_pieces is not None:
+            required = min(required, max(0, max_pieces - 1))
+        static_mix = enlist_rally_mix(state, region, warband_mix, required)
+        if sum(static_mix.values()) != required:
+            raise CommandError('The static Rally option must place its compulsory bonus Warbands')
 
     # Validate region
     valid, reason = validate_rally_region(state, region, faction)
@@ -999,86 +1244,11 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
         result["tribe_allied"] = tribe
 
     elif action == "place_warbands":
-        # Determine warband cap
-        if faction == GERMANS:
-            cap = _german_warband_cap(state, region)
-        else:
-            # Check prerequisite: Aedui/Belgae need existing Ally/Citadel;
-            # Arverni need Ally, Citadel, or Leader — §3.3.1
-            if faction in (AEDUI, BELGAE):
-                has_ally = count_pieces(state, region, faction, ALLY) > 0
-                has_citadel = count_pieces(
-                    state, region, faction, CITADEL) > 0
-                if not (has_ally or has_citadel):
-                    # Home Region exception — §3.3.1
-                    home = _get_home_regions(faction, scenario)
-                    if region in home:
-                        cap = 1  # "at least one Warband"
-                    else:
-                        raise CommandError(
-                            f"Place Warbands requires {faction} Ally or "
-                            f"Citadel in region"
-                        )
-                else:
-                    cap = _gallic_warband_cap(state, region, faction)
-            elif faction == ARVERNI:
-                has_ally = count_pieces(state, region, faction, ALLY) > 0
-                has_citadel = count_pieces(
-                    state, region, faction, CITADEL) > 0
-                has_leader = (
-                    get_leader_in_region(state, region, ARVERNI) is not None
-                )
-                if not (has_ally or has_citadel or has_leader):
-                    home = _get_home_regions(faction, scenario)
-                    if region in home:
-                        cap = 1
-                    else:
-                        raise CommandError(
-                            f"Place Warbands requires Arverni Ally, "
-                            f"Citadel, or Leader in region"
-                        )
-                else:
-                    cap = _gallic_warband_cap(state, region, faction)
-            else:
-                cap = _gallic_warband_cap(state, region, faction)
-
-        # Germans: home region minimum — §3.4.1
-        if faction == GERMANS:
-            has_ally = count_pieces(state, region, GERMANS, ALLY) > 0
-            has_settlement = (
-                scenario in ARIOVISTUS_SCENARIOS
-                and count_pieces(state, region, GERMANS, SETTLEMENT) > 0
-            )
-            is_home = region in _get_home_regions(GERMANS, scenario)
-            # Ariovistus: Settlement regions also count as home
-            if scenario in ARIOVISTUS_SCENARIOS and has_settlement:
-                is_home = True
-
-            if not (has_ally or has_settlement):
-                if is_home:
-                    if not home_bonus:
-                        cap = max(cap, 1)  # Base home minimum, or low-level option
-                else:
-                    if cap == 0:
-                        raise CommandError(
-                            "Place Warbands requires Germanic Ally "
-                            "(or Settlement in Ariovistus) in region"
-                        )
-
-        # Home region minimum for Gallic factions — §3.3.1
-        if faction in GALLIC_FACTIONS:
-            home = _get_home_regions(faction, scenario)
-            if region in home:
-                cap = max(cap, 1)
-
-        from fs_bot.engine.diviciacus import placement_available
-        available = placement_available(state, region, faction, WARBAND,
-                                        get_available(state, faction, WARBAND))
-        to_place = min(cap, available)
-        if home_bonus:
-            to_place = min(to_place, max(0, available - 1))
-        if max_pieces is not None:
-            to_place = min(to_place, max_pieces - int(home_bonus and available > 0))
+        limits = rally_count_limits(state, region, faction,
+            include_home_bonus=include_home_bonus, include_bonuses=include_bonuses,
+            max_pieces=max_pieces)
+        cap = limits['cap']
+        to_place = _chosen_count(count, limits)
         mix = None
         if warband_mix is not None:
             from fs_bot.commands.sa_enlist import enlist_rally_mix
@@ -1086,14 +1256,16 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
                 raise CommandError("Only Belgic Enlist can borrow Rally Warbands")
             mix = enlist_rally_mix(state, region, warband_mix, cap)
             to_place = sum(mix.values())
+            if to_place < min(bonus_count, cap, _mixed_warband_available(state)):
+                raise CommandError('Rally composition omits compulsory additional Warbands')
 
         # Found via play: an empty Available pool (or zero cap) made the
         # Rally charge Resources while placing nothing. A no-effect
         # selection is refused before payment, like other no-effect cases.
-        if to_place <= 0 and not (home_bonus and available > 0):
+        if to_place <= 0 and count is None and warband_mix is None:
             raise CommandError(
                 f"Rally would place no Warbands in {region} "
-                f"(cap {cap}, available {available})"
+                f"(maximum {limits['max']})"
             )
 
         # Deduct cost
@@ -1109,17 +1281,11 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
             if mix is None:
                 place_piece(state, region, faction, WARBAND, to_place)
             else:
-                from fs_bot.commands.sa_enlist import BORROW_KEY
-                for owner, n in mix.items():
-                    if n:
-                        place_piece(state, region, owner, WARBAND, n)
-                ctx = state[BORROW_KEY]
-                ctx["affected"] += mix[GERMANS]
-                ledger = ctx["pieces"].setdefault(region, {})
-                ledger[HIDDEN] = ledger.get(HIDDEN, 0) + mix[GERMANS]
-                result["warband_owners"] = mix
+                _place_rally_mix(state, region, mix, result)
 
         result["pieces_placed"][WARBAND] = to_place
+        if home_bonus:
+            result['home_bonus'] = min(1, to_place)
 
     elif action == "place_citadel":
         # §3.3.1: If the Faction has an Allied Tribe at a City,
@@ -1181,11 +1347,21 @@ def rally_in_region(state, region, faction, action, *, tribe=None,
     else:
         raise CommandError(f"Unknown Rally action: {action}")
 
-    if home_bonus:
+    if bonus_count and action != 'place_warbands':
         placed = sum(result["pieces_placed"].values())
         if max_pieces is None or placed < max_pieces:
-            bonus = german_rally_home_bonus(state, region)
-            result["home_bonus"] = bonus
+            from fs_bot.engine.diviciacus import placement_available
+            available = placement_available(state, region, faction, WARBAND,
+                                            get_available(state, faction, WARBAND))
+            bonus = sum(static_mix.values()) if static_mix is not None else min(bonus_count, available)
+            if max_pieces is not None:
+                bonus = min(bonus, max_pieces - placed)
+            if bonus:
+                if static_mix is not None:
+                    _place_rally_mix(state, region, static_mix, result)
+                else:
+                    place_piece(state, region, faction, WARBAND, bonus)
+            result['home_bonus' if home_bonus else 'bonus_warbands'] = bonus
             if bonus:
                 result["pieces_placed"][WARBAND] = (
                     result["pieces_placed"].get(WARBAND, 0) + bonus)

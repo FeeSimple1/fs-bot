@@ -44,7 +44,7 @@ def test_acco_menu_allows_empty_devastated_enemy_controlled_region(faction):
                'as_if_control': True, 'allow_devastated': True}
     action, output = _collect(state, faction, request, [
         'Plan the action', command, rc.MANDUBII,
-        'place a Roman Ally' if faction == rc.ROMANS else 'an Ally at a Subdued Tribe',
+        'an Ally at a Subdued Tribe',
         rc.TRIBE_MANDUBII])
     assert 'March' not in output
     assert execute_free_action_plan(state, faction, request, action)['executed']
@@ -94,15 +94,16 @@ def test_no_legal_entreat_region_returns_to_explicit_menu():
     assert 'Cannot use this plan:' in output
 
 
-def test_invalid_no_effect_plan_returns_to_explicit_menu():
+def test_skipped_placement_returns_to_explicit_menu():
     state = _state()
     request = {'kind': 'free_action', 'request_type': 'event_rally',
                'allowed_commands': ['Rally'], 'allowed_regions': [rc.MANDUBII],
                'max_regions': 1, 'as_if_control': True, 'free': True}
     result, output = _collect(state, rc.AEDUI, request, [
-        'Plan the action', 'Rally', rc.MANDUBII, 'Warbands', 'Decline'])
+        'Plan the action', 'Rally', rc.MANDUBII, 'Skip this Region', 'Decline'])
     assert result == {'decline': True}
-    assert 'Cannot use this plan:' in output
+    assert output.count('Aedui: Event grants a free action.') == 2
+    assert 'Warbands' not in output  # No base for that Rally option here.
 
 
 def test_event_march_can_reach_only_required_destination_during_frost():

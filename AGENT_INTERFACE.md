@@ -54,6 +54,56 @@ a partial execution differs from a wholly refused action. A `player_action` is:
  "details": { ...command-specific plan... }}
 ```
 
+Recruit entries accept an exact integer `count` for `place_auxilia`:
+
+```json
+{"recruit_plan":[{"region":"Provincia","action":"place_auxilia","count":1}]}
+```
+
+Use ordered Rally steps to preserve the player's choices, including named
+Vercingetorix's Ally-or-Citadel plus Warbands in either order:
+
+```json
+{"rally_plan":{"steps":[
+  {"region":"Arverni","action":"place_warbands","count":2},
+  {"region":"Arverni","action":"place_ally","tribe":"Arverni"}
+]}}
+```
+
+Rally troop steps accept `count`; it is the total Warbands for that step,
+including compulsory additions not already applied in the Region. Ordinary
+counts may be zero, with the Region's normal cost still charged. Fixed Event
+placements and mandatory German Home placements impose a minimum. Omit
+`count` to request the maximum; explicit null, Boolean, fractional, negative,
+and out-of-range counts are invalid in a submitted plan. Static placements
+do not accept `count`. Enlisted `warband_mix` is an alternative exact physical
+allocation and cannot accompany `count`; static Rally steps may use it for
+their compulsory Warband additions.
+
+Do not mix `steps` with the legacy `citadels`/`allies`/`warbands` lists. Legacy
+plans retain their existing order and maximum-placement defaults. A Recruit
+Region may appear only once. Rally permits a second option only under its
+printed exceptions; Vercingetorix pays the Region once. A Limited Command
+still selects only one Region even when Rally has two steps there, and an
+ordinary Limited Command cannot include a Special Activity. Event grants
+can independently permit an accompanying activity under their own text.
+The existing `command_parts` interface requires distinct Regions on each
+side of an intervening SA; it cannot yet split Vercingetorix's two options
+within one Region around the SA.
+
+For Enlist's free German Rally, `details.enlist.count` selects the Warband
+total. With a base-game `place: "ally"`, it instead selects the following
+Warbands. Ariovistus's Ally option has only its compulsory Home addition
+and does not accept `count`.
+
+With agreed Diviciacus cooperation, a placement entry can also specify
+`"placement_owners":{"Romans":0,"Aedui":1}` for one physical Aedui
+Warband acting as Auxilia. The total must equal that entry's actual troop
+placement, and the offered physical pools and consent still constrain it.
+The terminal collects this allocation before computing later quantities.
+Omit the field to retain the existing reactive `diviciacus_pieces` request.
+This mapping is separate from Belgic Enlist's `warband_mix`.
+
 The per-command `details` shapes (battle_plan, raid_plan, rally_plan,
 recruit_plan, March origins/destinations, disperse_regions, and Event
 `card_id`/`text_preference`/`event_params`) are exactly what
@@ -225,6 +275,15 @@ Fixed Event Battles use `request_type: "diviciacus_command"` for the
 acting human's opt-in before requesting the lender's agreement.
 Both replies are booleans. Loss-order entries retain physical owners even
 when borrowed pieces fight as the other type; copy the offered entries.
+
+Non-player Recruit forecasts can produce `AGREEMENT` requests with
+`request_type: "supply_line"` before the planned Build/Scout and Recruit
+take effect. Answer with a boolean. The context identifies the Region and
+may include `proposed_action`. A refusal causes the bot to replan before
+effects; accepted permissions apply through the actual Command/Event.
+A replacement ordinary Command obtains its own required permissions.
+Missing or invalid human replies remain pending under the session contract.
+Event-granted Commands retain their own Region limits and SA allowances.
 
 ### Harassment and physical March pieces
 
@@ -462,6 +521,9 @@ full game with one agent-controlled Faction playing alongside the bots.
 
 ## Current limits
 
+- Shaded River Commerce (Card 39) limits Trade to one Region. The public
+  human action plan does not yet expose that selection; execution retains
+  its existing yield proxy. This remains a known human-choice gap.
 - Reactive hooks cover Retreat, Loss absorption, Supply Line, Quarters hosting,
   Trade, Harassment and its losses, physical March pieces, Winter Campaign,
   Raid Intimidate, Kinship, and scoped Event-granted actions.

@@ -491,85 +491,14 @@ def node_a6(state):
 # ============================================================================
 
 def _estimate_rally_placements(state, scenario):
-    """Estimate how many pieces Rally would place.
+    """Count the actual Rally, without its accompanying Special Ability.
 
-    Per §8.6.3: Rally places Citadels, Allies, Warbands.
-
-    Returns:
-        Dict with "citadels", "allies", "warbands", "total" counts.
+    The ordinary and Event-scoped entry gates use the same legal quantities,
+    compulsory additions, one-option limits, Resource budget and shared pool.
+    This detached calculation leaves the live board, input and RNG untouched.
     """
-    if state.get("_planning_free_command") or state.get("_command_region_scope") is not None:
-        from fs_bot.bots.bot_common import estimate_scoped_rally
-        return estimate_scoped_rally(state, AEDUI, node_a_rally)
-    playable = command_region_candidates(
-        state, get_playable_regions(scenario, state.get("capabilities")))
-    citadels = 0
-    allies = 0
-    warbands = 0
-
-    avail_citadels = get_available(state, AEDUI, CITADEL)
-    avail_allies = get_available(state, AEDUI, ALLY)
-    avail_warbands = get_available(state, AEDUI, WARBAND)
-
-    # Step 1: Citadels — replace Allies in Cities with Citadels
-    for region in playable:
-        if avail_citadels <= 0:
-            break
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            if avail_citadels <= 0:
-                break
-            tribe_info = state["tribes"].get(tribe, {})
-            if (tribe_info.get("allied_faction") == AEDUI
-                    and is_city_tribe(tribe)):
-                citadels += 1
-                avail_citadels -= 1
-                # This frees up an Ally
-                avail_allies += 1
-
-    # Step 2: Allies — place wherever possible
-    for region in playable:
-        if avail_allies <= 0:
-            break
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            if avail_allies <= 0:
-                break
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") is not None:
-                continue
-            # Must have Aedui presence for Rally — §3.3.1
-            if (count_pieces(state, region, AEDUI) > 0
-                    or is_controlled_by(state, region, AEDUI)):
-                allies += 1
-                avail_allies -= 1
-
-    # Step 3: Warbands — place most possible
-    for region in playable:
-        if avail_warbands <= 0:
-            break
-        has_base = False
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            tribe_info = state["tribes"].get(tribe, {})
-            if tribe_info.get("allied_faction") == AEDUI:
-                has_base = True
-                break
-        if count_pieces(state, region, AEDUI, CITADEL) > 0:
-            has_base = True
-        if is_controlled_by(state, region, AEDUI):
-            has_base = True
-
-        if has_base:
-            warbands += 1
-            avail_warbands -= 1
-
-    return {
-        "citadels": citadels,
-        "allies": allies,
-        "warbands": warbands,
-        "total": citadels + allies + warbands,
-    }
+    from fs_bot.bots.bot_common import estimate_scoped_rally
+    return estimate_scoped_rally(state, AEDUI, node_a_rally)
 
 
 # ============================================================================
@@ -1296,7 +1225,8 @@ def _determine_battle_sa(state, battle_plan, scenario):
 
 
 @planning_sa_view
-def _determine_trade_sa(state, scenario, *, battled=False, allowed_regions=None):
+def _determine_trade_sa(state, scenario, *, battled=False, allowed_regions=None,
+                        confirm=False):
     """A_TRADE: Determine if Aedui should Trade.
 
     Per §8.6.3: Trade only if:
@@ -1338,7 +1268,8 @@ def _determine_trade_sa(state, scenario, *, battled=False, allowed_regions=None)
     # "Trade only if either the Aedui are currently acting as the 2nd
     # Eligible Faction or if Trading would earn the Aedui more than two
     # Resources"
-    trade_resources = _estimate_trade_resources(state, scenario, allowed_regions=allowed_regions)
+    trade_resources = _estimate_trade_resources(
+        state, scenario, allowed_regions=allowed_regions, confirm=confirm)
 
     trigger_met = False
     if is_second_eligible:
@@ -1363,17 +1294,14 @@ def _determine_trade_sa(state, scenario, *, battled=False, allowed_regions=None)
     })
 
 
-def _estimate_trade_resources(state, scenario, *, allowed_regions=None):
+def _estimate_trade_resources(state, scenario, *, allowed_regions=None, confirm=False):
     """Estimate how many Resources Trade would earn.
 
     Per §4.4.1: Trade earns Resources based on pieces within Supply Lines
     to Cisalpina:
-      - +1 per Aedui Allied Tribe within Supply Lines
-      - +1 per Aedui Citadel within Supply Lines
-      If Romans agree: double those to +2 each, plus:
-      - +1 per Subdued Tribe in Aedui-Controlled regions within Supply Lines
-      - +1 per Roman Allied Tribe in Aedui-Controlled regions within Supply
-        Lines
+      - +1 per Aedui Ally or Citadel, and per Subdued Tribe under Aedui Control.
+      - If Romans agree, these yield +2 each, and Roman Allies under
+        Aedui Control also yield +2 each.
 
     Computed exactly via the Trade mechanic (real §3.2.1 Supply Lines and
     §4.4.1 yields) on a throwaway copy — no approximation.
@@ -1381,27 +1309,11 @@ def _estimate_trade_resources(state, scenario, *, allowed_regions=None):
     Returns:
         Integer Resources the Aedui would gain by Trading now.
     """
-    import copy
-    from fs_bot.commands.sa_trade import trade
-    # Roman agreement (the +2 multiplier and the Subdued/Roman-Ally yields):
-    # assume the Romans agree. NP Romans always agree (§8.6.3); a player
-    # Rome's declaration is resolved live at execution, not forecast here.
-    # The alliance's designed default is cooperation, agreement is usually
-    # buy-able ("offer some of the added Resources" — §4.4.1), and the
-    # trigger only fires when the Aedui are poor — exactly when Rome has
-    # least reason to refuse. A wrong-optimistic estimate is recoverable
-    # (call off / lower yield at resolution); a wrong-pessimistic one
-    # silently skips Trades the table would allow. See QUESTIONS.md.
-    romans_agree = True
-    sim = copy.deepcopy(state)
-    # Estimates must never consult a live decision agent (interactive and
-    # non-deterministic): strip it so trade() uses agreement defaults.
-    sim.pop("decision_agent", None)
-    try:
-        return trade(sim, roman_agreed=romans_agree,
-                     allowed_regions=allowed_regions).get("resources_gained", 0)
-    except Exception:
-        return 0
+    from fs_bot.commands.sa_trade import forecast_trade
+    # Hypothetical plans retain the documented cooperative human default.
+    # At actual SA time §8.6.3 requires declarations before the >2 test.
+    # Both paths retain the real seats and the printed Non-player policies.
+    return forecast_trade(state, allowed_regions=allowed_regions, confirm=confirm)
 
 
 def _get_trade_regions(state, scenario):

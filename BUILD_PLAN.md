@@ -1,13 +1,13 @@
 # Build plan and maintenance roadmap
 
-Updated 28 October 2026. The original pre-implementation plan is retained in
+Updated 29 October 2026. The original pre-implementation plan is retained in
 Git history. The engine now has implementations for all eight original build
 phases; those phase labels are an architectural map, not a list of unbuilt
 features or a certification that every rule interaction is correct.
 
 Start with [current engineering status](docs/current-status.md) for corrected
 behavior and adopted provisional rulings, and the
-[Spring Leader report](docs/reviews/spring-leaders-2026-10-28.md)
+[Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md)
 for the latest placement repairs and their validation status. The earlier
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
 retains its exact tested revision and reproducible results. Use
@@ -63,6 +63,16 @@ exhaustive rules compliance or human-game balance. New code revisions need
 their own relevant checks; old counts must not be relabeled as new evidence.
 
 ## Continuing work
+
+The 29 October batch closes optional Recruit/Rally quantities and the
+combined Vercingetorix Rally menu. Remaining implementation work from the
+original four items is voluntary own-piece reclamation and mid-action
+Vercingetorix entry. The source-derived choice audit also remains. Two
+additional gaps are confirmed: same-Region Rally interruption around an SA
+and human selection of Trade's single Region under shaded River Commerce.
+See the [current report](docs/reviews/recruit-rally-2026-10-29.md) for exact
+scope and unresolved source timing, rather than treating these as an
+exhaustive defect list.
 
 The follow-up implementation adds Diviciacus cooperation and its optional
 original-scenario setup, repairs strategy-runner acceptance/resume, exposes

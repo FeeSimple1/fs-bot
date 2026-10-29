@@ -800,7 +800,7 @@ def test_player_rome_quarters_defaults_to_np_plan_not_roll_for_all():
         return sum(count_pieces(st, r, rc.ROMANS, rc.LEGION)
                    for r in st["spaces"]) + st.get("winter_track_legions", 0)
 
-    # A deferring player Rome keeps exactly as many Legions as NP Rome —
-    # the same plan applied (roll-for-all would lose more on average;
-    # deterministic seed makes this exact).
+    # In this position the default algorithm preserves the same number of
+    # Legions. Agreement policies still use the actual seats: player Rome
+    # does not acquire the NP Roman's automatic Aedui permission (§8.6.6).
     assert game(np_rome=False) == game(np_rome=True)

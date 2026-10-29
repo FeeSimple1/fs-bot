@@ -686,24 +686,24 @@ class TestNodeRBuild:
         # Should prioritize Fort placement at non-Aedui Warbands
         assert isinstance(plan["forts"], list)
 
-    def test_build_resource_floor_stops_spending(self):
-        """Bug 4: §8.8.1 — Stop spending when Resources drop below 6."""
+    def test_build_spends_from_six_then_stops(self):
+        """§8.8.1 permits six to four, then prohibits further spending."""
         state = _make_state()
         # Set Resources to exactly 6 — can afford one action (cost 2)
         state["resources"] = {ROMANS: 6}
-        _place_roman_force(state, MANDUBII, legions=2, auxilia=3)
-        _place_roman_force(state, MORINI, legions=1, auxilia=2)
+        _place_roman_force(state, MANDUBII, leader=True, legions=2, auxilia=3)
+        set_tribe_allied_helper(state, MANDUBII, ROMANS)
         _place_enemy_threat(state, MANDUBII, ARVERNI, warbands=3)
-        _place_enemy_threat(state, MORINI, BELGAE, warbands=2)
+        refresh_all_control(state)
         plan = node_r_build(state)
-        # With 6 Resources and cost 2 per Fort, can't place any because
-        # 6 - 2 = 4 which is below 6 floor. So no spending allowed.
-        assert len(plan["forts"]) == 0
+        # An own Ally makes Build legal. The Fort costs two; with four
+        # left, no later Ally may be placed at the other Subdued Tribes.
+        assert plan["forts"] == [MANDUBII]
         assert len(plan["subdue"]) == 0
         assert len(plan["allies"]) == 0
 
     def test_build_resource_floor_allows_above_floor(self):
-        """§8.8.1 — Build allowed when Resources stay at or above 6."""
+        """§8.8.1 — Build begins while Resources are at least six."""
         state = _make_state()
         # Set Resources high enough for multiple builds
         state["resources"] = {ROMANS: 20}

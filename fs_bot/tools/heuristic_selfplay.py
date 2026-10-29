@@ -34,7 +34,7 @@ from fs_bot.tools.error_census import census_result, _severity
 from fs_bot.tools.validation_metadata import parse_seed_range, source_identity
 
 RECORD_VERSION = 2
-POLICY_VERSION = 2
+POLICY_VERSION = 3
 REACTIVE_POLICY = "retreat-first-region; refuse-agreements; engine-default-other"
 
 

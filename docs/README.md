@@ -25,6 +25,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [29 October Recruit/Rally repair](reviews/recruit-rally-2026-10-29.md) | Exact human quantities, ordered Vercingetorix options, physical allocations and related bot/bonus corrections; validation and remaining gaps |
 | [28 October Spring Leader repair](reviews/spring-leaders-2026-10-28.md) | Successor destinations, human choices, seeded priorities, delayed Vercingetorix and Interlude named-Leader corrections; exact validation and remaining timing limit |
 | [27 October second repair batch](reviews/second-batch-2026-10-27.md) | Province, Ambacti, Council and Winter Uprising choices; Aedui/final-year bot instructions; exact validation and outcome-drift investigation |
 | [Second-batch results JSON](reviews/second-batch-2026-10-27-results.json) | Final source identity, matrix acceptance, replay/diagnostic checks and baseline disposition |

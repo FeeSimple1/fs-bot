@@ -4,6 +4,41 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Recruit and Rally choices, 29 October 2026
+
+- Add exact human troop quantities, ordered Vercingetorix Rally options,
+  German Enlist quantities and Belgic Citadel choices.
+- Preserve physical Diviciacus allocations before later placement menus
+  reserve shared pools. Validate ordered plans, Limited Command scope,
+  malformed quantities, saved pending answers and rollback.
+- Correct Aquitani ownership and missing Rally bonuses, Nervii's placement
+  additions, and compulsory Gallia Togata recruitment.
+- Enforce one Recruit option per Region in Roman bot plans and forecast the
+  preceding Build/Scout before testing Recruit's threshold. Build placements
+  remain separate. Allow the printed Build payment from six Resources,
+  then stop further spending below six. Correct dynamic Colony and Razed
+  Tribe eligibility.
+- Confirm Supply Line permissions before bot Recruit effects and replan
+  after refusal, including scoped Event grants and Frumentum's used-SA limit.
+  Apply printed non-player Supply policies in the shared resolver as well.
+- Check Trade's Supply Lines for the acting Aedui. Bind the Roman
+  declaration to both routing and income, and exclude Dispersed and Razed
+  Tribes from Subdued income. Reuse actual NPC Supply replies between
+  Winter Quarters planning and validation.
+- Make the experimental Roman human policy check uncertain Recruit Supply
+  refusal before choosing a plan. Retain affordable choices and public
+  human options without inspecting future dice; advance study policy
+  provenance to version 3.
+- Preserve archived pending-decision identities across an absent/empty
+  Supply-cache difference while retaining strict checks for actual changes.
+- Repair overlapping A28/Diviciacus physical forces and the non-player
+  Aedui refusal to lend against themselves, including Roman defense.
+  Preserve binding loans, Scouted markers on Battle survivors, and A20's
+  return of projected surviving Warbands to their original Regions.
+- Record unresolved bonus-before-ordinary timing, A20 casualty origins
+  and Aedui Supply die scope separately from the six adopted provisional
+  rulings.
+
 ## Unreleased — Spring Leader placement, 28 October 2026
 
 - Expose human Successor destinations and apply non-player placement

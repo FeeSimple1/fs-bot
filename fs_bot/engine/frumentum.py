@@ -10,6 +10,7 @@ from copy import deepcopy
 
 from fs_bot.rules_consts import AEDUI, ROMANS, MAX_RESOURCES
 from fs_bot.engine.agent import consult_agent
+from fs_bot.commands.rally import preserve_supply_agreements
 
 
 ACTION_SA = "Special Ability"
@@ -54,7 +55,8 @@ def _action_kind(plan):
 
 def _execute(state, plan, allowance):
     from fs_bot.engine.execute import _execute_recruit, _execute_march, _execute_sa
-    with spending_scope(state, allowance):
+    from fs_bot.engine.recruit_planning import install_confirmed_supply
+    with install_confirmed_supply(state, plan), spending_scope(state, allowance):
         command = plan.get("command")
         if command == "Recruit":
             result = _execute_recruit(state, ROMANS, plan)
@@ -136,6 +138,12 @@ def _sa_plan(state, sa):
 
 
 def _default_action(state, request):
+    from fs_bot.engine.recruit_planning import plan_with_recruit_supply
+    return plan_with_recruit_supply(
+        state, lambda planning: _default_action_once(planning, request))
+
+
+def _default_action_once(state, request):
     """Follow the Roman chart within the remaining paid grant (A8.2.3)."""
     from fs_bot.bots.bot_dispatch import dispatch_bot_turn
     from fs_bot.bots.roman_bot import node_r_march, node_r_recruit
@@ -145,7 +153,9 @@ def _default_action(state, request):
     planning["can_play_event"] = False
     planning["is_second_eligible"] = False
     planning["non_player_factions"] = set(state.get("non_player_factions", ())) | {ROMANS}
+    planning["_diviciacus_preview"] = True
     remaining = request["remaining_actions"]
+    planning["_command_with_sa"] = ACTION_SA in remaining
     with spending_scope(planning, request["remaining_resources"]):
         candidates = []
 
@@ -176,10 +186,19 @@ def _default_action(state, request):
             validate_response(state, request, candidate)
         except ValueError:
             continue
+        # A53 resolves its SA and Commands as separate choices. Confirm only
+        # the selected action's routes, not a later Recruit from the combined
+        # flowchart forecast or an already-used Special Ability.
+        from fs_bot.engine.recruit_planning import forecast_supply
+        trial = _copy(state)
+        with forecast_supply(trial) as requests:
+            _execute(trial, deepcopy(candidate), request["remaining_resources"])
+        candidate.setdefault("details", {})["supply_line_requests"] = requests
         return candidate
     return {"decline": True}
 
 
+@preserve_supply_agreements
 def resolve_frumentum(state):
     """Select funding, then resolve each distinct Roman action in chosen order."""
     request = {"kind": "frumentum_amount", "card_id": "A53",

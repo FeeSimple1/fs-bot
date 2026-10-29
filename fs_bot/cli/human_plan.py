@@ -417,93 +417,13 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
 
 
 def _collect_rally(state, faction, stdin, stdout, single, *, excluded=()):
-    from fs_bot.rules_consts import BASE_SCENARIOS
-    from fs_bot.commands.rally import validate_rally_region
-    regions = [r for r in _playable_regions(state, faction)
-               if r not in excluded and validate_rally_region(state, r, faction)[0]]
-    if not regions:
-        return None
-    picked = _pick_regions(stdin, stdout, "Rally in which Region(s)?",
-                           regions, single=single,
-                           max_regions=state.get("_cli_command_max_regions"))
-    warbands, allies, citadels = [], [], []
-    for r in picked:
-        opts = [("Warbands", "warbands"),
-                ("an Ally at a Subdued Tribe", "ally")]
-        upgradable = _citadel_upgrade_tribes(state, r, faction)
-        if upgradable:
-            opts.append(("a Citadel (replace your Ally at a City)",
-                         "citadel"))
-        what = prompt_choice(stdin, stdout, f"  In {r}, place:", opts)
-        if what == "ally":
-            subdued = _subdued_tribes(state, r)
-            if subdued:
-                tribe = prompt_choice(stdin, stdout,
-                                      f"  Ally which Tribe in {r}?",
-                                      [(t, t) for t in subdued])
-                allies.append({"region": r, "tribe": tribe})
-                # Base German §3.4.1 permits Warbands after the new Ally,
-                # unlike the single-option Gallic/Ariovistus Rally.
-                if (faction == GERMANS and state['scenario'] in BASE_SCENARIOS
-                        and prompt_yes_no(stdin, stdout,
-                            '  Also place Warbands after this Ally?', default=True)):
-                    warbands.append(r)
-                continue
-        elif what == "citadel":
-            tribe = prompt_choice(stdin, stdout,
-                                  f"  Citadel at which City in {r}?",
-                                  [(t, t) for t in upgradable])
-            citadels.append({"region": r, "tribe": tribe})
-            continue
-        from fs_bot.commands.sa_enlist import BORROW_KEY
-        ctx = state.get(BORROW_KEY)
-        if faction == BELGAE and ctx and r in ctx["regions"]:
-            from fs_bot.commands.rally import _gallic_warband_cap, _get_home_regions
-            from fs_bot.board.pieces import get_available
-            cap = _gallic_warband_cap(state, r, faction)
-            if r in _get_home_regions(faction, state["scenario"]):
-                cap = max(cap, 1)
-            german_limit = min(cap, get_available(state, GERMANS, WARBAND))
-            if state["scenario"] in ARIOVISTUS_SCENARIOS:
-                selected = sum(e.get("warband_mix", {}).get(GERMANS, 0)
-                               for e in warbands if isinstance(e, dict))
-                german_limit = min(german_limit, max(0, 4 - ctx["affected"] - selected))
-            german = prompt_choice(stdin, stdout, "Place how many German Warbands?",
-                [(str(k), k) for k in range(german_limit, -1, -1)])
-            own_limit = min(cap - german, get_available(state, BELGAE, WARBAND))
-            own = prompt_choice(stdin, stdout, "Place how many Belgic Warbands?",
-                [(str(k), k) for k in range(own_limit, -1, -1)])
-            warbands.append({"region": r, "warband_mix": {BELGAE: own, GERMANS: german}})
-        else:
-            warbands.append(r)
-    return {"rally_plan": {"citadels": citadels, "allies": allies,
-                           "warbands": warbands}}
+    from fs_bot.cli.recruit_rally import collect
+    return collect(state, faction, stdin, stdout, single, rally=True, excluded=excluded)
 
 
 def _collect_recruit(state, faction, stdin, stdout, single, *, excluded=()):
-    from fs_bot.commands.rally import validate_recruit_region
-    regions = _playable_regions(state, faction)
-    cand = [r for r in regions if r not in excluded
-            and validate_recruit_region(state, r)[0]]
-    if not cand:
-        return None
-    picked = _pick_regions(stdin, stdout, "Recruit in which Region(s)?",
-                           cand, single=single,
-                           max_regions=state.get("_cli_command_max_regions"))
-    plan = []
-    for r in picked:
-        action = prompt_choice(stdin, stdout, f"  In {r}:",
-                               [("place Auxilia", "place_auxilia"),
-                                ("place a Roman Ally", "place_ally")])
-        entry = {"region": r, "action": action}
-        if action == "place_ally":
-            subdued = _subdued_tribes(state, r)
-            if subdued:
-                entry["tribe"] = prompt_choice(
-                    stdin, stdout, f"  Ally which Tribe in {r}?",
-                    [(t, t) for t in subdued])
-        plan.append(entry)
-    return {"recruit_plan": plan} if plan else None
+    from fs_bot.cli.recruit_rally import collect
+    return collect(state, faction, stdin, stdout, single, rally=False, excluded=excluded)
 
 
 def _collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
@@ -526,9 +446,9 @@ def _collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
 
 def _citadel_upgrade_tribes(state, region, faction):
     """City Tribes in ``region`` holding ``faction``'s Ally -- Citadel
-    upgrade candidates (Sec.3.3.1, Aedui/Arverni only)."""
+    upgrade candidates (Sec.3.3.1, Gallic Factions)."""
     from fs_bot.rules_consts import TRIBE_TO_CITY
-    if faction not in (AEDUI, ARVERNI):
+    if faction not in (AEDUI, ARVERNI, BELGAE):
         return []
     from fs_bot.map.map_data import get_tribes_in_region
     out = []
@@ -881,16 +801,10 @@ def _collect_enlist(state, faction, stdin, stdout, *, pending=None,
             ed["target"] = prompt_choice(stdin, stdout,
                                          f"  Target in {region}?", opts)
     if sub == "german_rally":
-        subdued = _subdued_tribes(state, region)
-        if subdued and prompt_yes_no(stdin, stdout,
-                                     "Place a German Ally (else Warbands)?",
-                                     default=False):
-            ed["place"] = "ally"
-            ed["tribe"] = prompt_choice(stdin, stdout,
-                                        "Ally which Tribe?",
-                                        [(t, t) for t in subdued])
-        else:
-            ed["place"] = "warbands"
+        from fs_bot.cli.recruit_rally import collect_enlist_rally
+        ed = collect_enlist_rally(state, region, stdin, stdout)
+        if ed is None:
+            return None, None
     return [region], {"enlist": ed}
 
 

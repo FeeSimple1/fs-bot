@@ -13,6 +13,7 @@ KEY = '_diviciacus_force'
 PIECES = {rc.ROMANS: rc.AUXILIA, rc.AEDUI: rc.WARBAND}
 STATES = (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
 DIVICIACUS_PIECES = 'diviciacus_pieces'
+PLACEMENT_SELECTION = '_diviciacus_placement_selection'
 
 
 def partner(faction):
@@ -44,9 +45,15 @@ def eligible_regions(state, faction, phase='command'):
     from fs_bot.cards.capabilities import is_capability_active
     capability = (phase != 'special_ability' and
                   is_capability_active(state, 38, rc.EVENT_UNSHADED))
+    combined = state.get('_combined_battle_force', {})
     result = []
     for region, space in state['spaces'].items():
         if not capability and region not in near:
+            continue
+        if (combined.get('faction') != faction
+                and partner(faction) in combined.get('owners', {}).get(region, ())):
+            # §1.5.2: the partner's prior A28 agreement binds its counters
+            # for that Event. They cannot be lent to the opposing defense.
             continue
         raw = space.get('pieces', {})
         if all(sum(raw.get(f, {}).get(ps, {}).get(pt, 0) for ps in STATES)
@@ -70,6 +77,19 @@ def validate_response(request, response):
 
 def choose_owners(state, faction, region, count, available, phase):
     """Exact physical colours for a human subset; NP losses borrow first."""
+    selection = state.get(PLACEMENT_SELECTION)
+    if phase == 'placement' and selection is not None:
+        from fs_bot.board.pieces import PieceError
+        if (selection['faction'] != faction or selection['region'] != region
+                or selection['used']):
+            raise PieceError('Physical placement selection does not match this placement.')
+        try:
+            validate_response({'available': available, 'count': count},
+                              {'counts': selection['counts']})
+        except ValueError as exc:
+            raise PieceError(str(exc)) from exc
+        selection['used'] = True
+        return {owner: selection['counts'].get(owner, 0) for owner in available}
     lender = partner(faction)
     order = (faction, lender) if phase == 'placement' else (lender, faction)
     left, default = count, {}
@@ -137,7 +157,9 @@ def _np_agrees(state, owner, actor, region, action, phase):
             targets.extend(_targets({'details': {'scout_plan': scout}}, region))
     if phase == 'defense':
         # §8.8.8: Romans lend to their own defense, never Aedui defense.
-        return actor == rc.ROMANS and calculate_victory_score(state, rc.ROMANS) <= 12
+        # §8.6.8 also forbids Aedui lending against themselves in defense.
+        return (actor == rc.ROMANS and rc.AEDUI not in targets
+                and calculate_victory_score(state, rc.ROMANS) <= 12)
     if owner == rc.ROMANS and actor == rc.AEDUI:
         return not check_victory(state, rc.AEDUI) and not (
             command in (rc.CMD_BATTLE, rc.CMD_RAID) and rc.ROMANS in targets)
@@ -242,7 +264,14 @@ def operate(state, region, faction, piece_type, count, operation, *, owner=None,
     states = (ps,) if ps is not None else STATES
     allocations, remaining = [], count
     # §8.6.8/§8.8.8 use the other faction's pieces to maximum degree.
-    for physical_owner in ((owner,) if owner is not None else (lender, actor)):
+    physical_owners = (lender, actor)
+    combined = state.get('_combined_battle_force', {})
+    if combined.get('faction') == actor:
+        # A28 can add ordinary Warbands alongside the converted Auxilia.
+        # Its same-type counters are part of this aggregate operation too.
+        physical_owners += tuple(f for f in combined.get('owners', {}).get(region, ())
+                                 if f not in physical_owners)
+    for physical_owner in ((owner,) if owner is not None else physical_owners):
         physical_type = ctx['physical_type'] if physical_owner == lender else piece_type
         raw = state['spaces'][region].get('pieces', {}).get(physical_owner, {})
         for visibility in states:
@@ -370,7 +399,10 @@ def _defense_force_scope(state, region, attacker, defender):
         if response is not True and not state.get('_diviciacus_preview'):
             yield
             return
-    accepted = consent_regions(state, defender, [region], {'command': rc.CMD_BATTLE}, 'defense')
+    accepted = consent_regions(state, defender, [region], {
+        'command': rc.CMD_BATTLE,
+        'details': {'battle_plan': [{'region': region, 'target': attacker}]}},
+        'defense')
     with force_scope(state, defender, accepted, 'defense'):
         yield
 
@@ -473,6 +505,58 @@ def placement_available(state, region, faction, piece_type, native):
         if faction == rc.ROMANS or native or rc.ROMANS not in state.get('non_player_factions', set()):
             return native
     return native + state['available'].get(ctx['lender'], {}).get(ctx['physical_type'], 0)
+
+
+def placement_owner_request(state, region, faction, piece_type, count):
+    """Pure physical-pool request for an already scoped cooperating placement."""
+    ctx = state.get(KEY)
+    if (not ctx or ctx['faction'] != faction or ctx['piece_type'] != piece_type
+            or ctx['phase'] not in ('command', 'special_ability')
+            or region not in ctx['regions']):
+        return None
+    if type(count) is not int or count < 0:
+        raise ValueError('Placement count must be a non-negative integer.')
+    native = state['available'].get(faction, {}).get(piece_type, 0)
+    total = placement_available(state, region, faction, piece_type, native)
+    return {'kind': DIVICIACUS_PIECES, 'phase': 'placement', 'region': region,
+            'piece_type': piece_type, 'count': count,
+            'available': {faction: native, ctx['lender']: max(0, total - native)}}
+
+
+@contextmanager
+def placement_owner_scope(state, faction, region, owners):
+    """Use one declared allocation without bypassing the Command's agreement.
+
+    Omission retains the live reactive choice. The same explicit allocation
+    works in a detached preview, so later Regions see the intended pools.
+    """
+    if owners is None:
+        yield
+        return
+    from fs_bot.board.pieces import PieceError
+    if (not isinstance(owners, dict) or not owners
+            or any(type(n) is not int or n < 0 for n in owners.values())):
+        raise PieceError('Physical placement owners require non-negative integer counts.')
+    request = placement_owner_request(state, region, faction,
+                                      PIECES.get(faction), sum(owners.values()))
+    if request is None:
+        raise PieceError('Physical placement owners require agreed Diviciacus cooperation.')
+    try:
+        validate_response(request, {'counts': owners})
+    except ValueError as exc:
+        raise PieceError(str(exc)) from exc
+    previous = state.get(PLACEMENT_SELECTION)
+    if previous is not None:
+        raise PieceError('A physical placement selection is already active.')
+    selection = {'faction': faction, 'region': region,
+                 'counts': dict(owners), 'used': False}
+    state[PLACEMENT_SELECTION] = selection
+    try:
+        yield
+        if not selection['used'] and any(owners.values()):
+            raise PieceError('No placement used the declared physical owners.')
+    finally:
+        state.pop(PLACEMENT_SELECTION, None)
 
 
 def place_converted(state, region, faction, piece_type, count, **kwargs):

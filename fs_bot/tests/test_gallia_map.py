@@ -74,12 +74,12 @@ def test_base_gallia_recruit_is_fixed_two_even_with_leader_and_fort():
     assert recruit_in_region(state, rc.CISALPINA, 'place_auxilia')['pieces_placed'] == {rc.AUXILIA: 2}
 
 
-def test_a5_recruit_bonus_does_not_waive_normal_recruitment_base():
+def test_a5_recruit_places_compulsory_bonus_when_ordinary_amount_is_zero():
     state = gallia(rc.SCENARIO_ARIOVISTUS)
-    before = deepcopy(state['spaces'])
-    with pytest.raises(CommandError, match='Leader, Ally, or Fort'):
-        recruit_in_region(state, rc.CISALPINA, 'place_auxilia')
-    assert state['spaces'] == before
+    before = count_pieces(state, rc.CISALPINA, rc.ROMANS, rc.AUXILIA)
+    result = recruit_in_region(state, rc.CISALPINA, 'place_auxilia', count=1)
+    assert result['pieces_placed'][rc.AUXILIA] == 1
+    assert count_pieces(state, rc.CISALPINA, rc.ROMANS, rc.AUXILIA) == before + 1
 
 
 @pytest.mark.parametrize('legacy_marker', [False, True])

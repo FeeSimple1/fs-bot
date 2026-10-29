@@ -1,5 +1,9 @@
 # Spring Leader placement repair — 28 October 2026
 
+Later disposition: the [29 October Recruit/Rally batch](recruit-rally-2026-10-29.md)
+addresses two further menu items listed below. This report retains the
+Spring revision's original measurements and balance evidence.
+
 This task starts from `a537511a1220ea4d2b0e94e63ab5cc581ef3a605`.
 It addresses the Spring placement item from the second comparison batch,
 including related named-Leader defects found in the Gallic War Interlude.

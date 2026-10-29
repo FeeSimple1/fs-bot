@@ -22,9 +22,26 @@
     "pre-interlude.json": {
       "kind": "pre-interlude",
       "file_sha256": "1a540f03f52cc631f2223b9a9d5d5f9d6eefb55c107ee8c3ce5539c858662d02",
-      "continued_sha256": "0404c326d763ab138b871e7f327c0cbcabe986a47249d3cd7f21b4edd97d8316",
+      "continued_sha256": "1bf7d4860e9f7b3164e8152011f4509744251b7990dea6df63c5dcde767d60a6",
       "scenario": "The Gallic War",
-      "seed": 3
+      "seed": 3,
+      "continuation_history": [
+        {
+          "continued_sha256": "0404c326d763ab138b871e7f327c0cbcabe986a47249d3cd7f21b4edd97d8316",
+          "source_commit": "8ef88e21b437d23bb82f7b404df79bbabeb11d9b",
+          "source_sha256": "56f041efb20a1d90f3b713973911ce0ba1216dc0a1aa1d4173ef6238c125c024",
+          "verified_parent_commit": "a537511a1220ea4d2b0e94e63ab5cc581ef3a605",
+          "verified_parent_source_sha256": "071485179ff2949ba9e2163ca48f6761c52f617084f90a0a60ee521f35926d8b",
+          "status": "Superseded continuation expectation; original saved fixture and generator remain unchanged."
+        }
+      ],
+      "continuation_revision": {
+        "base_commit": "a537511a1220ea4d2b0e94e63ab5cc581ef3a605",
+        "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74",
+        "reason": "The Gallic War Interlude explicitly places Ambiorix, including when the incumbent is a Successor; a uniquely ranked destination does not require a random tie-break. The old singleton draw changed later randomized removals and the rebuilt deck.",
+        "report": "docs/reviews/spring-leaders-2026-10-28.md",
+        "evidence": "compatibility-review/causal-review.json in the Spring validation evidence archive"
+      }
     },
     "post-interlude.json": {
       "kind": "post-interlude",

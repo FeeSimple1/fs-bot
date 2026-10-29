@@ -14,8 +14,10 @@ known limits, and the six source questions are in
 [PR-01 through PR-06](docs/provisional-rulings.md) on 24 October 2026; apply
 those provisional decisions to their specified gaps, subject to possible
 later correction if an authoritative source is found. The
-[27 October second-batch report](docs/reviews/second-batch-2026-10-27.md)
-tracks the latest Event-choice repairs; the
+[28 October Spring report](docs/reviews/spring-leaders-2026-10-28.md)
+tracks Leader placement repairs and the remaining mid-action entry gap;
+the [27 October second-batch report](docs/reviews/second-batch-2026-10-27.md)
+records the preceding Event-choice repairs. The
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
 remains a revision-specific checkpoint. A report is not a promise about
 every future change.

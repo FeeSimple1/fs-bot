@@ -99,6 +99,10 @@ You are about to PLAY one faction against the built-in bots.
      the Warband total as `{"region":name,"count":integer}` entries in
      `warbands`. The following granted Command is required when possible.
    - Quarters: your faction's relocation/payment object (see AGENT_INTERFACE).
+   - Leader placement: answer `spring_leader` with `{"region":name}` from
+     `legal_regions`. Only requests with `can_defer:true` allow
+     `{"defer":true}`. Successor placement is mandatory; boxed Vercingetorix
+     may wait for a later offered window. Placement does not spend a turn.
    - Winter Campaign: one Command, one standalone SA, a Command+SA using both
      actions, or `{"decline":true}`. A second single action is requested after
      the first resolves.

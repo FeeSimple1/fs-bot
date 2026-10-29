@@ -2015,14 +2015,8 @@ def node_b_spring(state):
     Returns:
         Spring action details dict, or None if nothing to do.
     """
-    ambiorix_region = _ambiorix_region(state)
-    if ambiorix_region is not None:
-        return None  # Ambiorix already on map
-
-    best_region = get_leader_placement_region(state, BELGAE)
-    if best_region:
-        return {"place_leader": AMBIORIX, "region": best_region}
-    return None
+    from fs_bot.engine.spring import np_spring_plan
+    return np_spring_plan(state, BELGAE)
 
 
 # ============================================================================

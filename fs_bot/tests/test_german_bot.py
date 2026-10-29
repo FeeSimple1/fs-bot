@@ -1172,7 +1172,7 @@ class TestNodeGSpring:
         refresh_all_control(state)
         result = node_g_spring(state)
         assert result is not None
-        assert result["place_leader"] == ARIOVISTUS_LEADER
+        assert result["place_leader"] == SUCCESSOR
         assert result["region"] == UBII
 
 

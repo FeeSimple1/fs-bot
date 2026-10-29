@@ -47,6 +47,9 @@ def validate_response(state, request, response):
                 response.get("player_action"), dict):
             raise ValueError("This action needs a player_action plan.")
         return response
+    if kind == "spring_leader":
+        from fs_bot.engine.spring import validate_response as validate_spring
+        return validate_spring(state, request, response)
     if kind in ("council_selection", "council_choice"):
         from fs_bot.cards.council import validate_response as validate_council
         return validate_council(state, request, response)

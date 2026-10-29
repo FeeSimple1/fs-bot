@@ -902,7 +902,14 @@ def _senate_auxilia(state):
 # PHASE 6: SPRING PHASE (§6.6, A6.6)
 # ============================================================================
 
-def spring_phase(state):
+def spring_phase(state, *, unlock_vercingetorix=False):
+    """Resolve Spring atomically, including all seats' Leader decisions."""
+    from fs_bot.engine.spring import atomic
+    with atomic(state):
+        return _spring_phase(state, unlock_vercingetorix=unlock_vercingetorix)
+
+
+def _spring_phase(state, *, unlock_vercingetorix=False):
     """Execute the Spring Phase — §6.6 / A6.6.
 
     Prepare for the coming year:
@@ -928,6 +935,13 @@ def spring_phase(state):
         "dispersed_flipped": 0,
         "intimidated_removed": 0,
     }
+
+    from fs_bot.engine.spring import unlock_spring_box_entry, resolve_spring_box_entry
+    if unlock_vercingetorix:
+        unlock_spring_box_entry(state)
+    entry = resolve_spring_box_entry(state)
+    if entry is not None:
+        result['spring_box_entry'] = entry
 
     # Place Successor Leaders from Available — §6.6
     result["successors_placed"] = _place_successor_leaders(state)
@@ -1036,46 +1050,8 @@ def _place_successor_leaders(state):
     Returns:
         List of (faction, region) tuples for placed leaders.
     """
-    scenario = state["scenario"]
-    result = []
-
-    if scenario in ARIOVISTUS_SCENARIOS:
-        leaders = ARIOVISTUS_LEADERS
-    else:
-        leaders = BASE_LEADERS
-
-    for leader_name in leaders:
-        faction = LEADER_FACTION[leader_name]
-        available = get_available(state, faction, LEADER)
-        if available < 1:
-            continue
-
-        # Check if leader is already on map
-        on_map = find_leader(state, faction)
-        if on_map is not None:
-            continue
-
-        # Diviciacus has no Successor — A1.4 NOTE in A6.6
-        if leader_name == DIVICIACUS:
-            continue
-
-        # Find placement region: where faction has a piece, or Home Region.
-        # Q12: NP Romans follow §8.3.2 -- place with the most Roman pieces.
-        placement = None
-        if (faction == ROMANS
-                and faction in state.get("non_player_factions", set())):
-            from fs_bot.bots.bot_common import get_leader_placement_region
-            placement = get_leader_placement_region(state, ROMANS)
-        if placement is None:
-            placement = _find_successor_placement(state, faction)
-        if placement is not None:
-            place_piece(
-                state, placement, faction, LEADER,
-                leader_name=SUCCESSOR
-            )
-            result.append((faction, placement))
-
-    return result
+    from fs_bot.engine.spring import place_successors
+    return place_successors(state)
 
 
 def _find_successor_placement(state, faction):
@@ -1087,40 +1063,10 @@ def _find_successor_placement(state, faction):
     Returns:
         Region name, or None if no valid placement.
     """
-    scenario = state["scenario"]
-
-    # First check Home Regions
-    if faction == ROMANS:
-        home = ROMAN_HOME_REGIONS
-    elif faction == ARVERNI:
-        if scenario in ARIOVISTUS_SCENARIOS:
-            home = ARVERNI_HOME_REGIONS_ARIOVISTUS
-        else:
-            home = ARVERNI_HOME_REGIONS_BASE
-    elif faction == AEDUI:
-        home = AEDUI_HOME_REGIONS
-    elif faction == BELGAE:
-        home = BELGAE_HOME_REGIONS
-    elif faction == GERMANS:
-        home = GERMAN_HOME_REGIONS_BASE
-    else:
-        home = ()
-
-    # Check home regions first
-    for region in home:
-        rd = ALL_REGION_DATA.get(region)
-        if rd and rd.is_playable(scenario, state.get("capabilities")):
-            return region
-
-    # Then check regions where faction has pieces
-    for region in state["spaces"]:
-        rd = ALL_REGION_DATA.get(region)
-        if rd and not rd.is_playable(scenario, state.get("capabilities")):
-            continue
-        if count_pieces(state, region, faction) > 0:
-            return region
-
-    return None
+    from fs_bot.engine.spring import successor_regions
+    from fs_bot.bots.bot_common import get_leader_placement_region
+    return get_leader_placement_region(state, faction,
+                                      candidates=successor_regions(state, faction))
 
 
 # ============================================================================
@@ -1172,6 +1118,11 @@ def run_winter_round(state, is_final=False,
     # >15 threshold, won at Winter 1 in most games) and Vercingetorix
     # never left the Spring box. Found by live human-seat play.
     fws = state.pop("first_winter_special", None) or {}
+    if fws.get('place_vercingetorix_in_spring'):
+        # Explicitly keep the Spring-box gate closed while this Winter's
+        # earlier phases run, including for legacy states without a flag.
+        from fs_bot.engine.spring import UNLOCK_KEY
+        state.setdefault(UNLOCK_KEY, False)
 
     result = {
         "winter_count": state["winter_count"],
@@ -1301,23 +1252,10 @@ def run_winter_round(state, is_final=False,
         state["first_senate_after_interlude_pending"] = False
 
     # Phase 6: Spring
-    result["phases"]["spring"] = spring_phase(state)
-    if fws.get("place_vercingetorix_in_spring"):
-        # "Beginning that Spring Phase, the Arverni may at any time place
-        # Vercingetorix from the Spring box into any Region (symbol up)."
-        # NP default (documented): place immediately, with the most
-        # Arverni pieces (§8.3.2).
-        sb = state.setdefault("spring_box_leaders", [])
-        from fs_bot.board.pieces import find_leader, place_piece as _pp
-        if VERCINGETORIX in sb and find_leader(state, ARVERNI) is None:
-            from fs_bot.bots.bot_common import get_leader_placement_region
-            dest = get_leader_placement_region(state, ARVERNI)
-            if dest:
-                avail = state["available"].setdefault(ARVERNI, {})
-                avail[LEADER] = avail.get(LEADER, 0) + 1
-                _pp(state, dest, ARVERNI, LEADER,
-                    leader_name=VERCINGETORIX)
-                sb.remove(VERCINGETORIX)
-                result["phases"]["vercingetorix_placed"] = {"region": dest}
+    result["phases"]["spring"] = spring_phase(
+        state, unlock_vercingetorix=bool(fws.get("place_vercingetorix_in_spring")))
+    entry = result["phases"]["spring"].get('spring_box_entry')
+    if entry and 'region' in entry:
+        result["phases"]["vercingetorix_placed"] = {"region": entry['region']}
 
     return result

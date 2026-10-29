@@ -2137,13 +2137,8 @@ def node_g_spring(state):
     Returns:
         Spring action dict, or None if nothing to do.
     """
-    aristos_region = _ariovistus_region(state)
-    if aristos_region is not None:
-        return None
-    best_region = get_leader_placement_region(state, GERMANS)
-    if best_region:
-        return {"place_leader": ARIOVISTUS_LEADER, "region": best_region}
-    return None
+    from fs_bot.engine.spring import np_spring_plan
+    return np_spring_plan(state, GERMANS)
 
 
 # ============================================================================

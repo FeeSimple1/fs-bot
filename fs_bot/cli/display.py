@@ -708,6 +708,7 @@ _PUBLIC_FIELDS = (
     ("removed_legions", "Removed Legions"),
     ("winter_track_legions", "Winter track Legions"),
     ("spring_box_leaders", "Spring box Leaders"),
+    ("vercingetorix_entry_unlocked", "Vercingetorix may enter from Spring box"),
     ("capability_owners", "Capability holders"),
     ("markers", "Markers"),
     ("event_modifiers", "Event effects"),

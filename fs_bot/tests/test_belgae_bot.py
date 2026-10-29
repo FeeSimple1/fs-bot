@@ -1228,7 +1228,7 @@ class TestNodeBSpring:
         _place_belgae_force(state, NERVII, warbands=3)
         result = node_b_spring(state)
         assert result is not None
-        assert result["place_leader"] == AMBIORIX
+        assert result["place_leader"] == SUCCESSOR
         assert result["region"] == MORINI  # Most Belgae pieces
 
     def test_spring_nothing_when_leader_on_map(self):
@@ -1847,7 +1847,7 @@ class TestSpringEdgeCases:
         _place_belgae_force(state, ATREBATES, warbands=3)
         result = node_b_spring(state)
         assert result is not None
-        assert result["place_leader"] == AMBIORIX
+        assert result["place_leader"] == SUCCESSOR
         assert result["region"] == NERVII
 
     def test_spring_nothing_when_no_belgae(self):

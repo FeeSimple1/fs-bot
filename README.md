@@ -50,13 +50,18 @@ Diviciacus Leader rules. The choice is saved with the game.
 | Play with an AI assistant | [Assistant guide](CHATGPT_README.md) |
 | Integrate a human or software agent | [Agent interface](AGENT_INTERFACE.md) |
 | Review fixes and remaining limitations | [Current engineering status](docs/current-status.md) |
-| Inspect outcomes and reproducible evidence | [Latest Event-choice repairs](docs/reviews/second-batch-2026-10-27.md), [first comparison batch](docs/reviews/first-batch-2026-10-27.md) |
+| Inspect outcomes and reproducible evidence | [Spring Leader repairs](docs/reviews/spring-leaders-2026-10-28.md), [Event-choice repairs](docs/reviews/second-batch-2026-10-27.md), [first comparison batch](docs/reviews/first-batch-2026-10-27.md) |
 | Review adopted provisional rulings | [Six project rulings](docs/provisional-rulings.md), [question ledger](QUESTIONS.md#current-open-source-questions) |
 | Develop and validate changes | [Developer instructions](CLAUDE.md), [maintenance roadmap](BUILD_PLAN.md), [self-play workflow](SELFPLAY_PLAYBOOK.md) |
 | Install or check a release | [Release guide](RELEASES.md), [change history](CHANGELOG.md) |
 | Browse all project documentation | [Documentation index](docs/README.md) |
 
 ## Current validation
+
+The [28 October Spring Leader report](docs/reviews/spring-leaders-2026-10-28.md)
+records 5,226 passing tests, 150 audited bot games and the separately reviewed
+balance refresh. It also identifies the remaining mid-action Vercingetorix
+entry gap; action-boundary prompts do not cover the full printed timing freedom.
 
 The [27 October second-batch report](docs/reviews/second-batch-2026-10-27.md)
 records **5,112 passing tests**, **200 audited bot games**, **80 mixed-seat

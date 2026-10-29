@@ -923,7 +923,7 @@ def rank_regions_for_event_placement(state, regions, scenario):
 # §8.3.2 — Placing Leaders
 # ============================================================================
 
-def get_leader_placement_region(state, faction):
+def get_leader_placement_region(state, faction, candidates=None):
     """Where to place a Leader when it enters/re-enters play.
 
     Per §8.3.2: "Place Leaders as soon as able where the most own pieces."
@@ -935,19 +935,15 @@ def get_leader_placement_region(state, faction):
     Returns:
         Region with the most own pieces, or None if no valid region.
     """
-    scenario = state["scenario"]
-    playable = get_playable_regions(scenario,
-                                   state.get("capabilities"))
-    best_region = None
-    best_count = -1
-
-    for region in playable:
-        own = count_pieces(state, region, faction)
-        if own > best_count:
-            best_count = own
-            best_region = region
-
-    return best_region
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    playable = set(get_playable_regions_for_state(state, faction))
+    if candidates is not None:
+        playable.intersection_update(candidates)
+    if not playable:
+        return None
+    counts = {region: count_pieces(state, region, faction) for region in playable}
+    most = max(counts.values())
+    return random_select(state, sorted(region for region in playable if counts[region] == most))
 
 
 # ============================================================================

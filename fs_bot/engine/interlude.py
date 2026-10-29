@@ -50,7 +50,7 @@ from fs_bot.rules_consts import (
     # Piece states
     HIDDEN, REVEALED, SCOUTED,
     # Leaders
-    CAESAR, VERCINGETORIX, AMBIORIX, BODUOGNATUS,
+    CAESAR, VERCINGETORIX, AMBIORIX,
     ARIOVISTUS_LEADER, DIVICIACUS, SUCCESSOR,
     LEADER_FACTION,
     # Regions
@@ -249,21 +249,32 @@ def _np_region_order(state, faction, *, home_last, rng,
     return pool_home + pool_non_home
 
 
-def _region_with_most_pieces(state, faction):
-    """Return the region with the most pieces of a faction (random tiebreak)."""
-    rng = state["rng"]
-    candidates = []
-    best = -1
-    for region in state["spaces"]:
-        n = count_pieces(state, region, faction)
-        if n > best:
-            best = n
-            candidates = [region]
-        elif n == best:
-            candidates.append(region)
-    if best <= 0 or not candidates:
+def _choose_interlude_leader_region(state, faction, leader, *, exclude_leader=False):
+    """Apply the scenario's placement rank, then let the owner break ties.
+
+    The Gallic War's Adjust Forces instructions place Ambiorix with the most
+    *other* Belgic pieces, and an Available Caesar with the most Romans when
+    Provincia is not Roman Controlled. Zero pieces still leaves tied Regions;
+    these named placements do not use ordinary Spring's Home/piece restriction.
+    """
+    from fs_bot.engine.spring import placement_request, choose_region
+    from fs_bot.map.map_data import get_playable_regions_for_state
+
+    regions = get_playable_regions_for_state(state, faction)
+    counts = {region: count_pieces(state, region, faction)
+              - (int(get_leader_in_region(state, region, faction) is not None)
+                 if exclude_leader else 0)
+              for region in regions}
+    if not counts:
         return None
-    return rng.choice(candidates)
+    most = max(counts.values())
+    candidates = [region for region in regions if counts[region] == most]
+    request = placement_request(
+        state, faction, leader, source='interlude', legal_regions=candidates,
+        can_defer=False, equal_priority=True,
+        reason='interlude_ambiorix' if faction == BELGAE else 'interlude_caesar',
+    )
+    return choose_region(state, faction, request)
 
 
 # ============================================================================
@@ -592,31 +603,19 @@ def _adjust_belgae_forces(state):
     )
     result["warbands_to_available"] = wb_removed
 
-    # Place Ambiorix in Region with most other Belgic pieces (even if
-    # currently in Available). Use the Belgic Leader piece (currently
-    # named BODUOGNATUS in Ariovistus first-half setup; the prose names
-    # the second-half identity Ambiorix). We re-place it with the
-    # leader name that reflects what's on the piece now, falling back
-    # to AMBIORIX if no leader was placed before.
+    # The scenario names Ambiorix, even if the first-half Leader was a
+    # Successor. Exclude the incumbent from the "most other Belgic pieces"
+    # comparison and choose before removing it so pending input keeps it intact.
     current_region = find_leader(state, BELGAE)
-    leader_name = AMBIORIX
-    if current_region is not None:
-        cur_name = get_leader_in_region(state, current_region, BELGAE)
-        # Force "Ambiorix" identity for the second half — the piece is
-        # the same physical Belgic Leader.
-        if cur_name == BODUOGNATUS:
-            leader_name = AMBIORIX
-        else:
-            leader_name = cur_name or AMBIORIX
-        # Remove leader from current region back to Available.
-        remove_piece(state, current_region, BELGAE, LEADER)
-    target = _region_with_most_pieces(state, BELGAE)
-    if target is not None and \
-            state["available"].get(BELGAE, {}).get(LEADER, 0) > 0:
-        place_piece(
-            state, target, BELGAE, LEADER, leader_name=leader_name,
+    if current_region is not None or get_available(state, BELGAE, LEADER) > 0:
+        target = _choose_interlude_leader_region(
+            state, BELGAE, AMBIORIX, exclude_leader=True,
         )
-        result["ambiorix_placed"] = target
+        if target is not None:
+            if current_region is not None:
+                remove_piece(state, current_region, BELGAE, LEADER)
+            place_piece(state, target, BELGAE, LEADER, leader_name=AMBIORIX)
+            result["ambiorix_placed"] = target
 
     refresh_all_control(state)
     return result
@@ -1114,7 +1113,7 @@ def _adjust_roman_forces(state):
             )
             result["caesar_placed"] = PROVINCIA
         else:
-            target = _region_with_most_pieces(state, ROMANS)
+            target = _choose_interlude_leader_region(state, ROMANS, CAESAR)
             if target is not None:
                 place_piece(
                     state, target, ROMANS, LEADER, leader_name=CAESAR,

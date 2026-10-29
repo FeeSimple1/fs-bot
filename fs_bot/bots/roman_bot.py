@@ -1750,17 +1750,8 @@ def node_r_spring(state):
     Returns:
         Spring action details dict, or None if nothing to do.
     """
-    from fs_bot.bots.bot_common import get_leader_placement_region
-
-    caesar_region = _caesar_region(state)
-    if caesar_region is not None:
-        return None  # Caesar already on map
-
-    # Place Caesar with most Roman pieces
-    best_region = get_leader_placement_region(state, ROMANS)
-    if best_region:
-        return {"place_leader": CAESAR, "region": best_region}
-    return None
+    from fs_bot.engine.spring import np_spring_plan
+    return np_spring_plan(state, ROMANS)
 
 
 def _quarters_host_agrees(state, host_faction, region):

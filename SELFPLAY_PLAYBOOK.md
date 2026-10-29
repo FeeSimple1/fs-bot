@@ -185,6 +185,13 @@ The final refresh retains all 100 keys and the 15-point threshold; its
 source digest, causal review and fresh verification are recorded separately
 from the original failed comparison.
 
+The [28 October Spring repair](docs/reviews/spring-leaders-2026-10-28.md)
+refreshes 11 records, nine winners and six card counts. Its paired review
+distinguishes corrected Leader priorities and missing random ties from legal
+changes to tie ordering and singleton RNG consumption. The original Gallic War
+Arverni −20-point comparison remains preserved. The 100 keys and 15-point band
+are unchanged; the report records separate final checks against the refresh.
+
 ## Experimental strategy policies
 
 The repaired `heuristic_selfplay` runner removes the policy-controlled seat from

@@ -1186,14 +1186,15 @@ class TestWinterNodes:
         assert plan["leave_devastated"] == []
 
     def test_spring_places_leader(self):
-        """Spring: Place Vercingetorix at most Arverni pieces."""
+        """Spring: Place a Successor at most Arverni pieces."""
         state = _make_state()
         # Leader not on map
         _place_arverni_force(state, ARVERNI_REGION, warbands=10)
         _place_arverni_force(state, MANDUBII, warbands=3)
         plan = node_v_spring(state)
         assert plan is not None
-        assert plan["place_leader"] == VERCINGETORIX
+        from fs_bot.rules_consts import SUCCESSOR
+        assert plan["place_leader"] == SUCCESSOR
         assert plan["region"] == ARVERNI_REGION
 
     def test_spring_nothing_if_leader_on_map(self):

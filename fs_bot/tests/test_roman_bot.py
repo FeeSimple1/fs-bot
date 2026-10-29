@@ -792,13 +792,13 @@ class TestNodeRQuarters:
 
 class TestNodeRSpring:
 
-    def test_spring_places_caesar_off_map(self):
+    def test_spring_places_successor_off_map(self):
         state = _make_state()
         _place_roman_force(state, PROVINCIA, auxilia=5, legions=2)
         # Caesar not on map
         result = node_r_spring(state)
         assert result is not None
-        assert result["place_leader"] == CAESAR
+        assert result["place_leader"] == SUCCESSOR
 
     def test_spring_noop_caesar_on_map(self):
         state = _make_state()

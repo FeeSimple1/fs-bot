@@ -142,6 +142,9 @@ def validate_saved_game(state, meta, log):
         _require(isinstance(leaders, list)
                  and all(isinstance(name, str) and name in rc.LEADER_FACTION
                          for name in leaders), "state.spring_box_leaders is invalid")
+    if "vercingetorix_entry_unlocked" in state:
+        _require(type(state["vercingetorix_entry_unlocked"]) is bool,
+                 "state.vercingetorix_entry_unlocked must be boolean")
     _validate_turn(state)
     _validate_metadata(state, meta, log)
     errors = validate_state(state) + check_structural_integrity(state)

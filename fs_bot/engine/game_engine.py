@@ -575,6 +575,34 @@ def _action_transaction(state, decision_func):
         raise
 
 
+def _offer_spring_box_entry(state, decision_func, boundary, cursor=None):
+    """Offer deferred Pax entry once at a real, complete-action boundary.
+
+    A separate transaction commits this optional placement/deferral before
+    the ordinary decision can pause. Its saved token prevents reopening the
+    same window on resume. Nested Command/Event interruption is not implied.
+    """
+    from fs_bot.engine.spring import spring_box_request, resolve_spring_box_entry
+    if spring_box_request(state) is None:
+        return None
+    window = {
+        "card": state.get("current_card"),
+        "played_cards": len(state.get("played_cards", [])),
+        "winter_count": state.get("winter_count", 0),
+        "boundary": boundary,
+        "cursor": cursor,
+    }
+    if state.get("_spring_box_entry_window") == window:
+        return None
+    with _action_transaction(state, decision_func):
+        result = resolve_spring_box_entry(state)
+        if spring_box_request(state) is not None:
+            state["_spring_box_entry_window"] = window
+        else:
+            state.pop("_spring_box_entry_window", None)
+    return result
+
+
 def resolve_card_turn(state, decision_func, *, execute=False,
                       _save_result=False):
     """Resolve an Event card, resuming after its last completed action.
@@ -607,6 +635,9 @@ def resolve_card_turn(state, decision_func, *, execute=False,
         if state["eligibility"].get(faction) != ELIGIBLE:
             turn["idx"] += 1
             continue
+        if execute:
+            _offer_spring_box_entry(state, decision_func, "before_faction",
+                                    cursor=turn["idx"])
         first = turn["first_action"] is None
         options = (get_first_eligible_options() if first else
                    get_second_eligible_options(turn["first_action"]))
@@ -642,6 +673,8 @@ def resolve_card_turn(state, decision_func, *, execute=False,
             reject(state, faction, exc.result)
 
 
+    if execute:
+        _offer_spring_box_entry(state, decision_func, "after_actions")
     # Even an all-Pass card (or one with no Eligible factions) has its
     # mandatory post-activation Arverni Phase, per A6.2/A2.3.9 errata.
     with _action_transaction(state, decision_func):
@@ -789,6 +822,8 @@ def play_card(state, decision_func, *, execute=False):
     if completed and completed["card"] == card_id:
         result = completed
     elif is_winter_card(card_id):
+        if execute:
+            _offer_spring_box_entry(state, decision_func, "before_winter")
         # Winter contains reactive human choices too; an interrupted
         # phase must restart from the pre-Winter board and RNG position.
         with _action_transaction(state, decision_func):
@@ -814,6 +849,10 @@ def play_card(state, decision_func, *, execute=False):
     if result["game_over"]:
         return result
 
+    if execute and result["type"] == "event":
+        # resolve_card_turn already offered this window. Reuse its token
+        # when reloading a completed Event awaiting card advancement.
+        _offer_spring_box_entry(state, decision_func, "after_actions")
     # Retain the completed result until advancing succeeds. An interrupt
     # between resolution and drawing must not repeat the completed card.
     with _action_transaction(state, decision_func):

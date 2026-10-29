@@ -189,6 +189,7 @@ inventing pieces, regions, owners, or internal grant flags.
 | `winter_uprising_timing` | A66; full `card_text`, `region, holder, forced` | `{"activate":true}` or `{"activate":false}`, or explicit default |
 | `winter_uprising_placement` | A66; full `card_text`, `region, holder, forced, beneficiary, regions, tribes, allies, warbands` | `{"allies":[tribe,...],"warbands":[{"region":name,"count":integer},...]}` or explicit default |
 | `quarters_plan` | `faction, errors` | relocation/payment object described below, or explicit default |
+| `spring_leader` | `faction, leader, source, reason, legal_regions, can_defer`; scenario ties may set `equal_priority` | `{"region":name}`, `{"defer":true}` only when offered, or explicit default |
 | `winter_campaign` | `card_id, remaining_actions`, optional `errors` | one paid action, combined Command+SA, or decline; see the Winter section below |
 | `frumentum_amount` | A53; `available_resources` (Aedui) | `{"amount": integer}`, `{"decline":true}` (zero), or explicit default |
 | `frumentum_action` | A53; `remaining_actions, remaining_resources, reserved_roman_resources` | one Recruit/March plan or standalone Build/Scout plan, `{"skip": action_name}`, finish with `{"decline":true}`, or explicit default |
@@ -200,6 +201,21 @@ pending. A normal turn still requires a legal `action` and its plan.
 Free-action defaults and declines must be single-field objects containing
 Boolean `true`; numeric `1`, strings and mixed sentinel/action objects are
 invalid.
+
+Spring Successors must enter a Region from `legal_regions`: a playable Home
+Region with the faction's printed symbol, or a Region containing its pieces.
+They cannot defer. A single mandatory destination resolves without asking.
+The Gallic War Interlude uses the same request for choices among the printed
+highest-priority destinations for Ambiorix or Caesar.
+
+For Vercingetorix in the Spring box, `can_defer` is true. His arrival becomes
+available beginning the first Pax Gallica Spring, including the first Winter
+after the Gallic War Interlude; the Interlude's own Spring does not unlock it.
+After deferral, the game offers placement at later action boundaries without
+spending a Command or changing Eligibility. The automated frontends do not
+yet offer arbitrary interruption inside a resolving Command or Event; these
+boundary windows do not exhaust the scenario's printed “at any time” freedom.
+All placement answers support pending input, save/resume and exact replay.
 
 Diviciacus uses `AGREEMENT` with `request_type: "diviciacus"` for the
 other Faction's consent. Its context identifies the phase, selected Regions,

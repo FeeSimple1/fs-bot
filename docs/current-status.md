@@ -18,6 +18,38 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 28 October Spring Leader placement
+
+The [Spring report](reviews/spring-leaders-2026-10-28.md) records mandatory
+Successor destinations, human placement decisions, and non-player priorities
+for every eligible faction. Bots choose the most own pieces among legal
+Regions, using seeded equal ties. Their Spring nodes return Successors rather
+than reviving named Leaders. Diviciacus never receives a Successor.
+
+Pax Gallica's boxed Vercingetorix can enter beginning the first Spring or
+remain boxed for a later action-boundary prompt. The first Winter after the
+Gallic War Interlude unlocks this option; the Interlude's embedded Spring does
+not. The Interlude now restores Ambiorix even when the first-half Leader was
+a Successor and lets human owners choose equally preferred named-Leader
+destinations. New choices preserve card/board/change information, pending
+answers, rollback, saved sessions and replay.
+
+The final local suite passes 5,226 tests. The accepted matrix contains 150
+audited bot games across three editions, 80 mixed-seat executions with replay,
+and 50 strict-census executions. The original balance comparison failed;
+all nine changed winners were traced and reviewed before refreshing eleven
+baseline records. A fresh 100-game check exactly matches the reviewed
+winner/card counts with the same 15-point limit. The report preserves the
+old-save expectation failure and all superseded verification evidence.
+
+Arbitrary Vercingetorix entry inside a resolving Command or Event remains a
+human-interface gap: action-boundary prompts do not fully implement the
+scenario's printed “at any time” right. Other remaining comparison work is
+optional Recruit/Rally quantities, Vercingetorix's combined Rally menu,
+voluntary own-piece reclamation, and a source-derived inventory of every
+printed human choice. Q-O38 and the six provisional rulings retain their
+existing dispositions.
+
 ### 27 October human Event choices batch
 
 The [second-batch report](reviews/second-batch-2026-10-27.md) records the
@@ -70,11 +102,11 @@ Its unshaded classification remains [Q-O38](../QUESTIONS.md#q-o38--optional-divi
 source transcription does not settle the label's placement. Existing
 unshaded bot behavior is preserved, without introducing a new project ruling.
 
-The remaining comparison work is Spring Leader placement, optional
-Recruit/Rally quantities and Vercingetorix's combined Rally menu, voluntary
-own-piece reclamation, and a source-derived inventory of every printed
-human choice. Passing this batch does not establish completeness in those
-areas.
+At this checkpoint, remaining comparison work included Spring Leader
+placement, optional Recruit/Rally quantities and Vercingetorix's combined
+Rally menu, voluntary own-piece reclamation, and a source-derived inventory
+of every printed human choice. The 28 October entry above records subsequent
+Spring repairs and their remaining interruption limit.
 
 ### 27 October Event integrity batch
 

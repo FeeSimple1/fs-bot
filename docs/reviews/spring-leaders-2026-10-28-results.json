@@ -1,0 +1,535 @@
+{
+  "acceptance_distinction": "Final acceptance follows reviewed fixture expectation/baseline refresh and passing fresh checks. Neither the initial full suite nor the original balance guardrail passed.",
+  "accepted": true,
+  "baseline_refresh": {
+    "authorized": true,
+    "changed_card_counts": 6,
+    "changed_records": 11,
+    "changed_winners": 9,
+    "exact_band": "3/20",
+    "fresh_check": {
+      "changed_card_counts": 0,
+      "changed_winners": 0,
+      "exact_winner_cards_match": true,
+      "exit_code": 0,
+      "games": 100,
+      "runner_exit_code": 0
+    },
+    "installed_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+    "keys": 100,
+    "original_failure_preserved": "balance/The Gallic War/Arverni: drift -1/5 exceeds unchanged 3/20 band",
+    "original_guardrail_passed": false,
+    "original_sha256": "15dd335d71fb38288348651c158462a1db8ca42868393ac4fcee4ce682c364bf",
+    "threshold_percentage_points": 15
+  },
+  "causal_review": {
+    "accepted_trace_files": 18,
+    "all_final_hashes_verified": true,
+    "cases": 9,
+    "categories": {
+      "corrected_np_successor_priority": 2,
+      "legal_sorted_tie_mapping_drift": 2,
+      "newly_randomized_vercingetorix_tie": 1,
+      "removed_singleton_interlude_rng_draw": 4
+    },
+    "checks": 23838,
+    "diagnostic_game_executions": 19,
+    "limitation": "First source-backed divergence localizes implementation drift; it does not prove that mechanism alone caused the final winner.",
+    "recovery": "Gallic War14 current gzip was truncated after initial successful compare; original retained and one same-source current case recaptured to a separate file."
+  },
+  "compatibility_fixture": {
+    "final_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+    "original_failure_preserved": true,
+    "provenance": "compatibility-review/causal-review.json; original generator/fixture bytes and old continuation hash history preserved"
+  },
+  "evidence_archive": {
+    "all_members_read_back": true,
+    "bytes": 6318120,
+    "credential_pattern_scan": {
+      "findings": 0,
+      "pattern_categories": [
+        "aws_access_id",
+        "github_token",
+        "google_api_key",
+        "openai_style_key",
+        "private_key",
+        "slack_token"
+      ],
+      "scope": "Every payload member byte stream; high-confidence patterns, not a guarantee against arbitrary secret formats."
+    },
+    "members": 522,
+    "path": "/workspace/scratch/534c265c65f4/fs-bot/docs/reviews/spring-leaders-2026-10-28-evidence.zip",
+    "payload_bytes": 17925570,
+    "per_member_sha256_and_sizes_verified": true,
+    "sha256": "d96b0412bd511df1a4fce9f757fb264b29737eda7e7e3e17161e3454adde7e1d",
+    "source_snapshot_python_files": 315
+  },
+  "final_full_suite": {
+    "console_seconds": 53.43,
+    "errors": 0,
+    "exit_code": 0,
+    "failures": 0,
+    "fixture_manifest_sha256": "0e1609c9158d2a2e635eca578681442764b05637200f7000ae5554ccceb060ef",
+    "output_prefix": "tests-after-fixture",
+    "skipped": 0,
+    "tests": 5226,
+    "time": 53.352
+  },
+  "independent_reviews": [
+    "independent-raw-review.json",
+    "independent-candidate-review.json",
+    "independent-trace-integrity-review.json",
+    "final-postchecks-review.json",
+    "drift-review/independent-nine-case-source-review.json"
+  ],
+  "initial_frozen_full_suite": {
+    "errors": 0,
+    "exit_code": 1,
+    "failures": 1,
+    "passed_tests": 5225,
+    "reason": "pre-interlude legacy fixture continuation digest changed; old failure preserved",
+    "skipped": 0,
+    "tests": 5226
+  },
+  "local_validation_only": true,
+  "matrix": {
+    "all_bot_completion_flags_true": true,
+    "bot_diagnostic_occurrences": 1573,
+    "bot_games": 150,
+    "bot_profiles": {
+      "legacy": {
+        "accepted": 100,
+        "games": 100,
+        "interlude_completed": 13,
+        "scenarios": [
+          "Pax Gallica?",
+          "Reconquest of Gaul",
+          "The Great Revolt",
+          "Ariovistus",
+          "The Gallic War"
+        ],
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "winner_counts": {
+          "Ariovistus": {
+            "Aedui": 3,
+            "Belgae": 3,
+            "Germans": 4,
+            "Romans": 10
+          },
+          "Pax Gallica?": {
+            "Aedui": 3,
+            "Belgae": 4,
+            "Romans": 13
+          },
+          "Reconquest of Gaul": {
+            "Aedui": 6,
+            "Arverni": 1,
+            "Belgae": 1,
+            "Romans": 12
+          },
+          "The Gallic War": {
+            "Aedui": 2,
+            "Belgae": 8,
+            "Romans": 10
+          },
+          "The Great Revolt": {
+            "Aedui": 5,
+            "Arverni": 7,
+            "Belgae": 4,
+            "Romans": 4
+          }
+        }
+      },
+      "original": {
+        "accepted": 25,
+        "games": 25,
+        "interlude_completed": 4,
+        "scenarios": [
+          "Pax Gallica?",
+          "Reconquest of Gaul",
+          "The Great Revolt",
+          "Ariovistus",
+          "The Gallic War"
+        ],
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "winner_counts": {
+          "Ariovistus": {
+            "Aedui": 2,
+            "Germans": 2,
+            "Romans": 1
+          },
+          "Pax Gallica?": {
+            "Arverni": 1,
+            "Belgae": 1,
+            "Romans": 3
+          },
+          "Reconquest of Gaul": {
+            "Aedui": 1,
+            "Belgae": 3,
+            "Romans": 1
+          },
+          "The Gallic War": {
+            "Aedui": 2,
+            "Belgae": 2,
+            "Romans": 1
+          },
+          "The Great Revolt": {
+            "Aedui": 1,
+            "Belgae": 3,
+            "Romans": 1
+          }
+        }
+      },
+      "second-edition": {
+        "accepted": 25,
+        "games": 25,
+        "interlude_completed": 4,
+        "scenarios": [
+          "Pax Gallica?",
+          "Reconquest of Gaul",
+          "The Great Revolt",
+          "Ariovistus",
+          "The Gallic War"
+        ],
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "winner_counts": {
+          "Ariovistus": {
+            "Aedui": 2,
+            "Germans": 2,
+            "Romans": 1
+          },
+          "Pax Gallica?": {
+            "Arverni": 1,
+            "Belgae": 1,
+            "Romans": 3
+          },
+          "Reconquest of Gaul": {
+            "Aedui": 2,
+            "Belgae": 2,
+            "Romans": 1
+          },
+          "The Gallic War": {
+            "Aedui": 2,
+            "Arverni": 1,
+            "Belgae": 2
+          },
+          "The Great Revolt": {
+            "Aedui": 1,
+            "Belgae": 3,
+            "Romans": 1
+          }
+        }
+      }
+    },
+    "mixed_seats": {
+      "batch_digest": "cfa10b1e312c2ee6b6e1b611611a9514b647ee68a2612628a80f3d4b33ffe628",
+      "cross_hash_equal": true,
+      "executions_including_replay": 80,
+      "hard_findings": 0,
+      "hash_seeds": [
+        0,
+        7
+      ],
+      "limitation": "Rejected random plans are disclosed separately; completion is not complete human-choice coverage.",
+      "partial": 0,
+      "rejected_random_plans_per_hash": 3,
+      "unique_cases": 20
+    },
+    "runner_job_exit_codes": {
+      "bots-legacy": 0,
+      "bots-original": 0,
+      "bots-second-edition": 0,
+      "census0": 0,
+      "census7": 0,
+      "fuzz0": 0,
+      "fuzz7": 0
+    },
+    "strict_census": {
+      "by_severity_per_hash": {
+        "legal-decline": 253
+      },
+      "coverage_evidence": "Exact tool metadata plus aggregate completion; the census tool does not emit per-game success records.",
+      "cross_hash_equal": true,
+      "defects": 0,
+      "executions": 50,
+      "hash_seeds": [
+        0,
+        7
+      ],
+      "unique_cases": 25
+    }
+  },
+  "original_balance": {
+    "band_percentage_points": 15,
+    "baseline_updated": false,
+    "changed_winner_count": 9,
+    "changed_winners": [
+      "Pax Gallica?|3",
+      "Pax Gallica?|5",
+      "The Gallic War|1",
+      "The Gallic War|3",
+      "The Gallic War|4",
+      "The Gallic War|8",
+      "The Gallic War|12",
+      "The Gallic War|14",
+      "The Gallic War|18"
+    ],
+    "exact_band": "3/20",
+    "maximum_absolute_drift": "1/5",
+    "passed": false,
+    "scenarios": {
+      "Ariovistus": {
+        "after": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Germans": 4,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Germans": 4,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "Pax Gallica?": {
+        "after": {
+          "Aedui": 3,
+          "Belgae": 4,
+          "Romans": 13
+        },
+        "before": {
+          "Aedui": 2,
+          "Arverni": 1,
+          "Belgae": 3,
+          "Romans": 14
+        },
+        "changed_winner_seeds": [
+          3,
+          5
+        ],
+        "exact_rate_change": {
+          "Aedui": "1/20",
+          "Arverni": "-1/20",
+          "Belgae": "1/20",
+          "Germans": "0",
+          "Romans": "-1/20"
+        },
+        "percentage_point_change": {
+          "Aedui": 5.0,
+          "Arverni": -5.0,
+          "Belgae": 5.0,
+          "Germans": 0.0,
+          "Romans": -5.0
+        }
+      },
+      "Reconquest of Gaul": {
+        "after": {
+          "Aedui": 6,
+          "Arverni": 1,
+          "Belgae": 1,
+          "Romans": 12
+        },
+        "before": {
+          "Aedui": 6,
+          "Arverni": 1,
+          "Belgae": 1,
+          "Romans": 12
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "The Gallic War": {
+        "after": {
+          "Aedui": 2,
+          "Belgae": 8,
+          "Romans": 10
+        },
+        "before": {
+          "Arverni": 4,
+          "Belgae": 7,
+          "Romans": 9
+        },
+        "changed_winner_seeds": [
+          1,
+          3,
+          4,
+          8,
+          12,
+          14,
+          18
+        ],
+        "exact_rate_change": {
+          "Aedui": "1/10",
+          "Arverni": "-1/5",
+          "Belgae": "1/20",
+          "Germans": "0",
+          "Romans": "1/20"
+        },
+        "percentage_point_change": {
+          "Aedui": 10.0,
+          "Arverni": -20.0,
+          "Belgae": 5.0,
+          "Germans": 0.0,
+          "Romans": 5.0
+        }
+      },
+      "The Great Revolt": {
+        "after": {
+          "Aedui": 5,
+          "Arverni": 7,
+          "Belgae": 4,
+          "Romans": 4
+        },
+        "before": {
+          "Aedui": 5,
+          "Arverni": 7,
+          "Belgae": 4,
+          "Romans": 4
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      }
+    }
+  },
+  "protected_files_unchanged": 48,
+  "recorded_utc": "2026-10-29T01:47:47.295639+00:00",
+  "remote_ci": {
+    "claimed_pass": false,
+    "status": "not run or verified by this local evidence package"
+  },
+  "same_api_rule_probes": {
+    "passed": true,
+    "results": {
+      "belgic_successor_most_own": {
+        "actual": "Sequani",
+        "expected": "Sequani"
+      },
+      "human_successor_destination": {
+        "actual": "Britannia",
+        "expected": "Britannia",
+        "requests": [
+          "spring_leader"
+        ]
+      },
+      "interlude_restores_ambiorix": {
+        "actual": "Ambiorix",
+        "expected": "Ambiorix"
+      },
+      "roman_ties": {
+        "destinations": [
+          "Provincia",
+          "Provincia",
+          "Provincia",
+          "Provincia",
+          "Sequani",
+          "Provincia",
+          "Sequani",
+          "Provincia",
+          "Sequani",
+          "Provincia",
+          "Sequani",
+          "Sequani"
+        ],
+        "distinct": [
+          "Provincia",
+          "Sequani"
+        ]
+      }
+    },
+    "source": {
+      "commit": "a537511a1220ea4d2b0e94e63ab5cc581ef3a605",
+      "dirty": true,
+      "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+    }
+  },
+  "schema_version": 1,
+  "scope": "Spring Leader placement and scoped Gallic War Interlude named Leader choices",
+  "source": {
+    "commit": "a537511a1220ea4d2b0e94e63ab5cc581ef3a605",
+    "dirty": true,
+    "python_files": 315,
+    "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74"
+  },
+  "starting_baseline_full_suite": {
+    "exit_code": 0,
+    "failures": 0,
+    "launch_provenance": "Parent observed session40215; exact argv and source provenance in starting-source.json",
+    "tests": 5112
+  },
+  "verifier_correction_disclosed": "verifier-correction.json: removed unsupported Optimates-must-be-Arverni assumption; initial verifier report retained"
+}

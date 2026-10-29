@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Spring Leader placement, 28 October 2026
+
+- Expose human Successor destinations and apply non-player placement
+  priorities to every eligible faction, with seeded ties among legal Regions.
+- Allow the Arverni to defer Vercingetorix's Spring-box arrival, preserve the
+  unlock through saves, and offer later placement at action boundaries.
+  Arbitrary interruption within a resolving Command/Event remains open.
+- Correct the Gallic War Interlude's named Ambiorix placement and human
+  choices among equally preferred named-Leader destinations.
+- Preserve pending choices, board/card/change display, rollback and replay.
+
 ## Unreleased — Event integrity repairs, 27 October 2026
 
 - Enforce A70 Nervii's Roman/Aedui non-player condition in both expansion

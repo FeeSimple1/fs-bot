@@ -98,6 +98,19 @@ for Arverni, the holder chooses their placements. Menus show the full held
 card and allow Warbands to be split among legal Regions. The following
 Command is required when possible, with normal Special Activity ordering.
 
+Spring prompts let you choose where an Available Successor returns. Every
+legal destination is offered, including empty Home Regions with your printed
+Rally or Recruit symbol. Placement is required; Diviciacus has no Successor.
+Bots place Leaders with the most of their own pieces and break equal ties
+using the game's seeded randomness.
+
+In Pax Gallica, you can place Vercingetorix from the Spring box beginning
+the first Spring, or leave him there for later. Subsequent action-boundary
+prompts let you bring him into any playable Region without using a turn.
+In the Gallic War, this begins in the first Winter after the Interlude.
+Arbitrary interruption inside a Command or Event is still an interface gap;
+the scenario's printed “at any time” rule is broader than these prompts.
+
 Boii has dedicated menus for its beneficiary, Allied Tribes and troop
 placements. The remaining allowance follows each choice across Regions.
 Parley offers complete legal meetings, including either direction when the

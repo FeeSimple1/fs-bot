@@ -32,6 +32,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind == "spring_leader":
+                from fs_bot.cli.spring import collect_leader
+                return collect_leader(state, faction, request, stdin, stdout)
             if kind in ("council_selection", "council_choice"):
                 from fs_bot.cli.council import collect_selection, collect_choice
                 collect = collect_selection if kind == "council_selection" else collect_choice

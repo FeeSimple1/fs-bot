@@ -1835,14 +1835,8 @@ def node_v_spring(state):
     Returns:
         Spring action details dict, or None if nothing to do.
     """
-    verc_region = _vercingetorix_region(state)
-    if verc_region is not None:
-        return None  # Vercingetorix already on map
-
-    best_region = get_leader_placement_region(state, ARVERNI)
-    if best_region:
-        return {"place_leader": VERCINGETORIX, "region": best_region}
-    return None
+    from fs_bot.engine.spring import np_spring_plan
+    return np_spring_plan(state, ARVERNI)
 
 
 # ============================================================================

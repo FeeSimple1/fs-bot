@@ -53,7 +53,7 @@ def render_board(state, scenario=None, options=None, position=None):
 
 def cmd_init(args):
     os.makedirs(args.dir, exist_ok=True)
-    setup_args = {"seed": args.seed}
+    setup_args = {"seed": args.seed, "human_factions": (args.seat,)}
     if getattr(args, "card_edition", "legacy") != "legacy":
         setup_args["card_edition"] = args.card_edition
     if getattr(args, "diviciacus_option", False):
@@ -68,6 +68,7 @@ def cmd_init(args):
     display.remember(st, [args.seat])
     meta = {"scenario": args.scenario, "seed": args.seed, "seat": args.seat,
             "initial_seat": args.seat,
+            "setup_human_factions": [args.seat],
             "card_edition": st.get("card_edition", "legacy"),
             "diviciacus_option": st.get("diviciacus_option", False),
             "initial_faction_modes": {f: "human" if f == args.seat else "bot"
@@ -253,6 +254,8 @@ def cmd_replay(args):
                    "initial_seat": meta.get("initial_seat", saved["origin_seat"]),
                    "card_edition": meta.get("card_edition", "legacy"),
                    "diviciacus_option": origin.get("diviciacus_option", False)}
+    if "setup_human_factions" in meta:
+        replay_meta["setup_human_factions"] = list(meta["setup_human_factions"])
     view = HumanTurnDisplay(sys.stdout)
     view.remember(origin, [replay_meta["seat"]])
     replay_meta["human_snapshots"] = encode(view.snapshots)

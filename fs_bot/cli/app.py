@@ -334,7 +334,8 @@ def main(argv=None, stdin=None, stdout=None):
                                  or faction_modes)
             state = setup_scenario(scenario, seed=seed,
                                    card_edition=card_edition,
-                                   diviciacus_option=diviciacus_option)
+                                   diviciacus_option=diviciacus_option,
+                                   human_factions=meta.get("setup_human_factions", ()))
         elif state.get("interlude_completed") and GERMANS in faction_modes:
             # Older snapshots saved the original seats after the Interlude.
             faction_modes[ARVERNI] = faction_modes.pop(GERMANS)
@@ -368,9 +369,16 @@ def main(argv=None, stdin=None, stdout=None):
         if args.diviciacus_option and scenario not in BASE_SCENARIOS:
             stdout.write("--diviciacus-option applies only to original scenarios.\n")
             return 2
+        # Keep the setup seats separately from ongoing faction modes so
+        # replay reconstructs the mandatory Great Revolt Leader. Historical
+        # saves without this field retain their original Successor setup.
+        meta["setup_human_factions"] = [
+            f for f, mode in faction_modes.items() if mode == "human"
+        ]
         state = setup_scenario(scenario, seed=seed,
                                card_edition=args.card_edition or "legacy",
-                               diviciacus_option=bool(args.diviciacus_option))
+                               diviciacus_option=bool(args.diviciacus_option),
+                               human_factions=meta["setup_human_factions"])
 
     initial_modes = dict(meta.get("initial_faction_modes") or faction_modes)
     if state.get("interlude_completed") and GERMANS not in initial_modes:

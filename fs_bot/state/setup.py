@@ -928,7 +928,7 @@ _SETUP_FUNCTIONS = {
 
 
 def setup_scenario(scenario, seed=None, *, card_edition="legacy",
-                   diviciacus_option=False):
+                   diviciacus_option=False, human_factions=()):
     """Set up a scenario and return the initial game state.
 
     Args:
@@ -936,6 +936,9 @@ def setup_scenario(scenario, seed=None, *, card_edition="legacy",
         seed: Optional RNG seed for deterministic replay.
         card_edition: Saved selection for the five optional revised cards.
         diviciacus_option: Use O38 and its Leader in an original scenario.
+        human_factions: Factions assigned to humans for this new game. A
+            sole human Belgae seat receives Ambiorix in The Great Revolt.
+            Multiple human factions do not establish player ownership.
 
     Returns:
         Complete game state dictionary, validated.
@@ -953,6 +956,13 @@ def setup_scenario(scenario, seed=None, *, card_edition="legacy",
                                 diviciacus_option=diviciacus_option)
     state["card_edition"] = card_edition
     _SETUP_FUNCTIONS[scenario](state)
+
+    # The Great Revolt, "Players and Victory": a player running only the
+    # Belgae starts with Ambiorix. With multiple human factions the seat
+    # model cannot identify shared players, including Romans+Aedui.
+    if scenario == SCENARIO_GREAT_REVOLT and set(human_factions) == {BELGAE}:
+        remove_piece(state, SUGAMBRI, BELGAE, LEADER)
+        place_piece(state, SUGAMBRI, BELGAE, LEADER, leader_name=AMBIORIX)
 
     # Validate state integrity
     errors = validate_state(state)

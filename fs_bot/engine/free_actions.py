@@ -199,6 +199,10 @@ def _validate_plan(state, faction, request, action):
     error = validate_rally_interruption(state, faction, action)
     if error:
         return error
+    from fs_bot.engine.action_validation import validate_region_uniqueness
+    error = validate_region_uniqueness(action)
+    if error:
+        return error
     standalone = request.get('request_type') == 'event_sa'
     cmd, sa = action.get('command'), action.get('sa', 'No SA')
     if standalone:

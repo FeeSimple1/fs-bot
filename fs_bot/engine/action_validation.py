@@ -4,7 +4,7 @@ Region eligibility is checked by the executors at the time the SA resolves;
 these constraints concern the whole Command and cannot change mid-action.
 """
 
-from fs_bot.rules_consts import BRITANNIA, AEDUI
+from fs_bot.rules_consts import BRITANNIA, AEDUI, CMD_SEIZE, SA_ENTREAT
 from fs_bot.commands.common import CommandError
 
 
@@ -46,6 +46,43 @@ def command_regions(action):
 
 def command_parts(action):
     return (action.get("details") or {}).get("command_parts") or [action]
+
+
+def validate_region_uniqueness(action):
+    """Reject repeated Seize/Entreat selections (§§3.1, 4.1, 4.3.1).
+
+    These plans select one Region per entry. Other plans can encode several
+    operations within one selection: Raid flips, Rally options, March groups,
+    and Build operations must not be deduplicated as Region selections.
+    """
+    if action.get("command") == CMD_SEIZE:
+        regions = []
+        details = action.get("details") or {}
+        if not isinstance(details, dict):
+            return "Command details must be an object"
+        parts = command_parts(action)
+        if not isinstance(parts, list) or any(not isinstance(part, dict) for part in parts):
+            return "Command portions must be a list of objects"
+        for part in parts:
+            selected = part.get("regions") or []
+            if not isinstance(selected, list) or any(not isinstance(r, str) for r in selected):
+                return "Seize Regions must be a list of Region names"
+            regions.extend(selected)
+        if len(regions) != len(set(regions)):
+            return "Select a Region only once for the Command (§3.1)"
+    if action.get("sa") == SA_ENTREAT:
+        entries = action.get("sa_regions") or []
+        if not isinstance(entries, list):
+            return "Entreat Regions must be a list"
+        regions = []
+        for entry in entries:
+            region = entry.get("region") if isinstance(entry, dict) else entry
+            if not isinstance(region, str):
+                return "Each Entreat entry needs a Region name"
+            regions.append(region)
+        if len(regions) != len(set(regions)):
+            return "Select a Region only once for the Special Ability (§4.1; Entreat §4.3.1)"
+    return None
 
 
 def validate_rally_interruption(state, faction, action):
@@ -90,11 +127,17 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
     from fs_bot.engine.game_engine import is_frost
     if not isinstance(action, dict):
         return "The Command plan must be an object"
+    details = action.get("details") or {}
+    if not isinstance(details, dict):
+        return "Command details must be an object"
     from fs_bot.commands.sa_trade import validate_trade_plan
     error = validate_trade_plan(action)
     if error:
         return error
     error = validate_rally_interruption(state, faction, action)
+    if error:
+        return error
+    error = validate_region_uniqueness(action)
     if error:
         return error
     command, sa = action.get("command"), action.get("sa")
@@ -114,9 +157,6 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
             return f"{sa} cannot accompany {command} (§4)"
         if sa == "Ambush" and faction == AEDUI and len(set(action.get("sa_regions") or [])) > 1:
             return "Aedui Ambush is limited to one Region (§4.4.3)"
-    details = action.get("details") or {}
-    if not isinstance(details, dict):
-        return "Command details must be an object"
     if ("command_parts" in details
             and not isinstance(details["command_parts"], list)):
         return "Command portions must be a list"

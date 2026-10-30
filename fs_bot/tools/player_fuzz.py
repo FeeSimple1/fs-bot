@@ -398,10 +398,11 @@ def _compare_dry_vs_live(res, seats, expected):
 
 def play_game(scenario, seed, *, reactive=True, events=True, card_edition="legacy"):
     """One fuzzed game. Returns a result dict incl. findings and digest."""
-    st = setup_scenario(scenario, seed=seed, card_edition=card_edition)
-    sop = sorted(get_sop_factions(st))
+    sop = sorted(get_sop_factions({"scenario": scenario}))
     frng = random.Random(f"player_fuzz|{scenario}|{seed}")
     seats = _pick_seats(sop, frng)
+    st = setup_scenario(scenario, seed=seed, card_edition=card_edition,
+                        human_factions=seats)
     st["non_player_factions"] = set(sop) - set(seats)
     if reactive:
         st["decision_agent"] = make_random_reactive(seats, frng)

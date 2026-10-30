@@ -52,7 +52,9 @@ def play_game(scenario, seed, agent_faction=None, planner=None, *,
     heuristic explicitly defer to the raw callback defaults, with counts
     recorded separately. This is not a model of expert human play.
     """
-    st = setup_scenario(scenario, seed=seed, card_edition=card_edition)
+    humans = () if agent_faction is None else (agent_faction,)
+    st = setup_scenario(scenario, seed=seed, card_edition=card_edition,
+                        human_factions=humans)
     seats = set(get_sop_factions(st))
     if agent_faction is not None and agent_faction not in seats:
         raise ValueError(f"{agent_faction!r} is not a playable seat in {scenario}")

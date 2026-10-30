@@ -194,9 +194,10 @@ def test_real_gallic_war_policy_handoff_resumes_legal_interlude_checkpoint(monke
     assert not state['interlude_completed']
     assert study._active_seat(state, rc.GERMANS) == rc.GERMANS
 
-    def resume_setup(scenario, *, seed, card_edition):
+    def resume_setup(scenario, *, seed, card_edition, human_factions):
         assert scenario == state['scenario'] == rc.SCENARIO_GALLIC_WAR
         assert seed == meta['seed'] and card_edition == state['card_edition']
+        assert human_factions == (rc.GERMANS,)
         return state
 
     def resume_display(board):

@@ -1480,14 +1480,12 @@ def _maybe_collect_transfer(state, faction, action, stdin, stdout):
     """Offer a Sec.1.5.2 Resource gift riding this Command/Event execution.
     Menu-driven (first option "No") so scripted input declines naturally;
     one grouped gift per action (documented simplification)."""
-    from fs_bot.rules_consts import BASE_SCENARIOS
+    from fs_bot.commands.transfer import transfer_eligibility_error
     stock = state["resources"].get(faction, 0)
     if stock <= 0:
         return action
     others = [f for f in FACTIONS
-              if f != faction
-              and not (state["scenario"] in BASE_SCENARIOS
-                       and f == GERMANS)]
+              if transfer_eligibility_error(state, faction, f) is None]
     if not others:
         return action
     # Blank means no gift; closed input means the turn is still pending.

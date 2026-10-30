@@ -1,0 +1,341 @@
+{
+  "audit_commit": "7e72fe7eda33c58b2f83457c39edf5b295a04f77",
+  "audit_report": "reviews/human-choice-audit-2026-10-29.md",
+  "updated": "2026-10-29",
+  "tested_source": {
+    "commit": "fa0ca1682ba055f3375ee09448f4cb419fb38770",
+    "python_sha256": "f386da33458625e15a918eaaefedb96b2bcf1464c879b60d9b6fa8b180f4ebd0",
+    "python_files": 385
+  },
+  "total": 50,
+  "closed": 5,
+  "open": 45,
+  "unverified_inventory_rows_separate": 34,
+  "notes": [
+    "Historical audit inventory is unchanged; these are later dispositions.",
+    "WS-F04 closes the sole-human-Belgae setup trigger; paired-player ownership remains WS-F09."
+  ],
+  "findings": [
+    {
+      "id": "TIMING-SA-DURING",
+      "title": "General during-Command Special Ability timing remains restricted",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "CMD-REPEATED-REGION",
+      "title": "Human plans may Seize and Entreat repeatedly in the same Region",
+      "severity": "high",
+      "status": "closed",
+      "commits": [
+        "82e65efd3afdebb501884daf11fa189448c042c5"
+      ],
+      "report": "reviews/cheap-fixes-2026-10-29.md"
+    },
+    {
+      "id": "CMD-DEVASTATE-LOSSES",
+      "title": "Devastate omits each human owner’s casualty choice",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "CMD-RAMPAGE-COUNT",
+      "title": "Rampage forces two Warbands instead of the actor’s chosen quantity",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "CMD-SCOUT-ALLOCATION",
+      "title": "Scout cannot allocate one Auxilia across factions or choose Warband visibility",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "CMD-SEIZE-TRIBES",
+      "title": "Seize only offers all-or-none dispersal for a Region",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "CMD-INTIMIDATE-TRIBE",
+      "title": "Intimidate removes a default Allied Tribe rather than a chosen Tribe",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "CMD-BUILD-ORDER",
+      "title": "Build reorders all Regions by operation type",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BATTLE-LOSS-TIERS",
+      "title": "Human Battle casualty choices can violate mandatory loss priority tiers",
+      "severity": "high",
+      "status": "closed",
+      "commits": [
+        "91b957ce02d93da5e2cc80fa25f966a0ca77c248"
+      ],
+      "report": "reviews/cheap-fixes-2026-10-29.md"
+    },
+    {
+      "id": "BATTLE-LOSS-IDENTITY",
+      "title": "Ordinary Battle casualties cannot select visibility or physical Allied Tribe",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BATTLE-RETREAT-CHOICES",
+      "title": "Retreat forces all Hidden defenders and Leader to stay and omits removal-only Retreat",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BATTLE-BESIEGE-CHOICE",
+      "title": "Besiege uses automatic target priority instead of Roman choice",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BATTLE-RAMPAGE-VICTIM",
+      "title": "Rampage target cannot choose affected pieces or per-piece removal versus Retreat",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "MARCH-DROPOFF",
+      "title": "Ordinary March cannot author transit dropoffs",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "MARCH-HIDE-IN-PLACE",
+      "title": "March requires movement and cannot only hide at a selected origin",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BE-01",
+      "title": "Several Event-granted Marches and German guidance still use automatic plans",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "BE-02",
+      "title": "Fixed Event Battle resolvers suppress human Region or defender selections",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "BE-03",
+      "title": "Gallic beneficiaries and command order are hardcoded; Remi Influence gives pieces to the wrong faction",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "BE-04",
+      "title": "Named factions never receive optional Event-effect decisions",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "BE-05",
+      "title": "Drought substitutes casualty priorities for every faction’s own selection",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "BE-06",
+      "title": "Event contracts cannot express smaller quantities or removal-only choices",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BE-07",
+      "title": "Several direct Event removals cannot select physical visibility or exact Allied Tribe",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BE-08",
+      "title": "Generated CLI Event schema cannot express several legal handler inputs",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BE-09",
+      "title": "Human Capability activation/Region choices use unconditional NPC priorities",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "BE-10",
+      "title": "Gallic Shouts does not present its private two-card peek",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BE-11",
+      "title": "Event plan validators accept selections outside printed quantity and target limits",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "BE-12",
+      "title": "German Allegiances cannot replace Warbands for a Gallic executor",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-01",
+      "title": "Vosegus/Sabis choose human Battles and the optional second Battle with NPC policy",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-02",
+      "title": "A19 shaded uses German NPC movement policy for human play and skips other executors",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-03",
+      "title": "A67 omits the beneficiary and March choices and forces German human NPC Battle policy",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-04",
+      "title": "A29 Raid and A69 Ambush targets are auto-derived for humans",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-05",
+      "title": "A20/A58 Roman may-grants are forced or omitted depending on executor",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-06",
+      "title": "A20/A58 Seize grants run forbidden enemy Rally rolls",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-07",
+      "title": "A5 eviction forces the first Home Region and leaves non-Roman structures in Cisalpina",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-08",
+      "title": "Three explicit up-to effects have no human quantity choice",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "EXP-09",
+      "title": "Typed human Event plans bypass printed geographic, beneficiary and quantity limits",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-10",
+      "title": "A22 shaded Capability never permits the added Intimidating Warband",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "EXP-11",
+      "title": "A36 and other removal effects replace human physical-piece selections with fixed priorities",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "EXP-12",
+      "title": "Remove-all expansion Events leave Scouted Warbands behind",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "WS-F01",
+      "title": "Interlude force reductions and Cisalpina relocations bypass human owners",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "WS-F02",
+      "title": "Roman Interlude expedition and marker-preservation choices are unreachable in human sessions",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "id": "WS-F03",
+      "title": "Pax first-Harvest Legion placement is automatically concentrated in one Region",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "WS-F04",
+      "title": "Human Belgae starts The Great Revolt with the wrong Leader",
+      "severity": "medium",
+      "status": "closed",
+      "commits": [
+        "380c14ff887f76c2712305df2d3b2073dd61be49",
+        "fa0ca1682ba055f3375ee09448f4cb419fb38770"
+      ],
+      "report": "reviews/cheap-fixes-2026-10-29.md"
+    },
+    {
+      "id": "WS-F05",
+      "title": "Quarters cannot select which visibility cohort relocates",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "WS-F06",
+      "title": "Resource-transfer choices are limited to one early outgoing CLI gift and omit legal Winter/incoming windows",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "WS-F07",
+      "title": "Ariovistus accepts Resource transfers to the game-run Arverni",
+      "severity": "medium",
+      "status": "closed",
+      "commits": [
+        "4e0126e77e1090cfc568b514cb584a44cbee2554"
+      ],
+      "report": "reviews/cheap-fixes-2026-10-29.md"
+    },
+    {
+      "id": "WS-F08",
+      "title": "Three printed setup options have no selection or implementation",
+      "severity": "low",
+      "status": "open"
+    },
+    {
+      "id": "WS-F09",
+      "title": "Shared player ownership is absent, so Spare Factions choices and consequences cannot be represented",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "FE-01",
+      "title": "Board inspection after SA-first Build shows the pre-SA board at the following March menu",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "FE-02",
+      "title": "Malformed Supply replacement escapes durable validation and changes the pending request under the same decision ID",
+      "severity": "medium",
+      "status": "closed",
+      "commits": [
+        "3a17d336cd861b6b1a0baebc2b6e4244ce9c1f6b"
+      ],
+      "report": "reviews/cheap-fixes-2026-10-29.md"
+    }
+  ]
+}

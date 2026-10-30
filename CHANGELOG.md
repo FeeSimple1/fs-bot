@@ -4,6 +4,18 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — First small audit repairs, 29 October 2026
+
+- Enforce mandatory Battle casualty tiers and one Seize/Entreat selection per
+  Region, including human plans and applicable free grants.
+- Keep malformed Supply replacements at the same pending human decision.
+- Reject game-run Arverni Resource gifts in Ariovistus and filter transfer
+  menus using the shared rule; preserve the raw executor's error reporting.
+- Start new sole-human-Belgae Great Revolt games with Ambiorix and retain
+  correct setup in replay without rewriting historical saves.
+- Close five of the audit's 50 grouped findings. See the
+  [repair report](docs/reviews/cheap-fixes-2026-10-29.md) for validation and limits.
+
 ## Unreleased — Human-choice audit, 29 October 2026
 
 - Record 50 grouped open findings and a 490-row source-derived inventory

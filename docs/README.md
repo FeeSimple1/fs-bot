@@ -13,6 +13,7 @@ references and canonical constants remain read-only.
 | [Assistant play](../CHATGPT_README.md) | File-based pending decisions, responses, board inspection, and replay |
 | [Agent interface](../AGENT_INTERFACE.md) | Turn plans, typed decision requests, validation, and session contracts |
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
+| [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Provisional rulings](provisional-rulings.md) | Nine owner-adopted interpretations, each subject to later authoritative correction |
 | [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
 | [Developer instructions](../CLAUDE.md) | Source hierarchy, implementation constraints, tests, and commit discipline |
@@ -25,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [29 October first small audit repairs](reviews/cheap-fixes-2026-10-29.md) | Five closed findings, individual tested commits, source identity and remaining scope |
 | [29 October human-choice audit](reviews/human-choice-audit-2026-10-29.md) | 50 grouped open findings, 490 coverage rows, evidence limits and six ordered repair batches; no engine changes |
 | [Human-choice inventory](reviews/human-choice-audit-2026-10-29-inventory.json) | Every reviewed card/side/profile and choice family, source references, affected interfaces and repair assignments |
 | [Human-choice evidence](reviews/human-choice-audit-2026-10-29-evidence.zip) | Portable defect witnesses, independent reruns, full pytest JUnit and unchanged-source manifest |

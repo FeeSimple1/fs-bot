@@ -58,8 +58,15 @@ Diviciacus Leader rules. The choice is saved with the game.
 
 ## Current validation
 
+The [first small audit repairs](docs/reviews/cheap-fixes-2026-10-29.md) close
+five findings: mandatory Battle casualty tiers, repeated Seize/Entreat,
+malformed Supply replans, game-run Arverni transfers and sole-human-Belgae
+Great Revolt setup. **45 audit findings remain open** in the
+[progress register](docs/human-choice-progress.json). The report records
+fresh tests, source identity and compatibility limits.
+
 The [human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md) records
-**50 grouped open findings** across 490 inventory rows, including rule errors,
+**50 grouped findings at its audited revision** across 490 inventory rows, including rule errors,
 missing decisions and previously documented or optional feature limits.
 Eleven representative probe scripts were independently rerun; the unchanged
 engine still passes **6,109 tests**. The audit makes no engine fixes and

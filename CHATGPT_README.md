@@ -18,6 +18,12 @@ open missing prompts, incorrect Event recipients, incomplete physical choices
 and validation gaps. A successful plan or absence of a pending request does
 not establish that every printed human decision was offered. Consult its
 finding register for current scope; the audit changed no engine behavior.
+The [first small repair batch](docs/reviews/cheap-fixes-2026-10-29.md)
+subsequently closes five findings. New sole-human-Belgae Great Revolt sessions
+start with Ambiorix; saved origins preserve that setup for replay. Historical
+saves are not retroactively changed. Battle requests now expose only the
+legal casualty tier, so older transcripts with a different request may stop
+at the existing replay verification boundary.
 
 Recruit/Rally plans can specify exact troop `count` values. Use
 `rally_plan.steps` to preserve Vercingetorix's two placement orders, and

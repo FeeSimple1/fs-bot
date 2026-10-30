@@ -1,0 +1,289 @@
+{
+  "source": {
+    "commit": "fa0ca1682ba055f3375ee09448f4cb419fb38770",
+    "python_sha256": "f386da33458625e15a918eaaefedb96b2bcf1464c879b60d9b6fa8b180f4ebd0",
+    "python_files": 385
+  },
+  "closed_findings": [
+    "BATTLE-LOSS-TIERS",
+    "CMD-REPEATED-REGION",
+    "FE-02",
+    "WS-F07",
+    "WS-F04"
+  ],
+  "remaining": 45,
+  "commits": [
+    {
+      "stage": "supply",
+      "commit": "3a17d336cd861b6b1a0baebc2b6e4244ce9c1f6b",
+      "message": "Keep malformed Supply reconsideration pending for human correction",
+      "files": [
+        "fs_bot/engine/supply_reconsideration.py",
+        "fs_bot/tests/test_supply_refusal_malformed.py"
+      ],
+      "pytest": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "6128",
+        "time": "63.491",
+        "timestamp": "2026-10-29T20:04:57.796580-07:00",
+        "hostname": "e17666734fe9"
+      },
+      "command": [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-n",
+        "6",
+        "--junitxml=/workspace/scratch/534c265c65f4/cheap-fixes-2026-10-29/supply.xml"
+      ],
+      "exit_code": 0,
+      "python_files": 380,
+      "python_sha256": "099e89ac41d7c1b846a3cd9431c103722db38d608d277ebabf3112b2db8f07d3"
+    },
+    {
+      "stage": "transfers",
+      "commit": "4e0126e77e1090cfc568b514cb584a44cbee2554",
+      "message": "Reject game-run Arverni Resource transfers per A1.5.2 and A1.8",
+      "files": [
+        "fs_bot/commands/transfer.py",
+        "fs_bot/cli/human_plan.py",
+        "fs_bot/tools/seat_session.py",
+        "fs_bot/tests/test_transfer_scenario_eligibility.py"
+      ],
+      "pytest": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "6161",
+        "time": "56.740",
+        "timestamp": "2026-10-29T20:06:01.817825-07:00",
+        "hostname": "e17666734fe9"
+      },
+      "command": [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-n",
+        "6",
+        "--junitxml=/workspace/scratch/534c265c65f4/cheap-fixes-2026-10-29/transfers.xml"
+      ],
+      "exit_code": 0,
+      "python_files": 381,
+      "python_sha256": "c323ad0433c9eaf6ad1a3501c33ce53797a29982a78391419ecc8b66ae3ba190"
+    },
+    {
+      "stage": "regions",
+      "commit": "82e65efd3afdebb501884daf11fa189448c042c5",
+      "message": "Enforce one Seize or Entreat selection per Region under sections 3.1 and 4.1",
+      "files": [
+        "fs_bot/engine/action_validation.py",
+        "fs_bot/engine/free_actions.py",
+        "fs_bot/tests/test_repeated_seize_entreat_regions.py"
+      ],
+      "pytest": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "6177",
+        "time": "59.509",
+        "timestamp": "2026-10-29T20:06:59.113903-07:00",
+        "hostname": "e17666734fe9"
+      },
+      "command": [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-n",
+        "6",
+        "--junitxml=/workspace/scratch/534c265c65f4/cheap-fixes-2026-10-29/regions.xml"
+      ],
+      "exit_code": 0,
+      "python_files": 382,
+      "python_sha256": "c06008a7812f2ac07a8dc658abc8dd8acbd42795fa59c71828d1506713de8e93"
+    },
+    {
+      "stage": "losses",
+      "commit": "91b957ce02d93da5e2cc80fa25f966a0ca77c248",
+      "message": "Enforce mandatory Battle casualty tiers per sections 3.2.4 and 3.3.4",
+      "files": [
+        "fs_bot/battle/losses.py",
+        "fs_bot/tests/test_battle_loss_tiers.py"
+      ],
+      "pytest": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "6235",
+        "time": "60.571",
+        "timestamp": "2026-10-29T20:12:27.258810-07:00",
+        "hostname": "e17666734fe9"
+      },
+      "command": [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-n",
+        "6",
+        "--junitxml=/workspace/scratch/534c265c65f4/cheap-fixes-2026-10-29/losses.xml"
+      ],
+      "exit_code": 0,
+      "python_files": 383,
+      "python_sha256": "734dadf16d01cfdfefd883d0d0a61901355e651624ac46093daecb9ea3905333"
+    },
+    {
+      "stage": "setup",
+      "commit": "380c14ff887f76c2712305df2d3b2073dd61be49",
+      "message": "Start sole human Belgae with Ambiorix in The Great Revolt",
+      "files": [
+        "fs_bot/state/setup.py",
+        "fs_bot/cli/app.py",
+        "fs_bot/tools/llm_seat.py",
+        "fs_bot/tests/test_great_revolt_belgae_setup.py"
+      ],
+      "pytest": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "6254",
+        "time": "57.539",
+        "timestamp": "2026-10-29T20:13:28.370799-07:00",
+        "hostname": "e17666734fe9"
+      },
+      "command": [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-n",
+        "6",
+        "--junitxml=/workspace/scratch/534c265c65f4/cheap-fixes-2026-10-29/setup.xml"
+      ],
+      "exit_code": 0,
+      "python_files": 384,
+      "python_sha256": "56ed87fb116075e16607267935dec72c502770054bdcd29c7e4f621f77fbe034"
+    },
+    {
+      "stage": "policy-setup",
+      "commit": "fa0ca1682ba055f3375ee09448f4cb419fb38770",
+      "message": "Apply human-seat setup rules to validation and policy games",
+      "files": [
+        "fs_bot/tools/player_fuzz.py",
+        "fs_bot/tools/heuristic_selfplay.py",
+        "fs_bot/tests/test_great_revolt_validation_setup.py",
+        "fs_bot/tests/test_strategy_harness.py"
+      ],
+      "pytest": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "6260",
+        "time": "57.026",
+        "timestamp": "2026-10-29T20:18:18.813175-07:00",
+        "hostname": "e17666734fe9"
+      },
+      "command": [
+        "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-n",
+        "6",
+        "--junitxml=/workspace/scratch/534c265c65f4/cheap-fixes-2026-10-29/policy-setup.xml"
+      ],
+      "exit_code": 0,
+      "python_files": 385,
+      "python_sha256": "f386da33458625e15a918eaaefedb96b2bcf1464c879b60d9b6fa8b180f4ebd0"
+    }
+  ],
+  "documentation_precommit_pytest": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "6260",
+    "time": "56.856",
+    "timestamp": "2026-10-29T20:22:46.354521-07:00",
+    "hostname": "e17666734fe9"
+  },
+  "integration": {
+    "source": {
+      "commit": "fa0ca1682ba055f3375ee09448f4cb419fb38770",
+      "python_sha256": "f386da33458625e15a918eaaefedb96b2bcf1464c879b60d9b6fa8b180f4ebd0",
+      "python_files": 385
+    },
+    "bot_games": 110,
+    "bot_editions": {
+      "legacy": 100,
+      "original": 5,
+      "second-edition": 5
+    },
+    "baseline_comparison": {
+      "games": 100,
+      "winner_or_card_count_changes": 0,
+      "baseline_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+      "baseline_changed": false,
+      "existing_band": 0.15
+    },
+    "fuzz": {
+      "legacy": {
+        "games": 5,
+        "human_turns": 149,
+        "event_turns": 34,
+        "events_ok": 32,
+        "partial": 0,
+        "hard_findings": 0,
+        "batch_digest": "8a68d5633a2faee65a102500c3a44fd53a2cb72ac6643d9b9b7975c8d2d6268a"
+      },
+      "original": {
+        "games": 5,
+        "human_turns": 149,
+        "event_turns": 34,
+        "events_ok": 32,
+        "partial": 0,
+        "hard_findings": 0,
+        "batch_digest": "97d0d5c729f02e8b5d34f1c80dee8415dde4a8cf870c599c15f7cbdadff0292c"
+      },
+      "second-edition": {
+        "games": 5,
+        "human_turns": 149,
+        "event_turns": 34,
+        "events_ok": 32,
+        "partial": 0,
+        "hard_findings": 0,
+        "batch_digest": "4835a5db606e0f436d005c6857466a9f964ed0810f516850b58800ce131e170b"
+      }
+    },
+    "mixed_seat_distinct_cases": 15,
+    "mixed_seat_executions_including_replay_and_hash_repeat": 60,
+    "scope": "Five scenarios; bot legacy seeds1-20 and other edition seed201; mixed seed201 in all three profiles, hashes0/7 with replay.",
+    "passed": true
+  },
+  "protected_files_unchanged": 48,
+  "failed_attempts": [
+    {
+      "file": "losses-attempt1.pytest.txt",
+      "cause": "Live casualty tier filtering initially changed a shared bot projection helper; full-list projections restored before commit."
+    },
+    {
+      "file": "policy-setup-attempt1.pytest.txt",
+      "cause": "An existing Interlude checkpoint test double needed the new human_factions argument and assertion."
+    }
+  ],
+  "evidence": {
+    "file": "cheap-fixes-2026-10-29-evidence.zip",
+    "bytes": 952778,
+    "sha256": "8c8f2fb81f6ec6a1e9bd441f9c279dabf7d39b0893144528d1c6697916bcb155"
+  }
+}

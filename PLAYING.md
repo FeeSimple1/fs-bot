@@ -41,6 +41,11 @@ Bot. Recommended first game: **The Great Revolt**, you as the
 **Arverni** (Vercingetorix's grand revolt — the scenario the game is
 named for).
 
+In a new Great Revolt game with Belgae as the sole human faction, its Leader
+starts as Ambiorix, as required by that scenario. Existing saves retain their
+original Leader. Multiple human faction settings do not yet identify which
+factions share one player; that separate setup/victory feature remains open.
+
 `--save autosave.json` writes a snapshot after every card. Resume any
 time with:
 
@@ -80,6 +85,11 @@ Special Activity, then the rest of that Command in other Regions.
 For base-game Arverni Rally, it also allows the Special Activity between
 Vercingetorix's two options in the same Region.
 Ambush and Besiege resolve within their accompanying Battle.
+
+Seize and Entreat cannot select a Region twice. Battle casualty menus show
+only the legally eligible group of pieces for the current loss: static pieces
+first when retreating and after other pieces otherwise, with Diviciacus last.
+Some exact physical casualty selections remain on the audit backlog.
 
 Recruit and Rally now ask how many Auxilia or Warbands to place. The
 quantity menu includes zero where the rules allow it, and includes any

@@ -19,6 +19,24 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 29 October first small audit repairs — five findings closed
+
+The [small-repair report](reviews/cheap-fixes-2026-10-29.md) closes
+`BATTLE-LOSS-TIERS`, `CMD-REPEATED-REGION`, `FE-02`, `WS-F07` and `WS-F04`.
+Battle losses enforce their mandatory tiers, Seize/Entreat cannot repeat a
+Region, malformed Supply replans remain pending, game-run Arverni cannot
+transfer Resources, and new sole-human-Belgae Great Revolt games start with
+Ambiorix. New regressions cover the rules and relevant menu, rollback and
+save/replay paths. Each code fix has its own commit and full-suite check.
+
+**45 of the audit's 50 grouped findings remain open.** The
+[progress register](human-choice-progress.json) records the five closures;
+the original audit inventory remains a historical record of `7e72fe7`.
+The 34 unverified inventory rows and two non-player source questions remain
+separate. Event/Interlude choice routing, general interruption timing, exact
+casualty identities, transfer windows and shared-player ownership are outside
+this batch. The report records validation and compatibility limits.
+
 ### 29 October human-choice audit — open repair backlog
 
 The [human-choice audit](reviews/human-choice-audit-2026-10-29.md) completes
@@ -35,9 +53,9 @@ unchanged engine still passes 6,109 tests. Thirty-four inventory rows remain
 explicitly unverified. Source inspection and routing support are distinguished
 from executed semantic checks.
 
-Repair priorities start with illegal Battle casualty tiers, duplicate
+The audit's first repair priorities were illegal Battle casualty tiers, duplicate
 Seize/Entreat Regions, malformed Supply responses, forbidden Arverni transfers
-and Great Revolt Belgae setup. Later batches cover Event constraints/effects,
+and Great Revolt Belgae setup; these are addressed above. Later batches cover Event constraints/effects,
 correct human ownership, exact choices/timing, Interlude/Winter, and optional
 player modes. The report assigns every finding once and records reproductions.
 

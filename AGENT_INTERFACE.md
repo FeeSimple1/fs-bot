@@ -10,11 +10,12 @@ index](docs/README.md) for the other guides. The owner-adopted
 later correction if an authoritative source is found.
 
 Known contract gaps are catalogued in the
-[human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md), including
-accepted illegal loss/Region selections, unrequested Event/seasonal choices
-and malformed nested Supply responses. Current dry-run acceptance verifies
-the implemented path; it is not complete printed-rule validation. The audit
-changes no response schema or engine behavior.
+[human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md). The
+[first small repair batch](docs/reviews/cheap-fixes-2026-10-29.md) closes its
+casualty-tier, duplicate Seize/Entreat, malformed Supply, forbidden transfer
+and sole-human-Belgae setup findings. Unrequested Event/seasonal choices and
+other contract gaps remain. Current dry-run acceptance verifies the implemented
+path; it is not complete printed-rule validation.
 
 There are **two integration points**, because a Faction makes two kinds of
 decisions:
@@ -153,6 +154,11 @@ higher-yield Region. Missing or invalid durable responses remain pending.
 Optional `details.transfers` (`[{"to": faction, "amount": integer}]`, §1.5.2)
 ride an action. The helpers below provide validation; the source plan builders
 remain the detailed reference for each Command and Special Activity.
+Durable turns reject ineligible transfer parties before accepting the plan:
+game-run Germans in original scenarios and game-run Arverni in Ariovistus
+cannot give or receive Resources. Current scenario rules apply after Interlude.
+The raw executor retains its documented behavior of reporting a refused gift
+while continuing the accompanying Command; it cannot apply a forbidden gift.
 
 Boii (37) unshaded accepts `place_faction` (Romans or Aedui) and
 `placements`: entries contain `region`, `piece_type`, and positive integer
@@ -328,6 +334,12 @@ come from `fs_bot.engine.agent`; other kinds below are literal strings.
 Requests can include additional context. Copy offered values rather than
 inventing pieces, regions, owners, or internal grant flags.
 
+For each Battle Loss, `LOSS_ORDER.pieces` contains only the currently legal
+tier: Allies/Forts/Citadels/Settlements first when retreating, last otherwise.
+Diviciacus remains the last possible casualty. Later losses rebuild the legal
+options, including when a hard piece survives its die roll. Exact visibility
+and Ally identity gaps recorded separately by the audit remain open.
+
 | `request["kind"]` | request fields | response |
 |---|---|---|
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
@@ -400,6 +412,10 @@ the offered replacement can cover the untouched plan instead. Event-owned
 `grant` and `frumentum` context constrain replacements to their existing
 action lists, timing and funding. These are engine-supplied request fields,
 not permissions that the responding player can add to a plan.
+
+Replacement `details`, if supplied, must be an object. Malformed nested
+Supply replies retain the same pending request, input and board/RNG; they
+cannot fall through to an automatic choice or a different decision kind.
 
 Within A53, a refused Recruit may be skipped with
 `{"replacement":{"skip":"Recruit"}}`. A standalone SA replacement with
@@ -760,7 +776,8 @@ context remain checked. New timing decisions carry version metadata so they
 cannot silently use the old no-prompt path.
 This compatibility covers inserted timing decisions, not changed outcomes
 from substantive rule corrections. A historical transcript affected by such
-a correction, including previously omitted Seize Rally effects, can fail
+a correction, including previously omitted Seize Rally effects or historical
+Battle requests that offered both casualty tiers, can fail
 verified replay; the frontend reports the mismatch rather than treating a
 different board as equivalent.
 

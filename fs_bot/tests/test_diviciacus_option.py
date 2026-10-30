@@ -86,16 +86,33 @@ def test_o38_rejects_an_unplayable_region_before_changing_the_pool():
     assert encode(state) == before
 
 
-def test_o38_bot_effect_checks_distinguish_placement_from_shaded_capability():
-    from fs_bot.cards.event_eval import (get_event_flags, PLACES_LEADER,
+def test_o38_bot_effect_checks_preserve_placement_legality_before_final_year():
+    from fs_bot.cards.event_eval import (get_event_flags, PLACES_LEADER, IS_CAPABILITY,
                                         should_skip_event)
     state = empty_option()
-    state['deck'] = [rc.WINTER_CARD]
-    assert get_event_flags(rc.CARD_O38) == frozenset({PLACES_LEADER})
+    state['deck'] = [rc.WINTER_CARD, 1, rc.WINTER_CARD]
+    assert get_event_flags(rc.CARD_O38) == frozenset({PLACES_LEADER, IS_CAPABILITY})
     assert not should_skip_event(state, rc.CARD_O38, rc.AEDUI)
-    assert should_skip_event(state, rc.CARD_O38, rc.BELGAE)
+    assert not should_skip_event(state, rc.CARD_O38, rc.BELGAE)
     place_diviciacus(state)
     assert should_skip_event(state, rc.CARD_O38, rc.AEDUI)
+
+
+@pytest.mark.parametrize('shaded', [False, True])
+def test_human_can_execute_either_o38_side_in_final_year(shaded):
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.cards.event_eval import should_skip_event
+    state = empty_option()
+    state['deck'] = [rc.WINTER_CARD]
+    assert should_skip_event(state, rc.CARD_O38, rc.AEDUI)
+    state['event_params'] = {'region': rc.CARNUTES}
+    execute_event(state, rc.CARD_O38, shaded=shaded)
+    if shaded:
+        assert is_capability_active(state, 38, rc.EVENT_SHADED)
+    else:
+        assert find_leader(state, rc.AEDUI) == rc.CARNUTES
+        assert is_capability_active(state, rc.CARD_O38, rc.EVENT_UNSHADED)
+    assert validate_state(state) == []
 
 
 def test_optional_leader_limits_suborn_and_ambush_until_removed():

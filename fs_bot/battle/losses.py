@@ -395,6 +395,14 @@ def resolve_losses(state, region, faction, num_losses, *,
             "losses_taken": int — actual pieces removed
             "losses_absorbed": int — losses absorbed by surviving rolls
     """
+    # A20 projects only Warbands. Its game-run Arverni casualty ownership
+    # and provisional origin tie break must not expose human loss choices
+    # or consume nonparticipating Allied Tribes/Citadels at the destination.
+    from fs_bot.cards.morbihan_display import resolve_projected_losses
+    projected = resolve_projected_losses(state, region, faction, num_losses)
+    if projected is not None:
+        return projected
+
     result = {
         "removed": [],
         "rolls": [],

@@ -168,19 +168,31 @@ def test_german_capability_and_uprising_remain_available_before_gallic_war_inter
         assert node_g3b(state) == 'No'
 
 
-def test_optional_diviciacus_preserves_unshaded_compatibility_pending_q_o38():
+@pytest.mark.parametrize('shaded', [False, True, None])
+def test_optional_diviciacus_both_sides_declined_in_final_year(shaded):
     state = build_initial_state(rc.SCENARIO_GREAT_REVOLT, seed=8, diviciacus_option=True)
     state['deck'] = [1, rc.WINTER_CARD]
-    assert is_capability_final_year(state, rc.CARD_O38, shaded=False) is False
-    assert is_capability_final_year(state, rc.CARD_O38, shaded=True) is True
-    assert not is_final_year_capability(state, rc.CARD_O38, shaded=False)
-    assert is_final_year_capability(state, rc.CARD_O38, shaded=True)
+    assert is_capability_final_year(state, rc.CARD_O38, shaded=shaded)
+    assert is_final_year_capability(state, rc.CARD_O38, shaded=shaded)
     from fs_bot.bots.bot_common import should_decline_event
     from fs_bot.cards.card_data import is_capability_card
     assert is_capability_card(rc.CARD_O38, state['scenario'])
-    # Preserve the previous unshaded opportunity pending Q-O38's unresolved
-    # CAPABILITY boundary; the shaded prohibition is clearly a Capability.
-    assert not should_decline_event(state, rc.CARD_O38, rc.AEDUI)
-    assert not should_decline_event(state, rc.CARD_O38, rc.ROMANS)
-    assert should_decline_event(state, rc.CARD_O38, rc.ARVERNI)
-    assert should_decline_event(state, rc.CARD_O38, rc.BELGAE)
+    # The replacement card's printed boundary label resolves both sides
+    # under §5.3; the final-year restriction is only for Non-players.
+    for faction in (rc.AEDUI, rc.ROMANS, rc.ARVERNI, rc.BELGAE):
+        assert should_decline_event(state, rc.CARD_O38, faction)
+
+
+def test_optional_diviciacus_actual_bot_nodes_check_both_sides_and_live_year():
+    state = build_initial_state(rc.SCENARIO_GREAT_REVOLT, seed=8, diviciacus_option=True)
+    state['current_card'] = state['current_card_id'] = rc.CARD_O38
+    state['non_player_factions'] = {rc.ROMANS, rc.AEDUI, rc.BELGAE, rc.ARVERNI}
+    nodes = (node_r4, node_a3, node_b3b, node_v2b)
+    state['deck'] = [1, rc.WINTER_CARD, 2, rc.WINTER_CARD]
+    before = encode(state)
+    assert [node(state) for node in nodes] == ['No'] * len(nodes)
+    assert encode(state) == before
+    state['deck'] = [1, rc.WINTER_CARD]
+    before = encode(state)
+    assert [node(state) for node in nodes] == ['Yes'] * len(nodes)
+    assert encode(state) == before

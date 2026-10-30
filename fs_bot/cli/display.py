@@ -278,6 +278,13 @@ def _format_capabilities(state):
     for card_id, side in caps.items():
         side_short = "shaded" if side == EVENT_SHADED else "unshaded"
         title = CARD_TITLES.get(card_id, "")
+        if not title:
+            # Optional O38 is outside the ordinary deck title tables.
+            from fs_bot.cards.card_data import get_card
+            try:
+                title = get_card(card_id, state.get('scenario')).title
+            except KeyError:
+                pass
         name = f" {title}" if title else ""
         holder = f", held by {owners[card_id]}" if card_id in owners else ""
         parts.append(f"#{card_id}{name} ({side_short}{holder})")

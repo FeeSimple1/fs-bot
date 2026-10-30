@@ -17,7 +17,7 @@ Source: §5.3, §5.1.2, Card Reference, A Card Reference
 from fs_bot.rules_consts import (
     EVENT_SHADED, EVENT_UNSHADED,
     CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
-    ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS, CARD_O38,
 )
 
 
@@ -171,6 +171,10 @@ def is_valid_capability(card_id, scenario=None):
     Returns:
         bool
     """
+    # Optional original-game O38 is outside the ordinary deck sets; its
+    # printed boundary label makes both sides Capabilities under §5.3.
+    if card_id == CARD_O38:
+        return True
     if scenario is not None and scenario in ARIOVISTUS_SCENARIOS:
         return (card_id in CAPABILITY_CARDS or
                 card_id in CAPABILITY_CARDS_ARIOVISTUS)

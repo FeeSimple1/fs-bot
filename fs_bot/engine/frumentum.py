@@ -53,17 +53,30 @@ def _action_kind(plan):
     return plan.get("command") or ACTION_SA
 
 
-def _execute(state, plan, allowance):
+def _execute(state, plan, allowance, *, request=None):
     from fs_bot.engine.execute import _execute_recruit, _execute_march, _execute_sa
     from fs_bot.engine.recruit_planning import install_confirmed_supply
     with install_confirmed_supply(state, plan), spending_scope(state, allowance):
+        original = plan
+        if request is not None and (plan.get('command') == 'Recruit'
+                                    or plan.get('sa') == 'Build'):
+            from fs_bot.engine.supply_reconsideration import reconsider
+            sa_only = plan.get('command') is None
+            plan = reconsider(state, ROMANS, plan, with_sa=sa_only, sa_only=sa_only,
+                              allowed_commands=[cmd for cmd in ('Recruit', 'March')
+                                                if cmd in request['remaining_actions']],
+                              frumentum=request)
         command = plan.get("command")
-        if command == "Recruit":
+        if 'skip' in plan:
+            result = {'executed': False, 'declined_no_effect': True}
+        elif command == "Recruit":
             result = _execute_recruit(state, ROMANS, plan)
         elif command == "March":
             result = _execute_march(state, ROMANS, plan)
         else:
             result = _execute_sa(state, ROMANS, plan) or {"executed": False}
+        if plan != original:
+            result['supply_replacement'] = deepcopy(plan)
         spent = allowance - state["resources"][ROMANS]
     return result, spent
 
@@ -107,7 +120,9 @@ def validate_response(state, request, response):
     from fs_bot.commands.common import CommandError
     from fs_bot.board.pieces import PieceError
     try:
-        result, spent = _execute(_copy(state), deepcopy(response), request["remaining_resources"])
+        trial = _copy(state)
+        trial['_diviciacus_preview'] = True
+        result, spent = _execute(trial, deepcopy(response), request["remaining_resources"])
     except (CommandError, PieceError, ValueError, TypeError, KeyError, IndexError, AttributeError) as exc:
         raise ValueError(f"Invalid paid Frumentum plan: {exc}") from exc
     error = _result_error(result)
@@ -244,8 +259,9 @@ def resolve_frumentum(state):
                 remaining.remove(response["skip"])
                 errors = []
                 continue
-            result, spent = _execute(state, response, allowance)
-            kind = _action_kind(response)
+            result, spent = _execute(state, response, allowance, request=request)
+            response = result.get('supply_replacement', response)
+            kind = response.get('skip') or _action_kind(response)
             remaining.remove(kind)
             allowance -= spent
             context["remaining"] = allowance

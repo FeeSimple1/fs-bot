@@ -4638,7 +4638,7 @@ def execute_card_A69(state, shaded=False):
             state["event_modifiers"]["card_A69_loss_per_warband"] = to_place
 
 def execute_card_O38(state, shaded=False):
-    """Card O38: optional original-scenario Diviciacus Leader (A Setup).
+    """Card O38: optional Diviciacus Leader, both sides Capability (§5.3).
 
     Unshaded ("Caesar's druid"): Place the Diviciacus piece in any Region;
     the Ariovistus Diviciacus Leader rules apply (A1.4). The option keeps
@@ -4650,7 +4650,7 @@ def execute_card_O38(state, shaded=False):
 
     Source: A Card Reference, card O38
     """
-    from fs_bot.rules_consts import DIVICIACUS, LEADER
+    from fs_bot.rules_consts import CARD_O38, DIVICIACUS, LEADER
     if not shaded:
         if state.get("diviciacus_in_play") or find_leader(state, AEDUI) is not None:
             raise ValueError("card O38: Diviciacus is already in play")
@@ -4676,7 +4676,14 @@ def execute_card_O38(state, shaded=False):
         avail[LEADER] = avail.get(LEADER, 0) + 1
         place_piece(state, region, AEDUI, LEADER, leader_name=DIVICIACUS)
         state["diviciacus_in_play"] = True
+        # O38 replaces base card 38: its two sides cannot both remain active.
+        # Keep unshaded under O38, because base 38 unshaded would wrongly
+        # permit combined forces anywhere, without the Leader's proximity.
+        deactivate_capability(state, 38)
+        activate_capability(state, CARD_O38, EVENT_UNSHADED)
     else:
+        deactivate_capability(state, CARD_O38)
+        # Retain the historical shaded id for transfer consumers and saves.
         activate_capability(state, 38, EVENT_SHADED)
 
 

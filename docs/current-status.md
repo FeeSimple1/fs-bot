@@ -8,15 +8,58 @@ their game outcomes are not a baseline for a later rules revision.
 [Documentation index](README.md) · [Playing guide](../PLAYING.md) ·
 [Current question index](../QUESTIONS.md#current-open-source-questions)
 
-This page includes the 24 October adoption of six
-[provisional rulings](provisional-rulings.md), the preceding follow-up
+This page includes the 24 October adoption of six and 29 October adoption
+of three additional [provisional rulings](provisional-rulings.md), the follow-up
 repairs, and the 23 October implementation review. The
 [provisional-ruling report](reviews/provisional-rulings-2026-10-24.md)
-records validation of the adopted implementation. Each dated report keeps
+records validation of the first six rulings on its 24 October revision.
+Each dated report keeps
 its own revision, source digest and outcome evidence; earlier checkpoint
 measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
+
+### 29 October rules adoption and Trade choice
+
+The [rules and Trade report](reviews/rulings-trade-2026-10-29.md) records the
+owner's adoption of three additional provisional rulings, PR-07 through
+PR-09, and the printed-card resolution of O38. Non-player Aedui Supply uses
+one roll for the complete human Roman action; ordinary Rally/Recruit
+prerequisites precede their bonuses; tied A20 casualties select an origin
+Region at equal odds for each loss. The rulings remain subject to later
+authoritative correction.
+
+The replacement Diviciacus photograph confirms that both sides are
+Capabilities under §5.3, so bots decline both in the final year. Human
+choices remain available. O38's unshaded Capability is recorded separately
+from original card 38's geographically unrestricted cooperation effect.
+A20 now returns exact survivors to their original Regions and cannot take
+projected losses on nonparticipating local Allies/Citadels.
+
+Human Aedui can select the single Trade Region under shaded River Commerce
+after the relevant Supply declarations. The choice uses the actual board
+at the Special Activity, including a preceding Command, and preserves
+pending decisions, save/resume and replay.
+
+Final local validation: **5,777 tests passed**, **150 audited bot games**,
+**80 mixed-seat executions including replay**, and **50 strict-census
+executions**. The original 15-point balance guardrail passes without changing
+its baseline. Cross-hash replay and census reports match. The report retains
+the failed implementation attempts separately from the accepted source.
+
+The actual Aedui die refusal now lets Rome reconsider a Recruit plan before
+it executes, or reconsider Build at its own boundary while keeping an
+earlier completed Command. Replanning retains the refusal, and saved
+sessions preserve and verify rejected attempts that established it.
+
+Three known interface gaps remain: voluntary own-piece removal/Citadel
+downgrades throughout legal action timing; Vercingetorix's mid-action
+Spring-box entry; and a Special Activity between his two Rally options in
+one Region. The broader source-derived human-choice audit also remains.
+The report records why start-only reclamation would be incomplete.
+The separate non-player shaded Trade selection question is recorded in
+[Q-TRADE-NP-REGION](../QUESTIONS.md#q-trade-np-region--shaded-river-commerce-selection-29-october-2026);
+this batch retains its existing policy pending source review.
 
 ### 29 October Recruit and Rally choices
 
@@ -35,11 +78,11 @@ source-derived completeness audit also remains. That review has confirmed
 another existing within-action limitation: an SA cannot yet interrupt the
 two Vercingetorix Rally options in the same Region; current interrupted
 Command portions use different Regions.
-The Trade review confirmed a second gap: human Aedui cannot select the
-single Trade Region under shaded River Commerce (Card 39); execution still
-uses a highest-yield proxy. That choice remains part of the completeness
-work. Four implementation gaps are now known, including the two original
-items above.
+The Trade review confirmed a second gap: human Aedui could not select the
+single Trade Region under shaded River Commerce (Card 39); execution used
+a highest-yield proxy. That choice remained part of the completeness
+work. Four implementation gaps were known at that checkpoint. The later rules
+and Trade repair above closes the Trade Region choice.
 
 Final local validation passes 5,622 tests, 150 audited bot games, 80
 mixed-seat executions with replay and 50 strict-census executions. The
@@ -49,10 +92,11 @@ Old Aquitani saves lacking an owner remain owner-unknown. The newly recorded
 [bonus-timing question](../QUESTIONS.md#q-rally-bonus-timing--additions-before-ordinary-placement-29-october-2026)
 asks whether printed additions can establish Control before an ordinary
 placement. [A20 casualty origins](../QUESTIONS.md#q-a20-origin--counterattack-losses-among-projected-origins-29-october-2026)
-are also unresolved when projected Warbands have equal visibility. Neither
-question changes the six adopted provisional rulings or Q-O38. The
+were also unresolved when projected Warbands have equal visibility. The
+later owner adoption above settles their project behavior. The
 [Aedui Supply agreement question](../QUESTIONS.md#q-supply-aedui-die-scope--agreement-across-multiple-regions-29-october-2026)
-records the separate uncertainty about dice covering multiple Regions.
+records the separate uncertainty about dice covering multiple Regions, now
+governed by provisional PR-07.
 
 ### 28 October Spring Leader placement
 
@@ -85,8 +129,7 @@ remaining comparison work was
 optional Recruit/Rally quantities, Vercingetorix's combined Rally menu,
 voluntary own-piece reclamation, and a source-derived inventory of every
 printed human choice. The 29 October entry above updates those dispositions.
-Q-O38 and the six provisional rulings retain their
-existing dispositions.
+The later 29 October rules-adoption entry updates Q-O38 and the ruling register.
 
 ### 27 October human Event choices batch
 
@@ -136,9 +179,9 @@ A70 when Belgae are non-player, including before the final year. Human Events
 and choices against player Belgae remain available.
 
 The optional O38 shaded Capability now receives the same final-year check.
-Its unshaded classification remains [Q-O38](../QUESTIONS.md#q-o38--optional-diviciacus-capability-label-27-october-2026): the flat
-source transcription does not settle the label's placement. Existing
-unshaded bot behavior is preserved, without introducing a new project ruling.
+At that checkpoint its unshaded classification remained [Q-O38](../QUESTIONS.md#q-o38--optional-diviciacus-capability-label-27-october-2026): the flat
+source transcription did not settle the label's placement. The owner's later
+replacement-card photograph resolves the label; see the 29 October entry.
 
 At this checkpoint, remaining comparison work included Spring Leader
 placement, optional Recruit/Rally quantities and Vercingetorix's combined
@@ -254,7 +297,7 @@ for reproduction commands and compatibility limits.
 
 ## Adopted provisional rulings
 
-On 24 October 2026 (America/Chicago), the owner adopted the following
+On 24 and 29 October 2026 (America/Chicago), the owner adopted the following
 project policies. **Each is subject to possible later correction if an
 authoritative source is found.** The [ruling register](provisional-rulings.md)
 records their exact scope and rationale; the
@@ -270,6 +313,9 @@ claiming official errata or designer confirmation.
 | [PR-04: German-owned A63](provisional-rulings.md#pr-04) | Resolve its Interlude activation before transition, retain German ownership afterward, and leave it dormant in the base-game half. |
 | [PR-05: Ariovistus Harassment](provisional-rulings.md#pr-05) | Follow printed faction order with Germans in their proper slot, then automatic Arverni last. |
 | [PR-06: Winter Harassment](provisional-rulings.md#pr-06) | Retain the last actually played non-Winter card's order, including all-pass cards; keep the game-run faction last. |
+| [PR-07: Aedui Supply dice](provisional-rulings.md#pr-07) | One roll for the human Roman action, including its Special Ability and all relevant Regions; retain the answer during replanning. |
+| [PR-08: Placement bonus timing](provisional-rulings.md#pr-08) | The ordinary placement option must qualify before its additional pieces; explicit printed exceptions remain. |
+| [PR-09: A20 casualty origins](provisional-rulings.md#pr-09) | Preserve visibility priority, then select equally among eligible origin Regions separately for each casualty. |
 
 PR-06 recovers the order from saved `played_cards` without changing
 `current_card`. A state with no recoverable preceding Event uses the current

@@ -205,8 +205,8 @@ def is_final_year_capability(state, card_id, shaded=None):
         True if this is a Capability card and it's the final year.
     """
     from fs_bot.rules_consts import CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS, CARD_O38
-    if card_id == CARD_O38 and shaded is False:
-        return False
+    # O38's printed boundary label covers both sides under §5.3, including
+    # the unshaded placement of the optional Diviciacus Leader.
     is_capability = (card_id in CAPABILITY_CARDS
                      or card_id in CAPABILITY_CARDS_ARIOVISTUS
                      or card_id == CARD_O38)
@@ -354,8 +354,7 @@ def should_decline_event(state, card_id, faction):
             and BELGAE in state.get("non_player_factions", set())):
         return True
 
-    # Capability in final year — §8.1.1. Preserve the existing O38 unshaded
-    # opportunity pending Q-O38; its shaded Capability is declined.
+    # Capability in final year — §8.1.1, including both printed O38 sides.
     shaded = get_dual_use_preference(faction, scenario, card_id) == EVENT_SHADED
     if is_final_year_capability(state, card_id, shaded=shaded):
         return True

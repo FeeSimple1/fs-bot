@@ -41,7 +41,7 @@ def test_cli_sa_first_trade_funds_zero_resource_rally():
     st["resources"][AEDUI] = 0
     out = StringIO()
     action = collect_player_action(st, AEDUI, ACTION_COMMAND_SA,
-                                  StringIO("5\n1\n4\n1\n3\n3\n1\n1\n"), out)
+                                  StringIO("5\n1\n1\n3\n3\n1\n1\n"), out)
     assert action["sa_timing"] == "before"
     assert out.getvalue().index("Which Special Activity?") < out.getvalue().index("Which accompanying Command?")
     assert st["resources"][AEDUI] == 0  # planning did not execute the SA
@@ -57,7 +57,7 @@ def test_cli_command_first_keeps_after_timing():
     st["resources"][AEDUI] = 1
     out = StringIO()
     action = collect_player_action(st, AEDUI, ACTION_COMMAND_SA,
-                                  StringIO("1\n3\n3\n1\n1\ny\n1\n4\nn\n"), out)
+                                  StringIO("1\n3\n3\n1\n1\ny\n1\nn\n"), out)
     assert action["sa_timing"] == "after"
     assert out.getvalue().index("Which Command?") < out.getvalue().index("Which Special Activity?")
     result = execute_decision(st, AEDUI, {"player_action": action})
@@ -71,7 +71,7 @@ def test_cli_rally_trade_continue_rally_official_example():
     st["resources"][AEDUI] = 1
     out = StringIO()
     action = collect_player_action(st, AEDUI, ACTION_COMMAND_SA,
-                                  StringIO("6\n1\n1\n3\n1\n1\n1\n4\n2\n2\n1\n1\nn\n"), out)
+                                  StringIO("6\n1\n1\n3\n1\n1\n1\n2\n2\n1\n1\nn\n"), out)
     assert action["sa_timing"] == "during"
     assert st["resources"][AEDUI] == 1
     result = execute_decision(st, AEDUI, {"player_action": action})

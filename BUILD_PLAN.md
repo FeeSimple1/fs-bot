@@ -67,12 +67,13 @@ their own relevant checks; old counts must not be relabeled as new evidence.
 The 29 October batch closes optional Recruit/Rally quantities and the
 combined Vercingetorix Rally menu. Remaining implementation work from the
 original four items is voluntary own-piece reclamation and mid-action
-Vercingetorix entry. The source-derived choice audit also remains. Two
-additional gaps are confirmed: same-Region Rally interruption around an SA
-and human selection of Trade's single Region under shaded River Commerce.
-See the [current report](docs/reviews/recruit-rally-2026-10-29.md) for exact
-scope and unresolved source timing, rather than treating these as an
-exhaustive defect list.
+Vercingetorix entry. The source-derived choice audit also remains. The same-Region Rally interruption around an SA also remains. The later
+[29 October rules and Trade repair](docs/reviews/rulings-trade-2026-10-29.md)
+closes human selection of Trade's single Region under shaded River Commerce.
+The [Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md) retains
+its placement scope and then-unresolved timing questions; the later rules
+and Trade report records their adopted provisional answers. These known
+items are not an exhaustive defect list.
 
 The follow-up implementation adds Diviciacus cooperation and its optional
 original-scenario setup, repairs strategy-runner acceptance/resume, exposes
@@ -81,13 +82,14 @@ and historical save fixtures. These are now implemented maintenance items;
 the [current status](docs/current-status.md#follow-up-repairs) distinguishes
 them from the older validation checkpoint above.
 
-1. **Revisit the six provisional rulings if authoritative answers are found.**
+1. **Revisit the provisional rulings if authoritative answers are found.**
    The owner adopted [PR-01 through PR-06](docs/provisional-rulings.md) on
    24 October 2026. These govern A30's Belgic cue, A28 lending by both
    non-player factions, unused A53 funding, German-owned A63 after Interlude,
    Arverni-last Harassment, and the preceding Event's order during Winter.
-   Each is subject to possible later correction if an authoritative source
-   is found. [QUESTIONS.md](QUESTIONS.md) retains the source conflicts;
+   PR-07 through PR-09 were adopted on 29 October for Aedui Supply dice,
+   placement-bonus timing, and A20 casualty origins. Each is subject to
+   possible later correction if an authoritative source is found. [QUESTIONS.md](QUESTIONS.md) retains the source conflicts;
    they are not current implementation blockers or designer-confirmed rules.
 2. **Extend position and interaction coverage as defects or gaps are found.**
    Prioritize multiple-faction human decisions, scoped Event combinations,

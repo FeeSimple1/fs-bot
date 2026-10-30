@@ -383,8 +383,8 @@ for i in range(1, 6):
 # "Diviciacus Leader Option" for base-game scenarios (A Setup). NOT the Gallic
 # War second-half substitute — that is A38 Vergobret (A2.1 Deck; BGG thread
 # 3701651).
-# Unshaded places the Diviciacus piece (A Card Reference O38); shaded is the
-# same Capability as base 38 shaded.
+# Both sides are Capabilities: O38's printed boundary label applies to both
+# versions (§5.3). Unshaded places Diviciacus; shaded matches base 38 shaded.
 _o38_order, _o38_syms = _parse_faction_line("Ae Ro Ar Be".split())
 _ARIOVISTUS_SPECIFIC_CARDS["O38"] = CardData(
     "O38", "Diviciacus", _o38_order, _o38_syms, is_capability=True)
@@ -436,8 +436,7 @@ def is_capability_card(card_id, scenario=None):
     For Ariovistus scenarios, checks both base and Ariovistus capability sets.
     """
     # O38 is optional base-scenario content, outside the ordinary deck sets.
-    # Its shaded side is a Capability. Side-aware callers preserve the existing
-    # unshaded exemption pending the source question Q-O38.
+    # Its printed boundary label makes both sides Capabilities (§5.3).
     if card_id == CARD_O38:
         return True
     if scenario is not None and scenario in ARIOVISTUS_SCENARIOS:

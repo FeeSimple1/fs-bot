@@ -25,6 +25,7 @@ boolean. The full request and board print before each choice. An explicit
 """
 
 import argparse
+import copy
 import json
 import os
 import sys
@@ -150,6 +151,7 @@ def cmd_play(args):
 
     dfunc.transaction_checkpoint = session.checkpoint
     dfunc.transaction_restore = session.restore
+    dfunc.transaction_complete = session.transaction_complete
 
     while state["current_card"] is not None:
         try:
@@ -163,6 +165,10 @@ def cmd_play(args):
             return 0
         except ActionRejected as exc:
             persist()
+            if session.replayed_rejection:
+                # The failed attempt is part of the verified history. Its
+                # correction is the next queued decision, not a new prompt.
+                continue
             print(f"Decision rejected: {exc} Edit queue.json and run play again.")
             return 0
         except (KeyboardInterrupt, EOFError):
@@ -258,7 +264,9 @@ def cmd_replay(args):
     entries = log[origin_log_count:] + saved["journal"]
     replay_session.data["queue"] = [SeatSession._inbox_entry(e) for e in entries]
     replay_session.data["expected"] = [
-        {"id": e["assistant_id"], "signature": e["assistant_signature"]}
+        {"id": e["assistant_id"], "signature": e["assistant_signature"],
+         **({"assistant_rejected": copy.deepcopy(e["assistant_rejected"])}
+            if "assistant_rejected" in e else {})}
         for e in entries]
     save_game(origin, target, meta=replay_meta, log=replay_log)
     from argparse import Namespace

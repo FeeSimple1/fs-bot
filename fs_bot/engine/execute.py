@@ -221,9 +221,13 @@ def execute_decision(state, faction, decision):
     # refused exact portion. That OR result cannot commit a partial human
     # placement plan or the SA between its portions. SA-only errors retain
     # their established separate result; these are Command-placement errors.
-    if _exact_human_placement(action) and result.get('errors'):
+    if _exact_human_placement(result.get('supply_replacement', action)) and result.get('errors'):
         result['executed'] = False
     if not result.get("executed"):
+        from fs_bot.engine.supply_retry import reconsideration_for_failure, RECONSIDERATION
+        receipt = reconsideration_for_failure(state, snapshot, faction, action)
+        if receipt is not None:
+            result[RECONSIDERATION] = receipt
         state.clear()
         state.update(snapshot)
         if agent is not None:
@@ -232,6 +236,69 @@ def execute_decision(state, faction, decision):
             state["_card_turn"] = card_turn
         result["rolled_back"] = True
     return result
+
+
+def _reconsider_current_recruit(state, faction, plan, *, accompanying_sa=None,
+                               limited=False, split=False, continuation=False,
+                               excluded_regions=(), grant=None, completed_sa_result=None):
+    """Revise only the current Command, retaining its accompanying SA plan."""
+    if plan.get('command') != _CMD_RECRUIT:
+        return plan, None
+    from copy import deepcopy
+    from fs_bot import rules_consts as rc
+    from fs_bot.engine.action_validation import compatible_sa
+    from fs_bot.engine.supply_reconsideration import reconsider, SA_DETAILS
+    command_only = deepcopy(plan)
+    command_only.update(sa=SA_ACTION_NONE_LABEL, sa_regions=[])
+    command_only.pop('sa_timing', None)
+    details = command_only.setdefault('details', {})
+    for key in SA_DETAILS:
+        details.pop(key, None)
+    # Voluntary transfers have already resolved at the outer action's start.
+    details.pop('transfers', None)
+    allowed = ([rc.CMD_RECRUIT] if split else
+               [cmd for cmd in rc.ROMAN_COMMANDS
+                if compatible_sa(cmd, accompanying_sa)])
+    revised = reconsider(
+        state, faction, command_only, with_sa=False, limited=limited,
+        allowed_commands=allowed, accompanying_sa=accompanying_sa,
+        continuation=continuation, excluded_regions=excluded_regions,
+        grant=grant, completed_sa_result=completed_sa_result)
+    if revised == command_only:
+        return plan, None
+    chosen = deepcopy(revised)
+    for key in ('sa', 'sa_regions', 'sa_timing'):
+        if key in plan:
+            chosen[key] = deepcopy(plan[key])
+    for key in SA_DETAILS:
+        if key in (plan.get('details') or {}):
+            chosen.setdefault('details', {})[key] = deepcopy(plan['details'][key])
+    return chosen, deepcopy(revised)
+
+
+def _reconsider_untouched_split(state, faction, action, *, limited=False, grant=None):
+    """Before a first Recruit portion, a refusal can change the whole action.
+
+    Dependency discovery examines only that first portion. The original SA
+    and later portion have not resolved and must not spend an agreement die
+    speculatively on the board as it exists before earlier effects.
+    """
+    from copy import deepcopy
+    from fs_bot.engine.supply_reconsideration import reconsider
+    parts = (action.get('details') or {}).get('command_parts') or []
+    if action.get('command') != _CMD_RECRUIT or len(parts) != 2:
+        return action
+    remaining = deepcopy(action)
+    remaining.setdefault('details', {}).pop('transfers', None)
+    revised = reconsider(state, faction, remaining, limited=limited,
+                         dependency_action=parts[0], grant=grant,
+                         with_sa=not limited)
+    if revised == remaining:
+        return action
+    revised = deepcopy(revised)
+    # The outer action already performed these before entering orchestration.
+    revised.setdefault('details', {}).pop('transfers', None)
+    return revised
 
 
 def _execute_decision(state, faction, decision):
@@ -332,14 +399,61 @@ def _execute_decision(state, faction, decision):
             ("before" if _sa_runs_before_command(command, sa) else "after"))
         before = timing == "before"
         sa_result = None
+
+        def current_command(plan, *, split=False, continuation=False, excluded=()):
+            """Reconsider current Recruit only after preceding effects resolve.
+
+            A completed or still-accompanying SA is not another free choice.
+            Its compatibility constrains a changed Command; later SA execution
+            receives the revised Command's actual Regions and movement plan.
+            """
+            if not is_human or plan.get('command') != _CMD_RECRUIT:
+                return handler(state, faction, plan), plan
+            from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
+            accompanying = (((sa_result or {}).get('sa')
+                             if (sa_result or {}).get('executed') else None)
+                            if before or continuation else sa)
+            chosen, replacement = _reconsider_current_recruit(
+                state, faction, plan, accompanying_sa=accompanying,
+                limited=decision.get('action') == ACTION_LIMITED_COMMAND,
+                split=split, continuation=continuation, excluded_regions=excluded,
+                completed_sa_result=sa_result if before or continuation else None)
+            selected = _COMMAND_HANDLERS[chosen['command']]
+            if is_human and chosen['command'] == _CMD_RECRUIT:
+                executed = _execute_recruit(state, faction, chosen, _exact=True)
+            else:
+                executed = selected(state, faction, chosen)
+            if replacement is not None:
+                executed['supply_replacement'] = replacement
+            return executed, chosen
+
         if timing == "during" and sa not in _BATTLE_MODIFYING_SAS:
             parts = (bot_action.get("details") or {}).get("command_parts") or []
             if len(parts) != 2:
                 return {"executed": False, "command": command,
                         "reason": "Interrupted Command needs two portions"}
-            first = handler(state, faction, parts[0])
+            if is_human:
+                from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
+                revised = _reconsider_untouched_split(
+                    state, faction, bot_action,
+                    limited=decision.get('action') == ACTION_LIMITED_COMMAND)
+                if revised != bot_action:
+                    revised_decision = dict(decision, player_action=revised)
+                    result = _execute_decision(state, faction, revised_decision)
+                    result['supply_replacement'] = revised
+                    return _attach_transfers(result)
+            from fs_bot.engine.action_validation import command_regions
+            first, first_plan = current_command(
+                parts[0], split=True, excluded=command_regions(parts[1]))
+            # Keep the enclosing plan consistent for the SA's Command-wide
+            # restrictions, including any revised first Recruit portion.
+            if first_plan is not parts[0]:
+                from copy import deepcopy
+                bot_action = deepcopy(bot_action)
+                bot_action['details']['command_parts'][0] = first_plan
             sa_result = _execute_sa(state, faction, bot_action)
-            second = handler(state, faction, parts[1])
+            second, _ = current_command(parts[1], split=True, continuation=True,
+                                        excluded=command_regions(first_plan))
             result = {"executed": _command_executed(first) or _command_executed(second),
                       "command": command, "command_parts": [first, second],
                       "errors": (first.get("errors") or []) + (second.get("errors") or []),
@@ -352,7 +466,8 @@ def _execute_decision(state, faction, decision):
             result = _execute_event(state, faction, bot_action,
                                     human=is_human)
         else:
-            result = handler(state, faction, bot_action)
+            result, bot_action = current_command(bot_action)
+            command = bot_action['command']
         if not before:
             if (command == _CMD_EVENT or _command_executed(result)
                     or _sa_survives_empty_command(faction, command, sa)):
@@ -420,7 +535,7 @@ def _execute_borrowed_command(state, faction, action, handler):
     return result
 
 
-def _execute_bot_command(state, faction, bot_action, *, with_sa=False):
+def _execute_bot_command(state, faction, bot_action, *, with_sa=False, _human_grant=None):
     """Execute an Event-granted Command; add an SA only when text grants it."""
     from fs_bot.commands.common import free_action_scope
     action = dict(bot_action)
@@ -428,10 +543,10 @@ def _execute_bot_command(state, faction, bot_action, *, with_sa=False):
         action["sa"] = SA_ACTION_NONE_LABEL
         action["sa_regions"] = []
     with free_action_scope(state, faction):
-        return _execute_free_bot_command(state, faction, action)
+        return _execute_free_bot_command(state, faction, action, _human_grant=_human_grant)
 
 
-def _execute_free_bot_command(state, faction, bot_action):
+def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
     """Route a bot_action's Command (never an Event) to the matching command
     executor. Returns the result dict, or None if the command is not one of
     the wired board Commands."""
@@ -451,23 +566,62 @@ def _execute_free_bot_command(state, faction, bot_action):
     timing = bot_action.get("sa_timing")
     before = (timing == "before" if timing else _sa_runs_before_command(cmd, sa))
     sa_result = None
+    sa_kwargs = {'_human_grant': _human_grant} if _human_grant is not None else {}
+
+    def current_command(plan, *, split=False, continuation=False, excluded=()):
+        chosen, replacement = plan, None
+        if _human_grant is not None:
+            accompanying = (((sa_result or {}).get('sa')
+                             if (sa_result or {}).get('executed') else None)
+                            if before or continuation else sa)
+            chosen, replacement = _reconsider_current_recruit(
+                state, faction, plan, accompanying_sa=accompanying,
+                split=split, continuation=continuation, excluded_regions=excluded,
+                grant=_human_grant,
+                completed_sa_result=sa_result if before or continuation else None)
+        selected_command = chosen.get('command', cmd)
+        if selected_command == _CMD_MARCH:
+            result = _execute_march(state, faction, chosen, free=True)
+        elif selected_command == _CMD_RECRUIT and _human_grant is not None:
+            result = _execute_recruit(state, faction, chosen, _exact=True)
+        else:
+            result = handlers[selected_command](state, faction, chosen)
+        if replacement is not None:
+            result['supply_replacement'] = replacement
+        return result, chosen
+
     if timing == "during":
         parts = (bot_action.get("details") or {}).get("command_parts") or []
-        first = h(state, faction, parts[0])
-        sa_result = _execute_sa(state, faction, bot_action)
-        second = h(state, faction, parts[1])
+        if _human_grant is not None:
+            revised = _reconsider_untouched_split(state, faction, bot_action,
+                                                 grant=_human_grant)
+            if revised != bot_action:
+                result = _execute_free_bot_command(
+                    state, faction, revised, _human_grant=_human_grant)
+                result['supply_replacement'] = revised
+                return result
+        from fs_bot.engine.action_validation import command_regions
+        first, first_plan = current_command(
+            parts[0], split=True, excluded=command_regions(parts[1]))
+        if first_plan is not parts[0]:
+            from copy import deepcopy
+            bot_action = deepcopy(bot_action)
+            bot_action['details']['command_parts'][0] = first_plan
+        sa_result = _execute_sa(state, faction, bot_action, **sa_kwargs)
+        second, _ = current_command(parts[1], split=True, continuation=True,
+                                    excluded=command_regions(first_plan))
         return {"executed": _command_executed(first) or _command_executed(second),
                 "command": cmd, "command_parts": [first, second],
                 "errors": (first.get("errors") or []) + (second.get("errors") or []),
                 "sa_execution": sa_result, "sa_timing": "during"}
     if before:
-        sa_result = _execute_sa(state, faction, bot_action)
-    result = (_execute_march(state, faction, bot_action, free=True)
-              if cmd == _CMD_MARCH else h(state, faction, bot_action))
+        sa_result = _execute_sa(state, faction, bot_action, **sa_kwargs)
+    result, bot_action = current_command(bot_action)
+    cmd = bot_action.get('command', cmd)
     if not before:
         if (_command_executed(result)
                 or _sa_survives_empty_command(faction, cmd, sa)):
-            sa_result = _execute_sa(state, faction, bot_action)
+            sa_result = _execute_sa(state, faction, bot_action, **sa_kwargs)
         else:
             result = dict(result)
             result["sa_skipped"] = "command produced no legal effect"
@@ -2966,38 +3120,45 @@ def _resolve_a20_arverni_ambush(state):
 
     B, sources, projected, _ = best
     from fs_bot.cards.morbihan_display import snapshot_sources, projected_battle
+    from copy import deepcopy
     physical_sources = snapshot_sources(state, theater)
-    moved = {}
-    for (r, ps), n in sources.items():
-        if r == B:
-            continue
-        move_piece(state, r, B, ARVERNI, WARBAND, count=n, piece_state=ps)
-        moved[r, ps] = n
+    saved = deepcopy({key: value for key, value in state.items()
+                      if key != 'decision_agent'})
+    agent, had_agent = state.get('decision_agent'), 'decision_agent' in state
+    card_turn = state.get('_card_turn')
     try:
-        with projected_battle(state, B, physical_sources):
+        for (r, ps), n in sources.items():
+            if r != B:
+                move_piece(state, r, B, ARVERNI, WARBAND, count=n, piece_state=ps)
+        with projected_battle(state, B, physical_sources) as survivors:
             res = resolve_battle(state, B, attacking_faction=ARVERNI,
                                  defending_faction=ROMANS, is_ambush=True)
-    except _EXEC_ERRORS as exc:
-        # Restore on failure to keep the board consistent.
-        for (r, ps), n in moved.items():
-            avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, ps)
-            take = min(n, avail)
-            if take > 0:
-                move_piece(state, B, r, ARVERNI, WARBAND, count=take,
-                           piece_state=ps)
+        # Step 5 reveals Hidden survivors, but leaves Scouted markers intact.
+        # PR-09 records each casualty's physical origin during Counterattack;
+        # return exactly that origin's survivors, not the first available ones.
+        for r, counts in survivors.items():
+            if r == B:
+                continue
+            for ps, n in counts.items():
+                if n > 0:
+                    returning_state = SCOUTED if ps == SCOUTED else REVEALED
+                    move_piece(state, B, r, ARVERNI, WARBAND, count=n,
+                               piece_state=returning_state)
         refresh_all_control(state)
-        return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
-                 "executed": False, "reason": repr(exc)}]
-    # Step 5 reveals Hidden survivors, but leaves Scouted markers intact.
-    # Keep the existing origin allocation within each surviving state.
-    for (r, ps), n in moved.items():
-        returning_state = SCOUTED if ps == SCOUTED else REVEALED
-        avail = count_pieces_by_state(state, B, ARVERNI, WARBAND, returning_state)
-        take = min(n, avail)
-        if take > 0:
-            move_piece(state, B, r, ARVERNI, WARBAND, count=take,
-                       piece_state=returning_state)
-    refresh_all_control(state)
+    except BaseException as exc:
+        # Gathering, losses, origin dice, Reveal and return are one action.
+        # Moving whatever remains back cannot undo Roman losses, restore the
+        # RNG, or recover exact origins after a partial Counterattack failure.
+        state.clear()
+        state.update(saved)
+        if had_agent:
+            state['decision_agent'] = agent
+        if card_turn is not None:
+            state['_card_turn'] = card_turn
+        if isinstance(exc, _EXEC_ERRORS):
+            return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
+                     "executed": False, "rolled_back": True, "reason": repr(exc)}]
+        raise
     return [{"free_action": "ambush", "flag": "card_A20_arverni_ambush",
              "region": B, "defender": ROMANS, "projected_warbands": projected,
              "result": res}]
@@ -4291,8 +4452,16 @@ def _sa_detail(bot_action, key):
     return (d.get("sa_details") or {}).get(key)
 
 
+def _execute_sa(state, faction, bot_action, *, _human_grant=None):
+    """Settle the current SA choice before binding its Diviciacus scope."""
+    from fs_bot.engine.supply_reconsideration import reconsider
+    bot_action = reconsider(state, faction, bot_action, sa_only=True,
+                           grant=_human_grant)
+    return _execute_sa_confirmed(state, faction, bot_action)
+
+
 @_diviciacus_command_scope(phase="special_ability")
-def _execute_sa(state, faction, bot_action):
+def _execute_sa_confirmed(state, faction, bot_action):
     """Execute a standalone Special Activity accompanying a Command.
 
     Returns a result dict, or None when there is no standalone SA to run
@@ -4345,7 +4514,7 @@ def _execute_sa(state, faction, bot_action):
             return result
 
     if sa == _SA_TRADE:
-        return _execute_trade(state, faction)
+        return _execute_trade(state, faction, action=bot_action)
     if (sa in (_SA_DEVASTATE, _SA_ENTREAT)
             and faction == _ARVERNI_F
             and faction in state.get("non_player_factions", set())):
@@ -4566,19 +4735,32 @@ def maybe_np_aedui_subsidy(state):
         return None    # e.g. card 38 shaded bans the transfer
 
 
-def _execute_trade(state, faction, *, allowed_regions=None):
+def _execute_trade(state, faction, *, allowed_regions=None, action=None):
     """Aedui Trade (§4.4.1), with one binding Roman declaration."""
     scope = state.get("_command_region_scope")
     if scope is not None:
         allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
     try:
-        from fs_bot.commands.sa_trade import trade_declarations
+        from fs_bot.commands.sa_trade import (trade_declarations, selection_from_action,
+                                               validate_trade_plan)
+        error = validate_trade_plan(action or {})
+        if error:
+            raise CommandError(error)
+        if faction != _AEDUI_F:
+            raise CommandError('Only Aedui may Trade (§4.4.1)')
         with trade_declarations(state):
             res = _sa_trade(state,
                             roman_agreed=_trade_roman_agreement(state),
-                            allowed_regions=allowed_regions)
+                            allowed_regions=allowed_regions,
+                            trade_region=selection_from_action(action))
     except _EXEC_ERRORS as exc:
         return {"executed": False, "sa": _SA_TRADE, "error": str(exc)}
+    if res.get('declined'):
+        return {"executed": False, "sa": _SA_TRADE, "result": res,
+                "declined_no_effect": True, "reason": "Aedui called off Trade (§4.4.1)"}
+    if not res['resources_gained']:
+        return {"executed": False, "sa": _SA_TRADE, "result": res,
+                "declined_no_effect": True, "reason": "Trade yielded no Resources"}
     return {"executed": True, "sa": _SA_TRADE, "result": res}
 
 

@@ -187,9 +187,9 @@ class TradePlayer(TacticalPlayer):
         if 'Which Command?' in delta:
             self.planned = True
             # Follow the real Rally/Trade menus used by §4.1's timing example.
-            self.answers = (['5', '1', '4', '1', '3', '3', '1', '1']
+            self.answers = (['5', '1', '1', '3', '3', '1', '1']
                             if self.timing == 'before' else
-                            ['1', '3', '3', '1', '1', 'y', '1', '4', 'n'])
+                            ['1', '3', '3', '1', '1', 'y', '1', 'n'])
             return self.answers.pop(0) + '\n'
         assert not options, delta
         # The other human seat explicitly approves the actual Trade, after

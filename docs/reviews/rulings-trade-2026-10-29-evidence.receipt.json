@@ -1,0 +1,11 @@
+{
+  "accepted_attempt": "attempt3",
+  "bytes": 7128802,
+  "credential_pattern_findings": 0,
+  "members": 1672,
+  "path": "/workspace/scratch/534c265c65f4/fs-bot/docs/reviews/rulings-trade-2026-10-29-evidence.zip",
+  "readback_verified": true,
+  "sha256": "32264630306ba63a73f5117de156081de0fa0599ce3f8205d2f7c1d76a5aade8",
+  "source_sha256": "e19896b1e07bbf425ca5e1f7d1db5113e4db6843c3302bc0ef1eb1bd32304bd0",
+  "uncompressed_bytes": 29402556
+}

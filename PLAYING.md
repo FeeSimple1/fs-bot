@@ -90,9 +90,12 @@ The current interruption menu still uses different Regions before and after
 the Special Activity. Splitting Vercingetorix's two placements in one Region
 around that activity remains an interface limitation.
 
-Another remaining choice gap affects shaded River Commerce (Card 39):
-Trade is limited to one Region, but the human menu does not yet let you
-select it. The current engine chooses a Region by its existing yield proxy.
+With shaded River Commerce (Card 39), choose the one Region that will
+Trade. The menu appears after Supply Line declarations and after any
+preceding Command, so its income estimates use the actual position. It
+includes every legal Region, even one yielding no Resources, and permits
+declining Trade. The ordinary Command still takes effect if Trade is
+declined or earns nothing. Use `board` or `b` at the choice as usual.
 
 When a Roman bot needs your Supply Line permission for Recruit and its
 preceding activity, it asks before making changes. A refusal makes it
@@ -192,7 +195,7 @@ flowcharts), including transcribed errata marked as `[ERRATA ...]` notes.
 The implementation follows these supplied references and the rulings
 recorded in QUESTIONS.md. That file is a historical decision ledger;
 [current status](docs/current-status.md) supersedes older completion claims.
-The owner adopted [six provisional rulings](docs/provisional-rulings.md),
+The owner adopted [nine provisional rulings](docs/provisional-rulings.md),
 all subject to possible later correction if an authoritative source is found:
 
 - A30 has no special Belgic instruction; bots use their normal shaded Event procedure.
@@ -204,6 +207,14 @@ all subject to possible later correction if an authoritative source is found:
 - Ariovistus Harassment follows printed faction order, with Arverni last.
 - Winter Harassment uses the last non-Winter card actually played, including
   a card on which everyone passed. The game-run faction remains last.
+- Non-player Aedui roll once for Supply permission for a human Roman action,
+  covering its Command, accompanying Special Ability and relevant Regions.
+  Replanning the same decision does not grant a new roll.
+- Ordinary Rally/Recruit placement prerequisites are checked before the
+  bonus pieces arrive. Bonuses still apply where the normal troop quantity
+  would be zero, and explicit printed exceptions remain.
+- A20 casualties follow the required visibility order, then choose an
+  original Region at equal odds for each otherwise tied Warband loss.
 
 These are project interpretations, not official errata. The ruling register
 explains each source gap and the fallback for older saves without usable
@@ -222,3 +233,9 @@ card history.
 For measured outcomes by scenario, see the [23 October validation
 report](docs/reviews/outstanding-fixes-2026-10-23.md). Those seeded bot games
 check the implementation; they do not predict results against a human player.
+
+The owner's replacement Diviciacus card photograph resolves a separate
+printed-label question: both O38 sides are Capabilities under §5.3. Bots
+therefore decline either side in the final year; this does not restrict a
+human's Event selection. See the [29 October rules report](docs/reviews/rulings-trade-2026-10-29.md)
+for the evidence and the narrower remaining Capability-removal question.

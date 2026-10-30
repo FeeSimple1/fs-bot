@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 
 from fs_bot.commands.common import CommandError, free_action_scope
+from fs_bot.commands.rally import preserve_supply_agreements
 from fs_bot.board.pieces import PieceError
 
 
@@ -48,6 +49,8 @@ def _sa_regions(action):
     details = action.get('details') or {}
     merged = dict(details.get('sa_details') or {})
     merged.update(details)
+    if 'trade_region' in merged:
+        regions.append(merged['trade_region'])
     for key in ('suborn_plan', 'entreat_plan', 'intimidate_plan', 'rampage_plan'):
         for entry in merged.get(key) or []:
             add(entry)
@@ -87,6 +90,7 @@ def _result_error(result):
     return None
 
 
+@preserve_supply_agreements
 def execute_free_action_plan(state, faction, request, action):
     """Execute a validated concrete plan, retaining its human SA timing."""
     from fs_bot.engine import execute as ex
@@ -111,8 +115,12 @@ def execute_free_action_plan(state, faction, request, action):
                     state, faction, action,
                     ignore_selection=request.get('intimidate_anywhere', False))
             if sa == 'Trade':
-                return ex._execute_trade(state, faction,
+                return ex._execute_trade(state, faction, action=action,
                                          allowed_regions=request.get('allowed_regions'))
+            if sa == 'Build':
+                return (ex._execute_sa(state, faction, action, _human_grant=request)
+                        or {'executed': False, 'declined_no_effect': True,
+                            'reason': 'Special Ability declined after Supply refusal'})
             return handlers[sa](state, faction, action)
         if request.get('morasses_ambush') and action.get('command') == CMD_BATTLE:
             return ex._execute_battle(state, faction, action, _ambush_anywhere=True)
@@ -120,8 +128,11 @@ def execute_free_action_plan(state, faction, request, action):
             # Card 6's bonus belongs to the engine-owned grant, never the
             # submitted plan. Validation executes this same path on a copy.
             return ex._execute_battle(state, faction, action, _double_auxilia=True)
-        return ex._execute_bot_command(state, faction, action,
-                                       with_sa=request.get('with_sa', False))
+        with ex._command_execution_scope(state, request.get('allowed_regions'),
+                                         request.get('with_sa', False)):
+            return ex._execute_bot_command(state, faction, action,
+                                           with_sa=request.get('with_sa', False),
+                                           _human_grant=request)
 
 
 def _explicit_sentinel(response, key):
@@ -180,6 +191,10 @@ def _validate_plan(state, faction, request, action):
     from fs_bot.engine.action_validation import command_regions, command_parts, compatible_sa
     from fs_bot.map.map_data import get_playable_regions_for_state
     faction = request.get('acting_faction', faction)
+    from fs_bot.commands.sa_trade import validate_trade_plan
+    error = validate_trade_plan(action)
+    if error:
+        return error
     standalone = request.get('request_type') == 'event_sa'
     cmd, sa = action.get('command'), action.get('sa', 'No SA')
     if standalone:
@@ -279,6 +294,7 @@ def _validate_plan(state, faction, request, action):
         if any(not path or path[-1] not in destinations for path in routes):
             return 'Every March group must end in the Event destination.'
     sim = deepcopy({k:v for k,v in state.items() if k != 'decision_agent'})
+    sim['_diviciacus_preview'] = True
     result = execute_free_action_plan(sim, faction, request, action)
     error = _result_error(result)
     if error:

@@ -32,6 +32,12 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind == "supply_refusal":
+                from fs_bot.cli.supply import collect_supply_refusal
+                return collect_supply_refusal(state, faction, request, stdin, stdout)
+            if kind == "trade_region":
+                from fs_bot.cli.trade import collect_trade_region
+                return collect_trade_region(state, faction, request, stdin, stdout)
             if kind == "spring_leader":
                 from fs_bot.cli.spring import collect_leader
                 return collect_leader(state, faction, request, stdin, stdout)

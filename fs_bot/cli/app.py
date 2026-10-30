@@ -34,7 +34,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.state.setup import setup_scenario
 from fs_bot.engine.game_engine import (
-    get_sop_factions, start_game, play_card,
+    get_sop_factions, start_game, play_card, ActionRejected,
 )
 from fs_bot.state import serialize
 from fs_bot.cli.reactive import make_cli_reactive
@@ -396,6 +396,7 @@ def main(argv=None, stdin=None, stdout=None):
     replay_reactive = deque(
         e for e in log if "reactive" in e) if args.replay else deque()
     live_log = list(log)
+    replay_attempt = {"entry": None}
 
     # Decision callback (bots via flowcharts, humans via menus), wrapped to
     # feed/record the replay log.
@@ -417,6 +418,7 @@ def main(argv=None, stdin=None, stdout=None):
             if (e.get("faction") == faction
                     and e.get("card") == state_.get("current_card")):
                 replay_decisions.popleft()
+                replay_attempt["entry"] = e
                 stdout.write(f"[replay] {faction}: {e.get('action')}\n")
                 d = {"action": e.get("action")}
                 if e.get("player_action") is not None:
@@ -469,11 +471,38 @@ def main(argv=None, stdin=None, stdout=None):
         state["decision_agent"] = agent
 
     def transaction_checkpoint():
+        replay_attempt["entry"] = None
         return (len(live_log), list(replay_decisions), list(replay_reactive),
                 copy.deepcopy(view.snapshots))
 
+    def transaction_complete():
+        recorded = replay_attempt["entry"]
+        if recorded and recorded.get("supply_reconsideration"):
+            raise RuntimeError("Replay expected a Supply-refused attempt, but it completed.")
+
     def transaction_restore(checkpoint):
         log_length, decisions, reactions, snapshots = checkpoint
+        error = sys.exc_info()[1]
+        receipt = (error.result.get("supply_reconsideration")
+                   if isinstance(error, ActionRejected) else None)
+        recorded = replay_attempt["entry"]
+        if isinstance(error, ActionRejected) and recorded and (
+                recorded.get("supply_reconsideration") is not None or receipt is not None):
+            if recorded.get("supply_reconsideration") != serialize.encode(receipt):
+                raise RuntimeError("Replay Supply refusal differs from its recorded result.")
+        if isinstance(receipt, dict):
+            # The resolved NPC die survives lawful reconsideration. Keep the
+            # attempted action and consumed reactions so --replay can produce
+            # that same refusal before proceeding to the corrected action.
+            if recorded is None:
+                attempted = next((entry for entry in live_log[log_length:]
+                                  if "reactive" not in entry), None)
+                if attempted is None:
+                    raise RuntimeError("Supply reconsideration has no turn transcript.")
+                attempted["supply_reconsideration"] = serialize.encode(receipt)
+            view.snapshots.clear()
+            view.snapshots.update(snapshots)
+            return
         del live_log[log_length:]
         replay_decisions.clear()
         replay_decisions.extend(decisions)
@@ -484,6 +513,7 @@ def main(argv=None, stdin=None, stdout=None):
 
     decision.transaction_checkpoint = transaction_checkpoint
     decision.transaction_restore = transaction_restore
+    decision.transaction_complete = transaction_complete
 
     def decision_rejected(state_, faction, result):
         reason = result.get("reason") or "the Command had no legal effect"

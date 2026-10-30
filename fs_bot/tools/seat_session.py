@@ -55,10 +55,15 @@ def validate_response(state, request, response):
     kind = request["kind"]
     if (kind != "turn" and isinstance(response, dict)
             and set(response) == {"use_default"} and response["use_default"] is True):
+        if kind == 'supply_refusal' and request.get('action_type') == 'command':
+            from fs_bot.engine.supply_reconsideration import validate_response as validate_supply
+            validate_supply(state, request, {'continue': True})
         return None
     if kind == "turn":
         if not isinstance(response, dict):
             raise ValueError("A turn response must be an action object.")
+        if any(key in response for key in ("assistant_rejected", "supply_reconsideration")):
+            raise ValueError("Supply refusal receipts are engine history, not player choices.")
         if response.get("action") not in request["options"]:
             raise ValueError("Choose one of the pending turn's legal actions.")
         if "bot_action" in response:
@@ -75,6 +80,13 @@ def validate_response(state, request, response):
             if error:
                 raise ValueError(error)
         return response
+    if kind == "supply_refusal":
+        from fs_bot.engine.supply_reconsideration import validate_response as validate_supply
+        validate_supply(state, request, response)
+        return response
+    if kind == "trade_region":
+        from fs_bot.commands.sa_trade import validate_trade_response
+        return validate_trade_response(request, response)
     if kind == "spring_leader":
         from fs_bot.engine.spring import validate_response as validate_spring
         return validate_spring(state, request, response)
@@ -183,6 +195,7 @@ class SeatSession:
         self.cursor = 0
         self.active = False
         self.error = None
+        self.replayed_rejection = False
 
     def __deepcopy__(self, memo):
         # This is a live frontend, not game state. Bot previews copy the
@@ -217,11 +230,53 @@ class SeatSession:
         self.finish()
         self.active = True
         self.cursor = 0
+        self.replayed_rejection = False
         return copy.deepcopy(self.data["queue"]), copy.deepcopy(self.data["journal"])
+
+    def transaction_complete(self):
+        """A recorded Supply refusal must fail again during verified replay."""
+        expected = {entry["id"]: entry for entry in self.data.get("expected", [])}
+        if any(expected.get(entry["assistant_id"], {}).get("assistant_rejected")
+               for entry in self.data["journal"]):
+            raise RuntimeError("Replay expected a Supply-refused attempt, but it completed.")
 
     def restore(self, token):
         self.active = False
-        if isinstance(sys.exc_info()[1], ActionRejected):
+        error = sys.exc_info()[1]
+        if isinstance(error, ActionRejected):
+            receipt = error.result.get("supply_reconsideration")
+            if isinstance(receipt, dict):
+                # PR-07: this is a resolved random refusal, not a malformed
+                # submission. Its attempted plan is necessary replay evidence
+                # for the retained die. Keep it and assign the correction a
+                # fresh ID instead of erasing the event that produced the die.
+                journal = self.data["journal"]
+                first = journal[0] if journal else None
+                if (not first or decode(first["assistant_request"])["kind"] != "turn"
+                        or self.cursor != len(journal)):
+                    raise RuntimeError("Supply reconsideration has no complete turn transcript.")
+                marker = encode(receipt)
+                expected = next((entry for entry in self.data.get("expected", [])
+                                 if entry["id"] == first["assistant_id"]), None)
+                if expected is not None:
+                    if expected.get("assistant_rejected") != marker:
+                        raise RuntimeError("Replay Supply refusal differs from its recorded result.")
+                    self.replayed_rejection = True
+                first["assistant_rejected"] = marker
+                self.log.extend(journal)
+                self.data["journal"] = []
+                self.data["pending"] = {
+                    "id": f"d{len(self.log) + 1:06d}",
+                    "request": copy.deepcopy(first["assistant_request"]),
+                    "board": encode(board_copy(self.state)),
+                }
+                self.cursor = 0
+                return
+            first = (self.data["journal"] or [None])[0]
+            if first and any(entry["id"] == first["assistant_id"]
+                             and entry.get("assistant_rejected")
+                             for entry in self.data.get("expected", [])):
+                raise RuntimeError("Replay expected a Supply refusal, but the rejection differed.")
             # A rejected action can be corrected, including its top-level
             # plan. Restore inputs, but do not force replay of that bad plan.
             queue, old_journal = token

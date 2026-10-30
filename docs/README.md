@@ -13,7 +13,7 @@ references and canonical constants remain read-only.
 | [Assistant play](../CHATGPT_README.md) | File-based pending decisions, responses, board inspection, and replay |
 | [Agent interface](../AGENT_INTERFACE.md) | Turn plans, typed decision requests, validation, and session contracts |
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
-| [Provisional rulings](provisional-rulings.md) | Six owner-adopted interpretations, each subject to later authoritative correction |
+| [Provisional rulings](provisional-rulings.md) | Nine owner-adopted interpretations, each subject to later authoritative correction |
 | [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
 | [Developer instructions](../CLAUDE.md) | Source hierarchy, implementation constraints, tests, and commit discipline |
 | [Maintenance roadmap](../BUILD_PLAN.md) | Existing components and further validation work |
@@ -25,6 +25,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [29 October rules adoption and Trade choice](reviews/rulings-trade-2026-10-29.md) | Three adopted provisional rulings, printed O38 classification, A20 origins and human Trade Region selection |
 | [29 October Recruit/Rally repair](reviews/recruit-rally-2026-10-29.md) | Exact human quantities, ordered Vercingetorix options, physical allocations and related bot/bonus corrections; validation and remaining gaps |
 | [28 October Spring Leader repair](reviews/spring-leaders-2026-10-28.md) | Successor destinations, human choices, seeded priorities, delayed Vercingetorix and Interlude named-Leader corrections; exact validation and remaining timing limit |
 | [27 October second repair batch](reviews/second-batch-2026-10-27.md) | Province, Ambacti, Council and Winter Uprising choices; Aedui/final-year bot instructions; exact validation and outcome-drift investigation |

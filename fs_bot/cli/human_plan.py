@@ -1035,6 +1035,13 @@ def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
 
 
 def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state):
+    if sa == "Trade":
+        # Supply declarations and the final board determine legal Regions.
+        # Ask at execution, after the preceding Command/SA portion resolves.
+        action["sa"] = sa
+        action["sa_regions"] = []
+        stdout.write("Trade declarations and any River Commerce Region choice follow at resolution.\n")
+        return action
     collector = _SA_COLLECTORS.get(sa)
     if collector is not None:
         kwargs = {"before_state": before_state} if sa == "Enlist" else {}
@@ -1072,7 +1079,7 @@ def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state)
 
 def _collect_command(state, faction, engine_action, stdin, stdout, *,
                      allowed_commands=None, allowed_regions=None, max_regions=None,
-                     required_destinations=None):
+                     required_destinations=None, allowed_sas=None):
     from copy import deepcopy
     from fs_bot.engine.action_validation import compatible_sa, command_regions
     from fs_bot.engine.game_engine import is_frost
@@ -1091,12 +1098,15 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
                 and (c != "March" or not is_frost(state) or is_free_action(state, faction))]
     if not commands:
         return None
+    available_sas = [s for s in _faction_special_abilities(faction, state["scenario"])
+                     if (allowed_sas is None or s in allowed_sas)
+                     and any(compatible_sa(c, s) for c in commands)]
     choices = [(c, c) for c in commands]
-    if engine_action == ACTION_COMMAND_SA:
+    if engine_action == ACTION_COMMAND_SA and available_sas:
         choices.append(("Special Activity first, then Command", "sa_first"))
         if any(c not in ("March", "Battle") for c in commands):
             choices.append(("Command, Special Activity, then continue Command", "sa_during"))
-        if faction == BELGAE:
+        if faction == BELGAE and "Enlist" in available_sas:
             choices.append(("Command first, with borrowed German Warbands", "enlist_command_first"))
         stdout.write("Choose a Command for Command-first timing, or an order below.\n")
     cmd = prompt_choice(stdin, stdout, "Which Command?", choices)
@@ -1119,10 +1129,8 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
     if cmd == "sa_first":
         action = {"command": None, "regions": [], "sa": _SA_NONE,
                   "sa_regions": [], "details": {}, "sa_timing": "before"}
-        abilities = [s for s in _faction_special_abilities(faction, state["scenario"])
-                     if any(compatible_sa(c, s) for c in commands)]
         action = _collect_sa_plan(state, faction, action, stdin, stdout,
-                                  allowed_sas=abilities)
+                                  allowed_sas=available_sas)
         legal = [c for c in commands if compatible_sa(c, action["sa"])]
         if not legal:
             return None
@@ -1155,7 +1163,7 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
         sim = _preview_command(state, faction, first)
         action = deepcopy(first)
         action = _collect_sa_plan(sim, faction, action, stdin, stdout,
-                                  standalone=True)
+                                  standalone=True, allowed_sas=available_sas)
         from fs_bot.commands.sa_enlist import is_borrow_plan, begin_borrow
         if is_borrow_plan(action):
             begin_borrow(sim, action)
@@ -1176,11 +1184,12 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
     action = _collect_command_plan(state, faction, cmd, stdin, stdout, single)
     if action is None:
         return None
-    if engine_action == ACTION_COMMAND_SA:
+    if engine_action == ACTION_COMMAND_SA and any(
+            compatible_sa(cmd, s) for s in available_sas):
         if prompt_yes_no(stdin, stdout, "Add a Special Activity?", default=False):
             sim = _preview_command(state, faction, action)
             action = _collect_sa_plan(sim, faction, action, stdin, stdout,
-                                      before_state=state)
+                                      before_state=state, allowed_sas=available_sas)
             action["sa_timing"] = "after"
             from fs_bot.commands.sa_enlist import is_borrow_plan, begin_borrow
             if is_borrow_plan(action):

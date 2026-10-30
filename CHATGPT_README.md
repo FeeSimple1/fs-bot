@@ -8,7 +8,7 @@ with no package installation or internet connection required.
 See the [documentation index](docs/README.md), [current engineering
 status](docs/current-status.md), and [terminal play guide](PLAYING.md).
 The status document identifies verified fixes and source questions. The
-owner adopted [six provisional project rulings](docs/provisional-rulings.md),
+owner adopted [nine provisional project rulings](docs/provisional-rulings.md),
 all subject to possible later correction if an authoritative source is found.
 Apply them when playing; they are not official errata. Passing tests is not
 a claim of complete rules compliance.
@@ -18,6 +18,12 @@ Recruit/Rally plans can specify exact troop `count` values. Use
 `placement_owners` to reserve exact Roman/Aedui pieces during agreed
 Diviciacus cooperation. The [agent interface](AGENT_INTERFACE.md) defines
 the fields, mandatory bonuses, Region limits and remaining interruption gap.
+
+Under shaded River Commerce (39), let the `trade_region` request present
+the legal Regions and actual gains after Supply declarations. Choose one
+Region, explicitly decline, or explicitly request the default. A missing
+answer stays pending. A complete turn plan may instead supply
+`details.trade_region`; see the [agent interface](AGENT_INTERFACE.md).
 
 ## Quick start (for the assistant)
 
@@ -204,7 +210,8 @@ Use the displayed scores and the supplied references for those cases.
 
 These observations predate the October corrections. They are possible
 strategy ideas, not evidence of current win rates or expert human balance.
-For the latest reproducible bot outcomes, see the [validation report](docs/reviews/outstanding-fixes-2026-10-23.md).
+For current validation and the reports for each revision, see
+[current engineering status](docs/current-status.md).
 
 - Roman March priorities can consolidate Legions under threat and leave
   garrisons at origins. Removing Roman Allies can reduce the Roman score.

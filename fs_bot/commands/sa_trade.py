@@ -49,6 +49,93 @@ from fs_bot.commands.rally import (has_supply_line, supply_agreement_scope,
 
 
 _ROMAN_DECLARATION = (AEDUI, ROMANS, None)
+UNSELECTED = object()
+TRADE_REGION = 'trade_region'
+
+
+def selection_from_action(action):
+    """An optional authored Region; absence defers the choice until SA time."""
+    details = (action or {}).get('details') or {}
+    nested = details.get('sa_details') or {}
+    if TRADE_REGION in details:
+        return details[TRADE_REGION]
+    return nested.get(TRADE_REGION, UNSELECTED)
+
+
+def validate_trade_plan(action):
+    """Check the new field without predicting future Supply declarations."""
+    details = action.get('details') or {}
+    if not isinstance(details, dict):
+        return 'Command details must be an object'
+    nested = details.get('sa_details') or {}
+    if not isinstance(nested, dict):
+        return 'Special Ability details must be an object'
+    if TRADE_REGION not in details and TRADE_REGION not in nested:
+        return None
+    if action.get('sa') != 'Trade':
+        return 'trade_region requires a Trade Special Ability'
+    selection = selection_from_action(action)
+    if not isinstance(selection, str):
+        return 'trade_region must name one Region'
+    if (TRADE_REGION in details and TRADE_REGION in nested
+            and details[TRADE_REGION] != nested[TRADE_REGION]):
+        return 'Conflicting Trade Region selections'
+    return None
+
+
+def validate_trade_response(request, response):
+    """A durable human answer chooses one offered Region or explicitly declines."""
+    if not isinstance(response, dict):
+        raise ValueError('Choose a Trade Region or decline Trade.')
+    for sentinel in ('decline', 'use_default'):
+        if set(response) == {sentinel} and response[sentinel] is True:
+            return response
+    if (set(response) != {'region'} or not isinstance(response['region'], str)
+            or response['region'] not in request['legal_regions']):
+        raise ValueError('Choose one of the offered Trade Regions.')
+    return response
+
+
+def _choose_trade_region(state, region_items, roman_agreed, selection, choose_region):
+    """Declare Supply first, then let the human choose the restricted Region."""
+    regions = list(region_items)
+    if selection is not UNSELECTED:
+        if not isinstance(selection, str) or selection not in regions:
+            raise CommandError('The selected Trade Region has no legal Supply Line or is outside the allowed range.')
+        return selection
+    if not regions:
+        return None
+    if AEDUI in state.get('non_player_factions', ()):
+        # Preserve the existing map-order policy; its interpretation of
+        # §§8.3.3/8.6.3 is tracked separately from this human interface.
+        return regions[0]
+    if not choose_region or state.get('_diviciacus_preview'):
+        # A pure planning copy must allow any income a human could choose.
+        # In particular Subdued/Roman-Allied Tribes also finance the following
+        # Command; counting blue pieces alone can hide affordable plans.
+        return max(regions, key=lambda region: sum(item[2] for item in region_items[region]))
+    if choose_region:
+        from fs_bot.engine.agent import consult_agent
+        room = MAX_RESOURCES - state['resources'].get(AEDUI, 0)
+        request = {'kind': TRADE_REGION, 'faction': AEDUI,
+                   'legal_regions': regions, 'roman_agreed': bool(roman_agreed),
+                   'choices': [{'region': region,
+                                'resources_gained': min(room, sum(item[2] for item in items)),
+                                'per_item': items}
+                               for region, items in region_items.items()]}
+        response = consult_agent(state, AEDUI, request)
+        if response is not None:
+            validate_trade_response(request, response)
+            if response.get('decline') is True:
+                return None
+            if 'region' in response:
+                return response['region']
+    # The raw callback's explicit/default contract retains its old proxy.
+    # Durable sessions never reach this branch for a missing human answer.
+    def blue_pieces(region):
+        pieces = state['spaces'][region].get('pieces', {}).get(AEDUI, {})
+        return pieces.get(ALLY, 0) + pieces.get(CITADEL, 0)
+    return max(sorted(regions), key=blue_pieces)
 
 
 @contextmanager
@@ -103,10 +190,11 @@ def forecast_trade(state, *, allowed_regions=None, confirm=False):
         with trade_declarations(sim):
             agreed = roman_agreement(sim)
             return trade(sim, roman_agreed=agreed,
-                         allowed_regions=allowed_regions)['resources_gained']
+                         allowed_regions=allowed_regions, choose_region=False)['resources_gained']
 
 
-def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None):
+def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None,
+          trade_region=UNSELECTED, choose_region=True):
     """Execute Trade — Aedui gain Resources from Supply Lines.
 
     §4.4.1: Aedui receive +1 Resource (or +2 if Romans agreed) for each
@@ -138,10 +226,11 @@ def trade(state, agreements=None, roman_agreed=False, *, allowed_regions=None):
             state['_supply_line_agreements'][_ROMAN_DECLARATION] = True
         if agreements is not None:
             agreements = dict(agreements, **{ROMANS: agreed})
-        return _trade(state, agreements, agreed, allowed_regions=allowed_regions)
+        return _trade(state, agreements, agreed, allowed_regions=allowed_regions,
+                      trade_region=trade_region, choose_region=choose_region)
 
 
-def _trade(state, agreements, roman_agreed, *, allowed_regions):
+def _trade(state, agreements, roman_agreed, *, allowed_regions, trade_region, choose_region):
     scenario = state["scenario"]
     result = {"resources_gained": 0, "per_item": []}
 
@@ -195,36 +284,22 @@ def _trade(state, agreements, roman_agreed, *, allowed_regions):
             if r == AEDUI_REGION or is_adjacent(r, AEDUI_REGION)
         }
 
+    restricted = is_capability_active(state, 39, _ESh)
+    if trade_region is not UNSELECTED and not restricted:
+        raise CommandError('trade_region is only used with shaded River Commerce (39).')
     if not supply_line_regions:
+        if trade_region is not UNSELECTED:
+            raise CommandError('The selected Trade Region has no legal Supply Line or is outside the allowed range.')
         return result
 
-    # Card 39 (River Commerce) shaded: "Trade is maximum 1 Region."
-    if is_capability_active(state, 39, _ESh) and len(supply_line_regions) > 1:
-        if AEDUI in state.get("non_player_factions", set()):
-            # §8.3.3: Non-players apply limited-Region Capabilities "in
-            # the first Regions that apply" — the first applicable Region
-            # in the standard map order, not the best-value one (found by
-            # the rules-traceability pass).
-            for r in get_playable_regions(scenario,
-                                          state.get("capabilities")):
-                if r in supply_line_regions:
-                    supply_line_regions = {r}
-                    break
-        else:
-            # A player Aedui chooses; proxy: the highest-yield Region.
-            def _aedui_value(r):
-                ap = state["spaces"][r].get("pieces", {}).get(AEDUI, {})
-                return ap.get(ALLY, 0) + ap.get(CITADEL, 0)
-            supply_line_regions = {
-                max(sorted(supply_line_regions), key=_aedui_value)}
-
-    total = 0
+    region_items = {}
 
     # The membership set must not determine the order of the visible/replayed
     # earnings breakdown. Use the board's stable Region order.
     for region in get_playable_regions(scenario, state.get("capabilities")):
         if region not in supply_line_regions:
             continue
+        items = []
         # Aedui Allied Tribes and Citadels — §4.4.1
         space = state["spaces"][region]
         aedui_pieces = space.get("pieces", {}).get(AEDUI, {})
@@ -233,15 +308,13 @@ def _trade(state, agreements, roman_agreed, *, allowed_regions):
         aedui_allies = aedui_pieces.get(ALLY, 0)
         if aedui_allies > 0:
             gain = aedui_allies * aedui_value
-            total += gain
-            result["per_item"].append(("aedui_ally", region, gain))
+            items.append(("aedui_ally", region, gain))
 
         # Aedui Citadels
         aedui_citadels = aedui_pieces.get(CITADEL, 0)
         if aedui_citadels > 0:
             gain = aedui_citadels * aedui_value
-            total += gain
-            result["per_item"].append(("aedui_citadel", region, gain))
+            items.append(("aedui_citadel", region, gain))
 
         # Where Aedui Control: Subdued Tribes
         if is_controlled_by(state, region, AEDUI):
@@ -253,17 +326,29 @@ def _trade(state, agreements, roman_agreed, *, allowed_regions):
                 if allied_faction is None and tribe_info.get('status') is None:
                     # Subdued Tribe
                     gain = base_value
-                    total += gain
-                    result["per_item"].append(
+                    items.append(
                         ("subdued_tribe", tribe, gain)
                     )
                 elif allied_faction == ROMANS and roman_agreed:
                     # Roman Allied Tribe — only if Romans agreed
                     gain = base_value
-                    total += gain
-                    result["per_item"].append(
+                    items.append(
                         ("roman_ally", tribe, gain)
                     )
+
+        region_items[region] = items
+
+    if restricted:
+        selected = _choose_trade_region(state, region_items, roman_agreed,
+                                         trade_region, choose_region)
+        result['trade_region'] = selected
+        if selected is None:
+            result['declined'] = True
+            return result
+        result['per_item'] = region_items[selected]
+    else:
+        result['per_item'] = [item for items in region_items.values() for item in items]
+    total = sum(item[2] for item in result['per_item'])
 
     # Cap at MAX_RESOURCES
     current = state["resources"].get(AEDUI, 0)

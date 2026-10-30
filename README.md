@@ -50,13 +50,20 @@ Diviciacus Leader rules. The choice is saved with the game.
 | Play with an AI assistant | [Assistant guide](CHATGPT_README.md) |
 | Integrate a human or software agent | [Agent interface](AGENT_INTERFACE.md) |
 | Review fixes and remaining limitations | [Current engineering status](docs/current-status.md) |
-| Inspect outcomes and reproducible evidence | [Recruit/Rally repairs](docs/reviews/recruit-rally-2026-10-29.md), [Spring Leader repairs](docs/reviews/spring-leaders-2026-10-28.md), [Event-choice repairs](docs/reviews/second-batch-2026-10-27.md), [first comparison batch](docs/reviews/first-batch-2026-10-27.md) |
-| Review adopted provisional rulings | [Six project rulings](docs/provisional-rulings.md), [question ledger](QUESTIONS.md#current-open-source-questions) |
+| Inspect outcomes and reproducible evidence | [Rules adoption and Trade choice](docs/reviews/rulings-trade-2026-10-29.md), [Recruit/Rally repairs](docs/reviews/recruit-rally-2026-10-29.md), [Spring Leader repairs](docs/reviews/spring-leaders-2026-10-28.md), [Event-choice repairs](docs/reviews/second-batch-2026-10-27.md), [first comparison batch](docs/reviews/first-batch-2026-10-27.md) |
+| Review adopted provisional rulings | [Project rulings](docs/provisional-rulings.md), [question ledger](QUESTIONS.md#current-open-source-questions) |
 | Develop and validate changes | [Developer instructions](CLAUDE.md), [maintenance roadmap](BUILD_PLAN.md), [self-play workflow](SELFPLAY_PLAYBOOK.md) |
 | Install or check a release | [Release guide](RELEASES.md), [change history](CHANGELOG.md) |
 | Browse all project documentation | [Documentation index](docs/README.md) |
 
 ## Current validation
+
+The [29 October rules and Trade report](docs/reviews/rulings-trade-2026-10-29.md)
+records **5,777 passing tests**, **150 audited bot games**, **80 mixed-seat
+executions including replay**, and **50 strict-census executions**. Cross-hash
+reports match and the original balance guardrail passes without a baseline
+refresh. The report records the approved rulings, fixes, failed candidates
+and remaining interface gaps.
 
 The [29 October Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md)
 records 5,622 passing tests for exact quantities, ordered placements and related
@@ -83,7 +90,7 @@ records **4,715 passing tests**, **200 audited bot games**, **80 mixed-seat
 executions including replay**, and **50 strict-census executions** on the
 Event integrity repairs. Cross-hash reports match and the unchanged balance
 guardrail passes. The report also identifies the confirmed human-interface
-and Spring-placement findings still outstanding.
+and Spring-placement findings then outstanding.
 
 ## Earlier validation
 
@@ -94,7 +101,7 @@ implementation. All completed without defect findings; mixed-seat and census
 reports matched across hash seeds. The 100-game balance check passed without
 changing its baseline. The report gives exact source identities and scope.
 
-All [six adopted project rulings](docs/provisional-rulings.md) remain subject
+All [nine adopted project rulings](docs/provisional-rulings.md) remain subject
 to possible later correction if an authoritative source is found.
 
 ## Earlier verified checkpoint
@@ -129,6 +136,6 @@ python -m pytest -q
 Read [CLAUDE.md](CLAUDE.md) before editing. `Reference Documents/**` and
 `fs_bot/rules_consts.py` are protected, read-only sources. Project guides,
 reports, and strategy notes describe the implementation; they do not replace
-the supplied rules. The six expressly adopted provisional rulings govern
+the supplied rules. The nine expressly adopted provisional rulings govern
 their listed source gaps until corrected. The [self-play workflow](SELFPLAY_PLAYBOOK.md) documents
 batch, census, determinism, and balance checks.

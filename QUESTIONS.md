@@ -8,8 +8,26 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
-The owner adopted the following six provisional project rulings on
-24 October 2026 (America/Chicago). They settle current engine behavior while
+### Q-TRADE-NP-REGION — shaded River Commerce selection (29 October 2026)
+
+The human Region-choice repair exposed a separate non-player policy question.
+Section 8.3.3 applies limited-Region Capabilities in the first Regions that
+apply; §8.6.3 directs non-player Aedui Trade for all Resources obtainable.
+With shaded River Commerce, the current implementation selects the first
+Supply-Line Region in map order, even when that Region earns no Resources
+and a later Region would earn some. It is unclear whether “apply” excludes
+zero-income Regions, or whether the Trade instruction overrides map order
+with maximum income.
+
+This batch preserves that existing non-player behavior while adding the
+human's actual choice. The compatibility test does not establish a rules
+answer. This question requires source review and is not covered by the
+owner's adoption of PR-01–PR-09.
+
+### Adopted provisional rulings
+
+The owner adopted PR-01–PR-06 on 24 October and PR-07–PR-09 on
+29 October 2026 (America/Chicago). They settle current engine behavior while
 the underlying source questions remain open. **Each is subject to possible
 later correction if an authoritative source is found.** They are not official
 errata or designer-confirmed answers.
@@ -22,6 +40,9 @@ errata or designer-confirmed answers.
 | [German-owned A63 after Interlude](#open-a63) | [PR-04](docs/provisional-rulings.md#pr-04): final Interlude activation, then retained German ownership and dormancy. |
 | [Ariovistus automatic Arverni Harassment order](#open-ariovistus-harassment) | [PR-05](docs/provisional-rulings.md#pr-05): printed faction order, then automatic Arverni last. |
 | [After-Harvest Winter Harassment order](#open-winter-harassment) | [PR-06](docs/provisional-rulings.md#pr-06): retain the last actually played non-Winter card's order, including all-pass cards. |
+| [Aedui Supply roll scope](#q-supply-aedui-die-scope--agreement-across-multiple-regions-29-october-2026) | [PR-07](docs/provisional-rulings.md#pr-07): one non-player Aedui agreement roll for the current Roman action, across all relevant Supply Regions/routes. |
+| [Rally/Recruit bonus timing](#q-rally-bonus-timing--additions-before-ordinary-placement-29-october-2026) | [PR-08](docs/provisional-rulings.md#pr-08): bonus pieces cannot establish the prerequisite for the ordinary placement in that same Region. |
+| [A20 casualty origins](#q-a20-origin--counterattack-losses-among-projected-origins-29-october-2026) | [PR-09](docs/provisional-rulings.md#pr-09): choose equally among eligible tied origins for each Counterattack casualty, respecting visibility priority. |
 
 The [ruling register](docs/provisional-rulings.md) records exact scope,
 reasoning, source links, compatibility behavior, and correction policy.
@@ -29,9 +50,20 @@ Historical OPEN/CLOSED labels below describe earlier stages and do not replace
 this index. Earlier validation reports retain their original revisions and
 measurements; they do not validate these later adopted rulings.
 
+The separate [O38 label question](#q-o38--optional-diviciacus-capability-label-27-october-2026)
+is resolved by the owner's replacement-card photograph and §5.3. Both sides
+are Capabilities; that conclusion is not a provisional project ruling.
+
 ### Q-SUPPLY-AEDUI-DIE-SCOPE — agreement across multiple Regions (29 October 2026)
 
-**Open; no new owner ruling.** When human Romans have a victory score of
+**Owner-adopted PR-07, 29 October 2026; underlying source scope remains
+open.** Roll once for the current Roman action, retaining the answer across
+its Supply Regions, alternate routes, and re-planning after refusal. See
+[PR-07](docs/provisional-rulings.md#pr-07) for scope and rationale. This
+project decision is subject to possible later correction if an authoritative
+source is found.
+
+**Original question:** When human Romans have a victory score of
 10–12 and need permission through several Aedui-controlled Regions, the
 supplied rules do not explicitly define the number or geographic scope
 of non-player Aedui agreement dice.
@@ -44,15 +76,22 @@ agreement during the action. These passages do not explicitly distinguish
 one roll for the declared action, one for each declared Supply Line, or
 one for each Region needing permission.
 
-The current implementation retains its existing Region-keyed declaration
+The preceding repair retained its existing Region-keyed declaration
 and caching structure. The consent repair tests actual single-Region dice
 and their RNG effects; it does not settle the multi-Region granularity.
-An authoritative clarification or explicit owner decision is needed before
-changing that scope. This question is separate from PR-01 through PR-06.
+That earlier implementation did not resolve the question. The subsequent
+owner decision above now governs the scope; PR-01–PR-06 are unchanged.
 
 ### Q-A20-ORIGIN — Counterattack losses among projected origins (29 October 2026)
 
-**Open; no new owner ruling.** A20's temporary projection can combine
+**Owner-adopted PR-09, 29 October 2026; underlying origin rule remains
+open.** After applying the printed visibility priority, select an eligible
+origin Region with equal probability for each Counterattack casualty,
+recomputing the eligible origins after every removal. See
+[PR-09](docs/provisional-rulings.md#pr-09). This project decision is subject
+to possible later correction if an authoritative source is found.
+
+**Original question:** A20's temporary projection can combine
 Warbands from several physical Regions. The Scouted-marker repair preserves
 their visibility when survivors return, but does not select a new geographic
 priority for Counterattack casualties.
@@ -69,13 +108,21 @@ expressly address these projected casualty origins.
 
 Possible resolutions are an executing-faction choice, equal-chance selection
 among tied origins or counters, or an explicit fixed origin priority. The
-existing deterministic source-allocation convention remains pending
-clarification; this repair does not establish it as an authoritative rule.
+preceding repair retained a deterministic source-allocation convention
+pending clarification. PR-09 now replaces that convention; neither the old
+convention nor PR-09 is claimed as an authoritative rule.
 This question is separate from PR-01 through PR-06.
 
 ### Q-RALLY-BONUS-TIMING — additions before ordinary placement (29 October 2026)
 
-**Open; no new owner ruling.** The quantity review implements the printed
+**Owner-adopted PR-08, 29 October 2026; underlying timing rule remains
+open.** Retain the ordinary placement's prerequisite check before bonuses;
+the extra pieces cannot create the Control needed for that ordinary Ally
+placement. See [PR-08](docs/provisional-rulings.md#pr-08) for the preserved
+printed exceptions. This project decision is subject to possible later
+correction if an authoritative source is found.
+
+**Original question:** The quantity review implements the printed
 mandatory additions for Aquitani (25 shaded), Nervii (A70 shaded), and
 Gallia Togata (A5 unshaded). It does not add a tactical choice to apply an
 addition before the ordinary option in order to establish Control and
@@ -89,16 +136,29 @@ there places +1 Auxilia.” These specify additional pieces but not their
 timing relative to the ordinary option. In contrast, A3.4.1 explicitly places
 the German Home addition “At the end”.
 
-Two possible interpretations require authoritative clarification: the
+Two possible interpretations were identified: the
 ordinary option must already be legal before additions, or the player may
-apply an addition first and use its changed Control to qualify. The current
-implementation retains the former prerequisite check and does not claim to
-resolve the unprinted timing right. This question is separate from PR-01
-through PR-06 and does not block the stated additions or quantity choices.
+apply an addition first and use its changed Control to qualify. PR-08 adopts
+the former prerequisite check without claiming an authoritative answer to
+the unprinted timing question. PR-01–PR-06 are unchanged; bonus quantities
+and legal exact-count choices continue to apply.
 
 ### Q-O38 — optional Diviciacus Capability label (27 October 2026)
 
-**Open; no new owner ruling.** The final-year review found inconsistent
+**Resolved 29 October 2026 by printed evidence and §5.3.** The owner's
+photograph of the optional replacement Diviciacus card shows the CAPABILITY
+label on the boundary between its two effects. Both versions are therefore
+Capabilities. Non-players decline either side in the final year under
+§8.1.1; human players retain their Event choice. This is a published-rule
+application, not a provisional ruling or a designer response.
+
+The first photograph supplied was original card 38, with the combined-force
+unshaded effect. It confirmed that card's layout but did not establish the
+replacement's classification. The subsequent replacement-card photograph
+has the unshaded instruction to place the Diviciacus piece and apply his
+Ariovistus Leader rules; it resolves O38's actual label placement.
+
+**Original question and preceding implementation:** The final-year review found inconsistent
 classification of optional O38. Its shaded effect is a Capability and now
 receives the non-player last-year restriction. The existing unshaded
 exemption remains unchanged pending clarification.
@@ -113,13 +173,38 @@ boundary label applies to both sides:
 
 The flat transcription does not establish the label's physical placement.
 
-Two interpretations remain: the boundary label covers both sides, requiring
+Two interpretations were recorded: the boundary label covers both sides, requiring
 non-players to decline unshaded O38 in the last year too; or the label applies
 only to the shaded side, preserving the existing unshaded exemption. A
-reliable printed card image or authoritative clarification is needed. The
+reliable printed card image or authoritative clarification was needed. The
 27 October repair does not adopt either interpretation as a new rule.
 Actual unshaded bot routing was compared with `04b4b70` across 72 cases and
-remained unchanged. This question is separate from PR-01 through PR-06.
+remained unchanged. The replacement-card evidence now supersedes that
+unshaded exemption. This question is separate from PR-01–PR-09.
+
+**Capability tracking and Card 50:** New unshaded O38 executions record an
+active `O38` Capability, so Shifting Loyalties can select and remove it.
+Shaded O38 retains the existing `38` shaded registry key for transfer rules
+and saved-game compatibility. Executing either O38 side clears the other
+side's record. Unshaded O38 is never stored as original `38` unshaded: that
+would incorrectly grant the original card's combined-force effect without
+Diviciacus's proximity restriction.
+
+Removing the O38 Capability does not remove the physical Leader. Card 50
+instructs removal of a Capability, not a Forces piece or reversal of a
+completed placement. The existing presence-based A1.4 Leader behavior is
+retained: A Setup independently enables those rules with the optional
+piece, and A1.4 expressly reverts Special Abilities when Diviciacus is
+removed. Neither text expressly says what removing the O38 Capability alone
+does to his ongoing Leader effects. That narrow interaction remains open
+to authoritative clarification; retaining the existing Leader rules is not
+a new designer-confirmed answer or a tenth adopted project ruling.
+
+Earlier optional-game saves may contain the physical Leader without an
+unshaded Capability record. The repair does not infer missing Event history
+from his presence alone or silently invent a Capability. New executions
+record both the physical placement and Capability; removal of the latter
+survives saving and loading without recreating it.
 
 ---
 

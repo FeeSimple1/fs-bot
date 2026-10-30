@@ -48,19 +48,23 @@ def command_parts(action):
     return (action.get("details") or {}).get("command_parts") or [action]
 
 
-def validate_human_structure(state, faction, action, *, limited=False):
+def validate_human_structure(state, faction, action, *, limited=False, allow_frost=False):
     """Return an error for an illegal whole-action combination, else None."""
     from fs_bot.cli.human_plan import (_FACTION_COMMANDS,
                                        _faction_special_abilities)
     from fs_bot.engine.game_engine import is_frost
     if not isinstance(action, dict):
         return "The Command plan must be an object"
+    from fs_bot.commands.sa_trade import validate_trade_plan
+    error = validate_trade_plan(action)
+    if error:
+        return error
     command, sa = action.get("command"), action.get("sa")
     if command == "Event":
         return None  # Event-specific/free Commands are governed by their text.
     if command not in _FACTION_COMMANDS.get(faction, ()):
         return f"{faction} cannot execute {command}"
-    if command == "March" and is_frost(state):
+    if command == "March" and is_frost(state) and not allow_frost:
         return "No March Command during Frost (§2.3.8)"
     has_sa = sa and sa != "No SA"
     if limited and has_sa:

@@ -878,7 +878,8 @@ def get_event_flags(card_id, shaded=False, scenario=None, card_edition=None):
     idx = 1 if shaded else 0
     from fs_bot.rules_consts import CARD_O38
     if card_id == CARD_O38:
-        return (_BASE_FLAGS[38][1] if shaded else frozenset({PLACES_LEADER}))
+        return (_BASE_FLAGS[38][1] if shaded
+                else frozenset({PLACES_LEADER, IS_CAPABILITY}))
 
     # A-prefix cards
     if isinstance(card_id, str) and card_id.startswith("A"):
@@ -1173,12 +1174,8 @@ def is_capability_final_year(state, card_id, shaded=None):
         False otherwise.
     """
     scenario = state.get("scenario")
-    from fs_bot.rules_consts import CARD_O38
-    # Preserve the existing O38 unshaded exemption while Q-O38 remains
-    # unresolved: the supplied CAPABILITY boundary does not settle its scope.
-    # Its shaded Capability and card-level queries remain supported.
-    if card_id == CARD_O38 and shaded is False:
-        return False
+    # The printed O38 boundary label applies to both versions (§5.3), so
+    # its unshaded Leader placement receives the same final-year decline.
     if not is_capability_card(card_id, scenario):
         return False
 

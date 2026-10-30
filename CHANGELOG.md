@@ -4,6 +4,21 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Rules adoption and Trade choice, 29 October 2026
+
+- Adopt PR-07 through PR-09 provisionally: action-wide Aedui Supply dice,
+  ordinary placement prerequisites before bonuses, and randomized tied
+  A20 casualty origins. Preserve the earlier six rulings.
+- Apply the printed O38 Capability label to both sides, including bot
+  final-year decisions and active unshaded Capability bookkeeping.
+- Keep A20 losses within participating Warbands, return exact survivors,
+  and restore the complete board and RNG if resolution is interrupted.
+- Expose the human choice of one Trade Region under shaded River Commerce.
+- Allow reconsideration after an actual non-player Aedui Supply refusal,
+  preserving prior effects, the fixed answer, Event limits and durable replay.
+- Keep deferred Trade choices inside Event-granted Region limits and use
+  actual possible income in human planning previews.
+
 ## Unreleased — Recruit and Rally choices, 29 October 2026
 
 - Add exact human troop quantities, ordered Vercingetorix Rally options,

@@ -52,6 +52,10 @@ def forecast_answer(state, requester, controller, region):
     if queries is not None and request not in queries:
         queries.append(request)
     answers = state.get(ANSWERS, {})
+    from fs_bot.commands.rally import np_aedui_supply_key
+    action_key = np_aedui_supply_key(state, requester, controller)
+    if action_key is not None and action_key in answers:
+        return answers[action_key]
     if key in answers:
         return answers[key]
     return True if queries is not None else None
@@ -70,7 +74,8 @@ never overwrite the live die. Only engine-created confirmations are used
 by execution, never an answer claimed inside a player action.
     """
     from fs_bot.engine.agent import consult_agent, AGREEMENT
-    from fs_bot.bots.bot_common import np_agrees_to_supply_line
+    from fs_bot.engine.supply_retry import resolve_np_supply
+    from fs_bot.commands.rally import np_aedui_supply_key
     details = action.get('details') or {}
     requests = details.get(REQUESTS, [])
     before_rng = state['rng'].getstate()
@@ -80,10 +85,17 @@ by execution, never an answer claimed inside a player action.
         if key in answers:
             continue
         requester, controller, region = key
-        if key in state.get('_supply_line_agreements', {}):
+        before_request_rng = state['rng'].getstate()
+        action_key = np_aedui_supply_key(state, requester, controller)
+        accepted = state.get('_supply_line_agreements', {})
+        if action_key is not None and action_key in answers:
+            answer = answers[action_key]
+        elif action_key is not None and action_key in accepted:
+            answer = accepted[action_key]
+        elif key in accepted:
             answer = True
         elif controller in state.get('non_player_factions', ()):
-            answer = np_agrees_to_supply_line(controller, requester, state)
+            answer = resolve_np_supply(state, controller, requester)
         else:
             response = consult_agent(state, controller, {
                 'kind': AGREEMENT, 'request_type': 'supply_line',
@@ -95,6 +107,12 @@ by execution, never an answer claimed inside a player action.
                 raise ValueError('Supply Line agreement requires true or false')
             answer = True if response is None else response
         answers[key] = bool(answer)
+        if (action_key is not None
+                and (answer or state['rng'].getstate() != before_request_rng
+                     or action_key in answers or action_key in accepted)):
+            answers[action_key] = bool(answer)
+            if '_supply_line_agreements' in state:
+                state['_supply_line_agreements'][action_key] = bool(answer)
         if answer and '_supply_line_agreements' in state:
             # A surrounding Event is already executing: its new promises
             # bind even if another refusal discards this sub-action. An
@@ -135,6 +153,12 @@ def install_confirmed_supply(state, action):
         with supply_agreement_scope(state):
             accepted = state['_supply_line_agreements']
             accepted.update({key: True for key, yes in saved['answers'].items() if yes})
+            # Unlike a human refusal, the PR-07 automated Aedui refusal is
+            # fixed for the action, including its accompanying Special Ability.
+            from fs_bot.commands.rally import np_aedui_supply_key
+            key = np_aedui_supply_key(state, rc.ROMANS, rc.AEDUI)
+            if key is not None and key in saved['answers']:
+                accepted[key] = saved['answers'][key]
             yield
     finally:
         if previous is missing:

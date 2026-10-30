@@ -565,11 +565,19 @@ def _action_transaction(state, decision_func):
     frontend_checkpoint = save_frontend() if save_frontend else None
     try:
         yield
-    except BaseException:
+        complete = getattr(decision_func, 'transaction_complete', None)
+        if complete:
+            complete()
+    except BaseException as exc:
         state.clear()
         state.update(checkpoint)
         if had_agent:
             state["decision_agent"] = agent
+        if isinstance(exc, ActionRejected):
+            from fs_bot.engine.supply_retry import RECONSIDERATION, retain_reconsideration
+            receipt = exc.result.get(RECONSIDERATION)
+            if receipt is not None:
+                retain_reconsideration(state, receipt)
         if restore_frontend:
             restore_frontend(frontend_checkpoint)
         raise
@@ -661,6 +669,8 @@ def resolve_card_turn(state, decision_func, *, execute=False,
                         turn["first_action"] = decision["action"]
                     else:
                         turn["factions_done"] = True
+                from fs_bot.engine.supply_retry import RECEIPT
+                turn.pop(RECEIPT, None)
                 turn["idx"] += 1
         except ActionRejected as exc:
             # Interactive frontends can explain the failed plan and offer

@@ -93,7 +93,7 @@ def test_actual_a20_human_loss_menus_keep_physical_origins_and_real_roman_losses
     assert 'Carnutes: Romans Revealed Auxilia: 3 -> 1' in next_delta(display, state, rc.GERMANS)
 
 
-def test_caesar_counterattack_casualties_use_existing_return_allocation():
+def test_caesar_counterattack_casualties_keep_correct_physical_display():
     state = board(caesar=True)
     display = HumanTurnDisplay(StringIO())
     display.remember(state, (rc.ROMANS,))
@@ -130,7 +130,7 @@ def test_caesar_counterattack_casualties_use_existing_return_allocation():
     assert 'Arverni Revealed Warband: 0 -> 2' in delta
 
 
-def test_failed_battle_clears_projection_and_keeps_existing_restore_behavior(monkeypatch):
+def test_failed_battle_clears_projection_and_restores_physical_board(monkeypatch):
     from fs_bot.commands.common import CommandError
     state = board()
     initial = snapshot_state(state)

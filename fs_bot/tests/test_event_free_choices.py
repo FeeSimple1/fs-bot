@@ -115,7 +115,7 @@ def test_human_free_command_preserves_selected_sa_timing(monkeypatch, timing, ex
     import fs_bot.engine.execute as ex
     st = state(); calls = []
     monkeypatch.setattr(ex, '_execute_raid', lambda *args: calls.append('command') or {'executed': True})
-    monkeypatch.setattr(ex, '_execute_sa', lambda *args: calls.append('sa') or {'executed': True})
+    monkeypatch.setattr(ex, '_execute_sa', lambda *args, **kwargs: calls.append('sa') or {'executed': True})
     action = {'command': 'Raid', 'sa': 'Trade', 'sa_timing': timing,
               'sa_regions': [], 'details': {}}
     if timing == 'during':

@@ -6,7 +6,7 @@ The standard frontends dispatch bot seats to the built-in non-player logic;
 a custom turn callback must dispatch those seats explicitly. See [current status](docs/current-status.md) for revision-specific
 verification and adopted provisional rulings, and the [documentation
 index](docs/README.md) for the other guides. The owner-adopted
-[PR-01 through PR-06](docs/provisional-rulings.md) are subject to possible
+[PR-01 through PR-09](docs/provisional-rulings.md) are subject to possible
 later correction if an authoritative source is found.
 
 There are **two integration points**, because a Faction makes two kinds of
@@ -116,6 +116,19 @@ post-departure remainder of an origin). The Roman Build and Scout
 Special Abilities accept player plans (`build_plan`
 {forts, subdue, allies} and `scout_plan` {auxilia_moves,
 scout_targets}); without one, the bots' flowchart plans run instead.
+For Trade under shaded River Commerce (39), `details.trade_region` names
+one Region; `details.sa_details.trade_region` is also accepted. If both are
+present they must agree. A non-string or a field attached to another Special
+Ability is invalid; a named Region must be legal when Trade actually runs.
+Omission defers the human choice until after the Supply declarations and
+any preceding Command. The `trade_region` request carries `legal_regions`,
+`roman_agreed`, and `choices` entries with `region`, `resources_gained`, and
+`per_item`. Respond with `{"region": "<offered Region>"}`, `{"decline": true}`,
+or the explicit `{"use_default": true}`. Zero-yield Regions remain legal
+choices. A declined or zero-yield Trade retains the accompanying legal
+Command and reports `declined_no_effect`; it does not silently choose a
+higher-yield Region. Missing or invalid durable responses remain pending.
+
 Optional `details.transfers` (`[{"to": faction, "amount": integer}]`, §1.5.2)
 ride an action. The helpers below provide validation; the source plan builders
 remain the detailed reference for each Command and Special Activity.
@@ -203,6 +216,14 @@ turn; interactive frontends can provide
 `decision_func.decision_rejected(state, faction, result)` to explain the
 failure and retry the same turn.
 
+PR-07 makes one exception to ordinary rejected-attempt rollback: a genuine
+non-player Aedui die refusal must remain fixed when human Rome rechooses.
+The engine retains the refusal and its RNG receipt, while rolling back the
+failed Command. Durable sessions retain that rejected attempt in history,
+give the corrected decision a new ID, and re-execute and verify the rejection
+during replay. Player-authored plans cannot supply their own permission or
+RNG receipt. Other invalid plans retain ordinary rollback behavior.
+
 ## 2. Reactive decisions — `state["decision_agent"]`
 
 Set `state["decision_agent"] = agent`, a callable:
@@ -231,6 +252,8 @@ inventing pieces, regions, owners, or internal grant flags.
 | `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `AGREEMENT` | `request_type, requesting_faction, context` | `bool` (agree?) — `request_type` in {`retreat_into_control`, `supply_line`, ...} |
+| `supply_refusal` | `action_type, action, allowed_commands, allowed_special_abilities, limited, context`; grants may add `allowed_regions, max_regions` | `{"continue":true}` or `{"replacement": action}`; see scope below |
+| `trade_region` | `faction, legal_regions, roman_agreed, choices` with each Region's Resource gain and breakdown | `{"region":name}`, `{"decline":true}`, or `{"use_default":true}` |
 | `free_action` | `request_type` plus the Event's scope; ordinary grants may carry `allowed_commands, allowed_regions, max_regions, with_sa, free, allow_decline`; standalone SAs use `allowed_sas` | ordinary action or subtype-specific response below; decline only when permitted |
 | `kinship` | A65; `attackers, regions_by_faction` | `{"faction": attacker, "regions": [...]}`, decline, or explicit default |
 | `ambacti_removal` | 16; `roll, removal_counts, targets` | `{"removal_choice":"roll"\|"three", "removals":[{"region":name,"piece_state":visibility,"count":integer}, ...]}` or explicit default |
@@ -251,6 +274,32 @@ pending. A normal turn still requires a legal `action` and its plan.
 Free-action defaults and declines must be single-field objects containing
 Boolean `true`; numeric `1`, strings and mixed sentinel/action objects are
 invalid.
+
+`supply_refusal` follows an actual non-player Aedui roll of 5–6 for human
+Rome. `action_type` identifies whether the current Command or only the
+current Special Ability can be reconsidered. A replacement must respect
+the offered Command/SA lists and any Event Region limits. Changing Build
+does not undo an earlier March or other completed action. The answer is
+fixed under PR-07; continuing or replacing the plan does not roll again.
+Unknown permission remains conditional in pure previews, while an already
+recorded refusal is reflected in them. This request does not replace human
+Aedui permission choices or Winter Quarters' own procedure.
+
+When `command_only` is true, the replacement supplies only the remaining
+Command, with no new SA. `accompanying_sa` and `completed_sa_result` preserve
+constraints from the selected or completed SA. An interrupted continuation
+may set `continuation` and `excluded_regions`; it cannot change the already
+started Command type or reuse completed Regions. If nothing has resolved,
+the offered replacement can cover the untouched plan instead. Event-owned
+`grant` and `frumentum` context constrain replacements to their existing
+action lists, timing and funding. These are engine-supplied request fields,
+not permissions that the responding player can add to a plan.
+
+Within A53, a refused Recruit may be skipped with
+`{"replacement":{"skip":"Recruit"}}`. A standalone SA replacement with
+`sa: "No SA"`, when offered, skips that SA without spending its allocation.
+Neither response issues fresh funding, refunds prior spending, nor restores
+an action already used under the Event.
 
 Spring Successors must enter a Region from `legal_regions`: a playable Home
 Region with the faction's printed symbol, or a Region containing its pieces.
@@ -521,9 +570,10 @@ full game with one agent-controlled Faction playing alongside the bots.
 
 ## Current limits
 
-- Shaded River Commerce (Card 39) limits Trade to one Region. The public
-  human action plan does not yet expose that selection; execution retains
-  its existing yield proxy. This remains a known human-choice gap.
+- Voluntary own-piece removal/Citadel downgrades, Vercingetorix's entry
+  inside a resolving action, and an SA between his two Rally options in
+  the same Region remain interface gaps. The source-derived completeness
+  audit remains open; this list is not exhaustive.
 - Reactive hooks cover Retreat, Loss absorption, Supply Line, Quarters hosting,
   Trade, Harassment and its losses, physical March pieces, Winter Campaign,
   Raid Intimidate, Kinship, and scoped Event-granted actions.

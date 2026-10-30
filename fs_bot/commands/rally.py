@@ -79,7 +79,7 @@ from fs_bot.commands.common import (CommandError, _is_devastated, _is_intimidate
 
 @contextmanager
 def supply_agreement_scope(state):
-    """Keep accepted Supply agreements through one Command/Event (§1.5.2)."""
+    """Keep human promises and PR-07 NP Aedui replies through one action."""
     key = '_supply_line_agreements'
     if key in state:
         yield
@@ -104,8 +104,8 @@ def preserve_supply_agreements(function):
 def supply_query_scope(state):
     """One Recruit entry's precheck and execution use the same replies.
 
-    A refusal is not binding on distinct later requests. Only accepted
-    agreements are retained by the enclosing Command/Event scope.
+    A human refusal is not binding on distinct later requests. PR-07 keeps
+    the NP Aedui's answer, including refusal, for the whole outer action.
     """
     key = '_supply_line_query'
     previous = state.get(key)
@@ -117,6 +117,20 @@ def supply_query_scope(state):
             state.pop(key, None)
         else:
             state[key] = previous
+
+
+def np_aedui_supply_key(state, requester, controller):
+    """PR-07: the automated Aedui answer for human Rome has no Region key.
+
+    Human-controlled factions retain their independent Region declarations.
+    This adopted project ruling remains subject to authoritative correction.
+    The final None distinguishes the action answer from every physical Region.
+    """
+    non_players = state.get('non_player_factions', ())
+    if (requester == ROMANS and controller == AEDUI
+            and AEDUI in non_players and ROMANS not in non_players):
+        return (ROMANS, AEDUI, None)
+    return None
 
 
 def _borders_cisalpina_or_provincia(region, scenario):
@@ -197,19 +211,36 @@ def _region_allows_supply_line(state, region, faction, agreements=None):
     key = (faction, controlling_faction, region)
     accepted = state.get('_supply_line_agreements')
     queries = state.get('_supply_line_query')
+    action_key = np_aedui_supply_key(state, faction, controlling_faction)
+    # Historical confirmations can be Region-keyed. A new action-wide
+    # refusal cannot revoke a permission already granted for this Region.
+    from fs_bot.engine.recruit_planning import ANSWERS, forecast_answer
+    if accepted is not None and accepted.get(key) is True:
+        return True
+    if state.get(ANSWERS, {}).get(key) is True:
+        # Keep this dependency attached to a forecast's resulting plan so
+        # confirmation is installed for actual execution after replanning.
+        forecast_answer(state, faction, controlling_faction, region)
+        return True
+    if action_key is not None:
+        from fs_bot.engine.supply_retry import current_receipt
+        receipt = current_receipt(state)
+        if receipt is not None:
+            return receipt['answer']
+    if action_key is not None and accepted is not None and action_key in accepted:
+        return accepted[action_key]
     if accepted is not None and key in accepted:
         return True
     # Recruit forecasts record dependencies without consulting a human.
     # Actual execution uses only the engine's confirmed replies for that
     # concrete plan, including its preceding Build/Scout.
-    from fs_bot.engine.recruit_planning import forecast_answer
     forecast = forecast_answer(state, faction, controlling_faction, region)
     if forecast is not None:
         return forecast
     if queries is not None and key in queries:
         return queries[key]
     if controlling_faction in state.get('non_player_factions', ()):
-        from fs_bot.bots.bot_common import np_agrees_to_supply_line
+        before_rng = state['rng'].getstate()
         # A human plan preview may consider a possible Aedui agreement, but
         # must not resolve its real §8.6.6 die or hide an option on that
         # speculative result. Known answers above still take precedence.
@@ -224,7 +255,8 @@ def _region_allows_supply_line(state, region, faction, agreements=None):
             from fs_bot.engine.quarters import cached_np_supply_answer
             answer = cached_np_supply_answer(state, faction, controlling_faction, region)
             if answer is None:
-                answer = np_agrees_to_supply_line(controlling_faction, faction, state)
+                from fs_bot.engine.supply_retry import resolve_np_supply
+                answer = resolve_np_supply(state, controlling_faction, faction)
     else:
         _a = consult_agent(state, controlling_faction, {
             "kind": AGREEMENT, "request_type": "supply_line",
@@ -237,9 +269,14 @@ def _region_allows_supply_line(state, region, faction, agreements=None):
         queries[key] = answer
     if answer and accepted is not None:
         accepted[key] = True
+    if (action_key is not None and accepted is not None
+            and not state.get('_diviciacus_preview')
+            and (answer or state['rng'].getstate() != before_rng)):
+        accepted[action_key] = answer
     return answer
 
 
+@preserve_supply_agreements
 def has_supply_line(state, region, faction=ROMANS, agreements=None):
     """Check if a region is within a Supply Line.
 

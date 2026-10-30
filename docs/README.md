@@ -25,6 +25,9 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [29 October human-choice audit](reviews/human-choice-audit-2026-10-29.md) | 50 grouped open findings, 490 coverage rows, evidence limits and six ordered repair batches; no engine changes |
+| [Human-choice inventory](reviews/human-choice-audit-2026-10-29-inventory.json) | Every reviewed card/side/profile and choice family, source references, affected interfaces and repair assignments |
+| [Human-choice evidence](reviews/human-choice-audit-2026-10-29-evidence.zip) | Portable defect witnesses, independent reruns, full pytest JUnit and unchanged-source manifest |
 | [29 October action-timing repair](reviews/action-timing-2026-10-29.md) | Voluntary reclamation, mid-action Spring entry, same-Region Rally interruption, exact participating pieces, related fixes and revision-specific validation |
 | [29 October rules adoption and Trade choice](reviews/rulings-trade-2026-10-29.md) | Three adopted provisional rulings, printed O38 classification, A20 origins and human Trade Region selection |
 | [29 October Recruit/Rally repair](reviews/recruit-rally-2026-10-29.md) | Exact human quantities, ordered Vercingetorix options, physical allocations and related bot/bonus corrections; validation and remaining gaps |

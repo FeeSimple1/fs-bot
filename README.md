@@ -58,6 +58,14 @@ Diviciacus Leader rules. The choice is saved with the game.
 
 ## Current validation
 
+The [human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md) records
+**50 grouped open findings** across 490 inventory rows, including rule errors,
+missing decisions and previously documented or optional feature limits.
+Eleven representative probe scripts were independently rerun; the unchanged
+engine still passes **6,109 tests**. The audit makes no engine fixes and
+does not certify every rule interaction. Its ordered repair backlog supersedes
+earlier statements that the broader choice inventory was still pending.
+
 The [29 October action-timing report](docs/reviews/action-timing-2026-10-29.md)
 describes voluntary piece reclamation, Vercingetorix's mid-action entry,
 same-Region Rally interruption, and the related fixes found during their

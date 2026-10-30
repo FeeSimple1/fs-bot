@@ -9,6 +9,13 @@ index](docs/README.md) for the other guides. The owner-adopted
 [PR-01 through PR-09](docs/provisional-rulings.md) are subject to possible
 later correction if an authoritative source is found.
 
+Known contract gaps are catalogued in the
+[human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md), including
+accepted illegal loss/Region selections, unrequested Event/seasonal choices
+and malformed nested Supply responses. Current dry-run acceptance verifies
+the implemented path; it is not complete printed-rule validation. The audit
+changes no response schema or engine behavior.
+
 There are **two integration points**, because a Faction makes two kinds of
 decisions:
 

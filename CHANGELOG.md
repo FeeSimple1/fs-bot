@@ -4,6 +4,16 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Human-choice audit, 29 October 2026
+
+- Record 50 grouped open findings and a 490-row source-derived inventory
+  spanning cards, actions, seasonal decisions and both human interfaces.
+- Preserve 11 independently rerun witness scripts, full 6,109-test evidence
+  and unchanged-source hashes; distinguish executed cases from static review.
+- Publish six ordered repair batches and update current guides with known
+  limits. No engine, protected rules or balance-baseline changes in this pass.
+  See the [audit report](docs/reviews/human-choice-audit-2026-10-29.md).
+
 ## Unreleased — Action timing, 29 October 2026
 
 - Offer voluntary own-piece removal and Citadel downgrades during legal

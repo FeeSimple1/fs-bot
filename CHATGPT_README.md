@@ -13,6 +13,12 @@ all subject to possible later correction if an authoritative source is found.
 Apply them when playing; they are not official errata. Passing tests is not
 a claim of complete rules compliance.
 
+The [human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md) records
+open missing prompts, incorrect Event recipients, incomplete physical choices
+and validation gaps. A successful plan or absence of a pending request does
+not establish that every printed human decision was offered. Consult its
+finding register for current scope; the audit changed no engine behavior.
+
 Recruit/Rally plans can specify exact troop `count` values. Use
 `rally_plan.steps` to preserve Vercingetorix's two placement orders, and
 `placement_owners` to reserve exact Roman/Aedui pieces during agreed

@@ -19,6 +19,34 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 29 October human-choice audit — open repair backlog
+
+The [human-choice audit](reviews/human-choice-audit-2026-10-29.md) completes
+the bounded inventory previously listed as pending. At `7e72fe7`, it records
+**50 grouped open findings**: 21 high, 28 medium and one low. These include
+rule errors, unavailable human choices, previously documented transfer/shared
+player limits, and optional setup features. They are not all new regressions.
+No production behavior was changed by the audit.
+
+The 490-row inventory covers base/revised and expansion Event identities,
+Commands, Special Abilities, seasonal decisions and both interfaces. Eleven
+independently rerun probe scripts preserve representative failures; the
+unchanged engine still passes 6,109 tests. Thirty-four inventory rows remain
+explicitly unverified. Source inspection and routing support are distinguished
+from executed semantic checks.
+
+Repair priorities start with illegal Battle casualty tiers, duplicate
+Seize/Entreat Regions, malformed Supply responses, forbidden Arverni transfers
+and Great Revolt Belgae setup. Later batches cover Event constraints/effects,
+correct human ownership, exact choices/timing, Interlude/Winter, and optional
+player modes. The report assigns every finding once and records reproductions.
+
+Earlier verified rows below describe their tested paths, not complete coverage
+of every related rule. General during-March/Battle Special Ability timing,
+several Event grants, some physical casualty choices, and Interlude selections
+remain incomplete. Board inspection can show the pre-SA board during later
+March planning. The two existing non-player source questions remain separate.
+
 ### 29 October action timing and exact participating pieces
 
 The [action-timing report](reviews/action-timing-2026-10-29.md) follows the
@@ -41,7 +69,8 @@ Related source checks corrected repeated Scout movement, overlapping
 Diviciacus/Event-force bookkeeping, Scouted Rampage targets, and Event
 participation limits. The report records the exact validation revision and
 the further Seize/Surus corrections found during this review. A broader
-source-derived inventory of all human choices remains maintenance work.
+source-derived inventory was subsequently completed by the audit above;
+its confirmed findings remain repair work.
 The non-player Trade question and the newly recorded physical Elite
 designation question remain source questions, not new approved rulings.
 
@@ -91,7 +120,7 @@ At that checkpoint, three known interface gaps remained: voluntary own-piece rem
 downgrades throughout legal action timing; Vercingetorix's mid-action
 Spring-box entry; and a Special Activity between his two Rally options in
 one Region. The action-timing repair above addresses these three gaps.
-The broader source-derived human-choice audit remains.
+The subsequent human-choice audit above records the broader remaining gaps.
 The report records why start-only reclamation would be incomplete.
 The separate non-player shaded Trade selection question is recorded in
 [Q-TRADE-NP-REGION](../QUESTIONS.md#q-trade-np-region--shaded-river-commerce-selection-29-october-2026);
@@ -110,7 +139,7 @@ handling in Battle and A20; the report traces those related repairs.
 
 At that checkpoint, two original implementation items remained: voluntary own-piece reclamation
 under §1.4.1 and Vercingetorix entry inside a resolving Command/Event. The
-source-derived completeness audit also remains. That review has confirmed
+source-derived completeness audit was also pending. That review had confirmed
 another within-action limitation: an SA could not interrupt the
 two Vercingetorix Rally options in the same Region; the then-current interrupted
 Command portions use different Regions.

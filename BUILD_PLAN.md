@@ -6,7 +6,9 @@ phases; those phase labels are an architectural map, not a list of unbuilt
 features or a certification that every rule interaction is correct.
 
 Start with [current engineering status](docs/current-status.md) for corrected
-behavior and adopted provisional rulings, and the
+behavior and adopted provisional rulings. The
+[human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md) now defines
+the open repair backlog and its evidence limits. Consult the
 [Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md)
 for the latest placement repairs and their validation status. The earlier
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)
@@ -68,8 +70,16 @@ The 29 October Recruit/Rally batch closes optional quantities and the
 combined Vercingetorix Rally menu. The subsequent
 [action-timing repair](docs/reviews/action-timing-2026-10-29.md) adds voluntary
 own-piece reclamation, mid-action Vercingetorix entry, and a Special Ability
-between his two Rally options in one Region. The source-derived choice audit
-remains maintenance work. The
+between his two Rally options in one Region. The subsequent
+[human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md) records
+50 grouped open findings across 490 inventory rows. It changes no engine
+behavior. Its six repair batches cover core validation/setup, mandatory
+Event effects, correct human grant ownership, exact ordinary choices and
+timing, seasonal decisions, and optional setup/shared-player support.
+Start with Battle casualty tiers, repeated Seize/Entreat Regions, strict Supply
+responses, expansion Arverni transfer rejection and sole-human-Belgae setup.
+Preserve each source-derived witness as a desired-behavior regression during
+repair. The
 [29 October rules and Trade repair](docs/reviews/rulings-trade-2026-10-29.md)
 closes human selection of Trade's single Region under shaded River Commerce.
 The [Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md) retains

@@ -8,6 +8,13 @@ published non-player flowcharts. See [current status](docs/current-status.md)
 for verified fixes, test coverage, and provisional source interpretations. The
 [documentation index](docs/README.md) also links assistant play and API guides.
 
+The [human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md)
+records current limitations: some Event and seasonal choices still resolve
+automatically, some legal physical selections are unavailable, and general
+during-March/Battle Special Ability timing is unsupported. The `b` display
+can also show the pre-SA board while planning March after an SA. These remain
+open repairs; before/after action ordering is available.
+
 ## Requirements
 
 Python 3.10 or newer. Nothing else — no packages to install, no
@@ -117,7 +124,7 @@ preceding activity, it asks before making changes. A refusal makes it
 reconsider the plan; accepted permissions hold for the Command or Event
 you agreed to. You can still inspect the board at the prompt.
 
-When an Event grants an action, its menu lets you plan the permitted action,
+For Event grants with human-choice support, the menu lets you plan the permitted action,
 request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.

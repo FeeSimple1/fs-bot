@@ -4,6 +4,24 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Action timing, 29 October 2026
+
+- Offer voluntary own-piece removal and Citadel downgrades during legal
+  Command/Event procedures, with exact physical ownership and participating
+  groups retained.
+- Offer unlocked boxed Vercingetorix entry within actions and later Winter;
+  recheck future legality while preserving completed rolls and effects.
+- Permit a Special Ability between Vercingetorix's two Rally options in one
+  Region without repeating its cost or bonuses.
+- Update planning menus, current-card/change displays, board inspection,
+  pending validation, save/resume and historical replay compatibility.
+- Correct repeat Scout movement, Scouted Rampage targets, and overlapping
+  Diviciacus/Event-force bookkeeping. Execute earned Seize Rallies and
+  Surus replacements/Commands, and correct ordinary non-player casualty
+  visibility and Roman March destination priorities. See the
+  [action-timing report](docs/reviews/action-timing-2026-10-29.md) for the full
+  related-fix list and exact validation evidence.
+
 ## Unreleased — Rules adoption and Trade choice, 29 October 2026
 
 - Adopt PR-07 through PR-09 provisionally: action-wide Aedui Supply dice,

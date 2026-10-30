@@ -13,6 +13,9 @@ Reference:
   A6.0-A6.6  Ariovistus Winter Round
 """
 
+from functools import wraps
+
+from fs_bot.engine import action_windows
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -121,6 +124,14 @@ _ROWS_AT_OR_ABOVE_SENATE = {
 }
 
 
+def _winter_scope(function):
+    @wraps(function)
+    def wrapped(state, *args, **kwargs):
+        with action_windows.scope(state, phase='winter'):
+            return function(state, *args, **kwargs)
+    return wrapped
+
+
 # ============================================================================
 # PHASE 1: VICTORY PHASE (§6.1, A6.1)
 # ============================================================================
@@ -135,6 +146,7 @@ def _optimates_remove_all_legions(state):
                          to_available=False, to_track=True)
 
 
+@_winter_scope
 def victory_phase(state, is_final=False):
     """Execute the Victory Phase — §6.1 / A6.1.
 
@@ -158,6 +170,9 @@ def victory_phase(state, is_final=False):
         "rankings": None,
     }
 
+    # §6.1 ends the game now if this check succeeds. No later window can
+    # alter that completed result.
+    action_windows.window(state, 'winter_victory')
     # Check victory — §6.1
     winner = check_any_victory(state)
     if winner is not None:
@@ -199,6 +214,7 @@ def victory_phase(state, is_final=False):
 # PHASE 2: GERMANS PHASE (§6.2, base game only)
 # ============================================================================
 
+@_winter_scope
 def germans_phase(state):
     """Execute the Germans Phase — §6.2.
 
@@ -223,15 +239,19 @@ def germans_phase(state):
     }
 
     # §6.2.1 Rally
+    action_windows.window(state, 'winter_germans_command', command='Rally')
     result["rally"] = germans_phase_rally(state)
 
     # §6.2.2 March
+    action_windows.window(state, 'winter_germans_command', command='March')
     result["march"] = germans_phase_march(state)
 
     # §6.2.3 Raid
+    action_windows.window(state, 'winter_germans_command', command='Raid')
     result["raid"] = _germans_phase_raid_all(state)
 
     # §6.2.4 Battle with Ambush
+    action_windows.window(state, 'winter_germans_command', command='Battle')
     result["battle"] = germans_phase_battle(state)
 
     refresh_all_control(state)
@@ -270,6 +290,7 @@ def _germans_phase_raid_all(state):
     rng.shuffle(raid_regions)
 
     for region in raid_regions:
+        action_windows.window(state, 'winter_germans_raid_region', region=region)
         # Re-check: still have Hidden Warbands and valid targets?
         hidden = count_pieces_by_state(
             state, region, GERMANS, WARBAND, HIDDEN
@@ -294,6 +315,7 @@ def _germans_phase_raid_all(state):
 # PHASE 3: QUARTERS PHASE (§6.3, A6.3)
 # ============================================================================
 
+@_winter_scope
 def quarters_phase(state, relocations=None):
     """Execute §6.3/A6.3 with stable agreements across plan/execute."""
     from fs_bot.engine.quarters import agreement_cache
@@ -327,6 +349,7 @@ def _quarters_phase(state, relocations=None):
     )
     from fs_bot.engine.agent import consult_agent
     scenario = state["scenario"]
+    action_windows.window(state, 'winter_quarters')
     if relocations is not None:
         errors = validate_quarters_plan(state, relocations)
         if errors:
@@ -337,8 +360,10 @@ def _quarters_phase(state, relocations=None):
         "roman_quartering": None,
     }
     if scenario in BASE_SCENARIOS:
+        action_windows.window(state, 'winter_german_relocation')
         result["german_relocation"] = _quarters_german_relocation(state)
     for faction in quarters_factions(state):
+        action_windows.window(state, 'winter_quarters_faction', faction=faction)
         errors = []
         while True:
             plan = relocations
@@ -367,7 +392,7 @@ def _quarters_phase(state, relocations=None):
             errors = validate_quarters_plan(state, current_plan, faction=faction)
             if not errors:
                 try:
-                    _apply_relocations(state, faction, plan.get(faction, []))
+                    relocation_result = _apply_relocations(state, faction, plan.get(faction, []))
                     break
                 except QuartersError as exc:
                     errors = [str(exc)]
@@ -375,11 +400,17 @@ def _quarters_phase(state, relocations=None):
                     or faction in state.get("non_player_factions", set())):
                 raise QuartersError("; ".join(errors))
         if faction == ROMANS:
-            result["roman_relocation"] = plan.get(faction, [])
+            result["roman_relocation"] = relocation_result['moves']
+            action_windows.window(state, 'winter_roman_quartering')
+            quartering = plan.get(ROMANS + "_quartering", {})
+            if relocation_result['reconsider_quartering']:
+                from fs_bot.engine.quarters import reconsider_quartering
+                quartering = reconsider_quartering(state)
             result["roman_quartering"] = _quarters_roman_pay_or_roll(
-                state, plan.get(ROMANS + "_quartering", {}))
+                state, quartering)
         else:
             result["gallic_relocations"][faction] = plan.get(faction, [])
+            action_windows.window(state, 'winter_gallic_desertion', faction=faction)
             result["gallic_desertion"][faction] = _quarters_gallic_desertion(state, faction)
     refresh_all_control(state)
     return result
@@ -430,6 +461,8 @@ def _quarters_german_relocation(state):
     result["destination"] = dest
 
     for region, wb_count in warbands_to_move.items():
+        action_windows.window(state, 'winter_german_relocation_region',
+                              region=region, destination=dest, roll=roll)
         # Move Hidden, then Revealed, then Scouted Warbands
         for ps in (HIDDEN, REVEALED, SCOUTED):
             ps_count = count_pieces_by_state(
@@ -463,6 +496,9 @@ def _quarters_gallic_desertion(state, faction):
         if not _is_devastated(state, region):
             continue
 
+        action_windows.window(state, 'winter_desertion_region', faction=faction,
+                              region=region)
+
         # Check for Ally, Citadel (and Settlement for Germans in Ariovistus)
         has_ally = count_pieces(state, region, faction, ALLY) > 0
         has_citadel = count_pieces(state, region, faction, CITADEL) > 0
@@ -482,7 +518,9 @@ def _quarters_gallic_desertion(state, faction):
         region_result = {"rolls": [], "removed": 0}
 
         # Roll for each Warband individually
-        for _ in range(wb_count):
+        for index in range(wb_count):
+            action_windows.window(state, 'winter_desertion_piece', faction=faction,
+                                  region=region, index=index)
             # Re-check count (may have been removed)
             current = count_pieces(state, region, faction, WARBAND)
             if current == 0:
@@ -502,7 +540,7 @@ def _quarters_gallic_desertion(state, faction):
 def _apply_relocations(state, faction, relocation_list):
     """Validate and atomically apply one faction's §6.3 relocations."""
     from fs_bot.engine.quarters import apply_relocations
-    apply_relocations(state, faction, relocation_list)
+    return apply_relocations(state, faction, relocation_list)
 
 
 def validate_quarters_plan(state, relocations, *, faction=None):
@@ -524,6 +562,7 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
     for region, allocation in allocations.items():
         if not (allocation["paid"] or allocation["roll"]):
             continue
+        action_windows.window(state, 'winter_roman_quartering_region', region=region)
         cost = allocation["cost"]
         state["resources"][ROMANS] -= cost
         result["payments"][region] = {"count": len(allocation["paid"]), "cost": cost}
@@ -532,7 +571,9 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
             continue
         rolled = {"rolls": [], "pieces": [], "removed_legions": 0,
                   "removed_auxilia": 0}
-        for piece, visibility in allocation["roll"]:
+        for index, (piece, visibility) in enumerate(allocation["roll"]):
+            action_windows.window(state, 'winter_roman_quartering_piece',
+                                  region=region, index=index)
             roll = state["rng"].randint(DIE_MIN, DIE_MAX)
             rolled["rolls"].append(roll)
             rolled["pieces"].append((piece, visibility))
@@ -549,6 +590,7 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
 # PHASE 4: HARVEST PHASE (§6.4, A6.4)
 # ============================================================================
 
+@_winter_scope
 def harvest_phase(state):
     """Execute the Harvest Phase — §6.4 / A6.4.
 
@@ -565,6 +607,7 @@ def harvest_phase(state):
     result = {}
 
     # §6.4.1 Roman Earnings: Resources += victory score
+    action_windows.window(state, 'winter_harvest_faction', faction=ROMANS)
     roman_score = calculate_victory_score(state, ROMANS)
     roman_earn = roman_score
     _add_resources(state, ROMANS, roman_earn)
@@ -572,6 +615,7 @@ def harvest_phase(state):
 
     # §6.4.2 Gallic Earnings: 2x (Allied Tribes + Citadels)
     for faction in GALLIC_FACTIONS:
+        action_windows.window(state, 'winter_harvest_faction', faction=faction)
         if faction == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
             # A6.4.2: Arverni do not earn Resources in Ariovistus
             result[faction] = 0
@@ -589,11 +633,13 @@ def harvest_phase(state):
         result[faction] = earn
 
     # §6.4.3 River Tolls: Aedui +4
+    action_windows.window(state, 'winter_river_tolls', faction=AEDUI)
     _add_resources(state, AEDUI, AEDUI_RIVER_TOLLS)
     result[AEDUI] = result.get(AEDUI, 0) + AEDUI_RIVER_TOLLS
 
     # A6.4.4 Germanic Earnings (Ariovistus only): 2x (Allies + Settlements)
     if scenario in ARIOVISTUS_SCENARIOS:
+        action_windows.window(state, 'winter_harvest_faction', faction=GERMANS)
         german_allies = 0
         for tribe_info in state["tribes"].values():
             if tribe_info.get("allied_faction") == GERMANS:
@@ -619,6 +665,7 @@ def _add_resources(state, faction, amount):
 # PHASE 5: SENATE PHASE (§6.5, A6.5)
 # ============================================================================
 
+@_winter_scope
 def senate_phase(state, first_senate_after_interlude=False,
                  force_position=None):
     """Execute the Senate Phase — §6.5 / A6.5.
@@ -645,6 +692,7 @@ def senate_phase(state, first_senate_after_interlude=False,
 
     # §6.5.1 Senate Marker shift — or the 1st-Winter special: "instead
     # of shifting the Senate, put its marker at Intrigue (not Firm)".
+    action_windows.window(state, 'winter_senate_marker')
     if force_position is not None:
         state.setdefault("senate", {})["position"] = force_position
         state["senate"]["firm"] = False
@@ -656,10 +704,12 @@ def senate_phase(state, first_senate_after_interlude=False,
         )
 
     # §6.5.2 Legions
+    action_windows.window(state, 'winter_senate_legions')
     legions_result = _senate_legions(state)
     result.update(legions_result)
 
     # §6.5.3 Auxilia
+    action_windows.window(state, 'winter_senate_auxilia')
     result["auxilia_placed"] = _senate_auxilia(state)
 
     refresh_all_control(state)
@@ -839,6 +889,7 @@ def _senate_legions(state):
                 break
 
     # Step 2: Place into Provincia all Legions at or above Senate row
+    action_windows.window(state, 'winter_senate_legion_placement')
     senate_pos = state["senate"]["position"]
     rows_to_place = _ROWS_AT_OR_ABOVE_SENATE.get(senate_pos, ())
 
@@ -902,6 +953,7 @@ def _senate_auxilia(state):
 # PHASE 6: SPRING PHASE (§6.6, A6.6)
 # ============================================================================
 
+@_winter_scope
 def spring_phase(state, *, unlock_vercingetorix=False):
     """Resolve Spring atomically, including all seats' Leader decisions."""
     from fs_bot.engine.spring import atomic
@@ -947,6 +999,7 @@ def _spring_phase(state, *, unlock_vercingetorix=False):
     result["successors_placed"] = _place_successor_leaders(state)
 
     # Move remaining Fallen Legions to track — §6.6
+    action_windows.window(state, 'winter_spring_fallen')
     fallen = state.get("fallen_legions", 0)
     if fallen > 0:
         remaining = fallen
@@ -964,6 +1017,10 @@ def _spring_phase(state, *, unlock_vercingetorix=False):
 
     # Remove Scouted markers, flip Revealed to Hidden — §6.6
     for region in state["spaces"]:
+        if any(count_pieces_by_state(state, region, faction, piece, visibility)
+               for faction in FACTIONS for piece in FLIPPABLE_PIECES
+               for visibility in (SCOUTED, REVEALED)):
+            action_windows.window(state, 'winter_spring_region', region=region)
         for faction in FACTIONS:
             # Scouted → Revealed (removing Scouted marker) — §4.2.2
             for pt in FLIPPABLE_PIECES:
@@ -992,6 +1049,7 @@ def _spring_phase(state, *, unlock_vercingetorix=False):
                     result["pieces_flipped_hidden"] += revealed
 
     # Remove Devastated markers — §6.6
+    action_windows.window(state, 'winter_spring_devastation')
     markers = state.get("markers", {})
     for region in list(markers.keys()):
         region_markers = markers.get(region, {})
@@ -1010,6 +1068,8 @@ def _spring_phase(state, *, unlock_vercingetorix=False):
     # (Do NOT remove or flip Razed marker from Sacking Event — §6.6)
     for tribe_name, tribe_info in state["tribes"].items():
         status = tribe_info.get("status")
+        if status in (MARKER_DISPERSED_GATHERING, MARKER_DISPERSED):
+            action_windows.window(state, 'winter_spring_tribe', tribe=tribe_name)
         if status == MARKER_DISPERSED_GATHERING:
             # Remove Dispersed-Gathering → tribe becomes Subdued
             tribe_info["status"] = None
@@ -1035,6 +1095,7 @@ def _spring_phase(state, *, unlock_vercingetorix=False):
                     result["intimidated_removed"] += 1
 
     # Mark all factions Eligible — §6.6
+    action_windows.window(state, 'winter_spring_eligibility')
     for faction in FACTIONS:
         state["eligibility"][faction] = ELIGIBLE
 
@@ -1073,6 +1134,7 @@ def _find_successor_placement(state, faction):
 # MAIN: RUN WINTER ROUND
 # ============================================================================
 
+@_winter_scope
 def run_winter_round(state, is_final=False,
                      first_senate_after_interlude=False,
                      relocations=None,
@@ -1187,11 +1249,13 @@ def run_winter_round(state, is_final=False,
     # Uprising (remove marker, place pieces, free Command / Arverni Phase).
     from fs_bot.cards.winter_uprising_resolution import active as uprising_active
     if uprising_active(state):
+        action_windows.window(state, 'winter_uprising')
         from fs_bot.engine.execute import _resolve_winter_uprising
         result["phases"]["winter_uprising"] = _resolve_winter_uprising(state)
 
     # Phase 4: Harvest — apply the 1st-Winter-after-Interlude exception
     # before normal harvest.
+    action_windows.window(state, 'winter_harvest')
     if consume_first_harvest_no_belgica:
         # Per A2.1: "If there are no Legions on the Winter Track, do
         # not place any in Belgica during that Harvest Phase." The
@@ -1231,6 +1295,7 @@ def run_winter_round(state, is_final=False,
     # Cards 63/A63 grant any two paid Commands/SAs, with explicit human
     # choices and the card's exceptions to normal accompanying-SA rules.
     from fs_bot.engine.winter_campaign import winter_campaign_after_harvest
+    action_windows.window(state, 'winter_campaign')
     campaign = winter_campaign_after_harvest(state)
     if campaign is not None:
         result["phases"]["winter_campaign"] = campaign

@@ -10,6 +10,7 @@ from fs_bot.cli.human_plan import (
     _collect_march, _march_routes, _playable_regions, _regions_with_pieces,
 )
 from fs_bot.engine.execute import _execute_march
+from fs_bot.board.pieces import place_piece
 
 
 def gallia(scenario):
@@ -34,6 +35,10 @@ def test_human_march_can_select_actual_gallia_garrison_at_zero_resources(scenari
 @pytest.mark.parametrize('scenario', [rc.SCENARIO_GREAT_REVOLT, rc.SCENARIO_ARIOVISTUS])
 def test_scoped_geography_keeps_event_limits_and_gallia_ownership(scenario):
     state = gallia(scenario)
+    # Route legality now validates a real carried group; empty origins do
+    # not constitute a March, even when their map edge would be traversable.
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA)
+    place_piece(state, rc.SEQUANI, rc.GERMANS, rc.WARBAND)
     state['_cli_allowed_regions'] = {rc.CISALPINA}
     assert _playable_regions(state, rc.ROMANS) == [rc.CISALPINA]
     assert _regions_with_pieces(state, rc.ROMANS) == [rc.CISALPINA]
@@ -44,6 +49,8 @@ def test_scoped_geography_keeps_event_limits_and_gallia_ownership(scenario):
 
 def test_required_event_destination_routes_include_activated_cisalpina():
     state = gallia(rc.SCENARIO_GREAT_REVOLT)
+    place_piece(state, rc.AEDUI_REGION, rc.ROMANS, rc.AUXILIA)
+    place_piece(state, rc.SEQUANI, rc.AEDUI, rc.WARBAND)
     state['_cli_required_destinations'] = {rc.CISALPINA}
     routes = _march_routes(state, rc.AEDUI_REGION, rc.ROMANS)
     assert [rc.SEQUANI, rc.CISALPINA] in routes

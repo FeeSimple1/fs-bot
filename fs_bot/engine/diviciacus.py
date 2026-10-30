@@ -248,6 +248,68 @@ def effective_pieces(state, region, faction, raw):
     return result
 
 
+def validate_force_cohort_response(request, response):
+    """An operation can select pieces inside or outside an Event's subset."""
+    if response == {'use_default': True} and type(response.get('use_default')) is bool:
+        return response
+    if not isinstance(response, dict) or set(response) != {'counts'}:
+        raise ValueError('Choose counts from the selected Event group and other counters.')
+    counts = response['counts']
+    available = request['available']
+    if (not isinstance(counts, dict) or set(counts) - set(available)
+            or any(type(n) is not int or not 0 <= n <= available[k]
+                   for k, n in counts.items())
+            or sum(counts.values()) != request['count']):
+        raise ValueError('Choose exactly the requested number of physical counters.')
+    return response
+
+
+def choose_force_cohort(state, faction, request):
+    """Choose how many affected counters belong to a tracked Event subset."""
+    count, available = request['count'], request['available']
+    lower = max(0, count - available['other'])
+    upper = min(count, available['selected'])
+    if lower == upper:
+        return lower
+    from fs_bot.engine.agent import consult_agent
+    preview = state.get('_diviciacus_preview')
+    response = (None if preview or faction in state.get('non_player_factions', ())
+                else consult_agent(state, faction, request))
+    if response is not None:
+        validate_force_cohort_response(request, response)
+        if 'counts' in response:
+            return response['counts'].get('selected', 0)
+    if preview:
+        return lower
+    from fs_bot.bots.bot_common import random_select
+    return random_select(state, list(range(lower, upper + 1)))
+
+
+def _free_force_overlap(state, region, faction, physical_owner, physical_type,
+                        visibility, count, operation):
+    """Select the exact intersection with an already selected Event force.
+
+    Diviciacus may borrow all Aedui Warbands for Roman defense even while
+    some form Impetuosity's moving/attacking group. No source gives a
+    selected-versus-resident removal priority, so expose that physical
+    choice. A delegated Event default selects among legal allocations with
+    equal chance (§8.2.3); unrelated actions never add a die roll or prompt.
+    """
+    from fs_bot.commands.sa_enlist import FREE_FORCE_KEY
+    free = state.get(FREE_FORCE_KEY, {})
+    if (not free or physical_owner != free.get('faction', rc.GERMANS)
+            or physical_type != rc.WARBAND or region not in free['pieces']):
+        return 0
+    raw = state['spaces'][region].get('pieces', {}).get(physical_owner, {})
+    total = raw.get(visibility, {}).get(physical_type, 0)
+    selected = free['pieces'][region].get(visibility, 0)
+    request = {'kind': 'force_cohort', 'region': region,
+               'piece_type': physical_type, 'piece_state': visibility,
+               'operation': operation, 'count': count,
+               'available': {'selected': selected, 'other': total - selected}}
+    return choose_force_cohort(state, faction, request)
+
+
 def operate(state, region, faction, piece_type, count, operation, *, owner=None, **kwargs):
     ctx = state.get(KEY)
     if not ctx or region not in ctx['pieces']:
@@ -286,6 +348,8 @@ def operate(state, region, faction, piece_type, count, operation, *, owner=None,
     for physical_owner, physical_type, visibility, n in allocations:
         params = dict(kwargs)
         destination = params.pop('destination', None)
+        selected = _free_force_overlap(state, region, faction, physical_owner,
+                                       physical_type, visibility, n, operation)
         if operation == 'remove':
             params['piece_state'] = visibility
             board._remove_piece_inner(state, region, physical_owner, physical_type, n, **params)
@@ -313,6 +377,15 @@ def operate(state, region, faction, piece_type, count, operation, *, owner=None,
                 target[visibility] = target.get(visibility, 0) + n
             elif operation == 'flip':
                 ctx['pieces'][region][new_state] = ctx['pieces'][region].get(new_state, 0) + n
+        if selected:
+            from fs_bot.commands.sa_enlist import FREE_FORCE_KEY
+            free = state[FREE_FORCE_KEY]['pieces']
+            free[region][visibility] -= selected
+            if operation == 'move':
+                target = free.setdefault(destination, {})
+                target[visibility] = target.get(visibility, 0) + selected
+            elif operation == 'flip':
+                free[region][new_state] = free[region].get(new_state, 0) + selected
     return True
 
 

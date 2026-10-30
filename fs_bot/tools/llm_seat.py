@@ -265,6 +265,8 @@ def cmd_replay(args):
     replay_session.data["queue"] = [SeatSession._inbox_entry(e) for e in entries]
     replay_session.data["expected"] = [
         {"id": e["assistant_id"], "signature": e["assistant_signature"],
+         "request": copy.deepcopy(e.get("assistant_request", {})),
+         "action_windows_version": e.get("assistant_action_windows_version", 0),
          **({"assistant_rejected": copy.deepcopy(e["assistant_rejected"])}
             if "assistant_rejected" in e else {})}
         for e in entries]

@@ -4,6 +4,7 @@ import copy
 import io
 import json
 from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 
@@ -208,6 +209,21 @@ def _save_session(path, state, faction):
     return SimpleNamespace(dir=str(path))
 
 
+def _decline_timing_windows(args):
+    """Leave the new optional windows unchanged, retaining their real history."""
+    for _ in range(100):
+        _, meta, _ = load_game(Path(args.dir) / 'save.json')
+        pending = meta['assistant_session']['pending']
+        if not pending or decode(pending['request'])['kind'] != 'voluntary_removal':
+            return
+        args.response = json.dumps({'done': True})
+        assert llm_seat.cmd_submit(args) == 0
+        _, updated, _ = load_game(Path(args.dir) / 'save.json')
+        assert updated['assistant_session']['pending'] != pending, (
+            'A fresh explicit response was suppressed at a reused timing decision ID')
+    pytest.fail('Optional timing choices did not reach the next decision')
+
+
 @pytest.mark.parametrize('warbands_first', [False, True])
 def test_ordered_rally_file_session_rejects_bad_count_then_saves_and_replays(tmp_path, capsys, warbands_first):
     state = _state()
@@ -227,6 +243,7 @@ def test_ordered_rally_file_session_rejects_bad_count_then_saves_and_replays(tmp
     action = _rally(steps)
     args.response = json.dumps({'action': ACTION_COMMAND, 'player_action': action})
     assert llm_seat.cmd_submit(args) == 0
+    _decline_timing_windows(args)
     final, final_meta, final_log = load_game(tmp_path / 'live' / 'save.json')
     assert count_pieces(final, rc.MANDUBII, rc.ARVERNI, rc.WARBAND) == 1
     assert count_pieces(final, rc.MANDUBII, rc.ARVERNI, rc.ALLY) == 1
@@ -282,13 +299,17 @@ def test_event_recruit_count_pending_save_resume_and_exact_replay(tmp_path, caps
         'event_params': {'faction': rc.ROMANS}}}
     args.response = json.dumps({'action': ACTION_EVENT, 'player_action': event})
     assert llm_seat.cmd_submit(args) == 0
+    _decline_timing_windows(args)
     paused, paused_meta, log = load_game(tmp_path / 'live' / 'save.json')
     pending = paused_meta['assistant_session']['pending']
     request = decode(pending['request'])
     assert request['kind'] == 'free_action' and request['request_type'] == 'event_rally'
     assert request['max_regions'] == 3
     assert encode(paused) == encode(initial)
-    assert len(paused_meta['assistant_session']['journal']) == 1 and log == []
+    assert paused_meta['assistant_session']['journal'][0]['player_action'] == event
+    assert all(entry.get('reactive') == 'voluntary_removal'
+               for entry in paused_meta['assistant_session']['journal'][1:])
+    assert log == []
     args.response = json.dumps(_recruit(1.0))
     assert llm_seat.cmd_submit(args) == 0
     rejected, rejected_meta, rejected_log = load_game(tmp_path / 'live' / 'save.json')
@@ -298,11 +319,15 @@ def test_event_recruit_count_pending_save_resume_and_exact_replay(tmp_path, caps
     assert rejected_log == []
     args.response = json.dumps(_recruit(1))
     assert llm_seat.cmd_submit(args) == 0
+    _decline_timing_windows(args)
     final, final_meta, final_log = load_game(tmp_path / 'live' / 'save.json')
     assert count_pieces(final, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA) == 1
     assert final['resources'][rc.ROMANS] == 10
-    assert len(final_log) == 2
-    assert decode(final_log[1]['assistant_response']) == _recruit(1)
+    grants = [entry for entry in final_log if entry.get('reactive') == 'free_action']
+    assert len(grants) == 1
+    assert decode(grants[0]['assistant_response']) == _recruit(1)
+    assert all(entry.get('reactive') in (None, 'voluntary_removal', 'free_action')
+               for entry in final_log)
     assert not final_meta['assistant_session']['pending'] and not final_meta['assistant_session']['journal']
     args.output_dir = str(tmp_path / 'replay')
     assert llm_seat.cmd_replay(args) == 0
@@ -332,6 +357,7 @@ def test_interrupted_exact_rally_failure_keeps_whole_turn_pending_then_replays(t
     pending = copy.deepcopy(meta['assistant_session']['pending'])
     args.response = json.dumps({'action': ACTION_COMMAND_SA, 'player_action': action})
     assert llm_seat.cmd_submit(args) == 0
+    _decline_timing_windows(args)
     rejected, rejected_meta, rejected_log = load_game(live / 'save.json')
     # The invalid later exact quantity cannot commit the first Region or the
     # intervening Suborn, consume their pieces/Resources, or advance the turn.
@@ -345,12 +371,14 @@ def test_interrupted_exact_rally_failure_keeps_whole_turn_pending_then_replays(t
     action['details']['command_parts'][1] = _rally([_warbands(rc.SEQUANI, 1)])
     args.response = json.dumps({'action': ACTION_COMMAND_SA, 'player_action': action})
     assert llm_seat.cmd_submit(args) == 0
+    _decline_timing_windows(args)
     final, final_meta, final_log = load_game(live / 'save.json')
     assert count_pieces(final, rc.AEDUI_REGION, rc.AEDUI, rc.WARBAND) == 1
     assert count_pieces(final, rc.SEQUANI, rc.AEDUI, rc.WARBAND) == 1
     assert count_pieces(final, rc.MANDUBII, rc.AEDUI, rc.WARBAND) == 2
     assert final['resources'][rc.AEDUI] == 7
-    assert len(final_log) == 1 and final_log[0]['player_action'] == action
+    assert final_log[0]['player_action'] == action
+    assert all(entry.get('reactive') == 'voluntary_removal' for entry in final_log[1:])
     assert not final_meta['assistant_session']['pending'] and not final_meta['assistant_session']['journal']
     args.output_dir = str(tmp_path / 'replay')
     assert llm_seat.cmd_replay(args) == 0

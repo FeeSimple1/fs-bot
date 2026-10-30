@@ -8,6 +8,31 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
+### Q-ELITE-NP-PIECES — physical Elite Warband selection (29 October 2026)
+
+The timing review added exact human selection for shaded Vercingetorix's
+Elite. Card Reference 30 says to “pick 2 Arverni Warbands” that “take & inflict
+Losses as if Legions”; the revised card uses four. A human can distinguish
+those counters from ordinary Warbands of the same visibility, including
+when voluntarily removing a piece during Battle.
+
+The non-player designation rule is less clear. Section 8.4.1 explicitly
+reverses enemy-removal priorities for own casualties, including visibility
+and the distinction between troops and Legions. Sections 8.2.3 and 8.3.1
+describe unprioritized choices and Capability use, but do not expressly say
+which physical Warbands to designate as Elite. It is unclear whether to
+choose randomly, prefer Hidden then Revealed then Scouted, or apply another
+instruction. These policies can change which counters receive saving rolls
+and survive to Counterattack.
+
+No new policy is adopted here. The existing non-player Elite designation
+behavior is retained pending an authoritative clarification or an explicit
+owner ruling. The independent, printed visibility priority is corrected for
+ordinary non-player casualties; the unresolved Elite case is excluded from
+that change. This question is not covered by PR-01 through PR-09. The
+repository's `CLAUDE.md` requires stopping the specific ambiguous issue and
+recording its alternatives rather than implementing a best guess.
+
 ### Q-TRADE-NP-REGION — shaded River Commerce selection (29 October 2026)
 
 The human Region-choice repair exposed a separate non-player policy question.

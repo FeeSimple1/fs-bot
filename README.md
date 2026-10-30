@@ -58,6 +58,16 @@ Diviciacus Leader rules. The choice is saved with the game.
 
 ## Current validation
 
+The [29 October action-timing report](docs/reviews/action-timing-2026-10-29.md)
+describes voluntary piece reclamation, Vercingetorix's mid-action entry,
+same-Region Rally interruption, and the related fixes found during their
+integration. It records **6,109 passing tests**, **150 audited bot games**,
+**80 mixed-seat executions including replay**, and **50 strict-census
+executions**. It preserves the original balance failure, the paired causal
+review and the independently reviewed baseline refresh at the unchanged
+15-point limit. Fresh games exactly reproduce that reviewed baseline.
+These measurements are separate from the earlier checkpoints below.
+
 The [29 October rules and Trade report](docs/reviews/rulings-trade-2026-10-29.md)
 records **5,777 passing tests**, **150 audited bot games**, **80 mixed-seat
 executions including replay**, and **50 strict-census executions**. Cross-hash
@@ -72,8 +82,8 @@ superseded candidate from the final source and remaining interface gaps.
 
 The [28 October Spring Leader report](docs/reviews/spring-leaders-2026-10-28.md)
 records 5,226 passing tests, 150 audited bot games and the separately reviewed
-balance refresh. It also identifies the remaining mid-action Vercingetorix
-entry gap; action-boundary prompts do not cover the full printed timing freedom.
+balance refresh. It identified the mid-action Vercingetorix entry gap
+addressed by the later action-timing repair above.
 
 The [27 October second-batch report](docs/reviews/second-batch-2026-10-27.md)
 records **5,112 passing tests**, **200 audited bot games**, **80 mixed-seat

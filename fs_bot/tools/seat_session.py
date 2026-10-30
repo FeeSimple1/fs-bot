@@ -22,7 +22,9 @@ class DecisionPending(BaseException):
 
 def board_copy(state):
     return copy.deepcopy({k: v for k, v in state.items()
-                          if k != "decision_agent"})
+                          if k not in ("decision_agent", '_action_window_scope',
+                                       '_action_window_busy', '_action_window_cohorts',
+                                       '_battle_elite_warbands')})
 
 
 def fingerprint(value):
@@ -39,6 +41,10 @@ def _decision_signatures(state, request):
     board field and request field still has to match exactly.
     """
     board = board_copy(state)
+    # Engine re-entrancy/authority frames are transient call-stack state,
+    # never a game fact. The request's actual window remains fingerprinted.
+    board.pop('_action_window_scope', None)
+    board.pop('_action_window_busy', None)
     key = "_supply_line_agreements"
     if key not in board or (type(board[key]) is dict and not board[key]):
         board.pop(key, None)
@@ -55,6 +61,10 @@ def validate_response(state, request, response):
     kind = request["kind"]
     if (kind != "turn" and isinstance(response, dict)
             and set(response) == {"use_default"} and response["use_default"] is True):
+        if kind in ('spring_leader', 'battle_elite') and 'window' in request:
+            # None defers optional mid-action entry; explicit default places
+            # using the established priorities and must retain its meaning.
+            return response
         if kind == 'supply_refusal' and request.get('action_type') == 'command':
             from fs_bot.engine.supply_reconsideration import validate_response as validate_supply
             validate_supply(state, request, {'continue': True})
@@ -90,6 +100,10 @@ def validate_response(state, request, response):
     if kind == "spring_leader":
         from fs_bot.engine.spring import validate_response as validate_spring
         return validate_spring(state, request, response)
+    if kind == "voluntary_removal":
+        from fs_bot.engine.voluntary_removal import validate_response as validate_removal
+        return validate_removal(state, request, response,
+                                cohorts=request.get('cohorts'))
     if kind in ("council_selection", "council_choice"):
         from fs_bot.cards.council import validate_response as validate_council
         return validate_council(state, request, response)
@@ -99,6 +113,18 @@ def validate_response(state, request, response):
     if kind == "diviciacus_pieces":
         from fs_bot.engine.diviciacus import validate_response as validate_pieces
         return validate_pieces(request, response)
+    if kind == 'force_cohort':
+        from fs_bot.engine.diviciacus import validate_force_cohort_response
+        return validate_force_cohort_response(request, response)
+    if kind == 'battle_elite':
+        from fs_bot.battle.elite import validate_response as validate_elite
+        return validate_elite(state, request, response)
+    if kind == 'quarters_provincia':
+        from fs_bot.engine.quarters import validate_provincia_response
+        return validate_provincia_response(state, request, response)
+    if kind == 'quarters_payment':
+        from fs_bot.engine.quarters import validate_payment_response
+        return validate_payment_response(state, request, response)
     if kind == HARASSMENT_LOSS:
         from fs_bot.commands.march import validate_harassment_response
         return validate_harassment_response(request, response)
@@ -172,6 +198,8 @@ def validate_response(state, request, response):
 class SeatSession:
     """One authoritative saved inbox, pending decision and action journal."""
 
+    supports_action_windows = True
+
     def __init__(self, state, meta, log, display):
         self.state, self.meta, self.log, self.display = state, meta, log, display
         self.data = meta.setdefault("assistant_session", {
@@ -196,6 +224,7 @@ class SeatSession:
         self.active = False
         self.error = None
         self.replayed_rejection = False
+        self._legacy_replay_tail = False
 
     def __deepcopy__(self, memo):
         # This is a live frontend, not game state. Bot previews copy the
@@ -209,20 +238,47 @@ class SeatSession:
     def import_inbox(self, payload):
         """Import once. Re-reading an unchanged inbox cannot repeat a move."""
         receipt = fingerprint(payload)
-        if receipt in self.data["receipts"]:
-            return False
+        receipts = self.data['receipts']
+        decision_receipt = None
         if isinstance(payload, dict):
             pending = self.data.get("pending")
             if (not pending or payload.get("decision_id") != pending["id"]
                     or "response" not in payload):
+                # A consumed inbox may remain on disk after the engine has
+                # advanced. It is still an acknowledged old submission.
+                if receipt in receipts:
+                    return False
                 raise ValueError("Submission must identify the current pending decision.")
+            # Ordinary rejected plans reuse decision IDs. A later response
+            # can have the same board/request as the rejected attempt while
+            # belonging to a different corrected top-level plan. Include
+            # accepted response ancestry, not merely the request or its ID.
+            versioned = (pending.get('action_windows_version')
+                         or any(entry.get('assistant_action_windows_version')
+                                for entry in self.data['journal']))
+            if versioned:
+                lineage = [(entry['assistant_id'], entry['assistant_signature'],
+                            entry['assistant_response']) for entry in self.data['journal']]
+                decision_receipt = fingerprint({'payload': payload, 'pending': pending,
+                                                'lineage': lineage})
+                if decision_receipt in receipts:
+                    return False
+            elif receipt in receipts:
+                # Preserve older transcripts byte-for-byte until a newly
+                # introduced decision starts the versioned timing protocol.
+                return False
             queue = [payload]
         elif isinstance(payload, list):
+            if receipt in receipts:
+                return False
             queue = payload
         else:
             raise ValueError("queue.json must be a decision list or a decision_id/response object.")
         self.data["queue"] = copy.deepcopy(queue)
-        self.data["receipts"].append(receipt)
+        if receipt not in receipts:
+            receipts.append(receipt)
+        if decision_receipt is not None:
+            receipts.append(decision_receipt)
         return True
 
     def checkpoint(self):
@@ -231,6 +287,7 @@ class SeatSession:
         self.active = True
         self.cursor = 0
         self.replayed_rejection = False
+        self._legacy_replay_tail = False
         return copy.deepcopy(self.data["queue"]), copy.deepcopy(self.data["journal"])
 
     def transaction_complete(self):
@@ -302,6 +359,7 @@ class SeatSession:
         self.data["pending"] = None
         self.cursor = 0
         self.active = False
+        self._legacy_replay_tail = False
 
     @staticmethod
     def _inbox_entry(entry):
@@ -312,6 +370,8 @@ class SeatSession:
 
     def ask(self, state, faction, request):
         request = dict(request, faction=faction)
+        if self._skip_legacy_window(state, request):
+            return None
         signature, compatible_signatures = _decision_signatures(state, request)
         journal = self.data["journal"]
         if self.cursor < len(journal):
@@ -323,6 +383,7 @@ class SeatSession:
             return decode(entry["assistant_response"])
 
         decision_id = f"d{len(self.log) + self.cursor + 1:06d}"
+        record_version = int('_action_window_scope' in state or 'window' in request)
         for expected in self.data.get("expected", []):
             if expected["id"] == decision_id:
                 if expected["signature"] not in compatible_signatures:
@@ -331,9 +392,12 @@ class SeatSession:
                 # Replaying an accepted decision retains its original record,
                 # including the older writer's equivalent empty-cache shape.
                 signature = expected["signature"]
+                record_version = expected.get('action_windows_version', record_version)
+                self._legacy_replay_tail = not record_version
         self.display.before_decision(state, faction)
         pending = {"id": decision_id, "request": encode(request),
-                   "board": encode(board_copy(state))}
+                   "board": encode(board_copy(state)),
+                   **({'action_windows_version': 1} if record_version else {})}
         self.data["pending"] = pending
         queue = self.data["queue"]
         if not queue:
@@ -358,6 +422,8 @@ class SeatSession:
         entry = {"card": state.get("current_card"), "faction": faction,
                  "assistant_id": decision_id, "assistant_signature": signature,
                  "assistant_request": encode(request),
+                 **({'assistant_action_windows_version': record_version}
+                    if record_version else {}),
                  "assistant_response": encode(response)}
         if request["kind"] == "turn":
             entry.update(response)
@@ -368,6 +434,40 @@ class SeatSession:
         self.cursor += 1
         self.data["pending"] = None
         return response
+
+    def _skip_legacy_window(self, state, request):
+        """Do not inject choices into an already-recorded old transaction.
+
+        Only saved evidence permits compatibility. A fresh inbox, or a new
+        pending window, always requires a real human response.
+        """
+        if request.get('kind') not in ('voluntary_removal', 'spring_leader', 'battle_elite') or 'window' not in request:
+            return False
+        journal = self.data['journal']
+        if self.cursor < len(journal):
+            entry = journal[self.cursor]
+            old_request = decode(entry.get('assistant_request', {}))
+            return (not entry.get('assistant_action_windows_version')
+                    and 'window' not in old_request)
+        decision_id = f'd{len(self.log) + self.cursor + 1:06d}'
+        expected = next((entry for entry in self.data.get('expected', [])
+                         if entry['id'] == decision_id), None)
+        if expected is not None:
+            # Older integrations supplied only IDs/signatures. An exact
+            # match is still an explicitly recorded window, never a reason
+            # to skip it merely because those integrations omitted metadata.
+            _, signatures = _decision_signatures(state, request)
+            if expected['signature'] in signatures:
+                return False
+            old_request = decode(expected.get('request', {}))
+            return (not expected.get('action_windows_version')
+                    and 'window' not in old_request)
+        pending = self.data.get('pending')
+        if pending is not None:
+            old_request = decode(pending['request'])
+            return (not pending.get('action_windows_version')
+                    and 'window' not in old_request)
+        return self._legacy_replay_tail
 
     def reactive(self, state, faction, request):
         if faction != self.seat or state is not self.state:

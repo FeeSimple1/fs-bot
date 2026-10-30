@@ -19,6 +19,41 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 29 October action timing and exact participating pieces
+
+The [action-timing report](reviews/action-timing-2026-10-29.md) follows the
+three interface gaps identified by the rules/Trade review. Players can
+reclaim their own physical pieces or downgrade a Citadel during their
+Sequence-of-Play Command/Event, including later steps and grants to another
+faction. Vercingetorix can enter at procedure boundaries after his first
+eligible Spring, including opponents' actions and later Winter. An ordered
+Arverni Rally can insert its Special Ability between the two options in one
+Region, with the Region's cost and bonuses applied once.
+
+Planning previews expose these choices before computing Available pieces,
+Control and Leader requirements. Live execution rechecks the next operation
+without repeating completed dice or effects. Marching, Scout, Event-placed
+and Elite pieces retain their exact identities through removals. Durable
+sessions preserve pending choices and replay older accepted decisions without
+silently defaulting new human decisions.
+
+Related source checks corrected repeated Scout movement, overlapping
+Diviciacus/Event-force bookkeeping, Scouted Rampage targets, and Event
+participation limits. The report records the exact validation revision and
+the further Seize/Surus corrections found during this review. A broader
+source-derived inventory of all human choices remains maintenance work.
+The non-player Trade question and the newly recorded physical Elite
+designation question remain source questions, not new approved rulings.
+
+Final local validation passes **6,109 tests**, **150 audited bot games**,
+**80 mixed-seat executions including replay**, and **50 strict-census
+executions**. Cross-hash reports match with zero hard defects. The original
+balance comparison failed; all 100 paired parent/candidate games were
+reviewed before refreshing 69 winner/card records. Fresh games exactly
+match the reviewed baseline at the unchanged 15-point tolerance. The report
+retains the failed comparison, diagnostic capture retries and the distinction
+between corrected rules choices and implementation RNG sequencing.
+
 ### 29 October rules adoption and Trade choice
 
 The [rules and Trade report](reviews/rulings-trade-2026-10-29.md) records the
@@ -52,10 +87,11 @@ it executes, or reconsider Build at its own boundary while keeping an
 earlier completed Command. Replanning retains the refusal, and saved
 sessions preserve and verify rejected attempts that established it.
 
-Three known interface gaps remain: voluntary own-piece removal/Citadel
+At that checkpoint, three known interface gaps remained: voluntary own-piece removal/Citadel
 downgrades throughout legal action timing; Vercingetorix's mid-action
 Spring-box entry; and a Special Activity between his two Rally options in
-one Region. The broader source-derived human-choice audit also remains.
+one Region. The action-timing repair above addresses these three gaps.
+The broader source-derived human-choice audit remains.
 The report records why start-only reclamation would be incomplete.
 The separate non-player shaded Trade selection question is recorded in
 [Q-TRADE-NP-REGION](../QUESTIONS.md#q-trade-np-region--shaded-river-commerce-selection-29-october-2026);
@@ -72,11 +108,11 @@ shared pools through pending decisions, rollback, save/resume and replay.
 Validation also exposed overlapping A28/Diviciacus forces and Scouted-marker
 handling in Battle and A20; the report traces those related repairs.
 
-Two original implementation items remain: voluntary own-piece reclamation
+At that checkpoint, two original implementation items remained: voluntary own-piece reclamation
 under §1.4.1 and Vercingetorix entry inside a resolving Command/Event. The
 source-derived completeness audit also remains. That review has confirmed
-another existing within-action limitation: an SA cannot yet interrupt the
-two Vercingetorix Rally options in the same Region; current interrupted
+another within-action limitation: an SA could not interrupt the
+two Vercingetorix Rally options in the same Region; the then-current interrupted
 Command portions use different Regions.
 The Trade review confirmed a second gap: human Aedui could not select the
 single Trade Region under shaded River Commerce (Card 39); execution used
@@ -122,9 +158,9 @@ baseline records. A fresh 100-game check exactly matches the reviewed
 winner/card counts with the same 15-point limit. The report preserves the
 old-save expectation failure and all superseded verification evidence.
 
-Arbitrary Vercingetorix entry inside a resolving Command or Event remains a
-human-interface gap: action-boundary prompts do not fully implement the
-scenario's printed “at any time” right. At this Spring checkpoint, other
+At this Spring checkpoint, Vercingetorix entry inside a resolving Command
+or Event remained a human-interface gap: action-boundary prompts did not
+fully implement the scenario's printed “at any time” right. Other
 remaining comparison work was
 optional Recruit/Rally quantities, Vercingetorix's combined Rally menu,
 voluntary own-piece reclamation, and a source-derived inventory of every

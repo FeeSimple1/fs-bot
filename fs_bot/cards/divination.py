@@ -15,6 +15,8 @@ def resolve_divination(state, chooser, limit=3):
     """
     if chooser not in NON_GERMAN_PLAYERS:
         raise ValueError('Divination requires a non-German player to choose the action')
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "A34.command")
     request = {'kind': 'free_action', 'request_type': 'event_command',
                'card_id': 'A34', 'acting_faction': rc.GERMANS,
                'allowed_commands': ['March', 'Battle'], 'max_regions': min(3, limit),

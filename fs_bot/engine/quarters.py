@@ -95,6 +95,11 @@ class _QuartersAgreementCache:
         # Detached Quarters validation uses the same live agreement scope.
         return self
 
+    @property
+    def supports_action_windows(self):
+        from fs_bot.engine.action_windows import enabled
+        return enabled({'decision_agent': self.original})
+
     def __call__(self, board, faction, request):
         from fs_bot.engine.agent import AGREEMENT
         if request.get('kind') != AGREEMENT:
@@ -160,7 +165,8 @@ def _move(state, faction, piece, origin, destination, count):
         move_piece(state, origin, destination, faction, piece, count=count)
 
 
-def preview_relocations(state, faction, moves, *, confirm=False):
+def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
+                        _outcome=None):
     """Return a detached post-relocation board or raise QuartersError.
 
     ``confirm=False`` admits destinations requiring another faction's consent;
@@ -173,7 +179,7 @@ def preview_relocations(state, faction, moves, *, confirm=False):
     # even if the host refuses and the player must choose a different plan.
     if confirm:
         preview_relocations(state, faction, moves, confirm=False)
-    sim = _clone(state)
+    sim = state if _live else _clone(state)
     if confirm:
         sim['rng'] = state['rng']
     playable = set(get_playable_regions_for_state(state, faction))
@@ -234,6 +240,9 @@ def preview_relocations(state, faction, moves, *, confirm=False):
     for piece, origin, destination, count, visibility in allocated:
         move_piece(sim, origin, destination, faction, piece,
                    count=count, piece_state=visibility)
+    if _live and faction == rc.ROMANS:
+        from fs_bot.engine.action_windows import window
+        window(sim, 'quarters_before_supply', faction=faction)
     # Determine all Supply Line Regions once, after the adjacent step (§6.3.3).
     supply_agreements = {f: True for f in rc.FACTIONS}
     if confirm and any(p != rc.LEADER for p, *_ in provincia):
@@ -247,6 +256,32 @@ def preview_relocations(state, faction, moves, *, confirm=False):
     supplied = {origin for piece, origin, _, _ in provincia
                 if piece != rc.LEADER and has_supply_line(sim, origin, rc.ROMANS,
                                                          agreements=supply_agreements)}
+    if _live and faction == rc.ROMANS:
+        # Supply Line Regions are fixed now for the rest of Quarters. A
+        # Spring entry between the adjacent step and this check may have
+        # invalidated a previously legal Provincia plan; ask only for the
+        # unfinished step, without replaying committed adjacent moves.
+        supplied = {region for region in playable if has_supply_line(
+            sim, region, rc.ROMANS, agreements=supply_agreements)}
+        legal_moves = _provincia_options(sim, supplied)
+        request = {'kind': 'quarters_provincia', 'faction': rc.ROMANS,
+                   'original_moves': [list(move) for move in provincia],
+                   'legal_moves': legal_moves}
+        try:
+            validate_provincia_response(sim, request, {'moves': provincia})
+        except QuartersError as exc:
+            request['errors'] = [str(exc)]
+            provincia = _reconsider_provincia(sim, request)
+            if _outcome is not None:
+                _outcome['reconsider_quartering'] = True
+        for index, (piece, origin, destination, count) in enumerate(provincia):
+            window(sim, 'quarters_provincia_move', faction=faction,
+                   region=origin, index=index)
+            _move(sim, faction, piece, origin, destination, count)
+        refresh_all_control(sim)
+        if _outcome is not None:
+            _outcome['moves'] = adjacent + [tuple(move) for move in provincia]
+        return sim
     for piece, origin, destination, count in provincia:
         _need(count <= count_pieces(sim, origin, faction, piece),
               'Cannot relocate unavailable Roman pieces to Provincia')
@@ -263,10 +298,143 @@ def preview_relocations(state, faction, moves, *, confirm=False):
 
 
 def apply_relocations(state, faction, moves):
+    from fs_bot.engine.action_windows import scope
+    with scope(state, phase='winter'):
+        return _apply_relocations(state, faction, moves)
+
+
+def _apply_relocations(state, faction, moves):
+    from fs_bot.engine.action_windows import enabled, is_preview
+    outcome = {'moves': list(moves), 'reconsider_quartering': False}
+    if enabled(state) and not is_preview(state):
+        from fs_bot.engine.spring import atomic
+        # Missing responses restore the live step while its outer frontend
+        # retains accepted decisions for replay. A published NP refusal die
+        # remains consumed just as in the legacy detached execution path.
+        refused_rng = None
+        try:
+            with atomic(state):
+                try:
+                    preview_relocations(state, faction, moves, confirm=True, _live=True,
+                                        _outcome=outcome)
+                except QuartersError:
+                    refused_rng = state['rng'].getstate()
+                    raise
+        except QuartersError:
+            state['rng'].setstate(refused_rng)
+            raise
+        return outcome
     sim = preview_relocations(state, faction, moves, confirm=True)
     # All changes above used piece helpers, on a detached board. Commit only
     # after the complete relocation plan and required agreements succeeded.
     state['spaces'] = sim['spaces']
+    return outcome
+
+
+def _provincia_options(state, supplied):
+    options = []
+    for region in sorted(get_playable_regions_for_state(state, rc.ROMANS)):
+        if region == rc.PROVINCIA:
+            continue
+        direct = (rc.PROVINCIA in get_adjacent_for_state(state, region, rc.ROMANS)
+                  and _controller(state, rc.PROVINCIA) == rc.ROMANS
+                  and not _is_devastated(state, rc.PROVINCIA))
+        for piece in (rc.LEGION, rc.AUXILIA, rc.LEADER):
+            count = count_pieces(state, region, rc.ROMANS, piece)
+            if count and (piece == rc.LEADER or region in supplied or direct):
+                options.append([piece, region, rc.PROVINCIA, count])
+    return options
+
+
+def validate_provincia_response(state, request, response):
+    """Validate a continuation against the frozen, authored Supply choices."""
+    if isinstance(response, dict) and (response == {'decline': True}
+                                      or response == {'use_default': True}):
+        _need(type(next(iter(response.values()))) is bool,
+              'Provincia decline/default must be boolean')
+        return response
+    _need(isinstance(response, dict) and set(response) == {'moves'},
+          'Provincia continuation requires moves or an explicit decline')
+    _need(isinstance(response['moves'], (list, tuple)), 'Provincia moves must be a list')
+    remaining = {(piece, origin, destination): count
+                 for piece, origin, destination, count in request['legal_moves']}
+    for move in response['moves']:
+        _need(isinstance(move, (list, tuple)) and len(move) == 4,
+              'Each Provincia move needs piece, origin, destination, and count')
+        piece, origin, destination, count = move
+        _need(all(isinstance(value, str) for value in (piece, origin, destination)),
+              'Provincia moves must name offered pieces and Regions')
+        key = (piece, origin, destination)
+        _need(key in remaining, f'{origin} has no agreed Supply Line to Provincia')
+        _need(type(count) is int and 0 < count <= remaining[key],
+              'Provincia move selects unavailable pieces')
+        remaining[key] -= count
+    return response
+
+
+def _reconsider_provincia(state, request):
+    from fs_bot.engine.agent import consult_agent
+    while True:
+        response = (consult_agent(state, rc.ROMANS, request)
+                    if rc.ROMANS not in state.get('non_player_factions', ()) else None)
+        if response is not None:
+            try:
+                validate_provincia_response(state, request, response)
+            except QuartersError as exc:
+                request = dict(request, errors=[str(exc)])
+                continue
+        if response is None or response.get('use_default') is True:
+            remaining = {(p, origin, dest): n for p, origin, dest, n in request['legal_moves']}
+            result = []
+            for p, origin, dest, n in request['original_moves']:
+                count = min(n, remaining.get((p, origin, dest), 0))
+                if count:
+                    result.append((p, origin, dest, count))
+                    remaining[p, origin, dest] -= count
+            return result
+        return [] if response.get('decline') else response['moves']
+
+
+def validate_payment_response(state, request, response):
+    """Check revised payments after the actual relocation outcome."""
+    if (isinstance(response, dict) and set(response) == {'use_default'}
+            and response['use_default'] is True):
+        return response
+    _need(isinstance(response, dict) and set(response) == {'payments'},
+          'Revised Quartering requires payments or an explicit default')
+    quartering_allocations(state, response['payments'])
+    return response
+
+
+def reconsider_quartering(state):
+    """A changed Provincia result requires fresh choices for pieces left behind."""
+    from fs_bot.engine.agent import consult_agent
+    request = {'kind': 'quarters_payment', 'faction': rc.ROMANS,
+               'reason': 'Provincia relocations changed; choose for the pieces now remaining.'}
+    while True:
+        response = (consult_agent(state, rc.ROMANS, request)
+                    if rc.ROMANS not in state.get('non_player_factions', ()) else None)
+        if response is not None:
+            try:
+                validate_payment_response(state, request, response)
+            except QuartersError as exc:
+                request = dict(request, errors=[str(exc)])
+                continue
+        if response is not None and 'payments' in response:
+            return response['payments']
+        # §8.8.7 standard payment order, applied to the actual pieces now
+        # present without replanning or replaying any completed relocation.
+        order, payments = [], {}
+        for region in state['spaces']:
+            number = sum(n for _, _, n in quartering_inventory(state, region))
+            if region == rc.PROVINCIA or not number:
+                continue
+            priority = (0 if count_pieces(state, region, rc.ROMANS, rc.ALLY)
+                        else 2 if _is_devastated(state, region) else 1)
+            order.append((priority, region))
+            payments[region] = {'pay': number}
+        payments['_pay_order'] = [region for _, region in sorted(order)]
+        return payments
 
 
 def quartering_inventory(state, region):

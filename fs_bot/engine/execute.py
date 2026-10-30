@@ -59,6 +59,7 @@ from fs_bot.bots.bot_common import np_agrees_to_retreat
 from fs_bot.commands.seize import execute_harassment_loss as _seize_harass_loss
 from fs_bot.rules_consts import HARASSMENT_WARBANDS_PER_LOSS as _HWB_PER_LOSS
 from fs_bot.cards.card_effects import execute_event
+from fs_bot.engine.action_windows import sop_action, window as _timing_window
 
 # Mechanic functions raise CommandError on rule violations and PieceError
 # on invalid piece operations (e.g. a plan gone stale against the board).
@@ -115,6 +116,7 @@ def _apply_end_of_action_capabilities(state):
     place Belgic Ally there." Subdued = the Nervii Tribe neither Allied nor
     Dispersed (allied_faction None, status None).
     """
+    _timing_window(state, 'action_end')
     from fs_bot.cards.capabilities import is_capability_active
     from fs_bot.rules_consts import (BELGAE, NERVII, TRIBE_NERVII, ALLY,
                                      EVENT_SHADED)
@@ -175,6 +177,7 @@ def _exact_human_placement(action):
     return False
 
 
+@sop_action
 @preserve_supply_agreements
 def execute_decision(state, faction, decision):
     """Execute a decision, rolling back a human turn that executes no Command.
@@ -190,6 +193,7 @@ def execute_decision(state, faction, decision):
             install_confirmed_supply, clear_supply_confirmation)
         try:
             with install_confirmed_supply(state, decision.get('bot_action') or {}):
+                _timing_window(state, 'action_start', author=faction)
                 return _execute_decision(state, faction, decision)
         finally:
             # A skipped or interrupted NP Command must not leave an old
@@ -208,14 +212,20 @@ def execute_decision(state, faction, decision):
     card_turn = state.get("_card_turn")
     snapshot = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
     try:
+        _timing_window(state, 'action_start', author=faction,
+                       timing_actions=(action.get('details') or {}).get('timing_actions'))
         result = _execute_decision(state, faction, decision)
-    except BaseException:
+    except BaseException as exc:
         state.clear()
         state.update(snapshot)
         if agent is not None:
             state["decision_agent"] = agent
         if card_turn is not None:
             state["_card_turn"] = card_turn
+        if isinstance(exc, _EXEC_ERRORS):
+            return {'executed': False, 'command': action.get('command'),
+                    'reason': str(exc), 'errors': [{'error': str(exc)}],
+                    'rolled_back': True}
         raise
     # An interrupted Command can report one successful portion alongside a
     # refused exact portion. That OR result cannot commit a partial human
@@ -408,7 +418,9 @@ def _execute_decision(state, faction, decision):
             receives the revised Command's actual Regions and movement plan.
             """
             if not is_human or plan.get('command') != _CMD_RECRUIT:
-                return handler(state, faction, plan), plan
+                executed = handler(state, faction, plan)
+                _after_command_window(state, faction, plan, executed)
+                return executed, plan
             from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
             accompanying = (((sa_result or {}).get('sa')
                              if (sa_result or {}).get('executed') else None)
@@ -425,9 +437,18 @@ def _execute_decision(state, faction, decision):
                 executed = selected(state, faction, chosen)
             if replacement is not None:
                 executed['supply_replacement'] = replacement
+            _after_command_window(state, faction, chosen, executed)
             return executed, chosen
 
         if timing == "during" and sa not in _BATTLE_MODIFYING_SAS:
+            if (command == _CMD_RALLY
+                    and 'sa_after_rally_step' in (bot_action.get('details') or {})):
+                result = _execute_rally(
+                    state, faction, bot_action,
+                    _between_steps=lambda: _execute_sa(state, faction, bot_action))
+                _after_command_window(state, faction, bot_action, result)
+                _apply_end_of_action_capabilities(state)
+                return _attach_transfers(result)
             parts = (bot_action.get("details") or {}).get("command_parts") or []
             if len(parts) != 2:
                 return {"executed": False, "command": command,
@@ -458,6 +479,7 @@ def _execute_decision(state, faction, decision):
                       "command": command, "command_parts": [first, second],
                       "errors": (first.get("errors") or []) + (second.get("errors") or []),
                       "sa_execution": sa_result, "sa_timing": "during"}
+            _after_command_window(state, faction, bot_action, result)
             _apply_end_of_action_capabilities(state)
             return _attach_transfers(result)
         if before:
@@ -484,6 +506,27 @@ def _execute_decision(state, faction, decision):
     # Pass / None / unknown
     return {"executed": False, "command": command,
             "reason": "no executable command"}
+
+
+def _after_command_window(state, faction, action, result):
+    if _command_executed(result):
+        _timing_window(state, 'command_complete', author=faction,
+                       command=action.get('command'),
+                       timing_actions=(action.get('details') or {}).get(
+                           'after_command_timing_actions'))
+
+
+def _timing_plan_step(state, faction, action, stage, *, entry=None, index=0,
+                      **context):
+    """A scalar plan stage can carry the same choices as an object entry."""
+    details = action.get('details') or {}
+    stages = dict(details.get('stage_timing_actions') or {})
+    stages.update((details.get('sa_details') or {}).get('stage_timing_actions') or {})
+    actions = stages.get(f'{stage}:{index}')
+    if isinstance(entry, dict) and 'timing_actions' in entry:
+        actions = entry['timing_actions']
+    _timing_window(state, stage, author=faction, index=index,
+                   timing_actions=actions, **context)
 
 
 def _sa_survives_empty_command(faction, command, sa):
@@ -514,6 +557,10 @@ def _execute_borrowed_command(state, faction, action, handler):
             return {"executed": False, "command": action.get("command"),
                     "reason": "Interrupted Enlist needs two Command portions"}
         first = handler(state, faction, parts[0])
+        _after_command_window(state, faction, parts[0], first)
+    _timing_window(state, 'special_ability', author=faction, sa=_SA_ENLIST,
+                   timing_actions=((action.get('details') or {}).get(
+                       'sa_details') or {}).get('timing_actions'))
     try:
         begin_borrow(state, action)
     except _EXEC_ERRORS as exc:
@@ -521,6 +568,7 @@ def _execute_borrowed_command(state, faction, action, handler):
                 "reason": str(exc), "errors": [{"error": str(exc)}]}
     try:
         result = handler(state, faction, parts[1] if parts else action)
+        _after_command_window(state, faction, parts[1] if parts else action, result)
         affected = state[BORROW_KEY]["affected"]
     finally:
         end_borrow(state)
@@ -528,6 +576,11 @@ def _execute_borrowed_command(state, faction, action, handler):
         result = {"executed": _command_executed(first) or _command_executed(result),
                   "command": action["command"], "command_parts": [first, result],
                   "errors": (first.get("errors") or []) + (result.get("errors") or [])}
+        _after_command_window(state, faction, action, result)
+    tail = ((action.get('details') or {}).get('sa_details') or {}).get('after_sa_timing_actions')
+    if _command_executed(result) or tail is not None:
+        _timing_window(state, 'special_ability_complete', author=faction, sa=_SA_ENLIST,
+                       timing_actions=tail)
     result["sa_execution"] = {"executed": bool(affected) and _command_executed(result),
                               "sa": _SA_ENLIST, "type": "borrow",
                               "affected_warbands": affected}
@@ -588,9 +641,17 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
             result = handlers[selected_command](state, faction, chosen)
         if replacement is not None:
             result['supply_replacement'] = replacement
+        _after_command_window(state, faction, chosen, result)
         return result, chosen
 
     if timing == "during":
+        if (cmd == _CMD_RALLY
+                and 'sa_after_rally_step' in (bot_action.get('details') or {})):
+            result = _execute_rally(
+                state, faction, bot_action,
+                _between_steps=lambda: _execute_sa(state, faction, bot_action, **sa_kwargs))
+            _after_command_window(state, faction, bot_action, result)
+            return result
         parts = (bot_action.get("details") or {}).get("command_parts") or []
         if _human_grant is not None:
             revised = _reconsider_untouched_split(state, faction, bot_action,
@@ -610,10 +671,12 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
         sa_result = _execute_sa(state, faction, bot_action, **sa_kwargs)
         second, _ = current_command(parts[1], split=True, continuation=True,
                                     excluded=command_regions(first_plan))
-        return {"executed": _command_executed(first) or _command_executed(second),
+        result = {"executed": _command_executed(first) or _command_executed(second),
                 "command": cmd, "command_parts": [first, second],
                 "errors": (first.get("errors") or []) + (second.get("errors") or []),
                 "sa_execution": sa_result, "sa_timing": "during"}
+        _after_command_window(state, faction, bot_action, result)
+        return result
     if before:
         sa_result = _execute_sa(state, faction, bot_action, **sa_kwargs)
     result, bot_action = current_command(bot_action)
@@ -800,6 +863,8 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     from fs_bot.bots.bot_dispatch import dispatch_bot_turn
     from fs_bot.engine.free_actions import (command_options, consult_free_action,
                                              execute_free_action_plan)
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "resolve_free_command", beneficiary=faction)
     request = {"kind": "free_action", "request_type": "event_command",
                "allowed_commands": [cmd for cmd in command_options(faction)
                                     if cmd not in (exclude_commands or ())],
@@ -1055,6 +1120,8 @@ def _resolve_free_rally(state, faction, allowed_regions=None,
                         allow_devastated=False):
     from fs_bot.engine.free_actions import (rally_event_scope, consult_free_action,
                                              execute_free_action_plan)
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "resolve_free_rally", beneficiary=faction)
     request = {"kind": "free_action", "request_type": "event_rally",
                "allowed_commands": [_CMD_RECRUIT if faction == _ROMANS_F else _CMD_RALLY],
                "allowed_regions": sorted(allowed_regions) if allowed_regions is not None else None,
@@ -1496,14 +1563,17 @@ def _resolve_free_actions_scoped(state, faction):
     result dicts (possibly empty). Errors in an individual free action are
     captured, not raised, to keep a full game running.
     """
+    from fs_bot.cards.card_effects import _event_step
     mods = state.get("event_modifiers") or {}
     results = []
     if mods.get("card_A28_combined_battle"):
+        _event_step(state, "grant.card_A28_combined_battle")
         from fs_bot.cards.admagetobriga import resolve_admagetobriga
         results.extend(resolve_admagetobriga(state, faction))
     for flag in _FREE_FIRST_BATTLE_FLAGS:
         if not mods.get(flag):
             continue
+        _event_step(state, f"grant.{flag}")
         allowed = _free_battle_region_set(state, flag)
         action = _plan_free_battle_command(state, faction, allowed, no_retreat=True)
         if action is None:
@@ -1526,6 +1596,7 @@ def _resolve_free_actions_scoped(state, faction):
         # Optional second Battle in the same Region (Retreat allowed).
         dbl = _DOUBLE_BATTLE_FLAG.get(flag)
         if dbl and mods.get(dbl):
+            _event_step(state, f"grant.{dbl}")
             second_action = _plan_free_battle_command(
                 state, faction, {region}, second=True)
             if second_action is not None:
@@ -1544,163 +1615,215 @@ def _resolve_free_actions_scoped(state, faction):
     # free Seize in Belgica "as if Roman Control, with no Harassment" — the
     # Seize Disperses regardless of actual Control and skips Harassment.
     if mods.get("card_A58_roman_battle_seize"):
+        _event_step(state, "grant.card_A58_roman_battle_seize")
         results.extend(_resolve_a58_battle_seize(state, faction))
     if mods.get("card_A67_arduenna"):
         # A67 = base 67 effect, "updated to allow German use" (A Card Ref). A
         # non-German actor (Be/Ae/Ro) uses the faction-agnostic base resolver;
         # the German path has its own (March-to-Control + Battle + flip Hidden).
+        _event_step(state, "grant.card_A67_arduenna")
         from fs_bot.rules_consts import GERMANS as _G67
         if faction == _G67:
             results.extend(_resolve_a67_arduenna(state, faction))
         else:
             results.extend(_resolve_card67_arduenna(state, faction))
     if mods.get("card_A20_free_seize_veneti"):
+        _event_step(state, "grant.card_A20_free_seize_veneti")
         results.extend(_resolve_a20_free_seize(state))
     if mods.get("card_A20_arverni_ambush"):
+        _event_step(state, "grant.card_A20_arverni_ambush")
         results.extend(_resolve_a20_arverni_ambush(state))
     if mods.get("card_A17_roman_march_battle"):
+        _event_step(state, "grant.card_A17_roman_march_battle")
         results.extend(_resolve_a17_march_battle(state))
     if mods.get("card_A19_march_romans"):
+        _event_step(state, "grant.card_A19_march_romans")
         results.extend(_resolve_a19_march_romans(state, faction))
     if mods.get("card_6_double_auxilia_losses"):
+        _event_step(state, "grant.card_6_double_auxilia_losses")
         results.extend(_resolve_card6_scout_battle(state))
     if mods.get("card_11_double_auxilia_losses"):
+        _event_step(state, "grant.card_11_double_auxilia_losses")
         results.extend(_resolve_double_aux_battle_card(
             state, mods.get("card_11_battle_region"), "card_11"))
     if mods.get("card_11a_auxilia_battle"):
+        _event_step(state, "grant.card_11a_auxilia_battle")
         results.extend(_resolve_double_aux_battle_card(
             state, mods.get("card_11a_battle_region"), "card_11a"))
     if mods.get("card_2_auto_legion_loss"):
+        _event_step(state, "grant.card_2_auto_legion_loss")
         results.extend(_resolve_card2_battle(
             state, faction, mods.get("card_2_battle_region")))
     if mods.get("card_70_roman_march_battle"):
+        _event_step(state, "grant.card_70_roman_march_battle")
         results.extend(_resolve_card70_march_battle(
             state, mods.get("card_70_target_regions"),
             mods.get("card_70_legion_limit", 4)))
     if mods.get("card_72_march_and_enemy_battle"):
+        _event_step(state, "grant.card_72_march_and_enemy_battle")
         results.extend(_resolve_card72_march_enemy_battle(state, faction))
 
     if mods.get("card_72_hidden_march_battle"):
+        _event_step(state, "grant.card_72_hidden_march_battle")
         results.extend(_resolve_card72_hidden_march_battle(state, faction))
     if mods.get("card_58_german_march_battle"):
+        _event_step(state, "grant.card_58_german_march_battle")
         results.extend(_resolve_card58_german_ambush(state))
     if mods.get("card_65_german_march_ambush"):
+        _event_step(state, "grant.card_65_german_march_ambush")
         results.extend(_resolve_card65_german_march_ambush(
             state, mods.get("card_65_march_regions", 2)))
     if mods.get("card_17_german_ambush"):
+        _event_step(state, "grant.card_17_german_ambush")
         results.extend(_resolve_card17_march_ambush(
             state, mods.get("card_17_march_german_groups", 3)))
     if mods.get("card_17_germans_phase"):
+        _event_step(state, "grant.card_17_germans_phase")
         results.extend(_resolve_card17_germans_phase(state))
     if mods.get("card_57_march_britannia"):
+        _event_step(state, "grant.card_57_march_britannia")
         results.extend(_resolve_card57_britannia_march(state, faction))
     if mods.get("card_4_free_march_to"):
+        _event_step(state, "grant.card_4_free_march_to")
         results.extend(_resolve_card4_circumvallation(
             state, mods.get("card_4_free_march_to")))
     if mods.get("card_9_free_march_and_command"):
+        _event_step(state, "grant.card_9_free_march_and_command")
         results.extend(_resolve_card9_march_command(
             state, faction, mods.get("card_9_march_from"),
             mods.get("card_9_march_to")))
     if mods.get("card_70_free_command_sa"):
+        _event_step(state, "grant.card_70_free_command_sa")
         results.extend(_resolve_card70_free_command(state, faction))
     if mods.get("card_46_free_command"):
+        _event_step(state, "grant.card_46_free_command")
         results.append({"free_action": "free_command", "flag": "card_46",
                         "result": _resolve_free_command(state, faction)})
     if mods.get("card_51_aedui_free_command"):
+        _event_step(state, "grant.card_51_aedui_free_command")
         from fs_bot.rules_consts import AEDUI as _AEDUI
         results.append({"free_action": "free_command", "flag": "card_51",
                         "result": _resolve_free_command(state, _AEDUI)})
     if mods.get("card_52_free_command_sa"):
+        _event_step(state, "grant.card_52_free_command_sa")
         results.extend(_resolve_card52_free_command(state))
     if mods.get("card_35_gallic_commands"):
+        _event_step(state, "grant.card_35_gallic_commands")
         results.extend(_resolve_card35_gallic(state, faction))
     if mods.get("card_35_free_limited_command"):
+        _event_step(state, "grant.card_35_free_limited_command")
         results.extend(_resolve_card35_roman(state, faction))
     if mods.get("card_34_free_rally"):
+        _event_step(state, "grant.card_34_free_rally")
         results.append({"free_action": "free_rally", "flag": "card_34",
                         "result": _resolve_free_rally(
                             state, mods.get("card_34_rally_faction", faction),
                             max_regions=mods.get("card_34_rally_regions", 3),
                             as_if_control=True, allow_devastated=True)})
     if mods.get("card_26_arverni_rally"):
+        _event_step(state, "grant.card_26_arverni_rally")
         results.extend(_resolve_card26_arverni_rally(state))
     if mods.get("card_64_belgae_rally"):
+        _event_step(state, "grant.card_64_belgae_rally")
         results.extend(_resolve_card64_belgae_rally(state))
     if mods.get("card_25_extra_losses"):
+        _event_step(state, "grant.card_25_extra_losses")
         results.extend(_resolve_card25_battle(
             state, faction, mods.get("card_25_battle_region"),
             mods.get("card_25_extra_losses", 3)))
     if mods.get("card_36_free_battle"):
+        _event_step(state, "grant.card_36_free_battle")
         results.extend(_resolve_card36_battle(state, faction))
     if mods.get("card_36_gallic_ambush_battle"):
+        _event_step(state, "grant.card_36_gallic_ambush_battle")
         results.extend(_resolve_card36_shaded(state, faction))
     if mods.get("card_66_german_rally_march"):
+        _event_step(state, "grant.card_66_german_rally_march")
         results.extend(_resolve_card66_german_rally_march(state, faction))
     if mods.get("card_21_no_fort"):
+        _event_step(state, "grant.card_21_no_fort")
         results.extend(_resolve_card21_provincia_battle(state))
     if mods.get("card_45_battle_romans"):
+        _event_step(state, "grant.card_45_battle_romans")
         results.extend(_resolve_card45_battle(state, faction))
     if mods.get("card_54_joined_ranks"):
+        _event_step(state, "grant.card_54_joined_ranks")
         results.extend(_resolve_card54_joined_ranks(
             state, faction, mods.get("card_54_march_limit", 8),
             bool(mods.get("card_54a_second_always_retreat"))))
     if mods.get("card_44_free_scout"):
+        _event_step(state, "grant.card_44_free_scout")
         results.extend(_resolve_card44_scout(state))
     if mods.get("card_44_free_raid"):
+        _event_step(state, "grant.card_44_free_raid")
         results.extend(_resolve_card44_raid(state, faction))
     if mods.get("card_48_druids"):
+        _event_step(state, "grant.card_48_druids")
         results.extend(_resolve_card48_druids(
             state, mods.get("card_48_target_factions")))
     if mods.get("card_47_council"):
+        _event_step(state, "grant.card_47_council")
         results.extend(_resolve_card47_council(state, faction))
     if mods.get("card_62_war_fleet"):
+        _event_step(state, "grant.card_62_war_fleet")
         results.extend(_resolve_card62_war_fleet(state, faction))
     if (mods.get("card_A24_arverni_phase") or mods.get("card_A27_arverni_phase")
             or mods.get("card_A32_arverni_phase")):
+        _event_step(state, "grant.card_A24_arverni_phase")
         results.extend(_resolve_event_arverni_phase(state))
     if mods.get("card_51_german_action"):
-        # Germans are game-run (no flowchart): act with the placed Warbands via
-        # an Ambush sweep (the aggressive "March/Raid/Battle" option).
-        from fs_bot.rules_consts import GERMANS as _G
-        results.append({"free_action": "german_ambush", "flag": "card_51",
-                        "ambushes": _faction_ambush_sweep(state, _G)})
+        _event_step(state, "grant.card_51_german_action")
+        from fs_bot.cards.surus import resolve_surus
+        results.extend(resolve_surus(state, faction))
     if mods.get("card_44a_free_command"):
         # Card 44 (Ariovistus) shaded: the free Command is "in Regions
         # placed" — constrain the chooser to the Regions the handler
         # recorded. No placements never authorize a board-wide Command.
+        _event_step(state, "grant.card_44a_free_command")
         placed = mods.get("card_44a_command_regions") or []
         if placed:
             results.append({"free_action": "free_command", "flag": "card_44a",
                             "result": _resolve_free_command(
                                 state, faction, allowed_regions=set(placed))})
     if mods.get("card_A29_german_raid"):
+        _event_step(state, "grant.card_A29_german_raid")
         results.extend(_resolve_card_A29_raid(state))
     if mods.get("card_A34_use_german_pieces"):
+        _event_step(state, "grant.card_A34_use_german_pieces")
         results.extend(_resolve_card_A34_german_pieces(
             state, mods.get("card_A34_faction", faction),
             mods.get("card_A34_regions_limit", 3)))
     if mods.get("card_A34_free_command"):
+        _event_step(state, "grant.card_A34_free_command")
         results.append({"free_action": "free_command", "flag": "card_A34",
                         "result": _resolve_free_command(
                             state, mods.get("card_A34_faction", faction))})
     if mods.get("card_A65_kinship_battle"):
+        _event_step(state, "grant.card_A65_kinship_battle")
         results.extend(_resolve_card_A65_battle(state, faction))
     if mods.get("card_A69_ambush"):
+        _event_step(state, "grant.card_A69_ambush")
         results.extend(_resolve_card_A69_ambush(state))
     if mods.get("card_A58_free_ambush"):
+        _event_step(state, "grant.card_A58_free_ambush")
         from fs_bot.rules_consts import ROMANS as _ROM
         results.append({"free_action": "ambush", "flag": "card_A58",
                         "ambushes": _faction_ambush_sweep(state, faction,
                                                           only_faction=_ROM)})
     if mods.get("card_A45_free_intimidate"):
+        _event_step(state, "grant.card_A45_free_intimidate")
         results.extend(_resolve_card_A45_intimidate(state))
     if mods.get("card_67_arduenna"):
+        _event_step(state, "grant.card_67_arduenna")
         results.extend(_resolve_card67_arduenna(state, faction))
     if mods.get("card_A5_remove_non_romans"):
+        _event_step(state, "grant.card_A5_remove_non_romans")
         results.extend(_resolve_card_A5_evict(state))
     if mods.get("card_A37_place_allies_move"):
+        _event_step(state, "grant.card_A37_place_allies_move")
         results.extend(_resolve_card_A37_move(state, faction))
     if mods.get("card_A53_aedui_corn"):
+        _event_step(state, "grant.card_A53_aedui_corn")
         results.extend(_resolve_card_A53_frumentum(state))
     # Consume the one-shot flags now that their actions resolved.
     em = state.get("event_modifiers")
@@ -1713,9 +1836,16 @@ def _resolve_free_actions_scoped(state, faction):
 def _resolve_card_A29_raid(state):
     """A29: only the newly placed German Warbands receive the free Raid."""
     from fs_bot.cards.dumnorix import derive_raids, raid_cohort
+    from fs_bot.engine.action_windows import COHORTS, get_cohorts, clear_cohorts
     cohort = state.get("event_modifiers", {}).pop("card_A29_raid_cohort", [])
+    if "card_A29_raid" in state.get(COHORTS, {}):
+        cohort = [{"region": entry["region"], "faction": _GERMANS_F,
+                   "count": entry["count"]}
+                  for entry in get_cohorts(state, "card_A29_raid") if entry["count"]]
+        # raid_cohort owns the same counters during its subsequent steps.
+        clear_cohorts(state, "card_A29_raid")
     actions = derive_raids(state, cohort)
-    result = raid_cohort(state, cohort, actions)
+    result = raid_cohort(state, cohort, actions, allow_reduced=True)
     if not result["executed"]:
         result["declined_no_effect"] = True
     return [{"free_action": "raid", "flag": "card_A29", "faction": _GERMANS_F,
@@ -1734,8 +1864,12 @@ def _resolve_card_A69_ambush(state):
                                      TRIBE_TO_REGION, FORT, CITADEL)
     from fs_bot.commands.sa_ambush import validate_ambush_region
     from fs_bot.battle.resolve import _calculate_attack_losses
+    from fs_bot.engine.action_windows import COHORTS, get_cohorts, clear_cohorts
     region = TRIBE_TO_REGION[TRIBE_BELLOVACI]
     placed = state.get("event_modifiers", {}).pop("card_A69_loss_per_warband", 0)
+    tracked = "card_A69_ambush" in state.get(COHORTS, {})
+    if tracked:
+        placed = sum(entry["count"] for entry in get_cohorts(state, "card_A69_ambush"))
     candidates = []
     if placed:
         for enemy in FACTIONS:
@@ -1752,13 +1886,18 @@ def _resolve_card_A69_ambush(state):
             if losses > 0:
                 candidates.append(enemy)
     if not candidates:
+        clear_cohorts(state, "card_A69_ambush")
         return [{"free_action": "ambush", "flag": "card_A69", "executed": False,
                  "declined_no_effect": True, "reason": "no legal Belgic Ambush at Bellovaci"}]
     defender = max(candidates, key=lambda enemy: count_pieces(state, region, enemy))
-    result = _execute_battle(state, BELGAE, {
-        "command": _CMD_BATTLE, "sa": _SA_AMBUSH, "sa_regions": [region],
-        "details": {"battle_plan": [{"region": region, "target": defender}]}},
-        _full_loss_warbands=placed)
+    try:
+        result = _execute_battle(state, BELGAE, {
+            "command": _CMD_BATTLE, "sa": _SA_AMBUSH, "sa_regions": [region],
+            "details": {"battle_plan": [{"region": region, "target": defender}]}},
+            _full_loss_warbands=placed,
+            **({"_full_loss_cohort": "card_A69_ambush"} if tracked else {}))
+    finally:
+        clear_cohorts(state, "card_A69_ambush")
     return [{"free_action": "ambush", "flag": "card_A69", "region": region,
              "faction": BELGAE, "defender": defender, "result": result}]
 
@@ -2964,6 +3103,8 @@ def _resolve_card6_scout_battle(state):
     from fs_bot.rules_consts import ROMANS
     from fs_bot.engine.free_actions import consult_free_action, execute_free_action_plan
     out = []
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "6.scout")
     scout_request = {"kind": "free_action", "request_type": "event_sa",
                      "allowed_sas": [_SA_SCOUT], "free": True}
     scout_plan = consult_free_action(state, ROMANS, scout_request)
@@ -2982,6 +3123,8 @@ def _resolve_card6_scout_battle(state):
                         "executed": False, "reason": repr(exc)})
 
     # Consult after Scout so a human sees its changes before choosing Battle.
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "6.battle")
     battle_request = {"kind": "free_action", "request_type": "event_command",
                       "allowed_commands": [_CMD_BATTLE], "max_regions": 1,
                       "with_sa": False, "free": True, "double_auxilia": True}
@@ -3391,6 +3534,8 @@ def _resolve_a58_battle_seize(state, faction):
                         "executed": False, "reason": repr(exc)})
     # Free Seize in Belgica Regions where Romans have pieces; Disperse where
     # Roman-Controlled (get_dispersible_tribes enforces the cap/Control).
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "A58.seize")
     seize_regions = [r for r in BELGICA_REGIONS
                      if count_pieces(state, r, ROMANS) > 0]
     if seize_regions:
@@ -3435,23 +3580,6 @@ def _execute_event(state, faction, bot_action, *, human=False):
                 "card_id": card_id, "shaded": shaded,
                 "reason": f"Card {card_id} event_params must be an object."}
 
-    # Populate event_params before resolving; restore afterwards. For a bot,
-    # derive the NP choice (§8.2.3/§8.3.1). For a human, take the player's own
-    # params from the plan (no NP derivation). Cards whose choices aren't
-    # available still raise ValueError and are reported, not crashed.
-    prev_params = state.get("event_params")
-    if human:
-        derived = details.get("event_params")
-    else:
-        derived = _derive_event_params(state, faction, card_id, shaded)
-    # Always expose a dict (never None) so card handlers that read
-    # state.get("event_params").get(...) don't crash on missing params.
-    state["event_params"] = {**(prev_params or {}), **(derived or {})}
-    # Many card handlers read state["executing_faction"] to know who is
-    # playing the Event; it was never set, so those cards no-op. Set it for
-    # the acting faction (restored afterwards).
-    prev_faction = state.get("executing_faction")
-    state["executing_faction"] = faction
     # TRANSACTIONAL: "report, do not crash" means a failed Event did not
     # happen. (§5.1.3 Partial Execution is honoured INSIDE handlers — they
     # carry out whatever parts apply and skip the rest; a raise is reserved
@@ -3462,6 +3590,8 @@ def _execute_event(state, faction, bot_action, *, human=False):
     # otherwise leave a half-applied Event behind executed=False. Snapshot
     # the state and roll back on the safe-error path. (Found by the
     # player_fuzz dirty-event oracle on card 62; the class is generic.)
+    prev_params = state.get("event_params")
+    prev_faction = state.get("executing_faction")
     import copy as _copy
     _agent = state.pop("decision_agent", None)   # shared, never copied
     _card_turn = state.get("_card_turn")
@@ -3469,7 +3599,26 @@ def _execute_event(state, faction, bot_action, *, human=False):
     if _agent is not None:
         state["decision_agent"] = _agent
     try:
+        from fs_bot.engine.action_windows import window
+        window(state, "event_start", author=faction, card_id=card_id)
+        # Populate event_params before resolving; restore afterwards. For a bot,
+        # derive the NP choice (§8.2.3/§8.3.1). For a human, take the player's own
+        # params from the plan (no NP derivation). Cards whose choices aren't
+        # available still raise ValueError and are reported, not crashed.
+        if human:
+            derived = details.get("event_params")
+        else:
+            derived = _derive_event_params(state, faction, card_id, shaded)
+        # Always expose a dict (never None) so card handlers that read
+        # state.get("event_params").get(...) don't crash on missing params.
+        state["event_params"] = {**(prev_params or {}), **(derived or {})}
+        # Many card handlers read state["executing_faction"] to know who is
+        # playing the Event; it was never set, so those cards no-op. Set it for
+        # the acting faction (restored afterwards).
+        state["executing_faction"] = faction
         event_result = execute_event(state, card_id, shaded=shaded)
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, "handler_complete", card_id=card_id)
         # Follow-up choices are part of the same Event transaction (§5.4).
         free_actions = _resolve_free_actions(state, faction)
     except _EVENT_SAFE_ERRORS as exc:
@@ -3523,7 +3672,9 @@ def _execute_seize(state, faction, bot_action):
 
     as_if_control = bool(details.get("as_if_control"))
     no_harassment = bool(details.get("no_harassment"))
-    for region in regions:
+    for index, region in enumerate(regions):
+        _timing_plan_step(state, faction, bot_action, 'seize_region',
+                          index=index, region=region)
         if region in disperse_regions:
             tribes = get_dispersible_tribes(state, region,
                                             as_if_control=as_if_control)
@@ -3531,7 +3682,8 @@ def _execute_seize(state, faction, bot_action):
             tribes = []
         try:
             res = seize_in_region(state, region, tribes_to_disperse=tribes,
-                                  as_if_control=as_if_control)
+                                  as_if_control=as_if_control,
+                                  rally_resolver=_resolve_seize_rally)
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "error": str(exc)})
             continue
@@ -3551,8 +3703,47 @@ def _execute_seize(state, faction, bot_action):
         "regions_resolved": [r["region"] for r in per_region],
         "tribes_dispersed_total": dispersed_total,
         "forage_resources_total": forage_total,
+        "regions": per_region,
         "errors": errors,
     }
+
+
+def _resolve_seize_rally(state, source_region, tribe, roll_result):
+    """§3.2.3: resolve this successful roll before later rolls and Forage."""
+    from fs_bot.rules_consts import ARVERNI, ARIOVISTUS_SCENARIOS, CMD_RALLY
+    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.commands.common import _is_devastated, free_action_scope
+    from fs_bot.engine.action_windows import window
+    from fs_bot.engine.free_actions import (
+        consult_free_action, execute_free_action_plan, rally_event_scope)
+    faction = roll_result['faction']
+    window(state, 'seize_rally', region=source_region, tribe=tribe,
+           beneficiary=faction, roll=roll_result['roll'])
+    allowed = sorted(region for region in get_adjacent(source_region, state['scenario'])
+                     if not _is_devastated(state, region))
+    if not allowed:
+        return {'executed': False, 'command': CMD_RALLY,
+                'declined_no_effect': True, 'reason': 'No adjacent non-Devastated Region'}
+    if faction == ARVERNI and state['scenario'] in ARIOVISTUS_SCENARIOS:
+        # A3.2.3 specifically uses the game-run Rally procedure (A6.2.1),
+        # restricted here by the triggering Dispersed Tribe's adjacency.
+        from fs_bot.engine.arverni_phase import _arverni_phase_rally
+        result = _arverni_phase_rally(state, allowed)
+        return {'executed': any(result.values()), 'command': CMD_RALLY,
+                'result': result}
+    request = {'kind': 'free_action', 'request_type': 'event_rally',
+               'source': 'seize', 'source_region': source_region,
+               'tribe': tribe, 'roll': roll_result['roll'],
+               'allowed_commands': [CMD_RALLY], 'allowed_regions': allowed,
+               'max_regions': None, 'with_sa': False, 'free': True}
+    with free_action_scope(state, faction), rally_event_scope(state, faction, regions=allowed):
+        response = consult_free_action(state, faction, request)
+        if response is None:
+            return _resolve_free_rally_default(state, faction, allowed_regions=allowed)
+        if response.get('decline'):
+            return {'executed': False, 'command': CMD_RALLY,
+                    'declined_no_effect': True, 'reason': 'Seize-triggered Rally declined'}
+        return execute_free_action_plan(state, faction, request, response)
 
 
 @_diviciacus_command_scope
@@ -3590,21 +3781,27 @@ def _execute_raid(state, faction, bot_action):
                 {"type": "steal", "target": entry["target"]})
         if "physical_owner" in entry:
             by_region[region][-1]["physical_owner"] = entry["physical_owner"]
+        if 'timing_actions' in entry:
+            by_region[region][-1]['timing_actions'] = entry['timing_actions']
 
     per_region = []
     gained_total = 0
     errors = []
-    for region in order:
+    for index, region in enumerate(order):
+        _timing_plan_step(state, faction, bot_action, 'raid_region',
+                          index=index, region=region)
         actions = by_region[region][:max_raiders_per_region(state, faction)]
         if not actions:
             continue
         try:
-            res = raid_in_region(state, region, faction, actions)
+            res = raid_in_region(state, region, faction, actions,
+                after_flips=(details.get('raid_timing_actions') or {}).get(region))
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "error": str(exc)})
             continue
         gained_total += res.get("resources_gained", 0)
-        per_region.append(res)
+        if res.get('warbands_flipped', 0):
+            per_region.append(res)
 
     return {
         "executed": len(per_region) > 0,
@@ -3646,24 +3843,39 @@ def _atomic_placement_plan(state, execute):
 
 
 @_diviciacus_command_scope
-def _execute_rally(state, faction, bot_action):
+def _execute_rally(state, faction, bot_action, *, _between_steps=None):
     """Resolve ordered human options or the unchanged legacy NP priority lists."""
     from fs_bot.commands.rally import rally_plan_steps
-    plan = (bot_action.get('details') or {}).get('rally_plan') or {}
+    details = bot_action.get('details') or {}
+    plan = details.get('rally_plan') or {}
+    boundary = details.get('sa_after_rally_step')
+    if 'sa_after_rally_step' in details:
+        from fs_bot.engine.action_validation import validate_rally_interruption
+        error = validate_rally_interruption(state, faction, bot_action)
+        if error or _between_steps is None:
+            return _placement_error(_CMD_RALLY, error or 'Interrupted Rally requires its Special Activity')
     try:
         steps = rally_plan_steps(plan)
     except _EXEC_ERRORS as exc:
         return _placement_error(_CMD_RALLY, exc)
-    execute = lambda: _execute_rally_steps(state, faction, steps)
+    execute = lambda: _execute_rally_steps(
+        state, faction, steps, ordered='steps' in plan,
+        sa_after_step=boundary, between_steps=_between_steps)
     if 'steps' in plan or any('count' in entry or 'placement_owners' in entry for entry in steps):
         return _atomic_placement_plan(state, execute)
     return execute()
 
 
-def _execute_rally_steps(state, faction, steps):
-    from fs_bot.commands.rally import validate_rally_option
+def _execute_rally_steps(state, faction, steps, *, ordered=False,
+                         sa_after_step=None, between_steps=None):
+    from fs_bot.commands.rally import validate_rally_option, validate_rally_sequence
+    if ordered:
+        try:
+            validate_rally_sequence(state, faction, steps)
+        except _EXEC_ERRORS as exc:
+            return _placement_error(_CMD_RALLY, exc)
     planned = {}
-    for entry in steps:
+    for entry in (() if ordered else steps):
         region, action = entry['region'], entry['action']
         try:
             validate_rally_option(state, region, faction, action, planned.get(region, set()))
@@ -3671,10 +3883,15 @@ def _execute_rally_steps(state, faction, steps):
             return _placement_error(_CMD_RALLY, exc)
         planned.setdefault(region, set()).add(action)
     placed, errors, selected = [], [], {}
-    for entry in steps:
+    sa_result = None
+    for step_index, entry in enumerate(steps):
         region, action = entry['region'], entry['action']
         prior = selected.get(region, set())
         try:
+            from fs_bot.engine.action_windows import window
+            window(state, 'rally_option', author=faction,
+                   timing_actions=entry.get('timing_actions'),
+                   region=region, index=step_index)
             validate_rally_option(state, region, faction, action, prior)
             from fs_bot.engine.diviciacus import placement_owner_scope
             with placement_owner_scope(state, faction, region, entry.get('placement_owners')):
@@ -3686,16 +3903,25 @@ def _execute_rally_steps(state, faction, steps):
             if 'count' in entry:
                 record['count'] = entry['count']
             placed.append(record)
+            if between_steps is not None and step_index + 1 == sa_after_step:
+                # Keep this Command's Region ledger across the SA: the second
+                # option uses the changed board but pays no second cost/bonus.
+                sa_result = between_steps()
         except _EXEC_ERRORS as exc:
             errors.append({'region': region, 'action': action, 'error': str(exc)})
-    return {'executed': bool(placed), 'command': _CMD_RALLY,
-            'placements': placed, 'errors': errors}
+            if ordered:
+                break
+    result = {'executed': bool(placed), 'command': _CMD_RALLY,
+              'placements': placed, 'errors': errors}
+    if sa_result is not None:
+        result.update(sa_execution=sa_result, sa_timing='during')
+    return result
 
 
 @_diviciacus_command_scope
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _full_loss_warbands=0, _double_auxilia=False, _ambush_anywhere=False,
-                    _battle_observer=None):
+                    _battle_observer=None, _full_loss_cohort=None):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3717,6 +3943,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     standalone SAs accompanying a Battle (Scout, Intimidate) are not executed
     here.
     """
+    from fs_bot.engine.action_windows import window
+    window(state, 'battle_command', author=faction)
     details = bot_action.get("details") or {}
     battle_plan = details.get("battle_plan", []) or []
     # Free-Battle events may forbid the defender's Retreat (§ card text).
@@ -3799,10 +4027,13 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     battles = []
     errors = []
     diviciacus_blocks = []
-    for entry in battle_plan:
+    for battle_index, entry in enumerate(battle_plan):
         region = entry.get("region")
         if region is None:
             continue
+        window(state, 'battle_region', author=faction,
+               timing_actions=entry.get('timing_actions'),
+               region=region, index=battle_index)
         # Single target, or Roman ranked targets list -> take the top.
         if "target" in entry and entry["target"] is not None:
             defender = entry["target"]
@@ -3812,13 +4043,24 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
         if defender is None:
             continue
         from fs_bot.engine.diviciacus import defense_scope
-        with defense_scope(state, region, faction, defender):
+        from fs_bot.battle import elite
+        with defense_scope(state, region, faction, defender), elite.scope(state, region, faction, defender):
             # A Battle requires the defender to actually be present in the Region
             # (§3.x) — skip a no-target entry rather than resolving a no-op.
             if count_pieces(state, region, defender) <= 0:
                 errors.append({"region": region, "defender": defender,
                                "error": "defender not present"})
                 continue
+            from fs_bot.rules_consts import BASE_SCENARIOS
+            intrinsic_german_ambush = faction == _GE_A31 and state['scenario'] in BASE_SCENARIOS
+            if intrinsic_german_ambush:
+                # §3.4.4: even a free base-game German Battle may initiate
+                # only where it can Ambush; this is intrinsic to its Command.
+                from fs_bot.commands.sa_ambush import validate_ambush_region
+                valid, reason = validate_ambush_region(state, region, faction, defender)
+                if not valid:
+                    errors.append({'region': region, 'defender': defender, 'error': reason})
+                    continue
 
             # §3.2.4 / §3.3.4 / A3.4.4: pay once for the selected Battle
             # Region, before any Battle effects or defender decisions. Event
@@ -3830,8 +4072,14 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                                "error": f"Not enough Resources for Battle (need {cost})"})
                 continue
             state["resources"][faction] = state["resources"].get(faction, 0) - cost
+            # The loss-halving protection belongs to the start of this Battle,
+            # before reactions, prefire, or optional piece removals.
+            from fs_bot.rules_consts import CITADEL, FORT
+            citadel_at_start = count_pieces(state, region, defender, CITADEL) > 0
+            fort_at_start = count_pieces(state, region, defender, FORT) > 0
+            elite.ensure_selected(state, region)
 
-            is_ambush = sa == _SA_AMBUSH and region in sa_regions
+            is_ambush = intrinsic_german_ambush or (sa == _SA_AMBUSH and region in sa_regions)
             if is_ambush and not _ambush_anywhere:
                 from fs_bot.commands.sa_ambush import validate_ambush_region
                 from fs_bot.engine.diviciacus import ambush_scope
@@ -3925,9 +4173,12 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     is_ambush=is_ambush, besiege_target=besiege_target,
                     retreat_declaration=retreat_decl,
                     retreat_region=retreat_region,
+                    citadel_at_start=citadel_at_start,
+                    fort_at_start=fort_at_start,
                     allied_factions=allied_factions,
                     warband_full_loss=warband_full_loss,
                     full_loss_warbands=_full_loss_warbands,
+                    _full_loss_cohort=_full_loss_cohort,
                     double_auxilia=_double_auxilia,
                     ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
                                  and faction == _ARV_B and region == PROVINCIA),
@@ -3966,7 +4217,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
         "executed": len(battles) > 0,
         "command": _CMD_BATTLE,
         "battles_resolved": [(b["region"], b["defender"]) for b in battles],
-        "battle_sa_executed": any(b.get("is_ambush") or b.get("besiege") is not None
+        "battle_sa_executed": any(b.get("is_ambush") or b.get("result", {}).get("besiege") is not None
                                   for b in battles if not b.get("result", {}).get("card27_wiped")),
         "count": len(battles),
         "errors": errors,
@@ -4004,9 +4255,11 @@ def _execute_recruit_entries(state, faction, bot_action, *, exact=False):
     placed = []
     errors = []
     superseded = []
-    for entry in plan:
+    for index, entry in enumerate(plan):
         with supply_query_scope(state):
             region = entry.get("region")
+            _timing_plan_step(state, faction, bot_action, 'recruit_option',
+                              entry=entry, index=index, region=region)
             action = entry.get("action")
             if region is None or action is None:
                 continue
@@ -4232,6 +4485,8 @@ def march_plan_has_effect(state, faction, plan):
 def _execute_march(state, faction, bot_action, *, free=False, before_move=None,
                    moving_only=False):
     """Pay once per selected origin; movement-only helpers remain free."""
+    from fs_bot.engine.action_windows import window
+    window(state, 'march_before_plan', marching_faction=faction)
     moves, deferred = _collect_march_moves(state, faction, bot_action)
     result = _execute_march_moves(state, faction, moves, free=free,
                                   before_move=before_move, moving_only=moving_only)
@@ -4247,6 +4502,8 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
     are selected. Multiple groups/steps never incur additional origin fees.
     Free Event Commands and base-game German movement remain free.
     """
+    from fs_bot.engine.action_windows import window
+    window(state, 'march_before_payment', marching_faction=faction)
     selected, costs, deferred, errors = _select_affordable_march_moves(
         state, faction, moves, free=free)
     total_cost = sum(costs.values())
@@ -4375,6 +4632,9 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
     # to move resident Revealed Warbands as Hidden, e.g. "Only 1 Hidden Warband
     # in <R>, need 15"), and applied Harassment to residents too. Pieces do not
     # join a March mid-route; Harassment only hits the marching group.
+    from fs_bot.engine.action_windows import window
+    from fs_bot.engine.march_timing import window as group_window
+    window(state, 'march_origin', region=origin, marching_faction=faction)
     group = _mobile_march_group(state, faction, origin)
     if group_cap is not None:
         from fs_bot.rules_consts import LEADER as _LDR
@@ -4406,6 +4666,8 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
             select_origin_visibility(state, faction, origin, group)
     current = origin
     for i, nxt in enumerate(path):
+        group_window(state, faction, current, group, 'march_before_step',
+                     origin=origin, destination=nxt, step=i + 1)
         if not _group_has_pieces(group):
             break
         # The extra hop belongs only to pieces still moving with Caesar or
@@ -4413,8 +4675,10 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
         # Leader after the route was initially validated.
         if i >= _max_steps_for_group(state, current, faction, group):
             break
-        res = march_group(state, faction, current, [nxt], group)
+        res = march_group(state, faction, current, [nxt], group, _timing_managed=True)
         current = res.get("final_region", nxt)
+        group_window(state, faction, current, group, 'march_arrival',
+                     origin=origin, step=i + 1)
         if current != nxt or res.get("stopped_reason"):
             break  # stop in the crossing destination; do not continue/harass
         # Intermediate Region (entered then about to be left) -> Harassment
@@ -4454,10 +4718,21 @@ def _sa_detail(bot_action, key):
 
 def _execute_sa(state, faction, bot_action, *, _human_grant=None):
     """Settle the current SA choice before binding its Diviciacus scope."""
+    sa = bot_action.get('sa')
+    authored = ((bot_action.get('details') or {}).get('sa_details') or {}).get('timing_actions')
+    if (authored is not None or
+            (sa and sa != SA_ACTION_NONE_LABEL and sa not in _BATTLE_MODIFYING_SAS)):
+        _timing_window(state, 'special_ability', author=faction, sa=sa,
+                       timing_actions=authored)
     from fs_bot.engine.supply_reconsideration import reconsider
     bot_action = reconsider(state, faction, bot_action, sa_only=True,
                            grant=_human_grant)
-    return _execute_sa_confirmed(state, faction, bot_action)
+    result = _execute_sa_confirmed(state, faction, bot_action)
+    tail = ((bot_action.get('details') or {}).get('sa_details') or {}).get('after_sa_timing_actions')
+    if _command_executed(result) or tail is not None:
+        _timing_window(state, 'special_ability_complete', author=faction, sa=sa,
+                       timing_actions=tail)
+    return result
 
 
 @_diviciacus_command_scope(phase="special_ability")
@@ -4769,7 +5044,9 @@ def _execute_settle(state, faction, bot_action):
     regions = [r for r in (bot_action.get("sa_regions") or [])
                if isinstance(r, str)]
     placed, errors = [], []
-    for region in regions:
+    for index, region in enumerate(regions):
+        _timing_plan_step(state, faction, bot_action, 'settle_region',
+                          index=index, region=region)
         try:
             from fs_bot.commands.sa_settle import validate_settle_region
             valid, reason = validate_settle_region(state, region)
@@ -4788,7 +5065,9 @@ def _execute_devastate(state, faction, bot_action):
     regions = [r for r in (bot_action.get("sa_regions") or [])
                if isinstance(r, str)]
     done, errors = [], []
-    for region in regions:
+    for index, region in enumerate(regions):
+        _timing_plan_step(state, faction, bot_action, 'devastate_region',
+                          index=index, region=region)
         try:
             from fs_bot.commands.sa_devastate import validate_devastate_region
             valid, reason = validate_devastate_region(state, region)
@@ -4826,7 +5105,10 @@ def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
             free = bool(entry.get("free") and region in credits)
             groups.setdefault((region, free), []).append(entry)
     done, errors = [], []
-    for (region, free), entries in groups.items():
+    for index, ((region, free), entries) in enumerate(groups.items()):
+        if raid_credits is None:
+            _timing_plan_step(state, faction, bot_action, 'intimidate_region',
+                              entry=entries[0], index=index, region=region)
         try:
             targets = {e.get("target_faction") for e in entries}
             if len(targets) != 1:
@@ -4838,7 +5120,12 @@ def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
             if count > 2 or len(entries) > 2:
                 raise CommandError("Intimidate uses at most two Warbands per Region")
             if not ignore_selection:
-                valid, reason = validate_intimidate_region(state, region)
+                if free:
+                    from fs_bot.engine.raid_intimidate import eligible
+                    valid = eligible(state, region, credits.get(region, 0))
+                    reason = 'Free Raid Intimidate requires Ariovistus in its Region'
+                else:
+                    valid, reason = validate_intimidate_region(state, region)
                 if not valid:
                     raise CommandError(reason)
             credit = min(count, credits.get(region, 0)) if free else 0
@@ -4867,6 +5154,8 @@ def _execute_suborn(state, faction, bot_action):
     from fs_bot.rules_consts import AEDUI, ALLY, WARBAND, AUXILIA
     from fs_bot.commands.sa_suborn import (
         suborn_region_limit, suborn_preview, validate_suborn_region)
+    from fs_bot.engine.action_windows import interactive
+    dynamic = interactive(state)
     plan = _sa_detail(bot_action, "suborn_plan") or []
     result = {"executed": False, "sa": _SA_SUBORN, "regions": [], "errors": []}
     region = None
@@ -4878,7 +5167,10 @@ def _execute_suborn(state, faction, bot_action):
         if len(plan) > suborn_region_limit(state):
             raise CommandError(f"Suborn is maximum {suborn_region_limit(state)} Region(s) (§4.4.2 / card 43)")
         steps, used = [], set()
-        for entry in plan:
+        sim = deepcopy({key: value for key, value in state.items()
+                        if key != 'decision_agent'})
+        sim['_diviciacus_preview'] = True
+        for index, entry in enumerate(plan):
             if not isinstance(entry, dict):
                 raise CommandError("Suborn Region entry must be an object")
             region = entry.get("region")
@@ -4887,9 +5179,12 @@ def _execute_suborn(state, faction, bot_action):
             if region in used:
                 raise CommandError("Suborn may select each Region only once")
             used.add(region)
-            valid, reason = validate_suborn_region(state, region)
-            if not valid:
-                raise CommandError(reason)
+            if not dynamic:
+                _timing_plan_step(sim, faction, bot_action, 'suborn_region',
+                                  entry=entry, index=index, region=region)
+                valid, reason = validate_suborn_region(sim, region)
+                if not valid:
+                    raise CommandError(reason)
             operations = []
             actions = entry.get("actions", [])
             if not isinstance(actions, list):
@@ -4911,37 +5206,39 @@ def _execute_suborn(state, faction, bot_action):
                              "faction": action.get("faction", AEDUI) if placing else
                                          action.get("target_faction", action.get("faction")),
                              "piece_type": types[name]}
-                for key in ("tribe", "piece_state", "physical_owner"):
+                for key in ("tribe", "piece_state", "physical_owner", "timing_actions"):
                     if key in action:
                         operation[key] = action[key]
                 operations.append(operation)
             if operations:
-                steps.append((region, operations))
-        sim = state
-        for region, operations in steps:
-            sim, _ = suborn_preview(sim, region, operations)
+                steps.append((region, operations, entry, index))
+                if not dynamic:
+                    sim, _ = suborn_preview(sim, region, operations)
     except _EXEC_ERRORS as exc:
         result["errors"].append({"region": region, "error": str(exc)})
         return result
 
     # Full validation precedes any live mutation. Preserve that atomicity if
     # a later human allocation makes a formerly affordable conversion fail.
-    keys = ("spaces", "tribes", "available", "resources", "_diviciacus_force")
-    before = {key: deepcopy(state[key]) for key in keys if key in state}
+    before = deepcopy({key: value for key, value in state.items()
+                       if key not in ('decision_agent', '_card_turn')})
+    agent, card_turn = state.get('decision_agent'), state.get('_card_turn')
     try:
-        for region, operations in steps:
+        for region, operations, entry, index in steps:
+            _timing_plan_step(state, faction, bot_action, 'suborn_region',
+                              entry=entry, index=index, region=region)
+            valid, reason = validate_suborn_region(state, region)
+            if not valid:
+                raise CommandError(reason)
             _sa_suborn(state, region, operations)
             result["regions"].append(region)
     except BaseException as exc:
-        for key in keys:
-            if key in before:
-                if isinstance(state.get(key), dict):
-                    state[key].clear()
-                    state[key].update(before[key])
-                else:
-                    state[key] = before[key]
-            else:
-                state.pop(key, None)
+        state.clear()
+        state.update(before)
+        if agent is not None:
+            state['decision_agent'] = agent
+        if card_turn is not None:
+            state['_card_turn'] = card_turn
         if not isinstance(exc, _EXEC_ERRORS):
             raise
         result["regions"] = []
@@ -5027,7 +5324,9 @@ def _execute_build_plan(state, faction, bot_action):
         if ally_action and region in tribe_action_regions:
             raise CommandError("Build may place or subdue only one Ally per Region (§4.2.1)")
 
-    for region in plan.get("forts", []) or []:
+    for index, region in enumerate(plan.get("forts", []) or []):
+        _timing_plan_step(state, faction, bot_action, 'build_fort',
+                          index=index, region=region)
         try:
             validate_region(region)
             _sa_build_fort(state, region)
@@ -5035,8 +5334,10 @@ def _execute_build_plan(state, faction, bot_action):
         except _EXEC_ERRORS as exc:
             errors.append({"action": "fort", "region": region,
                            "error": str(exc)})
-    for entry in plan.get("subdue", []) or []:
+    for index, entry in enumerate(plan.get("subdue", []) or []):
         region, tribe = entry.get("region"), entry.get("tribe")
+        _timing_plan_step(state, faction, bot_action, 'build_subdue',
+                          entry=entry, index=index, region=region)
         target = state.get("tribes", {}).get(tribe, {}).get("allied_faction")
         if target is None:
             continue
@@ -5048,8 +5349,10 @@ def _execute_build_plan(state, faction, bot_action):
         except _EXEC_ERRORS as exc:
             errors.append({"action": "subdue", "region": region,
                            "tribe": tribe, "error": str(exc)})
-    for entry in plan.get("allies", []) or []:
+    for index, entry in enumerate(plan.get("allies", []) or []):
         region, tribe = entry.get("region"), entry.get("tribe")
+        _timing_plan_step(state, faction, bot_action, 'build_ally',
+                          entry=entry, index=index, region=region)
         try:
             validate_region(region, ally_action=True)
             _sa_build_ally(state, region, tribe)
@@ -5091,6 +5394,9 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
         FORT, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, EVENT_UNSHADED, EVENT_SHADED,
     )
     from fs_bot.battle.losses import calculate_losses
+    from fs_bot.battle.elite import window
+    window(state, 'battle_retreat_choice', region=region,
+           attacker=attacker, defender=defender)
 
     if is_ambush:
         return (False, None)  # §4.3.3: Defender may not Retreat from Ambush
@@ -5218,7 +5524,7 @@ def _execute_rampage(state, faction, bot_action):
     rather than Retreating (A4.5).
     """
     from fs_bot.rules_consts import (
-        BELGAE, ARVERNI, WARBAND, AUXILIA, LEGION, HIDDEN, REVEALED,
+        BELGAE, ARVERNI, WARBAND, AUXILIA, LEGION, HIDDEN, REVEALED, SCOUTED,
         ARIOVISTUS_SCENARIOS,
     )
     # The Belgae bot puts the Rampage plan in sa_regions as a list of dicts
@@ -5231,9 +5537,11 @@ def _execute_rampage(state, faction, bot_action):
 
     scenario = state["scenario"]
     done, errors = [], []
-    for entry in plan:
+    for index, entry in enumerate(plan):
         region = entry.get("region")
         target = entry.get("target")
+        _timing_plan_step(state, faction, bot_action, 'rampage_target',
+                          entry=entry, index=index, region=region)
         if region is None or target is None:
             continue
         from fs_bot.commands.sa_rampage import (validate_rampage_region,
@@ -5251,7 +5559,7 @@ def _execute_rampage(state, faction, bot_action):
         # Build the ordered pool of target pieces to lose (lowest value 1st).
         pool = []
         for pt in (WARBAND, AUXILIA):
-            for ps in (REVEALED, HIDDEN):
+            for ps in (SCOUTED, REVEALED, HIDDEN):
                 pool += [(pt, ps)] * _count_state(state, region, target, pt, ps)
         pool += [(LEGION, None)] * count_pieces(state, region, target, LEGION)
         if not pool:
@@ -5385,11 +5693,15 @@ def _resolve_seize_harassment(state, region):
     """Roman choices or the printed NP loss priority (§3.2.3 / §8.4.1)."""
     from fs_bot.commands.march import choose_harassment_loss
     from fs_bot.rules_consts import ROMANS, AUXILIA, ALLY, LEGION, FORT, LEADER, CMD_SEIZE
+    _timing_window(state, 'seize_harassment', region=region)
     losses_applied = []
     for faction, hwb in _iter_harassers(state, region, ROMANS, None,
                                       stop_when_empty=True):
         num_losses = hwb // _HWB_PER_LOSS
         for loss_index in range(1, num_losses + 1):
+            _timing_window(state, 'seize_harassment_loss', region=region,
+                           harasser=faction, loss_index=loss_index,
+                           num_losses=num_losses)
             pieces = {p: count_pieces(state, region, ROMANS, p)
                       for p in (AUXILIA, ALLY, FORT, LEGION, LEADER)}
             options = [p for p in (AUXILIA, ALLY) if pieces[p]]
@@ -5433,10 +5745,12 @@ def _execute_entreat(state, faction, bot_action):
                 "reason": "no legal Entreat at SA time (§8.7.1 'if none, "
                           "no Special Ability')"}
     done, errors = [], []
-    for a in plan:
+    for index, a in enumerate(plan):
         act = a.get("action")
         region = a.get("region")
         tgt = a.get("target_faction")
+        _timing_plan_step(state, faction, bot_action, 'entreat_operation',
+                          entry=a, index=index, region=region)
         try:
             from fs_bot.commands.sa_entreat import validate_entreat_region
             valid, reason = validate_entreat_region(state, region)
@@ -5480,10 +5794,11 @@ def _execute_scout(state, faction, bot_action):
     # schema); the bot's escort "intentions" ({to,needed,reason}) are skipped.
     moves = [m for m in (plan.get("auxilia_moves") or [])
              if isinstance(m, dict) and m.get("from_region") and m.get("to_region")]
-    if moves:
+    if moves or plan.get('movement_timing_actions') is not None:
         try:
-            _sa_scout_move(state, moves)
-            done.append({"moves": len(moves)})
+            _sa_scout_move(state, moves, after_movements=plan.get('movement_timing_actions'))
+            if moves:
+                done.append({"moves": len(moves)})
         except _EXEC_ERRORS as exc:
             errors.append({"action": "move", "error": str(exc)})
 
@@ -5496,8 +5811,10 @@ def _execute_scout(state, faction, bot_action):
         _first_r = _targets[0].get("region")
         _targets = [t for t in _targets if t.get("region") == _first_r]
 
-    for tgt in _targets:
+    for index, tgt in enumerate(_targets):
         region = tgt.get("region")
+        _timing_plan_step(state, faction, bot_action, 'scout_reveal',
+                          entry=tgt, index=index, region=region)
         enemy = tgt.get("enemy")
         want = tgt.get("hidden", 0)  # Hidden enemy Warbands to Reveal
         if want <= 0:
@@ -6436,9 +6753,11 @@ def _derive_card_62(state, faction, shaded):
 
 from fs_bot.cards.ally_events import derive_gobannitio, derive_correus
 from fs_bot.cards.boii_np import derive_boii
+from fs_bot.cards.surus import derive_params as derive_surus
 
 
 _EVENT_PARAM_DERIVERS = {
+    51: derive_surus,
     37: derive_boii,
     26: derive_gobannitio,
     64: derive_correus,

@@ -52,7 +52,8 @@ class MenuPlayer:
                 # can repeat an unaffordable March forever; ordinary turns
                 # above still make actual human Seize/Raid plans.
                 preferred = ['Use bot default for the next action',
-                             'Use bot default', 'gain 1 Resource', '(done)',
+                             'Use bot default', 'Finish voluntary removal',
+                             'Gain 1 Resource', 'gain 1 Resource', '(done)',
                              'No Retreat (take Losses in place)',
                              '(default order for the rest)']
             reply = next((labels[x] for x in preferred if x in labels), options[0][0])

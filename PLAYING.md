@@ -70,6 +70,8 @@ offers **Special Activity first, then Command**. You can instead choose
 the Command first and add its Special Activity afterward. The interrupt
 option allows Rally, Recruit, Raid, or Seize in some Regions, then the
 Special Activity, then the rest of that Command in other Regions.
+For base-game Arverni Rally, it also allows the Special Activity between
+Vercingetorix's two options in the same Region.
 Ambush and Besiege resolve within their accompanying Battle.
 
 Recruit and Rally now ask how many Auxilia or Warbands to place. The
@@ -86,9 +88,22 @@ City where they have an Ally. Enlist's free German Rally also offers its
 legal quantities, including the base game's Warbands after placing an Ally.
 When using Diviciacus cooperation, choose the physical Roman/Aedui pieces
 before planning the next Region; this preserves the correct remaining pools.
-The current interruption menu still uses different Regions before and after
-the Special Activity. Splitting Vercingetorix's two placements in one Region
-around that activity remains an interface limitation.
+In an interrupted Rally, choose the Special Activity after completing the
+first option, then continue from the resulting position. The second option
+must still be legal when reached; entering or removing Vercingetorix can
+change that permission. You do not pay for the Region twice.
+
+During your Sequence-of-Play Command or Event, the menus offer voluntary
+removal of your own physical pieces and replacement of your Citadels with
+Allies. These choices appear before planning quantities, so an empty
+Available pool need not prevent reclaiming a piece for the next placement.
+Choose **Finish voluntary removal** to confirm the selected removals, or
+leave the position unchanged if none were selected.
+Legions return to their track; the permanent Provincia Fort cannot be
+removed. A Citadel replacement needs an Available Ally; without one, the
+Citadel is simply removed. Lending pieces does not transfer ownership.
+Where it matters, menus distinguish moving, already moved, borrowed, and
+Event-selected counters from other pieces in the same Region.
 
 With shaded River Commerce (Card 39), choose the one Region that will
 Trade. The menu appears after Supply Line declarations and after any
@@ -106,6 +121,10 @@ When an Event grants an action, its menu lets you plan the permitted action,
 request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
+Shaded Surus lets the Event executor direct the newly placed German Warbands
+in a free March, Raid, or Battle; existing German residents stay outside that
+selected group. Seize's successful Rally checks resolve their free Rally
+choices immediately, before the next roll or Forage.
 
 The Province offers its printed Auxilia or Resources choice, showing the
 Available pool and Resource-cap limits. Ambacti asks for its removal choice
@@ -135,11 +154,13 @@ Bots place Leaders with the most of their own pieces and break equal ties
 using the game's seeded randomness.
 
 In Pax Gallica, you can place Vercingetorix from the Spring box beginning
-the first Spring, or leave him there for later. Subsequent action-boundary
-prompts let you bring him into any playable Region without using a turn.
-In the Gallic War, this begins in the first Winter after the Interlude.
-Arbitrary interruption inside a Command or Event is still an interface gap;
-the scenario's printed “at any time” rule is broader than these prompts.
+the first Spring, or leave him there for later. Placement opportunities
+continue between completed operations inside Commands, Events, and Winter,
+including other factions' actions. He may enter any playable Region without
+using a turn or changing Eligibility. In the Gallic War, this begins in the
+first Winter after the Interlude. Each opportunity lets you defer again;
+it does not automatically place him. **Use bot placement priorities** is an
+explicit placement choice. Planning menus ask for a specific Region instead.
 
 Boii has dedicated menus for its beneficiary, Allied Tribes and troop
 placements. The remaining allowance follows each choice across Regions.
@@ -152,6 +173,10 @@ Before your decisions, the display shows the current and upcoming card
 texts and changes since your previous decision. Type **`b`** or **`board`**
 at a menu or yes/no prompt to inspect the full board, including piece
 states, Tribes, markers, available forces, and active capabilities.
+Planning displays are labelled as previews; inspecting them does not alter
+the live game. Seize planning reserves markers and estimates Forage, while
+Rally checks and Harassment resolve during execution. Later decisions use
+the actual changes, including intervening Leader entry.
 
 Every plan is checked by the rules engine. A Command with no legal effect
 leaves your turn pending so you can choose again; a partly legal plan
@@ -179,6 +204,15 @@ explicit request. Roman Auxilia and Aedui Warbands keep their physical
 owners, and the board identifies their temporary treatment separately.
 When selecting a subset or placing pieces, prompts distinguish their
 physical owners as well as visibility where relevant.
+
+Roman Build planning permits both a Fort and the legal Ally action in one
+Region. Scout planning updates the position after each move, prevents the
+same counter moving twice, and offers the arriving Hidden Auxilia for
+Reveal. Under shaded Vercingetorix's Elite, the Arverni choose the actual
+Warbands treated as Legions; casualty choices distinguish those counters.
+If Vercingetorix's arrival changes Roman Quarters Supply, the Romans can
+revise their remaining Provincia moves and payments after completed adjacent
+moves, without repeating those moves.
 
 When saving is enabled, Ctrl-C also saves between decisions on the same
 card. Completed faction actions stay completed. If interrupted while

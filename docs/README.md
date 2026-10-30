@@ -25,6 +25,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [29 October action-timing repair](reviews/action-timing-2026-10-29.md) | Voluntary reclamation, mid-action Spring entry, same-Region Rally interruption, exact participating pieces, related fixes and revision-specific validation |
 | [29 October rules adoption and Trade choice](reviews/rulings-trade-2026-10-29.md) | Three adopted provisional rulings, printed O38 classification, A20 origins and human Trade Region selection |
 | [29 October Recruit/Rally repair](reviews/recruit-rally-2026-10-29.md) | Exact human quantities, ordered Vercingetorix options, physical allocations and related bot/bonus corrections; validation and remaining gaps |
 | [28 October Spring Leader repair](reviews/spring-leaders-2026-10-28.md) | Successor destinations, human choices, seeded priorities, delayed Vercingetorix and Interlude named-Leader corrections; exact validation and remaining timing limit |

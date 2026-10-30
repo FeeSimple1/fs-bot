@@ -795,7 +795,8 @@ def rally_plan_steps(plan):
         steps = plan['steps']
         for entry in steps:
             if (not isinstance(entry, dict)
-                    or set(entry) - {'region', 'action', 'tribe', 'count', 'warband_mix', 'placement_owners'}):
+                    or set(entry) - {'region', 'action', 'tribe', 'count', 'warband_mix',
+                                     'placement_owners', 'timing_actions'}):
                 raise CommandError('Invalid ordered Rally step')
     else:
         steps = []
@@ -1114,6 +1115,34 @@ def _mixed_warband_available(state):
         affected = state.get(BORROW_KEY, {}).get('affected', 0)
         germans = min(germans, max(0, ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS - affected))
     return get_available(state, BELGAE, WARBAND) + germans
+
+
+def validate_rally_sequence(state, faction, steps):
+    """Check an ordered plan's structure without predicting later board state.
+
+    A Special Activity or a legal Vercingetorix entry can change which option
+    is available. The live option check still applies when each step resolves.
+    A two-option Region must remain one contiguous selection (§§3.1, 3.3.1).
+    """
+    selected = {}
+    previous = None
+    for entry in steps:
+        region, action = entry['region'], entry['action']
+        prior = selected.get(region, set())
+        if prior:
+            if region != previous:
+                raise CommandError("Select a Region only once for the Command (§3.1)")
+            static = {"place_ally", "place_citadel"}
+            pair = (faction == ARVERNI and state['scenario'] in BASE_SCENARIOS
+                    and len(prior) == 1 and action not in prior
+                    and ((action == 'place_warbands' and prior <= static)
+                         or (action in static and prior == {'place_warbands'})))
+            german_pair = (faction == GERMANS and state['scenario'] in BASE_SCENARIOS
+                           and prior == {'place_ally'} and action == 'place_warbands')
+            if not (pair or german_pair):
+                raise CommandError("Rally selects one option per Region (§3.3.1/A3.4.1)")
+        selected.setdefault(region, set()).add(action)
+        previous = region
 
 
 def validate_rally_option(state, region, faction, action, prior):

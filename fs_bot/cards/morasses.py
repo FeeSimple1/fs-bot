@@ -248,6 +248,8 @@ def _declined(command, explicit):
 
 
 def resolve_morasses(state, chooser):
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "36.beneficiary")
     selected = consult_free_action(state, chooser, {
         'kind': 'free_action', 'request_type': 'morasses_faction', 'card_id': 36,
         'factions': list(rc.GALLIC_FACTIONS)})
@@ -265,6 +267,8 @@ def resolve_morasses(state, chooser):
                      'reason': 'No applicable Morasses action'}]
     else:
         actor = selected['faction']
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "36.battle")
     under_threat = _march_under_threat(state, actor)
     request = battle_request()
     battle = consult_free_action(state, actor, request)
@@ -273,6 +277,8 @@ def resolve_morasses(state, chooser):
     battle_result = (_declined(rc.CMD_BATTLE, battle is not None)
                      if battle is None or battle == {'decline': True}
                      else execute_free_action_plan(state, actor, request, battle))
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "36.march")
     march = consult_free_action(state, actor, march_request())
     if march is None:
         march = default_march(state, actor, under_threat=under_threat)

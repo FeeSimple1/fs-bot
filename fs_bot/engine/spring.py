@@ -16,11 +16,18 @@ def atomic(state):
     """A paused or invalid choice restores pieces, bookkeeping, and RNG."""
     before = deepcopy({key: value for key, value in state.items() if key != 'decision_agent'})
     agent, had_agent = state.get('decision_agent'), 'decision_agent' in state
+    card_turn = state.get('_card_turn')
     try:
         yield
     except BaseException:
         state.clear()
         state.update(before)
+        if isinstance(card_turn, dict):
+            # The card coordinator keeps this dictionary across nested choices.
+            # Restore its contents without stranding that live reference.
+            card_turn.clear()
+            card_turn.update(state['_card_turn'])
+            state['_card_turn'] = card_turn
         if had_agent:
             state['decision_agent'] = agent
         raise
@@ -166,6 +173,66 @@ def resolve_spring_box_entry(state, response=None):
         state.pop(UNLOCK_KEY, None)
         state.pop('_spring_box_entry_window', None)
         return dict(result, region=region)
+
+
+def _mid_action_request(state, window, *, allow_preview=False):
+    if (rc.ARVERNI in state.get('non_player_factions', set())
+            or (state.get('_diviciacus_preview') and not allow_preview)
+            or state.get('_resolved_card', {}).get('game_over')):
+        return None
+    request = spring_box_request(state)
+    if request is None:
+        return None
+    return dict(request, window=deepcopy(window))
+
+
+def mid_action_request(state, window):
+    """Pure human entry offer at an engine-authored semantic step.
+
+    Pax Gallica permits entry at any time beginning with the first Spring,
+    including other factions' actions and later Winter phases. The caller
+    owns the step's transaction and must offer before deriving its choices.
+    Legacy complete-action requests intentionally retain their old shape.
+    """
+    return _mid_action_request(state, window)
+
+
+def _validate_mid_action_request(state, request, *, allow_preview=False):
+    if not isinstance(request, dict):
+        raise ValueError('A current Spring entry request is required.')
+    current = _mid_action_request(state, request.get('window'),
+                                  allow_preview=allow_preview)
+    if current is None or current != request:
+        raise ValueError('The Spring entry opportunity has changed.')
+    return current
+
+
+def resolve_mid_action_entry(state, request, response=None):
+    """Apply one authored entry response without consulting a decision agent.
+
+    A newly inserted opportunity must not auto-place a human's Leader when
+    no response was chosen. Only explicit use_default invokes NP placement
+    priorities; the legacy Spring and complete-action behavior is unchanged.
+    """
+    _validate_mid_action_request(state, request)
+    return resolve_spring_box_entry(
+        state, {'defer': True} if response is None else response)
+
+
+def preview_mid_action_entry(state, request, response):
+    """Return a detached (state, result) for an explicit placement or deferral.
+
+    Preview never consults an agent or draws a default destination. Callers
+    must name a Region to inspect its effect on the rest of the action.
+    """
+    current = _validate_mid_action_request(state, request, allow_preview=True)
+    validate_response(state, current, response)
+    if response.get('use_default') is True:
+        raise ValueError('Spring entry preview requires an explicit Region or deferral.')
+    preview = deepcopy({key: value for key, value in state.items()
+                        if key != 'decision_agent'})
+    result = resolve_spring_box_entry(preview, response)
+    return preview, result
 
 
 def np_spring_plan(state, faction):

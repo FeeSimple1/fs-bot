@@ -400,15 +400,27 @@ def _rank_march_destinations(state, scenario, *, allowed_regions=None,
             c["hidden_wb"],            # (e) fewest Hidden Warbands first
         )
 
+    def _ranked(candidates, key):
+        # §8.3.4: geography/insertion order is not a final tie-break. Use
+        # the seeded chooser only among candidates equal at every priority.
+        from itertools import groupby
+        ordered = []
+        for _, members in groupby(sorted(candidates, key=key), key=key):
+            tied = list(members)
+            while tied:
+                chosen = random_select(state, tied)
+                ordered.append((chosen["region"], chosen["enemy"]))
+                tied.remove(chosen)
+        return ordered
+
     # --- Tier 1: enemies at 0+ victory margin ---
     tier1 = [c for c in all_candidates if c["at_victory"]]
     if tier1:
         # Players before NPs, then sub-priorities
-        tier1.sort(key=lambda c: (
+        return _ranked(tier1, lambda c: (
             0 if c["is_player"] else 1,
             _sub_sort_key(c),
         ))
-        return [(c["region"], c["enemy"]) for c in tier1]
 
     # --- Die roll for tiers 2-4 ---
     die = roll_die(state)
@@ -430,25 +442,21 @@ def _rank_march_destinations(state, scenario, *, allowed_regions=None,
             else:
                 tier2 = []
         if tier2:
-            tier2.sort(key=_sub_sort_key)
-            return [(c["region"], c["enemy"]) for c in tier2]
+            return _ranked(tier2, _sub_sort_key)
         # Fall through if no tier 2 candidates
 
     # --- Tier 3: on roll 3-4 ---
-    if die <= 4:
+    if 3 <= die <= 4:
         tier3 = [c for c in all_candidates if c["is_player"]]
         if tier3:
-            tier3.sort(key=_sub_sort_key)
-            return [(c["region"], c["enemy"]) for c in tier3]
+            return _ranked(tier3, _sub_sort_key)
         # Fall through if no tier 3 candidates
 
     # --- Tier 4: enemies with most Allies+Citadels (roll 5-6 or fallthrough) ---
-    tier4 = list(all_candidates)
-    tier4.sort(key=lambda c: (
+    return _ranked(all_candidates, lambda c: (
         -c["total_ac"],       # Most total Allies+Citadels first
         _sub_sort_key(c),
     ))
-    return [(c["region"], c["enemy"]) for c in tier4]
 
 
 # ============================================================================

@@ -440,12 +440,21 @@ def seize_rally_roll(state, faction):
 # ============================================================================
 
 def seize_in_region(state, region, tribes_to_disperse=None,
-                    as_if_control=False):
+                    as_if_control=False, *, rally_resolver=None):
+    """Resolve one atomic Region; the driver supplies reactive free Rallies."""
+    from fs_bot.engine.spring import atomic
+    with atomic(state):
+        return _seize_in_region(state, region, tribes_to_disperse,
+                                as_if_control, rally_resolver=rally_resolver)
+
+
+def _seize_in_region(state, region, tribes_to_disperse=None,
+                     as_if_control=False, *, rally_resolver=None):
     """Execute Seize in a single region.
 
-    Handles the Dispersal and Forage substeps. Rally checks and
-    Harassment are returned as info for the caller to execute
-    (since they involve other factions' decisions).
+    Each successful Rally roll is resolved through the driver's callback
+    before the next roll and before Forage (§3.2.3). Without a callback this
+    mechanical API returns Rally opportunities for an external caller.
 
     Args:
         state: Game state dict. Modified in place.
@@ -534,11 +543,19 @@ def seize_in_region(state, region, tribes_to_disperse=None,
     for tribe in result["tribes_dispersed"]:
         tribe_rally_info = {"tribe": tribe, "rolls": []}
         for faction in rally_factions:
+            from fs_bot.engine.action_windows import window
+            window(state, 'seize_rally_roll', region=region,
+                   tribe=tribe, beneficiary=faction)
             roll_result = seize_rally_roll(state, faction)
+            if roll_result['can_rally'] and rally_resolver is not None:
+                roll_result['rally_result'] = rally_resolver(
+                    state, region, tribe, roll_result)
             tribe_rally_info["rolls"].append(roll_result)
         result["rally_opportunities"].append(tribe_rally_info)
 
     # ----- Step 3: Forage — §3.2.3 -----
+    from fs_bot.engine.action_windows import window
+    window(state, 'seize_forage', region=region)
     forage = calculate_forage(state, region, result["tribes_dispersed"])
     if forage > 0:
         current = state["resources"].get(ROMANS, 0)

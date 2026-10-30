@@ -48,6 +48,41 @@ def command_parts(action):
     return (action.get("details") or {}).get("command_parts") or [action]
 
 
+def validate_rally_interruption(state, faction, action):
+    """Validate the one SA boundary inside an ordered Vercingetorix Rally.
+
+    Presence and placement legality are checked on the evolving board, not
+    here: an earlier step or the intervening SA can change later options.
+    """
+    from fs_bot.rules_consts import ARVERNI, BASE_SCENARIOS, CMD_RALLY, SA_DEVASTATE, SA_ENTREAT
+    details = action.get('details') or {}
+    if not isinstance(details, dict) or 'sa_after_rally_step' not in details:
+        return None
+    if (action.get('command') != CMD_RALLY or faction != ARVERNI
+            or state['scenario'] not in BASE_SCENARIOS):
+        return "An option-level Special Activity requires a base-game Arverni Rally"
+    if 'command_parts' in details:
+        return "Use one ordered Rally plan for an option-level Special Activity"
+    if action.get('sa_timing') != 'during' or action.get('sa') not in (SA_DEVASTATE, SA_ENTREAT):
+        return "An interrupted Rally needs one accompanying Special Activity with during timing"
+    plan = details.get('rally_plan')
+    if not isinstance(plan, dict) or 'steps' not in plan:
+        return "An interrupted Rally needs ordered Rally steps"
+    from fs_bot.commands.rally import rally_plan_steps, validate_rally_sequence
+    try:
+        steps = rally_plan_steps(plan)
+        validate_rally_sequence(state, faction, steps)
+    except (ValueError, TypeError, AttributeError, KeyError, CommandError) as exc:
+        return f"Invalid interrupted Rally: {exc}"
+    boundary = details['sa_after_rally_step']
+    last_with_tail = (boundary == len(steps)
+                      and bool(details.get('after_command_timing_actions')))
+    if (type(boundary) is not int or boundary <= 0
+            or not (boundary < len(steps) or last_with_tail)):
+        return "Place the Special Activity after a Rally step and before the final step"
+    return None
+
+
 def validate_human_structure(state, faction, action, *, limited=False, allow_frost=False):
     """Return an error for an illegal whole-action combination, else None."""
     from fs_bot.cli.human_plan import (_FACTION_COMMANDS,
@@ -57,6 +92,9 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
         return "The Command plan must be an object"
     from fs_bot.commands.sa_trade import validate_trade_plan
     error = validate_trade_plan(action)
+    if error:
+        return error
+    error = validate_rally_interruption(state, faction, action)
     if error:
         return error
     command, sa = action.get("command"), action.get("sa")
@@ -96,6 +134,8 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
             return f"Invalid Command plan: {exc}"
     if limited and len(set(selected_regions)) > 1:
         return "A Limited Command selects at most one Region (§2.3.5)"
+    if command in ('Rally', 'Recruit') and not selected_regions:
+        return "The Command needs at least one placement or Rally option"
     if len(parts) > 1:
         if command in ("March", "Battle"):
             return "Use before/after timing for March or Battle; their Command-wide resolution cannot be split"

@@ -162,10 +162,20 @@ def test_file_frontend_postroll_pause_invalid_stale_resume_and_replay(
     SeatSession(state, meta, [], display)
     save_game(state, path / 'save.json', meta=meta, log=[])
     args = SimpleNamespace(dir=str(path))
+    def decline_timing_windows():
+        while True:
+            _, saved_meta, _ = load_game(path / 'save.json')
+            current = saved_meta['assistant_session']['pending']
+            if not current or decode(current['request'])['kind'] != 'voluntary_removal':
+                return
+            args.decision_id = current['id']
+            args.response = json.dumps({'done': True})
+            assert llm_seat.cmd_submit(args) == 0
     assert llm_seat.cmd_play(args) == 0
     before, _, _ = load_game(path / 'save.json')
     args.response = json.dumps({'action': ACTION_EVENT, 'player_action': _event()})
     assert llm_seat.cmd_submit(args) == 0
+    decline_timing_windows()
     paused, paused_meta, paused_log = load_game(path / 'save.json')
     pending = paused_meta['assistant_session']['pending']
     request = decode(pending['request'])
@@ -173,7 +183,8 @@ def test_file_frontend_postroll_pause_invalid_stale_resume_and_replay(
     assert request['roll'] == 5 and request['removal_counts'] == {'roll': 5, 'three': 3}
     assert encode(paused) == encode(before)
     assert paused_log == []
-    assert len(paused_meta['assistant_session']['journal']) == 1
+    accepted_count = len(paused_meta['assistant_session']['journal'])
+    assert accepted_count >= 2  # Turn plus explicit optional timing decisions.
     assert decode(pending['board'])['rng'].getstate() != paused['rng'].getstate()
     shown = capsys.readouterr().out
     assert 'Ambacti' in shown and '"roll": 5' in shown
@@ -190,16 +201,20 @@ def test_file_frontend_postroll_pause_invalid_stale_resume_and_replay(
     assert encode(rejected) == encode(paused)
     assert rejected_meta['assistant_session']['pending'] == pending
     assert rejected_log == []
-    assert len(rejected_meta['assistant_session']['journal']) == 1
+    assert len(rejected_meta['assistant_session']['journal']) == accepted_count
 
     args.response = json.dumps(_choice())
     assert llm_seat.cmd_submit(args) == 0
+    decline_timing_windows()
     resolved, final_meta, log = load_game(path / 'save.json')
     assert count_pieces(resolved, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA) == 0
     assert count_pieces(resolved, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 4
     assert resolved['event_modifiers']['card_16_die_roll'] == 5
-    assert len(log) == 2
-    assert decode(log[1]['assistant_response']) == _choice()
+    choices = [entry for entry in log if entry.get('reactive') == 'ambacti_removal']
+    assert len(choices) == 1
+    assert decode(choices[0]['assistant_response']) == _choice()
+    assert all(entry.get('reactive') in (None, 'voluntary_removal', 'ambacti_removal')
+               for entry in log)
     assert not final_meta['assistant_session']['pending']
     assert not final_meta['assistant_session']['journal']
     args.output_dir = str(tmp_path / 'replayed')

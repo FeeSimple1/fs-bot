@@ -59,6 +59,8 @@ def resolve_britannia(state, executing_faction):
         return [{'free_action': 'march', 'flag': 'card_57', 'executed': False,
                  'reason': 'Britannia not in play'}]
     with free_action_scope(state, faction):
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, "57.march")
         request = {'kind': 'free_action', 'request_type': 'event_command',
                    'allowed_commands': ['March'], 'allowed_regions': None,
                    'required_destinations': [BRITANNIA], 'max_regions': None,
@@ -83,6 +85,8 @@ def resolve_britannia(state, executing_faction):
         if response is not None and not response.get('decline'):
             march = execute_free_action_plan(state, faction, request, response)
 
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, "57.special_ability")
         from fs_bot.cli.human_plan import _faction_special_abilities
         request = {'kind': 'free_action', 'request_type': 'event_sa',
                    'allowed_commands': [], 'allowed_regions': [BRITANNIA],
@@ -95,6 +99,8 @@ def resolve_britannia(state, executing_faction):
         sa_result = {'executed': False, 'reason': 'no Special Ability selected'}
         if response is not None and not response.get('decline'):
             sa_result = execute_free_action_plan(state, faction, request, response)
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, "57.resources")
         before = state['resources'].get(faction, 0)
         if count_pieces(state, BRITANNIA, faction) > 0:
             _cap_resources(state, faction, 4)

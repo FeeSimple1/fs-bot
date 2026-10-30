@@ -184,6 +184,8 @@ def _default_target(state, faction, region):
 
 def resolve_impetuosity(state, faction):
     """Resolve separate player March and optional Battle choices."""
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "72.march")
     request = {'kind': 'free_action', 'request_type': 'impetuosity_march',
                'card_id': 72, 'free': True, 'with_sa': False}
     plan = consult_free_action(state, faction, request)
@@ -202,6 +204,8 @@ def resolve_impetuosity(state, faction):
                       'allowed_regions': [region], 'max_regions': 1,
                       'free': True, 'with_sa': False}
     with scoped_free_force(state, region, {rc.HIDDEN: n}, faction=faction, source='Impetuosity'):
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, "72.battle")
         action = consult_free_action(state, faction, battle_request)
         if action is None:
             if target is None:

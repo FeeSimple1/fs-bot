@@ -87,9 +87,17 @@ printed exceptions; Vercingetorix pays the Region once. A Limited Command
 still selects only one Region even when Rally has two steps there, and an
 ordinary Limited Command cannot include a Special Activity. Event grants
 can independently permit an accompanying activity under their own text.
-The existing `command_parts` interface requires distinct Regions on each
-side of an intervening SA; it cannot yet split Vercingetorix's two options
-within one Region around the SA.
+The `command_parts` interface requires distinct Regions on each side of an
+intervening SA. Base-game Arverni can instead use one ordered `rally_plan`
+with `sa_timing: "during"` and `details.sa_after_rally_step: N`. This places
+the accompanying Devastate or Entreat after the first `N` completed steps,
+including between Vercingetorix's two options in one Region. Do not combine
+this marker with `command_parts`. The second option is validated on the
+resulting board, and the Region's cost and compulsory additions are counted
+once. Ordinary Limited Commands still cannot add an SA.
+Normally `N` is between 1 and one less than the step count. The final-step
+boundary is also accepted when an `after_command_timing_actions` continuation
+remains after the SA; it cannot represent an otherwise empty second half.
 
 For Enlist's free German Rally, `details.enlist.count` selects the Warband
 total. With a base-game `place: "ally"`, it instead selects the following
@@ -116,6 +124,12 @@ post-departure remainder of an origin). The Roman Build and Scout
 Special Abilities accept player plans (`build_plan`
 {forts, subdue, allies} and `scout_plan` {auxilia_moves,
 scout_targets}); without one, the bots' flowchart plans run instead.
+Build permits both a Fort and the legal Ally operation in a Region. Scout
+movement entries can name `physical_owners` when Diviciacus lends counters;
+their counts must total that move and use only still-unmoved pieces.
+Arrivals may participate in subsequent Scout Reveal, but may not Scout-move
+again. A Scout target's legacy `hidden` field specifies the requested total
+Warbands to Scout, including eligible Revealed Warbands.
 For Trade under shaded River Commerce (39), `details.trade_region` names
 one Region; `details.sa_details.trade_region` is also accepted. If both are
 present they must agree. A non-string or a field attached to another Special
@@ -187,6 +201,59 @@ Command, selecting different Regions, with the accompanying Special
 Activity between them. March and Battle currently support before/after
 timing; their Command-wide movement and Battle bookkeeping is not split.
 
+### Choices between operations
+
+The outer Sequence-of-Play human Command or Event owns voluntary removal
+permission, including its accompanying SA and nested grants. A guest faction
+executing a free action does not acquire that permission. Passing, another
+faction's turn, and ordinary Winter do not authorize voluntary removal.
+Borrowing changes which counters a force can use, not their physical owner.
+Unlocked boxed Vercingetorix has a separate Arverni entry opportunity during
+other factions' actions and Winter as well as during Arverni actions.
+
+Plans may author an ordered `timing_actions` list before a particular
+operation. Each entry has exactly `kind` and `response`:
+
+```json
+{"timing_actions":[
+  {"kind":"voluntary_removal","response":{"operations":[
+    {"action":"remove","region":"Arverni","piece_type":"Warband",
+     "piece_state":"Hidden","count":1}
+  ]}},
+  {"kind":"spring_leader","response":{"region":"Carnutes"}}
+]}
+```
+
+This is a shape example for an eligible Arverni actor; current legality still
+applies. Authored Spring entry must name a Region or use `{"defer":true}`;
+it cannot delegate a random/default placement during preview. Only the
+Arverni may author their Leader's entry. Removal instructions cannot supply
+their own permission, owner, or cohort definitions.
+
+| Plan location | When its list runs |
+|---|---|
+| `details.timing_actions` | At Command/Event start |
+| An operation entry's `timing_actions` | Before that Recruit/Rally step, Raid flip, Scout move/Reveal, or other supported operation |
+| `details.after_command_timing_actions` | After a successful Command, before an after-Command SA |
+| `details.sa_details.timing_actions` | Before the SA |
+| `details.sa_details.after_sa_timing_actions` | At SA completion |
+| `details.stage_timing_actions["seize_region:0"]` | Before the first Seize Region; scalar stages use `stage:index` keys |
+| `details.sa_details.stage_timing_actions["build_fort:0"]` | Before the first scalar Build Fort entry |
+| `details.scout_plan.movement_timing_actions` | After Scout movements, before their moved-piece ledger closes |
+| `details.raid_timing_actions[region]` | After that Region's Raid flips, before intrinsic Intimidate uses surviving raiders |
+| `details.event_params.stage_timing_actions["A37.moves:0"]` | Before an indexed Event step; scalar Event stages use the step name without `:index` |
+
+The CLI applies these choices on detached planning boards before computing
+Available pools and legal menus, then the engine revalidates them during
+execution. A skipped menu option carries its choices forward or stores them
+in the appropriate completion list; it does not apply them to the live game
+while planning. Timing requests occur between complete rules operations,
+not inside an indivisible replacement or die-result application.
+For ordered Event lists, `step:len(entries)` is their completion boundary.
+Typed entries can carry `timing_actions` directly; that takes precedence over
+the corresponding indexed stage list. Use the active card's supported step
+names rather than inventing stage keys.
+
 Diviciacus cooperation is requested through `details.diviciacus_regions`
 for a Command and `details.diviciacus_sa_regions` for a Special Activity.
 Use `engine.diviciacus.eligible_regions(state, faction, phase)` to find
@@ -239,6 +306,16 @@ raising `EOFError` interrupts. A raw callback is therefore not a durable
 human-input queue. The terminal and [file-based session](#file-based-assistant-sessions)
 frontends handle pending human input explicitly and validate responses.
 
+Raw callbacks opt into the additional between-operation requests by setting
+`agent.supports_action_windows = True` (or that attribute on a bound method's
+owner). Legacy callbacks remain unchanged unless opted in. The terminal and
+`SeatSession` enable the protocol. An authored `timing_actions` plan does not
+need this flag: its explicit choices still execute without live prompting.
+For optional mid-action `spring_leader` requests carrying `window`, raw
+`None` defers entry; for `voluntary_removal`, it removes nothing. Explicit
+`{"use_default":true}` places Vercingetorix using the established priorities,
+so it is different from deferral. Durable sessions require an actual reply.
+
 The constants `RETREAT`, `LOSS_ORDER`, `AGREEMENT`, and `HARASSMENT_LOSS`
 come from `fs_bot.engine.agent`; other kinds below are literal strings.
 Requests can include additional context. Copy offered values rather than
@@ -247,10 +324,13 @@ inventing pieces, regions, owners, or internal grant flags.
 | `request["kind"]` | request fields | response |
 |---|---|---|
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
-| `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add a third `physical_owner` field; hard pieces still roll |
+| `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag; copy entries intact; hard pieces still roll |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
 | `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
+| `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |
+| `voluntary_removal` | `faction, options, window`; may include engine-owned `cohorts` | `{"operations":[...]}`, `{"done":true}`, or explicit default (no removals) |
+| `battle_elite` | `faction, region, count, available` by visibility, `window` | `{"counts":{"Hidden":n,"Revealed":m,"Scouted":k}}` totaling the exact offered count, or explicit default |
 | `AGREEMENT` | `request_type, requesting_faction, context` | `bool` (agree?) — `request_type` in {`retreat_into_control`, `supply_line`, ...} |
 | `supply_refusal` | `action_type, action, allowed_commands, allowed_special_abilities, limited, context`; grants may add `allowed_regions, max_regions` | `{"continue":true}` or `{"replacement": action}`; see scope below |
 | `trade_region` | `faction, legal_regions, roman_agreed, choices` with each Region's Resource gain and breakdown | `{"region":name}`, `{"decline":true}`, or `{"use_default":true}` |
@@ -262,7 +342,9 @@ inventing pieces, regions, owners, or internal grant flags.
 | `winter_uprising_timing` | A66; full `card_text`, `region, holder, forced` | `{"activate":true}` or `{"activate":false}`, or explicit default |
 | `winter_uprising_placement` | A66; full `card_text`, `region, holder, forced, beneficiary, regions, tribes, allies, warbands` | `{"allies":[tribe,...],"warbands":[{"region":name,"count":integer},...]}` or explicit default |
 | `quarters_plan` | `faction, errors` | relocation/payment object described below, or explicit default |
-| `spring_leader` | `faction, leader, source, reason, legal_regions, can_defer`; scenario ties may set `equal_priority` | `{"region":name}`, `{"defer":true}` only when offered, or explicit default |
+| `quarters_provincia` | `faction, original_moves, legal_moves, errors` | `{"moves":[[piece,origin,"Provincia",count],...]}`, `{"decline":true}`, or explicit default |
+| `quarters_payment` | `faction, reason`, optional `errors` | `{"payments":{...}}` using the existing Roman quartering allocation shape, or explicit default |
+| `spring_leader` | `faction, leader, source, reason, legal_regions, can_defer`; mid-action offers add `window`, scenario ties may set `equal_priority` | `{"region":name}`, `{"defer":true}` only when offered, or explicit default |
 | `winter_campaign` | `card_id, remaining_actions`, optional `errors` | one paid action, combined Command+SA, or decline; see the Winter section below |
 | `frumentum_amount` | A53; `available_resources` (Aedui) | `{"amount": integer}`, `{"decline":true}` (zero), or explicit default |
 | `frumentum_action` | A53; `remaining_actions, remaining_resources, reserved_roman_resources` | one Recruit/March plan or standalone Build/Scout plan, `{"skip": action_name}`, finish with `{"decline":true}`, or explicit default |
@@ -274,6 +356,23 @@ pending. A normal turn still requires a legal `action` and its plan.
 Free-action defaults and declines must be single-field objects containing
 Boolean `true`; numeric `1`, strings and mixed sentinel/action objects are
 invalid.
+
+For `voluntary_removal`, copy an offered option's identifying fields and add
+a positive `count` no greater than `max_count`. Operations require `action`
+(`remove` or `downgrade`), `region`, `piece_type`, and `count`, plus only the
+applicable `piece_state`, `tribe`, `loan_kind`, and `cohort`. Use
+`engine.voluntary_removal.operation(option, count)` to construct them; labels,
+maximum counts and replacement descriptions are request metadata. Citadel
+downgrades use the same City; without an Available Ally the Citadel is simply
+removed. Legions return to their track, Diviciacus goes out of play, and the
+permanent Provincia Fort is excluded.
+
+`cohort` identifies a specific offered subset, such as moving March pieces,
+already moved Scout pieces, actual raiders, or an Event-selected force.
+Omitting it does not select that subset. `loan_kind` can identify overlapping
+loan memberships and must be copied exactly. Neither field transfers
+ownership or expands the player's removal permission. New requests expose
+remaining physical counters after every completed change.
 
 `supply_refusal` follows an actual non-player Aedui roll of 5–6 for human
 Rome. `action_type` identifies whether the current Command or only the
@@ -310,10 +409,12 @@ highest-priority destinations for Ambiorix or Caesar.
 For Vercingetorix in the Spring box, `can_defer` is true. His arrival becomes
 available beginning the first Pax Gallica Spring, including the first Winter
 after the Gallic War Interlude; the Interlude's own Spring does not unlock it.
-After deferral, the game offers placement at later action boundaries without
-spending a Command or changing Eligibility. The automated frontends do not
-yet offer arbitrary interruption inside a resolving Command or Event; these
-boundary windows do not exhaust the scenario's printed “at any time” freedom.
+After deferral, the game offers placement at later complete-operation
+boundaries inside Commands, Events and Winter, including opponents' actions,
+without spending a Command or changing Eligibility. A mid-action request
+includes `window` with its `stage`, phase and relevant Region/step context.
+An explicit default is preserved in the transcript rather than normalized
+to the `None` that means defer at these new windows.
 All placement answers support pending input, save/resume and exact replay.
 
 Diviciacus uses `AGREEMENT` with `request_type: "diviciacus"` for the
@@ -343,6 +444,7 @@ A `HARASSMENT_LOSS` request's `phase` determines what is being selected:
 | `absorb` | An offered soft piece type or `"roll"` |
 | `remove` | A hard piece type after a failed saving roll; the request includes `roll` |
 | `piece_state` | The offered visibility of the soft casualty |
+| `physical_owner` | Which offered physical owner supplies the moving-group casualty, such as Enlisted German versus Belgic Warbands |
 | `ally` | The exact Allied Tribe lost to Seize Harassment |
 
 Return one offered value, for example `{"choice":"roll"}` only when
@@ -370,7 +472,30 @@ The validators are `commands.march.validate_harassment_response` and
 `engine.march_choices.validate_response`; both validate without moving
 pieces or consuming RNG.
 
+`force_cohort` similarly separates Event-selected counters from other pieces,
+or the physical colours in an Enlist drop-off. Use the request's labels and
+offered counts; the `selected` label is not always an Event force.
+Shaded Vercingetorix's Elite uses `battle_elite` to select actual Warbands
+for that Battle. Subsequent loss-order entries can identify a selected piece
+as `["Warband", visibility, null, "elite"]`; other Warbands remain separate.
+
 ### Scoped Event grants
+
+Seize's successful Arverni and Belgae Rally checks issue separate
+`free_action` requests with `request_type: "event_rally"`, `source: "seize"`,
+`source_region`, `tribe`, and the actual `roll`. They permit free Rally in the
+offered adjacent non-Devastated Regions, with no SA. Each successful grant
+resolves before the next die or Forage; return an ordinary explicit Rally
+plan, decline, or explicit default. In Ariovistus, the Arverni result uses
+their game-run procedure rather than a player request.
+
+Shaded Surus (51) gives the Event executor an `event_command` request with
+`acting_faction: "Germans"`. Choose March, Raid, or Battle using only the newly
+placed surviving German Warbands, from the offered Region. The grant is free,
+selects one Region, allows no SA and cannot be declined when an action is
+possible. Existing residents do not join it. Base-game German Battle keeps
+its intrinsic Ambush requirements. `acting_faction` does not transfer
+voluntary-removal ownership to the chooser or the Germans.
 
 Winter Uprising's timing request belongs to its human holder. Deferring
 keeps the card, marker and delayed effect. Non-player holders activate at
@@ -471,6 +596,14 @@ The printed free capacity and available Resources still apply. See
 `engine.quarters.validate_quarters_plan` and
 `fs_bot/tests/test_quarters_decisions.py` for concrete legal examples.
 
+If an intervening Leader entry changes Supply after adjacent relocations,
+`quarters_provincia` reopens only the remaining Provincia moves. Completed
+adjacent moves stay completed. `legal_moves` entries use their final count as
+the maximum offered; explicit default retains only still-legal original
+moves, while decline chooses none. A changed relocation outcome then requests
+`quarters_payment` for the pieces actually left outside Provincia, before
+payment or loss rolls. Explicit default uses standard payments.
+
 ### Other paid and optional grants
 
 After Germanic Warbands Raid with Ariovistus, `raid_intimidate` offers their
@@ -570,10 +703,11 @@ full game with one agent-controlled Faction playing alongside the bots.
 
 ## Current limits
 
-- Voluntary own-piece removal/Citadel downgrades, Vercingetorix's entry
-  inside a resolving action, and an SA between his two Rally options in
-  the same Region remain interface gaps. The source-derived completeness
-  audit remains open; this list is not exhaustive.
+- Timing is offered at complete rules-operation boundaries. Some legacy
+  scalar-list or dynamically constructed Event menus collect these choices
+  only during live execution; typed placement entries and A37 additionally
+  expose them while planning. The source-derived completeness audit remains
+  open; this list is not exhaustive.
 - Reactive hooks cover Retreat, Loss absorption, Supply Line, Quarters hosting,
   Trade, Harassment and its losses, physical March pieces, Winter Campaign,
   Raid Intimidate, Kinship, and scoped Event-granted actions.
@@ -605,6 +739,23 @@ unfinished action. Bot preview copies cannot consume this human input.
 or legacy lists; unchanged inbox submissions cannot execute twice. Explicit
 `{use_default:true}` is supported for reactions. Missing, stale, malformed,
 or illegal responses pause rather than silently handing the choice to a bot.
+For new timing transactions, inbox receipts include the accepted response
+ancestry: a corrected plan may legitimately reuse a decision ID and the same
+answer without being mistaken for an already consumed earlier attempt.
+
+Replay retains older accepted and pending transcripts that predate these
+optional windows. Newly added prompts are skipped only while verifying that
+old recorded transaction; no synthetic choices are appended to its history.
+Fresh requests require explicit answers, including after an old pending
+decision has been answered. Transient engine timing frames are not game
+facts, but actual board changes, cohort options, and the request's `window`
+context remain checked. New timing decisions carry version metadata so they
+cannot silently use the old no-prompt path.
+This compatibility covers inserted timing decisions, not changed outcomes
+from substantive rule corrections. A historical transcript affected by such
+a correction, including previously omitted Seize Rally effects, can fail
+verified replay; the frontend reports the mismatch rather than treating a
+different board as equivalent.
 
 Winter Campaign requests include `remaining_actions` (initially 2). Return a
 normal Command plan, a standalone `{sa,sa_regions,details}` plan, or a combined

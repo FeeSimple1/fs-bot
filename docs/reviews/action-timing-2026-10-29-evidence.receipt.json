@@ -1,0 +1,11 @@
+{
+  "accepted_attempt": "attempt2",
+  "bytes": 58789532,
+  "credential_pattern_findings": 0,
+  "members": 2300,
+  "path": "/workspace/scratch/534c265c65f4/fs-bot/docs/reviews/action-timing-2026-10-29-evidence.zip",
+  "readback_verified": true,
+  "sha256": "a615af1336e1d591649c68ab9e05a6273a0a8a1efd56d86f20386ff94500d354",
+  "source_sha256": "c24adb23c9018071ed948e295a96fc4b17649e35fecabd985e77dedbfa32fcc5",
+  "uncompressed_bytes": 106244331
+}

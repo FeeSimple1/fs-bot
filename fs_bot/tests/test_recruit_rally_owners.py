@@ -4,6 +4,7 @@ import copy
 import io
 import json
 from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 
@@ -60,6 +61,21 @@ def _action(faction, *, explicit=True):
     plan = {'recruit_plan': entries} if roman else {'rally_plan': {'steps': entries}}
     return {'command': 'Recruit' if roman else 'Rally', 'sa': 'No SA',
             'details': dict(plan, diviciacus_regions=[rc.SEQUANI])}
+
+
+def _decline_timing_windows(args):
+    """Answer optional removal explicitly without bypassing durable requests."""
+    for _ in range(100):
+        _, meta, _ = load_game(Path(args.dir) / 'save.json')
+        pending = meta['assistant_session']['pending']
+        if not pending or decode(pending['request'])['kind'] != 'voluntary_removal':
+            return
+        args.response = json.dumps({'done': True})
+        assert llm_seat.cmd_submit(args) == 0
+        _, updated, _ = load_game(Path(args.dir) / 'save.json')
+        assert updated['assistant_session']['pending'] != pending, (
+            'A fresh explicit response was suppressed at a reused timing decision ID')
+    pytest.fail('Optional timing choices did not reach the next decision')
 
 
 @pytest.mark.parametrize('faction,piece', [(rc.ROMANS, rc.AUXILIA), (rc.AEDUI, rc.WARBAND)])
@@ -159,19 +175,24 @@ def test_owner_choice_saved_session_rollback_resume_and_replay(tmp_path, capsys,
         stale['details']['rally_plan']['steps'][0]['placement_owners'] = {rc.ROMANS: 2}
         args.response = json.dumps({'action': ACTION_COMMAND, 'player_action': stale})
         assert llm_seat.cmd_submit(args) == 0
+        _decline_timing_windows(args)
         rejected, rejected_meta, rejected_log = load_game(live / 'save.json')
         assert encode(rejected) == encode(before)
         assert rejected_meta['assistant_session']['pending'] == before_meta['assistant_session']['pending']
         assert rejected_meta['assistant_session']['journal'] == [] and rejected_log == []
     args.response = json.dumps({'action': ACTION_COMMAND, 'player_action': action})
     assert llm_seat.cmd_submit(args) == 0
+    _decline_timing_windows(args)
     if not explicit:
         paused, meta, log = load_game(live / 'save.json')
         pending = copy.deepcopy(meta['assistant_session']['pending'])
         request = decode(pending['request'])
         assert request['kind'] == 'diviciacus_pieces' and request['phase'] == 'placement'
         assert encode(paused) == encode(before)
-        assert len(meta['assistant_session']['journal']) == 1 and log == []
+        assert meta['assistant_session']['journal'][0]['player_action'] == action
+        assert all(entry.get('reactive') == 'voluntary_removal'
+                   for entry in meta['assistant_session']['journal'][1:])
+        assert log == []
         args.response = json.dumps({'counts': {rc.ROMANS: 1.0, rc.AEDUI: 0}})
         assert llm_seat.cmd_submit(args) == 0
         rejected, rejected_meta, _ = load_game(live / 'save.json')
@@ -179,11 +200,15 @@ def test_owner_choice_saved_session_rollback_resume_and_replay(tmp_path, capsys,
         assert rejected_meta['assistant_session']['pending'] == pending
         args.response = json.dumps({'counts': {rc.ROMANS: 1, rc.AEDUI: 0}})
         assert llm_seat.cmd_submit(args) == 0
+        _decline_timing_windows(args)
     final, meta, log = load_game(live / 'save.json')
     assert count_pieces(final, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 2
     assert count_pieces(final, rc.AEDUI_REGION, rc.AEDUI, rc.WARBAND) == 1
     assert log[0]['player_action'] == action
-    assert len(log) == (1 if explicit else 2)
+    owner_choices = [entry for entry in log if entry.get('reactive') == 'diviciacus_pieces']
+    assert len(owner_choices) == (0 if explicit else 1)
+    assert all(entry.get('reactive') in (None, 'voluntary_removal', 'diviciacus_pieces')
+               for entry in log)
     assert not meta['assistant_session']['pending'] and not meta['assistant_session']['journal']
     assert KEY not in final and PLACEMENT_SELECTION not in final
     args.output_dir = str(tmp_path / 'replay')

@@ -174,6 +174,8 @@ class TradePlayer(TacticalPlayer):
         delta, self.position = text[self.position:], len(text)
         self.reads += 1
         assert self.reads < 150, text[-3000:]
+        if 'Voluntary removal?' in delta:
+            return '1\n'  # Explicitly leave this optional timing window unchanged.
         if self.answers:
             return self.answers.pop(0) + '\n'
         match = re.search(r'You are (.*?), the ', delta)

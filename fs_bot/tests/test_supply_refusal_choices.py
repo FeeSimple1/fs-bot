@@ -117,20 +117,33 @@ def _run(session):
     return result
 
 
+def _run_declining_timing(session):
+    """Explicitly keep pieces at each optional window on this transcript."""
+    while True:
+        try:
+            return _run(session)
+        except DecisionPending:
+            pending = session.data['pending']
+            if decode(pending['request'])['kind'] != 'voluntary_removal':
+                raise
+            session.import_inbox({'decision_id': pending['id'],
+                                  'response': {'done': True}})
+
+
 def test_refusal_pending_invalid_save_resume_and_origin_replay(tmp_path):
     state = _state(5)
     state['_card_turn'] = {'idx': 0}
     initial = encode(state)
     session = _session(state)
     with pytest.raises(DecisionPending):
-        _run(session)
+        _run_declining_timing(session)
     assert encode(board_copy(state)) == initial
     pending = deepcopy(session.data['pending'])
     assert decode(pending['request'])['kind'] == 'supply_refusal'
     assert decode(pending['board'])['_card_turn'][RECEIPT]['answer'] is False
     session.import_inbox({'decision_id': pending['id'], 'response': {'continue': 1}})
     with pytest.raises(DecisionPending):
-        _run(session)
+        _run_declining_timing(session)
     assert session.data['pending'] == pending and session.error
     assert encode(board_copy(state)) == initial
     save_game(state, tmp_path / 'refusal.json', meta=session.meta, log=session.log)
@@ -138,12 +151,18 @@ def test_refusal_pending_invalid_save_resume_and_origin_replay(tmp_path):
     resumed = _session(saved_state, meta, log)
     resumed.import_inbox({'decision_id': pending['id'], 'response': {
         'replacement': _recruit((rc.MANDUBII,))}})
-    result = _run(resumed)
-    assert result['executed'] and len(resumed.log) == 1
-    assert resumed.log[0]['assistant_id'] == pending['id']
+    result = _run_declining_timing(resumed)
+    refusal_choices = [entry for entry in resumed.log
+                       if entry.get('reactive') == 'supply_refusal']
+    assert result['executed'] and len(refusal_choices) == 1
+    assert refusal_choices[0]['assistant_id'] == pending['id']
+    assert all(entry.get('reactive') in ('voluntary_removal', 'supply_refusal')
+               for entry in resumed.log)
     replay = _session(decode(initial))
     replay.data['expected'] = [{'id': entry['assistant_id'],
-                               'signature': entry['assistant_signature']}
+                               'signature': entry['assistant_signature'],
+                               'request': entry['assistant_request'],
+                               'action_windows_version': entry.get('assistant_action_windows_version', 0)}
                               for entry in resumed.log]
     replay.import_inbox([replay._inbox_entry(entry) for entry in resumed.log])
     assert _run(replay) == result

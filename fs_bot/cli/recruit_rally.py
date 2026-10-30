@@ -17,9 +17,8 @@ from fs_bot.rules_consts import (
 
 def _copy(state):
     # Planning never asks another human for consent or consumes live RNG.
-    sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
-    sim["_diviciacus_preview"] = True
-    return sim
+    from fs_bot.cli.action_windows import planning_copy
+    return planning_copy(state)
 
 
 def _apply(state, faction, entry, *, rally, prior=()):
@@ -137,7 +136,36 @@ def _entry(region, option, stdin, stdout):
     return entry
 
 
-def collect(state, faction, stdin, stdout, single, *, rally, excluded=()):
+def collect(state, faction, stdin, stdout, single, *, rally, excluded=(),
+            interrupt=None, inspect=None):
+    from fs_bot.cli import menus
+    from fs_bot.cli.action_windows import available
+    from fs_bot.cli.display import format_board
+    if not available(state):
+        return _collect(state, faction, stdin, stdout, single, rally=rally,
+                        excluded=excluded, interrupt=interrupt, inspect=inspect)
+    previous = menus._BOARD_HOOK[0]
+    current = [state]
+    def update(sim):
+        current[0] = sim
+        if inspect is not None:
+            inspect(sim)
+    menus.set_board_hook(lambda: stdout.write('\n' + format_board(current[0]) + '\n'))
+    try:
+        return _collect(state, faction, stdin, stdout, single, rally=rally,
+                        excluded=excluded, interrupt=interrupt, inspect=update)
+    finally:
+        menus.set_board_hook(previous)
+
+
+def _collect(state, faction, stdin, stdout, single, *, rally, excluded=(),
+             interrupt=None, inspect=None):
+    """Plan placements, optionally pausing once between Rally options.
+
+    ``interrupt`` receives the current planning board and completed steps,
+    resolves the planned SA on a copy, and returns that changed board. Keeping
+    the same local Region ledger avoids charging or adding bonuses twice.
+    """
     from fs_bot.cli.human_plan import _pick_regions, _playable_regions
     sim = _copy(state)
     validator = (lambda r: validate_rally_region(sim, r, faction)[0]) if rally else (
@@ -151,9 +179,19 @@ def collect(state, faction, stdin, stdout, single, *, rally, excluded=()):
         stdin, stdout, f"{command} in which Region(s), in resolution order?", regions,
         single=single, max_regions=state.get("_cli_command_max_regions"))
     entries = []
+    pending_timing = []
+    boundary = None
+    interrupted = False
     for region in picked:
         prior = set()
         while True:
+            from fs_bot.cli.action_windows import prepare
+            sim, choices = prepare(sim, faction, stdin, stdout,
+                                   stage='rally_option' if rally else 'recruit_region',
+                                   region=region, index=len(entries))
+            pending_timing.extend(choices)
+            if inspect is not None:
+                inspect(sim)
             options = _options(sim, faction, region, rally=rally, prior=prior)
             if not options:
                 if not prior:
@@ -165,6 +203,11 @@ def collect(state, faction, stdin, stdout, single, *, rally, excluded=()):
             if option is None:
                 break
             entry = _entry(region, option, stdin, stdout)
+            if pending_timing:
+                # prepare has already applied these to this planning board.
+                # The executor replays them once from the original board.
+                entry['timing_actions'] = pending_timing
+                pending_timing = []
             if rally and faction == BELGAE and entry["action"] != "place_warbands":
                 mixes = _mixes(sim, region, prior, entry)
                 if mixes and any(sum(mix.values()) for mix in mixes):
@@ -189,11 +232,77 @@ def collect(state, faction, stdin, stdout, single, *, rally, excluded=()):
                     bonus = result.get("pieces_placed", {}).get(piece, 0)
                     if bonus:
                         stdout.write(f"  This placement also adds {bonus} {piece}.\n")
+            if interrupt is not None and boundary is None:
+                if inspect is not None:
+                    inspect(sim)
+                use_sa = prompt_choice(stdin, stdout, "  Continue Rally or use the Special Activity?", [
+                    ("Continue Rally", False), ("Use Special Activity now", True)])
+                if use_sa:
+                    boundary = len(entries)
+                    interrupted = True
+                    sim = interrupt(sim, deepcopy(entries))
             if not rally:
                 break
     if not entries:
         return None
-    return {"rally_plan": {"steps": entries}} if rally else {"recruit_plan": entries}
+    if interrupt is not None and boundary is None:
+        boundary = len(entries)
+        interrupt(sim, deepcopy(entries))
+    result = {"rally_plan": {"steps": entries}} if rally else {"recruit_plan": entries}
+    if pending_timing:
+        result['after_command_timing_actions'] = pending_timing
+    if boundary is not None and (boundary < len(entries) or (pending_timing and interrupted)):
+        result["sa_after_rally_step"] = boundary
+    return result
+
+
+def collect_interrupted(state, faction, stdin, stdout, *, allowed_sas=None):
+    """Collect a single ordered Rally with one SA between its completed steps."""
+    from fs_bot.cli import menus
+    from fs_bot.cli.display import HumanTurnDisplay, format_board, snapshot_state
+    from fs_bot.cli.human_plan import _collect_sa_plan, _preview_sa
+    from fs_bot.rules_consts import CMD_RALLY
+
+    action = {'command': CMD_RALLY, 'regions': [], 'sa': 'No SA',
+              'sa_regions': [], 'details': {}}
+    board = [state]
+    view = HumanTurnDisplay(stdout)
+    view.remember(state, (faction,))
+    previous_hook = menus._BOARD_HOOK[0]
+
+    def inspect(sim):
+        board[0] = sim
+        if snapshot_state(sim) != view.snapshots[faction]:
+            stdout.write('\nRally planning preview:\n')
+            view.before_decision(sim, faction)
+
+    def interrupt(sim, steps):
+        nonlocal action
+        inspect(sim)
+        action['details']['rally_plan'] = {'steps': steps}
+        action = _collect_sa_plan(sim, faction, action, stdin, stdout,
+                                  standalone=True, allowed_sas=allowed_sas)
+        _preview_sa(sim, faction, action)
+        inspect(sim)
+        return sim
+
+    menus.set_board_hook(lambda: stdout.write('\n' + format_board(board[0]) + '\n'))
+    try:
+        planning = state
+        if state.get('_cli_max_regions') is not None:
+            planning = dict(state, _cli_command_max_regions=state['_cli_max_regions'])
+        details = collect(planning, faction, stdin, stdout, False, rally=True,
+                          interrupt=interrupt, inspect=inspect)
+    finally:
+        menus.set_board_hook(previous_hook)
+    if details is None:
+        return None
+    action['details'].update(details)
+    if action['sa'] in (None, 'No SA'):
+        action['details'].pop('sa_after_rally_step', None)
+    action['sa_timing'] = ('during' if 'sa_after_rally_step' in action['details']
+                           else 'after')
+    return action
 
 
 def collect_enlist_rally(state, region, stdin, stdout):

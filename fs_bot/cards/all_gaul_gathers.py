@@ -31,7 +31,7 @@ def eligible_regions(state):
                                        state.get('capabilities'))} & german)]
 
 
-def ally_options(state, region):
+def ally_options(state, region, *, require_available=True):
     """Legal (tribe, owner) placements, including normal stacking limits."""
     from fs_bot.cards.card_effects import _tribe_region
     options = []
@@ -42,7 +42,8 @@ def ally_options(state, region):
             continue
         for owner in rc.FACTIONS:
             if (rc.TRIBE_FACTION_RESTRICTION.get(tribe, owner) == owner
-                    and get_available(state, owner, rc.ALLY) > 0):
+                    and (not require_available
+                         or get_available(state, owner, rc.ALLY) > 0)):
                 options.append((tribe, owner))
     return options
 
@@ -81,23 +82,62 @@ def _entries(params, key):
 
 
 def _apply(state, placements, moves, faction):
-    from fs_bot.cards.card_effects import _ally_tribe, _tribe_region
-    for tribe, owner in placements:
-        if (tribe, owner) not in ally_options(
-                state, _tribe_region(state, tribe)):
-            raise ValueError('A37 Ally placement needs an eligible Subdued Tribe and Available disc')
-        if not _ally_tribe(state, tribe, owner):
-            raise ValueError('A37 could not place the selected Ally')
-    for move in moves:
-        move_piece(state, move['from_region'], move['to_region'], faction,
-                   move['piece_type'], count=move['count'],
-                   piece_state=move['piece_state'])
-    refresh_all_control(state)
+    from fs_bot.cards.card_effects import _ally_tribe, _tribe_region, _event_entries
+    from fs_bot.engine.action_windows import set_cohorts, get_cohorts, clear_cohorts
+    from fs_bot.board.pieces import count_pieces, PieceError
+    ledger, groups, available = 'event.A37.moves', [], {}
+    # Reserve the originally selected counters before any Event window.
+    # Removing a selected group must not silently substitute a resident.
+    for index, move in enumerate(moves):
+        origin, kind = move['from_region'], move['piece_type']
+        visibility = None if kind == rc.LEADER else move['piece_state'] or rc.HIDDEN
+        cell = origin, kind, visibility
+        if cell not in available:
+            available[cell] = (count_pieces(state, origin, faction, kind)
+                               if visibility is None else count_pieces_by_state(
+                                   state, origin, faction, kind, visibility))
+        if move['count'] > available[cell]:
+            raise PieceError('A37 movement selects more original pieces than present')
+        available[cell] -= move['count']
+        group = {'id': f'{ledger}.{index}', 'label': f'A37 movement group {index + 1}',
+                 'region': origin, 'piece_type': kind, 'count': move['count']}
+        if visibility is not None:
+            group['piece_state'] = visibility
+        groups.append(group)
+    set_cohorts(state, ledger, faction, groups)
+    try:
+        for entry in _event_entries(state, 'A37.allies', placements):
+            tribe, owner = entry['tribe'], entry['faction']
+            if (tribe, owner) not in ally_options(
+                    state, _tribe_region(state, tribe)):
+                raise ValueError('A37 Ally placement needs an eligible Subdued Tribe and Available disc')
+            if not _ally_tribe(state, tribe, owner):
+                raise ValueError('A37 could not place the selected Ally')
+        for index, move in enumerate(_event_entries(state, 'A37.moves', moves)):
+            groups = get_cohorts(state, ledger)
+            group = groups[index]
+            if group['count']:
+                move_piece(state, move['from_region'], move['to_region'], faction,
+                           move['piece_type'], count=group['count'],
+                           piece_state=group.get('piece_state'))
+            # The one destination cannot be an origin. Arrivals have no
+            # remaining movement entitlement to distinguish from residents.
+            group['count'] = 0
+            set_cohorts(state, ledger, faction, groups)
+        refresh_all_control(state)
+    finally:
+        clear_cohorts(state, ledger)
 
 
 def execute(state, shaded=False):
-    """Validate every selection before applying any part of the Event."""
-    from fs_bot.cards.card_effects import _tribe_region, _unally_tribe
+    """Apply ordered choices atomically, including newly Available pieces."""
+    from fs_bot.engine.spring import atomic
+    with atomic(state):
+        return _execute(state, shaded)
+
+
+def _execute(state, shaded=False):
+    from fs_bot.cards.card_effects import _tribe_region, _unally_tribe, _event_entries
     if state['scenario'] not in rc.ARIOVISTUS_SCENARIOS:
         raise ValueError('A37 belongs to Ariovistus scenarios')
     params = state.get('event_params') or {}
@@ -112,8 +152,8 @@ def execute(state, shaded=False):
             if choice not in options or choice in selected or len(selected) == 3:
                 raise ValueError('A37 removes at most three distinct Aedui/Roman Allies in Celtica within one of German Control')
             selected.append(choice)
-        for tribe, _ in selected:
-            _unally_tribe(state, tribe)
+        for entry in _event_entries(state, 'A37.removals', removals):
+            _unally_tribe(state, entry['tribe'])
         return
 
     faction = state.get('executing_faction')
@@ -139,10 +179,12 @@ def execute(state, shaded=False):
     for entry in placements:
         tribe, owner = entry.get('tribe'), entry.get('faction', faction)
         if (tribe in seen or _tribe_region(state, tribe) != destination
-                or (tribe, owner) not in ally_options(state, destination)
+                or tribe not in state.get('tribes', {})
+                or owner not in rc.FACTIONS
+                or rc.TRIBE_FACTION_RESTRICTION.get(tribe, owner) != owner
                 or entry.get('region', destination) != destination):
             raise ValueError('A37 Allies must occupy distinct eligible Tribes in the one selected Region')
-        normalized_placements.append((tribe, owner))
+        normalized_placements.append(dict(entry, tribe=tribe, faction=owner))
         seen.add(tribe)
 
     mobile = rc.AUXILIA if faction == rc.ROMANS else rc.WARBAND
@@ -162,13 +204,13 @@ def execute(state, shaded=False):
             raise ValueError('A37 move has an invalid piece state')
         if kind == rc.LEADER and visibility is not None:
             raise ValueError('A37 Leader movement does not have a piece state')
-        normalized_moves.append({'from_region': origin, 'to_region': target,
-            'piece_type': kind, 'count': count, 'piece_state': visibility})
+        normalized_moves.append(dict(entry, from_region=origin, to_region=target,
+            piece_type=kind, count=count, piece_state=visibility))
 
-    # Validate cumulative counts and every placement before either mutations
-    # or modifier flags reach the live board. move_piece preserves identity
-    # and orientation without March costs, hiding, routes, or Harassment.
-    _apply(_clone(state), normalized_placements, normalized_moves, faction)
+    # Availability is evaluated after each timing window. The outer local
+    # transaction restores every prior effect if a later selection is invalid.
+    # A detached preflight would wrongly reject a pool that a live player can
+    # replenish, and must never consume their answers.
     _apply(state, normalized_placements, normalized_moves, faction)
     state.setdefault('event_modifiers', {})['card_A37_place_allies_move'] = {
         'region': destination, 'moves': normalized_moves}
@@ -209,43 +251,97 @@ def derive_params(state, faction, shaded):
 def collect_params(state, faction, shaded, stdin, stdout):
     """Typed, bounded selections stored in the ordinary replayable Event plan."""
     from fs_bot.cli.menus import prompt_choice
-    from fs_bot.cards.card_effects import _ally_tribe
+    from fs_bot.cli.action_windows import prepare, planning_copy, inspect_board
+    from fs_bot.cards.card_effects import _ally_tribe, _unally_tribe, _tribe_piece_type
+    stage, tail_actions = planning_copy(state), {}
+
+    def before(step, index):
+        nonlocal stage
+        stage, actions = prepare(stage, faction, stdin, stdout,
+                                 stage='event_step', step=step, index=index)
+        return actions
+
+    def finish(params):
+        if tail_actions:
+            params['stage_timing_actions'] = tail_actions
+        return params
+
     if shaded:
-        options, selected = removal_options(state), []
-        while options and len(selected) < 3:
-            choice = prompt_choice(stdin, stdout, 'A37: remove which Ally?',
-                [('Finish removing Allies', None)] + [(f'{t}: {f}', (t, f)) for t, f in options])
-            if choice is None:
+        original_options, selected = removal_options(state), []
+        while len(selected) < 3:
+            actions = before('A37.removals', len(selected))
+            options = [(t, f) for t, f in original_options
+                       if stage['tribes'][t].get('allied_faction') == f
+                       and _tribe_piece_type(stage, t) == rc.ALLY]
+            if not options:
+                if actions:
+                    tail_actions[f'A37.removals:{len(selected)}'] = actions
                 break
-            options.remove(choice)
-            selected.append({'tribe': choice[0], 'faction': choice[1]})
-        return {'removals': selected}
+            with inspect_board(stage, stdout):
+                choice = prompt_choice(stdin, stdout, 'A37: remove which Ally?',
+                    [('Finish removing Allies', None)] + [(f'{t}: {f}', (t, f)) for t, f in options])
+            if choice is None:
+                if actions:
+                    tail_actions[f'A37.removals:{len(selected)}'] = actions
+                break
+            entry = {'tribe': choice[0], 'faction': choice[1]}
+            if actions:
+                entry['timing_actions'] = actions
+            _unally_tribe(stage, choice[0])
+            selected.append(entry)
+        return finish({'removals': selected})
     if faction not in (rc.AEDUI, rc.ROMANS):
         return {}
     destination = prompt_choice(stdin, stdout, 'A37: select one Celtica Region near German Control:',
         [('Finish without placement or movement', None)] + [(r, r) for r in eligible_regions(state)])
     if destination is None:
         return {'ally_placements': [], 'moves': []}
-    stage, placements, moves = _clone(state), [], []
-    while options := ally_options(stage, destination):
-        choice = prompt_choice(stdin, stdout, f'A37: place an Ally in {destination}?',
-            [('Finish placing Allies', None)] + [(f'{t}: {f}', (t, f)) for t, f in options])
+    placements, moves = [], []
+    while True:
+        actions = before('A37.allies', len(placements))
+        placed_tribes = {entry['tribe'] for entry in placements}
+        options = [(tribe, owner) for tribe, owner in ally_options(stage, destination)
+                   if tribe not in placed_tribes]
+        if not options:
+            if actions:
+                tail_actions[f'A37.allies:{len(placements)}'] = actions
+            break
+        with inspect_board(stage, stdout):
+            choice = prompt_choice(stdin, stdout, f'A37: place an Ally in {destination}?',
+                [('Finish placing Allies', None)] + [(f'{t}: {f}', (t, f)) for t, f in options])
         if choice is None:
+            if actions:
+                tail_actions[f'A37.allies:{len(placements)}'] = actions
             break
         tribe, owner = choice
         _ally_tribe(stage, tribe, owner)
-        placements.append({'tribe': tribe, 'faction': owner})
-    while options := move_options(stage, faction, destination):
-        choice = prompt_choice(stdin, stdout, f'A37: move your pieces directly to {destination}?',
-            [('Finish moving pieces', None)] + [
-                (f'{origin}: {count} {visibility + " " if visibility else ""}{kind}',
-                 (origin, kind, visibility, count)) for origin, kind, visibility, count in options])
+        entry = {'tribe': tribe, 'faction': owner}
+        if actions:
+            entry['timing_actions'] = actions
+        placements.append(entry)
+    while True:
+        actions = before('A37.moves', len(moves))
+        options = move_options(stage, faction, destination)
+        if not options:
+            if actions:
+                tail_actions[f'A37.moves:{len(moves)}'] = actions
+            break
+        with inspect_board(stage, stdout):
+            choice = prompt_choice(stdin, stdout, f'A37: move your pieces directly to {destination}?',
+                [('Finish moving pieces', None)] + [
+                    (f'{origin}: {count} {visibility + " " if visibility else ""}{kind}',
+                     (origin, kind, visibility, count)) for origin, kind, visibility, count in options])
         if choice is None:
+            if actions:
+                tail_actions[f'A37.moves:{len(moves)}'] = actions
             break
         origin, kind, visibility, maximum = choice
         count = (1 if maximum == 1 else prompt_choice(stdin, stdout, 'How many pieces?',
                                                      [(str(n), n) for n in range(1, maximum + 1)]))
         move_piece(stage, origin, destination, faction, kind, count=count, piece_state=visibility)
-        moves.append({'from_region': origin, 'to_region': destination,
-                      'piece_type': kind, 'piece_state': visibility, 'count': count})
-    return {'target_region': destination, 'ally_placements': placements, 'moves': moves}
+        entry = {'from_region': origin, 'to_region': destination,
+                 'piece_type': kind, 'piece_state': visibility, 'count': count}
+        if actions:
+            entry['timing_actions'] = actions
+        moves.append(entry)
+    return finish({'target_region': destination, 'ally_placements': placements, 'moves': moves})

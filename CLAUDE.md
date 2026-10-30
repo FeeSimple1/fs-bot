@@ -16,9 +16,12 @@ PR-07 through PR-09 on 29 October 2026; apply
 those provisional decisions to their specified gaps, subject to possible
 later correction if an authoritative source is found. The
 [29 October Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md)
-tracks exact quantities, ordered placements and related source corrections. The
+tracks exact quantities, ordered placements and related source corrections.
+The [29 October action-timing report](docs/reviews/action-timing-2026-10-29.md)
+tracks the subsequent reclamation, mid-action Spring entry, same-Region
+Rally interruption, and exact participating-piece repairs. The
 [28 October Spring report](docs/reviews/spring-leaders-2026-10-28.md)
-tracks Leader placement repairs and the remaining mid-action entry gap;
+tracks Leader placement repairs and the then-remaining mid-action entry gap;
 the [27 October second-batch report](docs/reviews/second-batch-2026-10-27.md)
 records the preceding Event-choice repairs. The
 [23 October validation report](docs/reviews/outstanding-fixes-2026-10-23.md)

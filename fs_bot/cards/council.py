@@ -146,6 +146,8 @@ def _become_eligible(state, faction):
 
 
 def _resolve(state, executor, selection):
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "47.selection")
     if selection is None:
         params = state.get('event_params')
         if params is None:
@@ -167,6 +169,8 @@ def _resolve(state, executor, selection):
     selection = {'region': selection['region'], 'target_factions': targets}
     results = []
     for faction in targets:
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, "47.benefit")
         request = choice_request(state, faction, selection)
         response = consult_agent(state, faction, request)
         default = response is None or _sentinel(response, 'use_default')

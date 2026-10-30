@@ -39,7 +39,82 @@ from fs_bot.map.map_data import is_adjacent, get_adjacent
 from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
-def scout_move(state, movements):
+def clear_scout_cohorts(state):
+    from fs_bot import rules_consts as rc
+    from fs_bot.engine.action_windows import clear_cohorts
+    for owner in (ROMANS, rc.AEDUI):
+        clear_cohorts(state, f'scout:{owner}')
+
+
+def scout_moved_count(state, region, visibility, owner=None):
+    from fs_bot import rules_consts as rc
+    from fs_bot.engine.action_windows import get_cohorts
+    owners = (owner,) if owner is not None else (ROMANS, rc.AEDUI)
+    return sum(c['count'] for faction in owners
+               for c in get_cohorts(state, f'scout:{faction}')
+               if c['region'] == region and c.get('piece_state') == visibility)
+
+
+def scout_movement_step(state, move, *, index=0):
+    """One Scout move, reserving the exact pieces that have already moved."""
+    from fs_bot import rules_consts as rc
+    from fs_bot.engine.action_windows import window, get_cohorts, set_cohorts
+    from fs_bot.engine.diviciacus import KEY, choose_owners, validate_response
+    origin, target = move['from_region'], move['to_region']
+    count, visibility = move['count'], move['piece_state']
+    window(state, 'scout_move', author=ROMANS, index=index,
+           from_region=origin, to_region=target,
+           timing_actions=move.get('timing_actions'))
+    if type(count) is not int or count < 1 or visibility not in (HIDDEN, REVEALED):
+        raise CommandError('Scout needs a positive count of Hidden or Revealed Auxilia')
+    if origin == BRITANNIA or target == BRITANNIA:
+        raise CommandError('Scout movement cannot move into or out of Britannia (§4.1.3)')
+    if not is_adjacent(origin, target):
+        raise CommandError(f'{origin} and {target} are not adjacent')
+    context = state.get(KEY, {})
+    borrowed = (context.get('faction') == ROMANS
+                and origin in context.get('pieces', {}))
+    raw = state['spaces'][origin].get('pieces', {})
+    available = {ROMANS: raw.get(ROMANS, {}).get(visibility, {}).get(AUXILIA, 0)
+                 - scout_moved_count(state, origin, visibility, ROMANS)}
+    if borrowed:
+        available[rc.AEDUI] = (context['pieces'][origin].get(visibility, 0)
+                              - scout_moved_count(state, origin, visibility, rc.AEDUI))
+    if min(available.values()) < 0 or sum(available.values()) < count:
+        raise CommandError(f'Not enough unmoved {visibility} Auxilia in {origin}; '
+                           'no Scout piece may move twice (§4.2.2)')
+    selected = move.get('physical_owners')
+    if selected is not None:
+        try:
+            validate_response({'available': available, 'count': count}, {'counts': selected})
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
+        allocation = selected
+    elif borrowed:
+        allocation = choose_owners(state, ROMANS, origin, count, available, 'scout_movement')
+    else:
+        allocation = {ROMANS: count}
+    for owner, amount in allocation.items():
+        if not amount:
+            continue
+        move_piece(state, origin, target, ROMANS, AUXILIA, count=amount,
+                   piece_state=visibility, physical_owner=owner if borrowed else None)
+        ledger = get_cohorts(state, f'scout:{owner}')
+        identifier = f'scout:{owner}:{target}:{visibility}'
+        item = next((c for c in ledger if c['id'] == identifier), None)
+        if item is None:
+            item = {'id': identifier, 'label': 'Already moved by Scout',
+                    'region': target, 'piece_type': AUXILIA if owner == ROMANS else WARBAND,
+                    'piece_state': visibility, 'count': 0}
+            if owner != ROMANS:
+                item['loan_kind'] = 'diviciacus'
+            ledger.append(item)
+        item['count'] += amount
+        set_cohorts(state, f'scout:{owner}', owner, ledger)
+    return (origin, target, count, visibility)
+
+
+def scout_move(state, movements, *, after_movements=None):
     """Execute Scout movement — move Auxilia to adjacent Regions.
 
     §4.2.2: "Move Auxilia as desired from any Regions to adjacent Regions,
@@ -63,46 +138,28 @@ def scout_move(state, movements):
     Raises:
         CommandError: If movement violates rules.
     """
-    result = {"moved": []}
-    total_moved = 0
-
-    for move in movements:
-        from_region = move["from_region"]
-        to_region = move["to_region"]
-        count = move["count"]
-        piece_state = move["piece_state"]
-
-        # §4.1.3: "No Special Ability may accompany March into or out of
-        # Britannia"
-        if from_region == BRITANNIA or to_region == BRITANNIA:
-            raise CommandError(
-                "Scout movement cannot move into or out of Britannia (§4.1.3)"
-            )
-
-        # Must be adjacent
-        if not is_adjacent(from_region, to_region):
-            raise CommandError(
-                f"{from_region} and {to_region} are not adjacent"
-            )
-
-        # Must have Auxilia in the from_region
-        available = count_pieces_by_state(
-            state, from_region, ROMANS, AUXILIA, piece_state
-        )
-        if available < count:
-            raise CommandError(
-                f"Only {available} {piece_state} Auxilia in {from_region}, "
-                f"need {count}"
-            )
-
-        # Execute movement — pieces keep their state
-        move_piece(state, from_region, to_region, ROMANS, AUXILIA,
-                   count=count, piece_state=piece_state)
-
-        result["moved"].append((from_region, to_region, count, piece_state))
-        total_moved += count
-
-    return result
+    from copy import deepcopy
+    saved = deepcopy({key: value for key, value in state.items()
+                      if key not in ('decision_agent', '_card_turn')})
+    agent, card_turn = state.get('decision_agent'), state.get('_card_turn')
+    clear_scout_cohorts(state)
+    try:
+        result = {'moved': [scout_movement_step(state, move, index=index)
+                           for index, move in enumerate(movements)]}
+        from fs_bot.engine.action_windows import window
+        window(state, 'scout_movement_complete', author=ROMANS,
+               timing_actions=after_movements)
+        return result
+    except BaseException:
+        state.clear()
+        state.update(saved)
+        if agent is not None:
+            state['decision_agent'] = agent
+        if card_turn is not None:
+            state['_card_turn'] = card_turn
+        raise
+    finally:
+        clear_scout_cohorts(state)
 
 
 def scout_reveal(state, region, auxilia_count, targets):

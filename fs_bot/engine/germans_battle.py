@@ -30,6 +30,7 @@ from fs_bot.board.control import refresh_all_control
 from fs_bot.battle.losses import calculate_losses
 from fs_bot.battle.resolve import resolve_battle
 from fs_bot.commands.common import CommandError
+from fs_bot.engine import action_windows
 
 
 def _count_hidden_pieces(state, region, faction):
@@ -103,6 +104,12 @@ def _get_battle_candidates(state, region):
 
 
 def germans_phase_battle(state):
+    """Run the game procedure with optional human timing windows."""
+    with action_windows.scope(state, phase='germans_battle'):
+        return _germans_phase_battle(state)
+
+
+def _germans_phase_battle(state):
     """Execute Germans Phase Battle with Ambush — §6.2.4.
 
     Battle with Ambush in each region where the Germans currently are able
@@ -132,6 +139,7 @@ def germans_phase_battle(state):
     }
     rng = state["rng"]
 
+    action_windows.window(state, 'germans_battle_setup')
     # Find all regions with valid battle candidates
     battle_regions = []
     for region in state["spaces"]:
@@ -141,8 +149,21 @@ def germans_phase_battle(state):
 
     # Choose order of Battles randomly — §6.2.4
     rng.shuffle(battle_regions)
+    scheduled_regions = set(battle_regions)
+
+    def include_new_regions():
+        # A newly entering Leader can supply an enemy where none existed
+        # when the original order was chosen. Completed Regions stay done.
+        added = [r for r in state['spaces'] if r not in scheduled_regions
+                 and _get_battle_candidates(state, r)]
+        if added:
+            rng.shuffle(added)
+            battle_regions.extend(added)
+            scheduled_regions.update(added)
 
     for region in battle_regions:
+        action_windows.window(state, 'germans_battle_region', region=region)
+        include_new_regions()
         # Re-evaluate candidates (state may have changed from prior battles)
         candidates = _get_battle_candidates(state, region)
         if not candidates:
@@ -155,6 +176,7 @@ def germans_phase_battle(state):
         np_candidates = [
             (f, ip) for f, ip in candidates if not ip
         ]
+        scheduled_targets = {f for f, _ in candidates}
 
         # Process players first, then non-players
         for candidate_group in [player_candidates, np_candidates]:
@@ -164,7 +186,19 @@ def germans_phase_battle(state):
             factions_in_group = [f for f, _ in candidate_group]
             rng.shuffle(factions_in_group)
 
-            for defending_faction in factions_in_group:
+            for index, defending_faction in enumerate(factions_in_group):
+                action_windows.window(state, 'germans_battle_target', region=region,
+                                      defender=defending_faction)
+                def include_new_target():
+                    # Spring entry is the only addition at this window.
+                    # Keep the selected battle, then give the newly present
+                    # human target priority over subsequent NP targets.
+                    if (ARVERNI not in scheduled_targets
+                            and any(f == ARVERNI for f, _ in
+                                    _get_battle_candidates(state, region))):
+                        factions_in_group.insert(index + 1, ARVERNI)
+                        scheduled_targets.add(ARVERNI)
+                include_new_target()
                 # Re-verify this battle is still valid
                 german_hidden = _count_hidden_pieces(state, region, GERMANS)
                 if german_hidden == 0:
@@ -193,6 +227,9 @@ def germans_phase_battle(state):
                 })
                 if region not in result["regions"]:
                     result["regions"].append(region)
+                include_new_target()
+
+        include_new_regions()
 
     refresh_all_control(state)
     return result

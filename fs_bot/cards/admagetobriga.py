@@ -176,6 +176,8 @@ def _agreement(state, faction, owner, region, target):
 
 def resolve_admagetobriga(state, faction):
     from fs_bot.engine.execute import _execute_battle, _attacker_has_force
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "A28.selection")
     params = state.get('event_params') or {}
     plan = params.get('battle_plan')
     if plan is None and params.get('region') is not None:
@@ -185,6 +187,8 @@ def resolve_admagetobriga(state, faction):
     plan = _validate_plan(state, faction, plan)
     owners_by_region, agreements, unresolved = {}, [], []
     for entry in plan:
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, "A28.agreements")
         region, target = entry['region'], entry['target']
         owners = _automatic_owners(faction)
         lenders = entry['allied_factions']

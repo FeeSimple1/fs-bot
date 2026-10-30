@@ -574,6 +574,10 @@ def _resolve_one_harassment_loss(state, region, marching_faction,
     applies the same procedure to Vercingetorix's Warbands and Leader.
     Only this function updates the carried group as well as the board.
     """
+    from fs_bot.engine.march_timing import window as group_window
+    group_window(state, marching_faction, region, departing_pieces,
+                 'march_harassment_loss', harasser=harasser,
+                 loss_index=loss_index, num_losses=num_losses)
     soft_target = AUXILIA if marching_faction == ROMANS else WARBAND
     hard_targets = []
     if departing_pieces.get(LEGION, 0) > 0:
@@ -596,12 +600,22 @@ def _resolve_one_harassment_loss(state, region, marching_faction,
         visibility = choose_harassment_piece_state(
             state, region, marching_faction, soft_target, context,
             available_by_state=carried)
-        departing_pieces[soft_target] -= 1
-        if carried is not None:
-            carried[visibility] -= 1
         from fs_bot.engine.diviciacus import march_casualty_owner
         owner = march_casualty_owner(state, marching_faction, region,
                                      departing_pieces, visibility)
+        enlisted = departing_pieces.get('_march_owner_visibility')
+        if owner is None and enlisted is not None and soft_target == WARBAND:
+            owners = [f for f in (GERMANS, BELGAE)
+                      if enlisted.get(f, {}).get(visibility, 0)]
+            owner = choose_harassment_loss(state, marching_faction, dict(
+                context, phase='physical_owner', options=owners,
+                piece_type=soft_target, piece_state=visibility))
+            enlisted[owner][visibility] -= 1
+            if owner == GERMANS:
+                departing_pieces['german_warbands'] -= 1
+        departing_pieces[soft_target] -= 1
+        if carried is not None:
+            carried[visibility] -= 1
         remove_piece(state, region, marching_faction, soft_target, 1,
                      piece_state=visibility, physical_owner=owner)
         return (soft_target, 1, None)
@@ -625,7 +639,7 @@ def _resolve_one_harassment_loss(state, region, marching_faction,
 # ============================================================================
 
 def march_group(state, faction, origin, destinations, group, *,
-                free=False):
+                free=False, _timing_managed=False):
     """Execute a March for a single group from origin through destinations.
 
     This moves the specified pieces step by step. It checks crossing stops
@@ -694,6 +708,15 @@ def march_group(state, faction, origin, destinations, group, *,
     current_region = origin
 
     for step_index, dest in enumerate(destinations):
+        if not _timing_managed:
+            from fs_bot.engine.march_timing import window as group_window
+            group_window(state, faction, current_region, group, 'march_before_step',
+                         origin=origin, destination=dest, step=step_index + 1)
+            if (group.get(LEADER) is None
+                    and not any(n > 0 for _, n in _iter_group_pieces(group))):
+                break
+            if step_index >= _max_steps_for_group(state, current_region, faction, group):
+                break
         # If this is not the first step, the current region was entered
         # on a prior step and is now being left — it was passed through.
         # The origin is never passed through (the group started there).
@@ -720,6 +743,9 @@ def march_group(state, faction, origin, destinations, group, *,
         prev_region = current_region
         current_region = dest
         result["path"].append(current_region)
+        if not _timing_managed:
+            group_window(state, faction, current_region, group, 'march_arrival',
+                         origin=origin, step=step_index + 1)
 
         if stops:
             result["stopped_reason"] = reason
@@ -855,11 +881,13 @@ def _move_group_to(state, from_region, to_region, faction, group):
             from fs_bot.rules_consts import BELGAE
             german = group["german_warbands"]
             moved = {}
+            owner_visibility = group.setdefault('_march_owner_visibility', {})
             for owner, n in ((GERMANS, german), (BELGAE, warband_count - german)):
                 if n:
                     counts = _move_flippable_preserving_state(state, from_region, to_region,
                         faction, WARBAND, n, physical_owner=owner,
-                        visibility=group.get("_march_owner_visibility", {}).get(owner))
+                        visibility=owner_visibility.get(owner))
+                    owner_visibility[owner] = counts
                     for ps, count in counts.items():
                         moved[ps] = moved.get(ps, 0) + count
             visibility[WARBAND] = moved

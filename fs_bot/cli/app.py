@@ -397,6 +397,7 @@ def main(argv=None, stdin=None, stdout=None):
         e for e in log if "reactive" in e) if args.replay else deque()
     live_log = list(log)
     replay_attempt = {"entry": None}
+    timing_replay = {"legacy": False}
 
     # Decision callback (bots via flowcharts, humans via menus), wrapped to
     # feed/record the replay log.
@@ -419,6 +420,7 @@ def main(argv=None, stdin=None, stdout=None):
                     and e.get("card") == state_.get("current_card")):
                 replay_decisions.popleft()
                 replay_attempt["entry"] = e
+                timing_replay["legacy"] = not e.get("action_windows_version")
                 stdout.write(f"[replay] {faction}: {e.get('action')}\n")
                 d = {"action": e.get("action")}
                 if e.get("player_action") is not None:
@@ -431,7 +433,8 @@ def main(argv=None, stdin=None, stdout=None):
         d = base_decision(state_, faction, options, position)
         if faction_modes.get(faction) == "human":
             entry = {"card": state_.get("current_card"), "faction": faction,
-                     "position": position, "action": d.get("action")}
+                     "position": position, "action": d.get("action"),
+                     "action_windows_version": 1}
             if d.get("player_action") is not None:
                 entry["player_action"] = d["player_action"]
             live_log.append(entry)
@@ -448,16 +451,26 @@ def main(argv=None, stdin=None, stdout=None):
             # the live game, or alter its decision display/history.
             if state_ is not state:
                 return None
+            if request.get('kind') in ('voluntary_removal', 'spring_leader', 'battle_elite') and 'window' in request:
+                next_record = replay_reactive[0] if replay_reactive else None
+                old_next = (next_record is not None
+                            and next_record.get('card') == state_.get('current_card')
+                            and not next_record.get('action_windows_version'))
+                if timing_replay['legacy'] or old_next:
+                    return None
             if faction in humans:
                 view.before_decision(state_, faction)
             if faction in humans and replay_reactive:
                 e = replay_reactive[0]
                 if (e.get("faction") == faction
-                        and e.get("reactive") == request.get("kind")):
+                        and e.get("reactive") == request.get("kind")
+                        and e.get('window') == request.get('window')):
                     replay_reactive.popleft()
+                    timing_replay['legacy'] = not e.get('action_windows_version')
                     return serialize.decode(e.get("response"))
                 replay_reactive.clear()
                 replay_decisions.clear()
+                timing_replay['legacy'] = False
             resp = cli_agent(state_, faction, request)
             if faction in humans:
                 # Explicit defaults are decisions too: omitting None desyncs
@@ -465,13 +478,18 @@ def main(argv=None, stdin=None, stdout=None):
                 live_log.append({"reactive": request.get("kind"),
                                  "faction": faction,
                                  "card": state_.get("current_card"),
+                                 "action_windows_version": 1,
+                                 **({'window': copy.deepcopy(request['window'])}
+                                    if 'window' in request else {}),
                                  "response": serialize.encode(resp)})
             return resp
 
+        agent.supports_action_windows = True
         state["decision_agent"] = agent
 
     def transaction_checkpoint():
         replay_attempt["entry"] = None
+        timing_replay['legacy'] = False
         return (len(live_log), list(replay_decisions), list(replay_reactive),
                 copy.deepcopy(view.snapshots))
 

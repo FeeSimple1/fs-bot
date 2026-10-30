@@ -1,0 +1,1611 @@
+{
+  "accepted_attempt": "attempt2",
+  "attempt": "attempt2",
+  "balance": {
+    "band_percentage_points": 15,
+    "baseline_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+    "baseline_updated": true,
+    "breaches": [],
+    "changed_card_count_count": 0,
+    "changed_record_count": 0,
+    "changed_records": [],
+    "changed_winner_count": 0,
+    "changed_winners": [],
+    "exact_band": "3/20",
+    "exact_records_match": true,
+    "extra_balance_games": 0,
+    "maximum_absolute_drift": "0",
+    "passed": true,
+    "same_audited_legacy_games_reused": true,
+    "scenarios": {
+      "Ariovistus": {
+        "after": {
+          "Aedui": 1,
+          "Belgae": 4,
+          "Germans": 7,
+          "Romans": 8
+        },
+        "before": {
+          "Aedui": 1,
+          "Belgae": 4,
+          "Germans": 7,
+          "Romans": 8
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "Pax Gallica?": {
+        "after": {
+          "Aedui": 5,
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 11
+        },
+        "before": {
+          "Aedui": 5,
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 11
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "Reconquest of Gaul": {
+        "after": {
+          "Aedui": 5,
+          "Belgae": 5,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 5,
+          "Belgae": 5,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "The Gallic War": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 2,
+          "Belgae": 6,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 2,
+          "Arverni": 2,
+          "Belgae": 6,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "The Great Revolt": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 9,
+          "Belgae": 3,
+          "Romans": 6
+        },
+        "before": {
+          "Aedui": 2,
+          "Arverni": 9,
+          "Belgae": 3,
+          "Romans": 6
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      }
+    }
+  },
+  "balance_policy": "reviewed-correction",
+  "baseline_review_identity": {
+    "active_baseline_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+    "causal_review_sha256": "cf38d60e042f4f6ad1ccf0b307a2f7761e91cc3a7fd0244fd02e6bec0a88f231",
+    "diagnostic_games_sha256": "3ae992e5f9b03c71e2ce2aa44308945391e3ee5dabd148677adf8afc0a901980",
+    "original_baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+    "source_sha256": "c24adb23c9018071ed948e295a96fc4b17649e35fecabd985e77dedbfa32fcc5"
+  },
+  "bot_batches": {
+    "legacy": {
+      "accepted": 100,
+      "games": 100,
+      "interlude_completed": 12,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Aedui": 1,
+          "Belgae": 4,
+          "Germans": 7,
+          "Romans": 8
+        },
+        "Pax Gallica?": {
+          "Aedui": 5,
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 11
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 5,
+          "Belgae": 5,
+          "Romans": 10
+        },
+        "The Gallic War": {
+          "Aedui": 2,
+          "Arverni": 2,
+          "Belgae": 6,
+          "Romans": 10
+        },
+        "The Great Revolt": {
+          "Aedui": 2,
+          "Arverni": 9,
+          "Belgae": 3,
+          "Romans": 6
+        }
+      }
+    },
+    "original": {
+      "accepted": 25,
+      "games": 25,
+      "interlude_completed": 4,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Aedui": 1,
+          "Belgae": 2,
+          "Romans": 2
+        },
+        "Pax Gallica?": {
+          "Aedui": 2,
+          "Belgae": 1,
+          "Romans": 2
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 2,
+          "Belgae": 2,
+          "Romans": 1
+        },
+        "The Gallic War": {
+          "Arverni": 1,
+          "Belgae": 4
+        },
+        "The Great Revolt": {
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 1
+        }
+      }
+    },
+    "second-edition": {
+      "accepted": 25,
+      "games": 25,
+      "interlude_completed": 4,
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      "winner_counts": {
+        "Ariovistus": {
+          "Aedui": 1,
+          "Belgae": 2,
+          "Romans": 2
+        },
+        "Pax Gallica?": {
+          "Aedui": 1,
+          "Belgae": 2,
+          "Romans": 2
+        },
+        "Reconquest of Gaul": {
+          "Aedui": 2,
+          "Arverni": 1,
+          "Belgae": 1,
+          "Romans": 1
+        },
+        "The Gallic War": {
+          "Belgae": 5
+        },
+        "The Great Revolt": {
+          "Aedui": 1,
+          "Arverni": 2,
+          "Belgae": 1,
+          "Romans": 1
+        }
+      }
+    }
+  },
+  "checks": 6009,
+  "failures": [],
+  "fixtures": {
+    "files": 9,
+    "frozen_bytes_verified": true
+  },
+  "mixed_seats": {
+    "batch_digest": "999e196a4faadd2bddf4255fe5d8c8a3dc9c26a4d2b03ad696b6b41b201fa7b9",
+    "cross_hash_equal": true,
+    "executions_including_replay": 80,
+    "hard_findings": 0,
+    "hash_seeds": [
+      0,
+      7
+    ],
+    "limitation": "Rejected random plans are disclosed separately; completion is not complete human-choice coverage.",
+    "partial": 0,
+    "rejected_random_plans_per_hash": 14,
+    "unique_cases": 20
+  },
+  "original_balance": {
+    "band_percentage_points": 15,
+    "baseline_sha256": "815b6f363134159b4cf5772abd4dc76a5e8e0be8fd0bb852dc571390504814f5",
+    "baseline_updated": false,
+    "breaches": [
+      {
+        "exact_change": "1/5",
+        "faction": "Belgae",
+        "scenario": "Reconquest of Gaul"
+      }
+    ],
+    "changed_card_count_count": 49,
+    "changed_record_count": 69,
+    "changed_records": [
+      {
+        "after": {
+          "cards": 46,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 46,
+          "winner": "Romans"
+        },
+        "key": "Ariovistus|1"
+      },
+      {
+        "after": {
+          "cards": 47,
+          "winner": "Germans"
+        },
+        "before": {
+          "cards": 47,
+          "winner": "Aedui"
+        },
+        "key": "Ariovistus|10"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Germans"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "key": "Ariovistus|13"
+      },
+      {
+        "after": {
+          "cards": 31,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 47,
+          "winner": "Belgae"
+        },
+        "key": "Ariovistus|15"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 30,
+          "winner": "Romans"
+        },
+        "key": "Ariovistus|16"
+      },
+      {
+        "after": {
+          "cards": 47,
+          "winner": "Germans"
+        },
+        "before": {
+          "cards": 12,
+          "winner": "Romans"
+        },
+        "key": "Ariovistus|17"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Germans"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Belgae"
+        },
+        "key": "Ariovistus|18"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 14,
+          "winner": "Romans"
+        },
+        "key": "Ariovistus|2"
+      },
+      {
+        "after": {
+          "cards": 45,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 45,
+          "winner": "Germans"
+        },
+        "key": "Ariovistus|3"
+      },
+      {
+        "after": {
+          "cards": 32,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 45,
+          "winner": "Romans"
+        },
+        "key": "Ariovistus|4"
+      },
+      {
+        "after": {
+          "cards": 30,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 46,
+          "winner": "Germans"
+        },
+        "key": "Ariovistus|5"
+      },
+      {
+        "after": {
+          "cards": 15,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Aedui"
+        },
+        "key": "Ariovistus|6"
+      },
+      {
+        "after": {
+          "cards": 47,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 11,
+          "winner": "Romans"
+        },
+        "key": "Ariovistus|7"
+      },
+      {
+        "after": {
+          "cards": 46,
+          "winner": "Germans"
+        },
+        "before": {
+          "cards": 46,
+          "winner": "Aedui"
+        },
+        "key": "Ariovistus|8"
+      },
+      {
+        "after": {
+          "cards": 74,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 24,
+          "winner": "Romans"
+        },
+        "key": "Pax Gallica?|11"
+      },
+      {
+        "after": {
+          "cards": 38,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 27,
+          "winner": "Romans"
+        },
+        "key": "Pax Gallica?|13"
+      },
+      {
+        "after": {
+          "cards": 26,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 73,
+          "winner": "Belgae"
+        },
+        "key": "Pax Gallica?|14"
+      },
+      {
+        "after": {
+          "cards": 54,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 26,
+          "winner": "Romans"
+        },
+        "key": "Pax Gallica?|15"
+      },
+      {
+        "after": {
+          "cards": 38,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 38,
+          "winner": "Aedui"
+        },
+        "key": "Pax Gallica?|16"
+      },
+      {
+        "after": {
+          "cards": 72,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 26,
+          "winner": "Romans"
+        },
+        "key": "Pax Gallica?|17"
+      },
+      {
+        "after": {
+          "cards": 40,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 70,
+          "winner": "Belgae"
+        },
+        "key": "Pax Gallica?|19"
+      },
+      {
+        "after": {
+          "cards": 72,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 25,
+          "winner": "Romans"
+        },
+        "key": "Pax Gallica?|2"
+      },
+      {
+        "after": {
+          "cards": 38,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 71,
+          "winner": "Romans"
+        },
+        "key": "Pax Gallica?|20"
+      },
+      {
+        "after": {
+          "cards": 40,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 58,
+          "winner": "Belgae"
+        },
+        "key": "Pax Gallica?|3"
+      },
+      {
+        "after": {
+          "cards": 40,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 56,
+          "winner": "Belgae"
+        },
+        "key": "Pax Gallica?|4"
+      },
+      {
+        "after": {
+          "cards": 26,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 41,
+          "winner": "Romans"
+        },
+        "key": "Pax Gallica?|8"
+      },
+      {
+        "after": {
+          "cards": 13,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 13,
+          "winner": "Aedui"
+        },
+        "key": "Reconquest of Gaul|1"
+      },
+      {
+        "after": {
+          "cards": 47,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 62,
+          "winner": "Aedui"
+        },
+        "key": "Reconquest of Gaul|10"
+      },
+      {
+        "after": {
+          "cards": 63,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 47,
+          "winner": "Arverni"
+        },
+        "key": "Reconquest of Gaul|11"
+      },
+      {
+        "after": {
+          "cards": 27,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "key": "Reconquest of Gaul|12"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 32,
+          "winner": "Romans"
+        },
+        "key": "Reconquest of Gaul|13"
+      },
+      {
+        "after": {
+          "cards": 31,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 47,
+          "winner": "Aedui"
+        },
+        "key": "Reconquest of Gaul|15"
+      },
+      {
+        "after": {
+          "cards": 31,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 12,
+          "winner": "Aedui"
+        },
+        "key": "Reconquest of Gaul|17"
+      },
+      {
+        "after": {
+          "cards": 14,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 31,
+          "winner": "Romans"
+        },
+        "key": "Reconquest of Gaul|19"
+      },
+      {
+        "after": {
+          "cards": 30,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 14,
+          "winner": "Romans"
+        },
+        "key": "Reconquest of Gaul|2"
+      },
+      {
+        "after": {
+          "cards": 45,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 16,
+          "winner": "Romans"
+        },
+        "key": "Reconquest of Gaul|3"
+      },
+      {
+        "after": {
+          "cards": 32,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 15,
+          "winner": "Romans"
+        },
+        "key": "Reconquest of Gaul|4"
+      },
+      {
+        "after": {
+          "cards": 30,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 61,
+          "winner": "Romans"
+        },
+        "key": "Reconquest of Gaul|5"
+      },
+      {
+        "after": {
+          "cards": 62,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 62,
+          "winner": "Belgae"
+        },
+        "key": "Reconquest of Gaul|7"
+      },
+      {
+        "after": {
+          "cards": 63,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 46,
+          "winner": "Romans"
+        },
+        "key": "Reconquest of Gaul|8"
+      },
+      {
+        "after": {
+          "cards": 102,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 101,
+          "winner": "Romans"
+        },
+        "key": "The Gallic War|1"
+      },
+      {
+        "after": {
+          "cards": 106,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 69,
+          "winner": "Belgae"
+        },
+        "key": "The Gallic War|10"
+      },
+      {
+        "after": {
+          "cards": 98,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 66,
+          "winner": "Romans"
+        },
+        "key": "The Gallic War|12"
+      },
+      {
+        "after": {
+          "cards": 65,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 98,
+          "winner": "Belgae"
+        },
+        "key": "The Gallic War|13"
+      },
+      {
+        "after": {
+          "cards": 105,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 100,
+          "winner": "Aedui"
+        },
+        "key": "The Gallic War|14"
+      },
+      {
+        "after": {
+          "cards": 31,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 72,
+          "winner": "Belgae"
+        },
+        "key": "The Gallic War|15"
+      },
+      {
+        "after": {
+          "cards": 67,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 30,
+          "winner": "Romans"
+        },
+        "key": "The Gallic War|16"
+      },
+      {
+        "after": {
+          "cards": 105,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 12,
+          "winner": "Romans"
+        },
+        "key": "The Gallic War|17"
+      },
+      {
+        "after": {
+          "cards": 84,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 99,
+          "winner": "Belgae"
+        },
+        "key": "The Gallic War|18"
+      },
+      {
+        "after": {
+          "cards": 68,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 14,
+          "winner": "Romans"
+        },
+        "key": "The Gallic War|2"
+      },
+      {
+        "after": {
+          "cards": 101,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 70,
+          "winner": "Belgae"
+        },
+        "key": "The Gallic War|20"
+      },
+      {
+        "after": {
+          "cards": 84,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 101,
+          "winner": "Aedui"
+        },
+        "key": "The Gallic War|3"
+      },
+      {
+        "after": {
+          "cards": 32,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 99,
+          "winner": "Belgae"
+        },
+        "key": "The Gallic War|4"
+      },
+      {
+        "after": {
+          "cards": 30,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 70,
+          "winner": "Belgae"
+        },
+        "key": "The Gallic War|5"
+      },
+      {
+        "after": {
+          "cards": 15,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 66,
+          "winner": "Romans"
+        },
+        "key": "The Gallic War|6"
+      },
+      {
+        "after": {
+          "cards": 47,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 11,
+          "winner": "Romans"
+        },
+        "key": "The Gallic War|7"
+      },
+      {
+        "after": {
+          "cards": 88,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 86,
+          "winner": "Romans"
+        },
+        "key": "The Gallic War|8"
+      },
+      {
+        "after": {
+          "cards": 47,
+          "winner": "Belgae"
+        },
+        "before": {
+          "cards": 47,
+          "winner": "Arverni"
+        },
+        "key": "The Great Revolt|10"
+      },
+      {
+        "after": {
+          "cards": 47,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 47,
+          "winner": "Arverni"
+        },
+        "key": "The Great Revolt|11"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Aedui"
+        },
+        "key": "The Great Revolt|12"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Aedui"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Arverni"
+        },
+        "key": "The Great Revolt|13"
+      },
+      {
+        "after": {
+          "cards": 46,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 46,
+          "winner": "Aedui"
+        },
+        "key": "The Great Revolt|14"
+      },
+      {
+        "after": {
+          "cards": 47,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 47,
+          "winner": "Aedui"
+        },
+        "key": "The Great Revolt|15"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Belgae"
+        },
+        "key": "The Great Revolt|16"
+      },
+      {
+        "after": {
+          "cards": 45,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 45,
+          "winner": "Aedui"
+        },
+        "key": "The Great Revolt|19"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "key": "The Great Revolt|2"
+      },
+      {
+        "after": {
+          "cards": 45,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 45,
+          "winner": "Aedui"
+        },
+        "key": "The Great Revolt|3"
+      },
+      {
+        "after": {
+          "cards": 43,
+          "winner": "Arverni"
+        },
+        "before": {
+          "cards": 43,
+          "winner": "Romans"
+        },
+        "key": "The Great Revolt|6"
+      },
+      {
+        "after": {
+          "cards": 46,
+          "winner": "Romans"
+        },
+        "before": {
+          "cards": 31,
+          "winner": "Belgae"
+        },
+        "key": "The Great Revolt|8"
+      }
+    ],
+    "changed_winner_count": 55,
+    "changed_winners": [
+      "Pax Gallica?|2",
+      "Pax Gallica?|3",
+      "Pax Gallica?|4",
+      "Pax Gallica?|11",
+      "Pax Gallica?|14",
+      "Pax Gallica?|15",
+      "Pax Gallica?|16",
+      "Pax Gallica?|19",
+      "Reconquest of Gaul|1",
+      "Reconquest of Gaul|2",
+      "Reconquest of Gaul|3",
+      "Reconquest of Gaul|4",
+      "Reconquest of Gaul|7",
+      "Reconquest of Gaul|8",
+      "Reconquest of Gaul|10",
+      "Reconquest of Gaul|11",
+      "Reconquest of Gaul|13",
+      "Reconquest of Gaul|15",
+      "The Great Revolt|2",
+      "The Great Revolt|3",
+      "The Great Revolt|6",
+      "The Great Revolt|8",
+      "The Great Revolt|10",
+      "The Great Revolt|11",
+      "The Great Revolt|12",
+      "The Great Revolt|13",
+      "The Great Revolt|14",
+      "The Great Revolt|15",
+      "The Great Revolt|16",
+      "The Great Revolt|19",
+      "Ariovistus|1",
+      "Ariovistus|2",
+      "Ariovistus|3",
+      "Ariovistus|5",
+      "Ariovistus|6",
+      "Ariovistus|7",
+      "Ariovistus|8",
+      "Ariovistus|10",
+      "Ariovistus|13",
+      "Ariovistus|15",
+      "Ariovistus|17",
+      "Ariovistus|18",
+      "The Gallic War|1",
+      "The Gallic War|2",
+      "The Gallic War|3",
+      "The Gallic War|4",
+      "The Gallic War|5",
+      "The Gallic War|8",
+      "The Gallic War|10",
+      "The Gallic War|14",
+      "The Gallic War|15",
+      "The Gallic War|16",
+      "The Gallic War|17",
+      "The Gallic War|18",
+      "The Gallic War|20"
+    ],
+    "exact_band": "3/20",
+    "exact_records_match": false,
+    "extra_balance_games": 0,
+    "maximum_absolute_drift": "1/5",
+    "passed": false,
+    "same_audited_legacy_games_reused": true,
+    "scenarios": {
+      "Ariovistus": {
+        "after": {
+          "Aedui": 1,
+          "Belgae": 4,
+          "Germans": 7,
+          "Romans": 8
+        },
+        "before": {
+          "Aedui": 3,
+          "Belgae": 3,
+          "Germans": 4,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          8,
+          10,
+          13,
+          15,
+          17,
+          18
+        ],
+        "exact_rate_change": {
+          "Aedui": "-1/10",
+          "Arverni": "0",
+          "Belgae": "1/20",
+          "Germans": "3/20",
+          "Romans": "-1/10"
+        },
+        "percentage_point_change": {
+          "Aedui": -10.0,
+          "Arverni": 0.0,
+          "Belgae": 5.0,
+          "Germans": 15.0,
+          "Romans": -10.0
+        }
+      },
+      "Pax Gallica?": {
+        "after": {
+          "Aedui": 5,
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 11
+        },
+        "before": {
+          "Aedui": 3,
+          "Belgae": 4,
+          "Romans": 13
+        },
+        "changed_winner_seeds": [
+          2,
+          3,
+          4,
+          11,
+          14,
+          15,
+          16,
+          19
+        ],
+        "exact_rate_change": {
+          "Aedui": "1/10",
+          "Arverni": "1/10",
+          "Belgae": "-1/10",
+          "Germans": "0",
+          "Romans": "-1/10"
+        },
+        "percentage_point_change": {
+          "Aedui": 10.0,
+          "Arverni": 10.0,
+          "Belgae": -10.0,
+          "Germans": 0.0,
+          "Romans": -10.0
+        }
+      },
+      "Reconquest of Gaul": {
+        "after": {
+          "Aedui": 5,
+          "Belgae": 5,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 6,
+          "Arverni": 1,
+          "Belgae": 1,
+          "Romans": 12
+        },
+        "changed_winner_seeds": [
+          1,
+          2,
+          3,
+          4,
+          7,
+          8,
+          10,
+          11,
+          13,
+          15
+        ],
+        "exact_rate_change": {
+          "Aedui": "-1/20",
+          "Arverni": "-1/20",
+          "Belgae": "1/5",
+          "Germans": "0",
+          "Romans": "-1/10"
+        },
+        "percentage_point_change": {
+          "Aedui": -5.0,
+          "Arverni": -5.0,
+          "Belgae": 20.0,
+          "Germans": 0.0,
+          "Romans": -10.0
+        }
+      },
+      "The Gallic War": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 2,
+          "Belgae": 6,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 2,
+          "Belgae": 8,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          8,
+          10,
+          14,
+          15,
+          16,
+          17,
+          18,
+          20
+        ],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "1/10",
+          "Belgae": "-1/10",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 10.0,
+          "Belgae": -10.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "The Great Revolt": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 9,
+          "Belgae": 3,
+          "Romans": 6
+        },
+        "before": {
+          "Aedui": 5,
+          "Arverni": 7,
+          "Belgae": 4,
+          "Romans": 4
+        },
+        "changed_winner_seeds": [
+          2,
+          3,
+          6,
+          8,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          19
+        ],
+        "exact_rate_change": {
+          "Aedui": "-3/20",
+          "Arverni": "1/10",
+          "Belgae": "-1/20",
+          "Germans": "0",
+          "Romans": "1/10"
+        },
+        "percentage_point_change": {
+          "Aedui": -15.0,
+          "Arverni": 10.0,
+          "Belgae": -5.0,
+          "Germans": 0.0,
+          "Romans": 10.0
+        }
+      }
+    }
+  },
+  "passed": true,
+  "protected_sources": {
+    "files": 48,
+    "unchanged": true
+  },
+  "pytest": {
+    "errors": 0,
+    "exit_code": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 6109,
+    "time": 59.598
+  },
+  "pytest_checked": true,
+  "pytest_collection": {
+    "errors": 0,
+    "exact_collection": true,
+    "failures": 0,
+    "pytest_version": "9.1.1",
+    "skipped": 0,
+    "tests": 6109
+  },
+  "pytest_prefix": "tests",
+  "reviewed_balance": {
+    "band_percentage_points": 15,
+    "baseline_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+    "baseline_updated": true,
+    "breaches": [],
+    "changed_card_count_count": 0,
+    "changed_record_count": 0,
+    "changed_records": [],
+    "changed_winner_count": 0,
+    "changed_winners": [],
+    "exact_band": "3/20",
+    "exact_records_match": true,
+    "extra_balance_games": 0,
+    "maximum_absolute_drift": "0",
+    "passed": true,
+    "same_audited_legacy_games_reused": true,
+    "scenarios": {
+      "Ariovistus": {
+        "after": {
+          "Aedui": 1,
+          "Belgae": 4,
+          "Germans": 7,
+          "Romans": 8
+        },
+        "before": {
+          "Aedui": 1,
+          "Belgae": 4,
+          "Germans": 7,
+          "Romans": 8
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "Pax Gallica?": {
+        "after": {
+          "Aedui": 5,
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 11
+        },
+        "before": {
+          "Aedui": 5,
+          "Arverni": 2,
+          "Belgae": 2,
+          "Romans": 11
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "Reconquest of Gaul": {
+        "after": {
+          "Aedui": 5,
+          "Belgae": 5,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 5,
+          "Belgae": 5,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "The Gallic War": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 2,
+          "Belgae": 6,
+          "Romans": 10
+        },
+        "before": {
+          "Aedui": 2,
+          "Arverni": 2,
+          "Belgae": 6,
+          "Romans": 10
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      },
+      "The Great Revolt": {
+        "after": {
+          "Aedui": 2,
+          "Arverni": 9,
+          "Belgae": 3,
+          "Romans": 6
+        },
+        "before": {
+          "Aedui": 2,
+          "Arverni": 9,
+          "Belgae": 3,
+          "Romans": 6
+        },
+        "changed_winner_seeds": [],
+        "exact_rate_change": {
+          "Aedui": "0",
+          "Arverni": "0",
+          "Belgae": "0",
+          "Germans": "0",
+          "Romans": "0"
+        },
+        "percentage_point_change": {
+          "Aedui": 0.0,
+          "Arverni": 0.0,
+          "Belgae": 0.0,
+          "Germans": 0.0,
+          "Romans": 0.0
+        }
+      }
+    }
+  },
+  "runner": {
+    "job_exit_codes": {
+      "bots-legacy": 0,
+      "bots-original": 0,
+      "bots-second-edition": 0,
+      "census0": 0,
+      "census7": 0,
+      "fuzz0": 0,
+      "fuzz7": 0
+    },
+    "passed": true
+  },
+  "source": {
+    "commit": "5ee485e43132e9080a083efece79c66af80afef8",
+    "dirty": true,
+    "source_sha256": "c24adb23c9018071ed948e295a96fc4b17649e35fecabd985e77dedbfa32fcc5"
+  },
+  "strict_census": {
+    "by_severity_per_hash": {
+      "legal-decline": 322
+    },
+    "coverage_evidence": "Exact tool metadata plus aggregate completion; the census tool does not emit per-game success records.",
+    "cross_hash_equal": true,
+    "defects": 0,
+    "executions": 50,
+    "hash_seeds": [
+      0,
+      7
+    ],
+    "unique_cases": 25
+  }
+}

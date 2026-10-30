@@ -338,6 +338,10 @@ def card30_arverni_legion_warbands(state, region, faction):
     from fs_bot.cards.capabilities import is_capability_active
     if faction != ARVERNI or not is_capability_active(state, 30, EVENT_SHADED):
         return 0
+    from fs_bot.battle.elite import count as picked_count
+    picked = picked_count(state, region)
+    if picked is not None:
+        return picked
     if get_leader_in_region(state, region, ARVERNI) is None:
         return 0
     f_pieces = get_effective_faction_pieces(state, region, ARVERNI)
@@ -350,6 +354,10 @@ def card30_arverni_legion_warbands(state, region, faction):
 # LOSSES STEP (b) — RESOLVE LOSSES
 # ============================================================================
 
+from fs_bot.battle.elite import loss_scope
+
+
+@loss_scope
 def resolve_losses(state, region, faction, num_losses, *,
                    is_retreat=False, is_ambush=False,
                    caesar_counterattacks=False,
@@ -433,6 +441,14 @@ def resolve_losses(state, region, faction, num_losses, *,
 
     remaining = num_losses
     while remaining > 0:
+        from fs_bot.battle import elite
+        elite.window(state, 'battle_loss', region=region, faction=faction,
+                     remaining=remaining, total=num_losses)
+        elite.ensure_selected(state, region)
+        picked_count = elite.count(state, region) if faction == ARVERNI else None
+        if picked_count is not None:
+            arverni_legions_alive = picked_count
+            card30_active = True
         # Build the priority list of pieces to take losses
         piece_order = _build_loss_priority(
             state, region, faction, is_retreat=is_retreat,
@@ -482,13 +498,15 @@ def resolve_losses(state, region, faction, num_losses, *,
                         chosen = tuple(_e)
                         break
         piece_type, piece_state = chosen[:2]
-        physical_owner = chosen[2] if len(chosen) == 3 else None
+        physical_owner = chosen[2] if len(chosen) >= 3 else None
 
         # Determine if this is a hard target that gets a die roll
         is_hard_target = piece_type in HARD_TARGET_PIECES
         # Card 30 shaded: a surviving Arverni "Legion" Warband absorbs via the
         # §3.2.4 save roll, just like a Legion (and may be targeted repeatedly).
-        is_legion_warband = (piece_type == WARBAND and arverni_legions_alive > 0)
+        is_legion_warband = (piece_type == WARBAND and
+            ((len(chosen) == 4 and chosen[3] == 'elite') if picked_count is not None
+             else arverni_legions_alive > 0))
 
         # Provincia Fort never absorbs Losses — §1.4.2
         if piece_type == FORT and region == PROVINCIA:
@@ -527,6 +545,8 @@ def resolve_losses(state, region, faction, num_losses, *,
                                      piece_type, piece_state, physical_owner)
                 if is_legion_warband:
                     arverni_legions_alive -= 1
+                    if picked_count is not None:
+                        elite.record_loss(state, region, piece_state)
                 result["rolls"].append((piece_type, roll, True))
                 result["removed"].append((piece_type, 1))
                 result["losses_taken"] += 1
@@ -547,6 +567,10 @@ def resolve_losses(state, region, faction, num_losses, *,
                                  piece_type, piece_state, physical_owner)
             result["removed"].append((piece_type, 1))
             result["losses_taken"] += 1
+            if is_legion_warband:
+                arverni_legions_alive -= 1
+                if picked_count is not None:
+                    elite.record_loss(state, region, piece_state)
 
         remaining -= 1
 
@@ -574,7 +598,9 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
       Allies from Cities last, then Citadels — A3.2.4
     """
     if loss_order is not None:
-        if get_leader_in_region(state, region, faction) != DIVICIACUS:
+        from fs_bot.battle.elite import count as picked_count
+        exact_elite = faction == ARVERNI and picked_count(state, region) is not None
+        if get_leader_in_region(state, region, faction) != DIVICIACUS and not exact_elite:
             return loss_order
         # A1.4/A3.2.4 is a restriction, not merely an NP preference.
         # Explicit priorities cannot make Diviciacus absorb a Loss while
@@ -583,10 +609,14 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
                                      is_retreat=is_retreat)
         for preferred in loss_order:
             for candidate in legal:
+                if exact_elite and len(preferred) != len(candidate):
+                    continue
                 if (preferred[0] == candidate[0]
                         and (preferred[1] is None or preferred[1] == candidate[1])
                         and (len(preferred) < 3 or
-                             (len(candidate) == 3 and preferred[2] == candidate[2]))):
+                             (len(candidate) >= 3 and preferred[2] == candidate[2]))
+                        and (len(preferred) < 4 or
+                             (len(candidate) >= 4 and preferred[3] == candidate[3]))):
                     return [candidate]
         return legal
 
@@ -605,6 +635,12 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
     is_arverni_ariovistus = (
         faction == ARVERNI and scenario in ARIOVISTUS_SCENARIOS
     )
+    is_nonplayer = faction in state.get('non_player_factions', ())
+    # Card 30's old NP scalar does not identify its picked physical
+    # Warbands. Reordering those candidates would silently choose a new
+    # Elite designation policy; keep that unresolved case unchanged.
+    ordinary_nonplayer = (is_nonplayer and not
+                          card30_arverni_legion_warbands(state, region, faction))
 
     # --- Collect static pieces (Allies, Forts, Citadels, Settlements) ---
     static_pieces = []
@@ -642,7 +678,7 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
 
     # Special loss ordering for Germans in base game — §3.4.5
     # and Arverni in Ariovistus — A3.2.4
-    if is_german_base or is_german_ariovistus or is_arverni_ariovistus:
+    if is_german_base or is_german_ariovistus or is_arverni_ariovistus or ordinary_nonplayer:
         # Scouted Warbands first, then Revealed, then Hidden
         scouted_wb = f_pieces.get(SCOUTED, {}).get(WARBAND, 0)
         revealed_wb = f_pieces.get(REVEALED, {}).get(WARBAND, 0)
@@ -660,9 +696,15 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
             other_pieces.append((WARBAND, None))
 
     # Auxilia
-    aux_total = _count_all_flippable(f_pieces, AUXILIA)
-    for _ in range(aux_total):
-        other_pieces.append((AUXILIA, None))
+    if is_nonplayer:
+        # §8.4.1 removes own pieces in the reverse of enemy-target order:
+        # Scouted, then Revealed, then Hidden, for Auxilia as for Warbands.
+        for ps in (SCOUTED, REVEALED, HIDDEN):
+            other_pieces.extend([(AUXILIA, ps)] * f_pieces.get(ps, {}).get(AUXILIA, 0))
+    else:
+        aux_total = _count_all_flippable(f_pieces, AUXILIA)
+        for _ in range(aux_total):
+            other_pieces.append((AUXILIA, None))
 
     # Legions
     legion_count = f_pieces.get(LEGION, 0)
@@ -695,6 +737,8 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
     result = loss_choices(state, region, faction, result)
     from fs_bot.engine.diviciacus import loss_choices as diviciacus_losses
     result = diviciacus_losses(state, region, faction, result)
+    from fs_bot.battle.elite import loss_choices as elite_losses
+    result = elite_losses(state, region, faction, result)
     # Humans choose among the offered pieces, so putting Diviciacus last
     # does not enforce "last possible piece". Do not offer him at all until
     # every other eligible piece, including cooperating Auxilia, is gone.

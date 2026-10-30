@@ -8,6 +8,43 @@ from fs_bot.engine.quarters import (
 from fs_bot.cli.menus import prompt_choice
 
 
+def collect_provincia(state, faction, request, stdin, stdout):
+    """Rechoose only the still-unresolved Provincia move after Supply changes."""
+    for error in request.get('errors', []):
+        stdout.write(f'Provincia relocation needs a new choice: {error}\n')
+    selection = prompt_choice(stdin, stdout, 'Remaining Provincia relocations?', [
+        ('Choose which pieces now move to Provincia', 'choose'),
+        ('Keep the original moves that remain legal', 'default'),
+        ('Make no further Provincia relocations', 'decline'),
+    ])
+    if selection != 'choose':
+        return {'use_default': True} if selection == 'default' else {'decline': True}
+    remaining = list(request['legal_moves'])
+    moves = []
+    while remaining:
+        selected = prompt_choice(stdin, stdout, 'Add a Provincia relocation?',
+            [('Finish relocations', None)] + [
+                (f'{piece} from {origin} (up to {count})', index)
+                for index, (piece, origin, destination, count) in enumerate(remaining)])
+        if selected is None:
+            break
+        piece, origin, destination, maximum = remaining.pop(selected)
+        count = prompt_choice(stdin, stdout, 'How many pieces?',
+                              [(str(n), n) for n in range(1, maximum + 1)])
+        moves.append([piece, origin, destination, count])
+    return {'moves': moves}
+
+
+def collect_payment(state, faction, request, stdin, stdout):
+    choice = prompt_choice(stdin, stdout,
+        'Provincia relocations changed; choose payments for the pieces now remaining:', [
+            ('Choose free quarters and paid pieces', 'choose'),
+            ('Use standard payments', 'default'),
+        ])
+    return ({'use_default': True} if choice == 'default'
+            else {'payments': _payments(state, stdin, stdout)})
+
+
 def collect_quarters_plan(state, faction, request, stdin, stdout):
     for error in request.get('errors', []):
         stdout.write(f'Quarters choice refused: {error}\n')

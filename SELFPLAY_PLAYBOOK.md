@@ -192,6 +192,15 @@ changes to tie ordering and singleton RNG consumption. The original Gallic War
 Arverni −20-point comparison remains preserved. The 100 keys and 15-point band
 are unchanged; the report records separate final checks against the refresh.
 
+The [29 October action-timing repair](docs/reviews/action-timing-2026-10-29.md)
+refreshes 69 records, 55 winners and 49 card counts after reviewing all 100
+paired parent/candidate games. It retains the original Reconquest Belgic
++20-point failure. The review separates restored Seize Rallies, Surus and
+casualty corrections from Roman random-tie choices and implementation RNG
+sequencing. Root and independent approvals bind the exact replacement data;
+fresh full-suite and matrix checks remain separate from the diagnostic runs.
+The seed set and 15-point tolerance are unchanged.
+
 ## Experimental strategy policies
 
 The repaired `heuristic_selfplay` runner removes the policy-controlled seat from

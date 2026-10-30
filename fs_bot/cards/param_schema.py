@@ -195,8 +195,18 @@ def _schema_uncached(card_id, ario):
             continue
         key = None
         it = node.iter
+        event_step = None
+        max_entries = None
+        if (isinstance(it, ast.Call) and isinstance(it.func, ast.Name)
+                and it.func.id == '_event_entries' and len(it.args) >= 3):
+            if isinstance(it.args[1], ast.Constant) and isinstance(it.args[1].value, str):
+                event_step = it.args[1].value
+            it = it.args[2]
         # Unwrap slicing: for x in removals[:2] -> removals
         if isinstance(it, ast.Subscript):
+            if (isinstance(it.slice, ast.Slice) and isinstance(it.slice.upper, ast.Constant)
+                    and type(it.slice.upper.value) is int):
+                max_entries = it.slice.upper.value
             it = it.value
         got = _params_get_call(it)
         if got:
@@ -205,6 +215,10 @@ def _schema_uncached(card_id, ario):
             key = var_to_key[it.id]
         if key is None or key not in schema:
             continue
+        if event_step is not None:
+            schema[key]['event_step'] = event_step
+        if max_entries is not None:
+            schema[key]['max_entries'] = max_entries
         fields = _entry_reads(node.body, node.target.id)
         if fields:
             schema[key]["kind"] = "entries"

@@ -50,20 +50,23 @@ from fs_bot.battle.losses import (calculate_losses, resolve_losses,
 
 
 from fs_bot.engine.diviciacus import defensive_battle
+from fs_bot.battle.elite import battle_scope
 
 
 @defensive_battle
+@battle_scope
 def resolve_battle(state, region, attacking_faction, defending_faction,
                    *, is_ambush=False, besiege_target=None,
                    retreat_declaration=None, retreat_region=None,
                    attack_loss_order=None, defend_loss_order=None,
-                   citadel_at_start=None, double_auxilia=False,
+                   citadel_at_start=None, fort_at_start=None, double_auxilia=False,
                    auto_legion_loss=False, ignore_fort=False,
                    ignore_citadel=False, extra_losses=0,
                    no_counterattack=False, ally_first=False,
                    attacker_stays_hidden=False, allied_factions=(),
                    warband_full_loss=False, auxilia_only_attack=False,
-                   no_attacker_leader=False, full_loss_warbands=0):
+                   no_attacker_leader=False, full_loss_warbands=0,
+                   _full_loss_cohort=None):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -194,7 +197,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     if ignore_citadel:
         had_citadel_at_start = False
 
-    had_fort_at_start = d_pieces.get(FORT, 0) > 0 and not ignore_fort
+    had_fort_at_start = ((d_pieces.get(FORT, 0) > 0 if fort_at_start is None
+                          else fort_at_start) and not ignore_fort)
     # Provincia permanent Fort — §1.4.2: never absorbs Losses
     # but it DOES count for halving — it's still "in the Region"
     # The rule says "Defenders who... have a Citadel or Fort" — the Fort
@@ -204,7 +208,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     # "Before and in addition to any Losses... the (Roman) Attacker may
     # automatically remove (Subdue) a Defending Citadel or Allied Tribe"
     # Ariovistus: also Settlements — A4.2.3
-    if besiege_target is not None:
+    if (besiege_target is not None
+            and count_pieces(state, region, defending_faction, besiege_target) > 0):
         besiege_piece = besiege_target
         if besiege_piece == SETTLEMENT:
             # A4.2.3: "may remove a Settlement instead of an Ally"
@@ -217,6 +222,10 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         result["besiege"] = {"removed": besiege_piece}
 
     # ── Step 3: Attack ──
+    from fs_bot.battle import elite
+    elite.window(state, 'battle_attack', region=region,
+                 attacker=attacking_faction, defender=defending_faction)
+    elite.ensure_selected(state, region)
     # Determine if Ambush affects the roll mechanic
     # and if Caesar Defending gets a special roll
 
@@ -329,6 +338,10 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         from fs_bot.rules_consts import EVENT_UNSHADED as _EUN
         if _ica(state, 10, _EUN):
             _c10_citadel = False
+    if _full_loss_cohort is not None:
+        from fs_bot.engine.action_windows import get_cohorts
+        full_loss_warbands = sum(piece['count'] for piece in
+            get_cohorts(state, _full_loss_cohort) if piece['region'] == region)
     attack_losses = _calculate_attack_losses(
         state, region, attacking_faction, defending_faction,
         is_retreat=defender_retreats,
@@ -341,6 +354,12 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         auxilia_only=auxilia_only_attack,
         no_attacker_leader=no_attacker_leader,
     )
+    if _full_loss_cohort is not None:
+        # A69's picked contribution is now part of the fixed Attack total.
+        # Later casualties/removals cannot alter it, and its physical filter
+        # is no longer needed for the rest of this Battle.
+        from fs_bot.engine.action_windows import clear_cohorts
+        clear_cohorts(state, _full_loss_cohort)
 
     # extra_losses (e.g. card 25: "inflicting 3 extra Losses").
     if extra_losses:
@@ -397,6 +416,9 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
             counterattack = True
 
     if counterattack:
+        elite.window(state, 'battle_counterattack', region=region,
+                     attacker=attacking_faction, defender=defending_faction)
+        elite.ensure_selected(state, region)
         # Counterattack: surviving Defenders cause Losses to Attackers
         # "Attacker takes normal Losses. Allies, Forts, Citadels last."
         # Card 30 shaded Tip: a defending Arverni's Legion-Warbands inflict in
@@ -404,6 +426,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         # the surviving count so removed picked Warbands grant no Legion bonus.
         _legion_override = result.get("attack", {}).get(
             "legion_warbands_surviving")
+        if defending_faction == ARVERNI and elite.count(state, region) is not None:
+            _legion_override = elite.count(state, region)
         counter_losses = calculate_losses(
             state, region,
             attacking_faction=defending_faction,
@@ -443,6 +467,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     # ── Step 5: Reveal ──
     # Skip if Retreat — §3.2.4: "If a Retreat, skip this step."
     if not defender_retreats:
+        elite.window(state, 'battle_reveal', region=region,
+                     attacker=attacking_faction, defender=defending_faction)
         if attacker_stays_hidden:
             # card 36: "Attackers Hidden" — only the Defender's survivors flip.
             _reveal_survivors(state, region, defending_faction, defending_faction)
@@ -452,6 +478,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
 
     # ── Step 6: Retreat ──
     if defender_retreats:
+        elite.window(state, 'battle_retreat', region=region,
+                     attacker=attacking_faction, defender=defending_faction)
         retreat_result = _execute_retreat(
             state, region, defending_faction, attacking_faction,
             retreat_region=retreat_region,

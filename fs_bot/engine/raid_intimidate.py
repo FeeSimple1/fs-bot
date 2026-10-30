@@ -16,9 +16,14 @@ RAID_INTIMIDATE = 'raid_intimidate'
 
 
 def eligible(state, region, raiders):
+    # A3.4.3 requires Ariovistus to be in the Region, even when an Event
+    # restricts the actual Raiders to newly placed Warbands. The resident
+    # Leader is not added to that selected force for March or Battle.
+    from fs_bot.commands.sa_enlist import FREE_FORCE_KEY
+    physical = {key: value for key, value in state.items() if key != FREE_FORCE_KEY}
     return (state['scenario'] in ARIOVISTUS_SCENARIOS
             and type(raiders) is int and raiders > 0
-            and get_leader_in_region(state, region, GERMANS) == ARIOVISTUS_LEADER)
+            and get_leader_in_region(physical, region, GERMANS) == ARIOVISTUS_LEADER)
 
 
 def target_options(state, region):

@@ -216,6 +216,8 @@ def _default_action_once(state, request):
 @preserve_supply_agreements
 def resolve_frumentum(state):
     """Select funding, then resolve each distinct Roman action in chosen order."""
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "A53.funding")
     request = {"kind": "frumentum_amount", "card_id": "A53",
                "available_resources": state["resources"].get(AEDUI, 0)}
     while True:
@@ -238,6 +240,8 @@ def resolve_frumentum(state):
     state["_frumentum_budget"] = context
     try:
         while remaining:
+            from fs_bot.cards.card_effects import _event_step
+            _event_step(state, "A53.action")
             request = {"kind": "frumentum_action", "card_id": "A53",
                        "remaining_actions": list(remaining),
                        "remaining_resources": allowance, "allocated_resources": amount,

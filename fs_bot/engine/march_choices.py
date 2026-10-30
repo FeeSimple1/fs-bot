@@ -135,5 +135,30 @@ def drop_visibility(state, faction, region, group, piece, count):
         dropped = choose_visibility(state, faction, region, piece, count,
                                     visibility, phase="dropoff")
         for ps, n in dropped.items():
+            owners = group.get('_march_owner_visibility')
+            if owners is not None and piece == rc.WARBAND:
+                german = owners.get(rc.GERMANS, {}).get(ps, 0)
+                native = owners.get(rc.BELGAE, {}).get(ps, 0)
+                lower, upper = max(0, n - native), min(n, german)
+                borrowed = upper  # Existing Enlist physical-helper default.
+                from fs_bot.engine.game_engine import get_sop_factions
+                chooser = _chooser(state, faction)
+                if (lower != upper and chooser in get_sop_factions(state)
+                        and chooser not in state.get('non_player_factions', ())
+                        and not state.get('_diviciacus_preview')):
+                    request = {'kind': 'force_cohort', 'operation': 'drop off',
+                        'region': region, 'piece_type': piece, 'piece_state': ps,
+                        'count': n, 'available': {'selected': german, 'other': native},
+                        'selected_label': 'Enlisted German Warbands',
+                        'other_label': 'Belgic Warbands'}
+                    response = consult_agent(state, chooser, request)
+                    if response is not None:
+                        from fs_bot.engine.diviciacus import validate_force_cohort_response
+                        validate_force_cohort_response(request, response)
+                        if 'counts' in response:
+                            borrowed = response['counts'].get('selected', 0)
+                owners[rc.GERMANS][ps] -= borrowed
+                owners[rc.BELGAE][ps] -= n - borrowed
+                group['german_warbands'] -= borrowed
             visibility[ps] -= n
     group[piece] -= count

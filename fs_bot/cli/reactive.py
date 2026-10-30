@@ -20,7 +20,11 @@ from fs_bot.rules_consts import WARBAND
 def _fmt_piece(piece):
     ptype, pstate = piece[:2]
     label = f"{ptype} ({pstate})" if pstate else str(ptype)
-    return f"{piece[2]} {label}" if len(piece) == 3 else label
+    if len(piece) >= 3 and piece[2] is not None:
+        label = f"{piece[2]} {label}"
+    if len(piece) == 4 and piece[3] == 'elite':
+        label += ' (as Legion)'
+    return label
 
 
 def make_cli_reactive(human_factions, stdin, stdout):
@@ -32,6 +36,21 @@ def make_cli_reactive(human_factions, stdin, stdout):
             return None
         kind = request.get("kind")
         try:
+            if kind == "voluntary_removal":
+                from fs_bot.cli.voluntary_removal import collect_removals
+                return collect_removals(state, faction, request, stdin, stdout)
+            if kind == 'force_cohort':
+                from fs_bot.cli.diviciacus import collect_force_cohort
+                return collect_force_cohort(state, faction, request, stdin, stdout)
+            if kind == 'battle_elite':
+                from fs_bot.battle.elite import collect_selection
+                return collect_selection(state, faction, request, stdin, stdout)
+            if kind == 'quarters_provincia':
+                from fs_bot.cli.quarters import collect_provincia
+                return collect_provincia(state, faction, request, stdin, stdout)
+            if kind == 'quarters_payment':
+                from fs_bot.cli.quarters import collect_payment
+                return collect_payment(state, faction, request, stdin, stdout)
             if kind == "supply_refusal":
                 from fs_bot.cli.supply import collect_supply_refusal
                 return collect_supply_refusal(state, faction, request, stdin, stdout)
@@ -88,6 +107,8 @@ def make_cli_reactive(human_factions, stdin, stdout):
                     stdout.write("Choose the Roman Allied Tribe to remove.\n")
                 elif phase == "piece_state":
                     stdout.write(f"Choose which {request['piece_type']} to remove.\n")
+                elif phase == 'physical_owner':
+                    stdout.write('Choose the physical owner of the moving-group casualty.\n')
                 else:
                     stdout.write("Remove a soft piece, or roll: on 1–3 remove a "
                                  "hard piece; on 4–6 lose nothing.\n")
@@ -97,6 +118,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
                              else f"Remove {option}")
                     if phase == "piece_state":
                         label = f"Remove {option} {request['piece_type']}"
+                    elif phase == 'physical_owner':
+                        label = (f"Remove a {request.get('piece_state', '')} {option} "
+                                 f"{request['piece_type']} from the moving group")
                     options.append((label, option))
                 choice = prompt_choice(stdin, stdout, "Harassment Loss?", options)
                 return {"use_default": True} if choice is None else {"choice": choice}
@@ -242,4 +266,5 @@ def make_cli_reactive(human_factions, stdin, stdout):
             raise
         return None
 
+    agent.supports_action_windows = True
     return agent

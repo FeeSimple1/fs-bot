@@ -61,6 +61,8 @@ def resolve_joined_ranks(state, faction, march_limit=8, second_always_retreat=Fa
         _CMD_BATTLE, SA_ACTION_NONE_LABEL,
     )
     from fs_bot.engine.game_engine import get_sop_factions
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "54.selection")
     params = state.get("event_params") or {}
     playable = set(get_playable_regions(state["scenario"], state.get("capabilities")))
     qualifying = FACTIONS if _revised(state) else (ROMANS, ARVERNI, AEDUI, BELGAE)
@@ -100,9 +102,8 @@ def resolve_joined_ranks(state, faction, march_limit=8, second_always_retreat=Fa
         raise ValueError("Card 54 needs an opposing defender in its destination")
     second = params.get("second_faction")
     players = get_sop_factions(state)
-    if second is not None and (second not in players or second in (faction, defender)
-                               or not _attacker_has_force(state, region, second)):
-        raise ValueError("Card 54 second attacker must be another player Faction already there")
+    if second is not None and (second not in players or second in (faction, defender)):
+        raise ValueError("Card 54 second attacker must be another player Faction")
     first = params.get("first_battle", True)
     if not isinstance(first, bool):
         raise ValueError("Card 54 first_battle must be true or false")
@@ -112,6 +113,8 @@ def resolve_joined_ranks(state, faction, march_limit=8, second_always_retreat=Fa
         arrived = _march_with_harassment(state, faction, origin, route, group_cap=group)
         results.append({"free_action": "march", "flag": "card_54", "source": origin,
                         "dest": arrived, "group": group})
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "54.first_battle")
     first_executed = False
     if first and defender is not None and _attacker_has_force(state, region, faction):
         result = _execute_battle(state, faction, {
@@ -121,9 +124,13 @@ def resolve_joined_ranks(state, faction, march_limit=8, second_always_retreat=Fa
         first_executed = bool(result.get("executed"))
         results.append({"free_action": "battle", "flag": "card_54", "battler": faction,
                         "region": region, "defender": defender, "result": result})
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "54.second_battle")
     possible = [second] if second is not None else [f for f in players
                 if f not in (faction, defender) and _attacker_has_force(state, region, f)]
     for ally in possible:
+        if not _attacker_has_force(state, region, ally):
+            continue  # Recheck after the first Battle and possible Leader entry.
         if ally in state.get("non_player_factions", set()):
             continue  # Card 54 Tips: a second Non-player would not Battle.
         if defender is None or count_pieces(state, region, defender) == 0:

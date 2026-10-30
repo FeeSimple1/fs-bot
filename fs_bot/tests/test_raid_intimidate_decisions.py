@@ -193,7 +193,8 @@ def test_cli_default_is_displayed_recorded_and_replayed_without_input(monkeypatc
                     stdin=io.StringIO('board\nUse bot default\n'), stdout=out) == 0
     _, _, log = load_game(saved)
     assert log == [{'reactive': 'raid_intimidate', 'faction': rc.GERMANS,
-                    'card': observed_cards[0][0], 'response': {'use_default': True}}]
+                    'card': observed_cards[0][0], 'action_windows_version': 1,
+                    'response': {'use_default': True}}]
     before_prompt = out.getvalue().split('Use the raiders to Intimidate?')[0]
     assert 'changes since your last decision' in before_prompt
     assert f'{rc.GERMANS} Resources:' in before_prompt

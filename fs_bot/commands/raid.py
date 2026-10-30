@@ -203,7 +203,89 @@ def get_valid_steal_targets(state, region, faction):
 # RAID EXECUTION
 # ============================================================================
 
-def raid_in_region(state, region, faction, raid_actions, *, free=False):
+def raid_in_region(state, region, faction, raid_actions, *, free=False,
+                   after_flips=None):
+    """Resolve complete flips, allowing timing choices between their effects."""
+    from fs_bot.commands.common import is_free_action
+    free = free or is_free_action(state, faction)
+    from fs_bot.engine.action_windows import interactive, has_authored
+    if interactive(state) or has_authored(raid_actions) or after_flips is not None:
+        return _timed_raid(state, region, faction, raid_actions, free=free,
+                           after_flips=after_flips)
+    return _raid_in_region(state, region, faction, raid_actions, free=free)
+
+
+def _timed_raid(state, region, faction, raid_actions, *, free=False,
+                after_flips=None):
+    from copy import deepcopy
+    from fs_bot.engine.action_windows import window, get_cohorts, set_cohorts, clear_cohorts
+    from fs_bot.commands.sa_enlist import FREE_FORCE_KEY
+    if not raid_actions or len(raid_actions) > max_raiders_per_region(state, faction):
+        raise CommandError('Raid needs one to the permitted maximum Warbands per Region')
+    if count_pieces_by_state(state, region, faction, WARBAND, HIDDEN) < len(raid_actions):
+        raise CommandError('Not enough Hidden Warbands for the declared Raid')
+    if any(not isinstance(action, dict) or action.get('type') not in (RAID_GAIN, RAID_STEAL)
+           or (action.get('type') == RAID_STEAL and action.get('target') not in FACTIONS)
+           for action in raid_actions):
+        raise CommandError('Each Raid action must gain or name a Faction to steal from')
+    saved = deepcopy({key: value for key, value in state.items()
+                      if key not in ('decision_agent', '_card_turn')})
+    agent, card_turn = state.get('decision_agent'), state.get('_card_turn')
+    key = f'raid_credit:{region}'
+    result = {'faction': faction, 'region': region, 'warbands_flipped': 0,
+              'resources_gained': 0, 'resources_stolen': {}, 'cost': RAID_COST}
+    track = faction == GERMANS and state['scenario'] in ARIOVISTUS_SCENARIOS
+    try:
+        for index, action in enumerate(raid_actions):
+            window(state, 'raid_flip', author=faction, region=region, index=index,
+                   timing_actions=action.get('timing_actions'))
+            if count_pieces_by_state(state, region, faction, WARBAND, HIDDEN) == 0:
+                # Earlier complete flips stand when the player subsequently
+                # reclaims the last remaining raider. Never substitute a
+                # resident outside an Event's trusted participating force.
+                break
+            step = _raid_in_region(state, region, faction, [action], free=free,
+                                    _resolve_intrinsic=False)
+            result['warbands_flipped'] += 1
+            result['resources_gained'] += step['resources_gained']
+            for target, amount in step['resources_stolen'].items():
+                result['resources_stolen'][target] = result['resources_stolen'].get(target, 0) + amount
+            if track:
+                ledger = get_cohorts(state, key)
+                if not ledger:
+                    item = {'id': key, 'label': 'Warbands that just Raided',
+                            'region': region, 'piece_type': WARBAND,
+                            'piece_state': REVEALED, 'count': 0}
+                    force = state.get(FREE_FORCE_KEY, {})
+                    if force.get('faction', GERMANS) == faction and region in force.get('pieces', {}):
+                        item['loan_kind'] = 'free_force'
+                    ledger = [item]
+                ledger[0]['count'] += 1
+                set_cohorts(state, key, faction, ledger)
+        window(state, 'raid_intimidate' if track else 'raid_complete',
+               author=faction, region=region, timing_actions=after_flips)
+        if track:
+            credit = sum(c['count'] for c in get_cohorts(state, key))
+            from fs_bot.engine.raid_intimidate import resolve_raid_intimidate
+            intrinsic = resolve_raid_intimidate(state, region, credit)
+            if intrinsic is not None:
+                result['raid_intimidate'] = intrinsic
+        refresh_all_control(state)
+        return result
+    except BaseException:
+        state.clear()
+        state.update(saved)
+        if agent is not None:
+            state['decision_agent'] = agent
+        if card_turn is not None:
+            state['_card_turn'] = card_turn
+        raise
+    finally:
+        clear_cohorts(state, key)
+
+
+def _raid_in_region(state, region, faction, raid_actions, *, free=False,
+                    _resolve_intrinsic=True):
     """Execute Raid in a single region.
 
     Flips 1 or 2 Hidden Warbands to Revealed. For each flipped Warband,
@@ -374,7 +456,7 @@ def raid_in_region(state, region, faction, raid_actions, *, free=False):
     # A3.4.3: these very Warbands can free Intimidate while Raiding with
     # Ariovistus. Resolve at the primitive boundary so Event-granted Raids
     # (including Card 44) get the same optional effect as ordinary Commands.
-    if faction == GERMANS and scenario in ARIOVISTUS_SCENARIOS:
+    if _resolve_intrinsic and faction == GERMANS and scenario in ARIOVISTUS_SCENARIOS:
         from fs_bot.engine.raid_intimidate import resolve_raid_intimidate
         try:
             intrinsic = resolve_raid_intimidate(state, region, result["warbands_flipped"])
@@ -490,6 +572,9 @@ def germans_phase_raid_region(state, region):
     rng = state["rng"]
 
     while warbands_remaining > 0:
+        from fs_bot.engine.action_windows import window
+        window(state, 'germans_raid_flip', region=region,
+               index=result['warbands_flipped'])
         targets = get_germans_phase_raid_targets(state, region)
         if not targets:
             break

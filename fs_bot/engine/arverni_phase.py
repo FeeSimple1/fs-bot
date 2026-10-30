@@ -60,6 +60,7 @@ from fs_bot.map.map_data import (
 from fs_bot.commands.common import CommandError, _is_devastated, _is_intimidated
 from fs_bot.battle.losses import calculate_losses
 from fs_bot.battle.resolve import resolve_battle
+from fs_bot.engine import action_windows
 
 
 # ============================================================================
@@ -907,6 +908,13 @@ def _get_battle_targets(state, region, target_faction, arverni_hidden):
 # ============================================================================
 
 def run_arverni_phase(state, is_frost=False, force_at_war=False):
+    """Open game-run phase timing without claiming a new player executor."""
+    with action_windows.scope(state, phase='arverni_phase'):
+        return _run_arverni_phase(state, is_frost=is_frost,
+                                  force_at_war=force_at_war)
+
+
+def _run_arverni_phase(state, is_frost=False, force_at_war=False):
     """Execute the full Arverni Phase — A6.2.
 
     Check At War. If At Peace, skip — unless ``force_at_war`` (cards A24/A27/A32

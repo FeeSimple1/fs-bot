@@ -199,6 +199,10 @@ def _collect_battle(state, faction, stdin, stdout, single, *, excluded=()):
 
 
 def _collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
+    from fs_bot.cli.action_windows import available
+    if available(state):
+        from fs_bot.cli.command_timing import collect_raid
+        return collect_raid(state, faction, stdin, stdout, single, excluded=excluded)
     from fs_bot.board.pieces import count_pieces_by_state
     from fs_bot.commands.common import _is_devastated
     from fs_bot.commands.raid import (
@@ -427,6 +431,10 @@ def _collect_recruit(state, faction, stdin, stdout, single, *, excluded=()):
 
 
 def _collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
+    from fs_bot.cli.action_windows import available
+    if available(state):
+        from fs_bot.cli.command_timing import collect_seize
+        return collect_seize(state, faction, stdin, stdout, single, excluded=excluded)
     from fs_bot.commands.seize import get_dispersible_tribes
     regions = _playable_regions(state, faction)
     cand = [r for r in regions if r not in excluded and count_pieces(state, r, ROMANS) > 0]
@@ -480,6 +488,10 @@ def _enemy_ally_tribes(state, region, faction):
 
 def _collect_suborn(state, faction, stdin, stdout, *, pending=None):
     """Choose all legal §4.4.2 native pieces, with A38/43 and exact states."""
+    from fs_bot.cli.action_windows import available
+    if available(state):
+        from fs_bot.cli.sa_timing import collect_suborn
+        return collect_suborn(state, faction, stdin, stdout)
     from fs_bot.rules_consts import ALLY
     from fs_bot.commands.sa_suborn import (
         legal_suborn_operations, suborn_limits, suborn_region_limit,
@@ -584,6 +596,10 @@ def _collect_suborn(state, faction, stdin, stdout, *, pending=None):
 def _collect_entreat(state, faction, stdin, stdout, *, pending=None):
     """Arverni Entreat (Sec.4.3.1): replace/remove enemy Allies or pieces in
     Arverni-Controlled Regions (1 Resource each)."""
+    from fs_bot.cli.action_windows import available
+    if available(state):
+        from fs_bot.cli.sa_timing import collect_entreat
+        return collect_entreat(state, faction, stdin, stdout)
     entries = []
     while True:
         regions = _regions_with_pieces(state, faction)
@@ -633,6 +649,10 @@ def _collect_entreat(state, faction, stdin, stdout, *, pending=None):
 def _collect_rampage(state, faction, stdin, stdout, *, pending=None):
     """Belgic Rampage (Sec.4.5.2): Regions with Hidden Belgic Warbands and an
     enemy; each entry names the target Faction."""
+    from fs_bot.cli.action_windows import available
+    if available(state):
+        from fs_bot.cli.sa_timing import collect_rampage
+        return collect_rampage(state, faction, stdin, stdout)
     from fs_bot.rules_consts import HIDDEN
     from fs_bot.board.pieces import count_pieces_by_state
     cands = [r for r in _regions_with_pieces(state, faction)
@@ -657,6 +677,10 @@ def _collect_rampage(state, faction, stdin, stdout, *, pending=None):
 def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
     """German Intimidate (A4.6.2): flip Hidden Warbands to remove that many
     pieces of ONE Faction per Region (1-2 per Region)."""
+    from fs_bot.cli.action_windows import available
+    if available(state):
+        from fs_bot.cli.sa_timing import collect_intimidate
+        return collect_intimidate(state, faction, stdin, stdout)
     from fs_bot.rules_consts import HIDDEN, ALLY
     from fs_bot.board.pieces import count_pieces_by_state
     cands = [r for r in _regions_with_pieces(state, faction)
@@ -707,11 +731,39 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
 
 def _collect_enlist(state, faction, stdin, stdout, *, pending=None,
                     before_state=None, borrow_only=False):
+    """Choose Enlist's timing board before any removal or borrowing menu."""
+    if borrow_only:
+        sub = 'borrow'
+    else:
+        sub = prompt_choice(stdin, stdout, "Enlist the Germans to:",
+            [("Battle", "german_battle"), ("March", "german_march"),
+             ("hide (flip Warbands Hidden)", "german_march_hide"),
+             ("Rally", "german_rally"), ("Raid", "german_raid"),
+             ("lend Warbands to the Belgic Command", "borrow")])
+    if sub == 'borrow' and before_state is not None:
+        state = before_state
+    from fs_bot.cli.action_windows import prepare, inspect_board
+    state, timing = prepare(state, faction, stdin, stdout,
+                            stage='special_ability', sa='Enlist')
+    with inspect_board(state, stdout):
+        regions, details = _collect_enlist_details(
+            state, faction, stdin, stdout, pending=pending, _sub=sub)
+    if details is not None and timing:
+        details.setdefault('sa_details', {})['timing_actions'] = timing
+    elif timing:
+        return [], {'sa_details': {'timing_actions': timing}}
+    return regions, details
+
+
+def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
+                            before_state=None, borrow_only=False, _sub=None):
     """Choose either borrowed Warbands or a free German Command (§4.5.1)."""
     from fs_bot.commands.sa_enlist import validate_enlist_region
     from fs_bot.rules_consts import HIDDEN, REVEALED, SCOUTED
     from fs_bot.board.pieces import count_pieces_by_state
-    if borrow_only:
+    if _sub is not None:
+        sub = _sub
+    elif borrow_only:
         sub = "borrow"
     else:
         sub = prompt_choice(stdin, stdout, "Enlist the Germans to:",
@@ -810,6 +862,10 @@ def _collect_enlist(state, faction, stdin, stdout, *, pending=None,
 
 def _collect_build(state, faction, stdin, stdout, *, pending=None):
     """Roman Build SA (Sec.4.2.1) -- returns (sa_regions, extra)."""
+    from fs_bot.cli.action_windows import available
+    if available(state):
+        from fs_bot.cli.roman_timing import collect_build
+        return collect_build(state, faction, stdin, stdout, pending=pending)
     single = False
     from fs_bot.commands.sa_build import validate_build_region
     from fs_bot.map.map_data import get_tribes_in_region
@@ -881,6 +937,10 @@ def _tribe_in_region(state, tribe, region):
 
 def _collect_scout(state, faction, stdin, stdout, *, pending=None):
     """Roman Scout SA (Sec.4.2.2) -- player moves Auxilia, then Reveals."""
+    from fs_bot.cli.action_windows import available
+    if available(state):
+        from fs_bot.cli.roman_timing import collect_scout
+        return collect_scout(state, faction, stdin, stdout, pending=pending)
     from fs_bot.rules_consts import (ROMANS, AUXILIA, WARBAND, HIDDEN,
                                      REVEALED, BRITANNIA, CAESAR, FACTIONS)
     from fs_bot.board.pieces import (count_pieces_by_state,
@@ -986,10 +1046,8 @@ def _collect_command_plan(state, faction, cmd, stdin, stdout, single=False,
 
 
 def _planning_copy(state):
-    from copy import deepcopy
-    result = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
-    result["_diviciacus_preview"] = True
-    return result
+    from fs_bot.cli.action_windows import planning_copy
+    return planning_copy(state)
 
 
 def _preview_command(state, faction, action):
@@ -1002,6 +1060,23 @@ def _preview_command(state, faction, action):
     else:
         execute_decision(sim, faction, {"player_action": action})
     return sim
+
+
+def _preview_sa(state, faction, action):
+    """Resolve an SA on a detached planning board, including authored timing."""
+    from fs_bot.engine.action_windows import scope
+    from fs_bot.engine.execute import _execute_sa
+    with scope(state, actor=faction, plan=action, phase='sequence_of_play'):
+        return _execute_sa(state, faction, action)
+
+
+def _preview_borrow(state, faction, action):
+    from fs_bot.commands.sa_enlist import begin_borrow
+    from fs_bot.engine.action_windows import scope, window
+    with scope(state, actor=faction, plan=action, phase='sequence_of_play'):
+        window(state, 'special_ability', author=faction, sa='Enlist',
+               timing_actions=((action.get('details') or {}).get('sa_details') or {}).get('timing_actions'))
+        begin_borrow(state, action)
 
 
 def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
@@ -1025,13 +1100,21 @@ def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
         # These SAs modify the coming Battle; an unmodified preview must not
         # remove their targets or attackers from the selection menu.
         state = before_state
+    from fs_bot.cli.action_windows import prepare, inspect_board
+    if sa not in ('Ambush', 'Besiege', 'Enlist'):
+        state, timing = prepare(state, faction, stdin, stdout,
+                                stage='special_ability', sa=sa)
+        if timing:
+            action['details'].setdefault('sa_details', {}).setdefault(
+                'timing_actions', []).extend(timing)
     from fs_bot.cli.diviciacus import choose_regions, planning_scope
-    cooperation = choose_regions(state, faction, "special_ability", stdin, stdout)
-    if cooperation is not None:
-        action["details"]["diviciacus_sa_regions"] = cooperation
-    with planning_scope(state, faction, cooperation, "special_ability"):
-        return _collect_sa_details(state, faction, action, stdin, stdout, sa,
-                                   before_state)
+    with inspect_board(state, stdout):
+        cooperation = choose_regions(state, faction, "special_ability", stdin, stdout)
+        if cooperation is not None:
+            action["details"]["diviciacus_sa_regions"] = cooperation
+        with planning_scope(state, faction, cooperation, "special_ability"):
+            return _collect_sa_details(state, faction, action, stdin, stdout, sa,
+                                       before_state)
 
 
 def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state):
@@ -1043,6 +1126,10 @@ def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state)
         stdout.write("Trade declarations and any River Commerce Region choice follow at resolution.\n")
         return action
     collector = _SA_COLLECTORS.get(sa)
+    from fs_bot.cli.action_windows import available
+    if sa in ('Settle', 'Devastate') and available(state):
+        from fs_bot.cli.sa_timing import collect_scalar
+        collector = lambda board, actor, src, out, **kw: collect_scalar(board, actor, sa, src, out)
     if collector is not None:
         kwargs = {"before_state": before_state} if sa == "Enlist" else {}
         sa_regions, extra = collector(state, faction, stdin, stdout,
@@ -1052,6 +1139,9 @@ def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state)
             return action
         action["sa_regions"] = sa_regions
         if extra:
+            extra = dict(extra)
+            if 'sa_details' in extra:
+                action['details'].setdefault('sa_details', {}).update(extra.pop('sa_details'))
             action["details"].update(extra)
     else:
         cand = _regions_with_pieces(state, faction)
@@ -1119,7 +1209,7 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
                   "details": details, "sa_timing": "before"}
         from fs_bot.commands.sa_enlist import begin_borrow
         sim = _planning_copy(state)
-        begin_borrow(sim, action)
+        _preview_borrow(sim, faction, action)
         command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
         if command is None:
             return None
@@ -1140,9 +1230,9 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
         sim = _planning_copy(state)
         from fs_bot.commands.sa_enlist import is_borrow_plan, begin_borrow
         if is_borrow_plan(action):
-            begin_borrow(sim, action)
+            _preview_borrow(sim, faction, action)
         else:
-            _execute_sa(sim, faction, action)
+            _preview_sa(sim, faction, action)
         command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
         if command is None:
             return None
@@ -1156,6 +1246,11 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
         legal = [c for c in commands if c not in ("March", "Battle")]
         cmd = prompt_choice(stdin, stdout, "Which Command to interrupt?",
                             [(c, c) for c in legal])
+        from fs_bot.rules_consts import BASE_SCENARIOS
+        if cmd == 'Rally' and faction == ARVERNI and state['scenario'] in BASE_SCENARIOS:
+            from fs_bot.cli.recruit_rally import collect_interrupted
+            return collect_interrupted(state, faction, stdin, stdout,
+                                       allowed_sas=available_sas)
         stdout.write("Select the Regions to resolve BEFORE the Special Activity.\n")
         first = _collect_command_plan(state, faction, cmd, stdin, stdout)
         if first is None:
@@ -1166,9 +1261,9 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
                                   standalone=True, allowed_sas=available_sas)
         from fs_bot.commands.sa_enlist import is_borrow_plan, begin_borrow
         if is_borrow_plan(action):
-            begin_borrow(sim, action)
+            _preview_borrow(sim, faction, action)
         else:
-            _execute_sa(sim, faction, action)
+            _preview_sa(sim, faction, action)
         stdout.write("Continue the same Command in additional Regions.\n")
         second = _collect_command_plan(sim, faction, cmd, stdin, stdout,
                                        excluded=command_regions(first))
@@ -1194,7 +1289,7 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
             from fs_bot.commands.sa_enlist import is_borrow_plan, begin_borrow
             if is_borrow_plan(action):
                 sim = _planning_copy(state)
-                begin_borrow(sim, action)
+                _preview_borrow(sim, faction, action)
                 stdout.write("Plan the Command with its borrowed German Warbands.\n")
                 command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
                 if command is None:
@@ -1280,6 +1375,54 @@ def _prompt_event_param(state, key, spec, stdin, stdout):
     return _pick(f"{key}:", _kind_options(state, kind, spec))
 
 
+def _collect_timed_event_entries(state, faction, card_id, shaded, params,
+                                 key, spec, stdin, stdout):
+    """Plan each typed operation against the actual completed Event prefix."""
+    from fs_bot.cards.event_preview import preview_event_prefix, EventStepUnavailable
+    from fs_bot.cli.action_windows import prepare, planning_copy, inspect_board
+    from fs_bot.commands.common import CommandError
+    from fs_bot.board.pieces import PieceError
+    original, entries = planning_copy(state), []
+    step = spec['event_step']
+    fields = spec.get('entry_fields') or {'region': 'region'}
+    while len(entries) < spec.get('max_entries', float('inf')):
+        try:
+            stage = preview_event_prefix(original, faction, card_id, shaded,
+                dict(params, **{key: entries}), step=step, index=len(entries))
+        except EventStepUnavailable:
+            break  # The opposite Event side's schema can include this key.
+        if not prompt_yes_no(stdin, stdout, f'Add a {key} entry?', default=not entries):
+            break
+        prepared, actions = prepare(stage, faction, stdin, stdout,
+                                     stage='event_step', step=step, index=len(entries))
+        while True:
+            entry = {}
+            with inspect_board(prepared, stdout):
+                for sub, sub_kind in fields.items():
+                    entry[sub] = prompt_choice(stdin, stdout, f'  {sub}:',
+                                              _kind_options(prepared, sub_kind, spec))
+            if actions:
+                entry['timing_actions'] = actions
+            try:
+                preview_event_prefix(original, faction, card_id, shaded,
+                    dict(params, **{key: entries + [entry]}), step=step, index=len(entries) + 1)
+            except EventStepUnavailable:
+                # A completed quota can stop the Event before another entry.
+                # Keep timing already confirmed at this last boundary without
+                # trapping the player in a menu no entry can satisfy.
+                if actions:
+                    params.setdefault('stage_timing_actions', {})[
+                        f'{step}:{len(entries)}'] = actions
+                stdout.write('This Event has no further entries at this step.\n')
+                return entries if spec.get('allow_empty') else entries or None
+            except (CommandError, PieceError, ValueError, TypeError, KeyError) as exc:
+                stdout.write(f'This Event entry cannot be applied: {exc}\n')
+                continue
+            entries.append(entry)
+            break
+    return entries if spec.get('allow_empty') else entries or None
+
+
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
@@ -1310,7 +1453,7 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     from fs_bot.engine.execute import _derive_event_params
     derived = None
     try:
-        derived = _derive_event_params(state, faction, card_id, shaded)
+        derived = _derive_event_params(_planning_copy(state), faction, card_id, shaded)
     except Exception:
         derived = None
     if derived:
@@ -1322,7 +1465,12 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
                                state.get("card_edition"))
     params = {}
     for key, spec in schema.items():
-        v = _prompt_event_param(state, key, spec, stdin, stdout)
+        from fs_bot.cli.action_windows import available
+        if spec.get('kind') == 'entries' and spec.get('event_step') and available(state):
+            v = _collect_timed_event_entries(state, faction, card_id, shaded,
+                                             params, key, spec, stdin, stdout)
+        else:
+            v = _prompt_event_param(state, key, spec, stdin, stdout)
         if v is not None:
             params[key] = v
     return params
@@ -1355,7 +1503,7 @@ def _maybe_collect_transfer(state, faction, action, stdin, stdout):
     return action
 
 
-def collect_player_action(state, faction, engine_action, stdin, stdout):
+def _collect_player_action(state, faction, engine_action, stdin, stdout):
     """Collect a human's full plan for a chosen action TYPE.
 
     Returns a ``player_action`` dict (bot-action shape) for a Command or Event,
@@ -1389,3 +1537,18 @@ def collect_player_action(state, faction, engine_action, stdin, stdout):
                                              stdin, stdout)
         return action
     return None
+
+
+def collect_player_action(state, faction, engine_action, stdin, stdout):
+    """Prepare action-start timing before deriving the human's legal plan."""
+    if engine_action == ACTION_PASS:
+        return None
+    from fs_bot.cli.action_windows import available, prepare, inspect_board
+    if not available(state):
+        return _collect_player_action(state, faction, engine_action, stdin, stdout)
+    sim, timing = prepare(state, faction, stdin, stdout, stage='action_start')
+    with inspect_board(sim, stdout):
+        action = _collect_player_action(sim, faction, engine_action, stdin, stdout)
+    if action is not None and timing:
+        action.setdefault('details', {})['timing_actions'] = timing
+    return action

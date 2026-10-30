@@ -195,6 +195,8 @@ def default_plan(state, *, preview=False):
 
 
 def resolve_publius(state):
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "A17.march")
     request = {'kind': 'free_action', 'request_type': 'publius_march',
                'card_id': 'A17', 'free': True, 'with_sa': False}
     plan = consult_free_action(state, rc.ROMANS, request)
@@ -207,6 +209,8 @@ def resolve_publius(state):
     # 'There' is the chosen Caesar-free endpoint, not an intermediate
     # Region where Harassment happened to destroy the marching group.
     region = plan['route'][-1] if plan['route'] else plan['origin']
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "A17.battle")
     battle_request = {'kind': 'free_action', 'request_type': 'event_command',
                       'card_id': 'A17', 'allowed_commands': [rc.CMD_BATTLE],
                       'allowed_regions': [region], 'max_regions': 1,

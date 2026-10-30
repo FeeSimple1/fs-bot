@@ -223,13 +223,7 @@ def legal_suborn_operations(state, region):
     return operations
 
 
-def suborn_preview(state, region, operations):
-    """Validate the entire ordered sequence on a detached board.
-
-    Selection eligibility belongs to the Region's start, not to each piece:
-    removing the last Hidden Aedui does not cancel the remaining operations.
-    This preview reserves pools, exact pieces, tribes and Resources cumulatively.
-    """
+def _validate_suborn_shape(state, operations):
     if not isinstance(operations, (list, tuple)):
         raise CommandError("Suborn operations must be a list")
     max_pieces, max_allies = suborn_limits(state)
@@ -240,10 +234,22 @@ def suborn_preview(state, region, operations):
     ally_ops = sum(op.get("piece_type") == ALLY for op in operations)
     if ally_ops > max_allies:
         raise CommandError(f"Suborn allows at most {max_allies} Ally operations, got {ally_ops}")
+
+
+def suborn_preview(state, region, operations):
+    """Reserve an ordered sequence on a detached board, including its timing.
+
+    Selection eligibility belongs to the Region's start, not to each piece:
+    removing the last Hidden Aedui does not cancel the remaining operations.
+    """
+    _validate_suborn_shape(state, operations)
     sim = deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
     sim['_diviciacus_preview'] = True
     cost = 0
-    for operation in operations:
+    for index, operation in enumerate(operations):
+        from fs_bot.engine.action_windows import window
+        window(sim, 'suborn_operation', author=AEDUI, region=region,
+               index=index, timing_actions=operation.get('timing_actions'))
         with _operation_view(sim, region, operation):
             _validate_suborn_operation(sim, region, operation)
             charge = suborn_operation_cost(sim, operation)
@@ -264,31 +270,40 @@ def suborn(state, region, operations):
     where relevant, tribe or removal piece_state. An explicit physical_owner
     equal to faction requests that native counter even under Diviciacus.
     """
-    _, cost = suborn_preview(state, region, operations)
-    result = {"removed": [], "placed": [], "cost": cost}
-    keys = ("spaces", "tribes", "available", "resources", "_diviciacus_force")
-    before = {key: deepcopy(state[key]) for key in keys if key in state}
+    from fs_bot.engine.action_windows import interactive
+    _validate_suborn_shape(state, operations)
+    if not interactive(state):
+        suborn_preview(state, region, operations)
+    result = {"removed": [], "placed": [], "cost": 0}
+    before = deepcopy({key: value for key, value in state.items()
+                       if key not in ('decision_agent', '_card_turn')})
+    agent, card_turn = state.get('decision_agent'), state.get('_card_turn')
     try:
-        state["resources"][AEDUI] -= cost
-        for operation in operations:
+        for index, operation in enumerate(operations):
+            from fs_bot.engine.action_windows import window
+            window(state, 'suborn_operation', author=AEDUI, region=region,
+                   index=index, timing_actions=operation.get('timing_actions'))
             with _operation_view(state, region, operation):
                 _validate_suborn_operation(state, region, operation)
+                charge = suborn_operation_cost(state, operation)
+                stock = state['resources'].get(AEDUI, 0)
+                if stock < charge:
+                    raise CommandError(f'Not enough Resources ({stock}) for Suborn (need {charge})')
+                state['resources'][AEDUI] -= charge
                 _apply_suborn_operation(state, region, operation)
+                result['cost'] += charge
             result["removed" if operation["action"] == "remove" else "placed"].append(
                 (operation["faction"], operation["piece_type"], 1))
         refresh_all_control(state)
     except BaseException:
         # Invalid later operations or a pending owner choice cannot leave a
         # partially paid Suborn. Outer action transactions own frontend replay.
-        for key in keys:
-            if key in before:
-                if isinstance(state.get(key), dict):
-                    state[key].clear()
-                    state[key].update(before[key])
-                else:
-                    state[key] = before[key]
-            else:
-                state.pop(key, None)
+        state.clear()
+        state.update(before)
+        if agent is not None:
+            state['decision_agent'] = agent
+        if card_turn is not None:
+            state['_card_turn'] = card_turn
         raise
     return result
 

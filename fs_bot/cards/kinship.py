@@ -99,6 +99,8 @@ def default_plan(state, chooser):
 
 def resolve_kinship(state, chooser):
     from fs_bot.engine.agent import consult_agent
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "A65.selection")
     request = {'kind': 'kinship', 'card_id': 'A65', 'attackers': list(ATTACKERS),
                'regions_by_faction': {f: legal_regions(state, f) for f in ATTACKERS}}
     response = consult_agent(state, chooser, request)

@@ -184,6 +184,8 @@ def default_attacker(state, faction, region, *, before=None):
 
 def resolve_impetuosity_unshaded(state, faction):
     from fs_bot.engine.free_actions import consult_free_action, execute_free_action_plan
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "72.march")
     request = {'kind': 'free_action', 'request_type': MARCH_REQUEST,
                'card_id': 72, 'free': True, 'with_sa': False}
     plan = consult_free_action(state, faction, request)
@@ -199,6 +201,8 @@ def resolve_impetuosity_unshaded(state, faction):
     before = _copy(state)
     march = execute_march(state, faction, plan)
     region = plan['destination']
+    from fs_bot.cards.card_effects import _event_step
+    _event_step(state, "72.enemy_battle")
     choices = attackers(state, faction, region)
     battle = None
     if choices:

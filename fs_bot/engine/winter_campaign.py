@@ -7,6 +7,7 @@ Britannia restrictions; Ambush/Besiege still need the other action to be Battle.
 import copy
 
 from fs_bot.engine.agent import consult_agent
+from fs_bot.engine import action_windows
 from fs_bot.rules_consts import ROMANS, EVENT_SHADED, ARIOVISTUS_SCENARIOS
 
 
@@ -83,6 +84,7 @@ def validate_human_plan(state, faction, plan, remaining=2):
     from fs_bot.commands.common import CommandError
     from fs_bot.board.pieces import PieceError
     sim = copy.deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
+    sim['_diviciacus_preview'] = True
     try:
         result = _execute_plan(sim, faction, copy.deepcopy(plan))
     except (CommandError, PieceError, ValueError, TypeError, KeyError,
@@ -98,8 +100,15 @@ def validate_human_plan(state, faction, plan, remaining=2):
 
 def resolve_winter_campaign(state, owner, card_id):
     """Resolve paid actions, querying a human again after each single action."""
+    with action_windows.scope(state, phase='winter_campaign'):
+        return _resolve_winter_campaign(state, owner, card_id)
+
+
+def _resolve_winter_campaign(state, owner, card_id):
     remaining, results, errors = 2, [], []
     while remaining:
+        action_windows.window(state, 'winter_campaign_action', faction=owner,
+                              card_id=card_id, remaining_actions=remaining)
         player = owner not in state.get("non_player_factions", set())
         request = {
             "kind": "winter_campaign", "card_id": card_id,

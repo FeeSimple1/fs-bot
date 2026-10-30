@@ -64,16 +64,20 @@ their own relevant checks; old counts must not be relabeled as new evidence.
 
 ## Continuing work
 
-The 29 October batch closes optional Recruit/Rally quantities and the
-combined Vercingetorix Rally menu. Remaining implementation work from the
-original four items is voluntary own-piece reclamation and mid-action
-Vercingetorix entry. The source-derived choice audit also remains. The same-Region Rally interruption around an SA also remains. The later
+The 29 October Recruit/Rally batch closes optional quantities and the
+combined Vercingetorix Rally menu. The subsequent
+[action-timing repair](docs/reviews/action-timing-2026-10-29.md) adds voluntary
+own-piece reclamation, mid-action Vercingetorix entry, and a Special Ability
+between his two Rally options in one Region. The source-derived choice audit
+remains maintenance work. The
 [29 October rules and Trade repair](docs/reviews/rulings-trade-2026-10-29.md)
 closes human selection of Trade's single Region under shaded River Commerce.
 The [Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md) retains
 its placement scope and then-unresolved timing questions; the later rules
 and Trade report records their adopted provisional answers. These known
-items are not an exhaustive defect list.
+items are not an exhaustive defect list. Two separate non-player source
+questions remain: shaded Trade Region selection and the physical Warbands
+designated by Vercingetorix's Elite. See the current question index.
 
 The follow-up implementation adds Diviciacus cooperation and its optional
 original-scenario setup, repairs strategy-runner acceptance/resume, exposes

@@ -54,3 +54,20 @@ def collect_pieces(state, faction, request, stdin, stdout):
         [(f"{n} {ROMANS} {AUXILIA} and {count - n} {AEDUI} {WARBAND}", n)
          for n in range(roman_min, roman_max + 1)])
     return {"counts": {ROMANS: number, AEDUI: count - number}}
+
+
+def collect_force_cohort(state, faction, request, stdin, stdout):
+    """Keep an Event's selected physical counters distinct during borrowing."""
+    count, available = request['count'], request['available']
+    selected_label = request.get('selected_label', 'selected Event group')
+    other_label = request.get('other_label', 'other counters')
+    low = max(0, count - available.get('other', 0))
+    high = min(count, available.get('selected', 0))
+    number = prompt_choice(stdin, stdout,
+        f"{faction}: {request['operation']} {count} {request['piece_type']} "
+        f"in {request['region']}; which physical counters?",
+        [(f'{n} {selected_label}; {count - n} {other_label}', n)
+         for n in range(low, high + 1)]
+        + [('Use the standard physical order', None)])
+    return ({'use_default': True} if number is None
+            else {'counts': {'selected': number, 'other': count - number}})

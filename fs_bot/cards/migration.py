@@ -196,6 +196,8 @@ def resolve_migration(state, chooser):
     results = {}
     for command, default in ((rc.CMD_RALLY, _default_rally),
                              (rc.CMD_MARCH, _default_march)):
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, "66.german_grant")
         request = _request(command)
         action = consult_free_action(state, chooser, request)
         if action is None:

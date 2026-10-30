@@ -3083,7 +3083,7 @@ def test_card66_german_rally_then_march():
 
 def test_arverni_phase_triggers_and_card44a_card51():
     """Slice 55: cards A24/A27/A32 trigger an Arverni Phase; card 44a shaded
-    free Command; card 51 shaded German Ambush."""
+    free Command; card 51 shaded Commands only newly placed Germans."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.state.state_schema import validate_state
     from fs_bot.board.pieces import place_piece
@@ -3109,7 +3109,8 @@ def test_arverni_phase_triggers_and_card44a_card51():
     fa2 = [f for f in (r2.get("free_actions") or []) if f.get("flag") == "card_44a"]
     assert fa2 and fa2[0]["result"]["executed"] is True
     assert validate_state(st2) == []
-    # 51 shaded: German Ambush sweep removes a Roman Auxilia.
+    # 51 shaded: without replacements, resident Germans receive no Command.
+    # The card grants an action "with them", not a board-wide German sweep.
     st3 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=224)
     st3["non_player_factions"] = set(get_sop_factions(st3))
     st3["current_card"] = 51
@@ -3121,8 +3122,12 @@ def test_arverni_phase_triggers_and_card44a_card51():
     from fs_bot.board.pieces import count_pieces
     rb = count_pieces(st3, R, ROMANS, AUXILIA)
     r3 = _execute_event(st3, AEDUI, {"command": "Event", "sa": "No SA",
-        "sa_regions": [], "details": {"card_id": 51, "text_preference": EVENT_SHADED}})
-    assert count_pieces(st3, R, ROMANS, AUXILIA) < rb
+        "sa_regions": [], "details": {"card_id": 51, "text_preference": EVENT_SHADED,
+                                     "event_params": {"region": R, "count": 0}}}, human=True)
+    assert r3["executed"]
+    assert count_pieces(st3, R, ROMANS, AUXILIA) == rb
+    assert count_pieces(st3, R, GERMANS, WARBAND) == 6
+    assert r3["free_actions"][0]["declined_no_effect"]
     assert validate_state(st3) == []
 
 

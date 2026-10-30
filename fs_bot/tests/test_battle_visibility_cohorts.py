@@ -265,8 +265,12 @@ def test_battle_keeps_scouted_survivors_for_both_sides(scenario, nonplayer):
             'battle_plan': [{'region': rc.MANDUBII, 'target': rc.BELGAE}],
             'no_retreat': True}})
     assert result['executed'] and result['errors'] == []
-    for faction, revealed in ((rc.AEDUI, 3), (rc.BELGAE, 1)):
-        assert count_pieces_by_state(state, rc.MANDUBII, faction, rc.WARBAND, rc.SCOUTED) == 4
+    for faction, revealed, scouted in (
+            ((rc.AEDUI, 5, 2), (rc.BELGAE, 5, 0)) if nonplayer else
+            ((rc.AEDUI, 3, 4), (rc.BELGAE, 1, 4))):
+        # §8.4.1 removes NPC own Scouted Warbands first. Any Scouted
+        # survivors still keep their marker; only Hidden survivors flip.
+        assert count_pieces_by_state(state, rc.MANDUBII, faction, rc.WARBAND, rc.SCOUTED) == scouted
         assert count_pieces_by_state(state, rc.MANDUBII, faction, rc.WARBAND, rc.REVEALED) == revealed
         assert count_pieces_by_state(state, rc.MANDUBII, faction, rc.WARBAND, rc.HIDDEN) == 0
     assert validate_state(state) == []

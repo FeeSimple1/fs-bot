@@ -78,7 +78,13 @@ def validate_response(state, request, response):
         from fs_bot.engine.frumentum import validate_response as validate_frumentum
         validate_frumentum(state, request['frumentum'], replacement)
         return response
-    if not continuing and (replacement.get('details') or {}).get('transfers'):
+    # Validate before accessing nested fields or projecting the completed
+    # Command. An AttributeError here would escape the durable validator
+    # and the raw decision-agent adapter would silently defer the choice.
+    details = replacement.get('details', {})
+    if not isinstance(details, dict):
+        raise ValueError('Replacement Command details must be an object')
+    if not continuing and details.get('transfers'):
         raise ValueError('Supply reconsideration cannot add Resource transfers')
     from fs_bot.engine.action_validation import validate_human_structure, command_regions
     from fs_bot.engine.moves import validate_player_action

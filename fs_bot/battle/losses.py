@@ -454,6 +454,7 @@ def resolve_losses(state, region, faction, num_losses, *,
             state, region, faction, is_retreat=is_retreat,
             loss_order=loss_order,
         )
+        piece_order = _current_loss_tier(piece_order, is_retreat=is_retreat)
 
         _hard_tier = (ALLY, CITADEL, FORT)
         if _abatis_available and (
@@ -580,6 +581,20 @@ def resolve_losses(state, region, faction, num_losses, *,
     return result
 
 
+def _current_loss_tier(piece_order, *, is_retreat=False):
+    """Restrict a live casualty choice to the mandatory current tier.
+
+    §§3.2.4/3.3.4 put static losses first for Retreating defenders and last
+    otherwise; A3.2.4 treats Settlements as Allies. Apply this after force
+    conversions and Diviciacus's last-piece restriction. The full priority
+    builder also serves projections that must see later tiers.
+    """
+    static_types = (ALLY, CITADEL, FORT, SETTLEMENT)
+    first_tier = [entry for entry in piece_order
+                  if (entry[0] in static_types) == is_retreat]
+    return first_tier or piece_order
+
+
 def _build_loss_priority(state, region, faction, *, is_retreat=False,
                          loss_order=None):
     """Build the ordered list of pieces eligible to take Losses.
@@ -600,24 +615,42 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
     if loss_order is not None:
         from fs_bot.battle.elite import count as picked_count
         exact_elite = faction == ARVERNI and picked_count(state, region) is not None
-        if get_leader_in_region(state, region, faction) != DIVICIACUS and not exact_elite:
-            return loss_order
-        # A1.4/A3.2.4 is a restriction, not merely an NP preference.
-        # Explicit priorities cannot make Diviciacus absorb a Loss while
-        # another piece can do so, nor repeatedly select a removed piece.
-        legal = _build_loss_priority(state, region, faction,
-                                     is_retreat=is_retreat)
+        # The legacy direct-priority path consumed no NP tie-breaking RNG.
+        # Legality inspection may build shuffled A28 defaults; keep that
+        # randomness only if no explicit preference can resolve this Loss.
+        explicit_rng = (state['rng'].getstate()
+                        if get_leader_in_region(state, region, faction) != DIVICIACUS
+                        and not exact_elite else None)
+        # Mandatory tiers apply to explicit priorities as well as callbacks.
+        # Rebuild after every Loss: a removed piece or a later tier cannot
+        # absorb it, and A1.4/A3.2.4 keeps Diviciacus last of all.
+        legal = _current_loss_tier(
+            _build_loss_priority(state, region, faction, is_retreat=is_retreat),
+            is_retreat=is_retreat)
         for preferred in loss_order:
             for candidate in legal:
                 if exact_elite and len(preferred) != len(candidate):
                     continue
                 if (preferred[0] == candidate[0]
-                        and (preferred[1] is None or preferred[1] == candidate[1])
                         and (len(preferred) < 3 or
                              (len(candidate) >= 3 and preferred[2] == candidate[2]))
                         and (len(preferred) < 4 or
                              (len(candidate) >= 4 and preferred[3] == candidate[3]))):
-                    return [candidate]
+                    if preferred[1] is None or preferred[1] == candidate[1]:
+                        if explicit_rng is not None:
+                            state['rng'].setstate(explicit_rng)
+                        return [candidate]
+                    # Legacy explicit priorities can name a visibility even
+                    # when the ordinary request uses a generic piece entry.
+                    # Preserve that exact choice only while it is present.
+                    if (candidate[1] is None
+                            and candidate[0] in FLIPPABLE_PIECES
+                            and count_pieces_by_state(
+                                state, region, faction, candidate[0],
+                                preferred[1]) > 0):
+                        if explicit_rng is not None:
+                            state['rng'].setstate(explicit_rng)
+                        return [(candidate[0], preferred[1], *candidate[2:])]
         return legal
 
     scenario = state["scenario"]

@@ -4,6 +4,12 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Scouted Event removals, 2 November 2026
+
+- Include Scouted Warbands in the mandatory unshaded removals for A25, A26,
+  A30 and A56, closing audit finding EXP-12. Preserve their existing faction,
+  Leader and Region scope. See the [repair report](docs/reviews/scouted-events-2026-11-02.md).
+
 ## Unreleased — First small audit repairs, 29 October 2026
 
 - Enforce mandatory Battle casualty tiers and one Seize/Entreat selection per

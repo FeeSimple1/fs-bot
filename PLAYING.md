@@ -138,6 +138,9 @@ For Event grants with human-choice support, the menu lets you plan the permitted
 request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
+The unshaded “remove all” effects of Ariovistus's Wife (A25), Divico (A26),
+Orgetorix (A30) and Galba (A56) include Scouted Warbands. Printed restrictions
+on Regions, factions and Leaders still apply.
 Shaded Surus lets the Event executor direct the newly placed German Warbands
 in a free March, Raid, or Battle; existing German residents stay outside that
 selected group. Seize's successful Rally checks resolve their free Rally

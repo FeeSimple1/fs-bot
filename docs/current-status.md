@@ -19,6 +19,14 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 2 November Scouted Event removals — one finding closed
+
+The [Scouted Event report](reviews/scouted-events-2026-11-02.md) closes
+`EXP-12`: A25, A26, A30 and A56 now include Scouted Warbands in their
+mandatory unshaded removals. **44 of 50 grouped audit findings remain open.**
+The [progress register](human-choice-progress.json) tracks all six closures.
+This narrow repair does not close A30's separate target-validation gap (`EXP-09`).
+
 ### 29 October first small audit repairs — five findings closed
 
 The [small-repair report](reviews/cheap-fixes-2026-10-29.md) closes
@@ -29,8 +37,8 @@ transfer Resources, and new sole-human-Belgae Great Revolt games start with
 Ambiorix. New regressions cover the rules and relevant menu, rollback and
 save/replay paths. Each code fix has its own commit and full-suite check.
 
-**45 of the audit's 50 grouped findings remain open.** The
-[progress register](human-choice-progress.json) records the five closures;
+This batch left **45 of the audit's 50 grouped findings open** at that revision.
+The [progress register](human-choice-progress.json) records later dispositions;
 the original audit inventory remains a historical record of `7e72fe7`.
 The 34 unverified inventory rows and two non-player source questions remain
 separate. Event/Interlude choice routing, general interruption timing, exact

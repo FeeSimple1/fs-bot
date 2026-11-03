@@ -1,15 +1,17 @@
 {
   "audit_commit": "7e72fe7eda33c58b2f83457c39edf5b295a04f77",
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
-  "updated": "2026-10-29",
+  "updated": "2026-11-02",
   "tested_source": {
-    "commit": "fa0ca1682ba055f3375ee09448f4cb419fb38770",
-    "python_sha256": "f386da33458625e15a918eaaefedb96b2bcf1464c879b60d9b6fa8b180f4ebd0",
-    "python_files": 385
+    "commit": "c453f8eb86dfd42a93d75031cd4fb4b2552fc5a2",
+    "working_tree_changes": true,
+    "python_sha256": "575e77365d90067f293e1887c363a7827324f8f2beb10542a275f8813a224dff",
+    "python_files": 386,
+    "note": "Tested working tree based on this commit; digest identifies the complete Python source committed with this report."
   },
   "total": 50,
-  "closed": 5,
-  "open": 45,
+  "closed": 6,
+  "open": 44,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -34,13 +36,13 @@
     },
     {
       "id": "CMD-DEVASTATE-LOSSES",
-      "title": "Devastate omits each human owner’s casualty choice",
+      "title": "Devastate omits each human owner\u2019s casualty choice",
       "severity": "medium",
       "status": "open"
     },
     {
       "id": "CMD-RAMPAGE-COUNT",
-      "title": "Rampage forces two Warbands instead of the actor’s chosen quantity",
+      "title": "Rampage forces two Warbands instead of the actor\u2019s chosen quantity",
       "severity": "medium",
       "status": "open"
     },
@@ -140,7 +142,7 @@
     },
     {
       "id": "BE-05",
-      "title": "Drought substitutes casualty priorities for every faction’s own selection",
+      "title": "Drought substitutes casualty priorities for every faction\u2019s own selection",
       "severity": "high",
       "status": "open"
     },
@@ -256,7 +258,8 @@
       "id": "EXP-12",
       "title": "Remove-all expansion Events leave Scouted Warbands behind",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/scouted-events-2026-11-02.md"
     },
     {
       "id": "WS-F01",

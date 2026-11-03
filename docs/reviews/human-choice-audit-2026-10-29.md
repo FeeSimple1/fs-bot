@@ -1,8 +1,9 @@
 # Human-choice audit — 29 October 2026
 
 Subsequent repair status: the [first small batch](cheap-fixes-2026-10-29.md)
-closes five findings. The [live progress register](../human-choice-progress.json)
-tracks the remaining 45. The counts and evidence below describe the original
+closes five findings, and the [2 November Scouted Event repair](scouted-events-2026-11-02.md)
+closes EXP-12. The [live progress register](../human-choice-progress.json)
+tracks the remaining 44. The counts and evidence below describe the original
 audited revision and have not been relabeled as later results.
 
 The audit found **50 grouped open findings: 21 high, 28 medium and one low** at

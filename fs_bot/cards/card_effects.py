@@ -3579,7 +3579,7 @@ def execute_card_A25(state, shaded=False):
     from fs_bot.rules_consts import TRIBE_NORI, TRIBE_TO_REGION
     if not shaded:
         # Remove all non-Leader German pieces from Cisalpina
-        for ps in (HIDDEN, REVEALED):
+        for ps in (HIDDEN, REVEALED, SCOUTED):
             c = count_pieces_by_state(state, CISALPINA, GERMANS, WARBAND, ps)
             if c > 0:
                 remove_piece(state, CISALPINA, GERMANS, WARBAND,
@@ -3632,7 +3632,7 @@ def execute_card_A26(state, shaded=False):
             _unally_tribe(state, TRIBE_HELVETII)
         # Remove all Arverni Warbands from Sequani and Aedui
         for reg in _event_entries(state, "A26.removals", (SEQUANI, AEDUI_REGION)):
-            for ps in (HIDDEN, REVEALED):
+            for ps in (HIDDEN, REVEALED, SCOUTED):
                 c = count_pieces_by_state(state, reg, ARVERNI, WARBAND, ps)
                 if c > 0:
                     remove_piece(state, reg, ARVERNI, WARBAND,
@@ -3805,7 +3805,7 @@ def execute_card_A30(state, shaded=False):
         region = params.get("region")
         if region:
             # Remove all Arverni from the region
-            for ps in (HIDDEN, REVEALED):
+            for ps in (HIDDEN, REVEALED, SCOUTED):
                 c = count_pieces_by_state(state, region, ARVERNI, WARBAND, ps)
                 if c > 0:
                     remove_piece(state, region, ARVERNI, WARBAND,
@@ -4416,7 +4416,7 @@ def execute_card_A56(state, shaded=False):
     scenario = state["scenario"]
     if not shaded:
         # Remove all Belgae except Leader from Atrebates
-        for ps in (HIDDEN, REVEALED):
+        for ps in (HIDDEN, REVEALED, SCOUTED):
             c = count_pieces_by_state(state, ATREBATES, BELGAE, WARBAND, ps)
             if c > 0:
                 remove_piece(state, ATREBATES, BELGAE, WARBAND,

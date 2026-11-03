@@ -26,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [2 November Scouted Event repair](reviews/scouted-events-2026-11-02.md) | A25/A26/A30/A56 mandatory removals, source-derived regressions and EXP-12 closure |
 | [29 October first small audit repairs](reviews/cheap-fixes-2026-10-29.md) | Five closed findings, individual tested commits, source identity and remaining scope |
 | [29 October human-choice audit](reviews/human-choice-audit-2026-10-29.md) | 50 grouped open findings, 490 coverage rows, evidence limits and six ordered repair batches; no engine changes |
 | [Human-choice inventory](reviews/human-choice-audit-2026-10-29-inventory.json) | Every reviewed card/side/profile and choice family, source references, affected interfaces and repair assignments |

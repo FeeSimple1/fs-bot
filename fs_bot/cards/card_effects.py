@@ -2888,38 +2888,14 @@ def execute_card_65(state, shaded=False):
 
     Source: Card Reference, card 65
     """
-    from fs_bot.rules_consts import TRIBE_TO_REGION
-    params = state.get("event_params", {})
-    faction = state.get("executing_faction")
     if not shaded:
         # German March + Ambush — defer to caller
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_65_german_march_ambush"] = True
         state["event_modifiers"]["card_65_march_regions"] = 2
     else:
-        # Replace 5 Germanic Warbands + 1 German Ally with your pieces
-        wb_replacements = params.get("warband_replacements", [])
-        replaced = 0
-        for r in _event_entries(state, "65.warband_replacements", wb_replacements):
-            if replaced >= 5:
-                break
-            region = r["region"]
-            for ps in (HIDDEN, REVEALED):
-                if count_pieces_by_state(state, region, GERMANS, WARBAND, ps) > 0:
-                    remove_piece(state, region, GERMANS, WARBAND, piece_state=ps)
-                    if faction and get_available(state, faction, AUXILIA) > 0:
-                        place_piece(state, region, faction, AUXILIA)
-                    replaced += 1
-                    break
-        _event_step(state, "65.ally")
-        # Replace 1 German Ally
-        ally_tribe = params.get("ally_replacement_tribe")
-        if ally_tribe:
-            tribe_info = state.get("tribes", {}).get(ally_tribe)
-            if tribe_info and tribe_info.get("allied_faction") == GERMANS:
-                _unally_tribe(state, ally_tribe)
-                if faction:
-                    _ally_tribe(state, ally_tribe, faction)
+        from fs_bot.cards.german_allegiances import execute
+        execute(state)
 
 def execute_card_66(state, shaded=False):
     """Card 66: Migration — German Rally+March / Gallic relocation.

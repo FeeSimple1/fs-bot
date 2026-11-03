@@ -1428,6 +1428,11 @@ def _collect_timed_event_entries(state, faction, card_id, shaded, params,
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
+    if card_id == 65:
+        if not shaded:
+            return {}
+        from fs_bot.cli.german_allegiances import collect_params
+        return collect_params(state, faction, stdin, stdout)
     if card_id == 47:
         from fs_bot.cli.council import collect_params
         return collect_params(state, faction, stdin, stdout)

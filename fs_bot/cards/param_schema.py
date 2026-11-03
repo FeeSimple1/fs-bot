@@ -257,6 +257,11 @@ def card_param_schema(card_id, scenario, card_edition=None):
 # violation). Offering/generating only these keeps humans out of dead ends
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
+    65: {"replacements": {"kind": "entries", "allow_empty": True,
+        "event_step": "65.replacements", "entry_fields": {
+            "region": "region", "piece_type": "piece_type", "piece_state": "piece_state",
+            "tribe": "tribe", "replace": "value"},
+        "entry_values": {"piece_type": (WARBAND, ALLY), "replace": (True, False)}}},
     # Shaded choices are requested only after the actual die roll. The old
     # removal_choice/value and (Region,count) list never belonged in generic
     # pre-roll Region menus.

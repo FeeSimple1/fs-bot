@@ -206,7 +206,7 @@ def execute_decision(state, faction, decision):
                                      limited=decision.get('action') == ACTION_LIMITED_COMMAND)
     if error:
         return {"executed": False, "command": action.get("command") if isinstance(action, dict) else None,
-                "reason": error, "errors": [{"error": error}]}
+                "reason": error, "errors": [{"error": error}], "rejected": True}
     from copy import deepcopy
     agent = state.get("decision_agent")
     card_turn = state.get("_card_turn")
@@ -225,7 +225,7 @@ def execute_decision(state, faction, decision):
         if isinstance(exc, _EXEC_ERRORS):
             return {'executed': False, 'command': action.get('command'),
                     'reason': str(exc), 'errors': [{'error': str(exc)}],
-                    'rolled_back': True}
+                    'rolled_back': True, 'rejected': True}
         raise
     # An interrupted Command can report one successful portion alongside a
     # refused exact portion. That OR result cannot commit a partial human
@@ -342,7 +342,7 @@ def _execute_decision(state, faction, decision):
         # No executable plan. A human menu that selected only an action TYPE
         # (Command/Event without regions/SA/params) cannot be auto-executed
         # until the plan is collected; report rather than crash.
-        return {"executed": False, "command": None,
+        return {"executed": False, "command": None, "rejected": True,
                 "reason": "decision carries no executable plan "
                           "(no bot_action or player_action)"}
 
@@ -3259,7 +3259,7 @@ def _execute_event(state, faction, bot_action, *, human=False):
     if (card_id in (47, "A66") and human and "event_params" in details
             and not isinstance(details["event_params"], dict)):
         return {"executed": False, "command": _CMD_EVENT,
-                "card_id": card_id, "shaded": shaded,
+                "card_id": card_id, "shaded": shaded, "rejected": True,
                 "reason": f"Card {card_id} event_params must be an object."}
 
     # TRANSACTIONAL: "report, do not crash" means a failed Event did not
@@ -3317,7 +3317,7 @@ def _execute_event(state, faction, bot_action, *, human=False):
         if _agent is not None:
             state["decision_agent"] = _agent
         return {"executed": False, "command": _CMD_EVENT,
-                "card_id": card_id, "shaded": shaded,
+                "card_id": card_id, "shaded": shaded, "rejected": True,
                 "reason": f"event not applicable: {exc!r}"}
     state["event_params"] = prev_params
     state["executing_faction"] = prev_faction
@@ -6492,9 +6492,11 @@ def _derive_card_62(state, faction, shaded):
 from fs_bot.cards.ally_events import derive_gobannitio, derive_correus
 from fs_bot.cards.boii_np import derive_boii
 from fs_bot.cards.surus import derive_params as derive_surus
+from fs_bot.cards.german_allegiances import derive_params as derive_german_allegiances
 
 
 _EVENT_PARAM_DERIVERS = {
+    65: derive_german_allegiances,
     51: derive_surus,
     37: derive_boii,
     26: derive_gobannitio,

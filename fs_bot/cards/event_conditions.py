@@ -12,6 +12,9 @@ from fs_bot import rules_consts as rc
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 65 and shaded:
+        from fs_bot.cards.german_allegiances import np_available
+        return np_available(state, faction)
     if card_id == 'A66':
         from fs_bot.cards.winter_uprising import np_regions
         return bool(np_regions(state, faction))

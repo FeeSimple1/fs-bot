@@ -497,7 +497,7 @@ def _adjust_eligibility_base(state, actions_taken):
 # ============================================================================
 
 class ActionRejected(ValueError):
-    """A human Command plan was missing, invalid, or had no legal effect."""
+    """A human action plan was rejected by execution or validation."""
 
     def __init__(self, result):
         self.result = result
@@ -516,10 +516,14 @@ def _maybe_execute(state, faction, decision, actions_taken):
         maybe_np_aedui_subsidy
     exec_result = execute_decision(state, faction, decision)
     if (not decision.get("bot_action")
-            and decision.get("action") in (ACTION_COMMAND, ACTION_COMMAND_SA,
-                                            ACTION_LIMITED_COMMAND)
             and isinstance(exec_result, dict)
-            and not exec_result.get("executed")):
+            and not exec_result.get("executed")
+            and (decision.get("action") in (ACTION_COMMAND, ACTION_COMMAND_SA,
+                                             ACTION_LIMITED_COMMAND)
+                 or (decision.get("action") == ACTION_EVENT
+                     and exec_result.get("rejected") is True))):
+        # Humans may play a legal ineffective Event. Only an explicit
+        # execution/validation rejection returns that decision to pending.
         raise ActionRejected(exec_result)
     # §8.6.6: the NP Aedui subsidy fires "at each instant" Roman
     # Resources drop below 2 — checked after every executed action.

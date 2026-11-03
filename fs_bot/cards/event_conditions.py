@@ -15,6 +15,13 @@ def np_event_available(state, card_id, faction, shaded):
     if card_id == 65 and shaded:
         from fs_bot.cards.german_allegiances import np_available
         return np_available(state, faction)
+    if card_id == 42:
+        from fs_bot.cards.base_event_limits import derive_wine
+        trial = deepcopy({key: value for key, value in state.items() if key != 'decision_agent'})
+        return derive_wine(trial, faction, shaded) is not None
+    from fs_bot.cards.expansion_validation import supported, np_available
+    if supported(card_id, shaded):
+        return np_available(state, card_id, faction)
     if card_id == 'A66':
         from fs_bot.cards.winter_uprising import np_regions
         return bool(np_regions(state, faction))

@@ -157,13 +157,15 @@ def test_card_40_rejects_non_listed_piece_types():
          "faction": rc.AEDUI}]}
     with pytest.raises(ValueError):
         ce.execute_event(st, 40, shaded=False)
-    # Per-Region caps: 5 Warbands requested -> 3 placed.
+    # The printed choice is capped; a request for five is invalid rather
+    # than silently substituted with a different three-piece selection.
     st2 = setup_scenario(BASE, seed=3)
     st2["executing_faction"] = rc.ARVERNI
     st2["event_params"] = {"placements": [
         {"region": "Sequani", "piece_type": rc.WARBAND, "count": 5,
          "faction": rc.ARVERNI}]}
     before = count_pieces(st2, "Sequani", rc.ARVERNI, rc.WARBAND)
-    ce.execute_event(st2, 40, shaded=False)
+    with pytest.raises(ValueError):
+        ce.execute_event(st2, 40, shaded=False)
     assert count_pieces(st2, "Sequani", rc.ARVERNI,
-                        rc.WARBAND) == before + 3
+                        rc.WARBAND) == before

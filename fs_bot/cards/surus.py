@@ -37,7 +37,7 @@ def derive_params(state, chooser, shaded):
                   if any(count_pieces(state, region, f, rc.WARBAND)
                          for f in (*enemies, rc.AEDUI))]
     if not candidates:
-        return {'replacements': []}
+        return {'region': random_select(state, regions), 'replacements': []}
     counts = {region: min(4, sum(count_pieces(state, region, f, rc.WARBAND)
                                  for f in enemies)) for region in candidates}
     most = max(counts.values())

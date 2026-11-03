@@ -34,7 +34,7 @@ from fs_bot.rules_consts import (
     SENATE_UP, SENATE_DOWN,
     CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
     SUCCESSOR,
-    ARVERNI_REGION, PICTONES, BRITANNIA,
+    ARVERNI, ARVERNI_REGION, PICTONES, BRITANNIA,
 )
 
 PIECE_TYPES = (WARBAND, AUXILIA, LEGION, ALLY, CITADEL, FORT, LEADER)
@@ -262,6 +262,17 @@ _OVERRIDES = {
             "region": "region", "piece_type": "piece_type", "piece_state": "piece_state",
             "tribe": "tribe", "replace": "value"},
         "entry_values": {"piece_type": (WARBAND, ALLY), "replace": (True, False)}}},
+    "A29": {"faction": {"kind": "faction", "values": (ROMANS, ARVERNI, AEDUI, BELGAE)},
+            "placements": {"kind": "entries", "event_step": "A29.placements",
+                           "entry_fields": {"region": "region", "piece_type": "piece_type", "faction": "faction", "count": "count", "tribe": "tribe"}}},
+    "A30": {"region": {"kind": "region"}},
+    "A36": {"placements": {"kind": "entries", "event_step": "A36.placements",
+                            "entry_fields": {"region": "region", "piece_type": "piece_type", "count": "count"}},
+            "ally_removals": {"kind": "entries", "event_step": "A36.allies", "max_entries": 2, "entry_fields": {"tribe": "tribe"}}},
+    "A43": {"replacements": {"kind": "entries", "event_step": "A43.replacements", "max_entries": 4,
+                              "entry_fields": {"region": "region", "from_type": "piece_type", "to_faction": "faction", "piece_state": "piece_state", "tribe": "tribe"}}},
+    "A45": {"placements": {"kind": "entries", "event_step": "A45.placements", "max_entries": 3,
+                            "entry_fields": {"tribe": "tribe", "faction": "faction"}}},
     # Shaded choices are requested only after the actual die roll. The old
     # removal_choice/value and (Region,count) list never belonged in generic
     # pre-roll Region menus.
@@ -348,8 +359,23 @@ _OVERRIDES = {
     # Auxilia" — entry piece_type takes those two only.
     22: {"replacements": {"entry_values": {"piece_type": (WARBAND, AUXILIA)}}},
     # Card 40 Alpine Tribes unshaded: "3 Warbands, 2 Auxilia, or 1 Ally".
-    40: {"placements": {"entry_values": {
-        "piece_type": (WARBAND, AUXILIA, ALLY)}}},
+    40: {"placements": {"kind": "entries", "allow_empty": True,
+        "event_step": "40.placements", "region_pool": "card40_alpine",
+        "entry_fields": {"region": "region", "piece_type": "piece_type",
+                         "count": "count", "faction": "faction", "tribe": "tribe"},
+        "entry_values": {"piece_type": (WARBAND, AUXILIA, ALLY), "count": (1, 2, 3)}}},
+    41: {"ally_placements": {"kind": "entries", "allow_empty": True,
+         "event_step": "41.allies", "max_entries": 2, "entry_fields": {"tribe": "tribe"}},
+         "citadel_upgrade_tribe": {"kind": "tribe"}, "fort_region": {"kind": "region"}},
+    42: {"removals": {"kind": "entries", "allow_empty": True,
+         "event_step": "42.removals", "entry_fields": {"tribe": "tribe"}},
+         "mode": {"kind": "value", "values": ("controlled", "adjacent")}},
+    51: {"region": {"kind": "region", "region_pool": "card51_surus"},
+         "replacements": {"kind": "entries", "allow_empty": True,
+          "event_step": "51.replacements", "entry_fields": {
+              "from_faction": "faction", "piece_state": "piece_state", "count": "count"},
+          "entry_values": {"faction": (*GALLIC_FACTIONS, GERMANS),
+                           "piece_state": (HIDDEN, REVEALED, SCOUTED), "count": (1, 2, 3, 4)}}},
     # Cards 10/63 shaded: "Place this card near a Gallic Faction" — the
     # player CHOOSES the receiving Faction (may gift it). Handlers read
     # event_params["faction"]; default (no param) = executing Gallic
@@ -363,6 +389,9 @@ def region_pool(state, name):
     """Named region pools for constrained cards."""
     from fs_bot.map.map_data import get_playable_regions_for_state
     playable = set(get_playable_regions_for_state(state))
+    if name in ("card40_alpine", "card51_surus"):
+        from fs_bot.cards.base_event_limits import adjacent_cisalpina, surus_regions
+        return adjacent_cisalpina(state) if name == "card40_alpine" else surus_regions(state)
     if name == "card16_romans":
         from fs_bot.cards.ambacti import eligible_regions
         return eligible_regions(state)

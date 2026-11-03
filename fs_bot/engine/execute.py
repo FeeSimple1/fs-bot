@@ -3256,7 +3256,7 @@ def _execute_event(state, faction, bot_action, *, human=False):
     card_id = details.get("card_id", state.get("current_card"))
     shaded = details.get("text_preference") == EVENT_SHADED
 
-    if (card_id in (47, "A66") and human and "event_params" in details
+    if (human and "event_params" in details
             and not isinstance(details["event_params"], dict)):
         return {"executed": False, "command": _CMD_EVENT,
                 "card_id": card_id, "shaded": shaded, "rejected": True,
@@ -5630,6 +5630,10 @@ def _derive_event_params(state, faction, card_id, shaded):
     if card_id == "A23":
         from fs_bot.cards.parley import derive_params
         return derive_params(state, faction, shaded)
+    from fs_bot.cards.expansion_validation import supported
+    if supported(card_id, shaded):
+        from fs_bot.cards.expansion_validation import derive_params
+        return derive_params(state, faction, card_id)
     fn = _EVENT_PARAM_DERIVERS.get(card_id)
     if fn is None:
         return None
@@ -5708,92 +5712,13 @@ def _derive_card_71(state, faction, shaded):
 
 
 def _derive_card_41(state, faction, shaded):
-    """Card 41 (Avaricum): if the Faction holds Avaricum, place up to 2 Allies
-    at Subdued Tribes within 1 of Bituriges and upgrade one City Ally to a
-    Citadel (§8.2.3/§8.3.1 — benefit self near Avaricum)."""
-    from fs_bot.rules_consts import (CITY_AVARICUM, CITY_TO_TRIBE,
-                                     BITURIGES, ALLY, CITADEL)
-    from fs_bot.map.map_data import (get_adjacent, get_tribes_in_region,
-                                     is_city_tribe)
-    from fs_bot.board.pieces import get_available, count_pieces
-    av_tribe = CITY_TO_TRIBE.get(CITY_AVARICUM)
-    ti = state.get("tribes", {}).get(av_tribe)
-    if not ti or ti.get("allied_faction") != faction:
-        return None
-    scenario = state["scenario"]
-    target_regions = [BITURIGES] + list(get_adjacent(BITURIGES, scenario))
-    placements = []
-    avail = get_available(state, faction, ALLY)
-    for r in target_regions:
-        for tribe in get_tribes_in_region(r, scenario):
-            t_info = state.get("tribes", {}).get(tribe)
-            if (t_info and t_info.get("allied_faction") is None
-                    and len(placements) < min(2, avail)):
-                placements.append({"tribe": tribe})
-    citadel_tribe = None
-    if get_available(state, faction, CITADEL) > 0:
-        for r in target_regions:
-            for tribe in get_tribes_in_region(r, scenario):
-                t_info = state.get("tribes", {}).get(tribe)
-                if (t_info and t_info.get("allied_faction") == faction
-                        and is_city_tribe(tribe)
-                        and count_pieces(state, r, faction, ALLY) > 0):
-                    citadel_tribe = tribe
-                    break
-            if citadel_tribe:
-                break
-    if not placements and not citadel_tribe:
-        return None
-    out = {"ally_placements": [{"tribe": t["tribe"]} for t in placements]}
-    if citadel_tribe:
-        out["citadel_upgrade_tribe"] = citadel_tribe
-    return out
+    from fs_bot.cards.base_event_limits import derive_avaricum
+    return derive_avaricum(state, faction, shaded)
 
 
 def _derive_card_42(state, faction, shaded):
-    """Card 42 (Roman Wine), unshaded: remove up to 4 non-own Allied Tribes
-    (not Citadels) in Roman-Controlled Regions (§8.2.3 — remove enemies', not
-    own).
-
-    Shaded (Romanizing tribes): remove 1-3 Roman or Aedui Allies (not Citadels)
-    in Roman-Aedui Supply-Line Regions (Card Reference 42 — Supply Lines per
-    §3.2.1 computed "as if Romans and Aedui both agreed", i.e. chain Regions are
-    No Control / Roman / Aedui). The NP removes enemies' Allies (§8.2.3) — never
-    its own."""
-    from fs_bot.rules_consts import TRIBE_TO_REGION, ROMANS, ALLY
-    from fs_bot.board.control import is_controlled_by
-    from fs_bot.board.pieces import count_pieces
-    if shaded:
-        from fs_bot.rules_consts import AEDUI
-        from fs_bot.commands.rally import has_supply_line
-        agreements = {ROMANS: True, AEDUI: True}
-        removals = []
-        for tribe in sorted(state.get("tribes", {})):
-            if len(removals) >= 3:
-                break
-            ti = state["tribes"][tribe]
-            af = ti.get("allied_faction")
-            if af not in (ROMANS, AEDUI) or af == faction:
-                continue  # only enemies' Roman/Aedui Allies
-            region = TRIBE_TO_REGION.get(tribe)
-            if not region or count_pieces(state, region, af, ALLY) <= 0:
-                continue  # an Ally piece (not a Citadel city)
-            if not has_supply_line(state, region, faction=ROMANS,
-                                   agreements=agreements):
-                continue
-            removals.append({"tribe": tribe, "faction": af})
-        return {"removals": removals} if removals else None
-    removals = []
-    for tribe, ti in state.get("tribes", {}).items():
-        af = ti.get("allied_faction")
-        region = TRIBE_TO_REGION.get(tribe)
-        if (af and af != faction and region
-                and is_controlled_by(state, region, ROMANS)
-                and count_pieces(state, region, af, ALLY) > 0):
-            removals.append({"tribe": tribe})
-            if len(removals) >= 4:
-                break
-    return {"removals": removals} if removals else None
+    from fs_bot.cards.base_event_limits import derive_wine
+    return derive_wine(state, faction, shaded)
 
 
 def _derive_card_23(state, faction, shaded):
@@ -6010,39 +5935,9 @@ def _derive_card_A18(state, faction, shaded):
 
 
 def _derive_card_A45(state, faction, shaded):
-    """Card A45 (Savage Dictates), unshaded: place up to 3 of the acting
-    non-German Faction's Allies at Subdued Celtica Tribes. Shaded deferred."""
-    from fs_bot.rules_consts import (GERMANS, CELTICA_REGIONS, ALLY,
-                                     MARKER_INTIMIDATED)
-    from fs_bot.map.map_data import get_tribes_in_region, get_adjacent
-    from fs_bot.board.pieces import get_available
-    if shaded or faction == GERMANS:
-        return None
-    avail = get_available(state, faction, ALLY)
-    if avail <= 0:
-        return None
-    scen = state["scenario"]
-    markers = state.get("markers", {})
-    intimidated = {r for r, m in markers.items()
-                   if isinstance(m, dict) and MARKER_INTIMIDATED in m}
-    if not intimidated:
-        return None  # "within 1 Region of Intimidated markers" — none exist
-
-    def _within1(region):
-        return region in intimidated or any(
-            a in intimidated for a in get_adjacent(region, scen))
-
-    placements = []
-    for region in CELTICA_REGIONS:
-        if not _within1(region):
-            continue
-        for tribe in get_tribes_in_region(region, scen):
-            ti = state.get("tribes", {}).get(tribe)
-            if (ti and ti.get("allied_faction") is None
-                    and ti.get("status") is None
-                    and len(placements) < min(3, avail)):
-                placements.append({"tribe": tribe, "faction": faction})
-    return {"placements": placements} if placements else None
+    """Source-limited default for A45's unshaded placements."""
+    from fs_bot.cards.expansion_validation import derive_params
+    return None if shaded else derive_params(state, faction, 'A45')
 
 
 def _derive_card_A37(state, faction, shaded):
@@ -6337,50 +6232,9 @@ def _derive_card_A58(state, faction, shaded):
 # Registry of per-card event_param derivers (extend as cards gain faithful
 # NP derivations). Card 1 (Cicero) is the unambiguous senate-direction case.
 def _derive_card_A29(state, faction, shaded):
-    """A29 unshaded: a Gaul or Roman places up to 2 own Allies at Subdued Tribes
-    in Regions with (German) Settlements, plus 5 own Warbands (Gallic) / 3
-    Auxilia (Roman) among those Regions (§8.2.3 — benefit self)."""
-    if shaded:
-        return None
-    from fs_bot.rules_consts import (GERMANS, ROMANS, GALLIC_FACTIONS,
-                                     SETTLEMENT, WARBAND, AUXILIA, ALLY)
-    from fs_bot.board.pieces import count_pieces, get_available
-    from fs_bot.map.map_data import get_playable_regions, get_tribes_in_region
-    if faction == GERMANS:
-        return None
-    scen = state["scenario"]
-    settlement_regions = [
-        r for r in get_playable_regions(scen, state.get("capabilities"))
-        if count_pieces(state, r, GERMANS, SETTLEMENT) > 0]
-    if not settlement_regions:
-        return None
-    placements = []
-    avail_ally = get_available(state, faction, ALLY)
-    n_ally = 0
-    for region in settlement_regions:
-        if n_ally >= min(2, avail_ally):
-            break
-        for tribe in get_tribes_in_region(region, scen):
-            ti = state.get("tribes", {}).get(tribe)
-            if (ti and ti.get("allied_faction") is None
-                    and ti.get("status") is None):
-                placements.append({"region": region, "piece_type": ALLY,
-                                   "faction": faction, "tribe": tribe})
-                n_ally += 1
-                break
-    if faction in GALLIC_FACTIONS:
-        n = min(5, get_available(state, faction, WARBAND))
-        if n > 0:
-            placements.append({"region": settlement_regions[0],
-                               "piece_type": WARBAND, "faction": faction,
-                               "count": n})
-    elif faction == ROMANS:
-        n = min(3, get_available(state, faction, AUXILIA))
-        if n > 0:
-            placements.append({"region": settlement_regions[0],
-                               "piece_type": AUXILIA, "faction": faction,
-                               "count": n})
-    return {"placements": placements} if placements else None
+    """Source-limited default for A29's unshaded placements."""
+    from fs_bot.cards.expansion_validation import derive_params
+    return None if shaded else derive_params(state, faction, 'A29')
 
 
 def _derive_card_A40(state, faction, shaded):

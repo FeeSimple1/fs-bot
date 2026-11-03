@@ -1433,6 +1433,13 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
             return {}
         from fs_bot.cli.german_allegiances import collect_params
         return collect_params(state, faction, stdin, stdout)
+    if card_id in (41, 42) or (card_id in (40, 51) and not shaded):
+        from fs_bot.cli.base_event_limits import collect_params
+        return collect_params(state, faction, card_id, shaded, stdin, stdout)
+    from fs_bot.cards.expansion_validation import supported
+    if supported(card_id, shaded):
+        from fs_bot.cli.expansion_validation import collect_params
+        return collect_params(state, faction, card_id, shaded, stdin, stdout)
     if card_id == 47:
         from fs_bot.cli.council import collect_params
         return collect_params(state, faction, stdin, stdout)

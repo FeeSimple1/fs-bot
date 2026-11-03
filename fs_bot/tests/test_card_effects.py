@@ -1343,7 +1343,7 @@ class TestAuditConditionFixes:
         assert d is not None
         pts = [(p["piece_type"], p.get("count")) for p in d["placements"]]
         assert any(pt == ALLY for pt, _ in pts)
-        assert any(pt == WARBAND and c == 5 for pt, c in pts)
+        assert sum(c for pt, c in pts if pt == WARBAND) == 5
         # Execute and confirm the 5-Warband cap holds.
         st["event_params"] = d
         st["executing_faction"] = AEDUI
@@ -1351,7 +1351,7 @@ class TestAuditConditionFixes:
         execute_event(st, "A29", shaded=False)
         assert count_pieces(st, "Sequani", AEDUI, WARBAND) - before == 5
 
-    def test_cardA29_handler_skips_non_settlement_region(self):
+    def test_cardA29_handler_rejects_non_settlement_region(self):
         from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, WARBAND)
         from fs_bot.board.pieces import count_pieces
         from fs_bot.state.state_schema import build_initial_state
@@ -1361,7 +1361,8 @@ class TestAuditConditionFixes:
         st["event_params"] = {"placements": [
             {"region": "Aedui", "piece_type": WARBAND, "faction": AEDUI, "count": 5}]}
         before = count_pieces(st, "Aedui", AEDUI, WARBAND)
-        execute_event(st, "A29", shaded=False)
+        with pytest.raises(ValueError, match="ineligible piece or Region"):
+            execute_event(st, "A29", shaded=False)
         assert count_pieces(st, "Aedui", AEDUI, WARBAND) == before
 
     def test_cardA40_deriver_and_three_region_cap(self):

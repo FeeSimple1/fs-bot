@@ -1,6 +1,9 @@
 """A37 Aedui Event instruction: place Allies, but move no pieces."""
 from collections import Counter
 from copy import deepcopy
+import gzip
+import json
+from pathlib import Path
 
 import pytest
 
@@ -8,8 +11,10 @@ from fs_bot import rules_consts as rc
 from fs_bot.board.control import refresh_all_control
 from fs_bot.board.pieces import place_piece, count_pieces, get_leader_in_region
 from fs_bot.engine.execute import _execute_event, _resolve_card_A37_move
+from fs_bot.engine.game_engine import _maybe_execute
 from fs_bot.state.state_schema import build_initial_state
-from fs_bot.tools.error_census import play_game, census_result
+from fs_bot.state.serialize import decode
+from fs_bot.tools.error_census import census_result
 
 
 @pytest.mark.parametrize('scenario', [rc.SCENARIO_ARIOVISTUS, rc.SCENARIO_GALLIC_WAR])
@@ -55,16 +60,22 @@ def test_np_instruction_does_not_control_a_human_aedui_choice():
 
 @pytest.mark.parametrize('scenario', [rc.SCENARIO_ARIOVISTUS, rc.SCENARIO_GALLIC_WAR])
 def test_seed3_a37_refusal_is_a_legal_partial_event(scenario):
-    # Exact pair from the combined 50-game census; fix the decision, not the
-    # census severity table. The Ally placement remains an executed Event.
-    game = play_game(scenario, 3)
-    records = [record for card in game['card_results'] if card.get('card') == 'A37'
-               for faction, record in (card.get('turn_result', {}).get('actions_taken') or {}).items()
-               if faction == rc.AEDUI and record.get('execution', {}).get('command') == 'Event']
-    assert len(records) == 1
-    result = records[0]['execution']
+    # Preserve the exact failing position/decision from the original census,
+    # independently of earlier Events changing the full-game trajectory.
+    name = 'ariovistus-3' if scenario == rc.SCENARIO_ARIOVISTUS else 'the-gallic-war-3'
+    path = Path(__file__).parent / 'fixtures' / 'a37_before_exp09' / f'{name}.json.gz'
+    original = json.loads(gzip.decompress(path.read_bytes()))
+    assert original['source_commit'] == '8db858b14cd13856059d42db1ad3931e523b5ed4'
+    assert (original['scenario'], original['seed'], original['card'], original['faction']) == (
+        scenario, 3, 'A37', rc.AEDUI)
+    state, decision = decode(original['state']), decode(original['decision'])
+    before = sum(count_pieces(state, r, rc.AEDUI, rc.ALLY) for r in state['spaces'])
+    records = {rc.AEDUI: deepcopy(decision)}
+    result = _maybe_execute(state, rc.AEDUI, decision, records)
     assert result['executed']
+    assert sum(count_pieces(state, r, rc.AEDUI, rc.ALLY) for r in state['spaces']) > before
     assert result['free_actions'][0]['declined_no_effect']
+    game = {'card_results': [{'card': 'A37', 'turn_result': {'actions_taken': records}}]}
     counts, examples, occurrences = Counter(), {}, []
     census_result(game, counts, examples, scenario, 3, occurrences)
     a37 = [row for row in occurrences if row['card'] == 'A37' and row['faction'] == rc.AEDUI]

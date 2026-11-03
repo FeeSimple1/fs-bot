@@ -3677,22 +3677,23 @@ class TestShadedDerivers:
 
     def test_card42_shaded_never_removes_own_ally(self):
         # §8.2.3: the acting Faction removes enemies' Allies, never its own.
-        # Aedui acting -> a Roman Ally on a supply line is removed, an Aedui
-        # Ally on the same supply line is kept.
+        # Romans guiding shaded text remove the Aedui Ally and keep their
+        # own. Aedui are unsuitable for this witness: their card-specific
+        # instructions restrict Roman Wine targets to player Arverni/Belgae.
         from fs_bot.board.pieces import place_piece, count_pieces
         from fs_bot.board.control import refresh_all_control
         from fs_bot.rules_consts import AEDUI, ROMANS, ALLY
         s = self._base()
-        s["tribes"]["Helvetii"]["allied_faction"] = ROMANS   # enemy of Aedui
+        s["tribes"]["Helvetii"]["allied_faction"] = ROMANS
         place_piece(s, "Sequani", ROMANS, ALLY)
-        s["tribes"]["Sequani"]["allied_faction"] = AEDUI     # acting's own
+        s["tribes"]["Sequani"]["allied_faction"] = AEDUI
         place_piece(s, "Sequani", AEDUI, ALLY)
         refresh_all_control(s)
-        execute_decision(s, AEDUI, self._ev(42))
-        assert count_pieces(s, "Sequani", ROMANS, ALLY) == 0          # removed
-        assert s["tribes"]["Helvetii"]["allied_faction"] is None
-        assert count_pieces(s, "Sequani", AEDUI, ALLY) == 1           # kept
-        assert s["tribes"]["Sequani"]["allied_faction"] == AEDUI
+        execute_decision(s, ROMANS, self._ev(42))
+        assert count_pieces(s, "Sequani", ROMANS, ALLY) == 1
+        assert s["tribes"]["Helvetii"]["allied_faction"] == ROMANS
+        assert count_pieces(s, "Sequani", AEDUI, ALLY) == 0
+        assert s["tribes"]["Sequani"]["allied_faction"] is None
 
     def test_card68_shaded_places_citadel_and_warbands(self):
         from fs_bot.board.pieces import place_piece, count_pieces

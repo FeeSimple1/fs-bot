@@ -198,12 +198,38 @@ A58 also prevents Harassment. Required choices remain pending if a bot
 default cannot perform a legal action. A refused troop loan lets you replan.
 Use `board` or `b` at these menus to inspect the current position.
 
-Arduenna (A67) lets the Event player select a beneficiary other than Arverni.
+Gallic Shouts (35 shaded) and Celtic Rites (46 shaded) let the Event player
+choose a Gallic beneficiary. That player makes its own Command choices.
+Gallic Shouts also lets the beneficiary put its full and Limited Commands
+in either order; both are free, without Battle or a Special Activity.
+Celtic Rites permits Battle but no Special Activity, and keeps the original
+Event player Eligible. Required actions cannot be declined when possible.
+The ordinary March menu's pending hide-without-movement limitation also
+affects these grants.
+
+Under [PR-10](docs/provisional-rulings.md#pr-10), automatic Arverni receiving
+an Event Command in Ariovistus act only while At War. They take the first
+possible permitted Command in Rally, March, Raid, Battle order, retaining
+inherent Ambush if Battle is allowed. They receive no human decision prompt.
+This project ruling is provisional and subject to official correction.
+
+Arduenna (67) lets the Event player select Romans or a Gallic faction;
+expansion Arduenna (A67) instead permits any beneficiary other than Arverni.
 That player may accept or decline the complete sequence. After accepting,
-choose a March into Nervii or Treveri, then a different Command there, before
-the final Hide step. Each action is required when possible. You can select
+choose a March into either or both Nervii and Treveri, then a non-March
+Command in either or both Regions, before the final Hide step. Each action
+is required when possible. You can select
 the moving groups and legal routes, including split groups and transit
 dropoffs; pieces that arrive cannot move again from another selected origin.
+Scouted pieces that moved lose their marker during March and can Hide at
+the end; Scouted residents lose their marker at the end and stay Revealed.
+
+Remi Influence (68 shaded) asks the Gallic faction allied with Remi whether
+to accept and which City to use: Alesia or Cenabum. That faction receives
+the Citadel and four Warbands as available, even if another player played
+the Event. Only the chosen City's Ally, Citadel and status are cleared;
+other forces in its Region remain. Use `board` or `b` at these menus to
+inspect the current position before choosing.
 
 The unshaded “remove all” effects of Ariovistus's Wife (A25), Divico (A26),
 Orgetorix (A30) and Galba (A56) include Scouted Warbands. Printed restrictions
@@ -316,7 +342,7 @@ flowcharts), including transcribed errata marked as `[ERRATA ...]` notes.
 The implementation follows these supplied references and the rulings
 recorded in QUESTIONS.md. That file is a historical decision ledger;
 [current status](docs/current-status.md) supersedes older completion claims.
-The owner adopted [nine provisional rulings](docs/provisional-rulings.md),
+The owner adopted [eleven provisional rulings](docs/provisional-rulings.md),
 all subject to possible later correction if an authoritative source is found:
 
 - A30 has no special Belgic instruction; bots use their normal shaded Event procedure.
@@ -336,6 +362,12 @@ all subject to possible later correction if an authoritative source is found:
   would be zero, and explicit printed exceptions remain.
 - A20 casualties follow the required visibility order, then choose an
   original Region at equal odds for each otherwise tied Warband loss.
+
+- Automatic Arverni Event Commands follow PR-10's first-possible phase order
+  and actual At War condition, with inherent Ambush for Battle.
+- Numeric Arduenna's Arverni bot uses PR-11's conservative Legion-Loss
+  prediction, printed NPC Retreat and Vercingetorix Harassment safety;
+  actual human choices and dice still resolve normally.
 
 These are project interpretations, not official errata. The ruling register
 explains each source gap and the fallback for older saves without usable

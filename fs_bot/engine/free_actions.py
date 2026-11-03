@@ -144,6 +144,17 @@ def _explicit_sentinel(response, key):
 
 def validate_free_action_response(state, faction, request, response):
     """Return a useful validation error, or None for a legal explicit response."""
+    if (request.get('request_type') in ('gallic_event_beneficiary', 'gallic_command_order')
+            or request.get('gallic_event_card') or request.get('request_type') == 'remi_event_effect'):
+        if request.get('request_type') == 'remi_event_effect':
+            from fs_bot.cards.remi_event_effect import validate_response
+        else:
+            from fs_bot.cards.gallic_event_grants import validate_response
+        try:
+            validate_response(state, faction, request, response)
+        except (ValueError, TypeError, KeyError, IndexError, AttributeError, CommandError, PieceError, NotImplementedError) as exc:
+            return str(exc)
+        return None
     if request.get('request_type') == 'named_event_effect':
         from fs_bot.cards.named_event_effects import validate_response
         try:
@@ -314,6 +325,9 @@ def _validate_plan(state, faction, request, action):
         if cmd == 'Battle':
             entries = (part.get('details') or {}).get('battle_plan') or []
             battle_regions = [entry.get('region') for entry in entries]
+            from fs_bot.board.pieces import count_pieces
+            if any(not count_pieces(state, entry.get('region'), faction) for entry in entries):
+                return "Battle requires the acting Faction's pieces in every selected Region."
             if len(battle_regions) != len(set(battle_regions)):
                 return 'Select each Battle Region only once.'
         selected.extend(command_regions(part))

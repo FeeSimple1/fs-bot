@@ -1697,7 +1697,9 @@ def execute_card_35(state, shaded=False):
         state["event_modifiers"]["card_35_roman_peek"] = True
         state["event_modifiers"]["card_35_free_limited_command"] = True
     else:
-        # Gallic Faction gets 1 Command + 1 Limited Command, free, no Battles
+        from fs_bot.cards.gallic_event_grants import initial_params
+        initial_params(state, 35)
+        # The executor selects the recipient; that recipient chooses the order.
         state["event_modifiers"]["card_35_gallic_commands"] = True
         state["event_modifiers"]["card_35_no_battles"] = True
 
@@ -1978,7 +1980,9 @@ def execute_card_46(state, shaded=False):
                 # "Ineligible through NEXT card" — persistent.
                 state.setdefault("forced_ineligible", {})[fac] = 1
     else:
-        # Free Command for a Gallic Faction + Stay Eligible
+        from fs_bot.cards.gallic_event_grants import initial_params
+        initial_params(state, 46)
+        # The selected Gallic faction Commands; the Event executor stays Eligible.
         faction = state.get("executing_faction")
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_46_free_command"] = True
@@ -2852,23 +2856,10 @@ def execute_card_67(state, shaded=False):
 
     Source: Card Reference, card 67
     """
-    from fs_bot.rules_consts import NERVII, TREVERI
-    state.setdefault("event_modifiers", {})
-    state["event_modifiers"]["card_67_arduenna"] = True
-    state["event_modifiers"]["card_67_target_regions"] = [NERVII, TREVERI]
-    # After Command, flip pieces Hidden — deferred to caller
-    # but if event_params has pieces already moved, flip them
-    faction = state.get("executing_faction")
-    params = state.get("event_params", {})
-    flip_regions = params.get("flip_hidden_regions", [])
-    for region in _event_entries(state, "67.hiding", flip_regions):
-        if region in (NERVII, TREVERI) and faction:
-            for piece_type in (AUXILIA, WARBAND):
-                revealed = count_pieces_by_state(
-                    state, region, faction, piece_type, REVEALED)
-                if revealed > 0:
-                    flip_piece(state, region, faction, piece_type, revealed,
-                               from_state=REVEALED, to_state=HIDDEN)
+    from fs_bot.cards.gallic_event_grants import initial_params
+    initial_params(state, 67)
+    state.setdefault("event_modifiers", {})["card_67_arduenna"] = True
+
 
 def execute_card_68(state, shaded=False):
     """Card 68: Remi Influence — Replace Allies / Remove+Citadel.
@@ -2915,49 +2906,9 @@ def execute_card_68(state, shaded=False):
                 _unally_tribe(state, tribe)
                 _ally_tribe(state, tribe, ROMANS)
     else:
-        tribe_info = state.get("tribes", {}).get(TRIBE_REMI)
-        if not tribe_info or tribe_info.get("allied_faction") not in GALLIC_FACTIONS:
-            return
-        faction = state.get("executing_faction")
-        target_city = params.get("target_city")
-        if target_city not in (CITY_ALESIA, CITY_CENABUM):
-            return
-        tribe = CITY_TO_TRIBE.get(target_city)
-        region = TRIBE_TO_REGION.get(tribe)
-        # Remove anything at the city
-        t_info = state.get("tribes", {}).get(tribe)
-        # Remove the City tribe's piece (Ally or Citadel) + dict together
-        _unally_tribe(state, tribe)
-        # Defensive: pair any stray Citadel removal with its tribe entry
-        for fac in (ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS):
-            while count_pieces(state, region, fac, CITADEL) > 0:
-                remove_piece(state, region, fac, CITADEL)
-                clear_allied_tribe(state, region, fac, CITADEL)
-        # Remove "anything" at the City — Dispersed/Razed live in
-        # tribe["status"]; clear so the placed Citadel is consistent.
-        if t_info and t_info.get("status") in (
-                MARKER_DISPERSED, MARKER_DISPERSED_GATHERING, MARKER_RAZED):
-            t_info["status"] = None
-        markers = state.get("markers", {})
-        if tribe in markers:
-            markers[tribe].pop(MARKER_DISPERSED, None)
-            markers[tribe].pop(MARKER_DISPERSED_GATHERING, None)
-            markers[tribe].pop(MARKER_RAZED, None)
-        _event_step(state, "68.citadel")
-        # Place Citadel + 4 Warbands of executing faction. The Citadel
-        # allies the City tribe — record the allegiance with the piece.
-        if (faction and get_available(state, faction, CITADEL) > 0
-                and count_pieces(state, region, faction, CITADEL) == 0):
-            place_piece(state, region, faction, CITADEL)
-            if t_info is not None:
-                t_info["allied_faction"] = faction
-            refresh_all_control(state)
-        _event_step(state, "68.warbands")
-        if faction:
-            avail = get_available(state, faction, WARBAND)
-            to_place = min(4, avail)
-            if to_place > 0:
-                place_piece(state, region, faction, WARBAND, count=to_place)
+        from fs_bot.cards.remi_event_effect import execute
+        return execute(state)
+
 
 def execute_card_69(state, shaded=False):
     """Card 69: Segni & Condrusi — Place Germanic Warbands + Germans Phase.

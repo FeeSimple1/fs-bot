@@ -1,7 +1,8 @@
 # Provisional project rulings
 
 **PR-01–PR-06 adopted on 24 October 2026; PR-07–PR-09 adopted on
-29 October 2026 (America/Chicago).** These nine rulings determine the
+29 October 2026; PR-10–PR-11 adopted on 2 November 2026
+(America/Chicago).** These eleven rulings determine the
 engine's behavior where the available sources conflict or leave a procedure
 unspecified. For the first six, the owner instructed:
 "Use each of these. Mark them as subject to possible later correction if
@@ -25,6 +26,8 @@ remain unchanged.
 | [PR-07](#pr-07) | One non-player Aedui Supply agreement roll covers the current Roman action, across all relevant Regions and routes. | Separate Region-keyed agreement rolls. |
 | [PR-08](#pr-08) | Rally/Recruit bonuses cannot establish the prerequisite for the ordinary placement in the same Region. | Same behavior, now explicitly adopted. |
 | [PR-09](#pr-09) | Each tied A20 Counterattack casualty selects an eligible origin Region with equal probability. | Fixed origin-allocation order. |
+| [PR-10](#pr-10) | At War automatic Arverni choose the first possible permitted Event Command in Rally–March–Raid–Battle order; Battle retains inherent Ambush. | No supported single-Command adaptation of the Arverni Phase. |
+| [PR-11](#pr-11) | Numeric 67's non-player Arverni maximize conservative predicted Legion Losses, using printed NPC Retreat and March safety conditions. | Generic gathering and Command choice did not establish the printed maximum. |
 
 ## Sources and research scope
 
@@ -49,6 +52,14 @@ the boundary-label rule in §5.3; it is not a provisional project ruling.
 The [question ledger](../QUESTIONS.md#current-open-source-questions)
 preserves the ambiguities and historical dispositions. Research did not
 establish that no authoritative answer exists elsewhere.
+
+On 2 November, the owner authorized research into automatic Arverni Event
+Commands and numeric Arduenna's non-player prediction model. The
+[research report](reviews/gallic-event-rules-research-2026-11-02.md) separates
+published requirements from the adaptations below. The owner adopted both:
+"Let's go with your recommendations; they are subject to official overruling
+if we find such a source". This authorizes PR-10 and PR-11; it does not make
+them official rules or waive their validation requirements.
 
 <a id="pr-01"></a>
 
@@ -289,6 +300,71 @@ adopted random origin selection to avoid a fixed geographic preference.
 **Status:** Provisional; subject to possible later correction if an
 authoritative source is found. The source does not expressly assign an
 origin chooser or this tie-break.
+
+<a id="pr-10"></a>
+
+## PR-10: Automatic Arverni receiving an Event Command
+
+**Adopted:** 2 November 2026 (America/Chicago).
+
+**Ruling:** When an Event grants the game-run Arverni a Command in
+Ariovistus, require their actual At War condition and select the first
+possible permitted Command in A6.2 order: Rally, March, Raid, then Battle.
+Execute only that Command, using the normal Arverni Phase targeting and
+priorities and the Event's restrictions. Recompute the choice for each
+grant. A Limited Command still has its normal one-Region restriction. At
+Peace produces no Command; it does not create an activation or force war.
+
+Battle retains the automatic Arverni's inherent Ambush and its Hidden
+superiority condition under A3.1/A4.3.3. Do not grant Entreat or Devastate.
+Card 35's prohibition on Battle remains binding. The Event executor selects
+the beneficiary where the card permits; the automatic Arverni receive no
+human Command or action-order prompt.
+
+**Basis:** A8.2.3 directs use of the Arverni Phase rules as applicable. A6.2
+supplies the sequence and At War condition but does not expressly turn its
+multi-Command activation into a one-Command priority list. That adaptation,
+including the application of At Peace, is the provisional part. Inherent
+Ambush is independently supported by A3.1/A4.3.3.
+
+**Status:** Provisional; subject to official overruling if an authoritative
+source is found. Applies to granted Commands, not to ordinary Arverni Phase
+activation or Events with their own more specific instructions.
+
+<a id="pr-11"></a>
+
+## PR-11: Numeric Arduenna's non-player prediction
+
+**Adopted:** 2 November 2026 (America/Chicago).
+
+**Ruling:** For numeric card 67's Arverni non-player instruction, select a
+legal March-and-Battle plan maximizing predicted Losses directed at Roman
+Legions. Against non-player Romans use their printed Retreat procedure
+(8.4.3). Against human Romans compare standing and legal Retreat responses
+and maximize the lower prediction. Use the printed 8.7.1 convention that
+Defender Loss rolls result in removals. Scoring retains ordinary default
+casualty priorities; it does not optimize over every possible human casualty
+assignment. Other uncertain own-piece saving rolls must not inflate the
+conservative prediction or establish safety.
+
+Keep ordinary Vercingetorix March safety: minimize Harassment, allow at most
+three Harassment Losses, and allow none on Vercingetorix. Binding agreements
+not to Harass count. Do not assume that a saving roll will protect the
+Leader. Respect initial marching cohorts, physical piece ownership and
+visibility, legal routes, and applicable player-victory/Frost restrictions.
+Actual human responses and dice resolve normally when the selected plan is
+executed; this prediction does not guarantee the realized result. This
+ruling supplies no new physical Elite-Warband designation policy.
+
+**Basis:** The card requires maximum Legion Losses. Sections 8.2.3 and 8.7.1
+support normal Command conditions and the best-case Defender-roll
+convention; 8.4.3 supplies the NPC response. Those sources do not expressly
+define the prediction of a human response for this Event. The conservative
+response model is the owner's provisional adaptation.
+
+**Status:** Provisional; subject to official overruling if an authoritative
+source is found. Applies to numeric 67, not expansion card A67. Preserve the
+distinction between the chosen evaluation model and live Battle resolution.
 
 ## Later corrections and evidence
 

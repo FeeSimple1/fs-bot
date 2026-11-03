@@ -87,12 +87,17 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 18 of 50 closed (36%) and 32 open; these are finding counts, not
+now records 19 of 50 closed (38%) and 31 open; these are finding counts, not
 equal effort units. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)
 repairs dynamic Tribe geography in expansion defaults and detects rejected
 bot Events during mixed-seat validation; it closes no extra original finding.
+The [Gallic Event repair](docs/reviews/gallic-event-grants-2026-11-02.md)
+closes BE-03: beneficiary/order decisions, correct Remi ownership and the
+owner-adopted PR-10/PR-11 automatic policies are implemented and validated.
+Five additional ordinary Arverni Phase defects are tracked separately for
+follow-up. The original denominator stays 50.
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even
@@ -125,7 +130,9 @@ them from the older validation checkpoint above.
    non-player factions, unused A53 funding, German-owned A63 after Interlude,
    Arverni-last Harassment, and the preceding Event's order during Winter.
    PR-07 through PR-09 were adopted on 29 October for Aedui Supply dice,
-   placement-bonus timing, and A20 casualty origins. Each is subject to
+   placement-bonus timing, and A20 casualty origins. PR-10/PR-11 were adopted
+   on 2 November for automatic Arverni Event Commands and numeric Arduenna
+   predictions. Each is subject to
    possible later correction if an authoritative source is found. [QUESTIONS.md](QUESTIONS.md) retains the source conflicts;
    they are not current implementation blockers or designer-confirmed rules.
 2. **Extend position and interaction coverage as defects or gaps are found.**

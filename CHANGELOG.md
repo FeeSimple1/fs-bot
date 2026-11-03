@@ -4,6 +4,22 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Gallic Event ownership and Arverni policies, 2 November 2026
+
+- Restore beneficiary-owned choices on 35/46/67, Gallic Shouts' full/Limited
+  Command order, Celtic Rites' original-executor eligibility, and the actual
+  Remi owner's City/Citadel/Warband effect. Preserve card/board information,
+  pending decisions, save/resume and replay.
+- Implement owner-adopted PR-10 for automatic Arverni Event Commands and
+  PR-11 for numeric Arduenna's Legion-Loss prediction. Both remain provisional
+  and subject to official correction. Repair initial March cohorts, physical
+  ownership/visibility bookkeeping and the Roman Retreat exposure check.
+- Close BE-03: the original audit is 19/50 closed (38%). The final source
+  passes 7,149 tests and the complete game matrix without changing the
+  balance baseline. Five ordinary Arverni Phase defects remain separate
+  follow-ups. See the [repair report](docs/reviews/gallic-event-grants-2026-11-02.md)
+  for exact scope, evidence, outcome review and compatibility limits.
+
 ## Unreleased — Colony Event defaults, 2 November 2026
 
 - Use runtime Colony geography in Savage Dictates and Cross Rhenus defaults,

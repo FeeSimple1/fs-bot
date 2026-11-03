@@ -27,6 +27,8 @@ references and canonical constants remain read-only.
 | Document or artifact | Scope |
 |---|---|
 | [2 November Colony defaults and fuzz follow-up](reviews/colony-event-defaults-2026-11-02.md) | Dynamic Tribe geography for A45/A36, explicit rejected-bot detection and retained cross-hash CI evidence |
+| [2 November Gallic Event ownership](reviews/gallic-event-grants-2026-11-02.md) | BE-03 closure: beneficiary/order, Remi ownership, numeric Arduenna, adopted PR-10/PR-11, validation and separate phase follow-ups |
+| [2 November Gallic Event rules research](reviews/gallic-event-rules-research-2026-11-02.md) | Owner-requested external source check and subsequent adoption of PR-10/PR-11 for automatic Arverni Commands and Arduenna predictions |
 | [2 November named-faction Event choices](reviews/named-event-effects-2026-11-02.md) | BE-04 owner-directed optional effects, Legion sources, A18 complete removal and durable/terminal validation |
 | [3 November Event limits and German Allegiances](reviews/event-validation-2026-11-03.md) | BE-11/12 and EXP-09 legality, physical replacements, named owners, rejected human Event retries and outcome evidence |
 | [2 November Gallia Togata and Dread](reviews/expansion-effects-2026-11-02.md) | EXP-07/10 owner-directed evacuation, added Intimidate participant, Roman marker immunity, replay and outcome evidence |

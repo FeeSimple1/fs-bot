@@ -34,7 +34,7 @@ from fs_bot.rules_consts import (
     SENATE_UP, SENATE_DOWN,
     CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
     SUCCESSOR,
-    ARVERNI, ARVERNI_REGION, PICTONES, BRITANNIA, CITY_TO_TRIBE,
+    ARVERNI, ARVERNI_REGION, PICTONES, BRITANNIA, CITY_TO_TRIBE, CITY_ALESIA, CITY_CENABUM,
 )
 
 PIECE_TYPES = (WARBAND, AUXILIA, LEGION, ALLY, CITADEL, FORT, LEADER)
@@ -257,6 +257,10 @@ def card_param_schema(card_id, scenario, card_edition=None):
 # violation). Offering/generating only these keeps humans out of dead ends
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
+    35: {"faction": {"kind": "faction", "values": tuple(GALLIC_FACTIONS)}},
+    46: {"faction": {"kind": "faction", "values": tuple(GALLIC_FACTIONS)}},
+    67: {"faction": {"kind": "faction", "values": (ROMANS, *GALLIC_FACTIONS)}},
+    68: {"target_city": {"kind": "tribe", "values": (CITY_ALESIA, CITY_CENABUM)}},
     2: {"legions_from_track": {"kind": "count"},
         "legions_from_fallen": {"kind": "count"}},
     18: {"target_region": {"kind": "region"}},

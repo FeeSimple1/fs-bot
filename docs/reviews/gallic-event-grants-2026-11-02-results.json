@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-02",
+  "date_timezone": "America/Chicago",
+  "accepted": true,
+  "source": {
+    "commit": "e37b965e5ce420e29e486c7221661e51b9803282",
+    "python_sha256": "cdd29718dab7ea7443f93dc225f192e3f31751aaa84c4e6e56d617a2b6c7b63c",
+    "python_files": 442,
+    "python_worktree_changes": true
+  },
+  "python": "3.10.22",
+  "full_tests": {
+    "passed": 7149,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 177.51,
+    "command": "python -m pytest -q -n 2",
+    "log": "full-suite-attempt3.log",
+    "junit": "full-suite-attempt3.xml"
+  },
+  "focused_tests": {
+    "passed": 263,
+    "seconds": 8.8,
+    "log": "pre-freeze-focused-corrected.log"
+  },
+  "independent_review": {
+    "PR-10": "approved",
+    "PR-11": "approved",
+    "roman_retreat": "approved",
+    "bounded_allocation_oracle": {
+      "positions": 6,
+      "plans": 210,
+      "matched": true
+    }
+  },
+  "matrix": {
+    "source": {
+      "commit": "e37b965e5ce420e29e486c7221661e51b9803282",
+      "python_sha256": "cdd29718dab7ea7443f93dc225f192e3f31751aaa84c4e6e56d617a2b6c7b63c",
+      "python_files": 442,
+      "python_worktree_changes": true
+    },
+    "python": "3.10.22",
+    "checks_passed": [
+      "source identity and all Python files unchanged",
+      "all protected inputs unchanged",
+      "all subprocess exits zero",
+      "every job retained unchanged source and protected inputs",
+      "bot records legacy",
+      "bot record source identity legacy",
+      "bot metadata legacy",
+      "bot records original",
+      "bot record source identity original",
+      "bot metadata original",
+      "bot records second-edition",
+      "bot record source identity second-edition",
+      "bot metadata second-edition",
+      "exact cross-hash mixed-seat JSON and stdout legacy",
+      "exact cross-hash mixed-seat JSON and stdout original",
+      "exact cross-hash mixed-seat JSON and stdout second-edition",
+      "strict census and exact cross-hash output",
+      "unchanged 15-percentage-point balance band"
+    ],
+    "failures": [],
+    "protected_inputs_unchanged": true,
+    "protected_input_count": 49,
+    "bot_games": 150,
+    "bot_editions": {
+      "legacy": 100,
+      "original": 25,
+      "second-edition": 25
+    },
+    "fuzz": {
+      "legacy": {
+        "games": 200,
+        "human_turns": 6312,
+        "event_turns": 1582,
+        "events_ok": 1473,
+        "partial": 1,
+        "hard_findings": 0,
+        "batch_digest": "97f212d15097fdad2ca9a4f5fd2ef1f36b81a5a00088ac974a1e3aea9d04d09f"
+      },
+      "original": {
+        "games": 10,
+        "human_turns": 338,
+        "event_turns": 76,
+        "events_ok": 70,
+        "partial": 0,
+        "hard_findings": 0,
+        "batch_digest": "cdefd5fe7b34a6006fb8dd9f67bf9604c3b5948de66659d58eb66bbe40da8233"
+      },
+      "second-edition": {
+        "games": 10,
+        "human_turns": 299,
+        "event_turns": 63,
+        "events_ok": 57,
+        "partial": 0,
+        "hard_findings": 0,
+        "batch_digest": "d19466fc79bc28e8e30d001c9166cd893e900b18261b72cdc814e24d52f7d5df"
+      }
+    },
+    "mixed_seat_distinct_cases": 220,
+    "mixed_seat_executions_including_replay_and_hash_repeat": 880,
+    "strict_census_executions": 20,
+    "census_severities": {
+      "legal-decline": 123
+    },
+    "planned_counts": {
+      "bots": 150,
+      "mixed_distinct": 220,
+      "mixed_executions": 880,
+      "strict_census_executions": 20
+    },
+    "baseline_comparison": {
+      "games": 100,
+      "passed": true,
+      "rate_changes": [
+        {
+          "scenario": "Pax Gallica?",
+          "faction": "Aedui",
+          "before_wins": 1,
+          "after_wins": 3,
+          "percentage_point_change": 10
+        },
+        {
+          "scenario": "Pax Gallica?",
+          "faction": "Arverni",
+          "before_wins": 2,
+          "after_wins": 2,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "Pax Gallica?",
+          "faction": "Belgae",
+          "before_wins": 3,
+          "after_wins": 2,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Pax Gallica?",
+          "faction": "Romans",
+          "before_wins": 14,
+          "after_wins": 13,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "faction": "Aedui",
+          "before_wins": 6,
+          "after_wins": 6,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "faction": "Arverni",
+          "before_wins": 1,
+          "after_wins": 0,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "faction": "Belgae",
+          "before_wins": 2,
+          "after_wins": 4,
+          "percentage_point_change": 10
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "faction": "Romans",
+          "before_wins": 11,
+          "after_wins": 10,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "The Great Revolt",
+          "faction": "Aedui",
+          "before_wins": 5,
+          "after_wins": 3,
+          "percentage_point_change": -10
+        },
+        {
+          "scenario": "The Great Revolt",
+          "faction": "Arverni",
+          "before_wins": 5,
+          "after_wins": 8,
+          "percentage_point_change": 15
+        },
+        {
+          "scenario": "The Great Revolt",
+          "faction": "Belgae",
+          "before_wins": 6,
+          "after_wins": 4,
+          "percentage_point_change": -10
+        },
+        {
+          "scenario": "The Great Revolt",
+          "faction": "Romans",
+          "before_wins": 4,
+          "after_wins": 5,
+          "percentage_point_change": 5
+        },
+        {
+          "scenario": "Ariovistus",
+          "faction": "Aedui",
+          "before_wins": 1,
+          "after_wins": 1,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "Ariovistus",
+          "faction": "Belgae",
+          "before_wins": 2,
+          "after_wins": 1,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Ariovistus",
+          "faction": "Germans",
+          "before_wins": 5,
+          "after_wins": 4,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Ariovistus",
+          "faction": "Romans",
+          "before_wins": 12,
+          "after_wins": 14,
+          "percentage_point_change": 10
+        },
+        {
+          "scenario": "The Gallic War",
+          "faction": "Aedui",
+          "before_wins": 1,
+          "after_wins": 4,
+          "percentage_point_change": 15
+        },
+        {
+          "scenario": "The Gallic War",
+          "faction": "Arverni",
+          "before_wins": 1,
+          "after_wins": 2,
+          "percentage_point_change": 5
+        },
+        {
+          "scenario": "The Gallic War",
+          "faction": "Belgae",
+          "before_wins": 5,
+          "after_wins": 3,
+          "percentage_point_change": -10
+        },
+        {
+          "scenario": "The Gallic War",
+          "faction": "Romans",
+          "before_wins": 13,
+          "after_wins": 11,
+          "percentage_point_change": -10
+        }
+      ],
+      "winner_or_card_count_changes": 28,
+      "baseline_changed": false,
+      "baseline_sha256": "cbdfc7883ea0137fd5bf414ebc3bf847ec1774f42bd447d81a74ed268f9496c3",
+      "existing_band": 0.15
+    },
+    "parent_comparison": {
+      "games": 100,
+      "winner_or_card_count_changes": 23,
+      "final_state_changes": 54,
+      "provenance": "parent-record-provenance.json; reused prior records with exact parent Python bytes"
+    },
+    "scope": "All five scenarios. Bots: legacy1-20; original/second-edition201-205. Mixed: legacy1-40; original/second-edition201-202, hashes0/7 with replay. Strict census201-202, hashes0/7.",
+    "passed": true
+  },
+  "additional_diagnostics": {
+    "games": 1,
+    "case": "Ariovistus legacy seed39",
+    "accepted_sample": false,
+    "reason": "Inspect the one mixed-seat soft partial",
+    "result": "Reproduced exactly; fuzzer-injected Resource transfer after Rally planning left two Regions unaffordable; no mandatory Event effect missed",
+    "record": "attempt3/partial-Ariovistus-39.json"
+  },
+  "baseline": {
+    "changed": false,
+    "sha256": "cbdfc7883ea0137fd5bf414ebc3bf847ec1774f42bd447d81a74ed268f9496c3",
+    "band_unchanged": 0.15,
+    "full_100_maximum_pp_change": 15,
+    "three_seed_canary_band_unchanged": 0.4,
+    "three_seed_canary_maximum_pp_change": 33.333333333333336,
+    "fresh_post_refresh_games": 0,
+    "historical_attempt2_candidate": "Never installed; superseded"
+  },
+  "protected_inputs": {
+    "count": 49,
+    "all_unchanged": true,
+    "rule_inputs": 48,
+    "baseline_files": 1
+  },
+  "provisional_rulings": {
+    "new": [
+      "PR-10",
+      "PR-11"
+    ],
+    "total": 11,
+    "owner_adopted": true,
+    "subject_to_official_correction": true,
+    "unadopted_source_questions": 2
+  },
+  "scope_limits": [
+    "Original human-choice audit denominator remains50; independent inventory34 unverified rows unchanged.",
+    "Ordinary March hide-only menu and other BE-01 March grants remain separately open.",
+    "Five confirmed ordinary Arverni Phase defects remain separate follow-up work.",
+    "PR-11 score retains default casualty priorities and existing scalar NPC Elite designation; actual human choices and dice resolve live.",
+    "Scoped tests and game matrix do not certify every position or combination."
+  ],
+  "historical_evidence": {
+    "attempt1": "rejected; failures retained",
+    "attempt2": "runtime matrix passed but causal priority defect blocked acceptance",
+    "parent_records": "Reused100 records on exact parent Python bytes; see parent-record-provenance.json",
+    "not_pooled": true
+  },
+  "evidence_archive": "gallic-event-grants-2026-11-02-evidence.zip",
+  "progress": {
+    "closed": 19,
+    "total": 50,
+    "percent": 38,
+    "open": 31,
+    "newly_closed": [
+      "BE-03"
+    ],
+    "additional_ordinary_arverni_phase_findings": 5
+  },
+  "outcome_review": {
+    "parent_outcome_changes": 23,
+    "parent_state_changes": 54,
+    "exact_attempt2_state_reuses": 15,
+    "fresh_changed_outcome_pairs": 8,
+    "fresh_first_causes": {
+      "corrected_roman_retreat": 6,
+      "shaded_remi_eligibility": 2
+    },
+    "repair_control": "The Great Revolt seed6",
+    "stored_baseline_changes": 28,
+    "stored_baseline_winner_changes": 21,
+    "stored_baseline_card_changes": 16,
+    "stored_baseline_reconciliation": {
+      "new_only": 16,
+      "inherited_only": 9,
+      "overlap": 3,
+      "earlier_drifts_cancelled": 4
+    },
+    "unexplained_reviewed_first_divergences": 0,
+    "first_cause_not_sole_determinant": true,
+    "evidence": "causal-traces-attempt3/",
+    "all_first_cause_categories": {
+      "roman_retreat_legion_exposure": 6,
+      "remi_beneficiary_eligibility": 6,
+      "gallic_shouts_order_choice": 6,
+      "arduenna_prevents_repeated_movement": 3,
+      "german_excluded_from_gallic_benefit": 2
+    },
+    "summary": "causal-traces-attempt3/review-summary.json"
+  }
+}

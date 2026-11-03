@@ -6,7 +6,7 @@ The standard frontends dispatch bot seats to the built-in non-player logic;
 a custom turn callback must dispatch those seats explicitly. See [current status](docs/current-status.md) for revision-specific
 verification and adopted provisional rulings, and the [documentation
 index](docs/README.md) for the other guides. The owner-adopted
-[PR-01 through PR-09](docs/provisional-rulings.md) are subject to possible
+[PR-01 through PR-11](docs/provisional-rulings.md) are subject to possible
 later correction if an authoritative source is found.
 
 Known contract gaps are catalogued in the
@@ -661,6 +661,45 @@ response does not override that requirement. An engine-supplied
 such as German pieces under Divination. Do not add or change grant fields in
 a submitted action.
 
+Cards 35 shaded, 46 shaded and numeric 67 accept initial Event parameters
+`{"faction": beneficiary}` or an empty object. Empty parameters defer
+beneficiary selection to the Event executor's live `gallic_event_beneficiary`
+request. The recipient then owns its subsequent choices. Card35 sends
+`gallic_command_order` followed by two ordinary `event_command` requests:
+one full and one with `max_regions: 1`, in the selected order. Both exclude
+Battle and Special Abilities. Card46 sends one free Command request without
+a Special Ability; the original Event executor alone stays Eligible.
+Neither card permits declining a possible mandatory Command. Explicit
+`use_default` uses the implemented bot priorities; missing durable input remains pending.
+Initial `stage_timing_actions` may also name the executor's outer Event
+boundaries: `handler_complete`, the corresponding `grant.card_*` step,
+`<card>.beneficiary`, `resolve_free_command`, `35.order`, `35.command`,
+`35.limited_command`, `46.command`, or `67.accept`/`67.march`/`67.command`/
+`67.hide`, as applicable to that card. They do not authorize the executor
+to answer recipient-owned decisions.
+
+For 35/46 shaded, the legal expansion Arverni beneficiary resolves under
+[PR-10](docs/provisional-rulings.md#pr-10). Actual At War permits the first
+possible allowed Command in A6.2 order, respecting grant limits; Battle
+retains its inherent Ambush condition. At Peace produces a legal no-effect.
+No human Command or order prompt belongs to this automatic faction.
+Numeric 67's non-player Arverni plan follows
+[PR-11](docs/provisional-rulings.md#pr-11): printed Roman NPC Retreat, a
+conservative response comparison for human Romans, printed Defender-roll
+forecasting and normal Vercingetorix Harassment safety. Live choices/dice
+remain distinct from that forecast. The score retains default casualty
+priorities; Frost separately checks legal human casualty and dice outcomes.
+Both policies are provisional.
+
+Card68 shaded sends `remi_event_effect` to the actual Gallic owner of Remi.
+Only that owner can author `target_city`, decline, or the optional
+`stage_timing_actions` at `68.citadel` and `68.warbands`. The initial plan
+cannot preselect a foreign owner's response. The printed four Warbands
+are placed as available; there is no count field. Original-executor
+voluntary removal and independent owner Spring-entry rights remain separate.
+The live menus expose current/next card information, per-seat changes and
+`board`/`b`; detached previews do not consume the live RNG or human replies.
+
 Some `free_action` subtypes use a specialized response instead of an ordinary
 Command plan. These shapes describe the response, not guaranteed legal
 choices for a particular board:
@@ -676,10 +715,13 @@ choices for a particular board:
 | `gallia_evacuation_order` | `owner_order: [faction, ...]` | `cards/gallia_evacuation.py`; A5 executor orders every affected owner exactly once |
 | `gallia_evacuation` | `allocations: [{piece_id, destination, count, tribe?}]` | `cards/gallia_evacuation.py`; each affected owner allocates all its Cisalpina pieces |
 | `expansion_event_choices` | A29 `faction, placements`; A36 `placements, ally_removals` | `cards/expansion_validation.py`; named beneficiary/German owner selects within the request's scope |
+| `gallic_event_beneficiary` | `faction` from the request's `factions`, or sole `use_default: true` | `cards/gallic_event_grants.py`; executor selects for 35S/46S/67; no decline |
+| `gallic_command_order` | `order: ["command", "limited_command"]` or the reverse, or sole `use_default: true` | `cards/gallic_event_grants.py`; Card35 beneficiary chooses; no decline |
+| `remi_event_effect` | `target_city: "Alesia"` or `"Cenabum"`, optional `stage_timing_actions`; or sole `decline: true` / `use_default: true` | `cards/remi_event_effect.py`; Card68 shaded belongs to Remi's Gallic owner |
 | `procillus_march` | `origin, destination` | `cards/procillus.py`; A19 executor moves all mobile Romans from one offered origin |
 | `decisive_battle` | `region, defender` | `cards/decisive_battle.py`; A21/A57 first Battle, then optional second in the same Region |
 | `arduenna_faction` | `faction` from the request's `factions` | `cards/arduenna.py`; executor selects a playable beneficiary other than Arverni |
-| `arduenna_accept` | `accept: true` or `decline: true` | `cards/arduenna.py`; beneficiary decides the complete A67 sequence |
+| `arduenna_accept` | Sole `accept: true`, `decline: true` or `use_default: true` | `cards/arduenna.py`; beneficiary decides the complete 67/A67 sequence |
 | `arduenna_march` | Ordinary March action with explicit `origins, destinations, routes, groups` and optional `extra_groups` in `details.march_plan` | `cards/arduenna_march.py`; actual movement ending in Nervii/Treveri; normal transit dropoffs |
 | `arduenna_command` | Ordinary non-March Command action | `cards/arduenna.py`; Nervii/Treveri only, no SA |
 | `harudes_raid` | `raid_actions: [{region, target_faction}]` | `cards/harudes_bellovaci.py`; one entry per newly placed surviving Raider; null target means gain |
@@ -737,7 +779,11 @@ placed pieces. A69 retains ordinary resident participation, but its one-Loss
 bonus applies only to surviving new Warbands. An impossible Ambush cannot
 silently become an ordinary Battle or be inherited entirely by residents.
 
-For A67, the beneficiary may decline the entire sequence before any changes.
+Numeric 67's Arverni bot default retains a known
+[maximum-Legion-loss prediction gap](QUESTIONS.md#q-arduenna-np-prediction--maximizing-legion-losses-across-uncertain-actions-2-november-2026).
+It must not be described as a verified global optimum.
+
+For numeric 67 and A67, the beneficiary may decline the entire sequence before any changes.
 After acceptance, March and the subsequent non-March Command are required
 when mechanically possible, then friendly pieces in Nervii/Treveri Hide.
 March routes must actually move pieces into a destination; an in-place

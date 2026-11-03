@@ -8,6 +8,90 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
+### Q-ARVERNI-EVENT-COMMAND — automatic Arverni receiving one Command (2 November 2026)
+
+The Gallic-beneficiary repair permits the Event executor to select any legal
+Gallic faction, including the automatic Arverni in Ariovistus. Card 46 shaded
+grants “A Gallic Faction” a free Command. A5.1.1 retains Arverni within
+“Gallic,” and A8.2.3 says: “For actions by Arverni, follow the Arverni Phase
+rules as applicable (A6.2).” A6.2 instead describes a complete activation:
+“Proceed with Rally, March, Raid, and Battle.” Its At Peace rule skips that
+activation, and its Battle procedure includes Ambush.
+
+The references do not expressly say which single Command to choose or whether
+At Peace prevents an explicitly granted Event Command. The owner's subsequent
+research request prompted a wider primary-source check: A3.1 and A4.3.3
+expressly make Ambush inherent in automatic Arverni Battle. The earlier
+suggestion to strip Ambush from a granted Battle is withdrawn.
+This is also relevant to numeric card 35 shaded if explicitly invoked in an
+expansion state, although the normal expansion deck replaces that card with
+A35. Numeric 67 is replaced by A67, which expressly excludes Arverni.
+
+Possible policies include selecting the first possible permitted Command in
+phase order, choosing randomly among possible Commands using the otherwise
+unprioritized-choice rule, or letting the Event executor choose the Command
+and using A6.2 only for its execution. These are different adaptations; none
+is an explicit card-specific instruction in the supplied references.
+
+**Adopted provisionally on 2 November 2026 as [PR-10](docs/provisional-rulings.md#pr-10):**
+use the first possible permitted Command in A6.2 order, retain the actual At
+War prerequisite, and execute only that Command, including inherent Ambush
+and its conditions if Battle. Recompute for each grant and respect Limited
+Command restrictions. At Peace produces no Command. The owner expressly
+made this decision subject to official overruling if a source is found.
+
+The earlier unsupported-path rejection is a historical validation checkpoint,
+not the adopted behavior. Implementation and acceptance evidence are tracked
+in the [repair report](docs/reviews/gallic-event-grants-2026-11-02.md); adoption
+alone does not establish that the repair has passed validation.
+See the [external research note](docs/reviews/gallic-event-rules-research-2026-11-02.md)
+for sources, search limits and the explanation in plain language.
+
+### Q-ARDUENNA-NP-PREDICTION — maximizing Legion Losses across uncertain actions (2 November 2026)
+
+The numeric 67 repair exposed a separate existing non-player instruction
+gap. The Arverni card instruction says: “March and Battle to inflict maximum
+Losses on Legions; if none possible, treat as 'No Arverni'.” The current
+resolver gathers adjacent forces and follows a generic free-Command chooser,
+which does not establish that maximum.
+
+An exact allocation search must compare splitting Warbands between Nervii
+and Treveri and Vercingetorix's longer routes. Chapter 8 §8.7.1 expressly
+presumes “all Defender Loss rolls result in Defender removals” when
+evaluating its Battle condition. It does not expressly specify how this
+Event's optimization should predict a human Roman Retreat or a Leader's
+Harassment saving roll during the preceding March. Both can change which
+allocation is best. Existing `_predicted_legion_losses` assumes no Retreat;
+that implementation convention is not an additional source authority.
+The owner's research request also confirmed that §8.7.1 already limits
+Vercingetorix's ordinary March to at most three Harassment Losses and none on
+him, using minimum-Harassment routes. Applying those ordinary conditions to
+67 under §8.2.3 would remove the proposed Leader saving-roll gamble, rather
+than require inventing its outcome. The remaining interpretation concerns
+that application and forecasting a human defender's choices.
+
+Options include maximizing ordinary standing-Battle Losses under the existing
+estimate, maximizing expected Losses across dice outcomes with a separately
+defined human-response assumption, or maximizing guaranteed Losses across
+legal human responses and dice outcomes. Known non-player responses can be
+evaluated by their supplied rules rather than guessed. None of these options
+should claim to guarantee the realized result when choices or dice remain.
+
+**Adopted provisionally on 2 November 2026 as [PR-11](docs/provisional-rulings.md#pr-11):**
+use the printed Roman non-player Retreat response where applicable. Against
+a human, compare standing and legal Retreat responses and maximize the
+lower predicted Legion-directed Loss count, under the printed best-case
+Defender Loss-roll convention. Retain ordinary Vercingetorix Harassment
+safety; other uncertain own saving rolls cannot establish safety or inflate
+the conservative score. Actual choices and dice still resolve live.
+
+The owner expressly made this decision subject to official overruling if an
+authoritative source is found. The earlier exploratory optimizer remains an
+unaccepted historical artifact; its assumptions are not retroactively
+approved. The adopted model's implementation and validation are tracked in
+the [repair report](docs/reviews/gallic-event-grants-2026-11-02.md).
+See the [external research note](docs/reviews/gallic-event-rules-research-2026-11-02.md).
+
 ### Q-ELITE-NP-PIECES — physical Elite Warband selection (29 October 2026)
 
 The timing review added exact human selection for shaded Vercingetorix's
@@ -29,7 +113,7 @@ No new policy is adopted here. The existing non-player Elite designation
 behavior is retained pending an authoritative clarification or an explicit
 owner ruling. The independent, printed visibility priority is corrected for
 ordinary non-player casualties; the unresolved Elite case is excluded from
-that change. This question is not covered by PR-01 through PR-09. The
+that change. This question is not covered by PR-01 through PR-11. The
 repository's `CLAUDE.md` requires stopping the specific ambiguous issue and
 recording its alternatives rather than implementing a best guess.
 
@@ -47,12 +131,13 @@ with maximum income.
 This batch preserves that existing non-player behavior while adding the
 human's actual choice. The compatibility test does not establish a rules
 answer. This question requires source review and is not covered by the
-owner's adoption of PR-01–PR-09.
+owner's adoption of PR-01–PR-11.
 
 ### Adopted provisional rulings
 
 The owner adopted PR-01–PR-06 on 24 October and PR-07–PR-09 on
-29 October 2026 (America/Chicago). They settle current engine behavior while
+29 October, and PR-10–PR-11 on 2 November 2026 (America/Chicago). They settle
+current engine behavior while
 the underlying source questions remain open. **Each is subject to possible
 later correction if an authoritative source is found.** They are not official
 errata or designer-confirmed answers.
@@ -68,6 +153,8 @@ errata or designer-confirmed answers.
 | [Aedui Supply roll scope](#q-supply-aedui-die-scope--agreement-across-multiple-regions-29-october-2026) | [PR-07](docs/provisional-rulings.md#pr-07): one non-player Aedui agreement roll for the current Roman action, across all relevant Supply Regions/routes. |
 | [Rally/Recruit bonus timing](#q-rally-bonus-timing--additions-before-ordinary-placement-29-october-2026) | [PR-08](docs/provisional-rulings.md#pr-08): bonus pieces cannot establish the prerequisite for the ordinary placement in that same Region. |
 | [A20 casualty origins](#q-a20-origin--counterattack-losses-among-projected-origins-29-october-2026) | [PR-09](docs/provisional-rulings.md#pr-09): choose equally among eligible tied origins for each Counterattack casualty, respecting visibility priority. |
+| Automatic Arverni Event Command (question above) | [PR-10](docs/provisional-rulings.md#pr-10): first possible permitted phase-order Command while At War, retaining inherent Ambush. |
+| Numeric Arduenna prediction (question above) | [PR-11](docs/provisional-rulings.md#pr-11): conservative Legion Loss prediction, printed NPC Retreat and Vercingetorix safety. |
 
 The [ruling register](docs/provisional-rulings.md) records exact scope,
 reasoning, source links, compatibility behavior, and correction policy.

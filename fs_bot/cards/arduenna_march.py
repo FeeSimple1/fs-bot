@@ -1,4 +1,4 @@
-"""A67's initial-origin cohorts: no arriving counter may March a second time."""
+"""Arduenna initial-origin cohorts: no arriving counter may March twice."""
 from copy import deepcopy
 
 from fs_bot import rules_consts as rc
@@ -7,6 +7,25 @@ from fs_bot.engine.diviciacus import command_scope
 
 STATES = (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
 SOFT = (rc.AUXILIA, rc.WARBAND)
+
+
+def _cooperating(ctx, faction, origin, piece):
+    """A Command-wide loan elsewhere cannot recolour this native group."""
+    return (ctx.get('faction') == faction and ctx.get('piece_type') == piece
+            and origin in ctx.get('pieces', {}))
+
+
+def _merge_visibility_rows(rows):
+    """Hiding can join visibility cells, never separate groups or owners."""
+    merged = {}
+    for row in rows:
+        key = tuple(row.get(field) for field in
+                    ('id', 'region', 'piece_type', 'piece_state', 'loan_kind'))
+        if key in merged:
+            merged[key]['count'] += row['count']
+        else:
+            merged[key] = dict(row)
+    return list(merged.values())
 
 
 def _pool(state, faction, origin, piece):
@@ -161,11 +180,12 @@ def execute_march(state, faction, action, *, free=True):
                         after = rc.HIDDEN if ps == rc.REVEALED else rc.REVEALED if ps == rc.SCOUTED else ps
                         if ps != after:
                             piece = ctx['piece_type'] if owner != faction else row['piece_type']
-                            kwargs = {'physical_owner': owner} if owner != faction or ctx.get('faction') == faction else {}
+                            kwargs = ({'physical_owner': owner}
+                                      if _cooperating(ctx, faction, origin, piece) else {})
                             flip_piece(state, origin, faction, piece, row['count'],
                                        from_state=ps, to_state=after, **kwargs)
                             row['piece_state'] = after
-                    set_cohorts(state, key, owner, rows)
+                    set_cohorts(state, key, owner, _merge_visibility_rows(rows))
                 flipped.add(origin)
             gid = f'A67.group.{index + 1}'
             group = {rc.LEADER: None, rc.LEGION: 0, rc.AUXILIA: 0, rc.WARBAND: 0,
@@ -184,7 +204,7 @@ def execute_march(state, faction, action, *, free=True):
                         ps = row['piece_state']
                         vis = group['_march_visibility'].setdefault(piece, {})
                         vis[ps] = vis.get(ps, 0) + row['count']
-                        if piece == ctx.get('piece_type') and ctx.get('faction') == faction:
+                        if _cooperating(ctx, faction, origin, piece):
                             owners = group.setdefault('_diviciacus_owners', {}).setdefault(owner, {})
                             owners[ps] = owners.get(ps, 0) + row['count']
                 set_cohorts(state, key, owner, [row for row in rows if row['id'] != gid])

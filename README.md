@@ -77,7 +77,12 @@ Roman and Arverni decisions when another faction plays the Event.
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md) fixes
 dynamic Tribe locations in Event defaults and catches rejected bot Events
 in mixed-player validation.
-**18 of 50 findings are closed (36%); 32 remain open** in the
+The [Gallic Event repair](docs/reviews/gallic-event-grants-2026-11-02.md)
+adds beneficiary and Command-order choices on 35/46/67 and correct Remi
+ownership on 68. The owner adopted PR-10/PR-11 for automatic Arverni
+Commands and numeric Arduenna prediction. This validated repair closes BE-03;
+other grouped Event March grants remain open.
+**19 of 50 findings are closed (38%); 31 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.
@@ -143,7 +148,7 @@ implementation. All completed without defect findings; mixed-seat and census
 reports matched across hash seeds. The 100-game balance check passed without
 changing its baseline. The report gives exact source identities and scope.
 
-All [nine adopted project rulings](docs/provisional-rulings.md) remain subject
+All [eleven adopted project rulings](docs/provisional-rulings.md) remain subject
 to possible later correction if an authoritative source is found.
 
 ## Earlier verified checkpoint
@@ -178,6 +183,6 @@ python -m pytest -q
 Read [CLAUDE.md](CLAUDE.md) before editing. `Reference Documents/**` and
 `fs_bot/rules_consts.py` are protected, read-only sources. Project guides,
 reports, and strategy notes describe the implementation; they do not replace
-the supplied rules. The nine expressly adopted provisional rulings govern
+the supplied rules. The eleven expressly adopted provisional rulings govern
 their listed source gaps until corrected. The [self-play workflow](SELFPLAY_PLAYBOOK.md) documents
 batch, census, determinism, and balance checks.

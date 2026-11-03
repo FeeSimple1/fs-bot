@@ -3,20 +3,21 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-02",
   "tested_source": {
-    "commit": "3873ff97505194557e1ed63b833d7bf2e5317fdc",
-    "python_sha256": "c3c3cd4fd4370f4367db759106b7418449bcc0c27b34ceae2e93c014c64b3bf4",
-    "python_files": 424,
+    "commit": "e37b965e5ce420e29e486c7221661e51b9803282",
+    "python_sha256": "cdd29718dab7ea7443f93dc225f192e3f31751aaa84c4e6e56d617a2b6c7b63c",
+    "python_files": 442,
     "working_tree_changes": true,
-    "note": "Prepared Colony/default and rejected-bot validation repair over this commit; exact Python bytes are identified by the digest. Validation preceded committing the changes."
+    "note": "Accepted Gallic Event ownership and PR-10/PR-11 repair prepared over this parent. Exact Python bytes are identified by the digest; validation preceded committing the changes."
   },
   "total": 50,
-  "closed": 18,
-  "open": 32,
+  "closed": 19,
+  "open": 31,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
     "WS-F04 closes the sole-human-Belgae setup trigger; paired-player ownership remains WS-F09.",
-    "The Colony/default and rejected-bot validation follow-up closes no additional original finding; see reviews/colony-event-defaults-2026-11-02.md."
+    "The Colony/default and rejected-bot validation follow-up closes no additional original finding; see reviews/colony-event-defaults-2026-11-02.md.",
+    "BE-03 closed: Gallic Event ownership/order, Remi placement and adopted PR-10/PR-11 automatic policies validated. Other BE-01 March grants remain open; five new ordinary Arverni Phase defects are tracked separately outside the original denominator. See reviews/gallic-event-grants-2026-11-02.md."
   ],
   "findings": [
     {
@@ -121,7 +122,11 @@
       "id": "BE-01",
       "title": "Several Event-granted Marches and German guidance still use automatic plans",
       "severity": "high",
-      "status": "open"
+      "status": "open",
+      "partial_repairs": [
+        "Numeric67 human beneficiary receives its scoped March decision; other grouped Event Marches remain open."
+      ],
+      "partial_report": "reviews/gallic-event-grants-2026-11-02.md"
     },
     {
       "id": "BE-02",
@@ -133,7 +138,16 @@
       "id": "BE-03",
       "title": "Gallic beneficiaries and command order are hardcoded; Remi Influence gives pieces to the wrong faction",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/gallic-event-grants-2026-11-02.md",
+      "repair_summary": [
+        "Executor-selected Gallic beneficiaries and recipient-owned Command order/actions on35S/46S/67.",
+        "Original Event executor stays Eligible on46S.",
+        "Remi-owning Gallic faction chooses and receives68S Citadel/four Warbands as possible.",
+        "PR-10 automatic Arverni Event Commands, with actual At War and inherent Ambush.",
+        "PR-11 numeric67 maximum-Legion-Loss prediction, conservative responses and safe Harassment."
+      ],
+      "source_sha256": "cdd29718dab7ea7443f93dc225f192e3f31751aaa84c4e6e56d617a2b6c7b63c"
     },
     {
       "id": "BE-04",
@@ -392,5 +406,6 @@
       "report": "reviews/cheap-fixes-2026-10-29.md"
     }
   ],
-  "updated_timezone": "America/Chicago"
+  "updated_timezone": "America/Chicago",
+  "unresolved_source_questions_separate": 4
 }

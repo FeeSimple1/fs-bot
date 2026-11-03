@@ -12,7 +12,8 @@ Read [README.md](README.md) for entry points and
 known limits, and source questions are in
 [docs/current-status.md](docs/current-status.md). The owner adopted
 [PR-01 through PR-06](docs/provisional-rulings.md) on 24 October 2026 and
-PR-07 through PR-09 on 29 October 2026; apply
+PR-07 through PR-09 on 29 October 2026, and PR-10 through PR-11 on
+2 November 2026; apply
 those provisional decisions to their specified gaps, subject to possible
 later correction if an authoritative source is found. The
 [29 October Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md)
@@ -37,7 +38,7 @@ blanket permission to introduce other source material.
 
 ## Source of Truth (Strict Hierarchy)
 These are read-only. Never modify them. All other code must conform to them,
-with the nine expressly owner-adopted interpretations in
+with the eleven expressly owner-adopted interpretations in
 [docs/provisional-rulings.md](docs/provisional-rulings.md) governing only their
 listed unresolved cases. These project rulings are not official errata.
 1. fs_bot/rules_consts.py — Canonical Labels
@@ -79,7 +80,7 @@ What options you see
 
 Move on to other work.
 Do not implement a "best guess" — wait for the user to answer. The owner has
-already answered the nine cases in [the provisional ruling register](docs/provisional-rulings.md);
+already answered the eleven cases in [the provisional ruling register](docs/provisional-rulings.md);
 do not re-block those cases. Preserve their provisional status and revisit
 them if an authoritative clarification appears.
 

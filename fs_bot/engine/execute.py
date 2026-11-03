@@ -1659,8 +1659,8 @@ def _resolve_free_actions_scoped(state, faction):
         results.extend(_resolve_card70_free_command(state, faction))
     if mods.get("card_46_free_command"):
         _event_step(state, "grant.card_46_free_command")
-        results.append({"free_action": "free_command", "flag": "card_46",
-                        "result": _resolve_free_command(state, faction)})
+        from fs_bot.cards.gallic_event_grants import resolve
+        results.extend(resolve(state, faction, 46))
     if mods.get("card_51_aedui_free_command"):
         _event_step(state, "grant.card_51_aedui_free_command")
         from fs_bot.rules_consts import AEDUI as _AEDUI
@@ -1777,7 +1777,8 @@ def _resolve_free_actions_scoped(state, faction):
         results.extend(_resolve_card_A45_intimidate(state))
     if mods.get("card_67_arduenna"):
         _event_step(state, "grant.card_67_arduenna")
-        results.extend(_resolve_card67_arduenna(state, faction))
+        from fs_bot.cards.gallic_event_grants import resolve
+        results.extend(resolve(state, faction, 67))
     if mods.get("card_A5_remove_non_romans"):
         _event_step(state, "grant.card_A5_remove_non_romans")
         results.extend(_resolve_card_A5_evict(state, faction))
@@ -1890,7 +1891,7 @@ def _resolve_card_A53_frumentum(state):
     return resolve_frumentum(state)
 
 
-def _resolve_card67_arduenna(state, faction):
+def _resolve_card67_arduenna(state, faction, *, _consult=True, _event_steps=False):
     """Card 67 Arduenna (base): Romans or a Gallic Faction may free March into
     Nervii and/or Treveri, then a free Command except March in those Regions,
     then flip all friendly Warbands/Auxilia there Hidden."""
@@ -1904,6 +1905,9 @@ def _resolve_card67_arduenna(state, faction):
     playable = set(get_playable_regions(scen, state.get("capabilities")))
     targets = [r for r in (NERVII, TREVERI) if r in playable]
     out = []
+    if _event_steps:
+        from fs_bot.cards.card_effects import _event_step
+        _event_step(state, '67.march', beneficiary=faction)
     # Free March a mobile group from an adjacent Region into each target.
     for T in targets:
         if _attacker_has_force(state, T, faction):
@@ -1922,10 +1926,14 @@ def _resolve_card67_arduenna(state, faction):
         except _EXEC_ERRORS:
             pass
     # Free Command (except March) in/from the target Regions.
+    if _event_steps:
+        _event_step(state, '67.command', beneficiary=faction)
     cmd = _resolve_free_command(state, faction, allowed_regions=set(targets),
-                               exclude_commands={_CMD_MARCH})
+                               exclude_commands={_CMD_MARCH}, _consult=_consult)
     out.append({"free_action": "free_command", "flag": "card_67", "result": cmd})
     # Flip all friendly Warbands/Auxilia in the targets to Hidden.
+    if _event_steps:
+        _event_step(state, '67.hide', beneficiary=faction)
     flipped = 0
     for T in targets:
         for pt in (WARBAND, AUXILIA):
@@ -2289,21 +2297,9 @@ def _resolve_card35_roman(state, faction):
 
 
 def _resolve_card35_gallic(state, faction):
-    """Card 35 Gallic Shouts (shaded): "A Gallic Faction executes 1 Command and
-    1 Limited Command, in either order, free, no Battles." Run a full free
-    Command then a Limited free Command for the acting Faction, both excluding
-    Battle."""
-    out = []
-    out.append({"free_action": "free_command", "flag": "card_35",
-                "kind": "command",
-                "result": _resolve_free_command(
-                    state, faction, exclude_commands={_CMD_BATTLE})})
-    out.append({"free_action": "free_command", "flag": "card_35",
-                "kind": "limited_command",
-                "result": _resolve_free_command(
-                    state, faction, exclude_commands={_CMD_BATTLE},
-                    limited=True)})
-    return out
+    """Card 35S: recipient-owned full/Limited order, free and without Battles."""
+    from fs_bot.cards.gallic_event_grants import resolve
+    return resolve(state, faction, 35)
 
 
 def _resolve_card52_free_command(state):
@@ -3608,7 +3604,8 @@ def _execute_rally_steps(state, faction, steps, *, ordered=False,
 @_diviciacus_command_scope
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _full_loss_warbands=0, _double_auxilia=False, _ambush_anywhere=False,
-                    _battle_observer=None, _full_loss_cohort=None, _require_ambush=False):
+                    _battle_observer=None, _full_loss_cohort=None, _require_ambush=False,
+                    _skip_absent_targets=False):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3625,10 +3622,11 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
       - Besiege (§4.2.3/A4.2.3, Roman): remove a Citadel (else Ally, else
         Settlement) before Losses, chosen via get_besiege_targets.
 
-    Defender Retreat is left to auto-determination (no retreat); routing the
-    defender bot's Retreat decision (§8.4.3) is a separate workstream. Other
-    standalone SAs accompanying a Battle (Scout, Intimidate) are not executed
-    here.
+    Defender Retreat uses the live human response or normal non-player
+    policy (§8.4.3). Other standalone SAs accompanying a Battle (Scout,
+    Intimidate) are not executed here. The private prospective-target flag
+    lets trusted NPC67 plans select each Region only when its defender is
+    present, including arrivals from an earlier Retreat.
     """
     from fs_bot.engine.action_windows import window
     window(state, 'battle_command', author=faction)
@@ -3670,7 +3668,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     # Romans choose 1 Region — Auxilia there first inflict 1/2 Loss each on
     # the attacker, then the Battle resolves. NP choice: most Roman Auxilia.
     _c13_region = None
-    if (faction != _RO_B and _ica_b(state, 13, _EU_B) and _plan_regions):
+    if (not _skip_absent_targets and faction != _RO_B
+            and _ica_b(state, 13, _EU_B) and _plan_regions):
         _cands = [(count_pieces(state, r, _RO_B, _AUX_B), r)
                   for r in sorted(set(_plan_regions))]
         _cands = [c for c in _cands if c[0] > 0]
@@ -3680,7 +3679,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     # Card 59 unshaded (Germanic Horse): Romans may inflict 1 Loss per
     # Auxilia (not 1/2) in 1 Region per Battle Command — attack AND
     # counterattack (Tip). NP choice: the Region with most Roman Auxilia.
-    if _ica_b(state, 59, _EU_B) and _plan_regions:
+    if not _skip_absent_targets and _ica_b(state, 59, _EU_B) and _plan_regions:
         _cands = [(count_pieces(state, r, _RO_B, _AUX_B), r)
                   for r in sorted(set(_plan_regions))]
         _cands = [c for c in _cands if c[0] > 0]
@@ -3691,7 +3690,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     # Card 59 shaded: the owning Gallic Faction doubles the enemy's Losses
     # in 1 Region per Battle Command — when attacking AND when defending
     # (card Tips) — unless blocked by Fort/Citadel per the Tips.
-    if _ica_b(state, 59, _ES_B) and _plan_regions:
+    if not _skip_absent_targets and _ica_b(state, 59, _ES_B) and _plan_regions:
         _owner59 = _gco_b(state, 59)
         if _owner59 == faction:
             state.setdefault("event_modifiers", {})[
@@ -3715,13 +3714,15 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     errors = []
     diviciacus_blocks = []
     unavailable_ambushes = []
+    _queue_capabilities_used = set()
     for battle_index, entry in enumerate(battle_plan):
         region = entry.get("region")
         if region is None:
             continue
-        window(state, 'battle_region', author=faction,
-               timing_actions=entry.get('timing_actions'),
-               region=region, index=battle_index)
+        if not _skip_absent_targets:
+            window(state, 'battle_region', author=faction,
+                   timing_actions=entry.get('timing_actions'),
+                   region=region, index=battle_index)
         # Single target, or Roman ranked targets list -> take the top.
         if "target" in entry and entry["target"] is not None:
             defender = entry["target"]
@@ -3730,6 +3731,16 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             defender = targets[0] if targets else None
         if defender is None:
             continue
+        if _skip_absent_targets and not count_pieces(state, region, defender):
+            # This is a prospective queue, not a preselected Battle Region.
+            # Select it only if an earlier Retreat has brought Romans here.
+            continue
+        if _skip_absent_targets:
+            window(state, 'battle_region', author=faction,
+                   timing_actions=entry.get('timing_actions'),
+                   region=region, index=battle_index)
+            if not count_pieces(state, region, defender):
+                continue
         if _require_ambush:
             # A69 grants Ambush, not an ordinary Battle fallback. Recheck
             # after timing removals, before a defender's new Diviciacus
@@ -3783,6 +3794,24 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             from fs_bot.rules_consts import CITADEL, FORT
             citadel_at_start = count_pieces(state, region, defender, CITADEL) > 0
             fort_at_start = count_pieces(state, region, defender, FORT) > 0
+            if _skip_absent_targets:
+                # §8.3.3: a limited-Region NP Capability is used where first
+                # applicable. Absent prospective targets consume no use.
+                auxilia_here = count_pieces(state, region, _RO_B, _AUX_B) > 0
+                if (13 not in _queue_capabilities_used and faction != _RO_B
+                        and _ica_b(state, 13, _EU_B) and auxilia_here):
+                    _c13_region = region
+                    _queue_capabilities_used.add(13)
+                if ('59u' not in _queue_capabilities_used
+                        and _ica_b(state, 59, _EU_B) and auxilia_here):
+                    state.setdefault('event_modifiers', {})['card59_unshaded_region'] = region
+                    _queue_capabilities_used.add('59u')
+                if '59s' not in _queue_capabilities_used and _ica_b(state, 59, _ES_B):
+                    owner = _gco_b(state, 59)
+                    if ((owner == faction and not (citadel_at_start or fort_at_start))
+                            or (owner == defender and not citadel_at_start)):
+                        state.setdefault('event_modifiers', {})['card59_shaded_region'] = region
+                        _queue_capabilities_used.add('59s')
             elite.ensure_selected(state, region)
 
             is_ambush = intrinsic_german_ambush or (sa == _SA_AMBUSH and region in sa_regions)
@@ -3849,6 +3878,12 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 if count_pieces(state, region, defender) <= 0:
                     if _battle_observer is not None:
                         _battle_observer('before', state, region, defender, None)
+                        if _skip_absent_targets:
+                            # A completed prospective Battle still needs its
+                            # Frost/victory boundary when prefire removes the
+                            # last defender before ordinary Loss resolution.
+                            _battle_observer('after', state, region, defender,
+                                             {'card27_wiped': True})
                     battles.append({"region": region, "defender": defender,
                                     "is_ambush": is_ambush,
                                     "besiege": besiege_target,
@@ -5191,11 +5226,34 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
     #     group, but halved (Retreat) Losses leave a survivor.
     if mobile > 0 and suffer >= mobile and suffer_if_retreat < mobile:
         return (True, dest)
-    # (b) Romans Retreat to reduce Losses on Legions.
-    if (defender == ROMANS
-            and count_pieces(state, region, defender, LEGION) > 0
-            and suffer > 0):
-        return (True, dest)
+    # (b) Romans Retreat only when it lowers projected Legion Loss rolls
+    # (§8.4.3). Positive incoming Losses alone are insufficient: Auxilia
+    # may absorb all of them. Use the actual loss priority (including
+    # cooperating pieces and static-first Retreat), with each Defender
+    # roll presumed to remove its target for this forecast. Live rolls
+    # still resolve normally. A detached copy keeps priority inspection
+    # from consuming any live tie-breaking RNG.
+    if defender == ROMANS and count_pieces(state, region, defender, LEGION):
+        from copy import deepcopy
+        from fs_bot.battle.losses import _build_loss_priority
+        from fs_bot.rules_consts import MARKER_ABATIS
+
+        def legion_exposure(losses, retreat):
+            order = _build_loss_priority(
+                deepcopy({key: value for key, value in state.items()
+                          if key != "decision_agent"}),
+                region, defender, is_retreat=retreat)
+            if (retreat and state.get("markers", {}).get(region, {}).get(
+                    MARKER_ABATIS) == defender
+                    and not (attacker == GERMANS and is_capability_active(
+                        state, "A31", EVENT_SHADED))):
+                # A64 and its clarification: defending Abatis absorbs as
+                # a Fort, ahead of mobile pieces when Retreating.
+                losses = max(0, losses - 1)
+            return sum(piece[0] == LEGION for piece in order[:losses])
+
+        if legion_exposure(suffer_if_retreat, True) < legion_exposure(suffer, False):
+            return (True, dest)
     # (c) No Citadel/Fort, would inflict < 1/2 the Losses suffered, and a
     #     valid (piece-preserving) destination exists.
     if (not has_hard) and (inflict * 2 < suffer):
@@ -5623,6 +5681,9 @@ def _derive_event_params(state, faction, card_id, shaded):
     per-card workstream; those remain reported as 'needs parameters' rather
     than guessed.
     """
+    from fs_bot.cards.gallic_event_grants import supported as gallic_supported, factions as gallic_factions
+    if gallic_supported(card_id, shaded):
+        return {"faction": faction} if faction in gallic_factions(card_id) else None
     from fs_bot.cards.named_event_effects import supported as named_supported
     if named_supported(card_id, shaded):
         from fs_bot.cards.named_event_effects import derive_params
@@ -5775,31 +5836,8 @@ def _derive_card_68(state, faction, shaded):
                                      ROMANS)
     from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
     if shaded:
-        from fs_bot.rules_consts import (GALLIC_FACTIONS, FACTIONS, CITADEL,
-                                         CITY_ALESIA, CITY_CENABUM, CITY_TO_TRIBE)
-        from fs_bot.board.pieces import count_pieces
-        if faction not in GALLIC_FACTIONS:
-            return None
-        remi = state.get("tribes", {}).get(TRIBE_REMI)
-        if not remi or remi.get("allied_faction") != faction:
-            return None
-        best = None  # (city, enemy_value)
-        for city in (CITY_ALESIA, CITY_CENABUM):
-            tribe = CITY_TO_TRIBE.get(city)
-            region = TRIBE_TO_REGION.get(tribe)
-            if not region:
-                continue
-            ti = state.get("tribes", {}).get(tribe) or {}
-            enemy = 0
-            af = ti.get("allied_faction")
-            if af and af != faction:
-                enemy += 1
-            for f2 in FACTIONS:
-                if f2 != faction:
-                    enemy += count_pieces(state, region, f2, CITADEL)
-            if best is None or enemy > best[1]:
-                best = (city, enemy)
-        return {"target_city": best[0]} if best else None
+        from fs_bot.cards.remi_event_effect import derive_params
+        return derive_params(state, faction)
     if faction != ROMANS:
         return None
     _R = ROMANS

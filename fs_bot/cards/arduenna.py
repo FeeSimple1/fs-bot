@@ -23,8 +23,8 @@ def validate_faction(state, response):
         raise ValueError('Arduenna grants actions to one playable Faction other than Arverni.')
 
 
-def march_request():
-    return {'kind': 'free_action', 'request_type': 'arduenna_march', 'card_id': 'A67',
+def march_request(card_id='A67'):
+    return {'kind': 'free_action', 'request_type': 'arduenna_march', 'card_id': card_id,
             'allowed_commands': [rc.CMD_MARCH], 'required_destinations': list(TARGETS),
             'with_sa': False, 'free': True, 'allow_decline': False, 'validate_default_response': True}
 
@@ -42,7 +42,7 @@ def validate_march(state, faction, response):
         raise ValueError(error)
 
 
-def hide(state, actor):
+def hide(state, actor, card_id='A67'):
     """Hide every friendly piece there, including residents; de-Scout only once."""
     flipped = scouted = 0
     for region in TARGETS:
@@ -57,7 +57,8 @@ def hide(state, actor):
                 flip_piece(state, region, actor, piece, n,
                            from_state=rc.SCOUTED, to_state=rc.REVEALED)
                 scouted += n
-    return {'free_action': 'flip_hidden', 'flag': FLAG, 'faction': actor,
+    return {'free_action': 'flip_hidden',
+            'flag': 'card_67' if card_id == 67 else f'card_{card_id}_arduenna', 'faction': actor,
             'flipped': flipped, 'scouted_removed': scouted,
             'executed': bool(flipped or scouted)}
 
@@ -80,7 +81,6 @@ def default_march(state, actor):
     """An explicit default retains existing A67 movement priorities only."""
     from fs_bot.engine.execute import _mobile_march_group, _group_has_pieces
     from fs_bot.map.map_data import get_adjacent
-    from fs_bot.board.pieces import count_pieces
     from fs_bot.commands.march import march_group
     planning = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
     chosen = []
@@ -90,18 +90,24 @@ def default_march(state, actor):
             target, _, origins = selected
             chosen = [(origin, target, group) for origin, group in origins]
     else:
+        # Either destination may also be an origin (Card 67 Tips). Preserve
+        # initial groups so arrivals cannot be selected for a second March.
+        initial = {r: _mobile_march_group(planning, actor, r) for r in planning['spaces']}
         for target in TARGETS:
             if _group_has_pieces(_mobile_march_group(planning, actor, target)):
                 continue
             origins = [r for r in get_adjacent(target, state['scenario'])
-                       if r not in TARGETS and r not in [m[0] for m in chosen]
-                       and _group_has_pieces(_mobile_march_group(planning, actor, r))]
+                       if r not in [m[0] for m in chosen]
+                       and _group_has_pieces(initial[r])]
             if not origins:
                 continue
-            origin = max(origins, key=lambda r: sum(count_pieces(planning, r, actor, p)
-                                                    for p in (rc.LEGION, rc.AUXILIA, rc.WARBAND)))
-            group = _mobile_march_group(planning, actor, origin)
-            march_group(planning, actor, origin, [target], group, free=True)
+            from fs_bot.bots.bot_common import random_select
+            strength = {r: sum(initial[r].get(p, 0)
+                               for p in (rc.LEGION, rc.AUXILIA, rc.WARBAND)) for r in origins}
+            best = max(strength.values())
+            origin = random_select(state, sorted(r for r in origins if strength[r] == best))
+            group = initial[origin]
+            march_group(planning, actor, origin, [target], deepcopy(group), free=True)
             chosen.append((origin, target, group))
     if not chosen:
         return None
@@ -113,8 +119,8 @@ def default_march(state, actor):
                 'groups': {origin: group for origin, _, group in chosen}}}}
 
 
-def command_request(actor):
-    return {'kind': 'free_action', 'request_type': 'arduenna_command', 'card_id': 'A67',
+def command_request(actor, card_id='A67'):
+    return {'kind': 'free_action', 'request_type': 'arduenna_command', 'card_id': card_id,
             'allowed_commands': [c for c in command_options(actor) if c != rc.CMD_MARCH],
             'allowed_regions': list(TARGETS), 'max_regions': 2,
             'with_sa': False, 'free': True, 'allow_decline': False, 'validate_default_response': True}
@@ -151,7 +157,7 @@ def march_witness(state, actor):
     return None
 
 
-def command_witness(state, actor):
+def command_witness(state, actor, *, regions=TARGETS, request=None):
     """Mechanical human choices; a flowchart's IF-NONE is not impossibility."""
     from fs_bot.engine.free_actions import _validate_plan
     from fs_bot.commands.common import free_action_scope
@@ -160,7 +166,7 @@ def command_witness(state, actor):
     planning = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
     planning['_diviciacus_preview'] = True
     candidates = []
-    for region in TARGETS:
+    for region in regions:
         if actor == rc.ROMANS:
             candidates.append({'command': rc.CMD_SEIZE, 'regions': [region],
                                'details': {'disperse_regions': []}})
@@ -172,7 +178,8 @@ def command_witness(state, actor):
                     candidates.append({'command': rc.CMD_RAID, 'regions': [region],
                         'details': {'raid_plan': [{'region': region, 'target': enemy}]}})
         for enemy in rc.FACTIONS:
-            if enemy != actor and count_pieces(planning, region, enemy):
+            if (enemy != actor and count_pieces(planning, region, enemy)
+                    and count_pieces(planning, region, actor)):
                 candidates.append({'command': rc.CMD_BATTLE, 'regions': [region],
                     'details': {'battle_plan': [{'region': region, 'target': enemy}]}})
         with free_action_scope(planning, actor):
@@ -189,7 +196,7 @@ def command_witness(state, actor):
                                                     else {'rally_plan': {'steps': [entry]}})})
     for action in candidates:
         action.update(sa='No SA', sa_regions=[])
-        if _validate_plan(planning, actor, command_request(actor), action) is None:
+        if _validate_plan(planning, actor, request or command_request(actor), action) is None:
             return action
     return None
 
@@ -224,7 +231,7 @@ def consult_mandatory(state, actor, request):
     return (None if response == {'use_default': True} else response), response is not None
 
 
-def resolve_stage(state, actor, *, marching):
+def resolve_stage(state, actor, *, marching, card_id='A67'):
     from fs_bot.engine.execute import _resolve_free_command
     witness = march_witness if marching else command_witness
     attempt, previous_error = 1, None
@@ -232,7 +239,7 @@ def resolve_stage(state, actor, *, marching):
         if witness(state, actor) is None:
             return {'executed': False, 'declined_no_effect': True,
                     'reason': 'No legal March into the targets' if marching else 'No legal non-March Command there'}
-        request = march_request() if marching else command_request(actor)
+        request = march_request(card_id) if marching else command_request(actor, card_id)
         request['attempt'] = attempt
         if previous_error is not None:
             request['previous_error'] = previous_error

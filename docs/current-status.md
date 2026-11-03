@@ -9,7 +9,8 @@ their game outcomes are not a baseline for a later rules revision.
 [Current question index](../QUESTIONS.md#current-open-source-questions)
 
 This page includes the 24 October adoption of six and 29 October adoption
-of three additional [provisional rulings](provisional-rulings.md), the follow-up
+of three additional rulings, and the 2 November adoption of PR-10/PR-11
+([provisional register](provisional-rulings.md)), the follow-up
 repairs, and the 23 October implementation review. The
 [provisional-ruling report](reviews/provisional-rulings-2026-10-24.md)
 records validation of the first six rulings on its 24 October revision.
@@ -18,6 +19,32 @@ its own revision, source digest and outcome evidence; earlier checkpoint
 measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
+
+### 2 November Gallic Event ownership — BE-03 closed
+
+The [repair report](reviews/gallic-event-grants-2026-11-02.md) separates the
+Event executor from its chosen Gallic beneficiary on 35/46/67. The recipient
+chooses its own actions, including Gallic Shouts' full/Limited order. Celtic
+Rites keeps the original executor Eligible. Remi Influence's Gallic Remi
+owner chooses the City and receives its own Citadel and four Warbands as
+possible. Numeric Arduenna retains its distinct beneficiary list and scoped
+March → Command → Hide sequence.
+
+The owner adopted [PR-10/PR-11](provisional-rulings.md#pr-10) on 2 November,
+subject to official overruling if an authoritative source is found. These
+settle the project's automatic Arverni Command and numeric Arduenna
+prediction policies. Both are implemented and validated, closing BE-03.
+**19/50 findings are closed (38%); 31 remain open.** The final source passes
+7,149 tests, 150 audited bot games, 880 mixed-seat executions covering 220
+distinct cases, and 20 strict-census executions. The existing baseline and
+its statistical limits remain unchanged.
+The 34 unverified inventory rows remain separate. Two source questions still
+lack an adopted project policy; eleven others have provisional rulings.
+Ordinary March-to-Hide-only menu support and other BE-01 March grants remain
+independently open. The A6.2 review also reproduced five separate ordinary
+Arverni Phase defects (Rally Control/category, secondary March Control, Raid
+quantity and Ambush reserve), tracked in the repair report outside the
+original denominator.
 
 ### 2 November Colony defaults — post-publication CI repair
 
@@ -496,7 +523,7 @@ for reproduction commands and compatibility limits.
 
 ## Adopted provisional rulings
 
-On 24 and 29 October 2026 (America/Chicago), the owner adopted the following
+On 24/29 October and 2 November 2026 (America/Chicago), the owner adopted the following
 project policies. **Each is subject to possible later correction if an
 authoritative source is found.** The [ruling register](provisional-rulings.md)
 records their exact scope and rationale; the
@@ -515,6 +542,8 @@ claiming official errata or designer confirmation.
 | [PR-07: Aedui Supply dice](provisional-rulings.md#pr-07) | One roll for the human Roman action, including its Special Ability and all relevant Regions; retain the answer during replanning. |
 | [PR-08: Placement bonus timing](provisional-rulings.md#pr-08) | The ordinary placement option must qualify before its additional pieces; explicit printed exceptions remain. |
 | [PR-09: A20 casualty origins](provisional-rulings.md#pr-09) | Preserve visibility priority, then select equally among eligible origin Regions separately for each casualty. |
+| [PR-10: Automatic Arverni Event Command](provisional-rulings.md#pr-10) | While At War, first possible permitted Command in phase order, retaining inherent Ambush. |
+| [PR-11: Numeric Arduenna prediction](provisional-rulings.md#pr-11) | Conservative Legion Loss forecast, printed Roman NPC Retreat and Vercingetorix Harassment safety; actual choices/dice resolve live. |
 
 PR-06 recovers the order from saved `played_cards` without changing
 `current_card`. A state with no recoverable preceding Event uses the current

@@ -1,0 +1,294 @@
+{
+  "date": "2026-11-03",
+  "timezone": "America/Chicago",
+  "accepted": true,
+  "parent_commit": "4e9a82ed35052198987dad4c91dd79ce9c5b4ab9",
+  "final_source": {
+    "commit": "4e9a82ed35052198987dad4c91dd79ce9c5b4ab9",
+    "python_sha256": "7d627253f5b38bdedcfe5c84214a5476f68898d1f9cd11d50ef29377a42fe108",
+    "python_files": 452,
+    "python_worktree_changes": true
+  },
+  "full_suite": {
+    "tests": 7347,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "parent_full_suite": {
+    "tests": 7205,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_regressions": 142,
+  "focused_python312": {
+    "version": "3.12.14",
+    "passed": 142,
+    "log": "focused-python312.log"
+  },
+  "gameplay_matrix": {
+    "source": {
+      "commit": "4e9a82ed35052198987dad4c91dd79ce9c5b4ab9",
+      "python_sha256": "7d627253f5b38bdedcfe5c84214a5476f68898d1f9cd11d50ef29377a42fe108",
+      "python_files": 452,
+      "python_worktree_changes": true
+    },
+    "python": "3.10.22",
+    "checks_passed": [
+      "source identity and all Python files unchanged",
+      "all protected inputs unchanged",
+      "all subprocess exits zero",
+      "every job retained unchanged source and protected inputs",
+      "bot records legacy",
+      "bot record source identity legacy",
+      "bot metadata legacy",
+      "bot records original",
+      "bot record source identity original",
+      "bot metadata original",
+      "bot records second-edition",
+      "bot record source identity second-edition",
+      "bot metadata second-edition",
+      "25 exact cross-hash bot result repeats",
+      "exact cross-hash mixed-seat JSON and stdout legacy",
+      "exact cross-hash mixed-seat JSON and stdout original",
+      "exact cross-hash mixed-seat JSON and stdout second-edition",
+      "strict census and exact cross-hash output",
+      "unchanged 15-percentage-point balance band",
+      "all 150 NPC gameplay records compared with parent"
+    ],
+    "failures": [],
+    "protected_inputs_unchanged": true,
+    "protected_input_count": 49,
+    "bot_games": 150,
+    "bot_hash_seed_repeat_executions": 25,
+    "bot_editions": {
+      "legacy": 100,
+      "original": 25,
+      "second-edition": 25
+    },
+    "fuzz": {
+      "legacy": {
+        "games": 200,
+        "human_turns": 6133,
+        "event_turns": 1531,
+        "events_ok": 1430,
+        "partial": 0,
+        "hard_findings": 0,
+        "batch_digest": "f59d9a0401dd32333130b8e9ff5df0666821bfbe0402552167892fda16cb1ae3"
+      },
+      "original": {
+        "games": 10,
+        "human_turns": 276,
+        "event_turns": 64,
+        "events_ok": 60,
+        "partial": 0,
+        "hard_findings": 0,
+        "batch_digest": "a5d38615c6dcd749b6f4212470b0ac1e73e5aa891a34ea3c7c9c4035f28e64ce"
+      },
+      "second-edition": {
+        "games": 10,
+        "human_turns": 270,
+        "event_turns": 58,
+        "events_ok": 54,
+        "partial": 0,
+        "hard_findings": 0,
+        "batch_digest": "3523c2c4d986c25345700687bbc0002a6a85807a699e792c4af4b7f5780533c4"
+      }
+    },
+    "mixed_seat_distinct_cases": 220,
+    "mixed_seat_executions_including_replay_and_hash_repeat": 880,
+    "strict_census_executions": 20,
+    "census_severities": {
+      "legal-decline": 97
+    },
+    "planned_counts": {
+      "bots": 150,
+      "mixed_distinct": 220,
+      "mixed_executions": 880,
+      "strict_census_executions": 20,
+      "bot_hash_seed_repeat_executions": 25
+    },
+    "baseline_comparison": {
+      "games": 100,
+      "passed": true,
+      "rate_changes": [
+        {
+          "scenario": "Pax Gallica?",
+          "faction": "Aedui",
+          "before_wins": 1,
+          "after_wins": 3,
+          "percentage_point_change": 10
+        },
+        {
+          "scenario": "Pax Gallica?",
+          "faction": "Arverni",
+          "before_wins": 2,
+          "after_wins": 2,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "Pax Gallica?",
+          "faction": "Belgae",
+          "before_wins": 3,
+          "after_wins": 2,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Pax Gallica?",
+          "faction": "Romans",
+          "before_wins": 14,
+          "after_wins": 13,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "faction": "Aedui",
+          "before_wins": 6,
+          "after_wins": 6,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "faction": "Arverni",
+          "before_wins": 1,
+          "after_wins": 0,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "faction": "Belgae",
+          "before_wins": 2,
+          "after_wins": 4,
+          "percentage_point_change": 10
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "faction": "Romans",
+          "before_wins": 11,
+          "after_wins": 10,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "The Great Revolt",
+          "faction": "Aedui",
+          "before_wins": 5,
+          "after_wins": 3,
+          "percentage_point_change": -10
+        },
+        {
+          "scenario": "The Great Revolt",
+          "faction": "Arverni",
+          "before_wins": 5,
+          "after_wins": 8,
+          "percentage_point_change": 15
+        },
+        {
+          "scenario": "The Great Revolt",
+          "faction": "Belgae",
+          "before_wins": 6,
+          "after_wins": 4,
+          "percentage_point_change": -10
+        },
+        {
+          "scenario": "The Great Revolt",
+          "faction": "Romans",
+          "before_wins": 4,
+          "after_wins": 5,
+          "percentage_point_change": 5
+        },
+        {
+          "scenario": "Ariovistus",
+          "faction": "Aedui",
+          "before_wins": 1,
+          "after_wins": 2,
+          "percentage_point_change": 5
+        },
+        {
+          "scenario": "Ariovistus",
+          "faction": "Belgae",
+          "before_wins": 2,
+          "after_wins": 2,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "Ariovistus",
+          "faction": "Germans",
+          "before_wins": 5,
+          "after_wins": 4,
+          "percentage_point_change": -5
+        },
+        {
+          "scenario": "Ariovistus",
+          "faction": "Romans",
+          "before_wins": 12,
+          "after_wins": 12,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "The Gallic War",
+          "faction": "Aedui",
+          "before_wins": 1,
+          "after_wins": 3,
+          "percentage_point_change": 10
+        },
+        {
+          "scenario": "The Gallic War",
+          "faction": "Arverni",
+          "before_wins": 1,
+          "after_wins": 1,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "The Gallic War",
+          "faction": "Belgae",
+          "before_wins": 5,
+          "after_wins": 5,
+          "percentage_point_change": 0
+        },
+        {
+          "scenario": "The Gallic War",
+          "faction": "Romans",
+          "before_wins": 13,
+          "after_wins": 11,
+          "percentage_point_change": -10
+        }
+      ],
+      "winner_or_card_count_changes": 48,
+      "baseline_changed": false,
+      "baseline_sha256": "cbdfc7883ea0137fd5bf414ebc3bf847ec1774f42bd447d81a74ed268f9496c3",
+      "existing_band": 0.15
+    },
+    "parent_comparison": {
+      "games": 100,
+      "winner_or_card_count_changes": 0,
+      "final_state_changes": 0,
+      "all_editions_games": 150,
+      "all_editions_semantic_changes": 0,
+      "causal_review_required": false,
+      "provenance": "parent-record-provenance.json; exact production-byte equivalence despite one historical test-only edit"
+    },
+    "scope": "All five scenarios. Bots: legacy1-20; original/second-edition201-205. Mixed: legacy1-40; original/second-edition201-202, hashes0/7 with replay. Strict census201-202, hashes0/7.",
+    "passed": true
+  },
+  "parent_provenance": "parent-provenance-preflight.json; original labels retained in copied parent records",
+  "protected_files_unchanged": true,
+  "protected_input_count": 49,
+  "progress": {
+    "closed": 20,
+    "total": 50,
+    "open": 30,
+    "percent": 40,
+    "newly_closed": [
+      "BE-02"
+    ],
+    "unadopted_source_questions_separate": 3
+  },
+  "limits": [
+    "Equality is of recorded gameplay fields, not proof of identical full trajectories.",
+    "Bots cover fixed seeds across all five scenarios and three card-edition profiles, not exhaustive states.",
+    "Non-player Litaviccus target prediction remains separately open; no new provisional ruling is adopted.",
+    "Save schema is unchanged; old response logs are not promised exact cross-version replay.",
+    "Remote CI follows publication and is separate from this local acceptance."
+  ]
+}

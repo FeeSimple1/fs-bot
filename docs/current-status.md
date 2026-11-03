@@ -20,6 +20,31 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 3 November Event Battle choices — BE-02 closed
+
+The [Event Battle repair](reviews/event-battle-choices-2026-11-03.md) restores
+human Region and defender choices on 11/25/36/45/70 while retaining each
+card's mandatory follow-on, printed exceptions and cooperation permissions.
+It also protects revised Numidians' excluded Roman counters, removes Aedui
+self-double-counting in Litaviccus, and includes Event Loss modifiers in
+non-player Retreat forecasts. Board/card inspection and durable save/replay
+are covered by the new regressions.
+
+**20/50 original findings are closed (40%); 30 remain open.** The 34
+unverified inventory rows, three unadopted source questions and eleven
+existing provisional rulings remain separate. Non-player Litaviccus target
+prediction is a newly documented follow-up; card 70's whole-benefit
+acceptance and March planning remain part of BE-01.
+
+The exact source passes **7,347 tests**, including 142 added cases, and all
+142 added cases also pass on Python 3.12. Validation includes 150 bot games,
+25 additional bot hash-seed repeats, 220 mixed-player cases with replay and
+cross-hash repetition (880 executions), and 20 strict-census executions.
+All recorded gameplay fields in the 150 bot games match the verified parent;
+this is not a complete trajectory comparison. The existing balance baseline
+and 15-percentage-point limit remain unchanged. See the report for source
+identity, parent provenance, limitations and retained evidence.
+
 ### 3 November ordinary Arverni Phase — seven defects repaired
 
 The [phase repair report](reviews/arverni-phase-2026-11-03.md) covers all five

@@ -51,8 +51,10 @@ from fs_bot.battle.losses import (calculate_losses, resolve_losses,
 
 from fs_bot.engine.diviciacus import defensive_battle
 from fs_bot.battle.elite import battle_scope
+from fs_bot.battle.excluded_leader import auxilia_only_battle
 
 
+@auxilia_only_battle
 @defensive_battle
 @battle_scope
 def resolve_battle(state, region, attacking_faction, defending_faction,

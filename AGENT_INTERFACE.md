@@ -588,6 +588,23 @@ as `["Warband", visibility, null, "elite"]`; other Warbands remain separate.
 
 ### Scoped Event grants
 
+Numidians (11, both editions), Aquitani (25), unshaded Morasses (36), shaded
+Litaviccus (45), and Camulogenus (70)'s Battle step use `free_action` with
+`request_type: "fixed_event_battle"`. The request's `defenders_by_region`
+maps each offered Region to its legal defenders. Return exactly
+`{"region": "...", "defender": "..."}`, or explicitly request
+`{"use_default": true}` when `default_available` is true. The engine applies
+the printed modifiers; response fields cannot add Special Activities,
+participants, extra Losses or exemptions. Subsequent Diviciacus agreement
+requests remain separate from selecting the Battle.
+
+These Battles are mandatory when possible. Camulogenus's preceding whole
+benefit/March selection remains a separate open repair; after that stage has
+proceeded, its Battle cannot be independently declined. Aquitani's offered
+targets may include a Region without friendly Forces, as its text permits.
+Missing or invalid durable-session responses remain pending with board/RNG
+rollback; do not replace them with a default response.
+
 Seize's successful Arverni and Belgae Rally checks issue separate
 `free_action` requests with `request_type: "event_rally"`, `source: "seize"`,
 `source_region`, `tribe`, and the actual `roll`. They permit free Rally in the
@@ -720,6 +737,7 @@ choices for a particular board:
 | `remi_event_effect` | `target_city: "Alesia"` or `"Cenabum"`, optional `stage_timing_actions`; or sole `decline: true` / `use_default: true` | `cards/remi_event_effect.py`; Card68 shaded belongs to Remi's Gallic owner |
 | `procillus_march` | `origin, destination` | `cards/procillus.py`; A19 executor moves all mobile Romans from one offered origin |
 | `decisive_battle` | `region, defender` | `cards/decisive_battle.py`; A21/A57 first Battle, then optional second in the same Region |
+| `fixed_event_battle` | `region, defender` from `defenders_by_region`, or sole `use_default: true` if available | `cards/fixed_event_battles.py`; scoped Battles on 11/25/36/45/70, with printed modifiers applied by the engine |
 | `arduenna_faction` | `faction` from the request's `factions` | `cards/arduenna.py`; executor selects a playable beneficiary other than Arverni |
 | `arduenna_accept` | Sole `accept: true`, `decline: true` or `use_default: true` | `cards/arduenna.py`; beneficiary decides the complete 67/A67 sequence |
 | `arduenna_march` | Ordinary March action with explicit `origins, destinations, routes, groups` and optional `extra_groups` in `details.march_plan` | `cards/arduenna_march.py`; actual movement ending in Nervii/Treveri; normal transit dropoffs |

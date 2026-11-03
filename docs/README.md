@@ -26,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [3 November Event Battle choices](reviews/event-battle-choices-2026-11-03.md) | BE-02 closure, exact revised Numidians participants, Litaviccus counting, Event-aware Retreat forecasts, human sessions and outcome validation |
 | [3 November ordinary Arverni Phase repairs](reviews/arverni-phase-2026-11-03.md) | Rally legality, secondary March Control, Raid quantity/Ambush reserves and untracked Resources; separate follow-ups outside the original audit denominator |
 | [2 November Colony defaults and fuzz follow-up](reviews/colony-event-defaults-2026-11-02.md) | Dynamic Tribe geography for A45/A36, explicit rejected-bot detection and retained cross-hash CI evidence |
 | [2 November Gallic Event ownership](reviews/gallic-event-grants-2026-11-02.md) | BE-03 closure: beneficiary/order, Remi ownership, numeric Arduenna, adopted PR-10/PR-11, validation and separate phase follow-ups |

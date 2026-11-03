@@ -86,7 +86,11 @@ The [ordinary Arverni Phase repair](docs/reviews/arverni-phase-2026-11-03.md)
 fixes the five follow-up Rally, March and Raid defects, plus protected-Tribe
 placement and untracked Arverni Resources. These additional defects are
 outside the original audit denominator.
-**19 of 50 findings are closed (38%); 31 remain open** in the
+The [Event Battle repair](docs/reviews/event-battle-choices-2026-11-03.md)
+restores human targets on 11/25/36/45/70, enforces revised Numidians'
+Auxilia-only participation, removes Litaviccus's Aedui double-count and
+includes printed Event Loss modifiers in non-player Retreat decisions.
+**20 of 50 findings are closed (40%); 30 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

@@ -8,6 +8,38 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
+### Q-LITAVICCUS-NP-PREDICTION — Belgic target selection on shaded 45 (3 November 2026)
+
+The Event Battle choice repair found that Litaviccus's existing non-player
+default chooses the Region with the most Roman pieces. The supplied Belgic
+Event instruction instead says: “Battle where most Losses forced on Legions;
+if none, treat as 'No Belgae'.” A reproducible position has ten Roman Auxilia
+in Carnutes and one Legion in Mandubii. The Belgae can Ambush the Legion
+without Caesar and remove it with certainty, yet the existing default
+chooses Carnutes. This is a confirmed targeting defect, separate from BE-02's
+human choices.
+
+Sections 8.2.3 and 8.5.1 supply the ordinary non-player conditions and the
+best-case assumption for Defender Loss rolls. Section 8.4.3 supplies the
+non-player Roman Retreat response. They do not expressly specify how to
+predict a human Roman's optional Retreat when comparing prospective Legion
+Losses. PR-11 adopts a policy for numeric Arduenna 67 only; it has not been
+extended to Litaviccus.
+
+The remaining choice is whether to rank standing-Battle Losses, forecast
+actual non-player responses and conservative human responses, or require a
+stricter guaranteed outcome. The recommendation is the middle option:
+use the published non-player Roman response and, for a human, compare legal
+standing and Retreat responses and rank the lower predicted Legion Losses,
+retaining the printed Defender-roll assumption. This avoids relying on a
+human opponent choosing the response most favorable to the bot.
+
+**No new project ruling is adopted here.** The target predictor remains a
+separate repair pending an authoritative clarification or owner decision.
+The [Event Battle report](docs/reviews/event-battle-choices-2026-11-03.md)
+preserves the source review and witness; the largest-stack fallback must not
+be described as satisfying the printed Legion-targeting instruction.
+
 ### Q-ARVERNI-EVENT-COMMAND — automatic Arverni receiving one Command (2 November 2026)
 
 The Gallic-beneficiary repair permits the Event executor to select any legal

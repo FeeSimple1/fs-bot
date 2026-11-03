@@ -139,6 +139,16 @@ request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
 
+Numidians, Aquitani, unshaded Morasses, shaded Litaviccus and Camulogenus's
+Battle step ask the battling player to select a legal Region and opponent.
+Where the Event already fixes the Region or defender, that restriction
+remains. The engine applies the card's special Battle rules automatically,
+including Aquitani's ability to Battle without friendly Forces and revised
+Numidians' Auxilia-only participation. Card information, changes and
+`board`/`b` inspection remain available before choosing. These Battles must
+be carried out when possible; Camulogenus's preceding March choices remain
+an open repair.
+
 The repaired Event menus listed in the [Event validation report](docs/reviews/event-validation-2026-11-03.md)
 enforce their printed quantities and areas. An invalid Event stays pending so you can correct it without losing eligibility; a legal
 Event that has no effect is still allowed. Fixed effects occur as far as

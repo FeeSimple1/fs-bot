@@ -2051,43 +2051,57 @@ def _request_event_diviciacus(state, faction, action, card_id):
 @_diviciacus_command_scope
 def _resolve_fixed_event_battle(state, faction, action, **options):
     """Preserve Event Battle modifiers inside the actual Command scope."""
+    from contextlib import nullcontext
     from fs_bot.engine.diviciacus import defense_scope
     from fs_bot.battle.resolve import resolve_battle
     entry = action["details"]["battle_plan"][0]
     region, defender = entry["region"], entry["target"]
-    with defense_scope(state, region, faction, defender):
+    participants = nullcontext()
+    if options.get('auxilia_only_attack'):
+        from fs_bot.battle.excluded_leader import only_attacker_auxilia
+        participants = only_attacker_auxilia(state, faction, region)
+    # Revised Numidians excludes other Roman pieces even while the
+    # defender evaluates Retreat, before the Battle resolver is entered.
+    with participants, defense_scope(state, region, faction, defender):
         if "retreat_declaration" not in options:
-            rd, rr = _decide_defender_retreat(state, region, faction, defender, False)
+            forecast = {key: options[key]
+                        for key in ('double_auxilia', 'extra_losses', 'ally_first')
+                        if key in options}
+            rd, rr = _decide_defender_retreat(
+                state, region, faction, defender, False, **forecast)
             options.update(retreat_declaration=rd, retreat_region=rr)
         return resolve_battle(state, region, faction, defender, **options)
 
 
 def _resolve_card25_battle(state, faction, region, extra):
-    """Card 25 Aquitani (unshaded): free Battle in Pictones/Arverni with
-    ``extra`` extra Losses and 1 Ally (not Citadel) removed first."""
-    from fs_bot.engine.diviciacus_planning import clear_confirmation
-    if region is None:
-        return [{"free_action": "battle", "flag": "card_25", "executed": False,
-                 "declined_no_effect": True,
-                 "reason": "no Pictones/Arverni Battle target"}]
-    action = _plan_fixed_event_battle(
-        state, faction, 25, {region},
-        lambda sim: (region, _card25_battle_target(sim, region, faction)))
-    if action is None:
-        return [{"free_action": "battle", "flag": "card_25", "executed": False,
-                 "declined_no_effect": True,
-                 "reason": "no enemy in Region"}]
-    defender = action["details"]["battle_plan"][0]["target"]
+    """Card 25: one chosen Battle, even without friendly Forces (Card Tips)."""
+    from fs_bot.cards.fixed_event_battles import resolve
+    from fs_bot.rules_consts import PICTONES, ARVERNI_REGION
+    allowed = {region} if region is not None else {PICTONES, ARVERNI_REGION}
+    def default(sim):
+        selected = region
+        if selected is None:
+            selected = (_derive_card_25(sim, faction, False) or {}).get('battle_region')
+        if selected is None:
+            return None
+        return _plan_fixed_event_battle(
+            sim, faction, 25, allowed,
+            lambda board: (selected, _card25_battle_target(board, selected, faction)))
     try:
-        res = _resolve_fixed_event_battle(state, faction, action,
-                                         extra_losses=extra, ally_first=True)
+        action, res = resolve(
+            state, faction, 25, allowed, default,
+            lambda plan: _resolve_fixed_event_battle(
+                state, faction, plan, extra_losses=extra, ally_first=True))
     except _EXEC_ERRORS as exc:
         return [{"free_action": "battle", "flag": "card_25",
                  "executed": False, "reason": repr(exc)}]
-    finally:
-        clear_confirmation(state, faction, action)
-    return [{"free_action": "battle", "flag": "card_25", "region": region,
-             "defender": defender, "result": res}]
+    if action is None:
+        return [{"free_action": "battle", "flag": "card_25", "executed": False,
+                 "declined_no_effect": True,
+                 "reason": "no Pictones/Arverni Battle target"}]
+    chosen = action['details']['battle_plan'][0]
+    return [{"free_action": "battle", "flag": "card_25", "region": chosen['region'],
+             "defender": chosen['target'], "result": res}]
 
 
 def _card36_battle_target(state, faction):
@@ -2118,31 +2132,32 @@ def _card36_battle_target(state, faction):
 
 
 def _resolve_card36_battle(state, faction):
-    """Card 36: Battle a Gallic Faction, without Retreat/Counterattack/Citadel."""
-    from fs_bot.engine.diviciacus_planning import clear_confirmation
+    """Card 36: choose a Gallic defender, retaining the printed exceptions."""
+    from fs_bot.cards.fixed_event_battles import resolve
     from fs_bot.map.map_data import get_playable_regions_for_state
+    allowed = get_playable_regions_for_state(state, faction)
     def select(sim):
         best = _card36_battle_target(sim, faction)
         return best[:2] if best else (None, None)
-    action = _plan_fixed_event_battle(
-        state, faction, 36, get_playable_regions_for_state(state), select)
+    def default(sim):
+        return _plan_fixed_event_battle(sim, faction, 36, allowed, select)
+    try:
+        action, res = resolve(
+            state, faction, 36, allowed, default,
+            lambda plan: _resolve_fixed_event_battle(
+                state, faction, plan, retreat_declaration=False,
+                no_counterattack=True, ignore_citadel=True,
+                attacker_stays_hidden=True))
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "battle", "flag": "card_36",
+                 "executed": False, "reason": repr(exc)}]
     if action is None:
         return [{"free_action": "battle", "flag": "card_36", "executed": False,
                  "declined_no_effect": True,
                  "reason": "no Gallic Faction to Battle"}]
-    R, d = (action["details"]["battle_plan"][0][key] for key in ("region", "target"))
-    try:
-        res = _resolve_fixed_event_battle(state, faction, action,
-                             retreat_declaration=False,
-                             no_counterattack=True, ignore_citadel=True,
-                             attacker_stays_hidden=True)
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "battle", "flag": "card_36",
-                 "executed": False, "reason": repr(exc)}]
-    finally:
-        clear_confirmation(state, faction, action)
-    return [{"free_action": "battle", "flag": "card_36", "region": R,
-             "defender": d, "result": res}]
+    chosen = action['details']['battle_plan'][0]
+    return [{"free_action": "battle", "flag": "card_36", "region": chosen['region'],
+             "defender": chosen['target'], "result": res}]
 
 
 def _resolve_card36_shaded(state, faction):
@@ -2177,41 +2192,53 @@ def _resolve_card21_provincia_battle(state):
 
 
 def _resolve_card45_battle(state, faction):
-    """Card 45 Litaviccus (shaded): free Battle against the Romans in 1 Region,
-    using Aedui pieces as the attacker's own, Ambushing if able."""
+    """Card 45: choose one Roman target, using Aedui and Ambushing if able."""
+    from fs_bot.cards.fixed_event_battles import resolve
     from fs_bot.rules_consts import ROMANS, AEDUI
-    from fs_bot.board.pieces import count_pieces
     from fs_bot.commands.sa_ambush import validate_ambush_region
-    from fs_bot.map.map_data import get_playable_regions
-    best = None
-    for R in get_playable_regions(state["scenario"], state.get("capabilities")):
-        if count_pieces(state, R, ROMANS) <= 0:
-            continue
-        if not (_attacker_has_force(state, R, faction)
-                or _attacker_has_force(state, R, AEDUI)):
-            continue
-        rp = count_pieces(state, R, ROMANS)
-        if best is None or rp > best[1]:
-            best = (R, rp)
-    if best is None:
-        return [{"free_action": "battle", "flag": "card_45", "executed": False,
-                 "declined_no_effect": True,
-                 "reason": "no Roman target with a combined force"}]
-    R = best[0]
-    is_ambush, _ = validate_ambush_region(
-        state, R, faction, ROMANS, allied_factions=(AEDUI,))
-    details = {"battle_plan": [{"region": R, "target": ROMANS}],
-               "allied_factions": (AEDUI,)}
-    bot_action = {"command": _CMD_BATTLE,
-                  "sa": (_SA_AMBUSH if is_ambush else SA_ACTION_NONE_LABEL),
-                  "sa_regions": ([R] if is_ambush else []), "details": details}
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    allowed = get_playable_regions_for_state(state, faction)
+    # Aedui already use their own pieces; adding them again would double
+    # their Losses and Hidden count rather than treating them as one force.
+    allies = () if faction == AEDUI else (AEDUI,)
+    def default(sim):
+        if faction == ROMANS:
+            return None  # Battle cannot select its own faction as defender.
+        best = None
+        for region in allowed:
+            if count_pieces(sim, region, ROMANS) <= 0:
+                continue
+            if not (_attacker_has_force(sim, region, faction)
+                    or _attacker_has_force(sim, region, AEDUI)):
+                continue
+            number = count_pieces(sim, region, ROMANS)
+            if best is None or number > best[1]:
+                best = (region, number)
+        if best is None:
+            return None
+        return {"command": _CMD_BATTLE,
+                "details": {"battle_plan": [{"region": best[0], "target": ROMANS}]}}
+    def execute(plan):
+        region = plan['details']['battle_plan'][0]['region']
+        is_ambush, _ = validate_ambush_region(
+            state, region, faction, ROMANS, allied_factions=allies)
+        plan['details']['allied_factions'] = allies
+        plan.update(sa=_SA_AMBUSH if is_ambush else SA_ACTION_NONE_LABEL,
+                    sa_regions=[region] if is_ambush else [])
+        return _execute_battle(state, faction, plan)
     try:
-        res = _execute_battle(state, faction, bot_action)
+        action, res = resolve(state, faction, 45, allowed, default, execute)
     except _EXEC_ERRORS as exc:
         return [{"free_action": "battle", "flag": "card_45",
                  "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "battle", "flag": "card_45", "region": R,
-             "defender": ROMANS, "ambush": is_ambush, "result": res}]
+    if action is None:
+        return [{"free_action": "battle", "flag": "card_45", "executed": False,
+                 "declined_no_effect": True,
+                 "reason": "no Roman target with a combined force"}]
+    region = action['details']['battle_plan'][0]['region']
+    return [{"free_action": "battle", "flag": "card_45", "region": region,
+             "defender": ROMANS, "ambush": action.get('sa') == _SA_AMBUSH,
+             "result": res}]
 
 
 def _resolve_card54_joined_ranks(state, faction, march_limit,
@@ -2859,19 +2886,20 @@ def _resolve_card70_march_battle(state, target_regions, legion_limit):
     def select_battle(sim):
         defenders = _rank_battle_targets(sim, target, scen)
         return target, defenders[0] if defenders else None
-    action = _plan_fixed_event_battle(state, ROMANS, 70, {target}, select_battle)
+    from fs_bot.cards.fixed_event_battles import resolve
+    try:
+        action, res = resolve(
+            state, ROMANS, 70, {target},
+            lambda sim: _plan_fixed_event_battle(sim, ROMANS, 70, {target}, select_battle),
+            lambda plan: _resolve_fixed_event_battle(state, ROMANS, plan))
+    except _EXEC_ERRORS as exc:
+        return [{"free_action": "march_battle", "flag": "card_70_roman_march_battle",
+                 "region": target, "executed": False, "reason": repr(exc)}]
     if action is None:
         return [{"free_action": "march", "flag": "card_70_roman_march_battle",
                  "region": target, "moved": moved, "battle": None,
                  "reason": "no Battle target in T after March"}]
     defender = action["details"]["battle_plan"][0]["target"]
-    try:
-        res = _resolve_fixed_event_battle(state, ROMANS, action)
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "march_battle", "flag": "card_70_roman_march_battle",
-                 "region": target, "executed": False, "reason": repr(exc)}]
-    finally:
-        clear_confirmation(state, ROMANS, action)
     return [{"free_action": "march_battle", "flag": "card_70_roman_march_battle",
              "region": target, "defender": defender, "moved": moved, "result": res}]
 
@@ -2899,27 +2927,26 @@ def _resolve_card2_battle(state, faction, region):
 
 
 def _free_double_aux_battle(state, region, auxilia_only=False):
-    """Resolve a Roman free Battle in ``region`` with double Auxilia Losses,
-    targeting the top Roman Battle-priority defender (8.8.1). Returns the
-    battle result dict, or None if there is no valid target. ``auxilia_only``
-    restricts the attack to Auxilia (card 11 Ariovistus)."""
-    from fs_bot.rules_consts import ROMANS
+    """Cards 11/11a: the Roman owner chooses a defender after placement."""
+    from fs_bot.rules_consts import ROMANS, AUXILIA
+    from fs_bot.cards.fixed_event_battles import resolve
     from fs_bot.bots.roman_bot import _rank_battle_targets
-    from fs_bot.engine.diviciacus_planning import clear_confirmation
     if region is None:
         return None
+    card_id = '11a' if auxilia_only else 11
     def select(sim):
-        targets = _rank_battle_targets(sim, region, sim["scenario"])
+        targets = _rank_battle_targets(sim, region, sim['scenario'])
         return region, targets[0] if targets else None
-    action = _plan_fixed_event_battle(
-        state, ROMANS, "11a" if auxilia_only else 11, {region}, select)
-    if action is None:
-        return None
-    try:
-        return _resolve_fixed_event_battle(state, ROMANS, action,
-            double_auxilia=True, auxilia_only_attack=auxilia_only)
-    finally:
-        clear_confirmation(state, ROMANS, action)
+    def default(sim):
+        if auxilia_only and not count_pieces(sim, region, ROMANS, AUXILIA):
+            return None
+        return _plan_fixed_event_battle(sim, ROMANS, card_id, {region}, select)
+    _, result = resolve(
+        state, ROMANS, card_id, {region}, default,
+        lambda plan: _resolve_fixed_event_battle(
+            state, ROMANS, plan, double_auxilia=True,
+            auxilia_only_attack=auxilia_only))
+    return result
 
 
 def _resolve_double_aux_battle_card(state, region, flag):
@@ -5143,7 +5170,9 @@ def _execute_build_plan(state, faction, bot_action):
     return result
 
 
-def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
+def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
+                            *, double_auxilia=False, extra_losses=0,
+                            ally_first=False):
     """Route the defending faction's Retreat decision per §8.4.3.
 
     Non-player Retreat rules (non_player_guidelines_summary.txt, §8.4.3):
@@ -5208,9 +5237,14 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
         return (False, None)
     dest = max(sorted(legal), key=lambda r: count_pieces(state, r, defender))
 
-    suffer = calculate_losses(state, region, attacker, defender)
+    # Fixed Event Battles retain their printed Loss modifiers when the
+    # defender applies §8.4.3. Aquitani adds its three Losses after halving,
+    # just as the actual Battle resolver does.
+    suffer = calculate_losses(state, region, attacker, defender,
+                              double_auxilia=double_auxilia) + extra_losses
     suffer_if_retreat = calculate_losses(
-        state, region, attacker, defender, is_retreat=True)
+        state, region, attacker, defender, is_retreat=True,
+        double_auxilia=double_auxilia) + extra_losses
     inflict = calculate_losses(
         state, region, defender, attacker, is_counterattack=True)
 
@@ -5224,7 +5258,10 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
 
     # (a) Retreat to save the last piece: full Losses would wipe the mobile
     #     group, but halved (Retreat) Losses leave a survivor.
-    if mobile > 0 and suffer >= mobile and suffer_if_retreat < mobile:
+    from fs_bot.rules_consts import ALLY
+    first_ally = int(ally_first and count_pieces(state, region, defender, ALLY) > 0)
+    if (mobile > 0 and max(0, suffer - first_ally) >= mobile
+            and max(0, suffer_if_retreat - first_ally) < mobile):
         return (True, dest)
     # (b) Romans Retreat only when it lowers projected Legion Loss rolls
     # (§8.4.3). Positive incoming Losses alone are insufficient: Auxilia
@@ -5243,6 +5280,13 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush):
                 deepcopy({key: value for key, value in state.items()
                           if key != "decision_agent"}),
                 region, defender, is_retreat=retreat)
+            if first_ally:
+                # The printed first Ally Loss precedes normal standing or
+                # Retreat priorities, so it cannot expose a Legion instead.
+                first = next((index for index, piece in enumerate(order)
+                              if piece[0] == ALLY), None)
+                if first is not None:
+                    order.insert(0, order.pop(first))
             if (retreat and state.get("markers", {}).get(region, {}).get(
                     MARKER_ABATIS) == defender
                     and not (attacker == GERMANS and is_capability_active(

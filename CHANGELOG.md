@@ -4,6 +4,20 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Event Battle choices, 3 November 2026
+
+- Restore human Region and defender selection for modified Battles on
+  11/25/36/45/70, including Aquitani without friendly Forces. Preserve printed
+  restrictions, separate Diviciacus consent, board/card information, pending
+  responses, save/resume and replay.
+- Limit revised Numidians to participating Auxilia during damage, reaction
+  choices and Counterattack; keep other Roman counters physically present.
+- Count Aedui forces once when they execute Litaviccus. Apply printed Event
+  Loss modifiers when non-player defenders evaluate Retreat.
+- Close BE-02: 20/50 original audit findings are closed (40%), with 30 open.
+  The separate non-player Litaviccus target predictor remains open. See the
+  [Event Battle report](docs/reviews/event-battle-choices-2026-11-03.md).
+
 ## Unreleased — ordinary Arverni Phase repairs, 3 November 2026
 
 - Enforce one Rally placement category per Region, Arverni Control for a new

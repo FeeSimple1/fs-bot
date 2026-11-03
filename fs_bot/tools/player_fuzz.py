@@ -114,11 +114,22 @@ def make_random_reactive(seats, rng):
     AGREEMENT: coin flip (exercises both branches of every negotiation).
     HARASSMENT_LOSS: uniformly choose among the current legal options.
     DIVICIACUS_PIECES: random legal counts of each physical owner's counters.
+    FIXED_EVENT_BATTLE: a random offered Region/defender pair, retaining the
+        Event's mandatory follow-on and engine-owned modifiers.
     """
     def reactive(state, faction, request):
         if faction not in seats:
             return None
         kind = request.get("kind")
+        if kind == "free_action" and request.get("request_type") == "fixed_event_battle":
+            # Exercise the human selection instead of deferring to the NPC
+            # default. The trusted request contains the card's legal pairs,
+            # including Aquitani's Battle without friendly Forces.
+            choices = [(region, defender)
+                       for region, defenders in sorted(request["defenders_by_region"].items())
+                       for defender in sorted(defenders)]
+            region, defender = rng.choice(choices)
+            return {"region": region, "defender": defender}
         if kind == "raid_intimidate":
             if rng.random() < 0.25:
                 return {"decline": True}

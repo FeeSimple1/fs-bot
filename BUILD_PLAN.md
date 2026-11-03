@@ -87,7 +87,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 19 of 50 closed (38%) and 31 open; these are finding counts, not
+now records 20 of 50 closed (40%) and 30 open; these are finding counts, not
 equal effort units. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)
@@ -100,6 +100,10 @@ The [ordinary Arverni Phase repair](docs/reviews/arverni-phase-2026-11-03.md)
 fixes all five additional follow-up defects and two related errors in protected
 Tribe placement and Resource accounting. These remain separate from the
 original audit findings; its denominator stays 50.
+The [Event Battle repair](docs/reviews/event-battle-choices-2026-11-03.md)
+closes BE-02, including printed participants and Event Loss modifiers in
+Retreat forecasts. Non-player Litaviccus targeting remains a separate repair
+with the narrow prediction question recorded in `QUESTIONS.md`.
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even
@@ -115,9 +119,10 @@ closes human selection of Trade's single Region under shaded River Commerce.
 The [Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md) retains
 its placement scope and then-unresolved timing questions; the later rules
 and Trade report records their adopted provisional answers. These known
-items are not an exhaustive defect list. Two separate non-player source
-questions remain: shaded Trade Region selection and the physical Warbands
-designated by Vercingetorix's Elite. See the current question index.
+items are not an exhaustive defect list. Three unadopted non-player source
+questions remain: shaded Trade Region selection, the physical Warbands
+designated by Vercingetorix's Elite, and forecasting human Roman Retreat
+when selecting a Litaviccus target. See the current question index.
 
 The follow-up implementation adds Diviciacus cooperation and its optional
 original-scenario setup, repairs strategy-runner acceptance/resume, exposes

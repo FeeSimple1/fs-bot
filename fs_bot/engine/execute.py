@@ -3330,82 +3330,8 @@ def _resolve_a17_march_battle(state):
 
 
 def _resolve_a19_march_romans(state, faction):
-    """A19 Gaius Valerius Procillus (shaded): "March all Romans in 1 Region to
-    an adjacent one with Germans."
-
-    German NP instruction (Ariovistus): "Play only to move to where no Fort
-    and Germans will outnumber Romans." So a Germanic actor relocates all
-    Roman mobile pieces (Caesar, Legions, Auxilia) from a source Region into
-    an adjacent destination that (a) contains Germans, (b) has no Fort, and
-    (c) where, after the move, German pieces outnumber the Roman pieces —
-    trapping the Romans for a German attack. Among valid moves, the
-    one trapping the most Roman pieces (then the largest German advantage) is
-    chosen. Only the Germanic path is specified; other Factions no-op.
-    """
-    from fs_bot.rules_consts import (GERMANS, ROMANS, CAESAR, LEADER, LEGION,
-                                     AUXILIA, WARBAND, FORT, HIDDEN, REVEALED,
-                                     SCOUTED)
-    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
-                                     get_leader_in_region, move_piece)
-    from fs_bot.board.control import refresh_all_control
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    if faction != GERMANS:
-        return []
-    scen = state["scenario"]
-    playable = get_playable_regions(scen, state.get("capabilities"))
-
-    def roman_mobile(r):
-        m = (count_pieces(state, r, ROMANS, LEGION)
-             + count_pieces(state, r, ROMANS, AUXILIA))
-        if get_leader_in_region(state, r, ROMANS) is not None:
-            m += 1
-        return m
-
-    best = None  # (S, D, trapped, advantage)
-    for S in sorted(playable):
-        rs = roman_mobile(S)
-        if rs <= 0:
-            continue
-        for D in get_adjacent(S, scen):
-            if count_pieces(state, D, GERMANS) <= 0:        # "with Germans"
-                continue
-            if count_pieces(state, D, ROMANS, FORT) > 0:     # "no Fort"
-                continue
-            romans_after = count_pieces(state, D, ROMANS) + rs
-            adv = count_pieces(state, D, GERMANS) - romans_after
-            if adv <= 0:                                     # "outnumber"
-                continue
-            key = (rs, adv)
-            if best is None or key > (best[2], best[3]):
-                best = (S, D, rs, adv)
-
-    if best is None:
-        return [{"free_action": "march_romans", "flag":
-                 "card_A19_march_romans", "executed": False,
-                 "declined_no_effect": True,
-                 "reason": "no move where Germans outnumber Romans (no Fort)"}]
-
-    S, D, trapped, adv = best
-    # Move all Roman mobile pieces S -> D (Caesar, then Legions, then Auxilia).
-    moved = {"caesar": False, "legions": 0, "auxilia": 0}
-    leader = get_leader_in_region(state, S, ROMANS)
-    if leader is not None:
-        move_piece(state, S, D, ROMANS, LEADER)
-        moved["caesar"] = leader == CAESAR
-        moved["leader"] = leader
-    legs = count_pieces(state, S, ROMANS, LEGION)
-    if legs:
-        move_piece(state, S, D, ROMANS, LEGION, count=legs)
-        moved["legions"] = legs
-    for ps in (HIDDEN, REVEALED, SCOUTED):
-        a = count_pieces_by_state(state, S, ROMANS, AUXILIA, ps)
-        if a:
-            move_piece(state, S, D, ROMANS, AUXILIA, count=a, piece_state=ps)
-            moved["auxilia"] += a
-    refresh_all_control(state)
-    return [{"free_action": "march_romans", "flag": "card_A19_march_romans",
-             "source": S, "dest": D, "moved": moved,
-             "german_advantage": adv}]
+    from fs_bot.cards.procillus import resolve
+    return resolve(state, faction)
 
 
 def _resolve_a67_arduenna(state, faction):

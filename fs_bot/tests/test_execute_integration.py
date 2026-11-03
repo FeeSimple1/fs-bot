@@ -1838,7 +1838,7 @@ def test_a17_shaded_remove_4_auxilia_and_derivers():
 def test_a19_shaded_german_marches_romans():
     """Slice 33: A19 shaded — a German actor relocates all Roman mobile pieces
     (Caesar, Legions, Auxilia) into an adjacent German Region (no Fort) where
-    Germans will outnumber them. Non-German actors no-op."""
+    Germans will outnumber them under the German non-player instruction."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.state.state_schema import validate_state
     from fs_bot.board.pieces import (place_piece, count_pieces, find_leader,
@@ -1874,9 +1874,9 @@ def test_a19_shaded_german_marches_romans():
     assert get_leader_in_region(st, S, ROMANS) is None
     assert validate_state(st) == []
 
-    # Non-German actor no-ops (only the German path is specified).
+    # §5.1: other executors also select a compulsory legal Roman March.
     st2 = setup_scenario(SCENARIO_ARIOVISTUS, seed=13)
-    assert _resolve_a19_march_romans(st2, BELGAE) == []
+    assert _resolve_a19_march_romans(st2, BELGAE)[0]["executed"]
 
 
 def test_a19_shaded_noop_when_no_trap_available():
@@ -1890,6 +1890,7 @@ def test_a19_shaded_noop_when_no_trap_available():
     from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, ROMANS, GERMANS,
         AUXILIA, WARBAND, FACTIONS)
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=14)
+    st["non_player_factions"] = {GERMANS}
     # Strip every German Warband from the map so no destination can outnumber.
     for r in get_playable_regions(SCENARIO_ARIOVISTUS, st.get("capabilities")):
         n = count_pieces(st, r, GERMANS, WARBAND)

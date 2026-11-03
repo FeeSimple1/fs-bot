@@ -164,6 +164,10 @@ def validate_free_action_response(state, faction, request, response):
     if decline or use_default:
         return None
     try:
+        if request.get("request_type") == "procillus_march":
+            from fs_bot.cards.procillus import validate_march
+            validate_march(state, response)
+            return None
         if request.get("request_type") == "impetuosity_unshaded_march":
             from fs_bot.cards.impetuosity_unshaded import validate_march
             validate_march(state, faction, response)

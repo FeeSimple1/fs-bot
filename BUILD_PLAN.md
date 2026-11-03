@@ -80,9 +80,14 @@ The [first small repair batch](docs/reviews/cheap-fixes-2026-10-29.md) closes
 Battle casualty tiers, repeated Seize/Entreat Regions, strict Supply responses,
 expansion Arverni transfer rejection and sole-human-Belgae setup. The
 [Scouted Event repair](docs/reviews/scouted-events-2026-11-02.md) closes EXP-12.
-The [progress register](docs/human-choice-progress.json) leaves 44 grouped findings
-open. Next, select another bounded repair from the Event limits/effects group;
-larger choice-routing and optional-mode work remains separately scoped.
+The [expansion Event-grant batch](docs/reviews/human-event-grants-2026-11-02.md)
+closes EXP-01 through EXP-06. The [progress register](docs/human-choice-progress.json)
+now records 12 of 50 closed (24%) and 38 open; these are finding counts, not
+equal effort units. Continue with the remaining Event ownership, quantity
+and target-validation findings, then ordinary physical choices/timing and
+seasonal ownership. Base-card counterparts remain separate findings even
+where an expansion card now has complete menus. Optional setup and shared
+player modes remain separately scoped.
 Preserve each source-derived witness as a desired-behavior regression during
 repair. The
 [29 October rules and Trade repair](docs/reviews/rulings-trade-2026-10-29.md)

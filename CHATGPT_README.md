@@ -25,6 +25,19 @@ saves are not retroactively changed. Battle requests now expose only the
 legal casualty tier, so older transcripts with a different request may stop
 at the existing replay verification boundary.
 
+The [expansion Event-grant repair](docs/reviews/human-event-grants-2026-11-02.md)
+adds the A19/A21/A29/A57/A67/A69 human selections and the Roman-owned optional
+A20/A58 sequences. Read each new `free_action` request's `request_type`,
+owner, legal targets and `allow_decline` before answering; the
+[agent interface](AGENT_INTERFACE.md) lists their distinct response shapes.
+The Event player and the faction whose pieces act may differ. Do not treat
+a mandatory request as optional because NPC priorities would decline it.
+Explicit defaults are validated, refused troop loans can reopen only the
+unfinished stage, and the next request reflects the resulting board.
+Older affected transcripts may require new choices rather than replaying
+unchanged. The [progress register](docs/human-choice-progress.json) records
+the remaining audit work.
+
 Recruit/Rally plans can specify exact troop `count` values. Use
 `rally_plan.steps` to preserve Vercingetorix's two placement orders, and
 `placement_owners` to reserve exact Roman/Aedui pieces during agreed

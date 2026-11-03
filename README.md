@@ -62,10 +62,14 @@ The [first small audit repairs](docs/reviews/cheap-fixes-2026-10-29.md) close
 five findings: mandatory Battle casualty tiers, repeated Seize/Entreat,
 malformed Supply replans, game-run Arverni transfers and sole-human-Belgae
 Great Revolt setup. The [Scouted Event repair](docs/reviews/scouted-events-2026-11-02.md)
-also closes omitted mandatory removals on A25, A26, A30 and A56.
-**44 audit findings remain open** in the
-[progress register](docs/human-choice-progress.json). The report records
-fresh tests, source identity and compatibility limits.
+also closes omitted mandatory removals on A25, A26, A30 and A56. The
+[expansion Event-grant batch](docs/reviews/human-event-grants-2026-11-02.md)
+closes EXP-01 through EXP-06: human Battle, March, Raid and beneficiary
+choices, optional Roman benefits, and the printed Seize exceptions.
+**12 of 50 findings are closed (24%); 38 remain open** in the
+[progress register](docs/human-choice-progress.json). This counts findings,
+not effort or overall rules compliance. The reports record fresh validation,
+source identity, outcome changes and compatibility limits.
 
 The [human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md) records
 **50 grouped findings at its audited revision** across 490 inventory rows, including rule errors,

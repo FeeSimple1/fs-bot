@@ -19,12 +19,34 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 2 November expansion Event grants — six findings closed
+
+The [Event-grant report](reviews/human-event-grants-2026-11-02.md) closes
+EXP-01 through EXP-06. Humans choose A21/A57 Battles, A19's whole Roman
+March, A67's beneficiary and accepted action sequence, and A29/A69's Raid
+and Ambush targets. Romans decide whether to accept A20/A58 regardless of
+Event executor, then make current-board Battle/Seize choices. Both Seize
+grants suppress enemy Rally; A58 also suppresses Harassment.
+
+Selected pieces retain their physical identities through removals and March
+interruptions. Required choices reopen after a refused troop loan; retry
+targets are rebuilt from the current board. The report records source-derived
+tests, independent review, terminal/durable coverage and combined validation.
+Old affected transcripts may require the newly added human decisions.
+
+**12 of 50 findings are closed (24%); 38 remain open.** This is a count of
+resolved findings, not an effort estimate or certification of the whole game.
+The six-finding batch is complete. Base-card counterparts, ordinary Seize's
+Tribe menu, generic interruption timing, other physical choices, seasonal
+decisions and optional player modes remain separately tracked. The 34
+unverified inventory rows and two non-player source questions are unchanged.
+
 ### 2 November Scouted Event removals — one finding closed
 
 The [Scouted Event report](reviews/scouted-events-2026-11-02.md) closes
 `EXP-12`: A25, A26, A30 and A56 now include Scouted Warbands in their
-mandatory unshaded removals. **44 of 50 grouped audit findings remain open.**
-The [progress register](human-choice-progress.json) tracks all six closures.
+mandatory unshaded removals. That checkpoint left **44 of 50 findings open**.
+The [progress register](human-choice-progress.json) tracks later closures.
 This narrow repair does not close A30's separate target-validation gap (`EXP-09`).
 
 ### 29 October first small audit repairs — five findings closed

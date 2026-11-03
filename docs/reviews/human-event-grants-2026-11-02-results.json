@@ -1,0 +1,706 @@
+{
+  "source": {
+    "commit": "13e96378e7f0960ffb6b4104d76cc75c5120d444",
+    "python_sha256": "db34eb720f500716c4c59b0946b5a91b78897bb45eb726bc351c60f91acb94ca",
+    "python_files": 403
+  },
+  "bot_games": 150,
+  "bot_editions": {
+    "legacy": 100,
+    "original": 25,
+    "second-edition": 25
+  },
+  "baseline_comparison": {
+    "games": 100,
+    "winner_or_card_count_changes": 6,
+    "rate_changes": [
+      {
+        "scenario": "Ariovistus",
+        "faction": "Aedui",
+        "before_wins": 1,
+        "after_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Belgae",
+        "before_wins": 4,
+        "after_wins": 4,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Germans",
+        "before_wins": 7,
+        "after_wins": 6,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Romans",
+        "before_wins": 8,
+        "after_wins": 9,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Aedui",
+        "before_wins": 5,
+        "after_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Arverni",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Belgae",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Romans",
+        "before_wins": 11,
+        "after_wins": 11,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Aedui",
+        "before_wins": 5,
+        "after_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Belgae",
+        "before_wins": 5,
+        "after_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Romans",
+        "before_wins": 10,
+        "after_wins": 10,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Aedui",
+        "before_wins": 2,
+        "after_wins": 3,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Arverni",
+        "before_wins": 2,
+        "after_wins": 1,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Belgae",
+        "before_wins": 6,
+        "after_wins": 5,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Romans",
+        "before_wins": 10,
+        "after_wins": 11,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Aedui",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Arverni",
+        "before_wins": 9,
+        "after_wins": 9,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Belgae",
+        "before_wins": 3,
+        "after_wins": 3,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Romans",
+        "before_wins": 6,
+        "after_wins": 6,
+        "percentage_point_change": 0
+      }
+    ],
+    "passed": true,
+    "baseline_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+    "baseline_changed": false,
+    "existing_band": 0.15
+  },
+  "fuzz": {
+    "legacy": {
+      "games": 10,
+      "human_turns": 258,
+      "event_turns": 58,
+      "events_ok": 55,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "e698f7c6c32dc13599000aa760e47d9cbfdee62224049f8655164be03819c480"
+    },
+    "original": {
+      "games": 10,
+      "human_turns": 258,
+      "event_turns": 58,
+      "events_ok": 55,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "9366b737b425962773d6461d90e60a78e024b4803d49bdf7081df48cd2e5a4ad"
+    },
+    "second-edition": {
+      "games": 10,
+      "human_turns": 305,
+      "event_turns": 69,
+      "events_ok": 66,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "2816b128970542069df9f0810911d3fb009eff3ef6539e10935479c06279fc11"
+    }
+  },
+  "mixed_seat_distinct_cases": 30,
+  "mixed_seat_executions_including_replay_and_hash_repeat": 120,
+  "strict_census_executions": 20,
+  "census_severities": {
+    "legal-decline": 133
+  },
+  "scope": "Five scenarios; bot legacy seeds1-20 and other edition seeds201-205; mixed seeds201-202 in all three profiles, hashes0/7 with replay.",
+  "passed": true,
+  "source_verification": {
+    "source": {
+      "commit": "13e96378e7f0960ffb6b4104d76cc75c5120d444",
+      "python_sha256": "db34eb720f500716c4c59b0946b5a91b78897bb45eb726bc351c60f91acb94ca",
+      "python_files": 403,
+      "note": "Python source exactly committed; documentation-only changes remained uncommitted during matrix."
+    },
+    "protected_files": 49,
+    "protected_rules_and_constants": 48,
+    "balance_baseline_unchanged": true,
+    "protected_changed": [],
+    "pytest": [
+      {
+        "name": "baseline",
+        "tests": 6280,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "integrated-battles",
+        "tests": 6351,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "integrated-roman-final",
+        "tests": 6397,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "integrated-cohorts",
+        "tests": 6441,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "integrated-movement",
+        "tests": 6477,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "final-documentation-02",
+        "tests": 6477,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "python_version": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "incomplete_runs": [
+      {
+        "log": "final-documentation-incomplete.log",
+        "note": "Process disappeared at approximately54% with no JUnit/completion report; not counted as a pass; source unchanged; rerun final-documentation-02 passed."
+      }
+    ]
+  },
+  "integration_ledger": {
+    "base_commit": "d3241e7ad0ed5e11a88d114958e886221dd36db9",
+    "baseline_tests": 6280,
+    "parent_bot_games": 100,
+    "parent_baseline_differences": 0,
+    "integrated": [
+      {
+        "finding": "EXP-02",
+        "commit": "e71a63a0893bd5eb0ed53cbcfcf3f4b320866484",
+        "tests": 6292,
+        "method": "fast-forward of exact independently reviewed/tested source",
+        "log": "movement-a19-full-02.log"
+      },
+      {
+        "finding": "EXP-01",
+        "commit": "1384552124ff32adde82514f47fbea498d4d3167",
+        "agent_commit": "60267c74b5e2ba99931bdd3812dda2bbe28cec91",
+        "tests": 6351,
+        "log": "integrated-battles.log",
+        "method": "Resolved shared CLI dispatch conflict, retained both branches, full suite before commit"
+      },
+      {
+        "findings": [
+          "EXP-05",
+          "EXP-06"
+        ],
+        "commit": "76c6eecff06d4c3828d5f561c8be62f66c8a1d7b",
+        "agent_commits": [
+          "1e52a3990c0bc7df9453d688b9b59ca238ed24c7",
+          "c9464c111d96d45efffb9bdab8452edc83818b36"
+        ],
+        "tests": 6397,
+        "log": "integrated-roman-final.log",
+        "method": "Resolved shared dispatch and duplicate gate; incorporated live-target retry delta; full suite before commit"
+      },
+      {
+        "finding": "EXP-04",
+        "commit": "26e517a68f0a6f565d54e203678a4f78f0c020fb",
+        "agent_commit": "e0a1667e406a42da3d00c073c0908fbca4ef0780",
+        "tests": 6441,
+        "log": "integrated-cohorts.log",
+        "method": "Retained both namespaced default validators and all CLI routes; full suite before commit"
+      },
+      {
+        "finding": "EXP-03",
+        "commit": "13e96378e7f0960ffb6b4104d76cc75c5120d444",
+        "agent_commit": "6a25c9020cf828a3328d0df5735f63083d0474e0",
+        "tests": 6477,
+        "log": "integrated-movement.log",
+        "method": "Retained all default validators; removed trailing blank line; full suite before commit"
+      }
+    ]
+  },
+  "parent_baseline_changes": 0,
+  "paired_outcome_changes": [
+    {
+      "scenario": "Ariovistus",
+      "seed": 2,
+      "before": {
+        "cards": 43,
+        "winner": "Belgae"
+      },
+      "after": {
+        "winner": "Romans",
+        "cards": 14
+      }
+    },
+    {
+      "scenario": "Ariovistus",
+      "seed": 4,
+      "before": {
+        "cards": 32,
+        "winner": "Romans"
+      },
+      "after": {
+        "winner": "Romans",
+        "cards": 15
+      }
+    },
+    {
+      "scenario": "Ariovistus",
+      "seed": 17,
+      "before": {
+        "cards": 47,
+        "winner": "Germans"
+      },
+      "after": {
+        "winner": "Belgae",
+        "cards": 47
+      }
+    },
+    {
+      "scenario": "The Gallic War",
+      "seed": 2,
+      "before": {
+        "cards": 68,
+        "winner": "Arverni"
+      },
+      "after": {
+        "winner": "Romans",
+        "cards": 14
+      }
+    },
+    {
+      "scenario": "The Gallic War",
+      "seed": 4,
+      "before": {
+        "cards": 32,
+        "winner": "Romans"
+      },
+      "after": {
+        "winner": "Romans",
+        "cards": 15
+      }
+    },
+    {
+      "scenario": "The Gallic War",
+      "seed": 17,
+      "before": {
+        "cards": 105,
+        "winner": "Belgae"
+      },
+      "after": {
+        "winner": "Aedui",
+        "cards": 69
+      }
+    }
+  ],
+  "audit_progress": {
+    "batch_closed": 6,
+    "batch_total": 6,
+    "batch_percent": 100,
+    "closed": 12,
+    "total": 50,
+    "open": 38,
+    "percent": 24,
+    "basis": "Count of findings, not effort or overall rules completeness"
+  },
+  "limitations": [
+    "New specialized free-action types are directly exercised by dedicated tests; random mixed-seat callbacks use raw fallback for unfamiliar types.",
+    "Old affected transcripts may need new choices.",
+    "34 unverified inventory rows and two non-player source questions remain separate."
+  ],
+  "causal_review": {
+    "scope": "Only the six outcome-changing scenario/seed pairs; first actual execution divergence, not exhaustive downstream attribution.",
+    "method": "Actual run_game runner with the unchanged balance_smoke decision callback. Read-only wrappers capture live decisions/executions, not speculative previews. Legacy edition, same seed, PYTHONHASHSEED=0.",
+    "source": {
+      "parent": {
+        "commit": "d3241e7ad0ed5e11a88d114958e886221dd36db9",
+        "dirty": false,
+        "hash_seed": "0",
+        "python": "3.12.14",
+        "source_sha256": "575e77365d90067f293e1887c363a7827324f8f2beb10542a275f8813a224dff",
+        "worktree": "/workspace/scratch/534c265c65f4/fs-human-grants-parent"
+      },
+      "candidate": {
+        "commit": "13e96378e7f0960ffb6b4104d76cc75c5120d444",
+        "dirty": true,
+        "hash_seed": "0",
+        "python": "3.12.14",
+        "source_sha256": "db34eb720f500716c4c59b0946b5a91b78897bb45eb726bc351c60f91acb94ca",
+        "worktree": "/workspace/scratch/534c265c65f4/fs-bot"
+      }
+    },
+    "interruption": {
+      "preserved": "parent-The-Gallic-War-17.interrupted.json.gz",
+      "retry_log": "parent17-retry.log",
+      "rerun": "Parent The Gallic War seed 17 only; all six final files parse and reproduce their expected outcomes."
+    },
+    "blocker": null,
+    "pairs": [
+      {
+        "scenario": "Ariovistus",
+        "seed": 2,
+        "before_outcome": {
+          "cards": 43,
+          "winner": "Belgae"
+        },
+        "after_outcome": {
+          "cards": 14,
+          "winner": "Romans"
+        },
+        "trace_index_zero_based": 17,
+        "played_card_count_at_execution": 5,
+        "card": "A58",
+        "actor": "Romans",
+        "all_earlier_trace_rows_identical": true,
+        "same_pre_execution_state_and_rng": true,
+        "same_declared_decision": true,
+        "post_execution_changed_state_keys": [
+          "available",
+          "rng",
+          "spaces",
+          "tribes"
+        ],
+        "changed_regions": [
+          "Atrebates",
+          "Carnutes",
+          "Mandubii",
+          "Nervii",
+          "Veneti"
+        ],
+        "rng": {
+          "before_equal": true,
+          "after_equal": false,
+          "parent_consumed_rng": true,
+          "candidate_consumed_rng": false,
+          "before_sha256": "c2b4bb5f69b62188e825bddb90fdbd5d3228450499f847758f789101087cec4f",
+          "parent_after_sha256": "70eeafb4e9d0f0f37486aea840bf984cc464b392d9617fb8ba3cb5b68fb83352",
+          "candidate_after_sha256": "c2b4bb5f69b62188e825bddb90fdbd5d3228450499f847758f789101087cec4f"
+        },
+        "cause": "Corrected A58 execution: Roman NP flowchart Battle conditions and printed no-enemy-Rally exception.",
+        "detail": "Parent attacks Belgae at Atrebates with one Auxilia, losing it, then rolls 1 for Arverni and 2 for Belgae on Dispersal; enemy free Rallies place three Arverni Allies and Warbands. Candidate Roman flowchart selects no Battle, preserves the Auxilia, and Seizes for the same 8 Resources/one Dispersal without any Rally rolls. Candidate consumes no RNG in this Event; the RNG divergence starts with the corrected omission of forbidden enemy Rallies.",
+        "sources": [
+          "Reference Documents/Ariovistus/A Card Reference: A58",
+          "Reference Documents/Chapter 8: 8.2.3, 8.8.1",
+          "Reference Documents/Chapter 5: 5.1.1"
+        ],
+        "classification": "source_supported_correction_no_unintended_first_divergence_found"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 4,
+        "before_outcome": {
+          "cards": 32,
+          "winner": "Romans"
+        },
+        "after_outcome": {
+          "cards": 15,
+          "winner": "Romans"
+        },
+        "trace_index_zero_based": 15,
+        "played_card_count_at_execution": 4,
+        "card": "A19",
+        "actor": "Belgae",
+        "all_earlier_trace_rows_identical": true,
+        "same_pre_execution_state_and_rng": true,
+        "same_declared_decision": true,
+        "post_execution_changed_state_keys": [
+          "spaces"
+        ],
+        "changed_regions": [
+          "Cisalpina",
+          "Provincia"
+        ],
+        "rng": {
+          "before_equal": true,
+          "after_equal": true,
+          "parent_consumed_rng": false,
+          "candidate_consumed_rng": false,
+          "before_sha256": "80473f0ac60b6cc95ae7fd917c2da750b8b2d56a8d91846138d6526c8706097d",
+          "parent_after_sha256": "80473f0ac60b6cc95ae7fd917c2da750b8b2d56a8d91846138d6526c8706097d",
+          "candidate_after_sha256": "80473f0ac60b6cc95ae7fd917c2da750b8b2d56a8d91846138d6526c8706097d"
+        },
+        "cause": "Corrected A19 shaded application for a non-German Event executor.",
+        "detail": "Parent Belgae Event does not move Romans; candidate carries out the compulsory whole Roman March Provincia \u2192 Cisalpina with 6 Legions, 8 Auxilia, and Caesar. German-only no-Fort/outnumber instructions do not apply to Belgae. Neither execution consumes RNG, so this first divergence is a deterministic board correction, not an RNG shift.",
+        "sources": [
+          "Reference Documents/Ariovistus/A Card Reference: A19 shaded",
+          "Reference Documents/Chapter 5: 5.1, 5.1.3",
+          "Reference Documents/Ariovistus/german_bot_event_instructions_ariovistus.txt: Gaius Valerius Procillus, Parley (German NP only)"
+        ],
+        "classification": "source_supported_correction_no_unintended_first_divergence_found"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 17,
+        "before_outcome": {
+          "cards": 47,
+          "winner": "Germans"
+        },
+        "after_outcome": {
+          "cards": 47,
+          "winner": "Belgae"
+        },
+        "trace_index_zero_based": 108,
+        "played_card_count_at_execution": 29,
+        "card": "A19",
+        "actor": "Belgae",
+        "all_earlier_trace_rows_identical": true,
+        "same_pre_execution_state_and_rng": true,
+        "same_declared_decision": true,
+        "post_execution_changed_state_keys": [
+          "spaces"
+        ],
+        "changed_regions": [
+          "Morini",
+          "Sugambri"
+        ],
+        "rng": {
+          "before_equal": true,
+          "after_equal": true,
+          "parent_consumed_rng": false,
+          "candidate_consumed_rng": false,
+          "before_sha256": "5e655584afa780d26f9ce9b50f44e31be827d19a8fc1080e830187d1e6c4cab4",
+          "parent_after_sha256": "5e655584afa780d26f9ce9b50f44e31be827d19a8fc1080e830187d1e6c4cab4",
+          "candidate_after_sha256": "5e655584afa780d26f9ce9b50f44e31be827d19a8fc1080e830187d1e6c4cab4"
+        },
+        "cause": "Corrected A19 shaded application for a non-German Event executor.",
+        "detail": "Parent Belgae Event does not move Romans; candidate carries out the compulsory whole Roman March Morini \u2192 Sugambri with 8 Legions, 11 Auxilia, and Caesar. German-only no-Fort/outnumber instructions do not apply to Belgae. Neither execution consumes RNG, so this first divergence is a deterministic board correction, not an RNG shift.",
+        "sources": [
+          "Reference Documents/Ariovistus/A Card Reference: A19 shaded",
+          "Reference Documents/Chapter 5: 5.1, 5.1.3",
+          "Reference Documents/Ariovistus/german_bot_event_instructions_ariovistus.txt: Gaius Valerius Procillus, Parley (German NP only)"
+        ],
+        "classification": "source_supported_correction_no_unintended_first_divergence_found"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 2,
+        "before_outcome": {
+          "cards": 68,
+          "winner": "Arverni"
+        },
+        "after_outcome": {
+          "cards": 14,
+          "winner": "Romans"
+        },
+        "trace_index_zero_based": 17,
+        "played_card_count_at_execution": 5,
+        "card": "A58",
+        "actor": "Romans",
+        "all_earlier_trace_rows_identical": true,
+        "same_pre_execution_state_and_rng": true,
+        "same_declared_decision": true,
+        "post_execution_changed_state_keys": [
+          "available",
+          "rng",
+          "spaces",
+          "tribes"
+        ],
+        "changed_regions": [
+          "Atrebates",
+          "Carnutes",
+          "Mandubii",
+          "Nervii",
+          "Veneti"
+        ],
+        "rng": {
+          "before_equal": true,
+          "after_equal": false,
+          "parent_consumed_rng": true,
+          "candidate_consumed_rng": false,
+          "before_sha256": "c2b4bb5f69b62188e825bddb90fdbd5d3228450499f847758f789101087cec4f",
+          "parent_after_sha256": "70eeafb4e9d0f0f37486aea840bf984cc464b392d9617fb8ba3cb5b68fb83352",
+          "candidate_after_sha256": "c2b4bb5f69b62188e825bddb90fdbd5d3228450499f847758f789101087cec4f"
+        },
+        "cause": "Corrected A58 execution: Roman NP flowchart Battle conditions and printed no-enemy-Rally exception.",
+        "detail": "Parent attacks Belgae at Atrebates with one Auxilia, losing it, then rolls 1 for Arverni and 2 for Belgae on Dispersal; enemy free Rallies place three Arverni Allies and Warbands. Candidate Roman flowchart selects no Battle, preserves the Auxilia, and Seizes for the same 8 Resources/one Dispersal without any Rally rolls. Candidate consumes no RNG in this Event; the RNG divergence starts with the corrected omission of forbidden enemy Rallies.",
+        "sources": [
+          "Reference Documents/Ariovistus/A Card Reference: A58",
+          "Reference Documents/Chapter 8: 8.2.3, 8.8.1",
+          "Reference Documents/Chapter 5: 5.1.1"
+        ],
+        "classification": "source_supported_correction_no_unintended_first_divergence_found"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 4,
+        "before_outcome": {
+          "cards": 32,
+          "winner": "Romans"
+        },
+        "after_outcome": {
+          "cards": 15,
+          "winner": "Romans"
+        },
+        "trace_index_zero_based": 15,
+        "played_card_count_at_execution": 4,
+        "card": "A19",
+        "actor": "Belgae",
+        "all_earlier_trace_rows_identical": true,
+        "same_pre_execution_state_and_rng": true,
+        "same_declared_decision": true,
+        "post_execution_changed_state_keys": [
+          "spaces"
+        ],
+        "changed_regions": [
+          "Cisalpina",
+          "Provincia"
+        ],
+        "rng": {
+          "before_equal": true,
+          "after_equal": true,
+          "parent_consumed_rng": false,
+          "candidate_consumed_rng": false,
+          "before_sha256": "80473f0ac60b6cc95ae7fd917c2da750b8b2d56a8d91846138d6526c8706097d",
+          "parent_after_sha256": "80473f0ac60b6cc95ae7fd917c2da750b8b2d56a8d91846138d6526c8706097d",
+          "candidate_after_sha256": "80473f0ac60b6cc95ae7fd917c2da750b8b2d56a8d91846138d6526c8706097d"
+        },
+        "cause": "Corrected A19 shaded application for a non-German Event executor.",
+        "detail": "Parent Belgae Event does not move Romans; candidate carries out the compulsory whole Roman March Provincia \u2192 Cisalpina with 6 Legions, 8 Auxilia, and Caesar. German-only no-Fort/outnumber instructions do not apply to Belgae. Neither execution consumes RNG, so this first divergence is a deterministic board correction, not an RNG shift.",
+        "sources": [
+          "Reference Documents/Ariovistus/A Card Reference: A19 shaded",
+          "Reference Documents/Chapter 5: 5.1, 5.1.3",
+          "Reference Documents/Ariovistus/german_bot_event_instructions_ariovistus.txt: Gaius Valerius Procillus, Parley (German NP only)"
+        ],
+        "classification": "source_supported_correction_no_unintended_first_divergence_found"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 17,
+        "before_outcome": {
+          "cards": 105,
+          "winner": "Belgae"
+        },
+        "after_outcome": {
+          "cards": 69,
+          "winner": "Aedui"
+        },
+        "trace_index_zero_based": 108,
+        "played_card_count_at_execution": 29,
+        "card": "A19",
+        "actor": "Belgae",
+        "all_earlier_trace_rows_identical": true,
+        "same_pre_execution_state_and_rng": true,
+        "same_declared_decision": true,
+        "post_execution_changed_state_keys": [
+          "spaces"
+        ],
+        "changed_regions": [
+          "Morini",
+          "Sugambri"
+        ],
+        "rng": {
+          "before_equal": true,
+          "after_equal": true,
+          "parent_consumed_rng": false,
+          "candidate_consumed_rng": false,
+          "before_sha256": "5e655584afa780d26f9ce9b50f44e31be827d19a8fc1080e830187d1e6c4cab4",
+          "parent_after_sha256": "5e655584afa780d26f9ce9b50f44e31be827d19a8fc1080e830187d1e6c4cab4",
+          "candidate_after_sha256": "5e655584afa780d26f9ce9b50f44e31be827d19a8fc1080e830187d1e6c4cab4"
+        },
+        "cause": "Corrected A19 shaded application for a non-German Event executor.",
+        "detail": "Parent Belgae Event does not move Romans; candidate carries out the compulsory whole Roman March Morini \u2192 Sugambri with 8 Legions, 11 Auxilia, and Caesar. German-only no-Fort/outnumber instructions do not apply to Belgae. Neither execution consumes RNG, so this first divergence is a deterministic board correction, not an RNG shift.",
+        "sources": [
+          "Reference Documents/Ariovistus/A Card Reference: A19 shaded",
+          "Reference Documents/Chapter 5: 5.1, 5.1.3",
+          "Reference Documents/Ariovistus/german_bot_event_instructions_ariovistus.txt: Gaius Valerius Procillus, Parley (German NP only)"
+        ],
+        "classification": "source_supported_correction_no_unintended_first_divergence_found"
+      }
+    ]
+  },
+  "evidence_archive": {
+    "path": "human-event-grants-2026-11-02-evidence.zip",
+    "sha256": "bd3a5d2a3e39182279e97d9fd72f4b5b8bf376776500cf339b043dce2fb19a7f",
+    "bytes": 1925898,
+    "entries": 134,
+    "crc_and_manifest_verified": true
+  }
+}

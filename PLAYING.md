@@ -138,6 +138,32 @@ For Event grants with human-choice support, the menu lets you plan the permitted
 request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
+
+Vosegus (A21) and Sabis (A57) let you choose the first Battle's Region and
+defender, then decide whether to Battle again there against a currently
+available defender. The first Battle forbids Retreat; the second uses normal
+Retreat rules. Gaius Valerius Procillus (A19), shaded, lets the Event player choose which
+whole Roman force Marches and its adjacent destination with Germans.
+Harudes (A29) lets the Event player choose how the newly placed German
+Warbands Raid. Bellovaci (A69) lets that player choose the Ambush defender;
+only surviving newly placed Warbands receive the printed extra Losses.
+
+For Morbihan (A20) and Aduatuci (A58), the Roman player decides whether to
+accept the complete benefit, even when someone else played the card. A20's
+Arverni removals happen only after acceptance. Each following Battle or
+Seize choice uses the resulting board. Seize lets you choose exact Tribes,
+including Forage without Dispersal; neither card allows enemy Rally, and
+A58 also prevents Harassment. Required choices remain pending if a bot
+default cannot perform a legal action. A refused troop loan lets you replan.
+Use `board` or `b` at these menus to inspect the current position.
+
+Arduenna (A67) lets the Event player select a beneficiary other than Arverni.
+That player may accept or decline the complete sequence. After accepting,
+choose a March into Nervii or Treveri, then a different Command there, before
+the final Hide step. Each action is required when possible. You can select
+the moving groups and legal routes, including split groups and transit
+dropoffs; pieces that arrive cannot move again from another selected origin.
+
 The unshaded “remove all” effects of Ariovistus's Wife (A25), Divico (A26),
 Orgetorix (A30) and Galba (A56) include Scouted Warbands. Printed restrictions
 on Regions, factions and Leaders still apply.

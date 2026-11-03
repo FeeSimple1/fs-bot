@@ -4,6 +4,26 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — human expansion Event grants, 2 November 2026
+
+- Add human first/second Battle choices for A21/A57 and executor-owned whole
+  Roman March choices for shaded A19.
+- Restore A67 beneficiary selection, optional acceptance, scoped March and
+  subsequent Command choices, then Hide. Moving groups retain their original
+  physical pieces through split routes, losses and voluntary removals.
+- Let the A29/A69 executor choose Raid and Ambush targets. Removed placed
+  pieces cannot be replaced by residents; A69 cannot become an ordinary
+  Battle merely because a later removal invalidated Ambush.
+- Give Romans the optional A20/A58 benefit regardless of Event executor,
+  with separate current-board Battle/Seize choices and exact Dispersal targets.
+  Suppress enemy Rally for both cards and Harassment for A58.
+- Preserve mandatory human choices after refused loans, refresh retry targets,
+  and validate explicit defaults without silently skipping legal actions.
+  Add terminal board inspection and durable pending/save/replay regressions.
+- Close EXP-01 through EXP-06; see the
+  [repair report](docs/reviews/human-event-grants-2026-11-02.md) for validation,
+  compatibility limits and outcome changes.
+
 ## Unreleased — Scouted Event removals, 2 November 2026
 
 - Include Scouted Warbands in the mandatory unshaded removals for A25, A26,

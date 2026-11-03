@@ -589,6 +589,17 @@ choices for a particular board:
 | `publius_march` | `origin, route, legions, auxilia`, optional `dropoffs` | `cards/publius.py`; route is a Region list, drop-offs map intermediate Regions to piece counts |
 | `morasses_faction` | `faction` from the request's `factions` | `cards/morasses.py` |
 | `morasses_march` | `action, in_place` | `cards/morasses.py`; `action` is an ordinary March plan or null, `in_place` lists stationary origins |
+| `procillus_march` | `origin, destination` | `cards/procillus.py`; A19 executor moves all mobile Romans from one offered origin |
+| `decisive_battle` | `region, defender` | `cards/decisive_battle.py`; A21/A57 first Battle, then optional second in the same Region |
+| `arduenna_faction` | `faction` from the request's `factions` | `cards/arduenna.py`; executor selects a playable beneficiary other than Arverni |
+| `arduenna_accept` | `accept: true` or `decline: true` | `cards/arduenna.py`; beneficiary decides the complete A67 sequence |
+| `arduenna_march` | Ordinary March action with explicit `origins, destinations, routes, groups` and optional `extra_groups` in `details.march_plan` | `cards/arduenna_march.py`; actual movement ending in Nervii/Treveri; normal transit dropoffs |
+| `arduenna_command` | Ordinary non-March Command action | `cards/arduenna.py`; Nervii/Treveri only, no SA |
+| `harudes_raid` | `raid_actions: [{region, target_faction}]` | `cards/harudes_bellovaci.py`; one entry per newly placed surviving Raider; null target means gain |
+| `bellovaci_ambush` | `defender` | `cards/harudes_bellovaci.py`; A69 fixed Region and actual placed survivors |
+| `roman_event_accept` | `accept: true` or `decline: true` | `cards/roman_event_grants.py`; Romans decide the entire A20/A58 benefit |
+| `roman_event_battle` | Ordinary Battle action with offered Regions and defenders | `cards/roman_event_grants.py`; A58, no SA |
+| `roman_event_seize` | Ordinary Seize action with `details.disperse_tribes: {Region: [Tribe, ...]}` | `cards/roman_event_grants.py`; exact Tribes, ordered distinct Regions; empty lists mean Forage only |
 
 Use `engine.free_actions.validate_free_action_response` for these subtypes
 as well as ordinary grants. It returns an error string or `None`; do not
@@ -596,6 +607,47 @@ submit a custom subtype as a top-level Command. Subsequent Battle choices
 arrive as their own requests on the resulting board. Unshaded Impetuosity's
 adjacent March is required when possible; A17's follow-on Battle is required
 when possible after the optional combined action has been accepted.
+
+For A21/A57, `phase: first` requires a legal Battle and forbids Retreat;
+`phase: second` offers a fresh defender choice in that same Region, permits
+ordinary Retreat and may be declined. Human choices include legal static-only
+Forces and are not restricted by NPC damage priorities. A19, A29 and A69
+choices belong to the Event executor even when the commanded pieces belong
+to another faction. This does not transfer casualty, consent or physical
+piece ownership. A29 permits one or two actual placed Raiders per Region
+(or the applicable Capability limit); residents cannot replace removed
+placed pieces. A69 retains ordinary resident participation, but its one-Loss
+bonus applies only to surviving new Warbands. An impossible Ambush cannot
+silently become an ordinary Battle or be inherited entirely by residents.
+
+For A67, the beneficiary may decline the entire sequence before any changes.
+After acceptance, March and the subsequent non-March Command are required
+when mechanically possible, then friendly pieces in Nervii/Treveri Hide.
+March routes must actually move pieces into a destination; an in-place
+selection is not a substitute. Selected groups retain their initial-origin
+physical ownership and visibility through split routes, transit dropoffs,
+Harassment and later voluntary removals. Arrivals cannot move again as
+another origin's pieces. Scouted pieces lose their marker and remain Revealed
+at each applicable Hide step. If a loan refusal invalidates an accepted
+plan, only the unfinished stage is reopened on the current board.
+
+The Roman controller accepts or declines A20/A58 before their effects,
+regardless of who played the Event. Accepted components resolve in order
+when possible, with new requests on the resulting board. A20 removes all
+Arverni in Veneti before Seize; A58 offers Battle then Seize in Belgica.
+The engine-owned Seize request supplies the printed Control override and
+no-Rally exception; only A58 also suppresses Harassment. Responses cannot
+grant these exceptions, add an SA or use `command_parts` to escape scope.
+Optional `details.diviciacus_regions` remains available. An actual loan
+refusal reopens a required component; retry requests retain `attempt` and
+`previous_error` and refresh current legal targets.
+
+For requests with engine-owned `validate_default_response: true`, durable
+sessions validate and preserve explicit `{"use_default":true}`. A default
+that would skip a mandatory legal human action is rejected. This differs
+from the raw callback's documented `None` fallback; missing durable input
+always leaves a decision pending. These new prompts can require additional
+choices when replaying an older affected transcript.
 
 Kinship uses the separate `kinship` kind, selecting the attacker and any
 eligible Battle Regions together. Its Battle excludes the attacking Leader

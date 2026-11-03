@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-02",
   "tested_source": {
-    "commit": "c453f8eb86dfd42a93d75031cd4fb4b2552fc5a2",
-    "working_tree_changes": true,
-    "python_sha256": "575e77365d90067f293e1887c363a7827324f8f2beb10542a275f8813a224dff",
-    "python_files": 386,
-    "note": "Tested working tree based on this commit; digest identifies the complete Python source committed with this report."
+    "commit": "13e96378e7f0960ffb6b4104d76cc75c5120d444",
+    "python_sha256": "db34eb720f500716c4c59b0946b5a91b78897bb45eb726bc351c60f91acb94ca",
+    "python_files": 403,
+    "note": "Python source exactly committed; documentation-only changes remained uncommitted during matrix.",
+    "working_tree_changes": true
   },
   "total": 50,
-  "closed": 6,
-  "open": 44,
+  "closed": 12,
+  "open": 38,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -192,37 +192,61 @@
       "id": "EXP-01",
       "title": "Vosegus/Sabis choose human Battles and the optional second Battle with NPC policy",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "1384552124ff32adde82514f47fbea498d4d3167"
+      ],
+      "report": "reviews/human-event-grants-2026-11-02.md"
     },
     {
       "id": "EXP-02",
       "title": "A19 shaded uses German NPC movement policy for human play and skips other executors",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "e71a63a0893bd5eb0ed53cbcfcf3f4b320866484"
+      ],
+      "report": "reviews/human-event-grants-2026-11-02.md"
     },
     {
       "id": "EXP-03",
       "title": "A67 omits the beneficiary and March choices and forces German human NPC Battle policy",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "13e96378e7f0960ffb6b4104d76cc75c5120d444"
+      ],
+      "report": "reviews/human-event-grants-2026-11-02.md"
     },
     {
       "id": "EXP-04",
       "title": "A29 Raid and A69 Ambush targets are auto-derived for humans",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "26e517a68f0a6f565d54e203678a4f78f0c020fb"
+      ],
+      "report": "reviews/human-event-grants-2026-11-02.md"
     },
     {
       "id": "EXP-05",
       "title": "A20/A58 Roman may-grants are forced or omitted depending on executor",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "76c6eecff06d4c3828d5f561c8be62f66c8a1d7b"
+      ],
+      "report": "reviews/human-event-grants-2026-11-02.md"
     },
     {
       "id": "EXP-06",
       "title": "A20/A58 Seize grants run forbidden enemy Rally rolls",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "76c6eecff06d4c3828d5f561c8be62f66c8a1d7b"
+      ],
+      "report": "reviews/human-event-grants-2026-11-02.md"
     },
     {
       "id": "EXP-07",

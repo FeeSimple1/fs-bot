@@ -165,7 +165,7 @@ def _available(trial, card_id, faction, shaded):
         from fs_bot.bots.german_bot import _select_intimidate_targets
         for region in get_playable_regions_for_state(trial, rc.GERMANS):
             hidden = count_pieces_by_state(trial, region, rc.GERMANS, rc.WARBAND, rc.HIDDEN)
-            if hidden and _select_intimidate_targets(trial, region, min(2, hidden)):
+            if hidden and _select_intimidate_targets(trial, region, hidden):
                 return True
         return False
     if card_id == 'A19' and shaded and faction == rc.GERMANS:

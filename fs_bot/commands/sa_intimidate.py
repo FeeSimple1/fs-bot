@@ -10,7 +10,8 @@ Selection (A4.6.2):
     has Successor.
 
 Procedure per region:
-  - Flip one or two Hidden Germanic Warbands to Revealed.
+  - Flip one or two Hidden Germanic Warbands to Revealed; shaded A22
+    permits one added Reveal to remove one extra piece.
   - Place an Intimidated marker there (if none already).
   - Remove that many Warbands, Auxilia, and/or Allies of one Faction
     that has no Leader there.
@@ -33,7 +34,7 @@ from fs_bot.rules_consts import (
     # Markers
     MARKER_INTIMIDATED,
     # Scenarios
-    ARIOVISTUS_SCENARIOS,
+    ARIOVISTUS_SCENARIOS, EVENT_SHADED, EVENT_UNSHADED,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
@@ -41,6 +42,27 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.commands.common import CommandError, check_leader_proximity
+
+
+def intimidate_limit(state):
+    """A4.6.2's two Warbands, plus A22 shaded's optional added Reveal."""
+    from fs_bot.cards.capabilities import is_capability_active
+    return 3 if is_capability_active(state, 'A22', EVENT_SHADED) else 2
+
+
+def intimidate_capacity(state, region):
+    """Ordinary Intimidate's currently available Hidden participants."""
+    return min(intimidate_limit(state), count_pieces_by_state(
+        state, region, GERMANS, WARBAND, HIDDEN))
+
+
+def romans_immune(state):
+    """Read the actual Capability side, retaining legacy modifier saves."""
+    from fs_bot.cards.capabilities import get_active_capabilities
+    active = get_active_capabilities(state)
+    if 'A22' in active:
+        return active['A22'] == EVENT_UNSHADED
+    return bool(state.get('event_modifiers', {}).get('card_A22_no_intimidate_romans', False))
 
 
 def validate_intimidate_region(state, region):
@@ -84,13 +106,13 @@ def intimidate(state, region, warbands_to_flip, target_faction,
                target_removals, *, revealed_by_raid=0):
     """Execute Intimidate in a region.
 
-    A4.6.2: Flip 1-2 Hidden Germanic Warbands to Revealed. Place
-    Intimidated marker. Remove that many enemy pieces.
+    A4.6.2: Flip 1-2 Hidden Germanic Warbands to Revealed. A22 shaded
+    permits one added Warband/removal. Place an Intimidated marker.
 
     Args:
         state: Game state dict. Modified in place.
         region: Region where Intimidate occurs.
-        warbands_to_flip: Number of Hidden Warbands to flip (1 or 2).
+        warbands_to_flip: Participants (1-2, or up to 3 with shaded A22).
         target_faction: Faction targeted for removal.
         target_removals: List of (piece_type, piece_state_or_None) to
             remove from target. Length must equal warbands_to_flip.
@@ -108,10 +130,10 @@ def intimidate(state, region, warbands_to_flip, target_faction,
     if scenario not in ARIOVISTUS_SCENARIOS:
         raise CommandError("Intimidate is only available in Ariovistus")
 
-    # Validate warbands_to_flip: 1 or 2
-    if warbands_to_flip not in (1, 2):
+    limit = intimidate_limit(state)
+    if type(warbands_to_flip) is not int or not 1 <= warbands_to_flip <= limit:
         raise CommandError(
-            f"Must flip 1 or 2 Warbands for Intimidate, got "
+            f"Must flip {'1 or 2' if limit == 2 else '1 to 3'} Warbands for Intimidate, got "
             f"{warbands_to_flip}"
         )
 
@@ -124,6 +146,8 @@ def intimidate(state, region, warbands_to_flip, target_faction,
                                      REVEALED) < revealed_by_raid):
         raise CommandError("Invalid Raiding Warband credit for Intimidate")
     fresh_flips = warbands_to_flip - revealed_by_raid
+    if revealed_by_raid and fresh_flips > int(limit == 3):
+        raise CommandError('Raid Intimidate permits only A22\'s one added Hidden Warband')
     # Check Hidden Warbands available
     hidden_wb = count_pieces_by_state(
         state, region, GERMANS, WARBAND, HIDDEN
@@ -135,9 +159,7 @@ def intimidate(state, region, warbands_to_flip, target_faction,
         )
 
     # Validate target: must have no Leader in region — A4.6.2
-    from fs_bot.rules_consts import ROMANS as _ROMANS
-    if (target_faction == _ROMANS
-            and state.get("event_modifiers", {}).get("card_A22_no_intimidate_romans")):
+    if target_faction == ROMANS and romans_immune(state):
         raise CommandError(
             "A22: Intimidate has no effect on Romans")
     if target_faction == GERMANS:
@@ -152,6 +174,8 @@ def intimidate(state, region, warbands_to_flip, target_faction,
 
     # Validate removals match flip count
     marker_only = target_faction is None and not target_removals
+    if marker_only and (warbands_to_flip > 2 or (revealed_by_raid and fresh_flips)):
+        raise CommandError('A22 added Warband must remove an extra piece')
     if not marker_only and len(target_removals) != warbands_to_flip:
         raise CommandError(
             f"Must remove exactly {warbands_to_flip} pieces, "

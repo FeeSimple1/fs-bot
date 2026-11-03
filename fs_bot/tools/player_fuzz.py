@@ -130,7 +130,13 @@ def make_random_reactive(seats, rng):
                                   * target["available"])
             rng.shuffle(pieces)
             maximum = min(request["max_removals"], len(pieces))
-            return {"targets": pieces[:rng.randrange(1, maximum + 1)]}
+            targets = pieces[:rng.randrange(1, maximum + 1)]
+            response = {"targets": targets}
+            if (len(targets) > request.get("max_raider_removals", maximum)
+                    or (request.get("extra_warband_available") and len(targets) >= 2
+                        and rng.random() < 0.5)):
+                response["extra_warband"] = True
+            return response
         from fs_bot.engine.diviciacus import DIVICIACUS_PIECES
         if kind in ("march_cohort", DIVICIACUS_PIECES):
             from fs_bot.engine.march_choices import VISIBILITIES

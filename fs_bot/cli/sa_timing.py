@@ -221,7 +221,8 @@ def _intimidate_removals(state, region, target, prior):
 
 def collect_intimidate(state, faction, stdin, stdout):
     from fs_bot.cli.human_plan import _playable_regions
-    from fs_bot.commands.sa_intimidate import intimidate, validate_intimidate_region
+    from fs_bot.commands.sa_intimidate import (intimidate, validate_intimidate_region,
+                                               intimidate_capacity)
     plan = Planning(state, faction, stdin, stdout)
     regions, entries = [], []
     while True:
@@ -241,7 +242,7 @@ def collect_intimidate(state, faction, stdin, stdout):
             [(owner, owner) for owner in targets] + [('Place an Intimidated marker only', None)])
         removals = []
         if target is not None:
-            limit = min(2, count_pieces_by_state(plan.state, region, rc.GERMANS, rc.WARBAND, rc.HIDDEN))
+            limit = intimidate_capacity(plan.state, region)
             while len(removals) < limit:
                 options = _intimidate_removals(plan.state, region, target, removals)
                 if not options:

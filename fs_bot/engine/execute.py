@@ -1839,7 +1839,7 @@ def _resolve_card_A45_intimidate(state):
             hidden = count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN)
             if hidden:
                 plan.extend({"region": region, **target} for target in
-                            _select_intimidate_targets(state, region, min(2, hidden)))
+                            _select_intimidate_targets(state, region, hidden))
         if plan:
             # A8.7.1: only after removing pieces, place markers wherever
             # else possible. A45 also waives selection in these Regions.
@@ -4812,14 +4812,14 @@ def _execute_devastate(state, faction, bot_action):
 
 def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
                         raid_credits=None):
-    """One faction and 1–2 Warbands per Region/application (A4.6.2).
+    """One faction and 1–2 Warbands, or A22's added Warband, per application.
 
     A45's trusted grant waives selection. Successful Raid execution may
     supply already-Revealed Warband credits for its separate free Intimidate.
     Neither exception is accepted from the action's own fields.
     """
     from fs_bot.rules_consts import GERMANS
-    from fs_bot.commands.sa_intimidate import validate_intimidate_region
+    from fs_bot.commands.sa_intimidate import validate_intimidate_region, intimidate_limit
     if faction != GERMANS:
         return {"executed": False, "sa": _SA_INTIMIDATE,
                 "errors": ["Only Germans may Intimidate"]}
@@ -4846,8 +4846,16 @@ def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
             removals = [(e.get("target_piece"), e.get("target_state"))
                         for e in entries if e.get("target_piece") is not None]
             count = len(removals) or 1
-            if count > 2 or len(entries) > 2:
-                raise CommandError("Intimidate uses at most two Warbands per Region")
+            limit = intimidate_limit(state)
+            if count > limit or len(entries) > limit:
+                raise CommandError(f"Intimidate uses at most {limit} Warbands per Region")
+            extra_values = [entry['extra_warband'] for entry in entries
+                            if 'extra_warband' in entry]
+            if any(type(value) is not bool for value in extra_values):
+                raise CommandError('extra_warband must be a boolean')
+            extra = any(extra_values)
+            if extra and (not free or limit != 3 or count < 2):
+                raise CommandError('A22 added Raid Warband requires an extra removal')
             if not ignore_selection:
                 if free:
                     from fs_bot.engine.raid_intimidate import eligible
@@ -4857,8 +4865,9 @@ def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
                     valid, reason = validate_intimidate_region(state, region)
                 if not valid:
                     raise CommandError(reason)
-            credit = min(count, credits.get(region, 0)) if free else 0
-            if free and credit < count:
+            credit = count - int(extra) if free else 0
+            if free and (credit > credits.get(region, 0)
+                         or credit > (2 if extra else limit)):
                 raise CommandError("Intimidate exceeds the Warbands that actually Raided")
             res = _sa_intimidate(state, region, count, target, removals,
                                  revealed_by_raid=credit)

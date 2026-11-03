@@ -490,7 +490,7 @@ def validate_recruit_region(state, region):
 
     §3.2.1: Not Devastated, and must have Roman Control OR a Roman
     Leader, Ally, or Fort.
-    A3.2.1: Not Intimidated unless Roman Leader present.
+    A3.2.1: Not Intimidated unless Roman Leader present or A22 unshaded.
 
     Args:
         state: Game state dict.
@@ -509,9 +509,10 @@ def validate_recruit_region(state, region):
             and not _event_rally_option(state, region, ROMANS, "allow_devastated")):
         return False, "Region is Devastated"
 
-    # Ariovistus: not Intimidated unless Roman Leader — A3.2.1
+    # A3.2.1; A22 unshaded makes Intimidated markers ineffective on Romans.
+    from fs_bot.commands.sa_intimidate import romans_immune
     if scenario in ARIOVISTUS_SCENARIOS:
-        if _is_intimidated(state, region):
+        if _is_intimidated(state, region) and not romans_immune(state):
             if get_leader_in_region(state, region, ROMANS) is None:
                 return False, "Region is Intimidated and has no Roman Leader"
 

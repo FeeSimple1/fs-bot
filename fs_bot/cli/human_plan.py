@@ -678,7 +678,7 @@ def _collect_rampage(state, faction, stdin, stdout, *, pending=None):
 
 def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
     """German Intimidate (A4.6.2): flip Hidden Warbands to remove that many
-    pieces of ONE Faction per Region (1-2 per Region)."""
+    pieces of ONE Faction per Region (up to three with shaded A22)."""
     from fs_bot.cli.action_windows import available
     if available(state):
         from fs_bot.cli.sa_timing import collect_intimidate
@@ -695,12 +695,12 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
     plan = []
     for r in picked:
         from fs_bot.board.pieces import get_leader_in_region
+        from fs_bot.commands.sa_intimidate import romans_immune
         targets = [f for f in _enemies_in_region(state, r, faction)
                    if get_leader_in_region(state, r, f) is None
                    and any(count_pieces(state, r, f, pt)
                            for pt in (WARBAND, AUXILIA, ALLY))
-                   and not (f == ROMANS and state.get("event_modifiers", {}).get(
-                       "card_A22_no_intimidate_romans"))]
+                   and not (f == ROMANS and romans_immune(state))]
         target = prompt_choice(stdin, stdout,
                                f"  Intimidate which Faction in {r}?",
                                [(f, f) for f in targets] +
@@ -709,8 +709,8 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
             plan.append({"region": r, "target_faction": None,
                          "target_piece": None, "target_state": None})
             continue
-        flips = min(2, count_pieces_by_state(state, r, faction, WARBAND,
-                                             HIDDEN))
+        from fs_bot.commands.sa_intimidate import intimidate_capacity
+        flips = intimidate_capacity(state, r)
         reserved = {}
         for _ in range(flips):
             pts = [(pt, pt) for pt in (WARBAND, AUXILIA, ALLY)

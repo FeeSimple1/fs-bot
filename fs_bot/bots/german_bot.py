@@ -1736,9 +1736,10 @@ def _select_intimidate_targets(state, region, max_count, exclude_faction=None):
     Excludes targets where the target faction has a Leader in the region
     (per A4.6.2).
     """
-    # A4.6.2 caps each application at two Warbands, even where a caller
-    # supplies the entire Hidden force as its available budget.
-    max_count = min(2, max_count)
+    # A4.6.2 / A22 cap each application, including when the caller
+    # supplies the entire force as its available budget.
+    from fs_bot.commands.sa_intimidate import intimidate_limit, romans_immune
+    max_count = min(intimidate_limit(state), max_count)
     if max_count <= 0:
         return []
     non_players = state.get("non_player_factions", set())
@@ -1753,8 +1754,7 @@ def _select_intimidate_targets(state, region, max_count, exclude_faction=None):
         # them here can leave the Battle with no target ('defender not present').
         return ((selected and faction != selected[0]["target_faction"]) or
                 faction == exclude_faction or
-                (faction == ROMANS and state.get("event_modifiers", {}).get(
-                    "card_A22_no_intimidate_romans")))
+                (faction == ROMANS and romans_immune(state)))
 
     # Tier 1 — Player Allies (Roman, Aedui, Belgae)
     for faction in (ROMANS, AEDUI, BELGAE):
@@ -1903,7 +1903,7 @@ def _determine_intimidate_after_raid(state, raid_plan, *, after_raid=False):
         hidden = count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN)
         if not hidden:
             continue
-        targets = _select_intimidate_targets(state, region, min(2, hidden))
+        targets = _select_intimidate_targets(state, region, hidden)
         if targets:
             plan.extend(dict(target, region=region, free=False) for target in targets)
         elif MARKER_INTIMIDATED not in state.get("markers", {}).get(region, {}):

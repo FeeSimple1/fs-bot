@@ -4,6 +4,22 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Litaviccus targeting and forces, 3 November 2026
+
+- Adopt provisional PR-12 for Litaviccus: predict the published Roman bot
+  response or a human Roman's safer legal standing/Retreat choice. Maximize
+  Legion Losses, retain Battle/Frost safeguards and use No Belgae if none
+  qualify. Eligibility and execution share the same target planner.
+- Include Aedui pieces throughout the actual Battle: Retreat forecasts,
+  casualties and Reveal, retaining physical ownership, Tribe affiliation
+  and native Leader identity. Protect City/Remi Allies across owners.
+- Preserve human target freedom, physical board display and save/replay.
+  Battle loss reports now distinguish requested Loss totals from actual
+  removals/absorptions; forecasts use the executor's validated Ambush timing.
+- This follow-up closes no additional original audit finding: 20/50 remain
+  closed (40%), with 30 open. See the
+  [Litaviccus report](docs/reviews/litaviccus-targeting-2026-11-03.md).
+
 ## Unreleased — Event Battle choices, 3 November 2026
 
 - Restore human Region and defender selection for modified Battles on

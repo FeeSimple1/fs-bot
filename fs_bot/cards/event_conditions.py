@@ -166,6 +166,9 @@ def _available(trial, card_id, faction, shaded):
     if card_id == 36 and not shaded:
         return ex._card36_battle_target(trial, faction) is not None
     if card_id == 45 and shaded:
+        if faction == rc.BELGAE and trial['scenario'] in rc.BASE_SCENARIOS:
+            from fs_bot.cards.litaviccus_np import available
+            return available(trial)
         from fs_bot.map.map_data import get_playable_regions_for_state
         return any(count_pieces(trial, region, rc.ROMANS)
                    and (ex._attacker_has_force(trial, region, faction)

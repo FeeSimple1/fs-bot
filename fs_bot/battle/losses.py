@@ -178,7 +178,8 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
             1.0 if warband_full_loss else 0.5)
 
     # Component B: Leader × 1 and Auxilia × ½
-    leader_value = 1 if enemy_leader is not None else 0
+    from fs_bot.battle.combined import extra_leaders
+    leader_value = int(enemy_leader is not None) + extra_leaders(state, region, enemy_faction)
     # double_auxilia (e.g. A17 'double Losses by Auxilia'): Auxilia cause
     # 1 Loss each instead of 1/2.
     aux_factor = 1.0 if double_auxilia else 0.5
@@ -402,6 +403,7 @@ def resolve_losses(state, region, faction, num_losses, *,
             "rolls": list of (piece_type, roll_value, removed_bool)
             "losses_taken": int — actual pieces removed
             "losses_absorbed": int — losses absorbed by surviving rolls
+            "losses_requested": int — inflicted Losses before running out of pieces
     """
     # A20 projects only Warbands. Its game-run Arverni casualty ownership
     # and provisional origin tie break must not expose human loss choices
@@ -409,13 +411,14 @@ def resolve_losses(state, region, faction, num_losses, *,
     from fs_bot.cards.morbihan_display import resolve_projected_losses
     projected = resolve_projected_losses(state, region, faction, num_losses)
     if projected is not None:
-        return projected
+        return {**projected, 'losses_requested': num_losses}
 
     result = {
         "removed": [],
         "rolls": [],
         "losses_taken": 0,
         "losses_absorbed": 0,
+        "losses_requested": num_losses,
     }
 
     # Use die rolls for hard targets?
@@ -500,6 +503,7 @@ def resolve_losses(state, region, faction, num_losses, *,
                         break
         piece_type, piece_state = chosen[:2]
         physical_owner = chosen[2] if len(chosen) >= 3 else None
+        physical_tribe = chosen[3] if piece_type == ALLY and len(chosen) >= 4 else None
 
         # Determine if this is a hard target that gets a die roll
         is_hard_target = piece_type in HARD_TARGET_PIECES
@@ -520,7 +524,8 @@ def resolve_losses(state, region, faction, num_losses, *,
         leader_name = None
         is_diviciacus = False
         if piece_type == LEADER:
-            leader_name = get_leader_in_region(state, region, faction)
+            from fs_bot.battle.combined import physical_leader
+            leader_name = physical_leader(state, region, faction, physical_owner)
             is_diviciacus = (leader_name == DIVICIACUS)
 
         if (is_hard_target or is_legion_warband) and use_rolls:
@@ -543,7 +548,8 @@ def resolve_losses(state, region, faction, num_losses, *,
             if roll <= threshold:
                 # Remove the piece
                 _remove_battle_piece(state, region, faction,
-                                     piece_type, piece_state, physical_owner)
+                                     piece_type, piece_state, physical_owner,
+                                     tribe=physical_tribe)
                 if is_legion_warband:
                     arverni_legions_alive -= 1
                     if picked_count is not None:
@@ -558,14 +564,16 @@ def resolve_losses(state, region, faction, num_losses, *,
         elif is_hard_target and not use_rolls:
             # Ambush auto-remove (no roll) — §4.3.3
             _remove_battle_piece(state, region, faction,
-                                 piece_type, piece_state, physical_owner)
+                                 piece_type, piece_state, physical_owner,
+                                 tribe=physical_tribe)
             result["rolls"].append((piece_type, None, True))
             result["removed"].append((piece_type, 1))
             result["losses_taken"] += 1
         else:
             # Soft target: auto-remove — §3.2.4
             _remove_battle_piece(state, region, faction,
-                                 piece_type, piece_state, physical_owner)
+                                 piece_type, piece_state, physical_owner,
+                                 tribe=physical_tribe)
             result["removed"].append((piece_type, 1))
             result["losses_taken"] += 1
             if is_legion_warband:
@@ -839,7 +847,7 @@ def _filter_to_present(state, region, faction, piece_list):
 
 
 def _remove_battle_piece(state, region, faction, piece_type, piece_state,
-                         physical_owner=None):
+                         physical_owner=None, *, tribe=None):
     """Remove a single piece as a battle loss.
 
     Legions go to Fallen (§1.4.1).
@@ -849,11 +857,18 @@ def _remove_battle_piece(state, region, faction, piece_type, piece_state,
     sync with on-map pieces).
     """
     if piece_type == LEGION:
-        remove_piece(state, region, faction, LEGION, 1, to_fallen=True)
+        remove_piece(state, region, faction, LEGION, 1, to_fallen=True,
+                     physical_owner=physical_owner)
     elif piece_type in FLIPPABLE_PIECES:
         remove_piece(state, region, faction, piece_type, 1,
                      piece_state=piece_state, physical_owner=physical_owner)
     else:
-        remove_piece(state, region, faction, piece_type, 1)
+        remove_piece(state, region, faction, piece_type, 1,
+                     physical_owner=physical_owner)
         if piece_type in (ALLY, CITADEL):
-            clear_allied_tribe(state, region, faction, piece_type)
+            owner = physical_owner or faction
+            # Tribe affiliation and surviving Citadels belong to the
+            # physical owner, not the temporary combined-force view.
+            from fs_bot.battle.combined import COMBINED_KEY
+            physical = {key: value for key, value in state.items() if key != COMBINED_KEY}
+            clear_allied_tribe(physical, region, owner, piece_type, tribe=tribe)

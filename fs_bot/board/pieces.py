@@ -255,8 +255,13 @@ def count_pieces(state, region, faction=None, piece_type=None):
 
     for f in factions_to_check:
         f_pieces = get_effective_faction_pieces(state, region, f)
+        # Litaviccus can include optional Diviciacus alongside a native
+        # Leader. Count both without giving either the other's identity.
+        from fs_bot.battle.combined import extra_leaders
+        borrowed_leaders = extra_leaders(state, region, f)
         if piece_type:
             if piece_type == LEADER:
+                total += borrowed_leaders
                 if f_pieces.get(LEADER) is not None:
                     total += 1
             elif piece_type in FLIPPABLE_PIECES:
@@ -268,6 +273,7 @@ def count_pieces(state, region, faction=None, piece_type=None):
         else:
             # Count all piece types for this faction
             # Leader
+            total += borrowed_leaders
             if f_pieces.get(LEADER) is not None:
                 total += 1
             # Non-flippable static/other pieces

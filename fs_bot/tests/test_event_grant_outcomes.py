@@ -339,6 +339,11 @@ def test_litaviccus_no_roman_target_declines_before_event():
     assert ex._resolve_card45_battle(board, rc.BELGAE)[0]['declined_no_effect']
     place_piece(board, rc.MANDUBII, rc.ROMANS, rc.AUXILIA)
     place_piece(board, rc.MANDUBII, rc.AEDUI, rc.WARBAND, 2)
+    # The specific Belgic instruction requires Losses on Legions, not
+    # merely any Roman Battle target.
+    assert np_event_available(board, 45, rc.BELGAE, True) is False
+    place_piece(board, rc.MANDUBII, rc.ROMANS, rc.LEGION, from_legions_track=True)
+    place_piece(board, rc.MANDUBII, rc.AEDUI, rc.WARBAND, 2)
     assert np_event_available(board, 45, rc.BELGAE, True) is True
 
 

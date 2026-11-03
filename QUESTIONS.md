@@ -34,11 +34,18 @@ standing and Retreat responses and rank the lower predicted Legion Losses,
 retaining the printed Defender-roll assumption. This avoids relying on a
 human opponent choosing the response most favorable to the bot.
 
-**No new project ruling is adopted here.** The target predictor remains a
-separate repair pending an authoritative clarification or owner decision.
+**Adopted provisionally on 3 November 2026 as
+[PR-12](docs/provisional-rulings.md#pr-12):** use the published non-player
+Roman response and the lower forecast across a human Roman's legal
+standing/Retreat responses. The owner accepted this recommendation, subject
+to possible later correction if an authoritative source is found. The
+prediction retains the printed Defender-roll assumption and ordinary
+default casualty priorities; actual decisions and dice still resolve live.
 The [Event Battle report](docs/reviews/event-battle-choices-2026-11-03.md)
-preserves the source review and witness; the largest-stack fallback must not
-be described as satisfying the printed Legion-targeting instruction.
+preserves the original source review and witness. Implementation and
+validation are recorded in the subsequent
+[Litaviccus repair](docs/reviews/litaviccus-targeting-2026-11-03.md); the old
+largest-stack fallback does not satisfy the printed targeting instruction.
 
 ### Q-ARVERNI-EVENT-COMMAND — automatic Arverni receiving one Command (2 November 2026)
 

@@ -9,7 +9,8 @@ their game outcomes are not a baseline for a later rules revision.
 [Current question index](../QUESTIONS.md#current-open-source-questions)
 
 This page includes the 24 October adoption of six and 29 October adoption
-of three additional rulings, and the 2 November adoption of PR-10/PR-11
+of three additional rulings, the 2 November adoption of PR-10/PR-11,
+and the 3 November adoption of PR-12
 ([provisional register](provisional-rulings.md)), the follow-up
 repairs, and the 23 October implementation review. The
 [provisional-ruling report](reviews/provisional-rulings-2026-10-24.md)
@@ -19,6 +20,33 @@ its own revision, source digest and outcome evidence; earlier checkpoint
 measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
+
+### 3 November Litaviccus follow-up — PR-12 and full participation
+
+The [Litaviccus report](reviews/litaviccus-targeting-2026-11-03.md) implements
+owner-adopted PR-12: the Belgic bot chooses the Battle maximizing predicted
+Legion Losses, accounting for actual NPC Roman Retreat or a human Roman's
+safer legal standing/Retreat response. Zero-Loss or unsafe choices produce
+the printed No Belgae fallback. The ruling remains provisional.
+
+The same repair includes all Aedui pieces through the Battle, including
+Counterattack and Reveal, while retaining physical ownership and native
+Leader identity. It preserves City/Remi Allies across owners and uses the
+actual Ambush timing and full requested Loss totals for forecasts. Human
+choices, physical board inspection and durable save/replay remain supported.
+
+Validation on the exact source: **7,427 tests passed**, with all 80 added
+cases also passing on Python 3.12; 150 audited bot games, 25 cross-hash bot
+repeats, 220 mixed-player cases/880 executions, and 20 strict-census
+executions. Seven bot records changed, including two winners. All seven
+first differences were traced to Litaviccus on identical preceding boards
+and RNG; 14 paired trace games reproduce the matrix records. The existing
+balance baseline passes unchanged, with maximum drift of 10 percentage
+points inside its existing 15-point limit.
+
+This follow-up sits outside the original audit denominator: **20/50 remain
+closed (40%); 30 remain open.** There are now two unadopted source questions,
+twelve provisional rulings and 34 separately unverified inventory rows.
 
 ### 3 November Event Battle choices — BE-02 closed
 
@@ -566,7 +594,7 @@ for reproduction commands and compatibility limits.
 
 ## Adopted provisional rulings
 
-On 24/29 October and 2 November 2026 (America/Chicago), the owner adopted the following
+On 24/29 October and 2/3 November 2026 (America/Chicago), the owner adopted the following
 project policies. **Each is subject to possible later correction if an
 authoritative source is found.** The [ruling register](provisional-rulings.md)
 records their exact scope and rationale; the
@@ -587,6 +615,7 @@ claiming official errata or designer confirmation.
 | [PR-09: A20 casualty origins](provisional-rulings.md#pr-09) | Preserve visibility priority, then select equally among eligible origin Regions separately for each casualty. |
 | [PR-10: Automatic Arverni Event Command](provisional-rulings.md#pr-10) | While At War, first possible permitted Command in phase order, retaining inherent Ambush. |
 | [PR-11: Numeric Arduenna prediction](provisional-rulings.md#pr-11) | Conservative Legion Loss forecast, printed Roman NPC Retreat and Vercingetorix Harassment safety; actual choices/dice resolve live. |
+| [PR-12: Litaviccus target prediction](provisional-rulings.md#pr-12) | Belgic bot maximizes predicted Legion Losses, using printed NPC Roman Retreat or the lower human standing/Retreat forecast; printed Battle/Frost restrictions remain. |
 
 PR-06 recovers the order from saved `played_cards` without changing
 `current_card`. A state with no recoverable preceding Event uses the current

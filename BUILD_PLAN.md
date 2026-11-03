@@ -102,8 +102,10 @@ Tribe placement and Resource accounting. These remain separate from the
 original audit findings; its denominator stays 50.
 The [Event Battle repair](docs/reviews/event-battle-choices-2026-11-03.md)
 closes BE-02, including printed participants and Event Loss modifiers in
-Retreat forecasts. Non-player Litaviccus targeting remains a separate repair
-with the narrow prediction question recorded in `QUESTIONS.md`.
+Retreat forecasts. The subsequent
+[Litaviccus follow-up](docs/reviews/litaviccus-targeting-2026-11-03.md)
+implements adopted PR-12 targeting and repairs full Aedui Battle participation;
+these remain separate from the original audit denominator.
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even
@@ -119,10 +121,10 @@ closes human selection of Trade's single Region under shaded River Commerce.
 The [Recruit/Rally report](docs/reviews/recruit-rally-2026-10-29.md) retains
 its placement scope and then-unresolved timing questions; the later rules
 and Trade report records their adopted provisional answers. These known
-items are not an exhaustive defect list. Three unadopted non-player source
-questions remain: shaded Trade Region selection, the physical Warbands
-designated by Vercingetorix's Elite, and forecasting human Roman Retreat
-when selecting a Litaviccus target. See the current question index.
+items are not an exhaustive defect list. Two unadopted non-player source
+questions remain: shaded Trade Region selection and the physical Warbands
+designated by Vercingetorix's Elite. Litaviccus's response forecast now follows
+PR-12, subject to authoritative correction. See the current question index.
 
 The follow-up implementation adds Diviciacus cooperation and its optional
 original-scenario setup, repairs strategy-runner acceptance/resume, exposes
@@ -139,7 +141,8 @@ them from the older validation checkpoint above.
    PR-07 through PR-09 were adopted on 29 October for Aedui Supply dice,
    placement-bonus timing, and A20 casualty origins. PR-10/PR-11 were adopted
    on 2 November for automatic Arverni Event Commands and numeric Arduenna
-   predictions. Each is subject to
+   predictions. PR-12 was adopted on 3 November for Litaviccus's human
+   Roman response forecast. Each is subject to
    possible later correction if an authoritative source is found. [QUESTIONS.md](QUESTIONS.md) retains the source conflicts;
    they are not current implementation blockers or designer-confirmed rules.
 2. **Extend position and interaction coverage as defects or gaps are found.**

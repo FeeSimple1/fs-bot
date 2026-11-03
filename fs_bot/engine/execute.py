@@ -2191,19 +2191,38 @@ def _resolve_card21_provincia_battle(state):
              "faction": ARVERNI, "region": PROVINCIA, "result": result}]
 
 
+def _execute_card45_battle_plan(state, faction, plan, *, _battle_observer=None):
+    """Use the same printed participants and compulsory Ambush in play/preview."""
+    from fs_bot.rules_consts import ROMANS
+    from fs_bot.battle.combined import litaviccus_force
+    from fs_bot.commands.sa_ambush import validate_ambush_region
+    region = plan['details']['battle_plan'][0]['region']
+    with litaviccus_force(state, faction, region):
+        is_ambush, _ = validate_ambush_region(state, region, faction, ROMANS)
+        plan.update(sa=_SA_AMBUSH if is_ambush else SA_ACTION_NONE_LABEL,
+                    sa_regions=[region] if is_ambush else [])
+        return _execute_battle(state, faction, plan,
+                               _battle_observer=_battle_observer)
+
+
 def _resolve_card45_battle(state, faction):
     """Card 45: choose one Roman target, using Aedui and Ambushing if able."""
     from fs_bot.cards.fixed_event_battles import resolve
-    from fs_bot.rules_consts import ROMANS, AEDUI
-    from fs_bot.commands.sa_ambush import validate_ambush_region
+    from fs_bot.rules_consts import ROMANS, AEDUI, BELGAE, BASE_SCENARIOS
     from fs_bot.map.map_data import get_playable_regions_for_state
     allowed = get_playable_regions_for_state(state, faction)
-    # Aedui already use their own pieces; adding them again would double
-    # their Losses and Hidden count rather than treating them as one force.
-    allies = () if faction == AEDUI else (AEDUI,)
+    belgic_instruction = (faction == BELGAE and faction in state.get('non_player_factions', ())
+                          and state['scenario'] in BASE_SCENARIOS)
     def default(sim):
         if faction == ROMANS:
             return None  # Battle cannot select its own faction as defender.
+        if belgic_instruction:
+            from fs_bot.cards.litaviccus_np import plan
+            selected = plan(sim, choose=True)
+            return (None if selected is None else {
+                'command': _CMD_BATTLE, 'regions': [selected['region']],
+                'details': {'battle_plan': [
+                    {'region': selected['region'], 'target': ROMANS}]}})
         best = None
         for region in allowed:
             if count_pieces(sim, region, ROMANS) <= 0:
@@ -2218,23 +2237,17 @@ def _resolve_card45_battle(state, faction):
             return None
         return {"command": _CMD_BATTLE,
                 "details": {"battle_plan": [{"region": best[0], "target": ROMANS}]}}
-    def execute(plan):
-        region = plan['details']['battle_plan'][0]['region']
-        is_ambush, _ = validate_ambush_region(
-            state, region, faction, ROMANS, allied_factions=allies)
-        plan['details']['allied_factions'] = allies
-        plan.update(sa=_SA_AMBUSH if is_ambush else SA_ACTION_NONE_LABEL,
-                    sa_regions=[region] if is_ambush else [])
-        return _execute_battle(state, faction, plan)
     try:
-        action, res = resolve(state, faction, 45, allowed, default, execute)
+        action, res = resolve(state, faction, 45, allowed, default,
+                             lambda action: _execute_card45_battle_plan(state, faction, action))
     except _EXEC_ERRORS as exc:
         return [{"free_action": "battle", "flag": "card_45",
                  "executed": False, "reason": repr(exc)}]
     if action is None:
         return [{"free_action": "battle", "flag": "card_45", "executed": False,
                  "declined_no_effect": True,
-                 "reason": "no Roman target with a combined force"}]
+                 "reason": ("No Belgae: no target satisfies the Legion-Loss and Battle conditions"
+                            if belgic_instruction else "no Roman target with a combined force")}]
     region = action['details']['battle_plan'][0]['region']
     return [{"free_action": "battle", "flag": "card_45", "region": region,
              "defender": ROMANS, "ambush": action.get('sa') == _SA_AMBUSH,
@@ -3904,7 +3917,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 # If the absorption emptied the defender, skip the battle.
                 if count_pieces(state, region, defender) <= 0:
                     if _battle_observer is not None:
-                        _battle_observer('before', state, region, defender, None)
+                        _battle_observer('before', state, region, defender,
+                                         {'is_ambush': is_ambush})
                         if _skip_absent_targets:
                             # A completed prospective Battle still needs its
                             # Frost/victory boundary when prefire removes the
@@ -3929,7 +3943,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _no_retreat_here = False
 
             if _battle_observer is not None:
-                _battle_observer('before', state, region, defender, None)
+                _battle_observer('before', state, region, defender,
+                                 {'is_ambush': is_ambush})
             try:
                 if _no_retreat_here:
                     retreat_decl, retreat_region = (False, None)

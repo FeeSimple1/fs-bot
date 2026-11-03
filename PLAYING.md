@@ -149,6 +149,10 @@ Numidians' Auxilia-only participation. Card information, changes and
 be carried out when possible; Camulogenus's preceding March choices remain
 an open repair.
 
+For Litaviccus, the Aedui force participates throughout Battle, including
+Counterattack casualties and Reveal. Counters retain their physical owners;
+board inspection shows those owners and explains the combined force.
+
 The repaired Event menus listed in the [Event validation report](docs/reviews/event-validation-2026-11-03.md)
 enforce their printed quantities and areas. An invalid Event stays pending so you can correct it without losing eligibility; a legal
 Event that has no effect is still allowed. Fixed effects occur as far as
@@ -352,7 +356,7 @@ flowcharts), including transcribed errata marked as `[ERRATA ...]` notes.
 The implementation follows these supplied references and the rulings
 recorded in QUESTIONS.md. That file is a historical decision ledger;
 [current status](docs/current-status.md) supersedes older completion claims.
-The owner adopted [eleven provisional rulings](docs/provisional-rulings.md),
+The owner adopted [twelve provisional rulings](docs/provisional-rulings.md),
 all subject to possible later correction if an authoritative source is found:
 
 - A30 has no special Belgic instruction; bots use their normal shaded Event procedure.
@@ -378,6 +382,9 @@ all subject to possible later correction if an authoritative source is found:
 - Numeric Arduenna's Arverni bot uses PR-11's conservative Legion-Loss
   prediction, printed NPC Retreat and Vercingetorix Harassment safety;
   actual human choices and dice still resolve normally.
+- Shaded Litaviccus's Belgic bot uses PR-12 to maximize predicted Legion
+  Losses, accounting for the Roman bot's Retreat rules or a human Roman's
+  safer legal standing/Retreat response. Real decisions and dice remain yours.
 
 These are project interpretations, not official errata. The ruling register
 explains each source gap and the fallback for older saves without usable

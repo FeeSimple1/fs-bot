@@ -90,6 +90,9 @@ The [Event Battle repair](docs/reviews/event-battle-choices-2026-11-03.md)
 restores human targets on 11/25/36/45/70, enforces revised Numidians'
 Auxilia-only participation, removes Litaviccus's Aedui double-count and
 includes printed Event Loss modifiers in non-player Retreat decisions.
+The [Litaviccus follow-up](docs/reviews/litaviccus-targeting-2026-11-03.md)
+implements provisional PR-12 targeting and full Aedui Battle participation.
+This separate follow-up is outside the original audit denominator.
 **20 of 50 findings are closed (40%); 30 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
@@ -156,7 +159,7 @@ implementation. All completed without defect findings; mixed-seat and census
 reports matched across hash seeds. The 100-game balance check passed without
 changing its baseline. The report gives exact source identities and scope.
 
-All [eleven adopted project rulings](docs/provisional-rulings.md) remain subject
+All [twelve adopted project rulings](docs/provisional-rulings.md) remain subject
 to possible later correction if an authoritative source is found.
 
 ## Earlier verified checkpoint
@@ -191,6 +194,6 @@ python -m pytest -q
 Read [CLAUDE.md](CLAUDE.md) before editing. `Reference Documents/**` and
 `fs_bot/rules_consts.py` are protected, read-only sources. Project guides,
 reports, and strategy notes describe the implementation; they do not replace
-the supplied rules. The eleven expressly adopted provisional rulings govern
+the supplied rules. The twelve expressly adopted provisional rulings govern
 their listed source gaps until corrected. The [self-play workflow](SELFPLAY_PLAYBOOK.md) documents
 batch, census, determinism, and balance checks.

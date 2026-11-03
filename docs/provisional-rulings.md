@@ -1,8 +1,8 @@
 # Provisional project rulings
 
 **PR-01–PR-06 adopted on 24 October 2026; PR-07–PR-09 adopted on
-29 October 2026; PR-10–PR-11 adopted on 2 November 2026
-(America/Chicago).** These eleven rulings determine the
+29 October 2026; PR-10–PR-11 adopted on 2 November 2026;
+PR-12 adopted on 3 November 2026 (America/Chicago).** These twelve rulings determine the
 engine's behavior where the available sources conflict or leave a procedure
 unspecified. For the first six, the owner instructed:
 "Use each of these. Mark them as subject to possible later correction if
@@ -28,6 +28,7 @@ remain unchanged.
 | [PR-09](#pr-09) | Each tied A20 Counterattack casualty selects an eligible origin Region with equal probability. | Fixed origin-allocation order. |
 | [PR-10](#pr-10) | At War automatic Arverni choose the first possible permitted Event Command in Rally–March–Raid–Battle order; Battle retains inherent Ambush. | No supported single-Command adaptation of the Arverni Phase. |
 | [PR-11](#pr-11) | Numeric 67's non-player Arverni maximize conservative predicted Legion Losses, using printed NPC Retreat and March safety conditions. | Generic gathering and Command choice did not establish the printed maximum. |
+| [PR-12](#pr-12) | Numeric 45's non-player Belgae maximize predicted Legion Losses using actual NPC Roman Retreat and the lower forecast across human standing/Retreat responses. | Largest Roman stack could be chosen even when another Battle forced more Legion Losses. |
 
 ## Sources and research scope
 
@@ -60,6 +61,11 @@ published requirements from the adaptations below. The owner adopted both:
 "Let's go with your recommendations; they are subject to official overruling
 if we find such a source". This authorizes PR-10 and PR-11; it does not make
 them official rules or waive their validation requirements.
+
+On 3 November, the owner adopted the Litaviccus recommendation after the
+Event Battle review identified its targeting defect and the narrow human
+Retreat-prediction question. PR-12 records that adoption. This follow-up
+uses the supplied references and does not claim a new external-source search.
 
 <a id="pr-01"></a>
 
@@ -365,6 +371,48 @@ response model is the owner's provisional adaptation.
 **Status:** Provisional; subject to official overruling if an authoritative
 source is found. Applies to numeric 67, not expansion card A67. Preserve the
 distinction between the chosen evaluation model and live Battle resolution.
+
+<a id="pr-12"></a>
+
+## PR-12: Litaviccus's non-player target prediction
+
+**Adopted:** 3 November 2026 (America/Chicago).
+
+**Ruling:** For the non-player Belgic instruction on shaded numeric 45,
+choose a legal Battle maximizing predicted Losses on Roman Legions. Use
+the published non-player Roman Retreat response. For human Romans, compare
+standing and legal Retreat responses and rank the lower predicted Legion
+Losses. Retain the printed Defender Loss-roll assumption and ordinary
+default casualty priorities. This forecasts the human's safer stance; it
+does not optimize every possible human casualty assignment.
+
+Include the Event's combined Aedui force and required Ambush when able.
+Resolve uncertainty conservatively where it is not covered by the printed
+Defender Loss-roll convention; do not inspect or consume the live random
+sequence or request actual human decisions during prediction. Select tied
+best targets using the state's seeded RNG only when committing the plan.
+If no target predicts any Legion Loss, apply the printed “No Belgae”
+instruction before committing to the Event. Retain the ordinary applicable
+Battle safety conditions and Frost/player-victory restrictions.
+
+Actual human choices and dice resolve normally in the selected Battle.
+This prediction is not a guarantee of the realized result. It does not
+restrict a human Belgic player's legal target choices, change other
+factions' Event instructions, or apply to expansion card A45.
+
+**Basis:** The supplied Belgic Event instruction requires maximum Legion
+Losses and the zero-Loss fallback. Sections 8.2.3 and 8.5.1 supply ordinary
+non-player conditions and the Defender-roll convention; 8.4.3 supplies the
+non-player Roman response. Those sources do not expressly define how to
+predict a human defender's optional Retreat. The owner adopted the
+recommendation to assume that human Romans choose the legal response that
+preserves more Legions. This is a separate adoption; PR-11 remains scoped
+to numeric 67.
+
+**Status:** Provisional and subject to possible later correction if an
+authoritative source is found. The maximum-Legion objective, combined-force
+effect and mandatory Ambush are printed requirements; the human-response
+prediction is the project adaptation.
 
 ## Later corrections and evidence
 

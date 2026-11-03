@@ -123,16 +123,24 @@ def _active_force_context(state):
                      f"{selected_warbands(counts)} participate.")
     combined = state.get(COMBINED_KEY)
     if combined:
+        from fs_bot.board.pieces import get_leader_in_region
         physical = _physical_piece_view(state)
         for region, owners in sorted(combined["owners"].items()):
             forces = []
             for owner in sorted(owners):
-                for piece in TYPES:
+                for piece in combined.get("piece_types", TYPES):
                     total = count_pieces(physical, region, owner, piece)
                     if total:
-                        forces.append(f"{owner} " + _flippable_summary(
-                            physical, region, owner, piece, piece, total))
-            lines.append(f"  Admagetobriga in {region}: {combined['faction']} use "
+                        if piece in (WARBAND, AUXILIA):
+                            summary = _flippable_summary(
+                                physical, region, owner, piece, piece, total)
+                        elif piece == LEADER:
+                            summary = f"{LEADER}:{get_leader_in_region(physical, region, owner)}"
+                        else:
+                            summary = f"{piece}:{total}"
+                        forces.append(f"{owner} {summary}")
+            lines.append(f"  {combined.get('source', 'Admagetobriga')} in {region}: "
+                         f"{combined['faction']} use "
                          f"lent forces: {', '.join(forces) or '(none remaining)'}.")
     from fs_bot.cards.morbihan_display import PROJECTION_KEY
     projection = state.get(PROJECTION_KEY)

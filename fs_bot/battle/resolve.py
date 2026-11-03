@@ -602,7 +602,10 @@ def _calculate_attack_losses(state, region, attacking_faction,
         component_a += min(enemy_warbands, max(0, full_loss_warbands)) * 0.5
 
     # Component B
-    leader_value = 1 if enemy_leader is not None else 0
+    from fs_bot.battle.combined import extra_leaders
+    leader_value = int(enemy_leader is not None)
+    if not auxilia_only and not no_attacker_leader:
+        leader_value += extra_leaders(state, region, attacking_faction)
     aux_factor = 1.0 if double_auxilia else 0.5
     # Card 59 unshaded: Roman Auxilia inflict 1 Loss each in the flagged
     # Region this Battle Command.

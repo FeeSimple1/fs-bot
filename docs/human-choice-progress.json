@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-03",
   "tested_source": {
-    "commit": "4e9a82ed35052198987dad4c91dd79ce9c5b4ab9",
-    "python_sha256": "7d627253f5b38bdedcfe5c84214a5476f68898d1f9cd11d50ef29377a42fe108",
-    "python_files": 452,
+    "commit": "4f33e09347d809846d61e8cc25ebf711100372fc",
+    "python_sha256": "90a57ffbce8c94a9a4dc2690b15c5cce3bfa45e6b7f2e0b4af367ca883efeb06",
+    "python_files": 457,
     "working_tree_changes": true,
-    "note": "Event Battle choices prepared over this parent; full suite and game matrix use this exact Python source digest."
+    "note": "Litaviccus follow-up prepared over this parent; full suite and integrated matrix use this exact Python source. No additional original finding closes."
   },
   "total": 50,
   "closed": 20,
@@ -18,7 +18,8 @@
     "WS-F04 closes the sole-human-Belgae setup trigger; paired-player ownership remains WS-F09.",
     "The Colony/default and rejected-bot validation follow-up closes no additional original finding; see reviews/colony-event-defaults-2026-11-02.md.",
     "BE-03 closed by the Gallic Event batch. The five ordinary Arverni Phase follow-ups and two related defects are repaired separately; no additional original finding closes. See reviews/arverni-phase-2026-11-03.md. Other BE-01 March grants remain open.",
-    "BE-02 closes fixed Event Battle choices. Revised Numidians participation, Litaviccus counting and Event-aware Retreat forecasts are related repairs; the non-player Litaviccus target predictor is separately open. See reviews/event-battle-choices-2026-11-03.md."
+    "BE-02 closes fixed Event Battle choices. Revised Numidians participation, Litaviccus counting and Event-aware Retreat forecasts are related repairs; the non-player Litaviccus target predictor is separately open. See reviews/event-battle-choices-2026-11-03.md.",
+    "The subsequent Litaviccus follow-up implements owner-adopted PR-12 and full Aedui Battle participation. It repairs the separate target predictor recorded after BE-02 without changing the 50-finding denominator. See reviews/litaviccus-targeting-2026-11-03.md."
   ],
   "findings": [
     {
@@ -414,5 +415,5 @@
     }
   ],
   "updated_timezone": "America/Chicago",
-  "unresolved_source_questions_separate": 3
+  "unresolved_source_questions_separate": 2
 }

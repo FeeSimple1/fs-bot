@@ -64,6 +64,11 @@ its coverage without changing any non-player strategy.
 
 ### Separate follow-ups
 
+**Subsequent disposition, 3 November 2026:** the owner adopted PR-12 and the
+[Litaviccus follow-up](litaviccus-targeting-2026-11-03.md) repairs the target
+predictor and its related combined-force defect. The following account
+records what remained open at this report's own revision.
+
 The source review also established a non-player Belgic Litaviccus targeting
 defect: its current largest-Roman-stack choice does not maximize Losses forced
 on Legions. General prediction against a human defender needs the narrow

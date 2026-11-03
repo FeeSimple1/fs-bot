@@ -6,7 +6,7 @@ The standard frontends dispatch bot seats to the built-in non-player logic;
 a custom turn callback must dispatch those seats explicitly. See [current status](docs/current-status.md) for revision-specific
 verification and adopted provisional rulings, and the [documentation
 index](docs/README.md) for the other guides. The owner-adopted
-[PR-01 through PR-11](docs/provisional-rulings.md) are subject to possible
+[PR-01 through PR-12](docs/provisional-rulings.md) are subject to possible
 later correction if an authoritative source is found.
 
 Known contract gaps are catalogued in the
@@ -604,6 +604,18 @@ proceeded, its Battle cannot be independently declined. Aquitani's offered
 targets may include a Region without friendly Forces, as its text permits.
 Missing or invalid durable-session responses remain pending with board/RNG
 rollback; do not replace them with a default response.
+
+Litaviccus's combined force also participates in Retreat forecasts,
+Counterattack casualties and Reveal. Borrowed loss entries retain their
+physical owner, including Aedui static pieces or a Leader. Copy the offered
+entry intact. Board inspection shows physical ownership. PR-12 changes only
+the scoped non-player Belgic target forecast; it creates no new human
+response format and does not limit a human's legal target choices.
+
+Battle loss results include `losses_requested`, the full Loss total passed
+to casualty resolution, alongside `losses_taken` and `losses_absorbed`.
+Requested Losses can exceed the number of remaining counters; do not infer
+the original total from removals alone.
 
 Seize's successful Arverni and Belgae Rally checks issue separate
 `free_action` requests with `request_type: "event_rally"`, `source: "seize"`,

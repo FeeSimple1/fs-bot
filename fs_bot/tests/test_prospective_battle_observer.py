@@ -34,7 +34,7 @@ def test_card27_prefire_wipe_completes_private_observer_boundary(prospective):
                                 _skip_absent_targets=prospective)
     assert result['executed'] and result['count'] == 1 and not result['errors']
     assert is_controlled_by(state, rc.NERVII, rc.BELGAE)
-    assert observed == ([('before', rc.NERVII, rc.ROMANS, None),
+    assert observed == ([('before', rc.NERVII, rc.ROMANS, {'is_ambush': False}),
                          ('after', rc.NERVII, rc.ROMANS, {'card27_wiped': True})]
-                        if prospective else [('before', rc.NERVII, rc.ROMANS, None)])
+                        if prospective else [('before', rc.NERVII, rc.ROMANS, {'is_ambush': False})])
     assert validate_state(state) == []

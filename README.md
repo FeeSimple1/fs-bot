@@ -82,6 +82,10 @@ adds beneficiary and Command-order choices on 35/46/67 and correct Remi
 ownership on 68. The owner adopted PR-10/PR-11 for automatic Arverni
 Commands and numeric Arduenna prediction. This validated repair closes BE-03;
 other grouped Event March grants remain open.
+The [ordinary Arverni Phase repair](docs/reviews/arverni-phase-2026-11-03.md)
+fixes the five follow-up Rally, March and Raid defects, plus protected-Tribe
+placement and untracked Arverni Resources. These additional defects are
+outside the original audit denominator.
 **19 of 50 findings are closed (38%); 31 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,

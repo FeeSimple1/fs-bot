@@ -111,6 +111,10 @@ others now have provisional dispositions.
 
 ## Separate ordinary Arverni Phase follow-up
 
+**3 November follow-up:** the later [ordinary phase repair](arverni-phase-2026-11-03.md)
+addresses these five findings and two related defects. The account below
+records what was still open at this report's tested revision.
+
 Reviewing A6.2 for the Event adapter exposed five defects in the existing
 ordinary phase: Rally adds Warbands after an Ally in the same Region;
 Rally can place an Ally without Arverni Control; a secondary March can leave

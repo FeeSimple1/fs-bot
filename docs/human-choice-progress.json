@@ -1,13 +1,13 @@
 {
   "audit_commit": "7e72fe7eda33c58b2f83457c39edf5b295a04f77",
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
-  "updated": "2026-11-02",
+  "updated": "2026-11-03",
   "tested_source": {
-    "commit": "e37b965e5ce420e29e486c7221661e51b9803282",
-    "python_sha256": "cdd29718dab7ea7443f93dc225f192e3f31751aaa84c4e6e56d617a2b6c7b63c",
-    "python_files": 442,
+    "commit": "474a5929dfd54c06ecb3731c558493013c04c3de",
+    "python_sha256": "e42af737c5a40fa54c8e45abb4c1e70290f28bae1c748dd3572a9f7dad2c7e54",
+    "python_files": 444,
     "working_tree_changes": true,
-    "note": "Accepted Gallic Event ownership and PR-10/PR-11 repair prepared over this parent. Exact Python bytes are identified by the digest; validation preceded committing the changes."
+    "note": "Ordinary Arverni Phase repair prepared over this parent. Final full-suite source is identified by this digest. The game matrix uses the byte-identical production code before a test-only expectation correction; the report retains both complete manifests."
   },
   "total": 50,
   "closed": 19,
@@ -17,7 +17,7 @@
     "Historical audit inventory is unchanged; these are later dispositions.",
     "WS-F04 closes the sole-human-Belgae setup trigger; paired-player ownership remains WS-F09.",
     "The Colony/default and rejected-bot validation follow-up closes no additional original finding; see reviews/colony-event-defaults-2026-11-02.md.",
-    "BE-03 closed: Gallic Event ownership/order, Remi placement and adopted PR-10/PR-11 automatic policies validated. Other BE-01 March grants remain open; five new ordinary Arverni Phase defects are tracked separately outside the original denominator. See reviews/gallic-event-grants-2026-11-02.md."
+    "BE-03 closed by the Gallic Event batch. The five ordinary Arverni Phase follow-ups and two related defects are repaired separately; no additional original finding closes. See reviews/arverni-phase-2026-11-03.md. Other BE-01 March grants remain open."
   ],
   "findings": [
     {
@@ -407,5 +407,5 @@
     }
   ],
   "updated_timezone": "America/Chicago",
-  "unresolved_source_questions_separate": 4
+  "unresolved_source_questions_separate": 2
 }

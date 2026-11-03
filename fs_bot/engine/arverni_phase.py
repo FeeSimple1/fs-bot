@@ -41,8 +41,6 @@ from fs_bot.rules_consts import (
     FACTION_CONTROL,
     # Die
     DIE_MIN, DIE_MAX,
-    # Costs
-    MAX_RESOURCES,
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, flip_piece,
@@ -58,6 +56,8 @@ from fs_bot.map.map_data import (
     ALL_REGION_DATA, get_region_data, get_playable_regions,
 )
 from fs_bot.commands.common import CommandError, _is_devastated, _is_intimidated
+from fs_bot.commands.rally import _find_subdued_tribe_for_ally
+from fs_bot.commands.raid import max_raiders_per_region
 from fs_bot.battle.losses import calculate_losses
 from fs_bot.battle.resolve import resolve_battle
 from fs_bot.engine import action_windows
@@ -381,16 +381,11 @@ def _arverni_phase_rally(state, at_war_regions):
     ally_elsewhere_candidates = []
 
     for region in valid_regions:
-        if region in rallied_regions:
+        if region in rallied_regions or not is_controlled_by(state, region, ARVERNI):
             continue
-        tribes = get_tribes_in_region(region, scenario)
-        for tribe in tribes:
-            tribe_info = state["tribes"].get(tribe, {})
-            # Must be Subdued (no ally, no dispersed)
-            if tribe_info.get("allied_faction") is not None:
-                continue
-            if tribe_info.get("status") is not None:
-                continue
+        # A6.2.1 uses ordinary 3.3.1: own Control and a legal Subdued
+        # Tribe. Arverni cannot place at protected Aedui or Suebi Tribes.
+        for tribe in _find_subdued_tribe_for_ally(state, region, ARVERNI):
             entry = (region, tribe)
             if is_city_tribe(tribe):
                 ally_city_candidates.append(entry)
@@ -426,8 +421,8 @@ def _arverni_phase_rally(state, at_war_regions):
     warband_candidates = []
     for region in valid_regions:
         if region in rallied_regions:
-            # Already rallied for Citadel or Ally, but can still place Warbands
-            pass
+            # A6.2.1 allows Warbands only where no Ally/Citadel was placed.
+            continue
         # Calculate Warband cap per §3.3.1 Arverni Rally
         allies_here = count_pieces(state, region, ARVERNI, ALLY)
         citadels_here = count_pieces(state, region, ARVERNI, CITADEL)
@@ -441,12 +436,6 @@ def _arverni_phase_rally(state, at_war_regions):
 
     rng.shuffle(warband_candidates)
     for region, cap in warband_candidates:
-        if region in rallied_regions and region not in [
-            r for r, _ in result["citadels_placed"]
-        ] + [r for r, _ in result["allies_placed"]]:
-            # Only rally once per region, but regions that already rallied
-            # for Citadel/Ally can still get Warbands
-            pass
         available = get_available(state, ARVERNI, WARBAND)
         if available <= 0:
             break
@@ -575,21 +564,22 @@ def _arverni_phase_march(state, target_region, is_frost=False):
     # Then: 1 additional region where Aedui or Roman Control can be removed
     # Aedui first — A6.2.2
     additional_dest = None
-    for control_target in (AEDUI_CONTROL, ROMAN_CONTROL):
+    for defender in (AEDUI, ROMANS):
         for region in state["spaces"]:
             if region == target_region:
                 continue
-            space = state["spaces"].get(region, {})
-            if space.get("control") != control_target:
+            if calculate_control(state, region) != FACTION_CONTROL[defender]:
                 continue
-            # Check if any remaining marching groups are adjacent
-            for mg_region, mg_count in march_groups:
-                adj = get_adjacent(mg_region, scenario,
-                                   state.get("capabilities"))
-                if region in adj:
-                    additional_dest = region
-                    break
-            if additional_dest:
+            # A6.2.2 requires the remaining adjacent groups together to
+            # remove Control. A tie with all other Forces suffices (1.6).
+            incoming = sum(number for origin, number in march_groups
+                           if region in get_adjacent(origin, scenario,
+                                                     state.get("capabilities")))
+            defending = count_pieces(state, region, defender)
+            others = sum(count_pieces(state, region, faction)
+                         for faction in FACTIONS if faction != defender)
+            if incoming > 0 and others + incoming >= defending:
+                additional_dest = region
                 break
         if additional_dest:
             break
@@ -656,7 +646,10 @@ def _arverni_phase_raid(state, target_faction):
 
         # Calculate Warbands needed for Ambush — A6.2.3
         # Don't Raid with Warbands needed to enable Ambush
-        warbands_for_raid = _warbands_available_for_raid(state, region)
+        warbands_for_raid = min(
+            _warbands_available_for_raid(state, region),
+            max_raiders_per_region(state, ARVERNI),
+        )
         if warbands_for_raid <= 0:
             continue
 
@@ -686,10 +679,8 @@ def _arverni_phase_raid(state, target_faction):
 
                 # Steal Resource
                 state["resources"][target] = target_resources - 1
-                arverni_resources = state["resources"].get(ARVERNI, 0)
-                state["resources"][ARVERNI] = min(
-                    arverni_resources + 1, MAX_RESOURCES
-                )
+                # A1.5.2: Arverni never receive Resources in Ariovistus.
+                # Raid reduces the victim's track without creating one here.
                 result["total_stolen"][target] = (
                     result["total_stolen"].get(target, 0) + 1
                 )
@@ -704,35 +695,29 @@ def _arverni_phase_raid(state, target_faction):
 
 
 def _warbands_available_for_raid(state, region):
-    """Calculate how many Hidden Warbands can Raid (not needed for Ambush).
+    """Hidden Warbands beyond those needed for a possible Ambush (A6.2.3).
 
-    Per A6.2.3: Only Raid with Warbands not needed to enable an Ambush.
+    Preserve enough for an enemy that can actually be Ambushed with Losses,
+    even if eligible Romans/Aedui combine via Diviciacus. This comparison
+    does not ask a player to promise agreement to a future Battle.
     """
-    hidden = count_pieces_by_state(
-        state, region, ARVERNI, WARBAND, HIDDEN
-    )
+    from fs_bot.engine.diviciacus import eligible_regions, force_scope
 
-    # Check if any Ambush is possible in this region
-    # Ambush needs: Hidden Arverni Warbands > enemy Hidden pieces
-    warbands_needed_for_ambush = 0
+    hidden = count_pieces_by_state(state, region, ARVERNI, WARBAND, HIDDEN)
+    requirements = []
     for faction in FACTIONS:
-        if faction == ARVERNI:
+        if faction == ARVERNI or count_pieces(state, region, faction) == 0:
             continue
-        if count_pieces(state, region, faction) == 0:
-            continue
-        enemy_hidden = (
-            count_pieces_by_state(state, region, faction, WARBAND, HIDDEN)
-            + count_pieces_by_state(state, region, faction, AUXILIA, HIDDEN)
-        )
-        # Need enemy_hidden + 1 Warbands to Ambush this faction
-        needed = enemy_hidden + 1
-        # Only reserve if Ambush would cause losses
-        if _ambush_would_cause_loss(state, region, faction):
-            warbands_needed_for_ambush = max(
-                warbands_needed_for_ambush, needed
-            )
+        cooperation = ([region] if faction in (ROMANS, AEDUI)
+                       and region in eligible_regions(state, faction, 'defense') else [])
+        with force_scope(state, faction, cooperation, phase='defense'):
+            enemy_hidden = sum(count_pieces_by_state(state, region, faction, piece, HIDDEN)
+                               for piece in (WARBAND, AUXILIA))
+            if hidden > enemy_hidden and _ambush_would_cause_loss(state, region, faction):
+                requirements.append(enemy_hidden + 1)
 
-    return max(0, hidden - warbands_needed_for_ambush)
+    # Enough for an Ambush against an enemy, not every possible opponent.
+    return max(0, hidden - min(requirements, default=0))
 
 
 def _ambush_would_cause_loss(state, region, defending_faction):

@@ -14,7 +14,7 @@ references and canonical constants remain read-only.
 | [Agent interface](../AGENT_INTERFACE.md) | Turn plans, typed decision requests, validation, and session contracts |
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
-| [Provisional rulings](provisional-rulings.md) | Nine owner-adopted interpretations, each subject to later authoritative correction |
+| [Provisional rulings](provisional-rulings.md) | Eleven owner-adopted interpretations, each subject to later authoritative correction |
 | [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
 | [Developer instructions](../CLAUDE.md) | Source hierarchy, implementation constraints, tests, and commit discipline |
 | [Maintenance roadmap](../BUILD_PLAN.md) | Existing components and further validation work |
@@ -26,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [3 November ordinary Arverni Phase repairs](reviews/arverni-phase-2026-11-03.md) | Rally legality, secondary March Control, Raid quantity/Ambush reserves and untracked Resources; separate follow-ups outside the original audit denominator |
 | [2 November Colony defaults and fuzz follow-up](reviews/colony-event-defaults-2026-11-02.md) | Dynamic Tribe geography for A45/A36, explicit rejected-bot detection and retained cross-hash CI evidence |
 | [2 November Gallic Event ownership](reviews/gallic-event-grants-2026-11-02.md) | BE-03 closure: beneficiary/order, Remi ownership, numeric Arduenna, adopted PR-10/PR-11, validation and separate phase follow-ups |
 | [2 November Gallic Event rules research](reviews/gallic-event-rules-research-2026-11-02.md) | Owner-requested external source check and subsequent adoption of PR-10/PR-11 for automatic Arverni Commands and Arduenna predictions |

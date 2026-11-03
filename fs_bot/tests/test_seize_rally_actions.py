@@ -143,7 +143,20 @@ def test_ariovistus_arverni_uses_game_run_rally_without_human_request(monkeypatc
     result = seize_in_region(board, R, [rc.TRIBE_CARNUTES],
                              rally_resolver=execute._resolve_seize_rally)
     granted = result['rally_opportunities'][0]['rolls'][0]['rally_result']
-    assert granted['executed'] and granted['result']['allies_placed']
+    # A3.2.3 uses A6.2.1: upgrade the existing City Ally, then place
+    # Warbands in remaining Home Regions. Empty Regions lack the Control
+    # needed for an Ally (3.3.1); the upgraded City cannot also add Warbands.
+    assert granted['executed']
+    assert granted['result'] == {
+        'citadels_placed': [(rc.BITURIGES, rc.TRIBE_BITURIGES)],
+        'allies_placed': [],
+        'warbands_placed': {rc.PICTONES: 1, rc.VENETI: 1},
+    }
+    assert count_pieces(board, rc.BITURIGES, rc.ARVERNI, rc.CITADEL) == 1
+    assert count_pieces(board, rc.BITURIGES, rc.ARVERNI, rc.WARBAND) == 0
+    for region in (rc.PICTONES, rc.VENETI):
+        assert count_pieces(board, region, rc.ARVERNI, rc.WARBAND) == 1
+        assert count_pieces(board, region, rc.ARVERNI, rc.ALLY) == 0
     assert count_pieces(board, R, rc.ARVERNI) == 0
     assert validate_state(board) == []
 

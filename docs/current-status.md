@@ -20,6 +20,24 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 3 November ordinary Arverni Phase — seven defects repaired
+
+The [phase repair report](reviews/arverni-phase-2026-11-03.md) covers all five
+follow-ups from the Gallic Event batch: one Rally placement category per
+Region, Control for new Allies, a secondary March that actually removes
+enemy Control, Raid's regional quantity limit and feasible Ambush reserves.
+It also fixes protected-Tribe placement and Arverni receiving Raid Resources.
+The rules are explicit; this batch introduces no additional provisional policy.
+
+These seven defects sit outside the original human-choice audit denominator.
+**19/50 original findings remain closed (38%); 31 remain open.** The 34
+unverified inventory rows and two unadopted source questions remain separate.
+The report records source identity, regressions, outcome review and validation.
+The final suite passes 7,205 tests. The unchanged production code passes
+150 audited bot games, 220 mixed-player cases with cross-hash replay and
+20 strict-census executions. All 60 base-game comparison records are
+unchanged, and the existing balance baseline passes without a refresh.
+
 ### 2 November Gallic Event ownership — BE-03 closed
 
 The [repair report](reviews/gallic-event-grants-2026-11-02.md) separates the
@@ -44,7 +62,7 @@ Ordinary March-to-Hide-only menu support and other BE-01 March grants remain
 independently open. The A6.2 review also reproduced five separate ordinary
 Arverni Phase defects (Rally Control/category, secondary March Control, Raid
 quantity and Ambush reserve), tracked in the repair report outside the
-original denominator.
+original denominator and repaired in the subsequent 3 November phase batch.
 
 ### 2 November Colony defaults — post-publication CI repair
 

@@ -96,8 +96,10 @@ bot Events during mixed-seat validation; it closes no extra original finding.
 The [Gallic Event repair](docs/reviews/gallic-event-grants-2026-11-02.md)
 closes BE-03: beneficiary/order decisions, correct Remi ownership and the
 owner-adopted PR-10/PR-11 automatic policies are implemented and validated.
-Five additional ordinary Arverni Phase defects are tracked separately for
-follow-up. The original denominator stays 50.
+The [ordinary Arverni Phase repair](docs/reviews/arverni-phase-2026-11-03.md)
+fixes all five additional follow-up defects and two related errors in protected
+Tribe placement and Resource accounting. These remain separate from the
+original audit findings; its denominator stays 50.
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even

@@ -4,6 +4,20 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — ordinary Arverni Phase repairs, 3 November 2026
+
+- Enforce one Rally placement category per Region, Arverni Control for a new
+  Ally, and protected-Tribe restrictions.
+- Require a secondary March's combined arriving groups to remove Aedui or
+  Roman Control while preserving Arverni Control at their origins.
+- Cap Raid participants per Region; reserve Hidden Warbands only for an
+  actually possible damaging Ambush, including eligible Diviciacus sharing.
+  Remove raided Resources from victims without crediting the untracked Arverni.
+- Repair all five phase follow-ups and two related defects. These are outside
+  the original audit, which remains 19/50 closed (38%). See the
+  [phase report](docs/reviews/arverni-phase-2026-11-03.md) for source evidence,
+  validation, outcome changes and compatibility limits.
+
 ## Unreleased — Gallic Event ownership and Arverni policies, 2 November 2026
 
 - Restore beneficiary-owned choices on 35/46/67, Gallic Shouts' full/Limited

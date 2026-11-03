@@ -26,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [3 November Camulogenus March choices](reviews/camulogenus-2026-11-03.md) | Roman benefit acceptance, exact original groups/routes, moving-only visibility and durable decisions; partial BE-01 repair |
 | [3 November Litaviccus targeting and forces](reviews/litaviccus-targeting-2026-11-03.md) | Adopted PR-12, shared non-player eligibility/target prediction, full Aedui participation and source-bound outcome validation |
 | [3 November Event Battle choices](reviews/event-battle-choices-2026-11-03.md) | BE-02 closure, exact revised Numidians participants, Litaviccus counting, Event-aware Retreat forecasts, human sessions and outcome validation |
 | [3 November ordinary Arverni Phase repairs](reviews/arverni-phase-2026-11-03.md) | Rally legality, secondary March Control, Raid quantity/Ambush reserves and untracked Resources; separate follow-ups outside the original audit denominator |

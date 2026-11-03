@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-03",
   "tested_source": {
-    "commit": "4f33e09347d809846d61e8cc25ebf711100372fc",
-    "python_sha256": "90a57ffbce8c94a9a4dc2690b15c5cce3bfa45e6b7f2e0b4af367ca883efeb06",
-    "python_files": 457,
+    "commit": "4b112b1e5c180b8ff243e9b8e4d8ca76ad22d43e",
+    "python_sha256": "bb90b47656f19acfa1f64c0b799292e494aeedf6b414761566fd4290b0ad20f2",
+    "python_files": 463,
     "working_tree_changes": true,
-    "note": "Litaviccus follow-up prepared over this parent; full suite and integrated matrix use this exact Python source. No additional original finding closes."
+    "note": "Camulogenus partial BE-01 repair prepared over this parent; final suite and matrix use these exact Python bytes."
   },
   "total": 50,
   "closed": 20,
@@ -19,7 +19,8 @@
     "The Colony/default and rejected-bot validation follow-up closes no additional original finding; see reviews/colony-event-defaults-2026-11-02.md.",
     "BE-03 closed by the Gallic Event batch. The five ordinary Arverni Phase follow-ups and two related defects are repaired separately; no additional original finding closes. See reviews/arverni-phase-2026-11-03.md. Other BE-01 March grants remain open.",
     "BE-02 closes fixed Event Battle choices. Revised Numidians participation, Litaviccus counting and Event-aware Retreat forecasts are related repairs; the non-player Litaviccus target predictor is separately open. See reviews/event-battle-choices-2026-11-03.md.",
-    "The subsequent Litaviccus follow-up implements owner-adopted PR-12 and full Aedui Battle participation. It repairs the separate target predictor recorded after BE-02 without changing the 50-finding denominator. See reviews/litaviccus-targeting-2026-11-03.md."
+    "The subsequent Litaviccus follow-up implements owner-adopted PR-12 and full Aedui Battle participation. It repairs the separate target predictor recorded after BE-02 without changing the 50-finding denominator. See reviews/litaviccus-targeting-2026-11-03.md.",
+    "Camulogenus whole-benefit and March choices are repaired; BE-01 remains open for 4/9/17/58/65. See reviews/camulogenus-2026-11-03.md."
   ],
   "findings": [
     {
@@ -126,9 +127,10 @@
       "severity": "high",
       "status": "open",
       "partial_repairs": [
-        "Numeric67 human beneficiary receives its scoped March decision; other grouped Event Marches remain open."
+        "Numeric67 human beneficiary receives its scoped March decision; see reviews/gallic-event-grants-2026-11-02.md.",
+        "Numeric70 unshaded gives Romans whole-benefit acceptance and exact multi-origin March planning; remaining grouped grants are numeric4/9/17/58/65."
       ],
-      "partial_report": "reviews/gallic-event-grants-2026-11-02.md"
+      "partial_report": "reviews/camulogenus-2026-11-03.md"
     },
     {
       "id": "BE-02",

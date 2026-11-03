@@ -137,6 +137,7 @@ def test_camulogenus_defender_menu_uses_board_after_the_existing_march():
     output = StringIO()
     observed = []
     cli = make_cli_reactive([rc.ROMANS], StringIO(
+        f'Accept the entire benefit\nUse bot default\n'
         f'board\nChoose Region and defender\n{rc.CARNUTES}\n{rc.BELGAE}\n'), output)
 
     def agent(live, faction, request):

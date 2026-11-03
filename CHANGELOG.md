@@ -4,6 +4,21 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Camulogenus March choices, 3 November 2026
+
+- Give Romans the optional whole-benefit decision and exact March choices
+  on numeric 70, including when another faction executes the Event.
+- Allow multiple original groups, a single named destination and at most
+  four Legions in total. Preserve route limits, moving-piece visibility,
+  physical ownership, separate cooperation agreements and the required
+  following Battle.
+- Resolve the separate Battle with resident Roman Forces even when the
+  marching group is lost or removed before arrival.
+- Support terminal inspection and durable pending responses, save/resume
+  and replay. This repairs part of BE-01; the other grouped March grants
+  remain open, so the original audit stays at 20/50 closed (40%). See the
+  [Camulogenus report](docs/reviews/camulogenus-2026-11-03.md).
+
 ## Unreleased — Litaviccus targeting and forces, 3 November 2026
 
 - Adopt provisional PR-12 for Litaviccus: predict the published Roman bot

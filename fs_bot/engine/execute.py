@@ -2824,8 +2824,14 @@ def _card70_route(state, origin, destination, max_steps):
 
 
 def _resolve_card70_march_battle(state, target_regions, legion_limit):
-    """Card 70: a bounded free Roman March, then a separate free Battle."""
-    from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA, LEADER, CAESAR
+    """Card70's Roman beneficiary owns acceptance, March and Battle choices."""
+    from fs_bot.cards.camulogenus import resolve
+    return resolve(state, target_regions, legion_limit)
+
+
+def _resolve_card70_march_battle_default(state, target_regions, legion_limit):
+    """Existing non-player/default March priorities and fixed Battle grant."""
+    from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA, WARBAND, LEADER, CAESAR
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     from fs_bot.bots.roman_bot import _rank_battle_targets
     from fs_bot.battle.resolve import resolve_battle
@@ -2850,8 +2856,11 @@ def _resolve_card70_march_battle(state, target_regions, legion_limit):
             mobile_enemy = 0
             if defenders:
                 mobile_enemy = sum(count_pieces(sim, target, defenders[0], piece)
-                                   for piece in ("Warband", AUXILIA, LEGION))
-            if source is None and not _attacker_has_force(sim, target, ROMANS):
+                                   for piece in (WARBAND, AUXILIA, LEGION))
+            resident = (_attacker_has_force(sim, target, ROMANS)
+                        if ROMANS in sim.get("non_player_factions", ())
+                        else count_pieces(sim, target, ROMANS))
+            if source is None and not resident:
                 continue
             if best is None or mobile_enemy > best[0]:
                 best = (mobile_enemy, target, source)
@@ -2887,15 +2896,29 @@ def _resolve_card70_march_battle(state, target_regions, legion_limit):
             march = _execute_march(state, ROMANS, action, free=True, moving_only=True)
         finally:
             clear_confirmation(state, ROMANS, action)
-        if not march["executed"]:
+        if (not march["executed"] and (
+                march.get("reason") == "Diviciacus agreement was refused; choose a new plan"
+                or not count_pieces(state, target, ROMANS))):
             return [{"free_action": "march", "flag": "card_70_roman_march_battle",
                      "region": target, "result": march}]
         moved = {"legions": group[LEGION], "auxilia": group[AUXILIA]}
-        if not any(entry.get("final_region") == target for entry in march["marches"]):
+        if (not any(entry.get("final_region") == target for entry in march["marches"])
+                and not count_pieces(state, target, ROMANS)):
+            # The follow-on is a separate Battle Command. A lost/stopped
+            # moving group does not prevent resident Romans from fighting
+            # at the chosen destination (§5.1.3 partial execution).
             return [{"free_action": "march", "flag": "card_70_roman_march_battle",
                      "region": target, "moved": moved, "result": march,
                      "battle": None, "reason": "moving cohort could not reach the Battle destination"}]
 
+    return _resolve_card70_battle(state, target, moved)
+
+
+def _resolve_card70_battle(state, target, moved):
+    """Required follow-on Battle uses its resulting board and fresh consent."""
+    from fs_bot.rules_consts import ROMANS
+    from fs_bot.bots.roman_bot import _rank_battle_targets
+    scen = state['scenario']
     def select_battle(sim):
         defenders = _rank_battle_targets(sim, target, scen)
         return target, defenders[0] if defenders else None
@@ -2906,6 +2929,10 @@ def _resolve_card70_march_battle(state, target_regions, legion_limit):
             lambda sim: _plan_fixed_event_battle(sim, ROMANS, 70, {target}, select_battle),
             lambda plan: _resolve_fixed_event_battle(state, ROMANS, plan))
     except _EXEC_ERRORS as exc:
+        if ROMANS not in state.get("non_player_factions", ()):
+            # A later malformed human choice must roll back the preceding
+            # March through the compound grant's transaction boundary.
+            raise
         return [{"free_action": "march_battle", "flag": "card_70_roman_march_battle",
                  "region": target, "executed": False, "reason": repr(exc)}]
     if action is None:
@@ -4378,7 +4405,10 @@ def _flip_selected_march_group(state, faction, origin, group):
     from fs_bot import rules_consts as rc
     from fs_bot.board.pieces import count_pieces_by_state, flip_piece
     from fs_bot.engine.march_choices import choose_visibility, select_origin_visibility
-    select_origin_visibility(state, faction, origin, group)
+    # Frozen Event cohorts already selected their physical counters before
+    # any group moved. Re-prompting here could steal another group's pieces.
+    if "_march_visibility" not in group:
+        select_origin_visibility(state, faction, origin, group)
     owners = group.get("_diviciacus_owners")
     physical_owners = owners is not None
     piece = rc.AUXILIA if faction == rc.ROMANS else rc.WARBAND

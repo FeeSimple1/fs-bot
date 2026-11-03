@@ -146,8 +146,18 @@ remains. The engine applies the card's special Battle rules automatically,
 including Aquitani's ability to Battle without friendly Forces and revised
 Numidians' Auxilia-only participation. Card information, changes and
 `board`/`b` inspection remain available before choosing. These Battles must
-be carried out when possible; Camulogenus's preceding March choices remain
-an open repair.
+be carried out when possible.
+
+For unshaded Camulogenus, the Roman player first accepts or declines the
+entire March-and-Battle benefit, even when another faction played the Event.
+If accepted, choose Atrebates, Carnutes, or Mandubii as the single destination
+and select the groups, quantities and routes from their original Regions.
+At most four Legions may move in total, alongside any selected Auxilia.
+Caesar can accompany a group and permit its third step; the groups cannot
+drop off pieces along the way. Only participating Auxilia change visibility.
+Troops already at the destination remain available for the following Battle.
+Diviciacus cooperation requires its normal separate agreements for March
+and Battle. The final Battle cannot be separately declined when possible.
 
 For Litaviccus, the Aedui force participates throughout Battle, including
 Counterattack casualties and Reveal. Counters retain their physical owners;

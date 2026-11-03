@@ -116,11 +116,40 @@ def make_random_reactive(seats, rng):
     DIVICIACUS_PIECES: random legal counts of each physical owner's counters.
     FIXED_EVENT_BATTLE: a random offered Region/defender pair, retaining the
         Event's mandatory follow-on and engine-owned modifiers.
+    CAMULOGENUS: Roman acceptance and legal native groups/routes, with a
+        shared four-Legion budget; physical formation choices remain separate.
     """
     def reactive(state, faction, request):
         if faction not in seats:
             return None
         kind = request.get("kind")
+        if (kind == "free_action" and request.get("request_type") == "roman_event_accept"
+                and request.get("card_id") == 70):
+            return {"accept": True} if rng.random() >= 0.25 else {"decline": True}
+        if kind == "free_action" and request.get("request_type") == "camulogenus_march":
+            from fs_bot.cards.camulogenus import origin_groups, march_routes
+            destination = rng.choice(sorted(request["destinations"]))
+            pools = origin_groups(state)
+            origins = sorted(pools)
+            rng.shuffle(origins)
+            remaining = request["legion_limit"]
+            marches = []
+            for origin in origins:
+                pool = pools[origin]
+                legions = rng.randint(0, min(pool['legions'], remaining))
+                auxilia = rng.randint(0, pool['auxilia'])
+                caesar = bool(pool['caesar'] and rng.random() < 0.5)
+                if not (legions or auxilia or caesar):
+                    continue
+                group = {rc.LEGION: legions, rc.AUXILIA: auxilia,
+                         rc.LEADER: rc.CAESAR if caesar else None}
+                routes = march_routes(state, origin, group, destination)
+                if not routes:
+                    continue
+                marches.append({'origin': origin, 'route': rng.choice(routes),
+                                'legions': legions, 'auxilia': auxilia, 'caesar': caesar})
+                remaining -= legions
+            return {'destination': destination, 'marches': marches}
         if kind == "free_action" and request.get("request_type") == "fixed_event_battle":
             # Exercise the human selection instead of deferring to the NPC
             # default. The trusted request contains the card's legal pairs,

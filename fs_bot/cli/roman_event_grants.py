@@ -17,11 +17,18 @@ def _cooperation(state, faction, request, stdin, stdout):
 
 
 def collect_accept(state, faction, request, stdin, stdout):
-    benefit = ('remove all Arverni from Veneti, then free Seize there'
-               if request['card_id'] == 'A20' else 'free Battle, then free Seize in Belgica')
-    choice = prompt_choice(stdin, stdout, f'Romans may {benefit}.',
-                           [('Accept the entire benefit', 'accept'),
-                            ('Use bot default', 'use_default'), ('Decline', 'decline')])
+    from contextlib import nullcontext
+    from fs_bot.cli.action_windows import inspect_board
+    benefit = {
+        'A20': 'remove all Arverni from Veneti, then free Seize there',
+        'A58': 'free Battle, then free Seize in Belgica',
+        70: ('free March up to 4 Legions and any Auxilia to one of Atrebates, '
+             'Carnutes, or Mandubii, then free Battle there'),
+    }[request['card_id']]
+    with (inspect_board(state, stdout) if request['card_id'] == 70 else nullcontext()):
+        choice = prompt_choice(stdin, stdout, f'Romans may {benefit}.',
+                               [('Accept the entire benefit', 'accept'),
+                                ('Use bot default', 'use_default'), ('Decline', 'decline')])
     return {choice: True}
 
 

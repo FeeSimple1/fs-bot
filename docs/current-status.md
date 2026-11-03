@@ -21,6 +21,24 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 3 November Camulogenus — partial BE-01 repair
+
+The [Camulogenus report](reviews/camulogenus-2026-11-03.md) covers Roman
+whole-benefit acceptance and exact March planning on numeric 70: multiple
+original groups, one named destination, four Legions total, moving-only
+visibility and separate cooperation. It also repairs default planners skipping
+a possible resident Battle after the moving group is lost or removed.
+
+The final source passes **7,485 tests** and 120 audited bot games,
+with all 120 recorded results unchanged against a fresh same-runtime parent.
+Five bot hash repeats, 30 mixed cases / 120 executions with replay and cross-hash
+checks, and 60 strict-census executions pass. The balance baseline and band
+remain unchanged. Rejected generated inputs are reported separately.
+
+**20/50 original findings remain closed (40%); 30 remain open.** BE-01 remains
+open for 4/9/17/58/65; 67 and 70 are repaired. Two unadopted source questions,
+twelve provisional rulings and 34 unverified inventory rows remain separate.
+
 ### 3 November Litaviccus follow-up — PR-12 and full participation
 
 The [Litaviccus report](reviews/litaviccus-targeting-2026-11-03.md) implements

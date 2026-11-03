@@ -5,6 +5,8 @@ Date convention: America/Chicago. This repair addresses BE-02 of the
 `4e9a82ed35052198987dad4c91dd79ce9c5b4ab9`. Supplied rules and canonical
 constants remain read-only. No new provisional rule interpretation is adopted.
 
+**Later disposition, 3 November 2026:** [Camulogenus](camulogenus-2026-11-03.md) now supplies the whole-benefit acceptance and March choices recorded below as open. Historical results are unchanged.
+
 ## Restored choices
 
 | Event | Human decision and printed restrictions |

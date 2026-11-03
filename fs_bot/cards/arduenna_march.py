@@ -64,7 +64,7 @@ def _reserve(state, faction, origin, group, pools):
                 ledger[piece][ps] = ledger[piece].get(ps, 0) + amount
 
 
-def _rows(state, faction, prepared, original, remaining):
+def _rows(state, faction, prepared, original, remaining, source_id):
     """Form exact physical groups before the origin-by-origin flip procedure."""
     pools = deepcopy(original)
     raw = deepcopy(original)
@@ -81,7 +81,7 @@ def _rows(state, faction, prepared, original, remaining):
             row['loan_kind'] = 'diviciacus'
         rows.setdefault(owner, []).append(row)
     for index, (origin, path, group) in enumerate(prepared):
-        gid = f'A67.group.{index + 1}'
+        gid = f'{source_id}.group.{index + 1}'
         _reserve(state, faction, origin, group, pools[origin])
         add(faction, gid, origin, rc.LEADER, int(group[rc.LEADER] is not None))
         add(faction, gid, origin, rc.LEGION, group[rc.LEGION])
@@ -95,7 +95,7 @@ def _rows(state, faction, prepared, original, remaining):
     # Unselected initial pieces also need a cohort, so removing them at a
     # later window cannot be confused with arrivals or another selected group.
     for origin, pieces in raw.items():
-        gid = f'A67.remaining.{origin}'
+        gid = f'{source_id}.remaining.{origin}'
         add(faction, gid, origin, rc.LEADER, int(remaining[origin][rc.LEADER] is not None))
         add(faction, gid, origin, rc.LEGION, remaining[origin][rc.LEGION])
         for piece, owners in pieces.items():
@@ -106,15 +106,22 @@ def _rows(state, faction, prepared, original, remaining):
 
 
 @command_scope
-def execute_march(state, faction, action, *, free=True):
+def execute_march(state, faction, action, *, free=True, target_regions=None,
+                  source_id='A67', moving_only=False):
+    """Freeze initial cohorts for the trusted Event's chosen destinations.
+
+    A67 flips each selected origin. Card70 instead flips only each moving
+    cohort. These parameters are engine-owned, never response privileges.
+    """
     from fs_bot.engine.execute import (_collect_march_moves, _mobile_march_group,
                                       _group_has_pieces, _march_with_harassment)
     from fs_bot.cli.human_plan import _march_routes
     from fs_bot.engine.action_windows import window, set_cohorts, get_cohorts, clear_cohorts
     from fs_bot.cards.arduenna import TARGETS
+    targets = TARGETS if target_regions is None else target_regions
     moves, deferred = _collect_march_moves(state, faction, action)
     if deferred or not moves:
-        raise ValueError('Every selected Arduenna origin must supply a moving group.')
+        raise ValueError('Every selected Event origin must supply a moving group.')
     remaining, pools, prepared = {}, {}, []
     for move in moves:
         origin = move['origin']
@@ -141,9 +148,9 @@ def execute_march(state, faction, action, *, free=True):
         if leader:
             available[rc.LEADER] = None
         path = move.get('path')
-        if (not _group_has_pieces(group) or not path or path[-1] not in TARGETS
+        if (not _group_has_pieces(group) or not path or path[-1] not in targets
                 or path not in _march_routes(state, origin, faction, group)):
-            raise ValueError('Each group must follow a legal route into Nervii or Treveri.')
+            raise ValueError('Each group must follow a legal route into its granted destination.')
         prepared.append((origin, path, group))
     # These windows precede physical formation. Validate the authored counts
     # first, then form only surviving counters after any voluntary removal.
@@ -161,8 +168,8 @@ def execute_march(state, faction, action, *, free=True):
         for piece in (rc.LEGION, rc.AUXILIA, rc.WARBAND):
             group[piece] = min(group[piece], available[piece])
             available[piece] -= group[piece]
-    registered = _rows(state, faction, prepared, pools, remaining)
-    keys = {owner: f'event.A67.origins.{owner}' for owner in registered}
+    registered = _rows(state, faction, prepared, pools, remaining, source_id)
+    keys = {owner: f'event.{source_id}.origins.{owner}' for owner in registered}
     for owner, rows in registered.items():
         set_cohorts(state, keys[owner], owner, rows)
     flipped, marches = set(), []
@@ -170,8 +177,9 @@ def execute_march(state, faction, action, *, free=True):
     try:
         for index, (origin, path, original_group) in enumerate(prepared):
             if origin not in flipped:
-                window(state, 'arduenna_origin', marching_faction=faction, region=origin)
-                for owner, key in keys.items():
+                window(state, 'camulogenus_origin' if moving_only else 'arduenna_origin',
+                       marching_faction=faction, region=origin)
+                for owner, key in (() if moving_only else keys.items()):
                     rows = get_cohorts(state, key)
                     for row in rows:
                         if row['region'] != origin or row['piece_type'] not in SOFT or not row['count']:
@@ -187,7 +195,7 @@ def execute_march(state, faction, action, *, free=True):
                             row['piece_state'] = after
                     set_cohorts(state, key, owner, _merge_visibility_rows(rows))
                 flipped.add(origin)
-            gid = f'A67.group.{index + 1}'
+            gid = f'{source_id}.group.{index + 1}'
             group = {rc.LEADER: None, rc.LEGION: 0, rc.AUXILIA: 0, rc.WARBAND: 0,
                      '_march_visibility': {}}
             for owner, key in keys.items():
@@ -211,7 +219,7 @@ def execute_march(state, faction, action, *, free=True):
             if not _group_has_pieces(group):
                 continue
             final = _march_with_harassment(state, faction, origin, path,
-                flipped_origins=flipped, initial_group=group)
+                flipped_origins=flipped, initial_group=group, moving_only=moving_only)
             marches.append({'origin': origin, 'final_region': final})
         return {'executed': bool(marches), 'command': rc.CMD_MARCH,
                 'marches': marches, 'errors': [], 'total_cost': 0}

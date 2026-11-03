@@ -106,6 +106,9 @@ Retreat forecasts. The subsequent
 [Litaviccus follow-up](docs/reviews/litaviccus-targeting-2026-11-03.md)
 implements adopted PR-12 targeting and repairs full Aedui Battle participation;
 these remain separate from the original audit denominator.
+The [Camulogenus repair](docs/reviews/camulogenus-2026-11-03.md) completes
+numeric 70's Roman acceptance and March planning. BE-01 remains open for
+numeric 4/9/17/58/65; numeric 67 was repaired in the Gallic Event batch.
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even

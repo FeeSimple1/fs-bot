@@ -99,7 +99,16 @@ def session(state, actor, meta=None, log=None):
     output = StringIO()
     ses = SeatSession(state, {'seat': actor} if meta is None else meta,
                       [] if log is None else log, HumanTurnDisplay(output))
-    state['decision_agent'] = ses.reactive
+    # These cases isolate the BE-02 Battle boundary. Camulogenus's earlier
+    # acceptance/March boundaries have their own end-to-end session tests.
+    def battle_agent(live, faction, request):
+        if request.get('card_id') == 70:
+            if request.get('request_type') == 'roman_event_accept':
+                return {'accept': True}
+            if request.get('request_type') == 'camulogenus_march':
+                return {'use_default': True}
+        return ses.reactive(live, faction, request)
+    state['decision_agent'] = battle_agent if state.get('current_card') == 70 else ses.reactive
     ses.output = output
     return ses
 
@@ -126,6 +135,11 @@ def pending(ses, card, executor=rc.BELGAE, event_params=None):
 def replay(initial, final, card, log, result, executor=rc.BELGAE, event_params=None):
     records = iter(log)
     def respond(state, faction, request):
+        if request.get('card_id') == 70:
+            if request.get('request_type') == 'roman_event_accept':
+                return {'accept': True}
+            if request.get('request_type') == 'camulogenus_march':
+                return {'use_default': True}
         entry = next(records)
         assert decode(entry['assistant_request']) == dict(request, faction=faction)
         return decode(entry['assistant_response'])

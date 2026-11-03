@@ -26,9 +26,9 @@ def physical(state):
 def choose(state, region, defender, *, response=None):
     seen = []
     def agent(current, actor, request):
-        if request.get('kind') == 'free_action':
+        if (request.get('kind') == 'free_action'
+                and request.get('request_type') == 'fixed_event_battle'):
             seen.append((actor, request))
-            assert request['request_type'] == 'fixed_event_battle'
             return response if response is not None else {'region': region, 'defender': defender}
         if request.get('kind') == 'retreat':
             return {'retreat': False}

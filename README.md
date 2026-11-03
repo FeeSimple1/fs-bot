@@ -93,6 +93,9 @@ includes printed Event Loss modifiers in non-player Retreat decisions.
 The [Litaviccus follow-up](docs/reviews/litaviccus-targeting-2026-11-03.md)
 implements provisional PR-12 targeting and full Aedui Battle participation.
 This separate follow-up is outside the original audit denominator.
+The [Camulogenus repair](docs/reviews/camulogenus-2026-11-03.md) adds the
+Roman-owned acceptance and exact March planning on numeric 70. It is a
+partial repair of BE-01; grouped March grants on 4/9/17/58/65 remain open.
 **20 of 50 findings are closed (40%); 30 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,

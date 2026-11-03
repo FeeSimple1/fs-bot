@@ -598,12 +598,26 @@ the printed modifiers; response fields cannot add Special Activities,
 participants, extra Losses or exemptions. Subsequent Diviciacus agreement
 requests remain separate from selecting the Battle.
 
-These Battles are mandatory when possible. Camulogenus's preceding whole
-benefit/March selection remains a separate open repair; after that stage has
-proceeded, its Battle cannot be independently declined. Aquitani's offered
+These Battles are mandatory when possible. Camulogenus first offers Romans
+the whole-benefit decision described below; after acceptance, its Battle
+cannot be independently declined. Aquitani's offered
 targets may include a Region without friendly Forces, as its text permits.
 Missing or invalid durable-session responses remain pending with board/RNG
 rollback; do not replace them with a default response.
+
+Numeric 70 unshaded first uses `roman_event_accept` for the Roman beneficiary,
+independently of which faction executed the Event. After acceptance,
+`camulogenus_march` accepts `destination`, `marches`, and optional
+`diviciacus_regions`. Each March entry contains `origin`, `route`, integer
+`legions` and `auxilia` quantities, and Boolean `caesar`. Every nonempty
+route must end at the same offered destination: Atrebates, Carnutes, or
+Mandubii. Multiple groups may start in one or several original Regions,
+with at most four Legions in total. No response can introduce dropoffs,
+other pieces, an accompanying Special Activity, or extra movement.
+An empty `marches` list leaves the destination's existing force available
+for Battle without flipping stationary Auxilia. Formation requests select
+the actual visibility and physical owners; Diviciacus consent remains a
+separate request for each Command. A refused loan returns to planning.
 
 Litaviccus's combined force also participates in Retreat forecasts,
 Counterattack casualties and Reveal. Borrowed loss entries retain their
@@ -756,7 +770,8 @@ choices for a particular board:
 | `arduenna_command` | Ordinary non-March Command action | `cards/arduenna.py`; Nervii/Treveri only, no SA |
 | `harudes_raid` | `raid_actions: [{region, target_faction}]` | `cards/harudes_bellovaci.py`; one entry per newly placed surviving Raider; null target means gain |
 | `bellovaci_ambush` | `defender` | `cards/harudes_bellovaci.py`; A69 fixed Region and actual placed survivors |
-| `roman_event_accept` | `accept: true` or `decline: true` | `cards/roman_event_grants.py`; Romans decide the entire A20/A58 benefit |
+| `roman_event_accept` | `accept: true` or `decline: true` | `cards/roman_event_grants.py`; Romans decide the entire A20/A58/70 benefit |
+| `camulogenus_march` | `destination, marches` and optional `diviciacus_regions`; each group has `origin, route, legions, auxilia, caesar` | `cards/camulogenus.py`; Roman-owned numeric 70 March, one named destination, four Legions total |
 | `roman_event_battle` | Ordinary Battle action with offered Regions and defenders | `cards/roman_event_grants.py`; A58, no SA |
 | `roman_event_seize` | Ordinary Seize action with `details.disperse_tribes: {Region: [Tribe, ...]}` | `cards/roman_event_grants.py`; exact Tribes, ordered distinct Regions; empty lists mean Forage only |
 

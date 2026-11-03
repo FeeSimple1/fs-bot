@@ -1574,42 +1574,8 @@ def _resolve_free_actions_scoped(state, faction):
         if not mods.get(flag):
             continue
         _event_step(state, f"grant.{flag}")
-        allowed = _free_battle_region_set(state, flag)
-        action = _plan_free_battle_command(state, faction, allowed, no_retreat=True)
-        if action is None:
-            results.append({"free_action": "battle", "flag": flag,
-                            "executed": False, "reason": "no valid target",
-                            **({"declined_no_effect": True}
-                               if flag == "card_A21_first_no_retreat" else {})})
-            continue
-        chosen = action["details"]["battle_plan"][0]
-        region, defender = chosen["region"], chosen["target"]
-        try:
-            res = _execute_battle(state, faction, action)
-        except _EXEC_ERRORS as exc:
-            results.append({"free_action": "battle", "flag": flag,
-                            "executed": False, "reason": repr(exc)})
-            continue
-        results.append({"free_action": "battle", "flag": flag,
-                        "region": region, "defender": defender,
-                        "result": res})
-        # Optional second Battle in the same Region (Retreat allowed).
-        dbl = _DOUBLE_BATTLE_FLAG.get(flag)
-        if dbl and mods.get(dbl):
-            _event_step(state, f"grant.{dbl}")
-            second_action = _plan_free_battle_command(
-                state, faction, {region}, second=True)
-            if second_action is not None:
-                second = second_action["details"]["battle_plan"][0]["target"]
-                try:
-                    res2 = _execute_battle(state, faction, second_action)
-                    results.append({"free_action": "battle_second",
-                                    "flag": dbl, "region": region,
-                                    "defender": second, "result": res2})
-                except _EXEC_ERRORS as exc:
-                    results.append({"free_action": "battle_second",
-                                    "flag": dbl, "region": region,
-                                    "executed": False, "reason": repr(exc)})
+        from fs_bot.cards.decisive_battle import resolve_decisive_battle
+        results.extend(resolve_decisive_battle(state, faction, flag))
 
     # A58 Aduatuci (unshaded): Romans free Battle anywhere in Belgica, then
     # free Seize in Belgica "as if Roman Control, with no Harassment" — the

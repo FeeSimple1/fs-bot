@@ -61,6 +61,15 @@ def validate_response(state, request, response):
     kind = request["kind"]
     if (kind != "turn" and isinstance(response, dict)
             and set(response) == {"use_default"} and response["use_default"] is True):
+        if kind == 'free_action' and request.get('validate_default_response'):
+            # New mandatory grants may have legal human choices but no NP
+            # default. Validate explicit delegation before accepting it;
+            # preserve the sentinel so it cannot become raw-callback fallback.
+            from fs_bot.engine.free_actions import validate_free_action_response
+            error = validate_free_action_response(state, request['faction'], request, response)
+            if error:
+                raise ValueError(error)
+            return response
         if kind in ('spring_leader', 'battle_elite') and 'window' in request:
             # None defers optional mid-action entry; explicit default places
             # using the established priorities and must retain its meaning.

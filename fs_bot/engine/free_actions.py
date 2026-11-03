@@ -143,6 +143,9 @@ def _explicit_sentinel(response, key):
 
 def validate_free_action_response(state, faction, request, response):
     """Return a useful validation error, or None for a legal explicit response."""
+    if request.get('request_type') == 'decisive_battle':
+        from fs_bot.cards.decisive_battle import validate_response
+        return validate_response(state, faction, request, response)
     if not isinstance(response, dict):
         return 'Return a full action, decline, or use_default.'
     decline = _explicit_sentinel(response, 'decline')

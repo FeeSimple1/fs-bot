@@ -4,6 +4,21 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — named-faction Event choices, 2 November 2026
+
+- Route optional effects on 2/18/23 unshaded and 26 shaded to their named
+  Roman or Arverni owner, including when another faction plays the Event.
+  Add explicit decline/default, exact targets, Legion source allocation,
+  Gobannitio's separate Ally changes/Rally, and durable saved-session replay.
+- Repair Card2's missing non-player Legion placements. Remove Scouted Warbands
+  and an unprotected German Successor under expansion A18's all-pieces effect;
+  preserve the named Ariovistus exclusion and Roman decision ownership.
+- Preserve original-executor removal authority, independent Arverni Spring
+  entry and existing follow-on timing. Reject malformed or unconsumed timing
+  fields and rebuild Legion source choices after late reclamation.
+- Close BE-04. See the [repair report](docs/reviews/named-event-effects-2026-11-02.md)
+  for source readings, validation, compatibility and remaining scope.
+
 ## Unreleased — Event limits and German Allegiances, 3 November 2026
 
 - Enforce printed counts, areas, alternatives and targets for base cards

@@ -204,6 +204,42 @@ responses retain the pending ID and accepted history. Current card/change
 display and `board`/`b` remain available. Voluntary timing actions still
 belong to the original Event executor, independently of the placement owner.
 
+Named-owner optional effects on 2/18/23 unshaded, 26 shaded and A18 unshaded
+use `kind: "free_action"`, `request_type: "named_event_effect"`, `card_id`,
+`acting_faction`, `allow_decline: true` and `validate_default_response: true`.
+The initial terminal Event plan leaves these decisions for the live owner
+request. A same-owner typed Event may supply its own parameters directly;
+a foreign executor cannot supply that owner's targets. Empty initial parameters
+request the decision; missing durable input never means an automatic default.
+
+| Card/side | Named owner | Accepted owner response |
+|---|---|---|
+| 2 unshaded | Romans | `legions_from_track` and `legions_from_fallen`: nonnegative integer counts, totaling two as far as possible. The Senate must be able to shift or flip. Available source choices may change after a legal timing action. |
+| 18/A18 unshaded | Romans | `target_region` from `target_regions`. A18 also accepts its previous `region` alias; if both appear they must agree. A18 excludes named Ariovistus, but includes a Successor in its complete German removal. |
+| 23 unshaded | Romans | `target_city` from `target_cities`; Roman Control is required, not Roman ownership of the City. Existing Dispersed/Razed status is not a blanket human prohibition. |
+| 26 shaded | Arverni | `ally_removals` and `ally_placements`: ordered lists of exact Tribe names in Arverni Region. Remove only actual Allies, of any faction; place only own Allies at legal Subdued Tribes. Empty lists still proceed to the separately chosen free Rally. |
+
+Each request also accepts a sole strict-Boolean `{"decline":true}` or
+`{"use_default":true}`. For 26, decline skips both Ally changes and Rally.
+Explicit default follows the named faction's non-player policy; Roman Card2
+policy declines unless both Legions can enter, even though human partial
+execution is broader. A legal ineffective human selection remains permitted.
+
+Owner replies may include `stage_timing_actions` at `2.legions`,
+`2.fallen_legions`, or `26.removals:<index>`/`26.placements:<index>`, including
+the final list-length index. Unknown steps, malformed timing maps and unused
+reply-level `timing_actions` are rejected. Outer Event entry timing belongs in
+`details.timing_actions`. Outer `handler_complete` and Card26's
+`grant.card_26_arverni_rally` remain executor-authored Event timing points;
+they are not owner-response fields. The original executor retains voluntary
+piece-removal authority, while Arverni can independently author eligible
+Spring entry. Owner responses cannot claim another faction's authority.
+
+Invalid replies retain the pending ID, board, RNG and accepted history.
+Saved sessions and exact replay preserve both the owner effect and later
+Rally choice. Older affected transcripts can require new owner decisions;
+there is no save-format version change. Numeric 26 remains distinct from A26.
+
 Boii (37) unshaded accepts `place_faction` (Romans or Aedui) and
 `placements`: entries contain `region`, `piece_type`, and positive integer
 `count`; an Ally entry also names its `tribe` and has count 1. The complete

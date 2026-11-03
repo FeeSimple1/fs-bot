@@ -7,8 +7,9 @@ closes EXP-01 through EXP-06. The subsequent
 [2 November Gallia Togata and Dread repair](expansion-effects-2026-11-02.md)
 closes EXP-07 and EXP-10. The
 [3 November Event validation batch](event-validation-2026-11-03.md) closes
-BE-11, BE-12 and EXP-09. The [live progress register](../human-choice-progress.json)
-tracks 17 closed (34%) and 33 remaining. The counts and evidence below describe the original
+BE-11, BE-12 and EXP-09. The subsequent [named-faction Event repair](named-event-effects-2026-11-02.md)
+closes BE-04. The [live progress register](../human-choice-progress.json)
+tracks 18 closed (36%) and 32 remaining. The counts and evidence below describe the original
 audited revision and have not been relabeled as later results.
 
 The audit found **50 grouped open findings: 21 high, 28 medium and one low** at

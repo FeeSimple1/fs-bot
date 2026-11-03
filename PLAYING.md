@@ -146,6 +146,14 @@ possible, while “up to” choices let you select less. If an Event replaces a
 piece but the new one is unavailable or cannot legally stack, the original
 is still removed.
 
+Some repaired Events assign their choices to Romans or Arverni even when
+another faction plays the card. Legiones XIIII et XV, Rhenus Bridge and Sacking
+ask Romans whether to use the effect and which legal sources or targets to use.
+Gobannitio asks Arverni about Ally changes, then their free Rally. Its menu
+separates “Skip Ally changes; decide Rally” from declining both effects.
+Missing or invalid answers stay pending. The same board and card information
+remains available while answering another faction's Event.
+
 Shaded German Allegiances (65) lets you choose the exact German Warbands and
 Ally in Regions you Control, including visibility and Tribe, and whether
 each is removed or replaced. Romans receive Auxilia; Gallic factions receive

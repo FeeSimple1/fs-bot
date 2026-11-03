@@ -1,17 +1,17 @@
 {
   "audit_commit": "7e72fe7eda33c58b2f83457c39edf5b295a04f77",
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
-  "updated": "2026-11-03",
+  "updated": "2026-11-02",
   "tested_source": {
-    "commit": "d9fc7a3eb4bafea8f89fd881dd900bb2f353b90b",
-    "python_sha256": "ed4c0d64f358e0f71a3852520d94ee71c6e561a46b8f8a53fc52b1edff23af9f",
-    "python_files": 417,
-    "note": "Committed Python tree exactly matches final prepared matrix and combined full-suite source. Documentation-only changes pending.",
-    "working_tree_changes": true
+    "commit": "9e9191bc1c0eb5de13a5d578475d4f85042d2a6b",
+    "python_sha256": "9d4cc73f2efaa33b8e6ad871fb432ae43c7471d5222b1c13d9c9b571c0c3c4a8",
+    "python_files": 422,
+    "working_tree_changes": true,
+    "note": "Committed Python bytes equal the prepared full-suite/matrix source. At final validation, the working-tree changes were documentation only."
   },
   "total": 50,
-  "closed": 17,
-  "open": 33,
+  "closed": 18,
+  "open": 32,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -138,7 +138,11 @@
       "id": "BE-04",
       "title": "Named factions never receive optional Event-effect decisions",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "9e9191bc1c0eb5de13a5d578475d4f85042d2a6b"
+      ],
+      "report": "reviews/named-event-effects-2026-11-02.md"
     },
     {
       "id": "BE-05",
@@ -386,5 +390,6 @@
       ],
       "report": "reviews/cheap-fixes-2026-10-29.md"
     }
-  ]
+  ],
+  "updated_timezone": "America/Chicago"
 }

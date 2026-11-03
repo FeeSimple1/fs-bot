@@ -19,6 +19,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 2 November named-faction Event choices — BE-04 closed
+
+The [repair report](reviews/named-event-effects-2026-11-02.md) restores Romans'
+optional choices on 2/18/23 unshaded and expansion A18, and Arverni's choices
+on 26 shaded, even when another faction executes the Event. Explicit decline,
+exact targets and source selections belong to the named faction. Gobannitio
+can skip Ally changes and proceed to a separately chosen Rally; declining the
+whole sequence skips both.
+
+Card2 now actually places the non-player's required Legions. Expansion A18
+removes Scouted Warbands and a German Successor along with the other Germans,
+while its explicit named-Ariovistus protection remains. Non-player defaults
+follow supplied priorities without narrowing human target legality. Terminal
+menus and saved sessions retain card/board information, pending retries,
+original-executor removal authority, independent Spring entry and replay.
+
+**18 of 50 findings are closed (36%); 32 remain open.** This one-finding task
+is complete. Finding counts are not an effort estimate or overall rules
+certification. Other Event grants, physical choices, Capability decisions,
+private peeks and seasonal decisions remain separately tracked. The report's
+date uses America/Chicago; the preceding report used UTC.
+
 ### 3 November Event limits and German Allegiances — three findings closed
 
 The [repair report](reviews/event-validation-2026-11-03.md) closes BE-11,
@@ -39,7 +61,7 @@ rejected Events stay pending without consuming eligibility or committing the
 bad choice; legal ineffective Events remain permitted. New regressions cover
 real terminal decisions, detached previews and durable retry/save/replay.
 
-**17 of 50 findings are closed (34%); 33 remain open.** This three-finding
+At that checkpoint, **17 of 50 findings were closed (34%); 33 remained open.** This three-finding
 batch is complete; percentages count findings, not effort or overall rules
 accuracy. Other Event ownership/physical choices, ordinary timing and seasonal
 decisions remain separate, as do the 34 unverified inventory rows, two source

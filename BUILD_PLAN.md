@@ -87,8 +87,10 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 17 of 50 closed (34%) and 33 open; these are finding counts, not
-equal effort units. Continue with the remaining Event ownership, quantity
+now records 18 of 50 closed (36%) and 32 open; these are finding counts, not
+equal effort units. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
+(Roman and Arverni optional effects, plus related A18 removal corrections).
+Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even
 where an expansion card now has complete menus. Optional setup and shared

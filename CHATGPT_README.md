@@ -56,6 +56,16 @@ eligibility; legal ineffective Events remain permitted. See the
 [Event validation report](docs/reviews/event-validation-2026-11-03.md) and
 [agent interface](AGENT_INTERFACE.md) for shapes and compatibility limits.
 
+Cards 2/18/23 unshaded, 26 shaded and A18 unshaded can issue a
+`free_action` request with `request_type: "named_event_effect"`. Answer for the
+named `acting_faction`, even when another faction executed the Event. Select
+the offered target/source parameters, explicit `{"decline":true}`, or explicit
+`{"use_default":true}`. For 26, empty Ally lists proceed to the separate Rally
+choice; declining the entire effect does not. A foreign Event executor submits
+no owner's targets in its initial Event plan. See the
+[named-faction repair](docs/reviews/named-event-effects-2026-11-02.md) and
+[agent interface](AGENT_INTERFACE.md) for the exact contracts.
+
 Recruit/Rally plans can specify exact troop `count` values. Use
 `rally_plan.steps` to preserve Vercingetorix's two placement orders, and
 `placement_owners` to reserve exact Roman/Aedui pieces during agreed

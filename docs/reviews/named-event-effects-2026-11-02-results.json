@@ -1,0 +1,276 @@
+{
+  "bot_games": 150,
+  "bot_editions": {
+    "legacy": 100,
+    "original": 25,
+    "second-edition": 25
+  },
+  "baseline_comparison": {
+    "games": 100,
+    "winner_or_card_count_changes": 16,
+    "rate_changes": [
+      {
+        "scenario": "Ariovistus",
+        "faction": "Aedui",
+        "before_wins": 1,
+        "after_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Belgae",
+        "before_wins": 2,
+        "after_wins": 1,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Germans",
+        "before_wins": 5,
+        "after_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Romans",
+        "before_wins": 12,
+        "after_wins": 13,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Aedui",
+        "before_wins": 1,
+        "after_wins": 2,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Arverni",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Belgae",
+        "before_wins": 3,
+        "after_wins": 3,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Romans",
+        "before_wins": 14,
+        "after_wins": 13,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Aedui",
+        "before_wins": 6,
+        "after_wins": 5,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Arverni",
+        "before_wins": 1,
+        "after_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Belgae",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Romans",
+        "before_wins": 11,
+        "after_wins": 12,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Aedui",
+        "before_wins": 1,
+        "after_wins": 3,
+        "percentage_point_change": 10
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Arverni",
+        "before_wins": 1,
+        "after_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Belgae",
+        "before_wins": 5,
+        "after_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Romans",
+        "before_wins": 13,
+        "after_wins": 11,
+        "percentage_point_change": -10
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Aedui",
+        "before_wins": 5,
+        "after_wins": 4,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Arverni",
+        "before_wins": 5,
+        "after_wins": 6,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Belgae",
+        "before_wins": 6,
+        "after_wins": 6,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Romans",
+        "before_wins": 4,
+        "after_wins": 4,
+        "percentage_point_change": 0
+      }
+    ],
+    "passed": true,
+    "baseline_sha256": "cbdfc7883ea0137fd5bf414ebc3bf847ec1774f42bd447d81a74ed268f9496c3",
+    "baseline_changed": false,
+    "existing_band": 0.15
+  },
+  "fuzz": {
+    "legacy": {
+      "games": 10,
+      "human_turns": 335,
+      "event_turns": 79,
+      "events_ok": 75,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "a2081f16428819d3b87658221fa6fceafed765b169f0d45909ada4508d98f523"
+    },
+    "original": {
+      "games": 10,
+      "human_turns": 338,
+      "event_turns": 76,
+      "events_ok": 72,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "e035b7902ef4b1e6d5517462d250b38e68b336d2cd31d43d5e266aac5d820016"
+    },
+    "second-edition": {
+      "games": 10,
+      "human_turns": 332,
+      "event_turns": 77,
+      "events_ok": 71,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "ac8470d753765718abd152bf12c0672b2c9c6e1ef9b917631241b03d95cd786b"
+    }
+  },
+  "mixed_seat_distinct_cases": 30,
+  "mixed_seat_executions_including_replay_and_hash_repeat": 120,
+  "parent_comparison": {
+    "games": 100,
+    "winner_or_card_count_changes": 16,
+    "provenance": "task-baseline.json: byte-identical parent source; reused labelled records"
+  },
+  "strict_census_executions": 20,
+  "census_severities": {
+    "legal-decline": 119
+  },
+  "scope": "Five scenarios; bot legacy seeds1-20 and other edition seeds201-205; mixed seeds201-202 in all three profiles, hashes0/7 with replay.",
+  "passed": true,
+  "matrix_source": {
+    "commit": "2edf53e6a0dae774b391e64ce883fdcc5f622ba9",
+    "python_sha256": "9d4cc73f2efaa33b8e6ad871fb432ae43c7471d5222b1c13d9c9b571c0c3c4a8",
+    "python_files": 422,
+    "python_worktree_changes": true
+  },
+  "source": {
+    "commit": "9e9191bc1c0eb5de13a5d578475d4f85042d2a6b",
+    "python_sha256": "9d4cc73f2efaa33b8e6ad871fb432ae43c7471d5222b1c13d9c9b571c0c3c4a8",
+    "python_files": 422
+  },
+  "audit_progress": {
+    "batch_closed": 1,
+    "batch_total": 1,
+    "closed": 18,
+    "open": 32,
+    "total": 50,
+    "percent": 36
+  },
+  "full_tests": {
+    "combined": 6872,
+    "new_cases": 144,
+    "engine_new": 77,
+    "cli_new": 42,
+    "durable_new": 25,
+    "final_documentation_status": "passed",
+    "final_documentation": 6872
+  },
+  "protected_inputs": {
+    "count": 49,
+    "unchanged": true
+  },
+  "commits": {
+    "task_base": "2edf53e6a0dae774b391e64ce883fdcc5f622ba9",
+    "implementation": "9e9191bc1c0eb5de13a5d578475d4f85042d2a6b"
+  },
+  "limits": [
+    "34 unverified inventory rows remain separate",
+    "Two source questions and nine provisional rulings unchanged",
+    "NPC pre-Battle Intimidate projection lead remains outside original50 and unverified",
+    "Bounded source/behavior checks do not certify all rules or faction balance"
+  ],
+  "causal_review": {
+    "status": "complete; independently verified",
+    "paired_games": 16,
+    "diagnostic_executions": 32,
+    "winner_changes": 10,
+    "length_only_changes": 6,
+    "baseline_refresh": false,
+    "metadata_overlap": "Source commit occurred during diagnostics. All422 Python hashes verified before/after; original final Git-metadata equality failure retained.",
+    "first_cause_counts": {
+      "restored_legion_placements": 8,
+      "restored_roman_owned_removals": 2,
+      "declined_ineffective_events": 6
+    },
+    "all_first_pre_states_and_rng_identical": true,
+    "all_raw_prefixes_identical": true,
+    "metadata_only_first_differences": 0,
+    "first_row_state_changes": 14,
+    "first_row_action_only_changes": 2,
+    "initial_captured_row_replays_exact": 31,
+    "initial_captured_row_replays_total": 32,
+    "diagnostic_replay_exception": "Sorted diagnostic JSON lost map insertion order for one candidate snapshot. Restoring original order reproduced exact decision, full post-state/RNG and following execution; independently verified. Original failure retained.",
+    "evidence": [
+      "causal-review/causal-review.json",
+      "causal-review/frozen-causal-manifest.json",
+      "reviewer-causal-verification.json"
+    ]
+  },
+  "evidence_archive": {
+    "path": "named-event-effects-2026-11-02-evidence.zip",
+    "sha256": "f128e2045aad37eca879e8a7e3eb8c43621e168ddfb685ac3b31bee16212ac0f",
+    "bytes": 3905065,
+    "entries": 178,
+    "crc_and_manifest_verified": true
+  }
+}

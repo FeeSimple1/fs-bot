@@ -4,6 +4,22 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Gallia Togata and Dread, 2 November 2026
+
+- Let A5's executor choose affected-owner order, then each owner allocate
+  every prohibited Cisalpina piece to legal Home Regions or removal. Preserve
+  visibility, exact Tribe metadata, Settlement limits and Diviciacus removal.
+- Apply shaded A22's extra Warband to ordinary and Raid Intimidate, A45,
+  bot planning and both human interfaces. Three actual Baggage Trains Raiders
+  can provide three removals with Dread; a fresh bonus Warband is explicit
+  and respects the Event's physical cohort.
+- Make unshaded A22's Intimidated-marker immunity apply to Roman Recruit,
+  with correct Capability-side switching and removal behavior.
+- Preserve pending choices, board inspection, invalid-response rollback and
+  save/replay. Close EXP-07 and EXP-10; see the
+  [repair report](docs/reviews/expansion-effects-2026-11-02.md) for evidence
+  and remaining scope.
+
 ## Unreleased — human expansion Event grants, 2 November 2026
 
 - Add human first/second Battle choices for A21/A57 and executor-owned whole

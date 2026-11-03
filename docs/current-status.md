@@ -19,6 +19,30 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 2 November Gallia Togata and Dread — two findings closed
+
+The [repair report](reviews/expansion-effects-2026-11-02.md) closes EXP-07 and
+EXP-10. A5's executor chooses affected-owner order; each owner then chooses
+legal Home destinations or removal for every prohibited Cisalpina piece,
+including structures. Current-board choices preserve physical visibility,
+Tribe metadata, Settlement limits and Diviciacus's removal rules.
+
+Shaded Dread permits the added Intimidating Warband in ordinary actions,
+A45 and intrinsic Raid Intimidate. With Baggage Trains, the actual third
+Raider can also be the third Intimidator. An additional fresh Hidden Warband
+is an explicit choice within the available physical cohort. Unshaded Dread
+also correctly prevents Intimidated markers from blocking Roman Recruit.
+
+**14 of 50 findings are closed (28%); 36 remain open.** This two-finding
+batch is complete. The percentage counts findings, not effort or whole-game
+compliance. A5 shaded removal choices, exact Intimidate Allied Tribe choices,
+other Event validation/ownership and seasonal decisions remain separate.
+The 34 unverified inventory rows, two source questions and nine provisional
+rulings are unchanged. A separate NPC audit lead remains: pre-Battle
+Intimidate excludes the entire defender faction instead of only guaranteed
+Battle losses. Its combat-projection witness and repair are still pending;
+it is outside the original 50-finding denominator.
+
 ### 2 November expansion Event grants — six findings closed
 
 The [Event-grant report](reviews/human-event-grants-2026-11-02.md) closes
@@ -34,7 +58,7 @@ targets are rebuilt from the current board. The report records source-derived
 tests, independent review, terminal/durable coverage and combined validation.
 Old affected transcripts may require the newly added human decisions.
 
-**12 of 50 findings are closed (24%); 38 remain open.** This is a count of
+At that checkpoint, **12 of 50 findings were closed (24%); 38 remained open.** This is a count of
 resolved findings, not an effort estimate or certification of the whole game.
 The six-finding batch is complete. Base-card counterparts, ordinary Seize's
 Tribe menu, generic interruption timing, other physical choices, seasonal
@@ -369,7 +393,7 @@ for reproduction commands and compatibility limits.
 | Resources | Normal Battles pay their printed costs. Free Event actions waive costs and include a Special Ability only when granted. | `test_free_action_costs.py` |
 | Arverni Battle timing | Non-player Battles are paid before Devastate/Entreat, as instructed by §8.7.1; the accompanying ability cannot spend those reserved Resources. | `test_arverni_battle_payment.py` |
 | Raid | Bots exhaust each target priority before moving to the next. Steals require sufficient victim Resources and validate the complete Region plan before revealing pieces. | `test_raid_priority_regressions.py` |
-| Raid Intimidate | Ariovistus’s actual Raiders can free Intimidate as part of Raid, independently of an accompanying Special Ability. Human choices support decline, marker-only, removals, pause/save/replay, and exact Raider credit; Card 8 can use its third Raider. | `test_raid_intimidate.py`, `test_raid_intimidate_decisions.py`, `test_cli_raid_counts.py` |
+| Raid Intimidate | Ariovistus’s actual Raiders can free Intimidate independently of an accompanying Special Ability. Humans can decline, place only a marker, or select removals with pause/save/replay. Card 8's third Raider supplies a third Intimidator only with shaded Dread; Dread can instead spend one additional eligible Hidden Warband explicitly. | `test_raid_intimidate.py`, `test_raid_intimidate_decisions.py`, `test_cli_raid_counts.py`, `test_dread_intimidate.py` |
 | Acco (34) and Britannia (57) | Human beneficiaries choose free actions. Acco applies its Control/Devastated exceptions and Region limit; Britannia resolves its optional scoped Special Ability and checks the Resource bonus afterward. | `test_event_free_choices.py` |
 | Enlist | Borrowed German Warbands retain physical ownership through movement, control, actions and losses. Both Enlist options respect base/expansion restrictions. | `test_enlist_borrowed.py`, `test_enlist_free.py` |
 | Human movement menus | March can split an origin into multiple groups, include a remaining Leader, and plan full Roman/Vercingetorix routes. Subsets recheck Leader range, Alps and Abatis stops; previewing does not roll future Harassment. Base German Rally offers its Ally-then-Warbands sequence. | `test_cli_march_groups.py`, `test_cli_march_routes.py`, `test_migration.py` |
@@ -382,13 +406,13 @@ for reproduction commands and compatibility limits.
 | March after Harassment | Actual losses are applied to the carried group once. A visibility ledger prevents residents from replacing departing pieces. Drop-offs remain behind, surviving pieces continue, and losing Caesar or Vercingetorix removes the extra movement they grant. A successful Leader saving roll no longer removes that Leader from the moving group. | `test_publius.py`, `test_march_cohort.py` |
 | Harassment decisions and order | Humans choose soft casualties or a die roll, then the required hard casualty on a failed roll. Visibility and exact Allied tribes are selectable. Later harassers see prior losses; base-game announcements during Event-card turns follow card order then Germans. Roman Hidden Auxilia and Ariovistus German bots now Harass when instructed. Game-run factions cannot be prompted to waive mandatory Harassment. | `test_harassment_decisions.py` |
 | Battle outcome prediction | Independent human Retreat agreements retain their own Region and response history. The shared predictor checks the complete Battle Command and rejects an empty outcome set, preventing an unsafe Frost action from passing without any simulated outcomes. | `test_divination_frost.py`, `test_impetuosity_unshaded.py` |
-| Gallia Togata (5/A5) | The actual marker governs geography and Roman-only stacking. March, Recruit and Alps effects follow the selected card, including lingering A5 effects after Interlude and save/load. | `test_gallia_map.py` |
+| Gallia Togata (5/A5) | The actual marker governs geography and Roman-only stacking, including lingering A5 effects after Interlude. A5 unshaded gives the executor owner-order choice, then each owner allocates every prohibited piece to legal Homes or removal with exact visibility and Tribe metadata. | `test_gallia_map.py`, `test_gallia_evacuation.py` |
 | Arduenna (A67) | German forces gather the safe surplus from controlled origins, account for departing Leaders and all opposition, and choose a target where Control is achievable. | `test_arduenna_surplus.py` |
 | War Fleet (62) | All four non-player factions derive the printed coastal relocations and follow-on Command. Arverni Battle the selected player target; Roman distribution respects origin, Legion/Leader and final-force priorities. Availability and Frost checks preview the complete actual Command, including capabilities and human outcomes. | `test_war_fleet.py`, `test_war_fleet_roman.py` |
 | Kinship (A65) | A human Event executor chooses Belgae or Germans to Battle in any selected legal Regions. One Command applies its limits once, without costs or an accompanying ability. The attacker’s Leader remains physically present but does not fight or absorb losses. Non-players obey the beneficiary and opposing-player restrictions before choosing the Event. | `test_kinship.py`, `test_kinship_decisions.py` |
 | Migration (66) | The executing player chooses real German Rally and March separately, each limited to two Regions/origins. Roman bots follow the printed movement instructions and maximize Rally placement. | `test_migration.py` |
 | Frumentum (A53) | Aedui specify funding; Romans choose paid Recruit, March and one Special Ability in any order. Roman personal funds are reserved, and non-player funding follows A8.6.6. | `test_frumentum.py` |
-| Savage Dictates and Intimidate | A45 waives only its printed Leader/Control restrictions. Targets follow non-player priorities, retain the one-Faction/two-Warband limits, and validate all removals before changing pieces. | `test_intimidate_grants.py` |
+| Savage Dictates and Intimidate | A45 waives only its printed Leader/Control restrictions. Targets retain the one-Faction limit and normal two-Warband limit, increased to three with shaded Dread. Unshaded Dread also protects Roman Recruit from Intimidated markers. Removals validate before mutation. | `test_intimidate_grants.py`, `test_dread_intimidate.py` |
 | Harudes (A29) and Bellovaci (A69) | Harudes Raids use the newly placed Warbands and respect the Settlement limit. Bellovaci checks Ambush legality and gives its attack bonus only to newly placed Warbands. | `test_nested_event_rules.py` |
 | Successor and Litaviccus (45) | Threat March uses the actual Leader’s movement allowance. Pooled Aedui Warbands count for Ambush strength without bypassing Leader range; ordinary Battle remains available when Ambush is not. | `test_census_planner_regressions.py` |
 | Winter Uprising and Interlude | The Interlude executes Uprising and Winter Campaign before changing Forces and scenario. Forced Arverni phases handle an empty target set; Aedui/Belgic A63 ownership remains effective afterward. | `test_winter_uprising_regressions.py` |

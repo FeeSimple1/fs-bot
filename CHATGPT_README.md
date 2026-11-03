@@ -38,6 +38,12 @@ Older affected transcripts may require new choices rather than replaying
 unchanged. The [progress register](docs/human-choice-progress.json) records
 the remaining audit work.
 
+Gallia Togata (A5) asks the Event player to order multiple affected owners,
+then asks each owner where its Cisalpina pieces go or which to remove. Read the current
+request's piece IDs, visibility and legal Home/Tribe destinations. Dread
+(A22) changes Intimidate capacity: shaded permits an added participant/removal;
+unshaded also prevents Intimidated markers from blocking Roman Recruit.
+
 Recruit/Rally plans can specify exact troop `count` values. Use
 `rally_plan.steps` to preserve Vercingetorix's two placement orders, and
 `placement_owners` to reserve exact Roman/Aedui pieces during agreed
@@ -146,9 +152,24 @@ You are about to PLAY one faction against the built-in bots.
    - Raid Intimidate with Ariovistus: `{"targets":[]}` for the marker only,
      `{"decline":true}` to skip, or a `targets` list copying each chosen
      `target_faction`, `target_piece`, and `target_state` from the request.
-     Choose at most `max_removals` pieces of one Faction, within their offered
-     counts. The Warbands that just Raided provide this free effect; no
-     additional Hidden Warbands or Special Ability are spent.
+     Choose one Faction within the offered counts. Without shaded Dread,
+     actual Raiders supply at most two removals. With Dread, a plain response
+     can use up to `max_raider_removals` (three actual Raiders suffice).
+     If `extra_warband_available`, add `"extra_warband":true` to Reveal one
+     fresh Hidden Warband for an extra removal, totaling two or three within
+     `max_with_extra`. No extra Reveal is allowed for marker-only or a single
+     removal. This effect spends no SA; a later ordinary Intimidate needs
+     remaining Hidden Warbands, up to three with shaded Dread.
+   - Gallia Togata (A5): answer `gallia_evacuation_order` with
+     `{"owner_order":[...]}` containing every offered owner exactly once.
+     Each owner then answers `gallia_evacuation` with
+     `{"allocations":[{"piece_id":"<offered-id>","destination":"<region>","count":1}]}`.
+     Allocate every offered piece, preserving its exact ID/state; moving an
+     Ally/Citadel also needs its destination `tribe`. Use `destination:null`
+     without `tribe` to remove pieces. Splits are allowed; decline is not.
+     German Settlements create Homes, but Cisalpina is always excluded.
+     Each request reflects earlier owners' choices; use `board` or `b` to
+     inspect that position before answering.
 
    Reactions accept `{"use_default":true}` only when you explicitly want the
    engine's default choice. Nothing is silently decided for your seat.

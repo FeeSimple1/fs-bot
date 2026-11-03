@@ -1,6 +1,6 @@
 # Build plan and maintenance roadmap
 
-Updated 29 October 2026. The original pre-implementation plan is retained in
+Updated 2 November 2026. The original pre-implementation plan is retained in
 Git history. The engine now has implementations for all eight original build
 phases; those phase labels are an architectural map, not a list of unbuilt
 features or a certification that every rule interaction is correct.
@@ -81,13 +81,18 @@ Battle casualty tiers, repeated Seize/Entreat Regions, strict Supply responses,
 expansion Arverni transfer rejection and sole-human-Belgae setup. The
 [Scouted Event repair](docs/reviews/scouted-events-2026-11-02.md) closes EXP-12.
 The [expansion Event-grant batch](docs/reviews/human-event-grants-2026-11-02.md)
-closes EXP-01 through EXP-06. The [progress register](docs/human-choice-progress.json)
-now records 12 of 50 closed (24%) and 38 open; these are finding counts, not
+closes EXP-01 through EXP-06. The
+[Gallia Togata and Dread repair](docs/reviews/expansion-effects-2026-11-02.md)
+closes EXP-07 and EXP-10. The [progress register](docs/human-choice-progress.json)
+now records 14 of 50 closed (28%) and 36 open; these are finding counts, not
 equal effort units. Continue with the remaining Event ownership, quantity
 and target-validation findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even
 where an expansion card now has complete menus. Optional setup and shared
-player modes remain separately scoped.
+player modes remain separately scoped. An additional NPC audit lead concerns
+pre-Battle Intimidate excluding the whole defender faction instead of only
+guaranteed Battle losses. It needs a combat-projection witness and is tracked
+separately from the original 50 findings; it is not claimed repaired.
 Preserve each source-derived witness as a desired-behavior regression during
 repair. The
 [29 October rules and Trade repair](docs/reviews/rulings-trade-2026-10-29.md)

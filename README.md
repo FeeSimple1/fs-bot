@@ -66,7 +66,10 @@ also closes omitted mandatory removals on A25, A26, A30 and A56. The
 [expansion Event-grant batch](docs/reviews/human-event-grants-2026-11-02.md)
 closes EXP-01 through EXP-06: human Battle, March, Raid and beneficiary
 choices, optional Roman benefits, and the printed Seize exceptions.
-**12 of 50 findings are closed (24%); 38 remain open** in the
+The [Gallia Togata and Dread repair](docs/reviews/expansion-effects-2026-11-02.md)
+closes EXP-07 and EXP-10: owner-directed Cisalpina evacuation, the additional
+Intimidating Warband, and unshaded Dread's Roman Recruit immunity.
+**14 of 50 findings are closed (28%); 36 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

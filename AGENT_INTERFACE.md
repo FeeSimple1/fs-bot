@@ -367,7 +367,7 @@ and Ally identity gaps recorded separately by the audit remain open.
 | `winter_campaign` | `card_id, remaining_actions`, optional `errors` | one paid action, combined Command+SA, or decline; see the Winter section below |
 | `frumentum_amount` | A53; `available_resources` (Aedui) | `{"amount": integer}`, `{"decline":true}` (zero), or explicit default |
 | `frumentum_action` | A53; `remaining_actions, remaining_resources, reserved_roman_resources` | one Recruit/March plan or standalone Build/Scout plan, `{"skip": action_name}`, finish with `{"decline":true}`, or explicit default |
-| `raid_intimidate` | A3.4.3; `region, raiders, max_removals, targets` | `{"targets":[...]}`, marker only `{"targets":[]}`, `{"decline":true}`, or `{"use_default":true}` |
+| `raid_intimidate` | A3.4.3; `region, raiders, max_removals, targets`; shaded A22 adds `max_raider_removals, extra_warband_available, max_with_extra` | `{"targets":[...]}` with optional Boolean `extra_warband`, marker only `{"targets":[]}`, `{"decline":true}`, or `{"use_default":true}` |
 
 The file-based frontend accepts `{"use_default":true}` for a non-turn
 request only as an explicit decision. An omitted or invalid response remains
@@ -589,6 +589,8 @@ choices for a particular board:
 | `publius_march` | `origin, route, legions, auxilia`, optional `dropoffs` | `cards/publius.py`; route is a Region list, drop-offs map intermediate Regions to piece counts |
 | `morasses_faction` | `faction` from the request's `factions` | `cards/morasses.py` |
 | `morasses_march` | `action, in_place` | `cards/morasses.py`; `action` is an ordinary March plan or null, `in_place` lists stationary origins |
+| `gallia_evacuation_order` | `owner_order: [faction, ...]` | `cards/gallia_evacuation.py`; A5 executor orders every affected owner exactly once |
+| `gallia_evacuation` | `allocations: [{piece_id, destination, count, tribe?}]` | `cards/gallia_evacuation.py`; each affected owner allocates all its Cisalpina pieces |
 | `procillus_march` | `origin, destination` | `cards/procillus.py`; A19 executor moves all mobile Romans from one offered origin |
 | `decisive_battle` | `region, defender` | `cards/decisive_battle.py`; A21/A57 first Battle, then optional second in the same Region |
 | `arduenna_faction` | `faction` from the request's `factions` | `cards/arduenna.py`; executor selects a playable beneficiary other than Arverni |
@@ -607,6 +609,36 @@ submit a custom subtype as a top-level Command. Subsequent Battle choices
 arrive as their own requests on the resulting board. Unshaded Impetuosity's
 adjacent March is required when possible; A17's follow-on Battle is required
 when possible after the optional combined action has been accepted.
+
+For unshaded Gallia Togata (A5), an executor receives
+`gallia_evacuation_order` only when multiple non-Roman owners have pieces in
+Cisalpina. Return every faction in the request's `owners` exactly once in
+`owner_order`. Each owner then receives its own `gallia_evacuation` request
+on the resulting board; game-run Arverni resolve automatically. The request
+provides `acting_faction`, `origin`, `home_regions`, and `pieces`. Each piece
+entry has an opaque `id`, `piece_type`, `count`, optional `piece_state`,
+`tribe` or `leader_name`, and legal `destinations`.
+
+Copy each source `id` to an allocation's `piece_id`. Allocate its entire
+count using positive integers, splitting a visibility cohort if desired.
+Each move has a `destination`; Allies/Citadels also require the destination
+`tribe`. Use `destination: null` to remove pieces and omit `tribe` for that
+allocation. For example, when these pieces and destinations are offered:
+
+```json
+{"allocations":[
+  {"piece_id":"Warband:Hidden","destination":"Ubii","count":2},
+  {"piece_id":"Ally:Nori","destination":null,"count":1}
+]}
+```
+
+Later allocations cannot reuse an occupied Tribe or exceed Settlement limits.
+German Settlement Regions count as Homes; Cisalpina itself never qualifies.
+Relocation retains visibility and Leader identity. Both A5 requests allow
+explicit default but forbid decline; an owner can instead choose removal.
+Missing or invalid durable responses remain pending, including when earlier
+owners already have accepted choices. Board inspection shows the current
+decision position; save/resume replays accepted choices before continuing.
 
 For A21/A57, `phase: first` requires a legal Battle and forbids Retreat;
 `phase: second` offers a fresh defender choice in that same Region, permits
@@ -681,10 +713,20 @@ payment or loss rolls. Explicit default uses standard payments.
 
 ### Other paid and optional grants
 
+Ordinary German Intimidate uses one or two Hidden Warbands per Region;
+shaded Dread (A22) permits one added Warband to remove one extra piece,
+for up to three. Its capacity is the lesser of that limit and the eligible
+Hidden Warbands actually present. In `details.intimidate_plan`, provide one
+entry per removed piece, each with `region`, `target_faction`, `target_piece`
+and `target_state`. An ordinary three-removal plan needs three Hidden
+participants; do not add `extra_warband` or invent Raid credit. Normal Region,
+one-target-Faction, no-enemy-Leader and eligible-piece restrictions still apply.
+
 After Germanic Warbands Raid with Ariovistus, `raid_intimidate` offers their
 optional free Intimidate. The pending board shows the completed Raid's
 Resources and revealed Warbands before the choice. `raiders` is the number
-that actually Raided; `max_removals` is the lesser of that number and two.
+that actually Raided. Without shaded Dread, `max_removals` is the lesser of
+that number and two, even if Baggage Trains allowed three Raiders.
 Each offered target has `target_faction`, `target_piece`, `target_state`, and
 `available`. Return the first three fields for each chosen piece, repeating an
 entry only up to its available count. All chosen pieces must belong to one
@@ -696,9 +738,32 @@ Faction with no Leader in the Region. For example:
 
 An empty `targets` list places only the Intimidated marker. Decline leaves
 the Raid intact, while explicit default uses the German bot's priorities.
-This effect uses the Warbands that just Raided, does not reveal additional
-Hidden Warbands, and does not consume a Special Ability. A separate normal
-Intimidate may use additional Hidden Warbands. The validator
+This effect does not consume a Special Ability. With shaded Dread, the
+request distinguishes the following capacities:
+
+| Field | Meaning |
+|---|---|
+| `max_raider_removals` | Removals using actual Raiders alone, up to three |
+| `extra_warband_available` | Whether one additional eligible Hidden Warband remains |
+| `max_with_extra` | Removals using that fresh Warband plus at most two actual Raiders; zero if unavailable |
+| `max_removals` | Maximum across those two choices |
+
+A plain `{"targets":[...]}` response uses Raiders alone. Add
+`"extra_warband": true` to Reveal one additional Hidden Warband for one
+extra removal. This requires shaded Dread, an available eligible counter,
+and two or three removals within `max_with_extra`. `false` is accepted;
+non-Booleans, extra Reveals for marker-only/one-removal responses and invented
+credits are rejected. Three actual Raiders can supply three removals with
+Dread without a fourth Warband. A29's additional participant must belong
+to its surviving newly placed cohort; its Event executor owns the choice.
+A subsequent ordinary Intimidate uses remaining Hidden participants and
+cannot reuse Raider credit or the newly Revealed bonus participant.
+
+Unshaded Dread protects Romans from both Intimidate removals and Intimidated
+markers blocking Recruit. It does not waive other Recruit restrictions.
+The active Capability side takes precedence over stale legacy modifier data.
+
+The validator
 `engine.raid_intimidate.validate_response(state, request, response)` raises
 `ValueError` for an illegal choice without changing the live board or RNG.
 Missing or invalid assistant input remains pending; accepted choices are

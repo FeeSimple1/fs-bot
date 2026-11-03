@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-02",
   "tested_source": {
-    "commit": "13e96378e7f0960ffb6b4104d76cc75c5120d444",
-    "python_sha256": "db34eb720f500716c4c59b0946b5a91b78897bb45eb726bc351c60f91acb94ca",
-    "python_files": 403,
-    "note": "Python source exactly committed; documentation-only changes remained uncommitted during matrix.",
+    "commit": "9a2bad256073cbc5c76329af0e02d352d9d0a041",
+    "python_sha256": "d78d921cdb2db2c60bd433270bca2a80fb92462888610e8199522de41b749797",
+    "python_files": 407,
+    "note": "Committed Python bytes unchanged throughout integration matrix; documentation-only edits were uncommitted.",
     "working_tree_changes": true
   },
   "total": 50,
-  "closed": 12,
-  "open": 38,
+  "closed": 14,
+  "open": 36,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -252,7 +252,11 @@
       "id": "EXP-07",
       "title": "A5 eviction forces the first Home Region and leaves non-Roman structures in Cisalpina",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "cf982d289fd350266c758f2ab0d71c858e7e9490"
+      ],
+      "report": "reviews/expansion-effects-2026-11-02.md"
     },
     {
       "id": "EXP-08",
@@ -270,7 +274,11 @@
       "id": "EXP-10",
       "title": "A22 shaded Capability never permits the added Intimidating Warband",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "9a2bad256073cbc5c76329af0e02d352d9d0a041"
+      ],
+      "report": "reviews/expansion-effects-2026-11-02.md"
     },
     {
       "id": "EXP-11",

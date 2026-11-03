@@ -1,0 +1,248 @@
+{
+  "source": {
+    "commit": "9a2bad256073cbc5c76329af0e02d352d9d0a041",
+    "python_sha256": "d78d921cdb2db2c60bd433270bca2a80fb92462888610e8199522de41b749797",
+    "python_files": 407
+  },
+  "bot_games": 150,
+  "bot_editions": {
+    "legacy": 100,
+    "original": 25,
+    "second-edition": 25
+  },
+  "baseline_comparison": {
+    "games": 100,
+    "winner_or_card_count_changes": 7,
+    "rate_changes": [
+      {
+        "scenario": "Ariovistus",
+        "faction": "Aedui",
+        "before_wins": 1,
+        "after_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Belgae",
+        "before_wins": 4,
+        "after_wins": 4,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Germans",
+        "before_wins": 7,
+        "after_wins": 6,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Romans",
+        "before_wins": 8,
+        "after_wins": 9,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Aedui",
+        "before_wins": 5,
+        "after_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Arverni",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Belgae",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Romans",
+        "before_wins": 11,
+        "after_wins": 11,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Aedui",
+        "before_wins": 5,
+        "after_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Belgae",
+        "before_wins": 5,
+        "after_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Romans",
+        "before_wins": 10,
+        "after_wins": 10,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Aedui",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Arverni",
+        "before_wins": 2,
+        "after_wins": 1,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Belgae",
+        "before_wins": 6,
+        "after_wins": 6,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Romans",
+        "before_wins": 10,
+        "after_wins": 11,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Aedui",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Arverni",
+        "before_wins": 9,
+        "after_wins": 9,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Belgae",
+        "before_wins": 3,
+        "after_wins": 3,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Romans",
+        "before_wins": 6,
+        "after_wins": 6,
+        "percentage_point_change": 0
+      }
+    ],
+    "passed": true,
+    "baseline_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+    "baseline_changed": false,
+    "existing_band": 0.15
+  },
+  "fuzz": {
+    "legacy": {
+      "games": 10,
+      "human_turns": 258,
+      "event_turns": 58,
+      "events_ok": 55,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "e698f7c6c32dc13599000aa760e47d9cbfdee62224049f8655164be03819c480"
+    },
+    "original": {
+      "games": 10,
+      "human_turns": 258,
+      "event_turns": 58,
+      "events_ok": 55,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "9366b737b425962773d6461d90e60a78e024b4803d49bdf7081df48cd2e5a4ad"
+    },
+    "second-edition": {
+      "games": 10,
+      "human_turns": 305,
+      "event_turns": 69,
+      "events_ok": 66,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "2816b128970542069df9f0810911d3fb009eff3ef6539e10935479c06279fc11"
+    }
+  },
+  "mixed_seat_distinct_cases": 30,
+  "mixed_seat_executions_including_replay_and_hash_repeat": 120,
+  "parent_comparison": {
+    "games": 100,
+    "winner_or_card_count_changes": 1,
+    "provenance": "task-baseline.json: byte-identical parent source; reused labelled records"
+  },
+  "strict_census_executions": 20,
+  "census_severities": {
+    "legal-decline": 133
+  },
+  "scope": "Five scenarios; bot legacy seeds1-20 and other edition seeds201-205; mixed seeds201-202 in all three profiles, hashes0/7 with replay.",
+  "passed": true,
+  "audit_progress": {
+    "batch_closed": 2,
+    "batch_total": 2,
+    "closed": 14,
+    "open": 36,
+    "total": 50,
+    "percent": 28
+  },
+  "full_tests": {
+    "a5_standalone": 6506,
+    "dread_standalone": 6522,
+    "combined": 6551,
+    "new_cases": 74,
+    "final_documentation": 6551
+  },
+  "protected_inputs": {
+    "count": 49,
+    "unchanged": true
+  },
+  "commits": {
+    "task_base": "95e7a206d5b6ff410d949573724cb2b145ed23d8",
+    "a5": "cf982d289fd350266c758f2ab0d71c858e7e9490",
+    "dread_agent": "53d79cf72d65ae962ebcd0440d93c218ecc88afc",
+    "dread_integrated": "9a2bad256073cbc5c76329af0e02d352d9d0a041"
+  },
+  "limits": [
+    "34 unverified inventory rows remain separate",
+    "Two source questions unchanged",
+    "Nine provisional rulings unchanged",
+    "NPC pre-Battle Intimidate projection lead unverified and outside original50",
+    "No exhaustive correctness or statistically conclusive balance claim"
+  ],
+  "causal_review": {
+    "paired_games": 1,
+    "diagnostic_game_executions": 2,
+    "blocker": null,
+    "first_divergence_card": "A5",
+    "played_card_count": 37,
+    "unchanged_prior_trace_rows": 134,
+    "same_incoming_state_rng_decision": true,
+    "cause": "EXP-07: full evacuation including Ally/Settlement; source-supported NP destination choices",
+    "evidence": "causal-review/causal-summary.json"
+  },
+  "evidence_archive": {
+    "path": "expansion-effects-2026-11-02-evidence.zip",
+    "sha256": "28fd9da9aa3a471d5cff36474709a6001c63602c697e5a49a038b62771bb0f4f",
+    "bytes": 621349,
+    "entries": 87,
+    "crc_and_manifest_verified": true
+  }
+}

@@ -139,6 +139,24 @@ request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
 
+Unshaded Gallia Togata (A5) lets the Event player order multiple affected
+owners. Each owner then chooses Home destinations or removal for
+all its Cisalpina pieces, including Allies and Settlements. You can split
+Warbands among Homes; their Hidden/Revealed/Scouted states stay unchanged.
+Allies need legal empty Tribe spaces. German Settlements create additional
+Homes, but Cisalpina itself is excluded. Later owners see earlier moves;
+game-run Arverni evacuate automatically. Use `board` or `b` at each choice.
+
+Dread (A22), shaded, lets ordinary Intimidate Reveal up to three Hidden
+Warbands, removing one piece per Warband. After Raid with Ariovistus, the menu
+shows how many removals the actual Raiders support and whether you can
+Reveal one additional Hidden Warband for one extra removal. Three actual
+Raiders can supply all three removals without another Reveal. This free
+effect does not spend the accompanying Special Activity; a separate normal
+Intimidate must use Hidden Warbands still available. Dread's unshaded side
+protects Romans from Intimidate removals and from Intimidated markers
+blocking Recruit; other Recruit restrictions remain.
+
 Vosegus (A21) and Sabis (A57) let you choose the first Battle's Region and
 defender, then decide whether to Battle again there against a currently
 available defender. The first Battle forbids Retreat; the second uses normal

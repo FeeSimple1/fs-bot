@@ -4,6 +4,16 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Colony Event defaults, 2 November 2026
+
+- Use runtime Colony geography in Savage Dictates and Cross Rhenus defaults,
+  including Region grouping and continuation. This prevents a caught TypeError
+  from silently rejecting a bot's chosen Event.
+- Treat explicitly rejected bot Events as hard mixed-player fuzz findings.
+  Preserve human invalid-plan checks and legal optional declines.
+- Retain and compare per-game JSON in regular and scheduled fuzz CI, including
+  failed runs. See the [repair report](docs/reviews/colony-event-defaults-2026-11-02.md).
+
 ## Unreleased — named-faction Event choices, 2 November 2026
 
 - Route optional effects on 2/18/23 unshaded and 26 shaded to their named

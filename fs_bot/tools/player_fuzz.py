@@ -34,6 +34,10 @@ Oracles, per game:
                    a defect.
   nondeterminism — the same (scenario, seed) replayed from scratch produced a
                    different end digest. Hard defect (CLAUDE.md determinism).
+  bot-event-rejected — an NPC-selected Event was explicitly rejected by its
+                   executor. Hard defect even if state is unchanged and
+                   replay agrees: NPCs must avoid ineffective/forbidden
+                   Events (§8.1.1/8.2.1). Optional declines are not rejections.
 
 All seat/reactive randomness derives from random.Random(str) (sha512-based),
 so results are reproducible across processes and PYTHONHASHSEED values; the
@@ -402,6 +406,28 @@ def _compare_dry_vs_live(res, seats, expected):
     return divergences, partial
 
 
+def _rejected_bot_events(res):
+    """Find explicit NPC Event failures without classifying legal declines.
+
+    Use each recorded decision's authoring path, not the ending human seats:
+    those seats can change at the Gallic War Interlude. Human deliberately
+    malformed plans remain covered by the dry/live and rollback oracles.
+    """
+    rejected = []
+    for cr in (res or {}).get("card_results", ()):
+        for faction, rec in ((cr.get("turn_result") or {}).get("actions_taken") or {}).items():
+            action = rec.get("bot_action")
+            execution = rec.get("execution")
+            if (isinstance(action, dict)
+                    and action.get("command") == rc.FIRST_DID_EVENT
+                    and isinstance(execution, dict)
+                    and execution.get("executed") is False
+                    and execution.get("rejected") is True):
+                reason = execution.get("reason") or execution.get("errors") or execution
+                rejected.append((faction, cr.get("card"), str(reason)))
+    return rejected
+
+
 def play_game(scenario, seed, *, reactive=True, events=True, card_edition="legacy"):
     """One fuzzed game. Returns a result dict incl. findings and digest."""
     sop = sorted(get_sop_factions({"scenario": scenario}))
@@ -613,6 +639,8 @@ def play_game(scenario, seed, *, reactive=True, events=True, card_edition="legac
     divergences, partial = _compare_dry_vs_live(comparable, seats, expected)
     for f, card, msg in divergences:
         findings.append(("divergence", card, f"{f}: {msg}"))
+    for f, card, msg in _rejected_bot_events(comparable):
+        findings.append(("bot-event-rejected", card, f"{f}: {msg}"))
     try:
         digest = _digest(st, res)
     except (TypeError, ValueError) as exc:

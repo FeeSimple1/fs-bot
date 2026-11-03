@@ -78,16 +78,19 @@ jobs:
       - name: Player-surface fuzz, two hashseeds, determinism diff
         run: |
           PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz \
-            --seeds "$FUZZ_SEEDS" --card-edition "$CARD_EDITION" > fuzz0.txt
+            --seeds "$FUZZ_SEEDS" --card-edition "$CARD_EDITION" --out fuzz0.json > fuzz0.txt
           PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz \
-            --seeds "$FUZZ_SEEDS" --card-edition "$CARD_EDITION" > fuzz7.txt
+            --seeds "$FUZZ_SEEDS" --card-edition "$CARD_EDITION" --out fuzz7.json > fuzz7.txt
           cat fuzz0.txt
           diff fuzz0.txt fuzz7.txt
+          diff fuzz0.json fuzz7.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: fuzz-soak-${{ matrix.card_edition }}
-          path: fuzz*.txt
+          path: |
+            fuzz*.txt
+            fuzz*.json
 
   telemetry:
     runs-on: ubuntu-latest

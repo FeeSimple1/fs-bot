@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-02",
   "tested_source": {
-    "commit": "9e9191bc1c0eb5de13a5d578475d4f85042d2a6b",
-    "python_sha256": "9d4cc73f2efaa33b8e6ad871fb432ae43c7471d5222b1c13d9c9b571c0c3c4a8",
-    "python_files": 422,
+    "commit": "3873ff97505194557e1ed63b833d7bf2e5317fdc",
+    "python_sha256": "c3c3cd4fd4370f4367db759106b7418449bcc0c27b34ceae2e93c014c64b3bf4",
+    "python_files": 424,
     "working_tree_changes": true,
-    "note": "Committed Python bytes equal the prepared full-suite/matrix source. At final validation, the working-tree changes were documentation only."
+    "note": "Prepared Colony/default and rejected-bot validation repair over this commit; exact Python bytes are identified by the digest. Validation preceded committing the changes."
   },
   "total": 50,
   "closed": 18,
@@ -15,7 +15,8 @@
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
-    "WS-F04 closes the sole-human-Belgae setup trigger; paired-player ownership remains WS-F09."
+    "WS-F04 closes the sole-human-Belgae setup trigger; paired-player ownership remains WS-F09.",
+    "The Colony/default and rejected-bot validation follow-up closes no additional original finding; see reviews/colony-event-defaults-2026-11-02.md."
   ],
   "findings": [
     {

@@ -108,6 +108,12 @@ these exact bytes as prepared changes over `2edf53e`; the source commit and
 later documentation suite use the same bytes. Per-file manifests and the
 prepared patch preserve that distinction.
 
+Post-publication follow-up: the broader GitHub mixed-player check exposed an
+A45 Colony default failure outside this report's bounded sample. The
+[Colony repair](colony-event-defaults-2026-11-02.md) records its exact-runtime
+reproduction, shared A36 correction and stronger rejection detection. The
+measurements in this report remain those of the original tested revision.
+
 The existing Gobannitio Citadel-as-Ally test now expects rejection of that
 illegal target and retains its original unchanged-Citadel assertions. No test
 threshold or scenario seed was relaxed. Earlier focused failures are retained,

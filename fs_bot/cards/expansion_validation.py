@@ -303,6 +303,13 @@ def validate_response(state, owner, request, response):
         _apply(sim, request['card_id'], owner, response)
 
 
+def _entry_region(state, entry):
+    from fs_bot.cards.card_effects import _tribe_region
+    # Card 71 creates a Tribe whose Region lives in state, not the printed
+    # map. Use that same geography for tie groups and Region continuation.
+    return entry.get('region', _tribe_region(state, entry.get('tribe')))
+
+
 def _default_entry(state, card_id, owner, choices, previous_region=None, *, rng_state=None):
     from fs_bot.bots.bot_common import random_select, is_ally_in_city_or_remi, get_faction_targeting_order
     # Prefer own benefits, structures/City Allies, then target and visibility
@@ -324,13 +331,13 @@ def _default_entry(state, card_id, owner, choices, previous_region=None, *, rng_
     best = min(map(score, choices))
     candidates = [e for e in choices if score(e) == best]
     if previous_region is not None:
-        same = [e for e in candidates if e.get('region', rc.TRIBE_TO_REGION.get(e.get('tribe'))) == previous_region]
+        same = [e for e in candidates if _entry_region(state, e) == previous_region]
         candidates = same or candidates
     # Equal Regions, then equal targets within that Region, each by seeded tie.
-    regions = sorted({e.get('region', rc.TRIBE_TO_REGION.get(e.get('tribe'))) for e in candidates})
+    regions = sorted({_entry_region(state, e) for e in candidates})
     random_state = state if rng_state is None else rng_state
     region = random_select(random_state, regions)
-    return random_select(random_state, [e for e in candidates if e.get('region', rc.TRIBE_TO_REGION.get(e.get('tribe'))) == region])
+    return random_select(random_state, [e for e in candidates if _entry_region(state, e) == region])
 
 
 def default_params(state, card_id, owner):
@@ -363,7 +370,7 @@ def default_params(state, card_id, owner):
             break
         entry = _default_entry(sim, card_id, owner, spec['options'], previous, rng_state=state)
         params.setdefault(spec['key'], []).append(entry)
-        previous = entry.get('region', rc.TRIBE_TO_REGION.get(entry.get('tribe')))
+        previous = _entry_region(sim, entry)
         sim = preview(state, card_id, owner, params)
     return params
 

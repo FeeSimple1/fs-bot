@@ -19,6 +19,17 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 2 November Colony defaults — post-publication CI repair
+
+The [follow-up report](reviews/colony-event-defaults-2026-11-02.md) resolves
+the prior revision's player-fuzz CI failure. Savage Dictates and Cross Rhenus
+defaults now locate Colonies from current Tribe state, preserving Region
+priorities and continuation. The fuzzer flags explicit bot Event rejections
+even when replay hashes match; CI retains per-game evidence.
+
+This corrects a newly exposed shared-helper defect and validation gap.
+**The original audit remains 18/50 closed (36%), with 32 open.**
+
 ### 2 November named-faction Event choices — BE-04 closed
 
 The [repair report](reviews/named-event-effects-2026-11-02.md) restores Romans'

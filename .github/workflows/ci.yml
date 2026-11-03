@@ -73,9 +73,17 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-40 | tee fuzz0.txt
-          PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz --seeds 1-40 | tee fuzz7.txt
+          PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-40 --out fuzz0.json | tee fuzz0.txt
+          PYTHONHASHSEED=7 python -m fs_bot.tools.player_fuzz --seeds 1-40 --out fuzz7.json | tee fuzz7.txt
           diff fuzz0.txt fuzz7.txt
+          diff fuzz0.json fuzz7.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: player-fuzz-evidence
+          path: |
+            fuzz*.txt
+            fuzz*.json
 
   balance-guardrail:
     runs-on: ubuntu-latest

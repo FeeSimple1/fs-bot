@@ -90,6 +90,11 @@ completed-run statistics.
 Check every command's exit status. Compare the census JSON and fuzz output
 between hash seeds; saving both files is not itself a comparison. If piping a
 command through `tee`, enable Bash `set -o pipefail` so failures propagate.
+Use `--out` to retain per-game fuzz records as well as stdout. Regular and
+scheduled fuzz CI compare both JSON and stdout and upload the available files
+even on failure. An explicitly rejected NPC Event is a hard
+`bot-event-rejected` finding, independently of digest agreement. Intentionally
+malformed human plans and legal optional declines remain separate.
 The batch CLI itself requires hash seed 0; the archived orchestrator repeats
 25 selected games by calling the same `play_one` function in a separate hash-7
 process, then compares all recorded result fields used by its verifier.

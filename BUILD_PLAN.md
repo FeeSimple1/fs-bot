@@ -90,6 +90,9 @@ repair group. The [progress register](docs/human-choice-progress.json)
 now records 18 of 50 closed (36%) and 32 open; these are finding counts, not
 equal effort units. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
+The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)
+repairs dynamic Tribe geography in expansion defaults and detects rejected
+bot Events during mixed-seat validation; it closes no extra original finding.
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even

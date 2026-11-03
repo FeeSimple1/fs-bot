@@ -1,0 +1,195 @@
+{
+  "prepared_source": {
+    "base_commit": "3873ff97505194557e1ed63b833d7bf2e5317fdc",
+    "python_files": 424,
+    "python_sha256": "c3c3cd4fd4370f4367db759106b7418449bcc0c27b34ceae2e93c014c64b3bf4",
+    "python_worktree_changes": true
+  },
+  "protected_inputs_unchanged": 49,
+  "full_tests": {
+    "passed": 6886,
+    "new_cases": 14,
+    "python": "3.10.22"
+  },
+  "mixed_seat": {
+    "games": 200,
+    "human_turns": 6642,
+    "event_turns": 1697,
+    "events_ok": 1593,
+    "hard_findings": 0,
+    "partial": 2,
+    "batch_digest": "c48ee6015bd30f944de46e3b893a2efcbefa58ee35ff52d4effc8307bf684945"
+  },
+  "mixed_seat_distinct_cases": 200,
+  "mixed_seat_executions_including_replay_and_hash_repeat": 800,
+  "exact_cross_hash_json_and_stdout_match": true,
+  "changed_mixed_seat_cases": 1,
+  "bot_games": 100,
+  "bot_parent_comparison": {
+    "reused_previous_records": true,
+    "source_sha256": "9d4cc73f2efaa33b8e6ad871fb432ae43c7471d5222b1c13d9c9b571c0c3c4a8",
+    "provenance": "Prior prepared source over 2edf53e has the exact Python bytes later committed as task-base 3873ff9; original metadata retained.",
+    "differences": []
+  },
+  "baseline": {
+    "unchanged": true,
+    "passed": true,
+    "band_percentage_points": 15,
+    "max_change_percentage_points": 10,
+    "rates": [
+      {
+        "scenario": "Ariovistus",
+        "faction": "Aedui",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Belgae",
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Germans",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Romans",
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Aedui",
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Arverni",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Belgae",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Romans",
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Aedui",
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Arverni",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Belgae",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Romans",
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Aedui",
+        "percentage_point_change": 10
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Arverni",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Belgae",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Romans",
+        "percentage_point_change": -10
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Aedui",
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Arverni",
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Belgae",
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Romans",
+        "percentage_point_change": 0
+      }
+    ]
+  },
+  "audit_progress": {
+    "closed": 18,
+    "total": 50,
+    "open": 32,
+    "percent": 36,
+    "additional_original_findings_closed": 0
+  },
+  "passed": true,
+  "repaired_case_review": {
+    "first_changed_card_index": 36,
+    "card": "A45",
+    "earlier_complete_card_results_equal": true,
+    "before_execution": {
+      "executed": false,
+      "command": "Event",
+      "card_id": "A45",
+      "shaded": false,
+      "rejected": true,
+      "reason": "event not applicable: TypeError(\"'<' not supported between instances of 'str' and 'NoneType'\")"
+    },
+    "after_execution": {
+      "executed": true,
+      "command": "Event",
+      "card_id": "A45",
+      "shaded": false,
+      "event_result": null
+    },
+    "before_cards": 47,
+    "after_cards": 47,
+    "final_state_equal": false
+  },
+  "retained_ci_failure": {
+    "commit": "3873ff97505194557e1ed63b833d7bf2e5317fdc",
+    "job_id": 125721425896,
+    "python": "3.10.22",
+    "hash0_digest": "2691f5fe9b3b8744",
+    "hash7_digest": "eec610d024a5fd43",
+    "cause": "Caught TypeError in A45 dynamic Colony Region sorting; only its operand-order error text differs across hash seeds."
+  },
+  "task_complete_percent": 100,
+  "evidence_archive": {
+    "path": "colony-event-defaults-2026-11-02-evidence.zip",
+    "bytes": 517709,
+    "sha256": "85a07b3f8b2b7893416d972ba7d383c50e6335b54c69f15a05644cb94ab41ed5",
+    "entries": 70,
+    "crc_and_manifest_verified": true
+  },
+  "independent_final_review": {
+    "passed": true,
+    "evidence": "reviewer-colony-final.json",
+    "scope": "First36completecardresults equal; capturedA45boundary places3AeduiAllies includingColony withvalidstate; no fullgame rerun.",
+    "focused_python": "3.12.14"
+  }
+}

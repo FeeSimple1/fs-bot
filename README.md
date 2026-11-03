@@ -74,6 +74,9 @@ closes BE-11, BE-12 and EXP-09: printed target/quantity limits, correct German
 Allegiances replacements and pending retries for invalid human Events.
 The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04, including
 Roman and Arverni decisions when another faction plays the Event.
+The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md) fixes
+dynamic Tribe locations in Event defaults and catches rejected bot Events
+in mixed-player validation.
 **18 of 50 findings are closed (36%); 32 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,

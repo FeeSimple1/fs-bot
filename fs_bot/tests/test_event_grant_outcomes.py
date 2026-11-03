@@ -458,7 +458,8 @@ def test_gobannitio_shaded_never_removes_enemy_citadel_as_ally():
     board = state()
     _ally(board, rc.ARVERNI_REGION, rc.TRIBE_ARVERNI, rc.AEDUI, rc.CITADEL)
     board['event_params'] = {'ally_removals': [rc.TRIBE_ARVERNI]}
-    execute_card_26(board, True)
+    with pytest.raises(ValueError, match="never a Citadel"):
+        execute_card_26(board, True)
     assert count_pieces(board, rc.ARVERNI_REGION, rc.AEDUI, rc.CITADEL) == 1
     assert board['tribes'][rc.TRIBE_ARVERNI]['allied_faction'] == rc.AEDUI
 

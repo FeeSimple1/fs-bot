@@ -408,38 +408,8 @@ def execute_card_2(state, shaded=False):
     Source: Card Reference, card 2
     """
     if not shaded:
-        # Unshaded: Shift Senate up to place 2 Legions in Provincia
-        # Cannot shift if already at Firm Uproar (per Tips)
-        position = state["senate"]["position"]
-        is_firm = state["senate"]["firm"]
-        if position is None:
-            # First-year off-track Senate does not shift, so no Legions can
-            # be placed by this shift-to-place Event.
-            return
-        pos_idx = _SENATE_INDEX[position]
-
-        can_shift = not (pos_idx == 0 and is_firm)  # Not at Firm Uproar
-        if can_shift:
-            _apply_senate_shift(state, SENATE_UP)
-            _event_step(state, "2.legions")
-            # Place up to 2 Legions from track and/or Fallen into Provincia
-            params = state.get("event_params", {})
-            from_track = params.get("legions_from_track", 0)
-            from_fallen = params.get("legions_from_fallen", 0)
-            total = from_track + from_fallen
-            if total > 2:
-                total = 2
-                # Clamp to 2 total
-                from_track = min(from_track, 2)
-                from_fallen = 2 - from_track
-
-            if from_track > 0 and _count_on_legions_track(state) >= from_track:
-                place_piece(state, PROVINCIA, ROMANS, LEGION,
-                            count=from_track, from_legions_track=True)
-            _event_step(state, "2.fallen_legions")
-            if from_fallen > 0 and state.get("fallen_legions", 0) >= from_fallen:
-                place_piece(state, PROVINCIA, ROMANS, LEGION,
-                            count=from_fallen, from_fallen=True)
+        from fs_bot.cards.named_event_effects import execute
+        return execute(state, 2)
     else:
         # Shaded: Free Battle against Romans in a Region. The first Loss
         # removes a Legion automatically if any there. The Battle itself is
@@ -946,37 +916,8 @@ def execute_card_18(state, shaded=False):
     from fs_bot.map.map_data import get_adjacent
     from fs_bot.rules_consts import GERMANIA_REGIONS
     if not shaded:
-        # Unshaded: Remove all Germans from 1 Germania Region under or
-        # adjacent to Roman Control
-        params = state.get("event_params", {})
-        target = params.get("target_region")
-        if target is None:
-            return
-        # Validate target is a Germania Region
-        if target not in GERMANIA_REGIONS:
-            return
-        # Validate target is under or adjacent to Roman Control
-        roman_ctrl = is_controlled_by(state, target, ROMANS)
-        if not roman_ctrl:
-            adj_regions = get_adjacent(target, state.get("scenario"))
-            roman_ctrl = any(
-                is_controlled_by(state, adj, ROMANS) for adj in adj_regions
-            )
-        if not roman_ctrl:
-            return  # Not under or adjacent to Roman Control
-        # Remove all Germanic Warbands (all states)
-        for ps in (HIDDEN, REVEALED, SCOUTED):
-            wbs = count_pieces_by_state(
-                state, target, GERMANS, WARBAND, ps)
-            if wbs > 0:
-                remove_piece(state, target, GERMANS, WARBAND,
-                             count=wbs, piece_state=ps)
-        # Remove all Germanic Allies — pieces and tribes dict together
-        _unally_faction_tribes_in_region(state, target, GERMANS)
-        # Defensive: clear any stray Germanic Ally discs left behind
-        allies = count_pieces(state, target, GERMANS, ALLY)
-        if allies > 0:
-            remove_piece(state, target, GERMANS, ALLY, count=allies)
+        from fs_bot.cards.named_event_effects import execute
+        return execute(state, 18)
     else:
         # Shaded: If any Legion is in or adjacent to a Germania Region,
         # Romans -6 Resources and Ineligible
@@ -1211,39 +1152,8 @@ def execute_card_23(state, shaded=False):
     Source: Card Reference, card 23
     """
     if not shaded:
-        # Unshaded: Place Razed marker on a City at Roman Control
-        params = state.get("event_params", {})
-        target_city = params.get("target_city")
-        if target_city is None:
-            return
-        # Find the region containing this city
-        from fs_bot.rules_consts import CITY_TO_TRIBE, TRIBE_TO_REGION
-        tribe = CITY_TO_TRIBE.get(target_city)
-        if tribe is None:
-            return
-        region = TRIBE_TO_REGION.get(tribe)
-        if region is None:
-            return
-        # Validate: City must be at Roman Control
-        if not is_controlled_by(state, region, ROMANS):
-            return
-        # Place Razed marker (replaces anything at that tribe — "replace
-        # anything" means existing Ally/Citadel/Dispersed at the city)
-        _add_region_marker(state, region, MARKER_RAZED)
-        # +8 Resources to Romans
-        _cap_resources(state, ROMANS, 8)
-        # Update tribe status to mark as Razed/Dispersed
-        if tribe in state.get("tribes", {}):
-            # Remove any existing Ally/Citadel at this tribe — the City
-            # tribe's piece may be a Citadel; piece + tribes dict together.
-            tribe_info = state["tribes"][tribe]
-            _unally_tribe(state, tribe)
-            # Defensive: pair any stray Citadel removal with its tribe entry
-            for fac in GALLIC_FACTIONS:
-                while count_pieces(state, region, fac, CITADEL) > 0:
-                    remove_piece(state, region, fac, CITADEL)
-                    clear_allied_tribe(state, region, fac, CITADEL)
-            tribe_info["status"] = MARKER_RAZED
+        from fs_bot.cards.named_event_effects import execute
+        return execute(state, 23)
     else:
         # Shaded: If a Legion where executing faction's Citadel,
         # remove the Legion to Fallen, Romans Ineligible
@@ -1428,22 +1338,8 @@ def execute_card_26(state, shaded=False):
             tribe_info["allied_faction"] = place_faction
             refresh_all_control(state)
     else:
-        # Shaded: Arverni remove/place Allies in Arverni Region + free Rally
-        params = state.get("event_params", {})
-        # Ally removals/placements handled by caller via event_params
-        removals = params.get("ally_removals", [])
-        for tribe_name in _event_entries(state, "26.removals", removals):
-            # "in Arverni Region" — only tribes that sit there qualify
-            if (_tribe_region(state, tribe_name) == ARVERNI_REGION
-                    and _tribe_piece_type(state, tribe_name) == ALLY):
-                _unally_tribe(state, tribe_name)
-        placements = params.get("ally_placements", [])
-        for tribe_name in _event_entries(state, "26.placements", placements):
-            if _tribe_region(state, tribe_name) == ARVERNI_REGION:
-                _ally_tribe(state, tribe_name, ARVERNI)
-        # Free Rally within 1 Region of Vercingetorix
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_26_arverni_rally"] = True
+        from fs_bot.cards.named_event_effects import execute
+        return execute(state, 26)
 
 def execute_card_27(state, shaded=False):
     """Card 27: Massed Gallic Archers — CAPABILITY (both sides).
@@ -3289,30 +3185,8 @@ def execute_card_A18(state, shaded=False):
     params = state.get("event_params", {})
     scenario = state["scenario"]
     if not shaded:
-        region = params.get("region")
-        if region and region in GERMANIA_REGIONS:
-            leader = get_leader_in_region(state, region, GERMANS)
-            # "...under or adjacent to Roman Control" (A Card Reference A18).
-            roman_near = (is_controlled_by(state, region, ROMANS)
-                          or any(is_controlled_by(state, a, ROMANS)
-                                 for a in get_adjacent(region, scenario)))
-            if leader != ARIOVISTUS_LEADER and roman_near:
-                for ps in (HIDDEN, REVEALED):
-                    c = count_pieces_by_state(state, region, GERMANS,
-                                              WARBAND, ps)
-                    if c > 0:
-                        remove_piece(state, region, GERMANS, WARBAND,
-                                     count=c, piece_state=ps)
-                # German Allies: pieces and tribes dict together (Q13;
-                # external mixed-matrix playtest, defect family 2).
-                _unally_faction_tribes_in_region(state, region, GERMANS)
-                stray = count_pieces(state, region, GERMANS, ALLY)
-                if stray > 0:
-                    remove_piece(state, region, GERMANS, ALLY, count=stray)
-                setl = count_pieces(state, region, GERMANS, SETTLEMENT)
-                if setl > 0:
-                    remove_piece(state, region, GERMANS, SETTLEMENT,
-                                 count=setl)
+        from fs_bot.cards.named_event_effects import execute
+        return execute(state, 'A18')
     else:
         has_legion_near = False
         for g_region in GERMANIA_REGIONS:

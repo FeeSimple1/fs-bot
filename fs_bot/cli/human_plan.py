@@ -1428,6 +1428,10 @@ def _collect_timed_event_entries(state, faction, card_id, shaded, params,
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
+    from fs_bot.cards.named_event_effects import supported as named_effect
+    if named_effect(card_id, shaded):
+        from fs_bot.cli.named_event_effects import collect_params
+        return collect_params(state, faction, card_id, shaded, stdin, stdout)
     if card_id == 65:
         if not shaded:
             return {}

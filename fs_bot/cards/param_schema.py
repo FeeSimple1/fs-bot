@@ -34,7 +34,7 @@ from fs_bot.rules_consts import (
     SENATE_UP, SENATE_DOWN,
     CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER, DIVICIACUS,
     SUCCESSOR,
-    ARVERNI, ARVERNI_REGION, PICTONES, BRITANNIA,
+    ARVERNI, ARVERNI_REGION, PICTONES, BRITANNIA, CITY_TO_TRIBE,
 )
 
 PIECE_TYPES = (WARBAND, AUXILIA, LEGION, ALLY, CITADEL, FORT, LEADER)
@@ -257,6 +257,11 @@ def card_param_schema(card_id, scenario, card_edition=None):
 # violation). Offering/generating only these keeps humans out of dead ends
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
+    2: {"legions_from_track": {"kind": "count"},
+        "legions_from_fallen": {"kind": "count"}},
+    18: {"target_region": {"kind": "region"}},
+    "A18": {"target_region": {"kind": "region"}},
+    23: {"target_city": {"kind": "tribe", "values": tuple(CITY_TO_TRIBE)}},
     65: {"replacements": {"kind": "entries", "allow_empty": True,
         "event_step": "65.replacements", "entry_fields": {
             "region": "region", "piece_type": "piece_type", "piece_state": "piece_state",
@@ -349,7 +354,9 @@ _OVERRIDES = {
     57: {"faction": {"values": ("Romans", "Arverni", "Aedui", "Belgae")}},
     66: {"faction": {"values": tuple(GALLIC_FACTIONS)},
          "moves": {"entry_values": {"piece_type": (WARBAND, LEADER)}}},
-    26: {"place_faction": {"values": (ROMANS, AEDUI)},
+    26: {"ally_removals": {"kind": "list:tribe", "event_step": "26.removals"},
+         "ally_placements": {"kind": "list:tribe", "event_step": "26.placements"},
+         "place_faction": {"values": (ROMANS, AEDUI)},
          "place_type": {"values": (ALLY, CITADEL)}},
     # Card 71 Colony: the colony name must be NEW — never an existing
     # Tribe. Omit it from generated/prompted params; the handler's

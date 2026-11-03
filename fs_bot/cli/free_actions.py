@@ -10,6 +10,9 @@ from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_COMMAND_SA
 
 def collect_free_action(state, faction, request, stdin, stdout):
     """Collect and dry-run a full plan without changing the live board/RNG."""
+    if request.get('request_type') == 'named_event_effect':
+        from fs_bot.cli.named_event_effects import collect_response
+        return collect_response(state, faction, request, stdin, stdout)
     if request.get('request_type') == 'expansion_event_choices':
         from fs_bot.cli.expansion_validation import collect_response
         return collect_response(state, faction, request, stdin, stdout)

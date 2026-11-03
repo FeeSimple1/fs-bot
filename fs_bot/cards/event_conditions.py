@@ -12,6 +12,9 @@ from fs_bot import rules_consts as rc
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    from fs_bot.cards.named_event_effects import supported as named_supported, np_available as named_available
+    if named_supported(card_id, shaded) and card_id != 26:
+        return named_available(state, card_id)
     if card_id == 65 and shaded:
         from fs_bot.cards.german_allegiances import np_available
         return np_available(state, faction)
@@ -133,7 +136,8 @@ def _available(trial, card_id, faction, shaded):
         before_allies = sum(count_pieces(trial, region, rc.BELGAE, piece)
                             for region in trial['spaces'] for piece in (rc.ALLY, rc.CITADEL))
         derive = derive_gobannitio if card_id == 26 else derive_correus
-        trial['event_params'] = derive(trial, faction, shaded) or {}
+        trial['event_params'] = ({} if card_id == 26 and shaded
+                                 else derive(trial, faction, shaded) or {})
         if not trial['event_params'] and not shaded:
             return False
         trial['executing_faction'] = faction

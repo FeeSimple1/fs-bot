@@ -144,6 +144,13 @@ def _explicit_sentinel(response, key):
 
 def validate_free_action_response(state, faction, request, response):
     """Return a useful validation error, or None for a legal explicit response."""
+    if request.get('request_type') == 'named_event_effect':
+        from fs_bot.cards.named_event_effects import validate_response
+        try:
+            validate_response(state, faction, request, response)
+        except (ValueError, TypeError, KeyError, IndexError, AttributeError, CommandError, PieceError) as exc:
+            return str(exc)
+        return None
     if request.get('request_type') == 'decisive_battle':
         from fs_bot.cards.decisive_battle import validate_response
         return validate_response(state, faction, request, response)

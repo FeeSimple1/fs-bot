@@ -5623,6 +5623,10 @@ def _derive_event_params(state, faction, card_id, shaded):
     per-card workstream; those remain reported as 'needs parameters' rather
     than guessed.
     """
+    from fs_bot.cards.named_event_effects import supported as named_supported
+    if named_supported(card_id, shaded):
+        from fs_bot.cards.named_event_effects import derive_params
+        return derive_params(state, faction, card_id)
     if card_id == 47:
         # Every NP sheet declines Council. Do not preselect its human executor's
         # Region or guests; missing selections are requested during resolution.

@@ -1780,7 +1780,7 @@ def _resolve_free_actions_scoped(state, faction):
         results.extend(_resolve_card67_arduenna(state, faction))
     if mods.get("card_A5_remove_non_romans"):
         _event_step(state, "grant.card_A5_remove_non_romans")
-        results.extend(_resolve_card_A5_evict(state))
+        results.extend(_resolve_card_A5_evict(state, faction))
     if mods.get("card_A37_place_allies_move"):
         _event_step(state, "grant.card_A37_place_allies_move")
         results.extend(_resolve_card_A37_move(state, faction))
@@ -1859,60 +1859,10 @@ def _resolve_card_A45_intimidate(state):
     return [{"free_action": "intimidate", "flag": "card_A45", "result": result}]
 
 
-def _resolve_card_A5_evict(state):
-    """Card A5 Gallia Togata (unshaded): only Romans may stack in Cisalpina, so
-    non-Roman pieces there move to a Home Region of their Faction (or are
-    removed if none is available)."""
-    from fs_bot.rules_consts import (CISALPINA, ARVERNI, AEDUI, BELGAE, GERMANS,
-        LEADER, LEGION, AUXILIA, WARBAND, HIDDEN, REVEALED, SCOUTED, ARIOVISTUS_SCENARIOS,
-        ARVERNI_HOME_REGIONS_BASE, ARVERNI_HOME_REGIONS_ARIOVISTUS,
-        AEDUI_HOME_REGIONS, BELGAE_HOME_REGIONS,
-        GERMAN_HOME_REGIONS_BASE)
-    from fs_bot.board.pieces import (count_pieces, count_pieces_by_state,
-        get_leader_in_region, move_piece, remove_piece)
-    from fs_bot.board.control import refresh_all_control
-    from fs_bot.map.map_data import get_playable_regions
-    scen = state["scenario"]
-    ario = scen in ARIOVISTUS_SCENARIOS
-    homes = {
-        ARVERNI: (ARVERNI_HOME_REGIONS_ARIOVISTUS if ario
-                  else ARVERNI_HOME_REGIONS_BASE),
-        AEDUI: AEDUI_HOME_REGIONS, BELGAE: BELGAE_HOME_REGIONS,
-        GERMANS: GERMAN_HOME_REGIONS_BASE,
-    }
-    playable = set(get_playable_regions(scen, state.get("capabilities")))
-    moved, removed = [], []
-    for fac in (ARVERNI, AEDUI, BELGAE, GERMANS):
-        dest = next((h for h in homes.get(fac, ()) if h in playable
-                     and h != CISALPINA), None)
-        # Leader
-        if get_leader_in_region(state, CISALPINA, fac) is not None:
-            if dest:
-                move_piece(state, CISALPINA, dest, fac, LEADER)
-                moved.append((fac, LEADER, dest))
-            else:
-                remove_piece(state, CISALPINA, fac, LEADER); removed.append((fac, LEADER))
-        leg = count_pieces(state, CISALPINA, fac, LEGION)
-        if leg:
-            (move_piece(state, CISALPINA, dest, fac, LEGION, count=leg) if dest
-             else remove_piece(state, CISALPINA, fac, LEGION, count=leg))
-        for pt in (AUXILIA, WARBAND):
-            for ps in (HIDDEN, REVEALED, SCOUTED):
-                n = count_pieces_by_state(state, CISALPINA, fac, pt, ps)
-                if n <= 0:
-                    continue
-                if dest:
-                    move_piece(state, CISALPINA, dest, fac, pt, count=n,
-                               piece_state=ps)
-                    moved.append((fac, pt, dest))
-                else:
-                    remove_piece(state, CISALPINA, fac, pt, count=n,
-                                 piece_state=ps)
-                    removed.append((fac, pt))
-    refresh_all_control(state)
-    return [{"free_action": "evict_cisalpina", "flag": "card_A5",
-             "moved": moved, "removed": removed,
-             "executed": bool(moved or removed)}]
+def _resolve_card_A5_evict(state, faction):
+    """A5: executor orders owners; each owner relocates or removes its pieces."""
+    from fs_bot.cards.gallia_evacuation import resolve
+    return resolve(state, faction)
 
 
 def _resolve_card_A37_move(state, faction):

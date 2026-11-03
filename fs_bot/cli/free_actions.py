@@ -10,6 +10,9 @@ from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_COMMAND_SA
 
 def collect_free_action(state, faction, request, stdin, stdout):
     """Collect and dry-run a full plan without changing the live board/RNG."""
+    if request.get('request_type') in ('gallia_evacuation', 'gallia_evacuation_order'):
+        from fs_bot.cli.gallia_evacuation import collect_evacuation
+        return collect_evacuation(state, faction, request, stdin, stdout)
     if request.get("request_type") in ("arduenna_faction", "arduenna_accept"):
         from fs_bot.cli.arduenna import collect_faction
         return collect_faction(state, faction, request, stdin, stdout)

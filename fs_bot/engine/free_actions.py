@@ -192,6 +192,13 @@ def validate_free_action_response(state, faction, request, response):
     if decline or use_default:
         return None
     try:
+        if request.get('request_type') in ('gallia_evacuation', 'gallia_evacuation_order'):
+            from fs_bot.cards.gallia_evacuation import validate_order, validate_response
+            if request['request_type'] == 'gallia_evacuation_order':
+                validate_order(state, response)
+            else:
+                validate_response(state, faction, response)
+            return None
         if request.get("request_type", "").startswith("arduenna_"):
             from fs_bot.cards.arduenna import validate_response
             validate_response(state, faction, request, response)

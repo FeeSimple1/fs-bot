@@ -440,16 +440,17 @@ def seize_rally_roll(state, faction):
 # ============================================================================
 
 def seize_in_region(state, region, tribes_to_disperse=None,
-                    as_if_control=False, *, rally_resolver=None):
+                    as_if_control=False, *, rally_resolver=None, no_rally=False):
     """Resolve one atomic Region; the driver supplies reactive free Rallies."""
     from fs_bot.engine.spring import atomic
     with atomic(state):
         return _seize_in_region(state, region, tribes_to_disperse,
-                                as_if_control, rally_resolver=rally_resolver)
+                                as_if_control, rally_resolver=rally_resolver,
+                                no_rally=no_rally)
 
 
 def _seize_in_region(state, region, tribes_to_disperse=None,
-                     as_if_control=False, *, rally_resolver=None):
+                     as_if_control=False, *, rally_resolver=None, no_rally=False):
     """Execute Seize in a single region.
 
     Each successful Rally roll is resolved through the driver's callback
@@ -540,7 +541,7 @@ def _seize_in_region(state, region, tribes_to_disperse=None,
     # Determine which factions roll based on scenario
     rally_factions = _get_seize_rally_factions(scenario)
 
-    for tribe in result["tribes_dispersed"]:
+    for tribe in ([] if no_rally else result["tribes_dispersed"]):
         tribe_rally_info = {"tribe": tribe, "rolls": []}
         for faction in rally_factions:
             from fs_bot.engine.action_windows import window

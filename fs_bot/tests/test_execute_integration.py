@@ -1573,13 +1573,15 @@ def test_free_battle_and_seize_a58():
     assert validate_state(st) == []
 
 
-def test_free_battle_only_for_romans_a58():
-    """A58's free Battle+Seize is Roman-only; a non-Roman actor no-ops it."""
+def test_free_battle_and_seize_roman_beneficiary_for_other_executor_a58():
+    """A58 grants the Romans their actions regardless of Event executor."""
     from fs_bot.engine.execute import _resolve_a58_battle_seize
     from fs_bot.state.setup import setup_scenario
     from fs_bot.rules_consts import SCENARIO_ARIOVISTUS, BELGAE
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=5)
-    assert _resolve_a58_battle_seize(st, BELGAE) == []
+    results = _resolve_a58_battle_seize(st, BELGAE)
+    assert [row['free_action'] for row in results] == ['battle', 'seize']
+    assert results[-1]['result']['executed']
 
 
 def test_free_march_command_a67_german():

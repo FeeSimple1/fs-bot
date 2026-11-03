@@ -3420,37 +3420,18 @@ def execute_card_A19(state, shaded=False):
 def execute_card_A20(state, shaded=False):
     """Card A20: Morbihan — Veneti operations.
 
-    Unshaded: If Romans within 1 of Veneti, remove all Arverni from
-    Veneti and free Seize there.
+    Unshaded: If Romans within 1 of Veneti, they may remove all Arverni
+    from Veneti and free Seize there as if Control, without Rally rolls.
     Shaded: If Veneti Arverni Ally, Arverni Ambush Romans near Veneti.
 
     Source: A Card Reference, card A20
     """
-    from fs_bot.rules_consts import VENETI, TRIBE_VENETI
-    from fs_bot.map.map_data import get_adjacent
-    scenario = state["scenario"]
     if not shaded:
-        has_romans = False
-        regions_near = [VENETI] + list(get_adjacent(VENETI, scenario))
-        for r in regions_near:
-            if count_pieces(state, r, ROMANS) > 0:
-                has_romans = True
-                break
-        if has_romans:
-            # Remove all Arverni from Veneti — Allied tribes first
-            # (pieces + tribes dict together), then any strays
-            _unally_faction_tribes_in_region(state, VENETI, ARVERNI)
-            for pt in (ALLY, CITADEL):
-                while count_pieces(state, VENETI, ARVERNI, pt) > 0:
-                    remove_piece(state, VENETI, ARVERNI, pt)
-                    clear_allied_tribe(state, VENETI, ARVERNI, pt)
-            for ps in (HIDDEN, REVEALED, SCOUTED):
-                c = count_pieces_by_state(state, VENETI, ARVERNI, WARBAND, ps)
-                if c > 0:
-                    remove_piece(state, VENETI, ARVERNI, WARBAND,
-                                 count=c, piece_state=ps)
-            state.setdefault("event_modifiers", {})
-            state["event_modifiers"]["card_A20_free_seize_veneti"] = True
+        from fs_bot.cards.roman_event_grants import accepts_morbihan
+        if accepts_morbihan(state):
+            # "they may remove ... and free Seize": Romans decide before
+            # either component, regardless of the Event's executing Faction.
+            state.setdefault("event_modifiers", {})["card_A20_free_seize_veneti"] = True
     else:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A20_arverni_ambush"] = True
@@ -4479,8 +4460,8 @@ def execute_card_A57(state, shaded=False):
 def execute_card_A58(state, shaded=False):
     """Card A58: Aduatuci — Roman Battle+Seize / Replace Roman pieces.
 
-    Unshaded: Romans free Battle anywhere in Belgica, then free Seize
-    in Belgica as if Roman Control.
+    Unshaded: Romans may free Battle anywhere in Belgica, then free Seize
+    in Belgica as if Roman Control, without Harassment or enemy Rally.
     Shaded: In 1 Belgica Region, replace 1 Roman Ally and 3 Auxilia
     with yours, free Ambush Romans.
 

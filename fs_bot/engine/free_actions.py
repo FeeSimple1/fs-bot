@@ -95,11 +95,12 @@ def execute_free_action_plan(state, faction, request, action):
     """Execute a validated concrete plan, retaining its human SA timing."""
     from fs_bot.engine import execute as ex
     from fs_bot.engine.march_choices import chooser_scope
+    from fs_bot.cards.roman_event_grants import seize_scope
     from fs_bot.rules_consts import CMD_BATTLE
     # The request is an engine-owned grant. Responses cannot change its actor.
     chooser = faction
     faction = request.get('acting_faction', faction)
-    with chooser_scope(state, faction, chooser), free_action_scope(state, faction), rally_event_scope(
+    with seize_scope(state, request), chooser_scope(state, faction, chooser), free_action_scope(state, faction), rally_event_scope(
             state, faction, as_if_control=request.get('as_if_control', False),
             allow_devastated=request.get('allow_devastated', False),
             regions=request.get('allowed_regions')):
@@ -152,6 +153,15 @@ def validate_free_action_response(state, faction, request, response):
     use_default = _explicit_sentinel(response, 'use_default')
     if (set(response) & {'decline', 'use_default'}) and not (decline or use_default):
         return 'Decline or use_default must be a single field set to boolean true.'
+    if request.get('request_type') == 'roman_event_accept':
+        if decline or use_default:
+            return None
+        from fs_bot.cards.roman_event_grants import validate_accept
+        try:
+            validate_accept(response)
+        except ValueError as exc:
+            return str(exc)
+        return None
     if request.get('request_type') == 'impetuosity_enemy_battle':
         if use_default:
             return None
@@ -164,6 +174,12 @@ def validate_free_action_response(state, faction, request, response):
             return 'Impetuosity requires an adjacent March when one is possible.'
     if decline and not request.get('allow_decline', True):
         return 'This follow-on action must be carried out when possible.'
+    if use_default and request.get('roman_event_card'):
+        from fs_bot.cards.roman_event_grants import validate_default
+        try:
+            validate_default(state, request)
+        except ValueError as exc:
+            return str(exc)
     if decline or use_default:
         return None
     try:
@@ -171,6 +187,12 @@ def validate_free_action_response(state, faction, request, response):
             from fs_bot.cards.procillus import validate_march
             validate_march(state, response)
             return None
+        if request.get('roman_event_card'):
+            from fs_bot.cards.roman_event_grants import validate_cooperation
+            validate_cooperation(request, response)
+        if request.get('request_type') == 'roman_event_seize':
+            from fs_bot.cards.roman_event_grants import validate_seize_plan
+            validate_seize_plan(state, request, response)
         if request.get("request_type") == "impetuosity_unshaded_march":
             from fs_bot.cards.impetuosity_unshaded import validate_march
             validate_march(state, faction, response)
@@ -297,7 +319,9 @@ def _validate_plan(state, faction, request, action):
     if required and required not in merged:
         return f'Supply an explicit {required}.'
     if any(k in details for k in ('no_retreat', 'force_retreat', 'allied_factions',
-                                  'warband_full_loss', 'transfers')):
+                                  'warband_full_loss', 'transfers', 'as_if_control',
+                                  'no_harassment', 'no_rally', 'seize_no_rally',
+                                  'seize_no_harassment', 'seize_as_if_control')):
         return 'The plan includes effects not granted by this Event.'
     destinations = request.get('required_destinations')
     if cmd == 'March' and destinations is not None:

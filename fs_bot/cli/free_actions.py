@@ -16,6 +16,15 @@ def collect_free_action(state, faction, request, stdin, stdout):
     if request.get('request_type') == 'decisive_battle':
         from fs_bot.cli.decisive_battle import collect_battle
         return collect_battle(state, faction, request, stdin, stdout)
+    if request.get('request_type') == 'roman_event_accept':
+        from fs_bot.cli.roman_event_grants import collect_accept
+        return collect_accept(state, faction, request, stdin, stdout)
+    if request.get('request_type') == 'roman_event_seize':
+        from fs_bot.cli.roman_event_grants import collect_seize
+        return collect_seize(state, faction, request, stdin, stdout)
+    if request.get('request_type') == 'roman_event_battle':
+        from fs_bot.cli.roman_event_grants import collect_battle
+        return collect_battle(state, faction, request, stdin, stdout)
     if request.get("request_type") == "impetuosity_unshaded_march":
         from fs_bot.cli.impetuosity_unshaded import collect_march
         return collect_march(state, faction, request, stdin, stdout)

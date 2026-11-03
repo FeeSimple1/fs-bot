@@ -1515,7 +1515,10 @@ class TestAuditConditionFixes:
         st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
         # Romans present but NOT controlling Veneti (Belgae outnumber them).
         place_piece(st, VENETI, ROMANS, AUXILIA, count=1)
-        place_piece(st, VENETI, BELGAE, WARBAND, count=4)
+        # Revealed opposition denies Control without triggering the Roman
+        # NP prohibition on Seize where Harassment would cause Losses.
+        from fs_bot.rules_consts import REVEALED
+        place_piece(st, VENETI, BELGAE, WARBAND, count=4, piece_state=REVEALED)
         # A Subdued Tribe in Veneti.
         st["tribes"]["Veneti"]["allied_faction"] = None
         st["tribes"]["Veneti"]["status"] = None

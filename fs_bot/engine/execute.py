@@ -1577,9 +1577,8 @@ def _resolve_free_actions_scoped(state, faction):
         from fs_bot.cards.decisive_battle import resolve_decisive_battle
         results.extend(resolve_decisive_battle(state, faction, flag))
 
-    # A58 Aduatuci (unshaded): Romans free Battle anywhere in Belgica, then
-    # free Seize in Belgica "as if Roman Control, with no Harassment" — the
-    # Seize Disperses regardless of actual Control and skips Harassment.
+    # A58's optional compound benefit belongs to Romans, whoever played it.
+    # Its Seize treats Control as Roman and suppresses Harassment/Rally.
     if mods.get("card_A58_roman_battle_seize"):
         _event_step(state, "grant.card_A58_roman_battle_seize")
         results.extend(_resolve_a58_battle_seize(state, faction))
@@ -3121,38 +3120,9 @@ def _resolve_card6_scout_battle(state):
 
 
 def _resolve_a20_free_seize(state):
-    """A20 Morbihan (unshaded): after the Arverni are removed from Veneti, the
-    Romans free Seize there (§3.2.3 — Forage; Disperse Subdued Tribes only
-    where Roman-Controlled). The Seize belongs to the Romans by the card text,
-    so it is executed for the Romans regardless of which Faction played the
-    Event. If the Romans hold no pieces in Veneti, Seize is not possible there
-    and this no-ops (validate_seize_region, §3.2.3).
-
-    A20 shaded (Arverni Ambush near Veneti) is handled separately by
-    _resolve_a20_arverni_ambush. (The Arverni are NOT a player Faction in
-    Ariovistus: per available_forces_ariovistus.txt and A6.2 they are
-    game-run via the Arverni Phase, like the base game's Germans, with
-    mechanical Battle-with-Ambush per A6.2.4.)
-    """
-    from fs_bot.rules_consts import ROMANS, VENETI
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.board.control import is_controlled_by
-    if count_pieces(state, VENETI, ROMANS) <= 0:
-        return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
-                 "executed": False, "declined_no_effect": True,
-                 "reason": "Romans have no pieces in Veneti"}]
-    # Card A20: "free Seize there as if Roman Control" — Disperse Veneti's
-    # Subdued Tribes regardless of actual Control.
-    try:
-        res = _execute_seize(state, ROMANS, {
-            "command": _CMD_SEIZE, "sa": SA_ACTION_NONE_LABEL,
-            "regions": [VENETI], "details": {"disperse_regions": [VENETI],
-                                             "as_if_control": True}})
-    except _EXEC_ERRORS as exc:
-        return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
-                 "executed": False, "reason": repr(exc)}]
-    return [{"free_action": "seize", "flag": "card_A20_free_seize_veneti",
-             "region": VENETI, "result": res}]
+    """A20: Romans may accept removal of all Arverni and the scoped Seize."""
+    from fs_bot.cards.roman_event_grants import resolve
+    return resolve(state, 'A20')
 
 
 def _resolve_a20_arverni_ambush(state):
@@ -3403,50 +3373,9 @@ def _resolve_a67_arduenna(state, faction):
 
 
 def _resolve_a58_battle_seize(state, faction):
-    from fs_bot.rules_consts import ROMANS, BELGICA_REGIONS
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.board.control import is_controlled_by
-    out = []
-    if faction != ROMANS:
-        return out
-    belgica = set(BELGICA_REGIONS)
-    # Free Battle in Belgica (Retreat allowed — the card sets no no-Retreat).
-    action = _plan_free_battle_command(state, faction, belgica)
-    if action is not None:
-        chosen = action["details"]["battle_plan"][0]
-        region, defender = chosen["region"], chosen["target"]
-        try:
-            res = _execute_battle(state, faction, action)
-            out.append({"free_action": "battle", "flag":
-                        "card_A58_roman_battle_seize", "region": region,
-                        "defender": defender, "result": res})
-        except _EXEC_ERRORS as exc:
-            out.append({"free_action": "battle",
-                        "flag": "card_A58_roman_battle_seize",
-                        "executed": False, "reason": repr(exc)})
-    # Free Seize in Belgica Regions where Romans have pieces; Disperse where
-    # Roman-Controlled (get_dispersible_tribes enforces the cap/Control).
-    from fs_bot.cards.card_effects import _event_step
-    _event_step(state, "A58.seize")
-    seize_regions = [r for r in BELGICA_REGIONS
-                     if count_pieces(state, r, ROMANS) > 0]
-    if seize_regions:
-        # "as if Roman Control, with no Harassment": Disperse every Seize
-        # Region's Subdued Tribes regardless of actual Control, no Harassment.
-        try:
-            sres = _execute_seize(state, faction, {
-                "command": _CMD_SEIZE, "sa": SA_ACTION_NONE_LABEL,
-                "regions": seize_regions,
-                "details": {"disperse_regions": seize_regions,
-                            "as_if_control": True, "no_harassment": True}})
-            out.append({"free_action": "seize",
-                        "flag": "card_A58_roman_battle_seize",
-                        "regions": seize_regions, "result": sres})
-        except _EXEC_ERRORS as exc:
-            out.append({"free_action": "seize",
-                        "flag": "card_A58_roman_battle_seize",
-                        "executed": False, "reason": repr(exc)})
-    return out
+    """A58: the Roman beneficiary chooses, whoever executed the Event."""
+    from fs_bot.cards.roman_event_grants import resolve
+    return resolve(state, 'A58')
 
 
 def _execute_event(state, faction, bot_action, *, human=False):
@@ -3562,12 +3491,15 @@ def _execute_seize(state, faction, bot_action):
     forage_total = 0
     errors = []
 
-    as_if_control = bool(details.get("as_if_control"))
-    no_harassment = bool(details.get("no_harassment"))
+    from fs_bot.cards.roman_event_grants import seize_flags, SEIZE_GRANT
+    exact_tribes = details.get("disperse_tribes") if state.get(SEIZE_GRANT) else None
     for index, region in enumerate(regions):
+        as_if_control, no_rally, no_harassment = seize_flags(state, region)
         _timing_plan_step(state, faction, bot_action, 'seize_region',
                           index=index, region=region)
-        if region in disperse_regions:
+        if exact_tribes is not None:
+            tribes = exact_tribes.get(region, [])
+        elif region in disperse_regions:
             tribes = get_dispersible_tribes(state, region,
                                             as_if_control=as_if_control)
         else:
@@ -3575,12 +3507,14 @@ def _execute_seize(state, faction, bot_action):
         try:
             res = seize_in_region(state, region, tribes_to_disperse=tribes,
                                   as_if_control=as_if_control,
-                                  rally_resolver=_resolve_seize_rally)
+                                  rally_resolver=_resolve_seize_rally, no_rally=no_rally)
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "error": str(exc)})
             continue
         dispersed_total += len(res.get("tribes_dispersed", []))
         forage_total += res.get("forage_resources", 0)
+        if no_harassment:
+            res['harassment_opportunities'] = []
         # Harassment against the seizing Romans — §3.2.3 / §8.4.2 (suppressed
         # when the card grants Seize "with no Harassment", e.g. A58).
         harass = None if no_harassment else _resolve_seize_harassment(state, region)

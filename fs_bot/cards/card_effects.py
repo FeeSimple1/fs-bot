@@ -4688,18 +4688,8 @@ def execute_card_A67(state, shaded=False):
     state.setdefault("event_modifiers", {})
     state["event_modifiers"]["card_A67_arduenna"] = True
     state["event_modifiers"]["card_A67_target_regions"] = [NERVII, TREVERI]
-    # Flip Hidden deferred, but handle if provided
-    faction = state.get("executing_faction")
-    params = state.get("event_params", {})
-    flip_regions = params.get("flip_hidden_regions", [])
-    for region in _event_entries(state, "A67.hiding", flip_regions):
-        if region in (NERVII, TREVERI) and faction:
-            for piece_type in (AUXILIA, WARBAND):
-                revealed = count_pieces_by_state(
-                    state, region, faction, piece_type, REVEALED)
-                if revealed > 0:
-                    flip_piece(state, region, faction, piece_type, revealed,
-                               from_state=REVEALED, to_state=HIDDEN)
+    # The beneficiary's March and Command resolve first. Ignore the legacy
+    # flip_hidden_regions parameter: final hiding is compulsory and deferred.
 
 def execute_card_A69(state, shaded=False):
     """Card A69: Bellovaci — Remove/place at Bellovaci.

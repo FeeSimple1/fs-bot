@@ -115,7 +115,9 @@ def _march_routes(state, origin, faction, group=None):
             path = route + [region]
             if required is None or region in required:
                 routes.append(path)
-            if not outcome['stopped_reason'] and not (required is not None and region in required):
+            if not outcome['stopped_reason'] and not (
+                    required is not None and region in required
+                    and not state.get('_cli_arduenna_transit')):
                 visit(sim, region, path)
     visit(state, origin, [])
     return sorted(routes, key=lambda path: (len(path), path))

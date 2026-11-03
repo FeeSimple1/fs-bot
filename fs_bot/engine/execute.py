@@ -610,6 +610,9 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
         _CMD_RECRUIT: _execute_recruit, _CMD_MARCH: _execute_march,
     }
     h = handlers.get(cmd)
+    if (_human_grant or {}).get('request_type') == 'arduenna_march':
+        from fs_bot.cards.arduenna_march import execute_march
+        h = handlers[_CMD_MARCH] = execute_march
     if h is None:
         return None
     from fs_bot.commands.sa_enlist import is_borrow_plan
@@ -634,7 +637,7 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
                 completed_sa_result=sa_result if before or continuation else None)
         selected_command = chosen.get('command', cmd)
         if selected_command == _CMD_MARCH:
-            result = _execute_march(state, faction, chosen, free=True)
+            result = handlers[_CMD_MARCH](state, faction, chosen, free=True)
         elif selected_command == _CMD_RECRUIT and _human_grant is not None:
             result = _execute_recruit(state, faction, chosen, _exact=True)
         else:
@@ -1583,15 +1586,9 @@ def _resolve_free_actions_scoped(state, faction):
         _event_step(state, "grant.card_A58_roman_battle_seize")
         results.extend(_resolve_a58_battle_seize(state, faction))
     if mods.get("card_A67_arduenna"):
-        # A67 = base 67 effect, "updated to allow German use" (A Card Ref). A
-        # non-German actor (Be/Ae/Ro) uses the faction-agnostic base resolver;
-        # the German path has its own (March-to-Control + Battle + flip Hidden).
         _event_step(state, "grant.card_A67_arduenna")
-        from fs_bot.rules_consts import GERMANS as _G67
-        if faction == _G67:
-            results.extend(_resolve_a67_arduenna(state, faction))
-        else:
-            results.extend(_resolve_card67_arduenna(state, faction))
+        from fs_bot.cards.arduenna import resolve
+        results.extend(resolve(state, faction))
     if mods.get("card_A20_free_seize_veneti"):
         _event_step(state, "grant.card_A20_free_seize_veneti")
         results.extend(_resolve_a20_free_seize(state))
@@ -3239,47 +3236,11 @@ def _resolve_a67_arduenna(state, faction):
     out = []
     if faction != GERMANS:
         return out
-    priority = (ROMANS, AEDUI, BELGAE)
-
-    def other_forces(region):
-        return sum(count_pieces(state, region, other)
-                   for other in FACTIONS if other != GERMANS)
-
-    def safe_group(origin):
-        warbands = count_pieces(state, origin, GERMANS, WARBAND)
-        leader = get_leader_in_region(state, origin, GERMANS)
-        movable = warbands + int(leader is not None)
-        if is_controlled_by(state, origin, GERMANS):
-            # Control requires strictly more than ALL other Forces combined.
-            # Structures can retain Control without leaving a Warband behind.
-            movable = min(movable, max(0,
-                count_pieces(state, origin, GERMANS) - other_forces(origin) - 1))
-        moving_leader = leader if movable > 0 else None
-        return {LEADER: moving_leader,
-                WARBAND: min(warbands, movable - int(moving_leader is not None))}
-
-    candidates = []
-    for region in (NERVII, TREVERI):
-        defender = next((pf for pf in priority
-                         if count_pieces(state, region, pf) > 0), None)
-        if defender is None:
-            continue
-        moves = []
-        gathered = count_pieces(state, region, GERMANS)
-        for origin in get_adjacent(region, state['scenario']):
-            group = safe_group(origin)
-            if not _group_has_pieces(group):
-                continue
-            moves.append((origin, group))
-            gathered += group[WARBAND] + int(group[LEADER] is not None)
-        if gathered > other_forces(region):
-            candidates.append((region, defender, moves))
-    if not candidates:
+    from fs_bot.cards.arduenna import german_plan
+    selected = german_plan(state)
+    if selected is None:
         return out
-    first_priority = min(priority.index(candidate[1]) for candidate in candidates)
-    target, defender, moves = random_select(state, [
-        candidate for candidate in candidates
-        if priority.index(candidate[1]) == first_priority])
+    target, defender, moves = selected
 
     marched = []
     for origin, group in moves:
@@ -4420,7 +4381,8 @@ def _flip_selected_march_group(state, faction, origin, group):
 
 def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
                            harassers_by_region=None, dropoffs_by_region=None,
-                           flipped_origins=None, moving_only=False):
+                           flipped_origins=None, moving_only=False,
+                           initial_group=None):
     """March a faction's mobile group origin -> ... -> path[-1], one step
     at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
     enters and then leaves. Returns the final Region reached.
@@ -4439,8 +4401,13 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
     # join a March mid-route; Harassment only hits the marching group.
     from fs_bot.engine.action_windows import window
     from fs_bot.engine.march_timing import window as group_window
-    window(state, 'march_origin', region=origin, marching_faction=faction)
-    group = _mobile_march_group(state, faction, origin)
+    if initial_group is None:
+        window(state, 'march_origin', region=origin, marching_faction=faction)
+    # Trusted Event-owned initial cohorts (A67) cannot absorb later arrivals.
+    # Response data never reaches this parameter directly.
+    from copy import deepcopy
+    group = (deepcopy(initial_group) if initial_group is not None
+             else _mobile_march_group(state, faction, origin))
     if group_cap is not None:
         from fs_bot.rules_consts import LEADER as _LDR
         capped = {}
@@ -4453,7 +4420,14 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
         if "german_warbands" in group_cap:
             group["german_warbands"] = group_cap["german_warbands"]
     from fs_bot.commands.march import _max_steps_for_group, _validate_group_in_region
-    if len(path) > _max_steps_for_group(state, origin, faction, group):
+    if initial_group is not None:
+        group_window(state, faction, origin, group, 'march_origin', origin=origin)
+        # A voluntary removal can eliminate the selected Leader or whole group.
+        # The already legal route stops with its surviving original members.
+        if not _group_has_pieces(group):
+            return origin
+        path = path[:_max_steps_for_group(state, origin, faction, group)]
+    elif len(path) > _max_steps_for_group(state, origin, faction, group):
         raise CommandError("March route exceeds this group's movement allowance")
     _validate_group_in_region(state, origin, faction, group)
     # Validate the whole group's route before changing any visibility state.
@@ -4466,7 +4440,7 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
             _flip_origin_pieces(state, origin, faction)
             if flipped_origins is not None:
                 flipped_origins.add(origin)
-        if path:
+        if path and initial_group is None:
             from fs_bot.engine.march_choices import select_origin_visibility
             select_origin_visibility(state, faction, origin, group)
     current = origin

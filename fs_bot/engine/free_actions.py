@@ -186,9 +186,16 @@ def validate_free_action_response(state, faction, request, response):
             validate_bellovaci_default(state)
         except ValueError as exc:
             return str(exc)
+    if use_default and request.get('request_type') in ('arduenna_march', 'arduenna_command'):
+        from fs_bot.cards.arduenna import validate_default
+        return validate_default(state, faction, request)
     if decline or use_default:
         return None
     try:
+        if request.get("request_type", "").startswith("arduenna_"):
+            from fs_bot.cards.arduenna import validate_response
+            validate_response(state, faction, request, response)
+            return None
         if request.get("request_type") == "procillus_march":
             from fs_bot.cards.procillus import validate_march
             validate_march(state, response)

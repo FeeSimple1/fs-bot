@@ -10,6 +10,9 @@ from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_COMMAND_SA
 
 def collect_free_action(state, faction, request, stdin, stdout):
     """Collect and dry-run a full plan without changing the live board/RNG."""
+    if request.get("request_type") in ("arduenna_faction", "arduenna_accept"):
+        from fs_bot.cli.arduenna import collect_faction
+        return collect_faction(state, faction, request, stdin, stdout)
     if request.get("request_type") == "procillus_march":
         from fs_bot.cli.procillus import collect_march
         return collect_march(state, faction, request, stdin, stdout)
@@ -56,8 +59,16 @@ def collect_free_action(state, faction, request, stdin, stdout):
             options.append(("Decline", "decline"))
         choice = prompt_choice(stdin, stdout, message, options)
         if choice != "plan":
-            return {"use_default" if choice == "default" else "decline": True}
+            response = {"use_default" if choice == "default" else "decline": True}
+            if request.get('validate_default_response'):
+                error = validate_free_action_response(state, faction, request, response)
+                if error:
+                    stdout.write(f'Cannot use this default: {error}\n')
+                    continue
+            return response
         planning = _planning_copy(state)
+        if request.get('request_type') == 'arduenna_march':
+            planning['_cli_arduenna_transit'] = True
         with free_action_scope(planning, actor), rally_event_scope(
                 planning, actor,
                 as_if_control=request.get("as_if_control", False),

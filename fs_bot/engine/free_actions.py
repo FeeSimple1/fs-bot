@@ -180,6 +180,12 @@ def validate_free_action_response(state, faction, request, response):
             validate_default(state, request)
         except ValueError as exc:
             return str(exc)
+    if use_default and request.get('request_type') == 'bellovaci_ambush':
+        from fs_bot.cards.harudes_bellovaci import validate_bellovaci_default
+        try:
+            validate_bellovaci_default(state)
+        except ValueError as exc:
+            return str(exc)
     if decline or use_default:
         return None
     try:
@@ -193,6 +199,12 @@ def validate_free_action_response(state, faction, request, response):
         if request.get('request_type') == 'roman_event_seize':
             from fs_bot.cards.roman_event_grants import validate_seize_plan
             validate_seize_plan(state, request, response)
+        if request.get('request_type') in ('harudes_raid', 'bellovaci_ambush'):
+            from fs_bot.cards.harudes_bellovaci import validate_harudes, validate_bellovaci
+            validator = (validate_harudes if request['request_type'] == 'harudes_raid'
+                         else validate_bellovaci)
+            validator(state, request, response)
+            return None
         if request.get("request_type") == "impetuosity_unshaded_march":
             from fs_bot.cards.impetuosity_unshaded import validate_march
             validate_march(state, faction, response)

@@ -84,7 +84,13 @@ def resolve_raid_intimidate(state, region, raiders):
         return None
     request = {'kind': RAID_INTIMIDATE, 'region': region, 'raiders': raiders,
                'max_removals': min(2, raiders), 'targets': target_options(state, region)}
-    response = consult_agent(state, GERMANS, request)
+    # A29's executor directs the granted Raid, including its offensive
+    # intrinsic Intimidate (§5.1, A3.4.3); physical pieces stay German.
+    from fs_bot.cards.harudes_bellovaci import RAID_CHOOSER
+    chooser = state.get(RAID_CHOOSER, GERMANS)
+    if chooser != GERMANS:
+        request['acting_faction'] = GERMANS
+    response = consult_agent(state, chooser, request)
     if response is None or response == {'use_default': True}:
         from fs_bot.bots.german_bot import _select_intimidate_targets
         selected = _select_intimidate_targets(state, region, min(2, raiders))

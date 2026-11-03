@@ -1752,7 +1752,7 @@ def _resolve_free_actions_scoped(state, faction):
                                 state, faction, allowed_regions=set(placed))})
     if mods.get("card_A29_german_raid"):
         _event_step(state, "grant.card_A29_german_raid")
-        results.extend(_resolve_card_A29_raid(state))
+        results.extend(_resolve_card_A29_raid(state, faction))
     if mods.get("card_A34_use_german_pieces"):
         _event_step(state, "grant.card_A34_use_german_pieces")
         results.extend(_resolve_card_A34_german_pieces(
@@ -1768,7 +1768,7 @@ def _resolve_free_actions_scoped(state, faction):
         results.extend(_resolve_card_A65_battle(state, faction))
     if mods.get("card_A69_ambush"):
         _event_step(state, "grant.card_A69_ambush")
-        results.extend(_resolve_card_A69_ambush(state))
+        results.extend(_resolve_card_A69_ambush(state, faction))
     if mods.get("card_A58_free_ambush"):
         _event_step(state, "grant.card_A58_free_ambush")
         from fs_bot.rules_consts import ROMANS as _ROM
@@ -1798,23 +1798,10 @@ def _resolve_free_actions_scoped(state, faction):
     return results
 
 
-def _resolve_card_A29_raid(state):
-    """A29: only the newly placed German Warbands receive the free Raid."""
-    from fs_bot.cards.dumnorix import derive_raids, raid_cohort
-    from fs_bot.engine.action_windows import COHORTS, get_cohorts, clear_cohorts
-    cohort = state.get("event_modifiers", {}).pop("card_A29_raid_cohort", [])
-    if "card_A29_raid" in state.get(COHORTS, {}):
-        cohort = [{"region": entry["region"], "faction": _GERMANS_F,
-                   "count": entry["count"]}
-                  for entry in get_cohorts(state, "card_A29_raid") if entry["count"]]
-        # raid_cohort owns the same counters during its subsequent steps.
-        clear_cohorts(state, "card_A29_raid")
-    actions = derive_raids(state, cohort)
-    result = raid_cohort(state, cohort, actions, allow_reduced=True)
-    if not result["executed"]:
-        result["declined_no_effect"] = True
-    return [{"free_action": "raid", "flag": "card_A29", "faction": _GERMANS_F,
-             "result": result}]
+def _resolve_card_A29_raid(state, faction=None):
+    """A29: the executor chooses Raid targets/counts for the placed cohort."""
+    from fs_bot.cards.harudes_bellovaci import resolve_harudes
+    return resolve_harudes(state, faction or state.get("executing_faction") or _GERMANS_F)
 
 
 def _resolve_card_A65_battle(state, faction):
@@ -1823,48 +1810,11 @@ def _resolve_card_A65_battle(state, faction):
     return resolve_kinship(state, faction)
 
 
-def _resolve_card_A69_ambush(state):
-    """A69: legal Ambush at Bellovaci; only the placed Warbands gain full Loss."""
-    from fs_bot.rules_consts import (BELGAE, FACTIONS, TRIBE_BELLOVACI,
-                                     TRIBE_TO_REGION, FORT, CITADEL)
-    from fs_bot.commands.sa_ambush import validate_ambush_region
-    from fs_bot.battle.resolve import _calculate_attack_losses
-    from fs_bot.engine.action_windows import COHORTS, get_cohorts, clear_cohorts
-    region = TRIBE_TO_REGION[TRIBE_BELLOVACI]
-    placed = state.get("event_modifiers", {}).pop("card_A69_loss_per_warband", 0)
-    tracked = "card_A69_ambush" in state.get(COHORTS, {})
-    if tracked:
-        placed = sum(entry["count"] for entry in get_cohorts(state, "card_A69_ambush"))
-    candidates = []
-    if placed:
-        for enemy in FACTIONS:
-            if enemy == BELGAE or not count_pieces(state, region, enemy):
-                continue
-            valid, _ = validate_ambush_region(state, region, BELGAE, enemy)
-            if not valid:
-                continue
-            losses = _calculate_attack_losses(
-                state, region, BELGAE, enemy, is_retreat=False,
-                had_citadel_at_start=count_pieces(state, region, enemy, CITADEL) > 0,
-                had_fort_at_start=count_pieces(state, region, enemy, FORT) > 0,
-                full_loss_warbands=placed)
-            if losses > 0:
-                candidates.append(enemy)
-    if not candidates:
-        clear_cohorts(state, "card_A69_ambush")
-        return [{"free_action": "ambush", "flag": "card_A69", "executed": False,
-                 "declined_no_effect": True, "reason": "no legal Belgic Ambush at Bellovaci"}]
-    defender = max(candidates, key=lambda enemy: count_pieces(state, region, enemy))
-    try:
-        result = _execute_battle(state, BELGAE, {
-            "command": _CMD_BATTLE, "sa": _SA_AMBUSH, "sa_regions": [region],
-            "details": {"battle_plan": [{"region": region, "target": defender}]}},
-            _full_loss_warbands=placed,
-            **({"_full_loss_cohort": "card_A69_ambush"} if tracked else {}))
-    finally:
-        clear_cohorts(state, "card_A69_ambush")
-    return [{"free_action": "ambush", "flag": "card_A69", "region": region,
-             "faction": BELGAE, "defender": defender, "result": result}]
+def _resolve_card_A69_ambush(state, faction=None):
+    """A69: executor selects the defender; only placed survivors gain full Loss."""
+    from fs_bot.cards.harudes_bellovaci import resolve_bellovaci
+    from fs_bot.rules_consts import BELGAE
+    return resolve_bellovaci(state, faction or state.get("executing_faction") or BELGAE)
 
 
 def _resolve_card_A45_intimidate(state):
@@ -3747,7 +3697,7 @@ def _execute_rally_steps(state, faction, steps, *, ordered=False,
 @_diviciacus_command_scope
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _full_loss_warbands=0, _double_auxilia=False, _ambush_anywhere=False,
-                    _battle_observer=None, _full_loss_cohort=None):
+                    _battle_observer=None, _full_loss_cohort=None, _require_ambush=False):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3853,6 +3803,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     battles = []
     errors = []
     diviciacus_blocks = []
+    unavailable_ambushes = []
     for battle_index, entry in enumerate(battle_plan):
         region = entry.get("region")
         if region is None:
@@ -3868,6 +3819,24 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             defender = targets[0] if targets else None
         if defender is None:
             continue
+        if _require_ambush:
+            # A69 grants Ambush, not an ordinary Battle fallback. Recheck
+            # after timing removals, before a defender's new Diviciacus
+            # agreement may legitimately block an otherwise legal Ambush
+            # (A1.4). Impossible follow-ons leave prior Event effects intact
+            # (§5.1.3), and residents cannot replace an empty placed cohort.
+            from fs_bot.commands.sa_ambush import validate_ambush_region
+            from fs_bot.engine.action_windows import get_cohorts
+            cohort_empty = (_full_loss_cohort is not None and not any(
+                piece['count'] for piece in get_cohorts(state, _full_loss_cohort)
+                if piece['region'] == region))
+            valid, reason = validate_ambush_region(state, region, faction, defender)
+            if cohort_empty or not count_pieces(state, region, defender) or not valid:
+                unavailable_ambushes.append({'region': region, 'defender': defender,
+                    'reason': ('no surviving placed Warbands' if cohort_empty else
+                               'defender no longer present' if not count_pieces(state, region, defender)
+                               else reason)})
+                continue
         from fs_bot.engine.diviciacus import defense_scope
         from fs_bot.battle import elite
         with defense_scope(state, region, faction, defender), elite.scope(state, region, faction, defender):
@@ -3921,6 +3890,10 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                             context.get("faction") == defender and
                             "Hidden pieces" in reason):
                         diviciacus_blocks.append(region)
+                    elif _require_ambush:
+                        unavailable_ambushes.append({'region': region,
+                            'defender': defender, 'reason': reason})
+                        continue
                     else:
                         errors.append({"region": region, "sa": sa, "error": reason})
                     is_ambush = False
@@ -4039,7 +4012,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     for _k59 in ("card59_unshaded_region", "card59_shaded_region"):
         state.get("event_modifiers", {}).pop(_k59, None)
 
-    return {
+    result = {
         "executed": len(battles) > 0,
         "command": _CMD_BATTLE,
         "battles_resolved": [(b["region"], b["defender"]) for b in battles],
@@ -4049,6 +4022,12 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
         "errors": errors,
         "ambush_blocked_by_diviciacus": diviciacus_blocks,
     }
+    if unavailable_ambushes:
+        result['unavailable_ambushes'] = unavailable_ambushes
+        if not battles:
+            result.update(declined_no_effect=True,
+                          reason='The granted Ambush is no longer possible after timing choices.')
+    return result
 
 
 @_diviciacus_command_scope

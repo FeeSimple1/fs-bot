@@ -25,6 +25,9 @@ def collect_free_action(state, faction, request, stdin, stdout):
     if request.get('request_type') == 'roman_event_battle':
         from fs_bot.cli.roman_event_grants import collect_battle
         return collect_battle(state, faction, request, stdin, stdout)
+    if request.get('request_type') in ('harudes_raid', 'bellovaci_ambush'):
+        from fs_bot.cli.harudes_bellovaci import collect_grant
+        return collect_grant(state, faction, request, stdin, stdout)
     if request.get("request_type") == "impetuosity_unshaded_march":
         from fs_bot.cli.impetuosity_unshaded import collect_march
         return collect_march(state, faction, request, stdin, stdout)

@@ -69,7 +69,10 @@ choices, optional Roman benefits, and the printed Seize exceptions.
 The [Gallia Togata and Dread repair](docs/reviews/expansion-effects-2026-11-02.md)
 closes EXP-07 and EXP-10: owner-directed Cisalpina evacuation, the additional
 Intimidating Warband, and unshaded Dread's Roman Recruit immunity.
-**14 of 50 findings are closed (28%); 36 remain open** in the
+The [Event validation batch](docs/reviews/event-validation-2026-11-03.md)
+closes BE-11, BE-12 and EXP-09: printed target/quantity limits, correct German
+Allegiances replacements and pending retries for invalid human Events.
+**17 of 50 findings are closed (34%); 33 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

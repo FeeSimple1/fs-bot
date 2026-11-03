@@ -1,6 +1,6 @@
 # Build plan and maintenance roadmap
 
-Updated 2 November 2026. The original pre-implementation plan is retained in
+Updated 3 November 2026. The original pre-implementation plan is retained in
 Git history. The engine now has implementations for all eight original build
 phases; those phase labels are an architectural map, not a list of unbuilt
 features or a certification that every rule interaction is correct.
@@ -83,10 +83,13 @@ expansion Arverni transfer rejection and sole-human-Belgae setup. The
 The [expansion Event-grant batch](docs/reviews/human-event-grants-2026-11-02.md)
 closes EXP-01 through EXP-06. The
 [Gallia Togata and Dread repair](docs/reviews/expansion-effects-2026-11-02.md)
-closes EXP-07 and EXP-10. The [progress register](docs/human-choice-progress.json)
-now records 14 of 50 closed (28%) and 36 open; these are finding counts, not
+closes EXP-07 and EXP-10. The
+[Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
+BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
+repair group. The [progress register](docs/human-choice-progress.json)
+now records 17 of 50 closed (34%) and 33 open; these are finding counts, not
 equal effort units. Continue with the remaining Event ownership, quantity
-and target-validation findings, then ordinary physical choices/timing and
+and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even
 where an expansion card now has complete menus. Optional setup and shared
 player modes remain separately scoped. An additional NPC audit lead concerns

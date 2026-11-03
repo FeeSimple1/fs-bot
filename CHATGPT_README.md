@@ -44,6 +44,18 @@ request's piece IDs, visibility and legal Home/Tribe destinations. Dread
 (A22) changes Intimidate capacity: shaded permits an added participant/removal;
 unshaded also prevents Intimidated markers from blocking Roman Recruit.
 
+Use the current Event schemas for printed counts, exact targets and legal areas;
+do not send a partial plan where the text requires all possible fixed effects.
+For shaded German Allegiances (65), `replacements` selects each German
+Warband's visibility or Ally's Tribe and a Boolean `replace` choice.
+The old Region-only replacement fields are no longer accepted.
+A29's chosen beneficiary and A36's Germans answer their own
+`expansion_event_choices` request. Do not author another owner's pieces in
+the initial Event plan. Invalid Event plans remain pending without spending
+eligibility; legal ineffective Events remain permitted. See the
+[Event validation report](docs/reviews/event-validation-2026-11-03.md) and
+[agent interface](AGENT_INTERFACE.md) for shapes and compatibility limits.
+
 Recruit/Rally plans can specify exact troop `count` values. Use
 `rally_plan.steps` to preserve Vercingetorix's two placement orders, and
 `placement_owners` to reserve exact Roman/Aedui pieces during agreed

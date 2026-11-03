@@ -5,8 +5,10 @@ closes five findings, and the [2 November Scouted Event repair](scouted-events-2
 closes EXP-12. The [2 November expansion Event-grant batch](human-event-grants-2026-11-02.md)
 closes EXP-01 through EXP-06. The subsequent
 [2 November Gallia Togata and Dread repair](expansion-effects-2026-11-02.md)
-closes EXP-07 and EXP-10. The [live progress register](../human-choice-progress.json)
-tracks 14 closed (28%) and 36 remaining. The counts and evidence below describe the original
+closes EXP-07 and EXP-10. The
+[3 November Event validation batch](event-validation-2026-11-03.md) closes
+BE-11, BE-12 and EXP-09. The [live progress register](../human-choice-progress.json)
+tracks 17 closed (34%) and 33 remaining. The counts and evidence below describe the original
 audited revision and have not been relabeled as later results.
 
 The audit found **50 grouped open findings: 21 high, 28 medium and one low** at

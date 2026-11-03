@@ -19,6 +19,32 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 3 November Event limits and German Allegiances — three findings closed
+
+The [repair report](reviews/event-validation-2026-11-03.md) closes BE-11,
+BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan group.
+The affected base and expansion Events enforce printed target, geographic,
+beneficiary and quantity limits. Fixed effects occur as possible; valid
+replacement shortfalls still remove the original piece under §5.1.1.
+
+A29's selected beneficiary makes its own placements; Germans make A36's
+placements and removals. Shaded German Allegiances now replaces German
+Warbands with the executor's own Warbands, or Roman Auxilia, and supports
+exact visibility/Tribe choices and ordered removal-only selections. Current
+Control and physical targets are validated before mutation and after relevant
+interruptions. NPC defaults follow their own source priorities.
+
+An explicitly malformed human Event parameter object is rejected. Explicitly
+rejected Events stay pending without consuming eligibility or committing the
+bad choice; legal ineffective Events remain permitted. New regressions cover
+real terminal decisions, detached previews and durable retry/save/replay.
+
+**17 of 50 findings are closed (34%); 33 remain open.** This three-finding
+batch is complete; percentages count findings, not effort or overall rules
+accuracy. Other Event ownership/physical choices, ordinary timing and seasonal
+decisions remain separate, as do the 34 unverified inventory rows, two source
+questions and the NPC pre-Battle Intimidate projection lead.
+
 ### 2 November Gallia Togata and Dread — two findings closed
 
 The [repair report](reviews/expansion-effects-2026-11-02.md) closes EXP-07 and
@@ -33,7 +59,7 @@ Raider can also be the third Intimidator. An additional fresh Hidden Warband
 is an explicit choice within the available physical cohort. Unshaded Dread
 also correctly prevents Intimidated markers from blocking Roman Recruit.
 
-**14 of 50 findings are closed (28%); 36 remain open.** This two-finding
+At that checkpoint, **14 of 50 findings were closed (28%); 36 remained open.** This two-finding
 batch is complete. The percentage counts findings, not effort or whole-game
 compliance. A5 shaded removal choices, exact Intimidate Allied Tribe choices,
 other Event validation/ownership and seasonal decisions remain separate.
@@ -388,6 +414,9 @@ for reproduction commands and compatibility limits.
 | Morasses (36), shaded | Humans choose the Gallic beneficiary, Battle plan and March, including in-place hiding. Belgae target Romans then Gauls where Losses are possible and then hide in place. Aedui retain their one-Region Ambush limit. Actual Command capabilities, pre-fire and Frost outcomes are checked; wholly ineffective Events are declined before selection. | `test_morasses.py`, `test_morasses_decisions.py` |
 | Joined Ranks (54) | Optional March respects distance and eight-piece limit, including Leaders. Battles use the same defender; a second human faction chooses whether to participate, and a second non-player faction does not Battle. | `test_joined_ranks_choices.py` |
 | Dumnorix (44) | Replacements respect counts and owners; Scout/Raid uses only the newly placed cohort. Revised free Commands stay in placement Regions. | `test_dumnorix.py` |
+| Base Event limits (40/41/42/51) | Placement alternatives, complete target quotas and printed areas are enforced. Roman Wine follows its Supply and NPC instructions; Avaricum replacement shortages remove the exact source Ally; Surus cannot recycle newly placed counters. | `test_base_event_limits.py` |
+| German Allegiances (65), shaded | Exact German targets require executor Control; human entries select removal or native replacement in order. Scouted counters, Tribe records, scarce pools and timing interruptions remain physical. NPC defaults obey their specific availability instructions. | `test_german_allegiances.py` |
+| Expansion Event limits (A29/A30/A36/A43/A45) | Repaired sides enforce beneficiaries, areas, types and totals; A29's beneficiary and A36's Germans own their choices. Partial replacements obey stacking/availability; NPC self-only policy is separate from human legality. | `test_expansion_event_validation.py`, `test_cli_expansion_validation.py` |
 | Impetuosity (72), shaded | Humans choose one original Hidden Warband group for an adjacent or in-place March and separately choose optional Battle with that group alone. Bots respect player targets, physical Control, Frost and the Belgic Leader’s post-Battle escort. The one-use grant cannot leak into later Events. | `test_impetuosity.py`, `test_impetuosity_decisions.py`, `test_cli_impetuosity.py`, `test_free_action_lifetime.py` |
 | Impetuosity (72), unshaded | Humans choose groups from adjacent origins to one destination, then the eligible Arverni or Belgic attacker. March is mandatory when possible. Romans apply their printed March priorities before checking for the resulting Battle, and decline the Event before selection when instructed. | `test_impetuosity_unshaded.py` |
 | Resources | Normal Battles pay their printed costs. Free Event actions waive costs and include a Special Ability only when granted. | `test_free_action_costs.py` |
@@ -419,7 +448,7 @@ for reproduction commands and compatibility limits.
 | Winter Campaign | Humans can take up to two paid actions, including standalone Special Abilities. A63 records and activates its proper owner. Bot plans honor the remaining action budget before selecting dependent actions such as Settle/Rally. After-Harvest Harassment no longer tries to look up the Winter marker as an Event. | `test_winter_campaign_decisions.py`, `test_winter_harassment_order.py` |
 | Quarters | All human factions choose relocations and payments. Complete adjacent relocation groups are validated against pre-step Control, and original visibility is preserved so arrivals cannot move again. Supply Lines use the resulting board. Invalid destinations, static-piece movement and negative payments are rejected; losses apply to the actual unpaid pieces. | `test_quarters_decisions.py`, `test_quarters_relocation_step.py` |
 | Saves | Production loading validates board structure and pending-turn cursors before resuming, with readable errors for malformed saves. | `test_save_validation.py` |
-| Human replay | Default reactive responses are recorded. Actual terminal games from every playable seat replay to the same final state. | `test_cli_playthroughs.py` |
+| Human replay | Default reactive responses are recorded. Actual terminal games from every playable seat replay to the same final state. Explicitly rejected human Events retain their pending turn; legal ineffective Events remain permitted. | `test_cli_playthroughs.py`, `test_german_allegiances.py`, `test_resumable_turns.py` |
 | Morbihan display | During A20’s “as if there” Ambush, human loss choices show physical Arverni Warband origins and actual Roman losses, with the temporary battle calculation identified separately. | `test_morbihan_display.py` |
 | Borrowed-force display | Board views and per-seat changes show physical ownership during Enlist and Admagetobriga; active borrowed forces are identified separately. Actual Control, losses, and piece visibility remain visible. | `test_borrowed_force_display.py` |
 | Assistant play | Human reactions pause explicitly; a single saved session records inbox consumption, pending decisions and prior choices. Resume/replay does not silently choose or reroll earlier responses. | `test_assistant_session.py` |

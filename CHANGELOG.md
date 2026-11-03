@@ -4,6 +4,24 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Event limits and German Allegiances, 3 November 2026
+
+- Enforce printed counts, areas, alternatives and targets for base cards
+  40, 41, 42 and unshaded 51, and expansion A29/A30/A43/A45 unshaded and
+  A36 shaded. Preserve valid partial execution and replacement removal
+  when incoming pieces are unavailable or would violate stacking.
+- Restore beneficiary-owned A29 placements and German-owned A36 choices,
+  with current-board menus and durable pending/save/replay support.
+- Give Gallic executors their own Warbands under shaded German Allegiances;
+  Romans receive Auxilia. Let humans choose exact physical targets and
+  ordered removal or replacement within executor Control.
+- Reject explicitly malformed human Event parameter objects. Keep invalid
+  Events pending without spending eligibility; preserve legal ineffective
+  Events. Update NPC derivation and applicability for the repaired sides.
+- Close BE-11, BE-12 and EXP-09. See the
+  [repair report](docs/reviews/event-validation-2026-11-03.md) for revision-specific
+  validation, compatibility and remaining scope.
+
 ## Unreleased — Gallia Togata and Dread, 2 November 2026
 
 - Let A5's executor choose affected-owner order, then each owner allocate

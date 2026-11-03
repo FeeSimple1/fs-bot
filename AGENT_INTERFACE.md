@@ -160,6 +160,50 @@ cannot give or receive Resources. Current scenario rules apply after Interlude.
 The raw executor retains its documented behavior of reporting a refused gift
 while continuing the accompanying Command; it cannot apply a forbidden gift.
 
+The following repaired Event sides use complete, side-specific
+`details.event_params` plans. Fields describe shapes, not permission to
+select targets absent from the current board. Unknown fields and malformed
+counts are rejected. Existing entry `timing_actions` and
+`stage_timing_actions` remain supported at the named operation boundaries.
+
+| Card/side | Parameters and limits |
+|---|---|
+| 40 unshaded | `placements: [{region, piece_type, count?, faction?, tribe?}]`; one piece type per Region adjacent to Cisalpina, totaling at most 3 Warbands, 2 Auxilia or 1 Ally there. Count defaults to 1, faction to executor; Ally needs its Tribe. Empty placement still grants Resources. |
+| 41, either side | `ally_placements: [{tribe, region?, faction?, count?}]` (at most 2, own faction, count 1); optional `citadel_upgrade_tribe` and `fort_region`. The executor must have an Ally or Citadel at Avaricum; Control alone is insufficient. Fort placement is Roman-only. All choices are within one Region of Bituriges. |
+| 42 unshaded | `removals: [{tribe, faction?, region?, count?}]`; count 1, with optional `mode: "controlled"` or `"adjacent"`. Choose at most 4 under Roman Control OR at most 2 adjacent to it; omitted mode is inferred only when valid. Zero is permitted. |
+| 42 shaded | Same exact removal entries, no mode: 1–3 Roman/Aedui Allies in Supply Lines as if both agreed; zero only when no eligible targets exist. |
+| 51 unshaded | Required `region` within one of Treveri; `replacements: [{from_faction, piece_state?, count?, region?}]`, totaling four original Warbands as possible in that Region. An explicitly chosen empty Region remains legal and still grants the Aedui Command. |
+| 65 shaded | Ordered `replacements: [{region, piece_type, piece_state or tribe, replace}]`; exactly five German Warbands and one German Ally as possible in executor-Controlled Regions. `replace` is a required Boolean; false selects removal only. Warbands require exact visibility; Allies exact Tribe. |
+| A29 unshaded | `faction` selects Romans, Arverni, Aedui or Belgae. That owner supplies `placements: [{region, piece_type, faction?, count?, tribe?}]` among Settlement Regions: up to 2 Allies and five own Warbands or three Auxilia as possible. Other executors select only the beneficiary. |
+| A30 unshaded | `region`: one Region within one of Sequani; removes all Arverni there. |
+| A36 shaded | German-owned `placements: [{region, piece_type, count?}]` and `ally_removals: [{tribe}]`; two Settlements, four Warbands and two Ally removals as possible within one of Sugambri. A foreign executor supplies `{}` and awaits the German request. |
+| A43 unshaded | `replacements: [{region, from_type, to_faction, tribe or piece_state}]`; two Arverni Allies and two original Arverni Warbands as possible within one of Bibracte. Counterparts belong to Romans or Aedui. |
+| A45 unshaded | `placements: [{tribe, faction}]`; up to three non-German Allies in legal Subdued Celtica Tribes within one of an Intimidated marker. |
+
+Integer card 65 remains distinct from expansion A65. Its old
+`warband_replacements`/`ally_replacement_tribe` fields are not silently
+converted into default physical choices; affected transcripts need new
+exact input. Romans replace German Warbands with Auxilia; Gallic executors
+use their own Warbands. Incoming pieces use ordinary placement visibility.
+
+Printed replacement instructions follow §5.1.1: unavailable or stacking-invalid
+counterparts still remove the selected source. This includes Avaricum's
+Ally-to-Citadel conversion when no own Citadel can enter. Mere placement
+shortfalls do not create pieces. Fixed counts are required as possible;
+up-to selections retain their smaller legal choices. Surus replacements use
+original counters, so a newly placed Aedui Warband cannot become another
+source in the same Event.
+
+A29 and A36 may issue `kind: "free_action"`,
+`request_type: "expansion_event_choices"`, carrying `card_id`,
+`acting_faction`, `regions` and `allow_decline: false`. The named owner
+responds with the corresponding parameter object above or explicit
+`{"use_default":true}`; it cannot change the owner or decline required
+effects. Game-run Arverni resolve automatically. Missing/invalid durable
+responses retain the pending ID and accepted history. Current card/change
+display and `board`/`b` remain available. Voluntary timing actions still
+belong to the original Event executor, independently of the placement owner.
+
 Boii (37) unshaded accepts `place_faction` (Romans or Aedui) and
 `placements`: entries contain `region`, `piece_type`, and positive integer
 `count`; an Ally entry also names its `tribe` and has count 1. The complete
@@ -291,10 +335,14 @@ the state. An interruption rolls back only the unfinished action or phase,
 including its RNG changes. Frontends with external queues/logs can attach
 `transaction_checkpoint()` and `transaction_restore(token)` attributes to
 their `decision_func` to keep those synchronized with rollback.
-A wholly refused human Command raises `ActionRejected` without consuming the
-turn; interactive frontends can provide
+A wholly refused human Command or explicitly rejected human Event raises
+`ActionRejected` without consuming the turn; interactive frontends can provide
 `decision_func.decision_rejected(state, faction, result)` to explain the
-failure and retry the same turn.
+failure and retry the same turn. Legal ineffective Events remain permitted;
+the engine's structured rejection marker distinguishes invalid plans from
+that case. If supplied, `details.event_params` must be an object: null,
+false, zero and lists are not aliases for an empty plan. Omission retains
+its existing supported meaning.
 
 PR-07 makes one exception to ordinary rejected-attempt rollback: a genuine
 non-player Aedui die refusal must remain fixed when human Rome rechooses.
@@ -591,6 +639,7 @@ choices for a particular board:
 | `morasses_march` | `action, in_place` | `cards/morasses.py`; `action` is an ordinary March plan or null, `in_place` lists stationary origins |
 | `gallia_evacuation_order` | `owner_order: [faction, ...]` | `cards/gallia_evacuation.py`; A5 executor orders every affected owner exactly once |
 | `gallia_evacuation` | `allocations: [{piece_id, destination, count, tribe?}]` | `cards/gallia_evacuation.py`; each affected owner allocates all its Cisalpina pieces |
+| `expansion_event_choices` | A29 `faction, placements`; A36 `placements, ally_removals` | `cards/expansion_validation.py`; named beneficiary/German owner selects within the request's scope |
 | `procillus_march` | `origin, destination` | `cards/procillus.py`; A19 executor moves all mobile Romans from one offered origin |
 | `decisive_battle` | `region, defender` | `cards/decisive_battle.py`; A21/A57 first Battle, then optional second in the same Region |
 | `arduenna_faction` | `faction` from the request's `factions` | `cards/arduenna.py`; executor selects a playable beneficiary other than Arverni |

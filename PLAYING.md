@@ -139,6 +139,21 @@ request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
 
+The repaired Event menus listed in the [Event validation report](docs/reviews/event-validation-2026-11-03.md)
+enforce their printed quantities and areas. An invalid Event stays pending so you can correct it without losing eligibility; a legal
+Event that has no effect is still allowed. Fixed effects occur as far as
+possible, while “up to” choices let you select less. If an Event replaces a
+piece but the new one is unavailable or cannot legally stack, the original
+is still removed.
+
+Shaded German Allegiances (65) lets you choose the exact German Warbands and
+Ally in Regions you Control, including visibility and Tribe, and whether
+each is removed or replaced. Romans receive Auxilia; Gallic factions receive
+their own Warbands. For unshaded Harudes (A29), the Event player chooses the
+beneficiary, which then makes its placements. For shaded Usipetes & Tencteri
+(A36), Germans make both the placement and Ally-removal choices. Each owner
+sees the current board and can use `board` or `b` before answering.
+
 Unshaded Gallia Togata (A5) lets the Event player order multiple affected
 owners. Each owner then chooses Home destinations or removal for
 all its Cisalpina pieces, including Allies and Settlements. You can split

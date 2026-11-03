@@ -26,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [3 November Event limits and German Allegiances](reviews/event-validation-2026-11-03.md) | BE-11/12 and EXP-09 legality, physical replacements, named owners, rejected human Event retries and outcome evidence |
 | [2 November Gallia Togata and Dread](reviews/expansion-effects-2026-11-02.md) | EXP-07/10 owner-directed evacuation, added Intimidate participant, Roman marker immunity, replay and outcome evidence |
 | [2 November expansion Event grants](reviews/human-event-grants-2026-11-02.md) | EXP-01–06 human choices, physical cohorts, Roman acceptance/Seize exceptions, replay and outcome evidence |
 | [2 November Scouted Event repair](reviews/scouted-events-2026-11-02.md) | A25/A26/A30/A56 mandatory removals, source-derived regressions and EXP-12 closure |

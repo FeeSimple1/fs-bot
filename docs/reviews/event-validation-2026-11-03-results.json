@@ -1,0 +1,791 @@
+{
+  "bot_games": 150,
+  "bot_editions": {
+    "legacy": 100,
+    "original": 25,
+    "second-edition": 25
+  },
+  "fuzz": {
+    "legacy": {
+      "games": 10,
+      "human_turns": 382,
+      "event_turns": 90,
+      "events_ok": 82,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "2b2ce7e6d07707a4c8c01f9626b4d84caad3e255f7eb71a35792a9430ba4440f"
+    },
+    "original": {
+      "games": 10,
+      "human_turns": 382,
+      "event_turns": 90,
+      "events_ok": 82,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "f2122bfc5f2cb3a1fa69bc052d343444d5899ae7497bf9cf99b5c39a03fa8847"
+    },
+    "second-edition": {
+      "games": 10,
+      "human_turns": 342,
+      "event_turns": 77,
+      "events_ok": 70,
+      "partial": 0,
+      "hard_findings": 0,
+      "batch_digest": "131128c778740c2a5425008a25bebf755fccae7e828dc7664a41524807bb520b"
+    }
+  },
+  "mixed_seat_distinct_cases": 30,
+  "mixed_seat_executions_including_replay_and_hash_repeat": 120,
+  "parent_comparison": {
+    "games": 100,
+    "winner_or_card_count_changes": 50,
+    "provenance": "task-baseline.json: byte-identical parent source; reused labelled records"
+  },
+  "strict_census_executions": 20,
+  "census_severities": {
+    "legal-decline": 116
+  },
+  "scope": "Five scenarios; bot legacy seeds1-20 and other edition seeds201-205; mixed seeds201-202 in all three profiles, hashes0/7 with replay.",
+  "passed": true,
+  "matrix_source": {
+    "commit": "b17e2f6d8297501c16288cfd5de04ae61b19a774",
+    "python_sha256": "ed4c0d64f358e0f71a3852520d94ee71c6e561a46b8f8a53fc52b1edff23af9f",
+    "python_files": 417,
+    "python_worktree_changes": true
+  },
+  "source": {
+    "commit": "d9fc7a3eb4bafea8f89fd881dd900bb2f353b90b",
+    "python_sha256": "ed4c0d64f358e0f71a3852520d94ee71c6e561a46b8f8a53fc52b1edff23af9f",
+    "python_files": 417
+  },
+  "original_baseline_comparison": {
+    "games": 100,
+    "winner_or_card_count_changes": 52,
+    "rate_changes": [
+      {
+        "scenario": "Ariovistus",
+        "faction": "Aedui",
+        "before_wins": 1,
+        "after_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Belgae",
+        "before_wins": 4,
+        "after_wins": 2,
+        "percentage_point_change": -10
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Germans",
+        "before_wins": 7,
+        "after_wins": 5,
+        "percentage_point_change": -10
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Romans",
+        "before_wins": 8,
+        "after_wins": 12,
+        "percentage_point_change": 20
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Aedui",
+        "before_wins": 5,
+        "after_wins": 1,
+        "percentage_point_change": -20
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Arverni",
+        "before_wins": 2,
+        "after_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Belgae",
+        "before_wins": 2,
+        "after_wins": 3,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Romans",
+        "before_wins": 11,
+        "after_wins": 14,
+        "percentage_point_change": 15
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Aedui",
+        "before_wins": 5,
+        "after_wins": 6,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Arverni",
+        "before_wins": 0,
+        "after_wins": 1,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Belgae",
+        "before_wins": 5,
+        "after_wins": 2,
+        "percentage_point_change": -15
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Romans",
+        "before_wins": 10,
+        "after_wins": 11,
+        "percentage_point_change": 5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Aedui",
+        "before_wins": 2,
+        "after_wins": 1,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Arverni",
+        "before_wins": 2,
+        "after_wins": 1,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Belgae",
+        "before_wins": 6,
+        "after_wins": 5,
+        "percentage_point_change": -5
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Romans",
+        "before_wins": 10,
+        "after_wins": 13,
+        "percentage_point_change": 15
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Aedui",
+        "before_wins": 2,
+        "after_wins": 5,
+        "percentage_point_change": 15
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Arverni",
+        "before_wins": 9,
+        "after_wins": 5,
+        "percentage_point_change": -20
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Belgae",
+        "before_wins": 3,
+        "after_wins": 6,
+        "percentage_point_change": 15
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Romans",
+        "before_wins": 6,
+        "after_wins": 4,
+        "percentage_point_change": -10
+      }
+    ],
+    "passed": false,
+    "baseline_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+    "baseline_changed": false,
+    "existing_band": 0.15
+  },
+  "baseline_refresh": {
+    "source": {
+      "base_commit": "b17e2f6d8297501c16288cfd5de04ae61b19a774",
+      "python_worktree_changes": true,
+      "python_files": 417,
+      "python_sha256": "ed4c0d64f358e0f71a3852520d94ee71c6e561a46b8f8a53fc52b1edff23af9f",
+      "note": "Final prepared source includes A30 region-priority correction; pre-final100traces remain attributed to29f477d5."
+    },
+    "command": [
+      "/workspace/scratch/534c265c65f4/fs-test-venv/bin/python",
+      "-m",
+      "fs_bot.tools.balance_smoke",
+      "--update",
+      "--seeds",
+      "1-20",
+      "--band",
+      "0.15"
+    ],
+    "review": "reviewer-handoff.md; causal-review/causal-summary.json; final-a30-replay.json; final-source-equivalence.json",
+    "fresh_update_games": 100,
+    "fresh_outcomes_exactly_match_final_matrix": true,
+    "before_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+    "after_sha256": "cbdfc7883ea0137fd5bf414ebc3bf847ec1774f42bd447d81a74ed268f9496c3",
+    "changed_winner_or_card_count_records": 52,
+    "unchanged_seed_set": "1-20 in all five scenarios",
+    "unchanged_band": 0.15,
+    "comparison_after_reviewed_refresh": [
+      {
+        "scenario": "Ariovistus",
+        "faction": "Romans",
+        "baseline_wins": 12,
+        "matrix_wins": 12,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Arverni",
+        "baseline_wins": 0,
+        "matrix_wins": 0,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Aedui",
+        "baseline_wins": 1,
+        "matrix_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Belgae",
+        "baseline_wins": 2,
+        "matrix_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Ariovistus",
+        "faction": "Germans",
+        "baseline_wins": 5,
+        "matrix_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Romans",
+        "baseline_wins": 14,
+        "matrix_wins": 14,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Arverni",
+        "baseline_wins": 2,
+        "matrix_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Aedui",
+        "baseline_wins": 1,
+        "matrix_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Belgae",
+        "baseline_wins": 3,
+        "matrix_wins": 3,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "faction": "Germans",
+        "baseline_wins": 0,
+        "matrix_wins": 0,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Romans",
+        "baseline_wins": 11,
+        "matrix_wins": 11,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Arverni",
+        "baseline_wins": 1,
+        "matrix_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Aedui",
+        "baseline_wins": 6,
+        "matrix_wins": 6,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Belgae",
+        "baseline_wins": 2,
+        "matrix_wins": 2,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "faction": "Germans",
+        "baseline_wins": 0,
+        "matrix_wins": 0,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Romans",
+        "baseline_wins": 13,
+        "matrix_wins": 13,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Arverni",
+        "baseline_wins": 1,
+        "matrix_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Aedui",
+        "baseline_wins": 1,
+        "matrix_wins": 1,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Belgae",
+        "baseline_wins": 5,
+        "matrix_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Gallic War",
+        "faction": "Germans",
+        "baseline_wins": 0,
+        "matrix_wins": 0,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Romans",
+        "baseline_wins": 4,
+        "matrix_wins": 4,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Arverni",
+        "baseline_wins": 5,
+        "matrix_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Aedui",
+        "baseline_wins": 5,
+        "matrix_wins": 5,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Belgae",
+        "baseline_wins": 6,
+        "matrix_wins": 6,
+        "percentage_point_change": 0
+      },
+      {
+        "scenario": "The Great Revolt",
+        "faction": "Germans",
+        "baseline_wins": 0,
+        "matrix_wins": 0,
+        "percentage_point_change": 0
+      }
+    ],
+    "immutable_source_inputs": 48,
+    "immutable_source_inputs_unchanged": true,
+    "prior_failed_comparisons_retained": [
+      "matrix-01/integration-results.json",
+      "matrix-02/integration-results.json"
+    ],
+    "passed": true
+  },
+  "audit_progress": {
+    "batch_closed": 3,
+    "batch_total": 3,
+    "closed": 17,
+    "open": 33,
+    "total": 50,
+    "percent": 34
+  },
+  "full_tests": {
+    "german_allegiances_standalone": 6590,
+    "combined": 6728,
+    "new_cases": 177,
+    "final_documentation": 6728,
+    "final_documentation_status": "passed"
+  },
+  "immutable_source_inputs": {
+    "count": 48,
+    "unchanged": true
+  },
+  "commits": {
+    "task_base": "8db858b14cd13856059d42db1ad3931e523b5ed4",
+    "german_allegiances": "b17e2f6d8297501c16288cfd5de04ae61b19a774",
+    "event_validation_and_baseline": "d9fc7a3eb4bafea8f89fd881dd900bb2f353b90b"
+  },
+  "limits": [
+    "34 unverified inventory rows remain separate",
+    "Two source questions and nine provisional rulings unchanged",
+    "NPC pre-Battle Intimidate projection lead remains unverified and outside the original50",
+    "No exhaustive correctness or statistically conclusive balance claim"
+  ],
+  "causal_review": {
+    "counts": {
+      "pairs": 50,
+      "diagnostic_games": 100,
+      "winner_changes": 40,
+      "card_count_only_changes": 10,
+      "identical_full_prefix_and_prestate": 50,
+      "parent_exact_first_row_replays": 50,
+      "candidate_exact_first_row_replays": 47,
+      "candidate_metadata_only_exceptions": 3,
+      "candidate_same_complete_poststate_and_rng": 50
+    },
+    "first_cause_groups": {
+      "execution:42:Romans": 4,
+      "execution:42:Belgae": 2,
+      "decision:65:Arverni": 7,
+      "decision:65:Aedui": 3,
+      "decision:42:Aedui": 10,
+      "decision:65:Belgae": 3,
+      "execution:41:Aedui": 2,
+      "decision:A45:Aedui": 7,
+      "execution:A43:Aedui": 4,
+      "decision:42:Belgae": 2,
+      "execution:A36:Germans": 2,
+      "execution:A29:Aedui": 2,
+      "execution:A30:Aedui": 2
+    },
+    "source": {
+      "parent": {
+        "commit": "8db858b14cd13856059d42db1ad3931e523b5ed4",
+        "dirty": false,
+        "source_sha256": "d78d921cdb2db2c60bd433270bca2a80fb92462888610e8199522de41b749797",
+        "verification": "committed_parent_python_tree",
+        "verified_source_commit": "8db858b14cd13856059d42db1ad3931e523b5ed4",
+        "python": "3.12.14",
+        "hash_seed": "0",
+        "worktree": "/workspace/scratch/534c265c65f4/fs-base-event-before",
+        "python_files": 407,
+        "card_edition": "legacy"
+      },
+      "candidate": {
+        "commit": "b17e2f6d8297501c16288cfd5de04ae61b19a774",
+        "dirty": true,
+        "source_sha256": "29f477d5382d87fac2abc4fe9e93ff4b8ca7abcfbad08e5bd0abb9bff2dfb9b5",
+        "verification": "prepared_uncommitted_python_manifest",
+        "prepared_source": {
+          "base_commit": "b17e2f6d8297501c16288cfd5de04ae61b19a774",
+          "python_worktree_changes": true,
+          "python_files": 417,
+          "python_sha256": "29f477d5382d87fac2abc4fe9e93ff4b8ca7abcfbad08e5bd0abb9bff2dfb9b5",
+          "note": "BE11/EXP09 integrated as uncommitted source over testedBE12; existing balance canary blocks committing until paired outcome review. Prepared source patch archived."
+        },
+        "prepared_manifest": "/workspace/scratch/534c265c65f4/event-validation-2026-11-03/source-manifest.json",
+        "python": "3.12.14",
+        "hash_seed": "0",
+        "worktree": "/workspace/scratch/534c265c65f4/fs-bot",
+        "python_files": 417,
+        "card_edition": "legacy"
+      }
+    },
+    "limitations": "Every first divergence is source-supported and localizes to reviewed Event fixes. No unexplained first cause or gameplay/RNG replay discrepancy remains. This is bounded causal evidence, not a claim that every subsequent move was source-audited or that game winners are explained by a single local effect.",
+    "metadata_exception": "Only three candidate decisions differ in unused nested Trade-region list order after sorted JSON map reload; same Region sets, estimated Resources, action plans, and complete state/RNG. Both variants produce identical following execution results/state/RNG. No production fix or normalization was used to mask comparison.",
+    "evidence": "causal-review/causal-summary.json"
+  },
+  "final_source_equivalence": {
+    "reviewer": "/root/event_validation_review",
+    "date": "2026-11-03",
+    "scope": "Independent read-only comparison of the already executed two matrices and two bounded final-source A30 replays; no new full-game runs.",
+    "sources": {
+      "parent_commit": "8db858b14cd13856059d42db1ad3931e523b5ed4",
+      "original_traced_python_sha256": "29f477d5382d87fac2abc4fe9e93ff4b8ca7abcfbad08e5bd0abb9bff2dfb9b5",
+      "final_python_sha256": "ed4c0d64f358e0f71a3852520d94ee71c6e561a46b8f8a53fc52b1edff23af9f",
+      "python_files_each": 417,
+      "current_final_manifest_verified_before_and_after": true,
+      "manifest_files": [
+        {
+          "path": "source-manifest.json",
+          "sha256": "ad10ff6e893f9363967952e1948cd6d5072dfa6ebcd4cd1b9145d8714286c0bb"
+        },
+        {
+          "path": "final-source-manifest.json",
+          "sha256": "d25861f41cd00f3e5a9b61af265adb6537b0dff5c349203fb4f0ace6575d66d5"
+        }
+      ],
+      "python_delta": [
+        {
+          "path": "fs_bot/cards/expansion_validation.py",
+          "original_sha256": "a641e8b6e3841f7fa9907bcb9060d58452109144b0f4aad9c4a113f359a7c8e5",
+          "final_sha256": "40eeb1c419fc7f57ffa0c10c0daa5a6e9c6a5827d4003c6d0a24cbddfdbfae38"
+        },
+        {
+          "path": "fs_bot/tests/test_expansion_event_validation.py",
+          "original_sha256": "e7c9443e253453fc1a4826f82bb61a1a3f9f30f5f157be52237d6a49cace88bf",
+          "final_sha256": "346935216ded84a93b959c355c6a9c5bb0892dd20c7296fc34d2a5a424a4f6fa"
+        }
+      ]
+    },
+    "bot_comparisons": [
+      {
+        "edition": "legacy",
+        "records": 100,
+        "all_game_fields_equal": true,
+        "all_final_state_hashes_equal": true,
+        "comparison_excludes": [
+          "seconds",
+          "source_sha256",
+          "commit"
+        ],
+        "normalized_records_sha256": "ba26186b1231a8b0d8d10f5f7891e7a66c5871fce2a8990eb48c0f1b6d5c1900",
+        "inputs": [
+          {
+            "path": "matrix-01/bots-legacy/games.jsonl",
+            "sha256": "75abaaa506104ac15cd7497e15d27c4d3d17c9da4428df877b194cf96534d3ad"
+          },
+          {
+            "path": "matrix-02/bots-legacy/games.jsonl",
+            "sha256": "bb68ebeba7aa8858aea6da8fcfd481a901b3f3ad14ce70aa3018b04fe4b1895e"
+          }
+        ]
+      },
+      {
+        "edition": "original",
+        "records": 25,
+        "all_game_fields_equal": true,
+        "all_final_state_hashes_equal": true,
+        "comparison_excludes": [
+          "seconds",
+          "source_sha256",
+          "commit"
+        ],
+        "normalized_records_sha256": "673aa3736cecb39b1eac3f42a6c4750d35ed1286e91189db481b79ef35fff073",
+        "inputs": [
+          {
+            "path": "matrix-01/bots-original/games.jsonl",
+            "sha256": "3f305867c17ecc350f091dab98159411a56d1b4f98d130498ce9782a77c8c0ca"
+          },
+          {
+            "path": "matrix-02/bots-original/games.jsonl",
+            "sha256": "f3fc7f9199c8c3d5b4fb5741441f4114eb0edbb1b8bcdfc33436cab55460d1b9"
+          }
+        ]
+      },
+      {
+        "edition": "second-edition",
+        "records": 25,
+        "all_game_fields_equal": true,
+        "all_final_state_hashes_equal": true,
+        "comparison_excludes": [
+          "seconds",
+          "source_sha256",
+          "commit"
+        ],
+        "normalized_records_sha256": "53f3210decb643b472bce810d480131352ef03fe61889b4e1a6624831d935b2f",
+        "inputs": [
+          {
+            "path": "matrix-01/bots-second-edition/games.jsonl",
+            "sha256": "38bbac07d83e0e0cfb29fec73ba66eafcd2bb77d16e805c9c18cc9d9084274f5"
+          },
+          {
+            "path": "matrix-02/bots-second-edition/games.jsonl",
+            "sha256": "9df10c5835baed69c79b2602cef153fdf5e6fb1b627cd0c8910552647421d764"
+          }
+        ]
+      }
+    ],
+    "bot_records_total": 150,
+    "mixed_replay_comparisons": [
+      {
+        "name": "fuzz-legacy-0.json",
+        "equal_excluding_source_metadata": true,
+        "normalized_sha256": "b00a9b17e4f22727b39402616e4257b88fc8889f66127ccbf48e9d68bdfc6630",
+        "inputs": [
+          {
+            "path": "matrix-01/fuzz-legacy-0.json",
+            "sha256": "305587ca02df42eea62c59d0ff6bbc35cbc2eb796a245ba42fc6253e14f7345e"
+          },
+          {
+            "path": "matrix-02/fuzz-legacy-0.json",
+            "sha256": "a859607cf0897d76ea645775cd2cbb0e9d39aa5be9ed08da4a84b97e890f8beb"
+          }
+        ]
+      },
+      {
+        "name": "fuzz-legacy-7.json",
+        "equal_excluding_source_metadata": true,
+        "normalized_sha256": "b00a9b17e4f22727b39402616e4257b88fc8889f66127ccbf48e9d68bdfc6630",
+        "inputs": [
+          {
+            "path": "matrix-01/fuzz-legacy-7.json",
+            "sha256": "305587ca02df42eea62c59d0ff6bbc35cbc2eb796a245ba42fc6253e14f7345e"
+          },
+          {
+            "path": "matrix-02/fuzz-legacy-7.json",
+            "sha256": "a859607cf0897d76ea645775cd2cbb0e9d39aa5be9ed08da4a84b97e890f8beb"
+          }
+        ]
+      },
+      {
+        "name": "fuzz-original-0.json",
+        "equal_excluding_source_metadata": true,
+        "normalized_sha256": "a52e69fa8946c532bbf88a1cb09a3fff2de00e808c13da63d36585d89638afdf",
+        "inputs": [
+          {
+            "path": "matrix-01/fuzz-original-0.json",
+            "sha256": "64714e94cce82e424b9e8195801ca4e6e46cfd66af725304309b7d73313b569d"
+          },
+          {
+            "path": "matrix-02/fuzz-original-0.json",
+            "sha256": "010f81b549ff8ea7c4055d7367a0a75de48f9bd404b1d33891ccb290bb2e4e02"
+          }
+        ]
+      },
+      {
+        "name": "fuzz-original-7.json",
+        "equal_excluding_source_metadata": true,
+        "normalized_sha256": "a52e69fa8946c532bbf88a1cb09a3fff2de00e808c13da63d36585d89638afdf",
+        "inputs": [
+          {
+            "path": "matrix-01/fuzz-original-7.json",
+            "sha256": "64714e94cce82e424b9e8195801ca4e6e46cfd66af725304309b7d73313b569d"
+          },
+          {
+            "path": "matrix-02/fuzz-original-7.json",
+            "sha256": "010f81b549ff8ea7c4055d7367a0a75de48f9bd404b1d33891ccb290bb2e4e02"
+          }
+        ]
+      },
+      {
+        "name": "fuzz-second-edition-0.json",
+        "equal_excluding_source_metadata": true,
+        "normalized_sha256": "a34bb6653e67c9f0af98b4e947596cda7a1842e65b2f4ffed51666bab350416a",
+        "inputs": [
+          {
+            "path": "matrix-01/fuzz-second-edition-0.json",
+            "sha256": "6457254bb41f5d9f1832bde725b91a97223ed997fde19b46f6ef275b675e4815"
+          },
+          {
+            "path": "matrix-02/fuzz-second-edition-0.json",
+            "sha256": "1b2e4fe7c30fa1e87db1eb004dee7f3532426565557ac039ad30ab576c92c701"
+          }
+        ]
+      },
+      {
+        "name": "fuzz-second-edition-7.json",
+        "equal_excluding_source_metadata": true,
+        "normalized_sha256": "a34bb6653e67c9f0af98b4e947596cda7a1842e65b2f4ffed51666bab350416a",
+        "inputs": [
+          {
+            "path": "matrix-01/fuzz-second-edition-7.json",
+            "sha256": "6457254bb41f5d9f1832bde725b91a97223ed997fde19b46f6ef275b675e4815"
+          },
+          {
+            "path": "matrix-02/fuzz-second-edition-7.json",
+            "sha256": "1b2e4fe7c30fa1e87db1eb004dee7f3532426565557ac039ad30ab576c92c701"
+          }
+        ]
+      }
+    ],
+    "mixed_distinct_cases": 30,
+    "mixed_executions_including_hash_repeat_and_replay": 120,
+    "census_comparisons": [
+      {
+        "name": "census-0.json",
+        "equal_excluding_source_metadata": true,
+        "normalized_sha256": "45f15907791de6cbc7a1eaad33f5056d45f69cd727a47e058b8267d832e56bb3",
+        "inputs": [
+          {
+            "path": "matrix-01/census-0.json",
+            "sha256": "03af3adc22e18bda4acad285325599a786b0368b06f53287fa5a77e6e639eb7e"
+          },
+          {
+            "path": "matrix-02/census-0.json",
+            "sha256": "b04812522ba9de88f7f6728c5ad028b7a7958c0ae422755910b002cc980ad1a6"
+          }
+        ]
+      },
+      {
+        "name": "census-7.json",
+        "equal_excluding_source_metadata": true,
+        "normalized_sha256": "45f15907791de6cbc7a1eaad33f5056d45f69cd727a47e058b8267d832e56bb3",
+        "inputs": [
+          {
+            "path": "matrix-01/census-7.json",
+            "sha256": "03af3adc22e18bda4acad285325599a786b0368b06f53287fa5a77e6e639eb7e"
+          },
+          {
+            "path": "matrix-02/census-7.json",
+            "sha256": "b04812522ba9de88f7f6728c5ad028b7a7958c0ae422755910b002cc980ad1a6"
+          }
+        ]
+      }
+    ],
+    "census_executions": 20,
+    "independent_final_a30_replays": [
+      {
+        "input": "causal-review/first-Ariovistus-18.json",
+        "input_sha256": "670eef77aff303eefa9da58dc198d60c9721048ae47272f2141c38af6eefc66a",
+        "exact_result": true,
+        "exact_complete_post_state": true,
+        "exact_rng": true,
+        "normalized_post_state_sha256": "b679462a465fa3cb9813aa768e0a4d49759117a18c67c34700c63870fcbfec56",
+        "normalized_rng_sha256": "b11e381ae69de059d58e18fc4e471c67f4dbf1e28bb00157abcb5d16d8ea4697"
+      },
+      {
+        "input": "causal-review/first-The-Gallic-War-18.json",
+        "input_sha256": "419145841002f5a486e836f38b4d94de4a7731eb3de07b3fe40024fdbc9f0269",
+        "exact_result": true,
+        "exact_complete_post_state": true,
+        "exact_rng": true,
+        "normalized_post_state_sha256": "b7267f5ddb58690e9d83eac894751cc18ba838851e6e1237e331ad38be01b04b",
+        "normalized_rng_sha256": "b11e381ae69de059d58e18fc4e471c67f4dbf1e28bb00157abcb5d16d8ea4697"
+      }
+    ],
+    "baseline_refresh_clearance": {
+      "approved": true,
+      "source": "ed4c0d64f358e0f71a3852520d94ee71c6e561a46b8f8a53fc52b1edff23af9f",
+      "basis": "All 50 earliest parent/candidate differences were source-reviewed; final source changes only the reviewed A30 priority and regression; all matrix outcomes/state hashes, mixed/replay/census results and two final A30 executions remain equivalent.",
+      "original_100_game_threshold_unchanged": 0.15,
+      "existing_15_game_canary_threshold_unchanged": 0.4,
+      "retained_old_baseline_sha256": "207a129589d2bb17bec17319e70de7c8cf44d1572dc6aaca73cd0b39a9b5b8d3",
+      "retain_prior_failed_comparisons": true,
+      "retain_original_source_labels_for_sealed_100_traces": true,
+      "does_not_waive_final_full_suite": true
+    },
+    "limitations": [
+      "All 100 original source traces remain attributed to the original integrated source, not relabeled as final-source traces.",
+      "First-divergence review is bounded and does not individually audit every downstream move.",
+      "Three captured candidate decision payloads differ in unused plural Trade metadata order after sorted JSON reload; metadata-equivalence.json demonstrates identical next execution results and complete state/RNG.",
+      "Final baseline refresh, full-suite run, documentation, commit and push remain root-owned."
+    ],
+    "passed": true
+  },
+  "evidence_archive": {
+    "path": "event-validation-2026-11-03-evidence.zip",
+    "sha256": "ba4862acea4d6db065e24526fce3fe3f91f90257f96c2bb445550babd4f78a7a",
+    "bytes": 10370560,
+    "entries": 331,
+    "crc_and_manifest_verified": true
+  }
+}

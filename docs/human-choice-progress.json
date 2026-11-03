@@ -1,17 +1,17 @@
 {
   "audit_commit": "7e72fe7eda33c58b2f83457c39edf5b295a04f77",
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
-  "updated": "2026-11-02",
+  "updated": "2026-11-03",
   "tested_source": {
-    "commit": "9a2bad256073cbc5c76329af0e02d352d9d0a041",
-    "python_sha256": "d78d921cdb2db2c60bd433270bca2a80fb92462888610e8199522de41b749797",
-    "python_files": 407,
-    "note": "Committed Python bytes unchanged throughout integration matrix; documentation-only edits were uncommitted.",
+    "commit": "d9fc7a3eb4bafea8f89fd881dd900bb2f353b90b",
+    "python_sha256": "ed4c0d64f358e0f71a3852520d94ee71c6e561a46b8f8a53fc52b1edff23af9f",
+    "python_files": 417,
+    "note": "Committed Python tree exactly matches final prepared matrix and combined full-suite source. Documentation-only changes pending.",
     "working_tree_changes": true
   },
   "total": 50,
-  "closed": 14,
-  "open": 36,
+  "closed": 17,
+  "open": 33,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -180,13 +180,22 @@
       "id": "BE-11",
       "title": "Event plan validators accept selections outside printed quantity and target limits",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "b17e2f6d8297501c16288cfd5de04ae61b19a774",
+        "d9fc7a3eb4bafea8f89fd881dd900bb2f353b90b"
+      ],
+      "report": "reviews/event-validation-2026-11-03.md"
     },
     {
       "id": "BE-12",
       "title": "German Allegiances cannot replace Warbands for a Gallic executor",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "b17e2f6d8297501c16288cfd5de04ae61b19a774"
+      ],
+      "report": "reviews/event-validation-2026-11-03.md"
     },
     {
       "id": "EXP-01",
@@ -268,7 +277,12 @@
       "id": "EXP-09",
       "title": "Typed human Event plans bypass printed geographic, beneficiary and quantity limits",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "commits": [
+        "b17e2f6d8297501c16288cfd5de04ae61b19a774",
+        "d9fc7a3eb4bafea8f89fd881dd900bb2f353b90b"
+      ],
+      "report": "reviews/event-validation-2026-11-03.md"
     },
     {
       "id": "EXP-10",

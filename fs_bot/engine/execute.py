@@ -1630,7 +1630,7 @@ def _resolve_free_actions_scoped(state, faction):
         results.extend(_resolve_card72_hidden_march_battle(state, faction))
     if mods.get("card_58_german_march_battle"):
         _event_step(state, "grant.card_58_german_march_battle")
-        results.extend(_resolve_card58_german_ambush(state))
+        results.extend(_resolve_card58_german_ambush(state, faction))
     if mods.get("card_65_german_march_ambush"):
         _event_step(state, "grant.card_65_german_march_ambush")
         results.extend(_resolve_card65_german_march_ambush(
@@ -2736,7 +2736,13 @@ def _resolve_card65_german_march_ambush(state, march_limit):
              "executed": bool(ambushes)}]
 
 
-def _resolve_card58_german_ambush(state):
+def _resolve_card58_german_ambush(state, faction=None):
+    from fs_bot.cards.aduatuca import resolve
+    from fs_bot.rules_consts import ROMANS
+    return resolve(state, faction or state.get("executing_faction") or ROMANS)
+
+
+def _resolve_card58_german_ambush_default(state):
     """Card 58 Aduatuca (shaded): "March Germans to 1 Region with a Fort. They
     Ambush Romans there, 1 Loss per 2 Warbands." ("Sugambri strike unprepared
     fort" — the Fort gives no protection: ignore_fort.)

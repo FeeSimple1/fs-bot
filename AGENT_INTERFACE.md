@@ -605,6 +605,26 @@ targets may include a Region without friendly Forces, as its text permits.
 Missing or invalid durable-session responses remain pending with board/RNG
 rollback; do not replace them with a default response.
 
+Numeric 58 shaded uses `free_action` / `aduatuca_march`, consulted with the
+Event executor, with engine-owned `acting_faction: Germans`. Respond with
+`destination` and ordered `marches`, each containing `origin` and integer
+`warbands`. Choose a Roman Fort Region and distinct adjacent origins, at most
+one group per origin. Zero selects an origin for its normal visibility flip
+without moving pieces; an empty list leaves only resident Germans available
+for the mandatory following Ambush. No response can redirect that Battle,
+add pieces or routes, or independently decline it. For example:
+
+```json
+{"destination":"Mandubii","marches":[{"origin":"Sequani","warbands":2}]}
+```
+
+The granted March remains German movement, including Scouted handling;
+`march_cohort` formation choices go to the executor and identify
+`acting_faction: Germans`. Roman defender choices remain Roman-owned.
+Explicit `use_default` retains the previous automatic planner. Missing or
+invalid durable answers stay pending; saving at a later defender choice
+preserves and replays the accepted March before resolving that choice.
+
 Numeric 9 uses `free_action` / `mons_cevenna_march` for its human executor.
 Respond with `origin`, `destination`, `group` and optional `diviciacus_regions`.
 The group maps canonical mobile piece labels to integer quantities, with a

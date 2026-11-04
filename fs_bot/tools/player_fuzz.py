@@ -126,6 +126,13 @@ def make_random_reactive(seats, rng):
         if (kind == "free_action" and request.get("request_type") == "roman_event_accept"
                 and request.get("card_id") == 70):
             return {"accept": True} if rng.random() >= 0.25 else {"decline": True}
+        if kind == "free_action" and request.get("request_type") == "aduatuca_march":
+            destination = rng.choice(request['destinations'])
+            sources = list(request['origins_by_destination'][destination].items())
+            rng.shuffle(sources)
+            return {'destination': destination, 'marches': [
+                {'origin': origin, 'warbands': rng.randint(0, maximum)}
+                for origin, maximum in sources if rng.random() < 0.7]}
         if kind == "free_action" and request.get("request_type") == "mons_cevenna_march":
             from fs_bot.cards.mons_cevenna import pools, routes
             options = []

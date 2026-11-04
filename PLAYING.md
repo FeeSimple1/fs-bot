@@ -25,6 +25,15 @@ If no native March is possible, choose one of the three Regions for the
 remaining benefit. `b`/`board` is available while planning. Diviciacus
 cooperation requires separate consent for each Command.
 
+For shaded Aduatuca (card 58), the Event player chooses a Roman Fort
+Region and which adjacent German groups March there, with exact quantities.
+You may select an origin for hiding without moving Warbands. Each origin
+can send only one group. Resident Germans join the following Ambush against
+Romans; Hidden superiority is not required, and the Fort does not halve
+the one Loss per two German Warbands. Roman casualty choices remain with
+the Roman player. The shaded Event skips the unrelated unshaded removal
+prompts, and `b`/`board` remains available during March selection.
+
 ## Requirements
 
 Python 3.10 or newer. Nothing else — no packages to install, no

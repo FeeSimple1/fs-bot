@@ -21,6 +21,23 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Aduatuca — partial BE-01 repair
+
+The [Aduatuca report](reviews/aduatuca-2026-11-04.md) covers numeric58
+shaded's executor-owned Fort destination, German origins and exact quantities.
+Origins undergo ordinary visibility changes, including zero-movement hiding;
+resident Germans join the mandatory Roman Ambush with its printed Fort
+exception. Roman defender choices remain with Romans. Terminal inspection,
+durable rejection, rollback and save/resume are covered. **7,539 tests pass**;
+13 behavioral witnesses fail against the parent. Ten bot records/final hashes
+match, and 40 mixed executions including replay/hash repeats have zero hard
+findings. Old transcripts
+can encounter a new choice; cross-revision exact replay is not promised.
+
+**21/50 original findings remain closed (42%); 29 remain open.** BE-01
+remains open for 4/17/65. Two source questions, twelve provisional rulings
+and 34 unverified inventory rows remain separate.
+
 ### 3 November Mons Cevenna — partial BE-01 repair
 
 The [Mons Cevenna report](reviews/mons-cevenna-2026-11-03.md) covers

@@ -4,6 +4,16 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Aduatuca March choices, 4 November 2026
+
+- Give the human executor numeric58 shaded's Fort, German origins, exact
+  quantities and visibility formation choices, including hide-only origins.
+- Preserve the forced Roman Ambush, resident participants, printed Fort
+  exception and separate Roman defender choices, with durable rollback/resume.
+- Skip unshaded removal parameters in the shaded terminal flow.
+  Partial BE-01 repair; progress remains 21/50 (42%). See the
+  [Aduatuca report](docs/reviews/aduatuca-2026-11-04.md).
+
 ## Unreleased — Mons Cevenna March choices, 3 November 2026
 
 - Restore human first-March origin, destination and exact mobile-piece choices

@@ -4,6 +4,16 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Circumvallation choices, 4 November 2026
+
+- Restore numeric4's Roman-owned optional benefit, exact adjacent groups and
+  destination, including cooperation, physical formation and save/resume.
+- Move marker placement after the accepted March and validate legacy targets.
+- Close original BE-01: 22/50 findings closed (44%), 28 open. Record separate
+  high-priority CV-PERSISTENCE defects for continuing marker mechanics and
+  Interlude cleanup. See the [choice repair](docs/reviews/circumvallation-2026-11-04.md)
+  and [persistent-effect follow-up](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
+
 ## Unreleased — Germanic Chieftains choices, 4 November 2026
 
 - Restore numeric17 unshaded's Roman-owned choice of up to three original

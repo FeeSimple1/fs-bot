@@ -143,6 +143,20 @@ def make_random_reactive(seats, rng):
         if kind == "free_action" and request.get("request_type") == "german_guided_ambush":
             region=rng.choice(sorted(request['defenders_by_region']))
             return {'region':region,'defender':rng.choice(request['defenders_by_region'][region])}
+        if kind == "free_action" and request.get("request_type") == "circumvallation_march":
+            from fs_bot.cards.circumvallation import pools,routes
+            if rng.random()<0.25:
+                return {'decline':True}
+            destination=rng.choice(request['destinations'])
+            sources=list(pools(state).items());rng.shuffle(sources)
+            marches=[]
+            for origin,pool in sources:
+                legions=rng.randint(0,pool[rc.LEGION]);auxilia=rng.randint(0,pool[rc.AUXILIA])
+                leader=bool(pool[rc.LEADER] and rng.random()<0.5)
+                selected={rc.LEGION:legions,rc.AUXILIA:auxilia,rc.LEADER:pool[rc.LEADER] if leader else None}
+                if (legions or auxilia or leader) and routes(state,origin,destination,selected):
+                    marches.append({'origin':origin,'legions':legions,'auxilia':auxilia,'leader':leader})
+            return {'destination':destination,'marches':marches}
         if kind == "free_action" and request.get("request_type") == "aduatuca_march":
             destination = rng.choice(request['destinations'])
             sources = list(request['origins_by_destination'][destination].items())

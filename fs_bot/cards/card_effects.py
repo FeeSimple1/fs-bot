@@ -489,26 +489,11 @@ def execute_card_4(state, shaded=False):
 
     Source: Card Reference, card 4
     """
-    if not shaded:
-        params = state.get("event_params", {})
-        target = params.get("target_region")
-        if target is None:
-            return
-        # Place Circumvallation marker (dict-consistent via _add_region_marker)
-        _add_region_marker(state, target, MARKER_CIRCUMVALLATION)
-        # Free March is handled by the caller (bot/CLI)
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_4_free_march_to"] = target
-    else:
-        # Card 4 has only unshaded text in Card Reference
-        # Same effect for both sides
-        params = state.get("event_params", {})
-        target = params.get("target_region")
-        if target is None:
-            return
-        _add_region_marker(state, target, MARKER_CIRCUMVALLATION)
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_4_free_march_to"] = target
+    from fs_bot.cards.circumvallation import initial_target
+    target = initial_target(state)
+    # Romans own the whole optional grant. Marker placement follows their
+    # March decision; merely playing the Event must not place it in advance.
+    state.setdefault("event_modifiers", {})["card_4_free_march_to"] = target
 
 def execute_card_5(state, shaded=False):
     """Card 5: Gallia Togata — Gallia Togata marker / Remove pieces.

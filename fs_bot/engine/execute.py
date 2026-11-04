@@ -1645,7 +1645,7 @@ def _resolve_free_actions_scoped(state, faction):
     if mods.get("card_57_march_britannia"):
         _event_step(state, "grant.card_57_march_britannia")
         results.extend(_resolve_card57_britannia_march(state, faction))
-    if mods.get("card_4_free_march_to"):
+    if "card_4_free_march_to" in mods:
         _event_step(state, "grant.card_4_free_march_to")
         results.extend(_resolve_card4_circumvallation(
             state, mods.get("card_4_free_march_to")))
@@ -2441,6 +2441,11 @@ def _resolve_card9_march_command_default(state, faction, march_from, march_to):
 
 
 def _resolve_card4_circumvallation(state, region):
+    from fs_bot.cards.circumvallation import resolve
+    return resolve(state, region)
+
+
+def _resolve_card4_circumvallation_default(state, region):
     """Card 4 Circumvallation: the Romans free March one mobile group into the
     marked enemy-Citadel Region (the Circumvallation marker was placed there by
     the card handler). Marches from the adjacent Region with the largest Roman

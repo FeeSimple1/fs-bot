@@ -100,10 +100,12 @@ adds numeric 9's exact human March and destination-scoped follow-on;
 The [Aduatuca repair](docs/reviews/aduatuca-2026-11-04.md) restores numeric58's
 executor-owned Fort and German March choices. The [German guidance repair](docs/reviews/german-guidance-2026-11-04.md) restores
 numeric65's human March and Ambush choices. The [Germanic Chieftains repair](docs/reviews/germanic-chieftains-2026-11-04.md)
-restores numeric17's Roman-owned groups and single Ambush. BE-01 remains open for card4.
+restores numeric17's Roman-owned groups and single Ambush. The [Circumvallation choice repair](docs/reviews/circumvallation-2026-11-04.md)
+completes BE-01. [Persistent marker mechanics](docs/reviews/circumvallation-persistence-followup-2026-11-04.md)
+remain a separate verified high-priority follow-up.
 The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md)
 closes FE-01: `b`/`board` at Command menus show the position after the preceding SA.
-**21 of 50 findings are closed (42%); 29 remain open** in the
+**22 of 50 findings are closed (44%); 28 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

@@ -605,6 +605,30 @@ targets may include a Region without friendly Forces, as its text permits.
 Missing or invalid durable-session responses remain pending with board/RNG
 rollback; do not replace them with a default response.
 
+Numeric4 uses `free_action` / `circumvallation_march` for Romans, independent
+of the Event executor. `decline: true` declines the complete benefit before
+any new marker or movement; `use_default: true` delegates the whole benefit.
+An explicit plan contains `destination`, ordered `marches` and optional
+`diviciacus_regions`. Each group contains `origin`, integer `legions` and
+`auxilia`, and Boolean `leader`. Every group moves one adjacent step into
+the same offered enemy Citadel Region. Counts are reserved from original
+forces, including split groups and a Leader selected at most once. No extra
+routes, dropoffs, other pieces or four-Legion cap apply. For example:
+
+```json
+{"destination":"Mandubii","marches":[{"origin":"Sequani","legions":0,"auxilia":2,"leader":false}]}
+```
+
+The empty list leaves placement to existing Romans. Marker placement occurs
+after March, requiring a remaining non-Roman Citadel and Roman presence.
+Missing/invalid durable answers stay pending; saves at formation preserve
+accepted plans. Legacy `target_region` must name an enemy Citadel and only
+seeds automatic planning; the Roman human owns the actual destination.
+**Known follow-up CV-PERSISTENCE:** continuing marker restrictions, virtual
+Fort behavior, cleanup and exact Interlude removals are not implemented
+correctly. See the [verified follow-up](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
+Old transcripts may encounter the new decision; the save schema is unchanged.
+
 Numeric 17 unshaded shares `german_guided_march` / `german_guided_ambush`,
 but requests carry `card_id: 17` and are always consulted with Romans, not
 the Event executor or Germans. Engine-owned `acting_faction` remains Germans.

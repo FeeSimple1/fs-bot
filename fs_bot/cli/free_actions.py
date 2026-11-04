@@ -17,6 +17,9 @@ def collect_free_action(state, faction, request, stdin, stdout):
     if request.get('request_type') == 'aduatuca_march':
         from fs_bot.cli.aduatuca import collect_march
         return collect_march(state, faction, request, stdin, stdout)
+    if request.get('request_type') == 'circumvallation_march':
+        from fs_bot.cli.circumvallation import collect_march
+        return collect_march(state, faction, request, stdin, stdout)
     if request.get('request_type') == 'mons_cevenna_march':
         from fs_bot.cli.mons_cevenna import collect_march
         return collect_march(state, faction, request, stdin, stdout)

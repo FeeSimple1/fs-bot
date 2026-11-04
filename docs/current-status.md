@@ -21,6 +21,26 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Circumvallation choices — BE-01 closed; persistent effects open
+
+The [choice repair](reviews/circumvallation-2026-11-04.md) restores Roman
+whole-benefit decline and exact adjacent groups/destination on numeric4,
+whoever executes the Event. A new marker follows the accepted March and
+requires a remaining enemy Citadel and Roman presence. Formation/cooperation,
+terminal inspection and durable save/resume are covered. **7,623 tests pass**,
+including 29 added cases; 23 behavior witnesses fail against the parent and
+a native control passes. Ten bot gameplay records/final hashes match; mixed
+runs have zero hard findings and one traced generated Resource-gift partial.
+
+**22/50 original findings are closed (44%); 28 remain open.** The original
+human Event-March/guidance finding BE-01 is complete. This counts original
+findings, not complete card4 rules compliance. Executable probes separately
+confirm **CV-PERSISTENCE**, a new high-priority open follow-up: marked pieces
+can move, the virtual Fort is absent, marker cleanup is missing, and Interlude
+removes unmarked Romans. See the [persistent-effect report](reviews/circumvallation-persistence-followup-2026-11-04.md).
+Two source questions, twelve provisional rulings and 34 unverified inventory
+rows remain separate as well.
+
 ### 4 November Germanic Chieftains — partial BE-01 repair
 
 The [Germanic Chieftains report](reviews/germanic-chieftains-2026-11-04.md)

@@ -26,6 +26,8 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [4 November Circumvallation choices](reviews/circumvallation-2026-11-04.md) | Roman-owned optional March and post-March marker; closes original BE-01 |
+| [4 November Circumvallation persistent-effect follow-up](reviews/circumvallation-persistence-followup-2026-11-04.md) | Additional verified high-priority defects in marker mechanics and Interlude cleanup |
 | [4 November Germanic Chieftains](reviews/germanic-chieftains-2026-11-04.md) | Numeric17 Roman-owned original German groups and single Ambush; partial BE-01 repair |
 | [4 November German Allegiances guidance](reviews/german-guidance-2026-11-04.md) | Numeric65 executor-owned original March groups and all-able Ambush order/targets; partial BE-01 repair |
 | [4 November Aduatuca](reviews/aduatuca-2026-11-04.md) | Numeric58 shaded executor-owned German March and Fort choices; partial BE-01 repair |

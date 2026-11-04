@@ -1,0 +1,122 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "947bf814129cfc135b49d2babbbbf740bb46f356",
+    "dirty": true,
+    "source_sha256": "66f26c1ad50c0ef45d4ecb45fd45fb463381f51670e6c800545a281fc0dcffc1"
+  },
+  "python": "3.12.14",
+  "python_files": 477,
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "7623",
+    "time": "236.176",
+    "timestamp": "2026-11-04T16:56:17.798781+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "targeted_suite": {
+    "passed": 68
+  },
+  "parent_behavior_proof": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "23",
+    "skipped": "0",
+    "tests": "24",
+    "time": "0.617",
+    "timestamp": "2026-11-04T16:56:17.767415+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "parent_control_passed": 1,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "bot_comparison": {
+    "games": 10,
+    "scenarios": 5,
+    "seeds": [
+      1,
+      2
+    ],
+    "edition": "legacy",
+    "all_completed": true,
+    "all_gameplay_fields_and_final_hashes_equal": true,
+    "excluded": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "947bf814129cfc135b49d2babbbbf740bb46f356",
+      "dirty": true,
+      "source_sha256": "66f26c1ad50c0ef45d4ecb45fd45fb463381f51670e6c800545a281fc0dcffc1",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 296,
+    "event_turns": 88,
+    "events_ok": 86,
+    "partial": 1,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "4370ee9288f421ad5a93dd440cda58d215360e8dcf13a7a7b857efbea0f3eea1"
+  },
+  "mixed_hashes": [
+    0,
+    987
+  ],
+  "mixed_complete_json_equal": true,
+  "mixed_executions_with_replay": 40,
+  "soft_partial_explained": {
+    "scenario": "Pax Gallica?",
+    "seed": 2,
+    "card": 13,
+    "faction": "Belgae",
+    "cause": "Generated Resource gift leaves insufficient Resources for later Rally placement; dry/live agree."
+  },
+  "original_audit": {
+    "closed": 22,
+    "open": 28,
+    "total": 50,
+    "percent": 44
+  },
+  "be01_status": "closed",
+  "separate_open_followups": {
+    "CV-PERSISTENCE": {
+      "severity": "high",
+      "preexisting": true,
+      "candidate_and_parent_probe_results_equal": true,
+      "results": {
+        "marked_force_can_march": true,
+        "marker_survives_loss_of_last_roman": true,
+        "roman_auxilia_after_four_marked_warbands_attack": 4,
+        "roman_auxilia_expected_with_fort_protection": 5,
+        "marker_survives_attack_on_romans": true,
+        "interlude_removes_unmarked_romans": true,
+        "all_boards_valid": true
+      }
+    }
+  }
+}

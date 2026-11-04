@@ -58,6 +58,21 @@ the Roman bot for the whole grant applies the Roman card instructions;
 shaded Germanic Chieftains still runs the separate Germans Phase procedure.
 `b`/`board` and saving at the following Ambush decision remain available.
 
+For Circumvallation (card 4), Romans choose or decline the complete benefit,
+regardless of who plays the Event. Choose the enemy Citadel destination and
+exact adjacent Roman groups; multiple groups may leave an original Region.
+There is no four-Legion limit. The normal origin visibility step applies to
+pieces left behind. An empty March leaves the remaining placement effect to
+resident Romans; a new marker is placed only after March and only if a
+non-Roman Citadel and Roman pieces remain there. Cooperation requires separate
+consent. `b`/`board` and save/resume at physical formation remain available.
+
+**Circumvallation limitation:** its continuing marked-group movement and Fort
+rules, marker cleanup, and exact Interlude removal are still broken. The
+[new follow-up](docs/reviews/circumvallation-persistence-followup-2026-11-04.md)
+records reproducible witnesses. The repaired choice flow does not make this
+card's persistent effects rules-complete.
+
 ## Requirements
 
 Python 3.10 or newer. Nothing else — no packages to install, no

@@ -4,6 +4,16 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Circumvallation no-Romans cleanup, 4 November 2026
+
+- Remove the marker after successful physical removal or movement leaves no
+  Roman piece in its Region, including casualties and March departures.
+- Preserve it while any Roman piece remains; other Region markers are untouched.
+- Keep Interlude's final marker deletion safe if piece removal already cleared
+  it. Exact marked-only Interlude removal remains a known defect.
+- This partially repairs separate CV-PERSISTENCE; original progress remains
+  22/50 (44%). See the [report](docs/reviews/circumvallation-no-romans-2026-11-04.md).
+
 ## Unreleased — Circumvallation choices, 4 November 2026
 
 - Restore numeric4's Roman-owned optional benefit, exact adjacent groups and

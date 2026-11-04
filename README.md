@@ -102,7 +102,10 @@ executor-owned Fort and German March choices. The [German guidance repair](docs/
 numeric65's human March and Ambush choices. The [Germanic Chieftains repair](docs/reviews/germanic-chieftains-2026-11-04.md)
 restores numeric17's Roman-owned groups and single Ambush. The [Circumvallation choice repair](docs/reviews/circumvallation-2026-11-04.md)
 completes BE-01. [Persistent marker mechanics](docs/reviews/circumvallation-persistence-followup-2026-11-04.md)
-remain a separate verified high-priority follow-up.
+remain a separate verified high-priority follow-up. The
+[no-Romans cleanup repair](docs/reviews/circumvallation-no-romans-2026-11-04.md)
+now clears the marker after the last physical Roman leaves; the other
+persistent effects remain open.
 The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md)
 closes FE-01: `b`/`board` at Command menus show the position after the preceding SA.
 **22 of 50 findings are closed (44%); 28 remain open** in the

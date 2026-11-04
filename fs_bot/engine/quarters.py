@@ -328,6 +328,9 @@ def _apply_relocations(state, faction, moves):
     # All changes above used piece helpers, on a detached board. Commit only
     # after the complete relocation plan and required agreements succeeded.
     state['spaces'] = sim['spaces']
+    # Departures can end Circumvallation even on the detached legacy path.
+    # Commit its marker effects with the accepted physical relocations.
+    state['markers'] = sim['markers']
     return outcome
 
 

@@ -441,7 +441,8 @@
       "status": "open",
       "severity": "high",
       "report": "reviews/circumvallation-persistence-followup-2026-11-04.md",
-      "summary": "Circumvallation needs persistent physical-group tracking, movement restriction, virtual Fort protection, marker lifecycle and cohort-only Interlude cleanup. Executable probes confirm missing effects."
+      "summary": "No-Romans marker cleanup repaired. Persistent physical-group tracking, movement restriction, virtual Fort protection, attack/elimination cleanup and cohort-only Interlude removal remain open.",
+      "partial_report": "reviews/circumvallation-no-romans-2026-11-04.md"
     }
   ]
 }

@@ -26,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [4 November Circumvallation no-Romans cleanup](reviews/circumvallation-no-romans-2026-11-04.md) | Marker ends after last physical Roman departure or casualty; other persistent effects remain open |
 | [4 November Circumvallation choices](reviews/circumvallation-2026-11-04.md) | Roman-owned optional March and post-March marker; closes original BE-01 |
 | [4 November Circumvallation persistent-effect follow-up](reviews/circumvallation-persistence-followup-2026-11-04.md) | Additional verified high-priority defects in marker mechanics and Interlude cleanup |
 | [4 November Germanic Chieftains](reviews/germanic-chieftains-2026-11-04.md) | Numeric17 Roman-owned original German groups and single Ambush; partial BE-01 repair |

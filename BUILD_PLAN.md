@@ -117,7 +117,8 @@ The [German guidance repair](docs/reviews/german-guidance-2026-11-04.md) restore
 numeric65's executor-owned German March and all-able Ambush choices.
 The [Germanic Chieftains repair](docs/reviews/germanic-chieftains-2026-11-04.md)
 restores numeric17's Roman-owned German groups and single Ambush.
-Next address the separately verified [Circumvallation persistent-effect defects](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
+The [no-Romans cleanup repair](docs/reviews/circumvallation-no-romans-2026-11-04.md)
+repairs one marker boundary. Next address the remaining [Circumvallation persistent-effect defects](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even

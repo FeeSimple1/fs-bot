@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Circumvallation no-Romans cleanup — partial CV-PERSISTENCE
+
+The [cleanup repair](reviews/circumvallation-no-romans-2026-11-04.md) removes
+the marker after a successful piece operation leaves no physical Romans in
+its Region, including March departures and Battle casualties. Any remaining
+Roman piece keeps it, including an Ally, Fort or Leader. Other markers are
+preserved. This applies to both marker representations and all five scenarios.
+
+Marked-group tracking, movement restrictions, virtual Fort protection,
+attack/elimination boundaries, and exact marked-only Interlude cleanup remain
+open. Boolean-marker saves still do not identify their original marked group.
+**Original bundle remains 22/50 closed (44%), 28 open.** CV-PERSISTENCE is a
+separate high-priority finding and remains open after this partial repair.
+**7,662 tests pass**, including 39 new cases; 153 targeted tests pass.
+Against the parent, 36 new witnesses fail and three controls pass. Ten bot
+games complete and retain the same winners; one traced Interlude trajectory
+changes because a stale marker now expires.
+
+
 ### 4 November Circumvallation choices — BE-01 closed; persistent effects open
 
 The [choice repair](reviews/circumvallation-2026-11-04.md) restores Roman

@@ -68,7 +68,9 @@ non-Roman Citadel and Roman pieces remain there. Cooperation requires separate
 consent. `b`/`board` and save/resume at physical formation remain available.
 
 **Circumvallation limitation:** its continuing marked-group movement and Fort
-rules, marker cleanup, and exact Interlude removal are still broken. The
+rules, attack/elimination marker cleanup, and exact Interlude removal remain
+broken. The marker now clears when no physical Roman pieces remain; a lone
+Roman Ally, Fort or Leader counts as Roman presence. The
 [new follow-up](docs/reviews/circumvallation-persistence-followup-2026-11-04.md)
 records reproducible witnesses. The repaired choice flow does not make this
 card's persistent effects rules-complete.

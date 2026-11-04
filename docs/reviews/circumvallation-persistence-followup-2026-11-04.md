@@ -1,6 +1,11 @@
 # CV-PERSISTENCE — verified Circumvallation follow-up
 
 4 November 2026, America/Chicago. Status: **open; high priority**.
+**Later partial repair, 4 November:** the
+[no-Romans cleanup batch](circumvallation-no-romans-2026-11-04.md) repairs the
+last-Roman boundary only. The observations below describe the earlier audited
+revision; all other listed mechanics remain open. CV-PERSISTENCE is not closed.
+
 This is a newly recorded mechanics finding outside the original 50-finding
 human-choice audit. It is not repaired by the Circumvallation choice batch.
 

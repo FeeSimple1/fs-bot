@@ -625,8 +625,10 @@ Missing/invalid durable answers stay pending; saves at formation preserve
 accepted plans. Legacy `target_region` must name an enemy Citadel and only
 seeds automatic planning; the Roman human owns the actual destination.
 **Known follow-up CV-PERSISTENCE:** continuing marker restrictions, virtual
-Fort behavior, cleanup and exact Interlude removals are not implemented
-correctly. See the [verified follow-up](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
+Fort behavior, attack/elimination cleanup and exact Interlude removals remain
+incorrect. The no-Romans boundary now clears the marker after successful
+physical moves/removals. Any resident Roman piece counts, including an Ally,
+Fort or Leader; temporary effective-force views do not change ownership. See the [verified follow-up](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
 Old transcripts may encounter the new decision; the save schema is unchanged.
 
 Numeric 17 unshaded shares `german_guided_march` / `german_guided_ambush`,

@@ -1,0 +1,235 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "f5a4a1a568d45462892a36902291d179d0c51eee",
+    "dirty": true,
+    "source_sha256": "58371d2b62bc410b3d070fd14cab047da3b8f69728c62e7eb4bbfcd3aad675ca"
+  },
+  "python_files": 478,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "targeted_passed": 153,
+  "new_tests": 39,
+  "parent_failed": 36,
+  "parent_controls_passed": 3,
+  "bot_games": 10,
+  "all_bot_games_completed_and_audited": true,
+  "bot_comparison_differences": {
+    "('Pax Gallica?', 1)": [],
+    "('Pax Gallica?', 2)": [],
+    "('Reconquest of Gaul', 1)": [],
+    "('Reconquest of Gaul', 2)": [
+      "final_state_sha256"
+    ],
+    "('The Great Revolt', 1)": [
+      "final_state_sha256"
+    ],
+    "('The Great Revolt', 2)": [],
+    "('Ariovistus', 1)": [
+      "final_state_sha256"
+    ],
+    "('Ariovistus', 2)": [],
+    "('The Gallic War', 1)": [
+      "cards",
+      "commands",
+      "decisions",
+      "diagnostic_occurrences",
+      "diagnostics",
+      "engine_final_ranking",
+      "final_ranking",
+      "final_resources",
+      "final_state_sha256",
+      "last_faction",
+      "special_activities",
+      "winters"
+    ],
+    "('The Gallic War', 2)": []
+  },
+  "bot_comparison_excluded": [
+    "commit",
+    "seconds",
+    "source_sha256"
+  ],
+  "all_bot_winners_equal": true,
+  "original_progress": {
+    "closed": 22,
+    "total": 50,
+    "percent": 44,
+    "open": 28
+  },
+  "CV-PERSISTENCE": "open; partial no-Romans boundary repaired",
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "7662",
+    "time": "226.031",
+    "timestamp": "2026-11-04T23:28:29.405817+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "python": "3.12.14",
+  "superseded_candidate": {
+    "source_sha256": "183eb5c9fbe6e1cefcc0178ba716f33cded1a0f5cbc6bdc8d2170d3be708572b",
+    "tests_passed": 7657,
+    "reason": "Quarters discarded marker effects from detached board; fixed and revalidated separately."
+  },
+  "game_trace": {
+    "first_differences": [
+      {
+        "index": 28,
+        "resolved_card": "Winter",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 29,
+        "resolved_card": 62,
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 30,
+        "resolved_card": 48,
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 31,
+        "resolved_card": 13,
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 32,
+        "resolved_card": "A45",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 33,
+        "resolved_card": "A56",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 34,
+        "resolved_card": "A33",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 35,
+        "resolved_card": "A30",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 36,
+        "resolved_card": "A5",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 37,
+        "resolved_card": "A24",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 38,
+        "resolved_card": "A40",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 39,
+        "resolved_card": 15,
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 40,
+        "resolved_card": "A51",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 41,
+        "resolved_card": "A35",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 42,
+        "resolved_card": "A26",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 43,
+        "resolved_card": "A25",
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 44,
+        "resolved_card": 47,
+        "changed_keys": [
+          "markers"
+        ]
+      },
+      {
+        "index": 45,
+        "resolved_card": "Winter",
+        "changed_keys": [
+          "spaces",
+          "tribes",
+          "deck"
+        ]
+      },
+      {
+        "index": 46,
+        "resolved_card": 40,
+        "changed_keys": [
+          "spaces",
+          "tribes",
+          "deck"
+        ]
+      },
+      {
+        "index": 47,
+        "resolved_card": 55,
+        "changed_keys": [
+          "spaces",
+          "tribes",
+          "deck"
+        ]
+      }
+    ],
+    "disable_cleanup_reproduces_parent_record_except_seconds": true,
+    "disable_cleanup_reproduces_all_parent_snapshots": true,
+    "cleanup_log_includes_detached_previews": true,
+    "parent_cards": 71,
+    "candidate_cards": 88,
+    "parent_winner": "Belgae",
+    "candidate_winner": "Belgae"
+  }
+}

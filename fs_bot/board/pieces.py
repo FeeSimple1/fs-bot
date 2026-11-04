@@ -940,9 +940,11 @@ def clear_allied_tribe(state, region, faction, removed_piece_type, *, tribe=None
 
 def _refresh_region_control(state, *regions):
     from fs_bot.board.control import calculate_control
+    from fs_bot.cards.circumvallation import clear_without_romans
     spaces = state.get("spaces", {})
     for region in regions:
         if region in spaces:
+            clear_without_romans(state, region)
             spaces[region]["control"] = calculate_control(state, region)
 
 

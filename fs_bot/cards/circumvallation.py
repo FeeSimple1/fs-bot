@@ -1,6 +1,8 @@
 """Numeric4: Roman-owned optional adjacent March and subsequent marker placement.
 
-Persistent marked-group mechanics remain a separately documented repair.
+Marked-group movement, Fort protection and cohort cleanup remain a
+separately documented repair. The no-Romans marker boundary is enforced
+by the physical piece helpers.
 """
 from copy import deepcopy
 
@@ -13,6 +15,32 @@ from fs_bot.map.map_data import get_playable_regions_for_state
 
 REQUEST='circumvallation_march'
 FLAG='card_4_free_march_to'
+
+
+def clear_without_romans(state, region):
+    """Card Reference 4: remove the marker if no Romans remain there.
+
+    Read physical ownership, not a Command's temporary effective force:
+    cooperation, Enlist and combined Battles must not hide resident Romans.
+    All Roman pieces count, including an Ally, Fort or Leader alone.
+    """
+    markers = state.get('markers', {}).get(region)
+    if not isinstance(markers, (dict, set)) or rc.MARKER_CIRCUMVALLATION not in markers:
+        return
+    pieces = state.get('spaces', {}).get(region, {}).get('pieces', {}).get(rc.ROMANS, {})
+    if pieces.get(rc.LEADER) is not None:
+        return
+    if any(pieces.get(piece, 0) for piece in rc.PIECE_TYPES
+           if piece != rc.LEADER and piece not in rc.FLIPPABLE_PIECES):
+        return
+    if any(pieces.get(visibility, {}).get(piece, 0)
+           for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
+           for piece in rc.FLIPPABLE_PIECES):
+        return
+    if isinstance(markers, dict):
+        markers.pop(rc.MARKER_CIRCUMVALLATION, None)
+    else:
+        markers.discard(rc.MARKER_CIRCUMVALLATION)
 
 
 def _copy(state):

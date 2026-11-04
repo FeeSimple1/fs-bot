@@ -349,7 +349,8 @@ def _step0_circumvallation(state):
 
         # Remove the marker
         if isinstance(rm, dict):
-            del rm[MARKER_CIRCUMVALLATION]
+            # Physical removal of the last Roman already clears the marker.
+            rm.pop(MARKER_CIRCUMVALLATION, None)
         elif isinstance(rm, set):
             rm.discard(MARKER_CIRCUMVALLATION)
         result["regions_cleared"].append(region)

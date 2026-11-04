@@ -1030,11 +1030,15 @@ def _collect_command_plan(state, faction, cmd, stdin, stdout, single=False,
             return None
     collector = _COMMAND_COLLECTORS.get(cmd)
     from fs_bot.cli.diviciacus import choose_regions, planning_scope
-    cooperation = choose_regions(state, faction, "command", stdin, stdout,
-                                 excluded=excluded)
-    with planning_scope(state, faction, cooperation, "command"):
-        details = (collector(state, faction, stdin, stdout, single, excluded=excluded)
-                   if collector else None)
+    from fs_bot.cli.action_windows import inspect_board
+    # Earlier operations may have changed this detached planning board.
+    # Both cooperation and Command prompts must inspect that same board.
+    with inspect_board(state, stdout):
+        cooperation = choose_regions(state, faction, "command", stdin, stdout,
+                                     excluded=excluded)
+        with planning_scope(state, faction, cooperation, "command"):
+            details = (collector(state, faction, stdin, stdout, single, excluded=excluded)
+                       if collector else None)
     if details is None:
         return None
     if cooperation is not None:

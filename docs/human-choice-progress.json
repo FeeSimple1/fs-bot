@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-03",
   "tested_source": {
-    "commit": "4b112b1e5c180b8ff243e9b8e4d8ca76ad22d43e",
-    "python_sha256": "bb90b47656f19acfa1f64c0b799292e494aeedf6b414761566fd4290b0ad20f2",
-    "python_files": 463,
+    "commit": "6238dddbb24bddfc3f610e18cfc1ef93a77d7392",
+    "python_sha256": "f07654d71ce309a9b1d0b347e42ee2a59a4e1d86c9c8f0348bf19ee7d6ec9e27",
+    "python_files": 464,
     "working_tree_changes": true,
-    "note": "Camulogenus partial BE-01 repair prepared over this parent; final suite and matrix use these exact Python bytes."
+    "note": "FE-01 board inspection repair over the named parent; see reviews/planning-board-inspection-2026-11-03.md."
   },
   "total": 50,
-  "closed": 20,
-  "open": 30,
+  "closed": 21,
+  "open": 29,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -403,7 +403,11 @@
       "id": "FE-01",
       "title": "Board inspection after SA-first Build shows the pre-SA board at the following March menu",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/planning-board-inspection-2026-11-03.md",
+      "repair_summary": [
+        "Command and cooperation menus inspect their actual detached planning board, including after SA-first Build; live state and outer inspection hook are preserved."
+      ]
     },
     {
       "id": "FE-02",

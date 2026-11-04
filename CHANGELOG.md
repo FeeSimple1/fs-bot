@@ -4,6 +4,14 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Planning-board inspection, 3 November 2026
+
+- Fix `b`/`board` at Command and cooperation prompts to show the detached
+  position used by those menus after preceding operations, including
+  SA-first Build. Restore the outer inspection hook when the menu exits.
+- Close FE-01; original audit progress is 21/50 closed (42%), 29 open.
+  See the [repair report](docs/reviews/planning-board-inspection-2026-11-03.md).
+
 ## Unreleased — Camulogenus March choices, 3 November 2026
 
 - Give Romans the optional whole-benefit decision and exact March choices

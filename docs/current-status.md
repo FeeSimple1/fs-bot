@@ -21,6 +21,21 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 3 November planning-board inspection — FE-01 closed
+
+The [inspection repair](reviews/planning-board-inspection-2026-11-03.md)
+binds Command and cooperation inspection to the actual detached planning
+board. After SA-first Build, `b`/`board` at the March origin menu now shows
+the new Fort and spent Resources. Nested menu scopes restore the prior
+inspection hook on exit; planning does not alter the live board or RNG.
+
+The final source passes **7,489 tests**, including four regressions that
+fail against the parent; the targeted frontend suite passes 32 tests.
+
+**21/50 original findings are closed (42%); 29 remain open.** BE-01's
+remaining Event March grants are still open. Historical results below retain
+the counts and measurements of their own revisions.
+
 ### 3 November Camulogenus — partial BE-01 repair
 
 The [Camulogenus report](reviews/camulogenus-2026-11-03.md) covers Roman

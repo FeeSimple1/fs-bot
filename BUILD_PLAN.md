@@ -87,8 +87,8 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 20 of 50 closed (40%) and 30 open; these are finding counts, not
-equal effort units. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
+now records 21 of 50 closed (42%) and 29 open; these are finding counts, not
+equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)
 repairs dynamic Tribe geography in expansion defaults and detects rejected

@@ -11,9 +11,10 @@ for verified fixes, test coverage, and provisional source interpretations. The
 The [human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md)
 records current limitations: some Event and seasonal choices still resolve
 automatically, some legal physical selections are unavailable, and general
-during-March/Battle Special Ability timing is unsupported. The `b` display
-can also show the pre-SA board while planning March after an SA. These remain
-open repairs; before/after action ordering is available.
+during-March/Battle Special Ability timing is unsupported. Before/after action
+ordering is available. At Command prompts, `b`/`board` shows the planning
+position after preceding operations, including a Fort built before March.
+Planning leaves the live game unchanged until the action is submitted.
 
 ## Requirements
 

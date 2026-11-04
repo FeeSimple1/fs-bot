@@ -130,6 +130,10 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
     details = action.get("details") or {}
     if not isinstance(details, dict):
         return "Command details must be an object"
+    from fs_bot.commands.sa_intimidate import human_plan_error
+    error = human_plan_error(action)
+    if error:
+        return error
     from fs_bot.commands.sa_trade import validate_trade_plan
     error = validate_trade_plan(action)
     if error:

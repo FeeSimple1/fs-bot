@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Intimidate Tribe identity — CMD-INTIMIDATE-TRIBE closed
+
+The [Tribe repair](reviews/intimidate-tribes-2026-11-04.md) lets humans choose
+the exact Allied Tribe disc for ordinary, intrinsic Raid and A45 Intimidate.
+The complete Region's targets are reserved and validated before any Reveal
+or marker. Named human choices cannot silently become an NPC default.
+Terminal selection, board inspection, pending-input rollback and save/resume
+are covered; legacy unnamed NPC/default selections remain supported.
+
+**Original bundle is now 23/50 closed (46%), 27 open.** Circumvallation's
+marked-group tracking, movement restrictions, virtual Fort and exact Interlude
+removal remain open; this batch does not claim those mechanics repaired.
+**7,706 tests pass**, including 44 new cases; 229 targeted tests pass.
+Against the parent, 23 behavior witnesses fail and two controls pass. Ten bot
+gameplay records/final hashes match, and 40 mixed executions have zero hard
+findings plus one traced generated Rally partial per ten-case matrix.
+The separate pre-Battle NPC Intimidate targeting lead is also unchanged.
+
+
 ### 4 November Circumvallation no-Romans cleanup — partial CV-PERSISTENCE
 
 The [cleanup repair](reviews/circumvallation-no-romans-2026-11-04.md) removes

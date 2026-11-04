@@ -1010,7 +1010,11 @@ shaded Dread (A22) permits one added Warband to remove one extra piece,
 for up to three. Its capacity is the lesser of that limit and the eligible
 Hidden Warbands actually present. In `details.intimidate_plan`, provide one
 entry per removed piece, each with `region`, `target_faction`, `target_piece`
-and `target_state`. An ordinary three-removal plan needs three Hidden
+and `target_state`. Each human Ally removal also requires `target_tribe`,
+naming that Faction's actual disc in the selected Region. A City represented
+by a Citadel is not an Ally target. Duplicate, foreign, absent, null or
+non-Ally Tribe fields are invalid. All removals in a Region are validated
+before any Reveal or marker placement. An ordinary three-removal plan needs three Hidden
 participants; do not add `extra_warband` or invent Raid credit. Normal Region,
 one-target-Faction, no-enemy-Leader and eligible-piece restrictions still apply.
 
@@ -1020,13 +1024,25 @@ Resources and revealed Warbands before the choice. `raiders` is the number
 that actually Raided. Without shaded Dread, `max_removals` is the lesser of
 that number and two, even if Baggage Trains allowed three Raiders.
 Each offered target has `target_faction`, `target_piece`, `target_state`, and
-`available`. Return the first three fields for each chosen piece, repeating an
-entry only up to its available count. All chosen pieces must belong to one
+`available`. Ally options additionally contain `target_tribe` and have
+`available: 1`. Return the identity fields, including `target_tribe` for an
+Ally; repeat a mobile-piece entry only up to its available count. All chosen pieces must belong to one
 Faction with no Leader in the Region. For example:
 
 ```json
 {"targets":[{"target_faction":"Romans","target_piece":"Auxilia","target_state":"Hidden"}]}
 ```
+
+Ordinary, Raid-linked and A45 Intimidate menus select the named disc. Durable
+human submissions missing an Ally's Tribe stay pending; Event-grant plans
+also require the field. Unnamed bot plans and legacy low-level/raw Raid
+callbacks retain the established sorted default. Direct `intimidate` calls
+accept `(ALLY, None, tribe)` as well as legacy `(piece_type, piece_state)`
+pairs. Results retain `target_removed` and add `target_details` with the
+resolved `piece_type`, `piece_state` and `tribe` (null for non-Allies).
+When mixing legacy unspecified and named discs, named targets are reserved
+before automatic allocation. Save schema is unchanged; older human submissions
+may need the new field, and cross-revision transcript replay is not promised.
 
 An empty `targets` list places only the Intimidated marker. Decline leaves
 the Raid intact, while explicit default uses the German bot's priorities.

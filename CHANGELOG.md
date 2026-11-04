@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Intimidate Allied Tribe identity, 4 November 2026
+
+- Carry exact `target_tribe` choices through ordinary, intrinsic Raid and
+  A45-granted Intimidate, including terminal menus and durable save/resume.
+- Validate/reserve the whole Region's removals before any Reveal or marker;
+  reject Citadels, duplicate discs and malformed or missing human identities.
+- Preserve unnamed bot/default selections and legacy low-level pairs.
+- Close CMD-INTIMIDATE-TRIBE: 23/50 original findings closed (46%), 27 open.
+  Circumvallation's remaining mechanics are still open separately. See the
+  [report](docs/reviews/intimidate-tribes-2026-11-04.md).
+
 ## Unreleased — Circumvallation no-Romans cleanup, 4 November 2026
 
 - Remove the marker after successful physical removal or movement leaves no

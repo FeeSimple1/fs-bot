@@ -108,7 +108,10 @@ now clears the marker after the last physical Roman leaves; the other
 persistent effects remain open.
 The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md)
 closes FE-01: `b`/`board` at Command menus show the position after the preceding SA.
-**22 of 50 findings are closed (44%); 28 remain open** in the
+The [Intimidate Tribe repair](docs/reviews/intimidate-tribes-2026-11-04.md)
+closes CMD-INTIMIDATE-TRIBE with exact disc choices across ordinary, Raid-linked
+and A45 uses.
+**23 of 50 findings are closed (46%); 27 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

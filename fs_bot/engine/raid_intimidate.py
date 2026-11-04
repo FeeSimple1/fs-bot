@@ -41,8 +41,14 @@ def target_options(state, region):
                          if visibility is None else
                          count_pieces_by_state(state, region, faction, piece, visibility))
                 if count:
-                    options.append({'target_faction': faction, 'target_piece': piece,
-                                    'target_state': visibility, 'available': count})
+                    target = {'target_faction': faction, 'target_piece': piece,
+                              'target_state': visibility, 'available': count}
+                    if piece == ALLY:
+                        from fs_bot.commands.sa_intimidate import ally_targets
+                        options.extend(dict(target, target_tribe=tribe, available=1)
+                                       for tribe in ally_targets(state, region, faction))
+                    else:
+                        options.append(target)
     return options
 
 
@@ -74,7 +80,7 @@ def removal_limits(state, region, raiders):
     return raider_max, extra, max(raider_max, extra_max), extra_max
 
 
-def validate_response(state, request, response):
+def validate_response(state, request, response, *, require_named=False):
     """Validate the whole optional choice before any Intimidate effect."""
     if response in ({'decline': True}, {'use_default': True}):
         return
@@ -96,8 +102,11 @@ def validate_response(state, request, response):
         raise ValueError('Too many removals for the selected Raiding and extra Warbands.')
     keys = {'target_faction', 'target_piece', 'target_state'}
     for target in targets:
-        if not isinstance(target, dict) or set(target) != keys:
-            raise ValueError('Each target needs its Faction, piece type, and visibility.')
+        if (not isinstance(target, dict) or not keys <= set(target)
+                or set(target) - keys - {'target_tribe'}):
+            raise ValueError('Each target needs its Faction, piece type, visibility and optional Ally Tribe.')
+        if require_named and target['target_piece'] == ALLY and 'target_tribe' not in target:
+            raise ValueError('Choose target_tribe for each Intimidate Ally removal.')
     from fs_bot.engine.execute import _execute_intimidate
     sim = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
     result = _execute_intimidate(sim, GERMANS, _action(region, response),

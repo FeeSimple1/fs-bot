@@ -209,13 +209,15 @@ def collect_suborn(state, faction, stdin, stdout):
 
 
 def _intimidate_removals(state, region, target, prior):
-    from fs_bot.commands.sa_intimidate import intimidate
+    from fs_bot.commands.sa_intimidate import intimidate, ally_targets
     options = []
     for piece in (rc.WARBAND, rc.AUXILIA, rc.ALLY):
         for visibility in ((None,) if piece == rc.ALLY else (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)):
-            removal = (piece, visibility)
-            if _legal(state, intimidate, region, len(prior) + 1, target, prior + [removal]):
-                options.append((' '.join(p for p in (piece, visibility) if p), removal))
+            tribes = ally_targets(state, region, target) if piece == rc.ALLY else [None]
+            for tribe in tribes:
+                removal = (piece, visibility, tribe) if tribe is not None else (piece, visibility)
+                if _legal(state, intimidate, region, len(prior) + 1, target, prior + [removal]):
+                    options.append((' '.join(p for p in (piece, visibility, tribe) if p), removal))
     return options
 
 
@@ -255,9 +257,13 @@ def collect_intimidate(state, faction, stdin, stdout):
             if not removals:
                 continue
         intimidate(plan.state, region, len(removals) or 1, target, removals)
-        current = [{'region': region, 'target_faction': target,
-                    'target_piece': piece, 'target_state': visibility}
-                   for piece, visibility in removals or [(None, None)]]
+        current = []
+        for removal in removals or [(None, None)]:
+            entry = {'region': region, 'target_faction': target,
+                     'target_piece': removal[0], 'target_state': removal[1]}
+            if len(removal) == 3:
+                entry['target_tribe'] = removal[2]
+            current.append(entry)
         current[0] = plan.entry(current[0])
         entries.extend(current)
         regions.append(region)

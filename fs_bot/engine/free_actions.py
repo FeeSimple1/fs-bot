@@ -286,6 +286,10 @@ def _validate_plan(state, faction, request, action):
     from fs_bot.engine.action_validation import command_regions, command_parts, compatible_sa
     from fs_bot.map.map_data import get_playable_regions_for_state
     faction = request.get('acting_faction', faction)
+    from fs_bot.commands.sa_intimidate import human_plan_error
+    error = human_plan_error(action)
+    if error:
+        return error
     from fs_bot.commands.sa_trade import validate_trade_plan
     error = validate_trade_plan(action)
     if error:

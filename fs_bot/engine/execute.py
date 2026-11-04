@@ -4961,7 +4961,7 @@ def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
     Neither exception is accepted from the action's own fields.
     """
     from fs_bot.rules_consts import GERMANS
-    from fs_bot.commands.sa_intimidate import validate_intimidate_region, intimidate_limit
+    from fs_bot.commands.sa_intimidate import validate_intimidate_region, intimidate_limit, plan_removal
     if faction != GERMANS:
         return {"executed": False, "sa": _SA_INTIMIDATE,
                 "errors": ["Only Germans may Intimidate"]}
@@ -4985,7 +4985,9 @@ def _execute_intimidate(state, faction, bot_action, *, ignore_selection=False,
             if len(targets) != 1:
                 raise CommandError("Intimidate targets only one Faction per Region")
             target = next(iter(targets))
-            removals = [(e.get("target_piece"), e.get("target_state"))
+            if any('target_tribe' in e and e.get('target_piece') is None for e in entries):
+                raise CommandError('A named Intimidate Tribe requires an Ally removal')
+            removals = [plan_removal(e)
                         for e in entries if e.get("target_piece") is not None]
             count = len(removals) or 1
             limit = intimidate_limit(state)

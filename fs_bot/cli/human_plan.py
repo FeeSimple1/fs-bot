@@ -712,9 +712,13 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
         from fs_bot.commands.sa_intimidate import intimidate_capacity
         flips = intimidate_capacity(state, r)
         reserved = {}
+        reserved_tribes = set()
         for _ in range(flips):
+            from fs_bot.commands.sa_intimidate import ally_targets
+            tribes = [t for t in ally_targets(state, r, target) if t not in reserved_tribes]
             pts = [(pt, pt) for pt in (WARBAND, AUXILIA, ALLY)
-                   if count_pieces(state, r, target, pt) > reserved.get(pt, 0)]
+                   if count_pieces(state, r, target, pt) > reserved.get(pt, 0)
+                   and (pt != ALLY or tribes)]
             if not pts:
                 break
             pts.append(("(stop here)", None))
@@ -724,8 +728,14 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
             if pt is None:
                 break
             reserved[pt] = reserved.get(pt, 0) + 1
-            plan.append({"region": r, "target_faction": target,
-                         "target_piece": pt, "target_state": None})
+            entry = {"region": r, "target_faction": target,
+                     "target_piece": pt, "target_state": None}
+            if pt == ALLY:
+                tribe = prompt_choice(stdin, stdout, f'  Remove which {target} Allied Tribe?',
+                                      [(t, t) for t in tribes])
+                reserved_tribes.add(tribe)
+                entry['target_tribe'] = tribe
+            plan.append(entry)
     if not plan:
         return None, None
     return picked, {"intimidate_plan": plan}

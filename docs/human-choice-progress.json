@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "947bf814129cfc135b49d2babbbbf740bb46f356",
-    "python_sha256": "66f26c1ad50c0ef45d4ecb45fd45fb463381f51670e6c800545a281fc0dcffc1",
-    "python_files": 477,
+    "commit": "70c571cca14380c33f310b45c02cf615143b3ed0",
+    "python_sha256": "5179ad47b36917a8447e1e4dbe8b122f7e795e1d499736e68b0b66eb0e019d76",
+    "python_files": 479,
     "working_tree_changes": true,
-    "note": "Circumvallation Roman choices and placement repair closes original BE-01; CV-PERSISTENCE remains separately open. See reviews/circumvallation-2026-11-04.md."
+    "note": "Intimidate exact Allied Tribe choices close CMD-INTIMIDATE-TRIBE; CV-PERSISTENCE remains separately open. See reviews/intimidate-tribes-2026-11-04.md."
   },
   "total": 50,
-  "closed": 22,
-  "open": 28,
+  "closed": 23,
+  "open": 27,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -25,7 +25,8 @@
     "Numeric58 shaded executor-owned German March choices and mandatory Fort Ambush are repaired; BE-01 remains open for 4/17/65. See reviews/aduatuca-2026-11-04.md.",
     "Numeric65 executor-owned March and all-able Ambush choices are repaired. BE-01 remains open for 4/17. See reviews/german-guidance-2026-11-04.md.",
     "Numeric17 Roman-owned German groups and single Ambush choices are repaired. BE-01 remains open for numeric4. See reviews/germanic-chieftains-2026-11-04.md.",
-    "BE-01 closes after numeric4 Roman-owned optional choices and post-March marker placement. Separate verified high-priority CV-PERSISTENCE defects are not part of the original 50; see reviews/circumvallation-persistence-followup-2026-11-04.md."
+    "BE-01 closes after numeric4 Roman-owned optional choices and post-March marker placement. Separate verified high-priority CV-PERSISTENCE defects are not part of the original 50; see reviews/circumvallation-persistence-followup-2026-11-04.md.",
+    "CMD-INTIMIDATE-TRIBE closes with named physical disc choices in ordinary, Raid-linked and A45 Intimidate; Circumvallation group tracking and the NPC pre-Battle targeting lead remain open separately. See reviews/intimidate-tribes-2026-11-04.md."
   ],
   "findings": [
     {
@@ -72,7 +73,8 @@
       "id": "CMD-INTIMIDATE-TRIBE",
       "title": "Intimidate removes a default Allied Tribe rather than a chosen Tribe",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/intimidate-tribes-2026-11-04.md"
     },
     {
       "id": "CMD-BUILD-ORDER",

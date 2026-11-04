@@ -227,7 +227,8 @@ def make_random_reactive(seats, rng):
             for target in offered:
                 if target["target_faction"] == faction:
                     pieces.extend([{key: target[key] for key in
-                                    ("target_faction", "target_piece", "target_state")}]
+                                    ("target_faction", "target_piece", "target_state", "target_tribe")
+                                    if key in target}]
                                   * target["available"])
             rng.shuffle(pieces)
             maximum = min(request["max_removals"], len(pieces))

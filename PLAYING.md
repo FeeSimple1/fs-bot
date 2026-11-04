@@ -254,6 +254,11 @@ Allies need legal empty Tribe spaces. German Settlements create additional
 Homes, but Cisalpina itself is excluded. Later owners see earlier moves;
 game-run Arverni evacuate automatically. Use `board` or `b` at each choice.
 
+Intimidate now lets you choose the exact Allied Tribe to remove, including
+after Raid and through A45. Later choices cannot reuse the selected disc,
+and a City's Citadel is not offered as an Ally. Assistant plans name the
+Tribe with `target_tribe`; a missing or invalid choice stays pending.
+
 Dread (A22), shaded, lets ordinary Intimidate Reveal up to three Hidden
 Warbands, removing one piece per Warband. After Raid with Ariovistus, the menu
 shows how many removals the actual Raiders support and whether you can

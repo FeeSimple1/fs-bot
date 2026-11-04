@@ -24,7 +24,7 @@ Reference: A4.6.2, A3.2.1, A3.3.1
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
+    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS, FACTIONS,
     # Piece types
     WARBAND, AUXILIA, ALLY, LEGION,
     # Piece states
@@ -38,7 +38,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
-    flip_piece, remove_piece, clear_allied_tribe,
+    flip_piece, remove_piece, clear_allied_tribe, tribe_has_ally_disc,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.commands.common import CommandError, check_leader_proximity
@@ -63,6 +63,99 @@ def romans_immune(state):
     if 'A22' in active:
         return active['A22'] == EVENT_UNSHADED
     return bool(state.get('event_modifiers', {}).get('card_A22_no_intimidate_romans', False))
+
+
+def ally_targets(state, region, faction):
+    """Actual Allied Tribe discs, excluding a City's Citadel (A4.6.2)."""
+    return [tribe for tribe in sorted(state.get('tribes', {}))
+            if tribe_has_ally_disc(state, region, tribe, faction)]
+
+
+def plan_removal(entry):
+    """Keep optional authored Tribe identity through the engine adapter."""
+    removal = (entry.get('target_piece'), entry.get('target_state'))
+    if 'target_tribe' in entry:
+        removal += (entry['target_tribe'],)
+    return removal
+
+
+def human_plan_error(action):
+    """Human plans must identify Ally discs rather than invoke NPC priority.
+
+    Only structure is checked here: an earlier Command or timing window may
+    change which Tribes are legal when the Special Ability actually resolves.
+    """
+    details = action.get('details') or {}
+    if not isinstance(details, dict):
+        return 'Command details must be an object'
+    nested = details.get('sa_details') or {}
+    if not isinstance(nested, dict):
+        return 'Special Ability details must be an object'
+    # Match execute._sa_detail: an explicit null at the merged level falls
+    # back to the nested plan; it must not conceal an unnamed human target.
+    plan = details.get('intimidate_plan')
+    if plan is None:
+        plan = nested.get('intimidate_plan')
+    if plan is None:
+        return None
+    if not isinstance(plan, list) or any(not isinstance(e, dict) for e in plan):
+        return 'Intimidate needs a list of target entries'
+    for entry in plan:
+        if entry.get('target_piece') == ALLY:
+            tribe = entry.get('target_tribe')
+            if not isinstance(tribe, str) or not tribe:
+                return 'Choose target_tribe for each Intimidate Ally removal'
+        elif 'target_tribe' in entry:
+            return 'target_tribe applies only to an Intimidate Ally removal'
+    return None
+
+
+def _reserve_removals(state, region, faction, removals):
+    """Validate the complete physical subset before any flips or marker.
+
+    Legacy pairs retain their default allocation. Named Ally triples reserve
+    their discs first so an earlier unspecified Ally cannot consume them.
+    """
+    if not isinstance(removals, (list, tuple)):
+        raise CommandError('Intimidate removals must be a list of physical targets')
+    parsed, named = [], set()
+    allies = ally_targets(state, region, faction)
+    for item in removals:
+        if not isinstance(item, (list, tuple)) or len(item) not in (2, 3):
+            raise CommandError('Intimidate targets need piece, visibility and optional Ally Tribe')
+        pt, ps = item[:2]
+        tribe = item[2] if len(item) == 3 else None
+        if pt not in (WARBAND, AUXILIA, ALLY):
+            raise CommandError('Intimidate removes only Warbands, Auxilia or Allies')
+        if ps not in (None, HIDDEN, REVEALED, SCOUTED) or (pt == ALLY and ps is not None):
+            raise CommandError('Invalid Intimidate target visibility')
+        if len(item) == 3:
+            if (pt != ALLY or not isinstance(tribe, str) or tribe not in allies
+                    or tribe in named):
+                raise CommandError('Select a distinct Allied Tribe disc of the target Faction in this Region')
+            named.add(tribe)
+        parsed.append((pt, ps, tribe))
+    pool = {(pt, ps): count_pieces_by_state(state, region, faction, pt, ps)
+            for pt in (WARBAND, AUXILIA) for ps in (HIDDEN, REVEALED, SCOUTED)}
+    pool[(ALLY, None)] = count_pieces(state, region, faction, ALLY) if faction is not None else 0
+    unselected = [tribe for tribe in allies if tribe not in named]
+    reserved = []
+    for pt, ps, tribe in parsed:
+        choices = (None,) if pt == ALLY else ((ps,) if ps is not None
+                                             else (HIDDEN, REVEALED, SCOUTED))
+        selected = next((p for p in choices if pool.get((pt, p), 0) > 0), False)
+        if selected is False:
+            raise CommandError(f'Not enough {faction} {pt} in {region}')
+        pool[(pt, selected)] -= 1
+        if pt == ALLY and tribe is None:
+            if unselected:
+                tribe = unselected.pop(0)
+            elif named:
+                raise CommandError('Unspecified Ally would reuse a reserved Tribe')
+            # Old direct helper callers can have count-only fixture discs.
+            # With no authored Tribe, keep clear_allied_tribe's legacy path.
+        reserved.append((pt, selected, tribe))
+    return reserved
 
 
 def validate_intimidate_region(state, region):
@@ -114,8 +207,8 @@ def intimidate(state, region, warbands_to_flip, target_faction,
         region: Region where Intimidate occurs.
         warbands_to_flip: Participants (1-2, or up to 3 with shaded A22).
         target_faction: Faction targeted for removal.
-        target_removals: List of (piece_type, piece_state_or_None) to
-            remove from target. Length must equal warbands_to_flip.
+        target_removals: Pairs (piece_type, piece_state_or_None), or triples
+            (ALLY, None, tribe) for exact discs. Length equals participants.
 
     Returns:
         dict with:
@@ -129,6 +222,10 @@ def intimidate(state, region, warbands_to_flip, target_faction,
     scenario = state["scenario"]
     if scenario not in ARIOVISTUS_SCENARIOS:
         raise CommandError("Intimidate is only available in Ariovistus")
+    if not isinstance(target_removals, (list, tuple)):
+        raise CommandError('Intimidate removals must be a list of physical targets')
+    if target_faction is not None and target_faction not in FACTIONS:
+        raise CommandError('Choose a target Faction for Intimidate removals')
 
     limit = intimidate_limit(state)
     if type(warbands_to_flip) is not int or not 1 <= warbands_to_flip <= limit:
@@ -174,6 +271,8 @@ def intimidate(state, region, warbands_to_flip, target_faction,
 
     # Validate removals match flip count
     marker_only = target_faction is None and not target_removals
+    if not marker_only and target_faction not in FACTIONS:
+        raise CommandError('Choose a target Faction for Intimidate removals')
     if marker_only and (warbands_to_flip > 2 or (revealed_by_raid and fresh_flips)):
         raise CommandError('A22 added Warband must remove an extra piece')
     if not marker_only and len(target_removals) != warbands_to_flip:
@@ -182,34 +281,14 @@ def intimidate(state, region, warbands_to_flip, target_faction,
             f"got {len(target_removals)}"
         )
 
-    # Validate target piece types: Warbands, Auxilia, Allies — A4.6.2
-    for piece_type, piece_state in target_removals:
-        if piece_type not in (WARBAND, AUXILIA, ALLY):
-            raise CommandError(
-                f"Intimidate can only remove Warbands, Auxilia, or Allies, "
-                f"not {piece_type}"
-            )
-
-    # Validate every removal before flipping or placing a marker. A plan may
-    # mix specified visibility with "any"; reserve those pieces in the same
-    # Hidden/Revealed/Scouted order used by remove_piece.
-    pool = {(pt, ps): count_pieces_by_state(state, region, target_faction, pt, ps)
-            for pt in (WARBAND, AUXILIA) for ps in (HIDDEN, REVEALED, SCOUTED)}
-    pool[(ALLY, None)] = (count_pieces(state, region, target_faction, ALLY)
-                          if target_faction is not None else 0)
-    for pt, ps in target_removals:
-        choices = (None,) if pt == ALLY else ((ps,) if ps is not None
-                                             else (HIDDEN, REVEALED, SCOUTED))
-        selected = next((p for p in choices if pool.get((pt, p), 0) > 0), False)
-        if selected is False:
-            raise CommandError(f"Not enough {target_faction} {pt} in {region}")
-        pool[(pt, selected)] -= 1
+    removals = _reserve_removals(state, region, target_faction, target_removals)
 
     result = {
         "warbands_flipped": fresh_flips,
         "raiding_warbands_used": revealed_by_raid,
         "intimidated_placed": False,
         "target_removed": [],
+        "target_details": [],
     }
 
     # Flip Germanic Warbands
@@ -231,15 +310,17 @@ def intimidate(state, region, warbands_to_flip, target_faction,
         result["intimidated_placed"] = True
 
     # Remove target pieces
-    for piece_type, piece_state in target_removals:
+    for piece_type, piece_state, tribe in removals:
         if piece_type == ALLY:
             remove_piece(state, region, target_faction, ALLY, 1)
             # Keep state["tribes"] in sync with the removed Ally.
-            clear_allied_tribe(state, region, target_faction, ALLY)
+            clear_allied_tribe(state, region, target_faction, ALLY, tribe=tribe)
         else:
             remove_piece(state, region, target_faction, piece_type, 1,
                          piece_state=piece_state)
         result["target_removed"].append((piece_type, 1))
+        result['target_details'].append({'piece_type': piece_type,
+            'piece_state': piece_state, 'tribe': tribe})
 
     refresh_all_control(state)
     return result

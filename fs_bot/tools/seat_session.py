@@ -178,7 +178,7 @@ def validate_response(state, request, response):
         return validate_ambacti(state, request, response)
     if kind == "raid_intimidate":
         from fs_bot.engine.raid_intimidate import validate_response as validate_raid
-        validate_raid(state, request, response)
+        validate_raid(state, request, response, require_named=True)
         return response
     if kind == "kinship":
         from fs_bot.cards.kinship import validate_response as validate_kinship

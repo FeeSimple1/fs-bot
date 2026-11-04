@@ -4,6 +4,12 @@ from fs_bot.engine.raid_intimidate import target_options
 
 
 def collect_raid_intimidate(state, faction, request, stdin, stdout):
+    from fs_bot.cli.action_windows import inspect_board
+    with inspect_board(state, stdout):
+        return _collect_raid_intimidate(state, faction, request, stdin, stdout)
+
+
+def _collect_raid_intimidate(state, faction, request, stdin, stdout):
     region = request['region']
     stdout.write(f'\n{faction}: {request["raiders"]} Warband(s) just Raided in {region}. '
                  'With Ariovistus they may also free Intimidate now, without '
@@ -42,7 +48,8 @@ def collect_raid_intimidate(state, faction, request, stdin, stdout):
             if target['available'] <= 0:
                 continue
             visibility = f' ({target["target_state"]})' if target['target_state'] else ''
-            options.append((f'{target["target_piece"]}{visibility}', index))
+            tribe = f' at {target["target_tribe"]}' if 'target_tribe' in target else ''
+            options.append((f'{target["target_piece"]}{visibility}{tribe}', index))
         if not options:
             break
         if len(targets) >= (2 if extra else 1):
@@ -53,7 +60,8 @@ def collect_raid_intimidate(state, faction, request, stdin, stdout):
         selected = remaining[index]
         selected['available'] -= 1
         targets.append({key: selected[key] for key in
-                        ('target_faction', 'target_piece', 'target_state')})
+                        ('target_faction', 'target_piece', 'target_state', 'target_tribe')
+                        if key in selected})
     response = {'targets': targets}
     if extra:
         response['extra_warband'] = True

@@ -1,0 +1,354 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "70c571cca14380c33f310b45c02cf615143b3ed0",
+    "dirty": true,
+    "source_sha256": "5179ad47b36917a8447e1e4dbe8b122f7e795e1d499736e68b0b66eb0e019d76"
+  },
+  "python_files": 479,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "targeted_passed": 229,
+  "new_tests": 44,
+  "parent_proof": {
+    "behavioral_failures": 23,
+    "passing_controls": 2,
+    "deselected": 19
+  },
+  "bots": {
+    "games": 10,
+    "all_completed_and_audited": true,
+    "all_gameplay_fields_and_final_hashes_equal": true,
+    "excluded": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "70c571cca14380c33f310b45c02cf615143b3ed0",
+      "dirty": true,
+      "source_sha256": "5179ad47b36917a8447e1e4dbe8b122f7e795e1d499736e68b0b66eb0e019d76",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 296,
+    "event_turns": 88,
+    "events_ok": 86,
+    "partial": 1,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "7414a45e7c1adbb7bca968514177becb84625a98e8a06c366aa727a056212c1f",
+    "records": [
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 33,
+        "event_turns": 10,
+        "events_ok": 10,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "b745e20244665d58"
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 35,
+        "event_turns": 11,
+        "events_ok": 11,
+        "rejected": 0,
+        "findings": [],
+        "partial": 1,
+        "digest": "8365e5ea883096b8"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 12,
+        "event_turns": 4,
+        "events_ok": 4,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "f32b3d1f0f45dabf"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 2,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 60,
+        "event_turns": 16,
+        "events_ok": 16,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "45b906cb8593fb1e"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 17,
+        "event_turns": 6,
+        "events_ok": 6,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "3fd3a9131abd9d92"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 44,
+        "event_turns": 15,
+        "events_ok": 14,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "a38f52a069a69abd"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 1,
+        "seats": [
+          "Germans",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 41,
+        "event_turns": 5,
+        "events_ok": 5,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "1fcace28d366ae9b"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 2,
+        "seats": [
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 21,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "6a90557c8f4c1990"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 26,
+        "event_turns": 10,
+        "events_ok": 9,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "786978a3c4b6d6c6"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 2,
+        "seats": [
+          "Germans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 7,
+        "event_turns": 2,
+        "events_ok": 2,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "57f6ca4359831469"
+      }
+    ]
+  },
+  "hash_seeds": [
+    0,
+    987
+  ],
+  "mixed_complete_json_equal": true,
+  "mixed_executions_including_replay": 40,
+  "partial_trace": {
+    "source": {
+      "commit": "70c571cca14380c33f310b45c02cf615143b3ed0",
+      "dirty": true,
+      "source_sha256": "5179ad47b36917a8447e1e4dbe8b122f7e795e1d499736e68b0b66eb0e019d76"
+    },
+    "record": {
+      "scenario": "Pax Gallica?",
+      "seed": 2,
+      "seats": [
+        "Arverni",
+        "Belgae",
+        "Romans"
+      ],
+      "card_edition": "legacy",
+      "game_completed": true,
+      "ending_scenario": "Pax Gallica?",
+      "human_turns": 35,
+      "event_turns": 11,
+      "events_ok": 11,
+      "rejected": 0,
+      "findings": [],
+      "partial": 1,
+      "digest": "8365e5ea883096b8"
+    },
+    "partial_details": [
+      {
+        "card": 13,
+        "faction": "Belgae",
+        "signature": [
+          true,
+          "",
+          [
+            "{'given': 2, 'from': 'Belgae', 'to': 'Aedui'}"
+          ],
+          [
+            "{'region': 'Treveri', 'action': 'place_warbands', 'error': 'Belgae has 1 Resources, need 2'}"
+          ],
+          null
+        ],
+        "execution": {
+          "command": "Rally",
+          "errors": [
+            {
+              "action": "place_warbands",
+              "error": "Belgae has 1 Resources, need 2",
+              "region": "Treveri"
+            }
+          ],
+          "executed": true,
+          "placements": [
+            {
+              "action": "place_ally",
+              "region": "Nervii",
+              "tribe": "Nervii"
+            },
+            {
+              "action": "place_ally",
+              "region": "Atrebates",
+              "tribe": "Atrebates"
+            }
+          ],
+          "transfers": [
+            {
+              "from": "Belgae",
+              "given": 2,
+              "to": "Aedui"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "original_progress": {
+    "closed": 23,
+    "total": 50,
+    "percent": 46,
+    "open": 27
+  },
+  "remaining_CV-PERSISTENCE": "open; no marked-group tracking, movement or virtual Fort repair in this batch",
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "7706",
+    "time": "207.264",
+    "timestamp": "2026-11-05T00:46:28.690003+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "parent_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "23",
+    "skipped": "0",
+    "tests": "25",
+    "time": "0.370",
+    "timestamp": "2026-11-05T00:46:28.694084+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "python": "3.12.14"
+}

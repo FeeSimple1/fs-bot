@@ -132,9 +132,11 @@ def make_random_reactive(seats, rng):
             rng.shuffle(sources)
             marches=[]
             for origin,maximum in sources[:rng.randint(0,min(len(sources),request['max_origins']))]:
-                n=rng.randint(0,maximum)
+                n=rng.randint(1 if request.get('moving_groups_only') else 0,maximum)
                 legal=destinations(state,origin,n) if n else []
                 if n and not legal:
+                    if request.get('moving_groups_only'):
+                        continue
                     n=0
                 marches.append({'origin':origin,'warbands':n,'destination':rng.choice(legal) if n else None})
             return {'marches':marches}

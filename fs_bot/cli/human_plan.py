@@ -1442,6 +1442,8 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     if named_effect(card_id, shaded):
         from fs_bot.cli.named_event_effects import collect_params
         return collect_params(state, faction, card_id, shaded, stdin, stdout)
+    if card_id == 17 and not shaded:
+        return {}  # Romans author their actual German groups at the live grant.
     if card_id == 58 and shaded:
         # The executor chooses the actual March at its live grant, not the
         # unrelated unshaded removal parameters inferred from this handler.

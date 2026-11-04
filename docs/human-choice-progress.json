@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "72e0594e5d79d68b04208068e1b410666a930941",
-    "python_sha256": "b7f6503a9c85976edeac8e0c467a2a7191a525269f5b03086cc23701e66d28f1",
-    "python_files": 473,
+    "commit": "7e3a4afaa719c3dd1698997c3d270edff19833f8",
+    "python_sha256": "dab238eebb414d6ea0eb24acd9ac36b304e7a5c1c30c5eacfbb7912ff7f32bd9",
+    "python_files": 474,
     "working_tree_changes": true,
-    "note": "Numeric65 German guidance partial BE-01 repair; see reviews/german-guidance-2026-11-04.md."
+    "note": "Numeric17 Roman-owned guidance partial BE-01 repair; see reviews/germanic-chieftains-2026-11-04.md."
   },
   "total": 50,
   "closed": 21,
@@ -23,7 +23,8 @@
     "Camulogenus whole-benefit and March choices are repaired; BE-01 remains open for 4/9/17/58/65. See reviews/camulogenus-2026-11-03.md.",
     "Mons Cevenna numeric9 human first-March choice and destination-scoped follow-on are repaired; BE-01 remains open for 4/17/58/65. See reviews/mons-cevenna-2026-11-03.md.",
     "Numeric58 shaded executor-owned German March choices and mandatory Fort Ambush are repaired; BE-01 remains open for 4/17/65. See reviews/aduatuca-2026-11-04.md.",
-    "Numeric65 executor-owned March and all-able Ambush choices are repaired. BE-01 remains open for 4/17. See reviews/german-guidance-2026-11-04.md."
+    "Numeric65 executor-owned March and all-able Ambush choices are repaired. BE-01 remains open for 4/17. See reviews/german-guidance-2026-11-04.md.",
+    "Numeric17 Roman-owned German groups and single Ambush choices are repaired. BE-01 remains open for numeric4. See reviews/germanic-chieftains-2026-11-04.md."
   ],
   "findings": [
     {
@@ -134,9 +135,10 @@
         "Numeric70 unshaded gives Romans whole-benefit acceptance and exact multi-origin March planning; remaining grouped grants are numeric4/9/17/58/65.",
         "Numeric9 offers the human executor an exact adjacent March and preserves its destination for the following free Command and SA; legacy route limits are validated.",
         "Numeric58 shaded: executor chooses one Fort and distinct adjacent German origins/quantities, including hide-only origins; existing German and Roman battle reactions remain separate.",
-        "Numeric65 human executor selects up to two original German origins, quantities and destinations, then all able Ambush Regions/defenders in chosen order; original physical cohorts and hide-only origins are preserved."
+        "Numeric65 human executor selects up to two original German origins, quantities and destinations, then all able Ambush Regions/defenders in chosen order; original physical cohorts and hide-only origins are preserved.",
+        "Numeric17 unshaded: Romans choose up to three original German moving groups and a single following Ambush regardless of Event executor; explicit bot delegation follows Roman card instructions."
       ],
-      "partial_report": "reviews/german-guidance-2026-11-04.md"
+      "partial_report": "reviews/germanic-chieftains-2026-11-04.md"
     },
     {
       "id": "BE-02",

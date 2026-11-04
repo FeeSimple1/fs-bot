@@ -605,6 +605,26 @@ targets may include a Region without friendly Forces, as its text permits.
 Missing or invalid durable-session responses remain pending with board/RNG
 rollback; do not replace them with a default response.
 
+Numeric 17 unshaded shares `german_guided_march` / `german_guided_ambush`,
+but requests carry `card_id: 17` and are always consulted with Romans, not
+the Event executor or Germans. Engine-owned `acting_faction` remains Germans.
+The March request offers `max_origins: 3` and `moving_groups_only: true`.
+Respond with `marches`, each containing one distinct original `origin`, an
+adjacent `destination`, and a positive integer `warbands` quantity. An empty
+list selects no moving groups. Unlike card65's Region grant, card17 grants
+moving groups and does not offer additional hide-only origins. Normal
+origin flips still affect pieces left behind; arrivals cannot move twice.
+
+The following Ambush request has `max_regions: 1`: select one offered
+`region` and `defender`. It is mandatory when possible, but no second
+Region Ambushes. Physical formation choices go to Romans; defenders retain
+their own reactions. Native Roman NPCs guide automatically even when another
+player executes the Event. An explicit first-stage `use_default` invokes
+the Roman card instructions for the whole grant; raw callback deferral
+retains the established legacy contract. Durable missing/invalid replies
+remain pending, with whole-grant rollback and save/resume. The shaded Germans
+Phase is unchanged. New requests may change cross-revision replay needs.
+
 Numeric 65 unshaded uses `free_action` / `german_guided_march` for the Event
 executor, with engine-owned `acting_faction: Germans`. Respond with `marches`,
 a list of at most two entries containing `origin`, `destination` and integer

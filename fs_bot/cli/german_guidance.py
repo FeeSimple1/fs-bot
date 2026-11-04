@@ -7,9 +7,11 @@ from fs_bot.engine.free_actions import validate_free_action_response
 def collect_response(state,faction,request,stdin,stdout):
     with inspect_board(state,stdout):
         while True:
-            default_label=('Use bot default for the whole grant'
+            default_label=('Use Roman bot for the whole grant' if request['card_id']==17
+                           and request['request_type']=='german_guided_march' else
+                           'Use bot default for the whole grant'
                            if request['request_type']=='german_guided_march' else 'Use bot default')
-            mode=prompt_choice(stdin,stdout,'German Allegiances: choose the granted action.',
+            mode=prompt_choice(stdin,stdout,('Germanic Chieftains' if request['card_id']==17 else 'German Allegiances')+': choose the granted action.',
                 [('Choose exact action','plan'),(default_label,'default')])
             if mode=='default':
                 return {'use_default':True}
@@ -27,7 +29,8 @@ def collect_response(state,faction,request,stdin,stdout):
                     if origin is None:
                         break
                     count=prompt_choice(stdin,stdout,'How many German Warbands move?',
-                        [('0 (hide only)',0)]+[(f'{n} Warbands',n) for n in range(1,remaining[origin]+1)])
+                        ([] if request.get('moving_groups_only') else [('0 (hide only)',0)])
+                        +[(f'{n} Warbands',n) for n in range(1,remaining[origin]+1)])
                     target=None
                     if count:
                         legal=destinations(state,origin,count)

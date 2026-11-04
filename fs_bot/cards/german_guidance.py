@@ -1,4 +1,4 @@
-"""Numeric65: executor-owned German March and all able Ambushes (§3.4)."""
+"""Roman-owned numeric17 and executor-owned numeric65 German guidance."""
 from copy import deepcopy
 
 from fs_bot import rules_consts as rc
@@ -46,20 +46,23 @@ def defenders(state, remaining=None):
     return result
 
 
-def march_request(state, limit):
-    return {'kind':'free_action','request_type':'german_guided_march','card_id':65,
+def march_request(state, limit, card_id=65):
+    request = {'kind':'free_action','request_type':'german_guided_march','card_id':card_id,
             'acting_faction':rc.GERMANS,'origins':origins(state),
-            'max_origins':min(2,limit),'free':True,'with_sa':False,
+            'max_origins':min(3 if card_id==17 else 2,limit),'free':True,'with_sa':False,
             'allow_decline':False,'validate_default_response':True}
+    if card_id==17:
+        request['moving_groups_only']=True
+    return request
 
 
-def battle_request(state, remaining, blocked=()):
+def battle_request(state, remaining, blocked=(), card_id=65):
     choices={r:[f for f in enemies if (r,f) not in blocked]
              for r,enemies in defenders(state,remaining).items()}
     choices={r:enemies for r,enemies in choices.items() if enemies}
-    return {'kind':'free_action','request_type':'german_guided_ambush','card_id':65,
+    return {'kind':'free_action','request_type':'german_guided_ambush','card_id':card_id,
             'acting_faction':rc.GERMANS,'defenders_by_region':choices,
-            'remaining_regions':sorted(remaining),'free':True,'with_sa':False,
+            'remaining_regions':sorted(remaining),'max_regions':1 if card_id==17 else None,'free':True,'with_sa':False,
             'allow_decline':False,'validate_default_response':True}
 
 
@@ -85,7 +88,7 @@ def _validate(state, request, response):
     if not isinstance(response,dict) or set(response)!={'marches'} or not isinstance(response['marches'],list):
         raise ValueError('Supply an ordered marches list (empty permits no March).')
     if len(response['marches'])>request['max_origins']:
-        raise ValueError('German Allegiances selects at most two origin Regions.')
+        raise ValueError(f"This Event permits at most {request['max_origins']} original German groups/Regions.")
     selected=set(); available=origins(state)
     for entry in response['marches']:
         if not isinstance(entry,dict) or set(entry)!={'origin','destination','warbands'}:
@@ -96,6 +99,8 @@ def _validate(state, request, response):
         if type(n) is not int or not 0<=n<=available[origin]:
             raise ValueError('Choose an available quantity of German Warbands.')
         if n==0:
+            if request.get('moving_groups_only'):
+                raise ValueError('Germanic Chieftains grants moving groups; select a positive quantity or omit the group.')
             if destination is not None:
                 raise ValueError('A hide-only origin uses destination: null.')
         elif not isinstance(destination,str) or destination not in destinations(state,origin,n):
@@ -110,21 +115,37 @@ def action_for(response):
                  'group':{rc.WARBAND:e['warbands']}} for e in response['marches']]}}
 
 
-def _resolve(state, executor, limit):
-    from fs_bot.engine.execute import _resolve_card65_german_march_ambush_default
+def _resolve(state, executor, limit, card_id):
+    from fs_bot.engine.execute import (_resolve_card65_german_march_ambush_default,
+                                      _resolve_card17_march_ambush_default)
     from fs_bot.cards.arduenna_march import execute_march
     from fs_bot.battle.resolve import resolve_battle
+    default = (_resolve_card17_march_ambush_default if card_id==17
+               else _resolve_card65_german_march_ambush_default)
     if executor in state.get('non_player_factions',()):
-        return _resolve_card65_german_march_ambush_default(state,limit)
-    response = consult_free_action(state,executor,march_request(state,limit))
-    if response is None:
-        # Raw callback deferral and explicit whole-grant defaults retain the
-        # established automatic contract, including its existing scenario path.
-        return _resolve_card65_german_march_ambush_default(state,limit)
-    elif response['marches']:
+        return default(state,limit)
+    request=march_request(state,limit,card_id)
+    if card_id==17:
+        # Keep raw-callback legacy deferral distinct from an explicit Roman
+        # bot choice: the latter must follow the card's Roman instructions.
+        from fs_bot.engine.agent import consult_agent
+        response=consult_agent(state,executor,request)
+        if response is None:
+            return default(state,limit)
+        error=validate_response(state,request,response)
+        if error:
+            raise ValueError(error)
+        if _explicit_sentinel(response,'use_default'):
+            return default(state,limit,roman_guided=True)
+    else:
+        response=consult_free_action(state,executor,request)
+        if response is None:
+            return default(state,limit)
+    if response['marches']:
         with free_action_scope(state,rc.GERMANS), chooser_scope(state,rc.GERMANS,executor):
-            marched = execute_march(state,rc.GERMANS,action_for(response),source_id='65',
-                target_regions=set(get_playable_regions_for_state(state,rc.GERMANS)),allow_stationary=True)
+            marched = execute_march(state,rc.GERMANS,action_for(response),source_id=str(card_id),
+                target_regions=set(get_playable_regions_for_state(state,rc.GERMANS)),
+                allow_stationary=card_id==65)
     else:
         marched=[]
     remaining=set(get_playable_regions_for_state(state,rc.GERMANS)); ambushes=[]; blocked={}
@@ -132,7 +153,7 @@ def _resolve(state, executor, limit):
         # A later live timing choice can change a formerly blocked defense.
         blocked={key:position for key,position in blocked.items()
                  if position==state['spaces'].get(key[0])}
-        request=battle_request(state,remaining,blocked)
+        request=battle_request(state,remaining,blocked,card_id)
         choices=request['defenders_by_region']
         if not choices:
             break
@@ -157,16 +178,27 @@ def _resolve(state, executor, limit):
             battle=resolve_battle(state,region,rc.GERMANS,enemy,is_ambush=True)
         ambushes.append({'region':region,'defender':enemy,'result':battle})
         remaining.remove(region)
+        if card_id==17:
+            break
+    if card_id==17:
+        result={'free_action':'german_march_ambush','flag':'card_17_german_ambush',
+                'marches':marched,'ambushes':ambushes,'executed':bool(marched or ambushes),
+                'declined_no_effect':not bool(marched or ambushes)}
+        if ambushes:
+            result.update(ambushes[0])
+        else:
+            result['reason']='No legal German Ambush.'
+        return [result]
     return [{'free_action':'german_march_ambush','flag':FLAG,'marches':marched,
              'ambushes':ambushes,'executed':bool(marched or ambushes),
              'declined_no_effect':not bool(marched or ambushes)}]
 
 
-def resolve(state, executor, limit=2):
+def resolve(state, executor, limit=2, *, card_id=65):
     snapshot=_copy(state); agent=state.get('decision_agent'); had_agent='decision_agent' in state
     card_turn=state.get('_card_turn')
     try:
-        return _resolve(state,executor,limit)
+        return _resolve(state,rc.ROMANS if card_id==17 else executor,limit,card_id)
     except BaseException:
         state.clear();state.update(snapshot)
         if card_turn is not None:

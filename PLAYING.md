@@ -47,6 +47,17 @@ removes their ability to Ambush. Choosing the bot default at the first March
 menu delegates the complete grant; a later Ambush default chooses only the
 next Ambush. `b`/`board` remains available at these menus.
 
+For unshaded Germanic Chieftains (card 17), Romans choose up to three German
+moving groups and then a single Ambush Region and defender, whoever played
+the Event. These are moving groups with positive Warband quantities, one
+per original origin; choosing no groups is allowed. The whole selected
+origin undergoes normal visibility changes, but arrivals cannot move or
+flip again. Only the one chosen Region Ambushes, even when others are able.
+The Roman player also owns German visibility formation choices. Choosing
+the Roman bot for the whole grant applies the Roman card instructions;
+shaded Germanic Chieftains still runs the separate Germans Phase procedure.
+`b`/`board` and saving at the following Ambush decision remain available.
+
 ## Requirements
 
 Python 3.10 or newer. Nothing else — no packages to install, no

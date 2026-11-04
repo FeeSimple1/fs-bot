@@ -2478,6 +2478,12 @@ def _resolve_card57_britannia_march(state, faction):
 
 
 def _resolve_card17_march_ambush(state, march_limit):
+    from fs_bot.cards.german_guidance import resolve
+    from fs_bot.rules_consts import ROMANS
+    return resolve(state, ROMANS, march_limit, card_id=17)
+
+
+def _resolve_card17_march_ambush_default(state, march_limit, *, roman_guided=None):
     """Card 17 Germanic Chieftains (unshaded): "Romans March up to 3 German
     groups, then Ambush with Germans in any 1 Region." Setup March of up to
     march_limit German groups (shared helper), then Ambush in the single best
@@ -2488,7 +2494,8 @@ def _resolve_card17_march_ambush(state, march_limit):
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_playable_regions
     from fs_bot.battle.resolve import resolve_battle
-    roman_guided = ROMANS in state.get("non_player_factions", ())
+    if roman_guided is None:
+        roman_guided = ROMANS in state.get("non_player_factions", ())
     marched = (_roman_german_setup_marches(state, march_limit) if roman_guided
                else _german_setup_marches(state, march_limit))
     # Single best Ambush Region.

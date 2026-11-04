@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Germanic Chieftains — partial BE-01 repair
+
+The [Germanic Chieftains report](reviews/germanic-chieftains-2026-11-04.md)
+restores numeric17 unshaded's Roman-owned German groups and single Ambush,
+regardless of which faction executes the Event. Up to three original moving
+groups use exact quantities, ordinary origin visibility and the shared
+physical-cohort safeguards. Only the chosen Region Ambushes. Roman bot
+instructions govern explicit delegation; native Roman NPCs and raw legacy
+deferral remain supported. Shaded Germans Phase behavior is unchanged.
+Terminal inspection, pending-response rollback and save/resume are covered.
+**7,594 tests pass**, including 27 added regressions; 21 behavioral witnesses
+fail against the parent and its native Roman-bot control passes. Ten bot
+gameplay records/final hashes match, and 40 mixed executions including
+replay/hash repeats have zero hard findings.
+
+**21/50 original findings remain closed (42%); 29 remain open.** BE-01
+now remains open for card4. Two source questions, twelve provisional rulings
+and 34 unverified inventory rows remain separate.
+
 ### 4 November German Allegiances — partial BE-01 repair
 
 The [German guidance report](reviews/german-guidance-2026-11-04.md) covers

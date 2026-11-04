@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Germanic Chieftains choices, 4 November 2026
+
+- Restore numeric17 unshaded's Roman-owned choice of up to three original
+  German moving groups and the single following Ambush Region/defender.
+- Preserve ownership when another faction executes the Event, exact physical
+  cohorts, normal Ambush rules, durable pending decisions and save/resume.
+- Apply Roman card instructions to explicit bot delegation; preserve native
+  NPC/raw deferral and the separate shaded Germans Phase.
+  Partial BE-01 repair; progress remains 21/50 (42%). See the
+  [Germanic Chieftains report](docs/reviews/germanic-chieftains-2026-11-04.md).
+
 ## Unreleased — German Allegiances guidance, 4 November 2026
 
 - Restore numeric65's executor-owned German origins, quantities and routes,

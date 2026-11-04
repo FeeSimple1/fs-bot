@@ -108,7 +108,9 @@ implements adopted PR-12 targeting and repairs full Aedui Battle participation;
 these remain separate from the original audit denominator.
 The [Camulogenus repair](docs/reviews/camulogenus-2026-11-03.md) completes
 numeric 70's Roman acceptance and March planning. BE-01 remains open for
-numeric 4/9/17/58/65; numeric 67 was repaired in the Gallic Event batch.
+numeric 4/17/58/65; numeric 67 was repaired in the Gallic Event batch.
+The [Mons Cevenna repair](docs/reviews/mons-cevenna-2026-11-03.md) restores
+numeric 9's human first March and restricts the follow-on to its destination.
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even

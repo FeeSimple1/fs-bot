@@ -16,6 +16,15 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+For Mons Cevenna (card 9), choose the first March's origin, exact mobile
+pieces and adjacent destination within Provincia, Sequani and Arverni.
+All pieces at the selected origin undergo the normal March visibility flip.
+Then choose the free Command and optional Special Ability, in either supported
+order, in or from that destination. The second Command may March out of it.
+If no native March is possible, choose one of the three Regions for the
+remaining benefit. `b`/`board` is available while planning. Diviciacus
+cooperation requires separate consent for each Command.
+
 ## Requirements
 
 Python 3.10 or newer. Nothing else — no packages to install, no

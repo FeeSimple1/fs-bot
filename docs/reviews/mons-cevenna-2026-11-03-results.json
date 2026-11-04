@@ -1,0 +1,99 @@
+{
+  "date": "2026-11-03",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "c3883b2c242528d77b6b25e595fc43c47e7f1229",
+    "dirty": true,
+    "source_sha256": "d6da1ebb1d1c05706eabfc76b36c96c9b8e1861a4e6f05632697dca719af9536"
+  },
+  "python": "3.12.14",
+  "python_files": 467,
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "7517",
+    "time": "204.778",
+    "timestamp": "2026-11-04T11:19:02.464901+09:00",
+    "hostname": "97cea6e6ec63"
+  },
+  "targeted_suite": {
+    "passed": 54
+  },
+  "parent_behavior_proof": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "19",
+    "skipped": "0",
+    "tests": "19",
+    "time": "0.468",
+    "timestamp": "2026-11-04T11:18:51.900153+09:00",
+    "hostname": "97cea6e6ec63"
+  },
+  "bot_comparison": {
+    "games": 10,
+    "scenarios": 5,
+    "seeds": [
+      1,
+      2
+    ],
+    "edition": "legacy",
+    "all_completed": true,
+    "all_gameplay_fields_equal": true,
+    "comparison_excludes": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "c3883b2c242528d77b6b25e595fc43c47e7f1229",
+      "dirty": true,
+      "source_sha256": "d6da1ebb1d1c05706eabfc76b36c96c9b8e1861a4e6f05632697dca719af9536",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 282,
+    "event_turns": 83,
+    "events_ok": 80,
+    "partial": 0,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "37d9f91eb4d5d2fc7f23379913fe6295e800cc90d67b8a102bc0765abc583277"
+  },
+  "mixed_hashes": [
+    0,
+    987
+  ],
+  "mixed_full_json_equal": true,
+  "mixed_executions_including_replay": 40,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "audit_closed": 21,
+  "audit_total": 50,
+  "be01_remaining": [
+    4,
+    17,
+    58,
+    65
+  ]
+}

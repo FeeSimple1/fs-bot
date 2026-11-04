@@ -11,6 +11,9 @@ from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_COMMAND_SA
 
 def collect_free_action(state, faction, request, stdin, stdout):
     """Collect and dry-run a full plan without changing the live board/RNG."""
+    if request.get('request_type') == 'mons_cevenna_march':
+        from fs_bot.cli.mons_cevenna import collect_march
+        return collect_march(state, faction, request, stdin, stdout)
     if request.get('request_type') == 'camulogenus_march':
         from fs_bot.cli.camulogenus import collect_march
         return collect_march(state, faction, request, stdin, stdout)

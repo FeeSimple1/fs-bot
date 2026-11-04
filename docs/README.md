@@ -26,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [3 November Mons Cevenna](reviews/mons-cevenna-2026-11-03.md) | Numeric9 human first March and destination-scoped Command/SA; partial BE-01 repair |
 | [3 November planning-board inspection](reviews/planning-board-inspection-2026-11-03.md) | FE-01: Command inspection follows the actual preview after prior operations |
 | [3 November Camulogenus March choices](reviews/camulogenus-2026-11-03.md) | Roman benefit acceptance, exact original groups/routes, moving-only visibility and durable decisions; partial BE-01 repair |
 | [3 November Litaviccus targeting and forces](reviews/litaviccus-targeting-2026-11-03.md) | Adopted PR-12, shared non-player eligibility/target prediction, full Aedui participation and source-bound outcome validation |

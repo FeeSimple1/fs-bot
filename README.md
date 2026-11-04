@@ -95,7 +95,9 @@ implements provisional PR-12 targeting and full Aedui Battle participation.
 This separate follow-up is outside the original audit denominator.
 The [Camulogenus repair](docs/reviews/camulogenus-2026-11-03.md) adds the
 Roman-owned acceptance and exact March planning on numeric 70. It is a
-partial repair of BE-01; grouped March grants on 4/9/17/58/65 remain open.
+partial repair of BE-01. The [Mons Cevenna repair](docs/reviews/mons-cevenna-2026-11-03.md)
+adds numeric 9's exact human March and destination-scoped follow-on;
+grouped March grants on 4/17/58/65 remain open.
 The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md)
 closes FE-01: `b`/`board` at Command menus show the position after the preceding SA.
 **21 of 50 findings are closed (42%); 29 remain open** in the

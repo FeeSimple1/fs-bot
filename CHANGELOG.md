@@ -4,6 +4,16 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Mons Cevenna March choices, 3 November 2026
+
+- Restore human first-March origin, destination and exact mobile-piece choices
+  on numeric 9, including origin visibility and separate Diviciacus consent.
+- Keep the following free Command/SA in or from the destination; validate
+  legacy routes and prevent unavailable movement from broadening the grant.
+- Support terminal inspection, durable pending decisions and save/resume.
+  This is a partial BE-01 repair; progress remains 21/50 (42%). See the
+  [Mons Cevenna report](docs/reviews/mons-cevenna-2026-11-03.md).
+
 ## Unreleased — Planning-board inspection, 3 November 2026
 
 - Fix `b`/`board` at Command and cooperation prompts to show the detached

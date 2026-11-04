@@ -126,6 +126,25 @@ def make_random_reactive(seats, rng):
         if (kind == "free_action" and request.get("request_type") == "roman_event_accept"
                 and request.get("card_id") == 70):
             return {"accept": True} if rng.random() >= 0.25 else {"decline": True}
+        if kind == "free_action" and request.get("request_type") == "mons_cevenna_march":
+            from fs_bot.cards.mons_cevenna import pools, routes
+            options = []
+            for origin, pool in pools(state, faction).items():
+                if not any(pool.values()):
+                    continue
+                group = {piece: rng.randint(0, pool[piece])
+                         for piece in (rc.LEGION, rc.AUXILIA, rc.WARBAND)}
+                group[rc.LEADER] = bool(pool[rc.LEADER] and rng.random() < 0.5)
+                if not any(group.values()):
+                    group = {piece: pool[piece] for piece in
+                             (rc.LEGION, rc.AUXILIA, rc.WARBAND)}
+                    group[rc.LEADER] = bool(pool[rc.LEADER])
+                actual = dict(group, **{rc.LEADER: pool[rc.LEADER] if group[rc.LEADER] else None})
+                options.extend({'origin': origin, 'destination': path[0], 'group': group}
+                               for path in routes(state, faction, origin, actual))
+            if options:
+                return rng.choice(options)
+            return {'origin': None, 'destination': rng.choice(request['allowed_regions']), 'group': {}}
         if kind == "free_action" and request.get("request_type") == "camulogenus_march":
             from fs_bot.cards.camulogenus import origin_groups, march_routes
             destination = rng.choice(sorted(request["destinations"]))

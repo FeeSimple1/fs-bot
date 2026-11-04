@@ -704,13 +704,11 @@ def execute_card_9(state, shaded=False):
 
     Source: Card Reference, card 9
     """
-    # Both unshaded and shaded have the same effect
-    params = state.get("event_params", {})
+    from fs_bot.cards.mons_cevenna import initial_params
+    from_region, to_region = initial_params(state)
     state.setdefault("event_modifiers", {})
     state["event_modifiers"]["card_9_free_march_and_command"] = True
-    from_region = params.get("march_from")
-    to_region = params.get("march_to")
-    if from_region and to_region:
+    if from_region is not None:
         state["event_modifiers"]["card_9_march_from"] = from_region
         state["event_modifiers"]["card_9_march_to"] = to_region
 

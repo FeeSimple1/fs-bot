@@ -605,6 +605,28 @@ targets may include a Region without friendly Forces, as its text permits.
 Missing or invalid durable-session responses remain pending with board/RNG
 rollback; do not replace them with a default response.
 
+Numeric 9 uses `free_action` / `mons_cevenna_march` for its human executor.
+Respond with `origin`, `destination`, `group` and optional `diviciacus_regions`.
+The group maps canonical mobile piece labels to integer quantities, with a
+Boolean `Leader` selection. The single adjacent route must stay within
+Provincia, Sequani and Arverni; it cannot add dropoffs or extra origins.
+For example:
+
+```json
+{"origin":"Provincia","destination":"Sequani","group":{"Auxilia":1}}
+```
+
+If no native March is possible, use `origin: null`, an empty `group`, and
+one offered destination for partial execution. An available first March
+and following Command cannot be declined independently. Explicit
+`use_default` retains automatic planning. The following `event_command`
+request scopes Command and SA to that destination, while allowing March
+or Scout to move out. Missing/invalid durable answers remain pending;
+save/resume retains the chosen first March. Formation and cooperation
+answers remain separate. Legacy `march_from`/`march_to` Event parameters
+are validated as a complete adjacent pair; human players choose their
+actual move at the new live decision rather than the initial parameter form.
+
 Numeric 70 unshaded first uses `roman_event_accept` for the Roman beneficiary,
 independently of which faction executed the Event. After acceptance,
 `camulogenus_march` accepts `destination`, `marches`, and optional

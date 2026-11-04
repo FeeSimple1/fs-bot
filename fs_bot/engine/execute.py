@@ -2386,6 +2386,11 @@ def _resolve_card70_free_command(state, faction):
 
 
 def _resolve_card9_march_command(state, faction, march_from, march_to):
+    from fs_bot.cards.mons_cevenna import resolve
+    return resolve(state, faction, march_from, march_to)
+
+
+def _resolve_card9_march_command_default(state, faction, march_from, march_to):
     """Card 9 Mons Cevenna: "Free March from a Region into an adjacent Region,
     both within 1 Region of Provincia. Then execute a free Command and any free
     Special Ability in (or from) the destination Region." (Within 1 of
@@ -2402,6 +2407,9 @@ def _resolve_card9_march_command(state, faction, march_from, march_to):
     near = [r for r in (PROVINCIA, SEQUANI, ARVERNI_REGION)
             if r in set(get_playable_regions(scen, state.get("capabilities")))]
     S, B = march_from, march_to
+    if S is not None or B is not None:
+        from fs_bot.cards.mons_cevenna import validate_pair
+        validate_pair(state, faction, S, B)
     if not (S and B):
         # Derive: a within-1-of-Provincia source with a mobile group, into an
         # adjacent within-1-of-Provincia destination.
@@ -2422,8 +2430,11 @@ def _resolve_card9_march_command(state, faction, march_from, march_to):
             out.append({"free_action": "march", "flag": "card_9",
                         "executed": False, "reason": repr(exc)})
     # Free Command "in (or from) the destination Region" — restrict to dest.
-    allowed = {dest} if dest else (set(near) if near else None)
-    cmd_res = _resolve_free_command(state, faction, allowed_regions=allowed, with_sa=True)
+    # A failed/unavailable March does not expand the destination grant.
+    destination = B if B is not None else (near[0] if near else None)
+    allowed = {destination} if destination is not None else set()
+    cmd_res = _resolve_free_command(state, faction, allowed_regions=allowed,
+                                    with_sa=True, allow_decline=False)
     out.append({"free_action": "free_command", "flag": "card_9",
                 "result": cmd_res})
     return out

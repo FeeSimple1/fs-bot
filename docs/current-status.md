@@ -21,6 +21,23 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 3 November Mons Cevenna — partial BE-01 repair
+
+The [Mons Cevenna report](reviews/mons-cevenna-2026-11-03.md) covers
+numeric 9's human first-March origin, exact moving force and adjacent
+destination. Its follow-on Command and optional SA remain in/from that
+Region, with separate cooperation consent. Legacy initial routes now obey
+the printed geography, and unavailable movement cannot broaden the grant.
+Terminal board inspection, durable rejection/rollback and save/resume are
+covered. **7,517 tests pass**; 19 behavioral witnesses fail against the
+parent. Ten bot records match the parent, and 40 mixed executions including
+replay/hash repeats show zero hard findings. New decisions can change replay
+requirements across revisions.
+
+**21/50 original findings remain closed (42%); 29 remain open.** BE-01
+now remains open for 4/17/58/65. Two source questions, twelve provisional
+rulings and 34 unverified inventory rows remain separately tracked.
+
 ### 3 November planning-board inspection — FE-01 closed
 
 The [inspection repair](reviews/planning-board-inspection-2026-11-03.md)

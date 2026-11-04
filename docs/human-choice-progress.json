@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-03",
   "tested_source": {
-    "commit": "6238dddbb24bddfc3f610e18cfc1ef93a77d7392",
-    "python_sha256": "f07654d71ce309a9b1d0b347e42ee2a59a4e1d86c9c8f0348bf19ee7d6ec9e27",
-    "python_files": 464,
+    "commit": "c3883b2c242528d77b6b25e595fc43c47e7f1229",
+    "python_sha256": "d6da1ebb1d1c05706eabfc76b36c96c9b8e1861a4e6f05632697dca719af9536",
+    "python_files": 467,
     "working_tree_changes": true,
-    "note": "FE-01 board inspection repair over the named parent; see reviews/planning-board-inspection-2026-11-03.md."
+    "note": "Mons Cevenna partial BE-01 repair over this parent; see reviews/mons-cevenna-2026-11-03.md."
   },
   "total": 50,
   "closed": 21,
@@ -20,7 +20,8 @@
     "BE-03 closed by the Gallic Event batch. The five ordinary Arverni Phase follow-ups and two related defects are repaired separately; no additional original finding closes. See reviews/arverni-phase-2026-11-03.md. Other BE-01 March grants remain open.",
     "BE-02 closes fixed Event Battle choices. Revised Numidians participation, Litaviccus counting and Event-aware Retreat forecasts are related repairs; the non-player Litaviccus target predictor is separately open. See reviews/event-battle-choices-2026-11-03.md.",
     "The subsequent Litaviccus follow-up implements owner-adopted PR-12 and full Aedui Battle participation. It repairs the separate target predictor recorded after BE-02 without changing the 50-finding denominator. See reviews/litaviccus-targeting-2026-11-03.md.",
-    "Camulogenus whole-benefit and March choices are repaired; BE-01 remains open for 4/9/17/58/65. See reviews/camulogenus-2026-11-03.md."
+    "Camulogenus whole-benefit and March choices are repaired; BE-01 remains open for 4/9/17/58/65. See reviews/camulogenus-2026-11-03.md.",
+    "Mons Cevenna numeric9 human first-March choice and destination-scoped follow-on are repaired; BE-01 remains open for 4/17/58/65. See reviews/mons-cevenna-2026-11-03.md."
   ],
   "findings": [
     {
@@ -128,9 +129,10 @@
       "status": "open",
       "partial_repairs": [
         "Numeric67 human beneficiary receives its scoped March decision; see reviews/gallic-event-grants-2026-11-02.md.",
-        "Numeric70 unshaded gives Romans whole-benefit acceptance and exact multi-origin March planning; remaining grouped grants are numeric4/9/17/58/65."
+        "Numeric70 unshaded gives Romans whole-benefit acceptance and exact multi-origin March planning; remaining grouped grants are numeric4/9/17/58/65.",
+        "Numeric9 offers the human executor an exact adjacent March and preserves its destination for the following free Command and SA; legacy route limits are validated."
       ],
-      "partial_report": "reviews/camulogenus-2026-11-03.md"
+      "partial_report": "reviews/mons-cevenna-2026-11-03.md"
     },
     {
       "id": "BE-02",

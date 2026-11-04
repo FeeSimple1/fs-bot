@@ -98,7 +98,8 @@ Roman-owned acceptance and exact March planning on numeric 70. It is a
 partial repair of BE-01. The [Mons Cevenna repair](docs/reviews/mons-cevenna-2026-11-03.md)
 adds numeric 9's exact human March and destination-scoped follow-on;
 The [Aduatuca repair](docs/reviews/aduatuca-2026-11-04.md) restores numeric58's
-executor-owned Fort and German March choices. Grouped grants on 4/17/65 remain open.
+executor-owned Fort and German March choices. The [German guidance repair](docs/reviews/german-guidance-2026-11-04.md) restores
+numeric65's human March and Ambush choices. Grouped grants on 4/17 remain open.
 The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md)
 closes FE-01: `b`/`board` at Command menus show the position after the preceding SA.
 **21 of 50 findings are closed (42%); 29 remain open** in the

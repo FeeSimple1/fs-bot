@@ -107,7 +107,7 @@ def _rows(state, faction, prepared, original, remaining, source_id):
 
 @command_scope
 def execute_march(state, faction, action, *, free=True, target_regions=None,
-                  source_id='A67', moving_only=False):
+                  source_id='A67', moving_only=False, allow_stationary=False):
     """Freeze initial cohorts for the trusted Event's chosen destinations.
 
     A67 flips each selected origin. Card70 instead flips only each moving
@@ -148,7 +148,8 @@ def execute_march(state, faction, action, *, free=True, target_regions=None,
         if leader:
             available[rc.LEADER] = None
         path = move.get('path')
-        if (not _group_has_pieces(group) or not path or path[-1] not in targets
+        stationary = allow_stationary and path == [] and not _group_has_pieces(group)
+        if not stationary and (not _group_has_pieces(group) or not path or path[-1] not in targets
                 or path not in _march_routes(state, origin, faction, group)):
             raise ValueError('Each group must follow a legal route into its granted destination.')
         prepared.append((origin, path, group))

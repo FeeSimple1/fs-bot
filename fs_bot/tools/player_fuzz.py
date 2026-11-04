@@ -126,6 +126,21 @@ def make_random_reactive(seats, rng):
         if (kind == "free_action" and request.get("request_type") == "roman_event_accept"
                 and request.get("card_id") == 70):
             return {"accept": True} if rng.random() >= 0.25 else {"decline": True}
+        if kind == "free_action" and request.get("request_type") == "german_guided_march":
+            from fs_bot.cards.german_guidance import destinations
+            sources=list(request['origins'].items())
+            rng.shuffle(sources)
+            marches=[]
+            for origin,maximum in sources[:rng.randint(0,min(len(sources),request['max_origins']))]:
+                n=rng.randint(0,maximum)
+                legal=destinations(state,origin,n) if n else []
+                if n and not legal:
+                    n=0
+                marches.append({'origin':origin,'warbands':n,'destination':rng.choice(legal) if n else None})
+            return {'marches':marches}
+        if kind == "free_action" and request.get("request_type") == "german_guided_ambush":
+            region=rng.choice(sorted(request['defenders_by_region']))
+            return {'region':region,'defender':rng.choice(request['defenders_by_region'][region])}
         if kind == "free_action" and request.get("request_type") == "aduatuca_march":
             destination = rng.choice(request['destinations'])
             sources = list(request['origins_by_destination'][destination].items())

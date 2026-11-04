@@ -1634,7 +1634,7 @@ def _resolve_free_actions_scoped(state, faction):
     if mods.get("card_65_german_march_ambush"):
         _event_step(state, "grant.card_65_german_march_ambush")
         results.extend(_resolve_card65_german_march_ambush(
-            state, mods.get("card_65_march_regions", 2)))
+            state, mods.get("card_65_march_regions", 2), faction))
     if mods.get("card_17_german_ambush"):
         _event_step(state, "grant.card_17_german_ambush")
         results.extend(_resolve_card17_march_ambush(
@@ -2696,7 +2696,13 @@ def _german_setup_marches(state, march_limit):
     return marched
 
 
-def _resolve_card65_german_march_ambush(state, march_limit):
+def _resolve_card65_german_march_ambush(state, march_limit, faction=None):
+    from fs_bot.cards.german_guidance import resolve
+    from fs_bot.rules_consts import ROMANS
+    return resolve(state, faction or state.get("executing_faction") or ROMANS, march_limit)
+
+
+def _resolve_card65_german_march_ambush_default(state, march_limit):
     """Card 65 German Allegiances (unshaded): "March Germans from up to 2
     Regions, then Ambush with all Germans able."
 

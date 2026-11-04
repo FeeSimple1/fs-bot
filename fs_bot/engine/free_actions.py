@@ -165,6 +165,9 @@ def validate_free_action_response(state, faction, request, response):
     if request.get('request_type') == 'decisive_battle':
         from fs_bot.cards.decisive_battle import validate_response
         return validate_response(state, faction, request, response)
+    if request.get('request_type') in ('german_guided_march', 'german_guided_ambush'):
+        from fs_bot.cards.german_guidance import validate_response
+        return validate_response(state, request, response)
     if request.get('request_type') == 'aduatuca_march':
         from fs_bot.cards.aduatuca import validate_response
         return validate_response(state, request, response)

@@ -34,6 +34,19 @@ the one Loss per two German Warbands. Roman casualty choices remain with
 the Roman player. The shaded Event skips the unrelated unshaded removal
 prompts, and `b`/`board` remains available during March selection.
 
+For unshaded German Allegiances (card 65), the Event player chooses up to
+two German origin Regions, exact moving quantities and adjacent destinations.
+Zero Warbands selects an origin for hiding only; it still counts against the
+two-Region limit. Only original counters can leave each selected origin:
+arrivals cannot March again or be hidden a second time. Then choose the
+order and defenders for Ambushes in every Region able to act. Hidden
+superiority remains required, and Forts retain their normal protection.
+Even a zero-Loss Ambush may be legal. Roman/Aedui defensive cooperation is
+checked before combat; Germans cannot switch to an ordinary Battle if it
+removes their ability to Ambush. Choosing the bot default at the first March
+menu delegates the complete grant; a later Ambush default chooses only the
+next Ambush. `b`/`board` remains available at these menus.
+
 ## Requirements
 
 Python 3.10 or newer. Nothing else — no packages to install, no

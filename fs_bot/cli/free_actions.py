@@ -11,6 +11,9 @@ from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_COMMAND_SA
 
 def collect_free_action(state, faction, request, stdin, stdout):
     """Collect and dry-run a full plan without changing the live board/RNG."""
+    if request.get('request_type') in ('german_guided_march', 'german_guided_ambush'):
+        from fs_bot.cli.german_guidance import collect_response
+        return collect_response(state, faction, request, stdin, stdout)
     if request.get('request_type') == 'aduatuca_march':
         from fs_bot.cli.aduatuca import collect_march
         return collect_march(state, faction, request, stdin, stdout)

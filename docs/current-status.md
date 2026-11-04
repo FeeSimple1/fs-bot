@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November German Allegiances — partial BE-01 repair
+
+The [German guidance report](reviews/german-guidance-2026-11-04.md) covers
+numeric65's human executor choices: up to two original German origins,
+quantities/routes, then Ambush order and defenders in every able Region.
+Original physical cohorts prevent arrivals from moving twice or receiving
+another origin flip, including hide-only origins. Hidden superiority and
+Fort protection remain in force; defensive cooperation is checked before
+combat and a zero-Loss Ambush is not excluded merely by the NP heuristic.
+Terminal inspection, durable rollback and save/resume are covered.
+**7,567 tests pass**, including 28 added regressions; 20 behavior witnesses
+fail against the parent. Ten bot gameplay records/final hashes match, and
+40 mixed executions including replay/hash repeats have zero hard findings.
+Native NPC planners are unchanged; this is not a new audit of their priorities.
+
+**21/50 original findings remain closed (42%); 29 remain open.** BE-01
+remains open for 4/17. Two source questions, twelve provisional rulings and
+34 unverified inventory rows remain separate.
+
 ### 4 November Aduatuca — partial BE-01 repair
 
 The [Aduatuca report](reviews/aduatuca-2026-11-04.md) covers numeric58

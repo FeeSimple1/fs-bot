@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — German Allegiances guidance, 4 November 2026
+
+- Restore numeric65's executor-owned German origins, quantities and routes,
+  followed by order and target choices for every able Ambush Region.
+- Preserve original counters, hide-only origins, normal Fort protection,
+  Hidden superiority and legal zero-Loss Ambushes. Check defensive cooperation
+  before combat rather than allowing Germans to switch to normal Battle.
+- Support terminal inspection, pending decisions, rollback and save/resume.
+  Partial BE-01 repair; progress remains 21/50 (42%). See the
+  [German guidance report](docs/reviews/german-guidance-2026-11-04.md).
+
 ## Unreleased — Aduatuca March choices, 4 November 2026
 
 - Give the human executor numeric58 shaded's Fort, German origins, exact

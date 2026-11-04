@@ -605,6 +605,34 @@ targets may include a Region without friendly Forces, as its text permits.
 Missing or invalid durable-session responses remain pending with board/RNG
 rollback; do not replace them with a default response.
 
+Numeric 65 unshaded uses `free_action` / `german_guided_march` for the Event
+executor, with engine-owned `acting_faction: Germans`. Respond with `marches`,
+a list of at most two entries containing `origin`, `destination` and integer
+`warbands`. Origins must be distinct and quantities must fit the initial force.
+A positive group enters one adjacent playable Region; zero uses
+`destination: null` and hides only the original counters at that origin.
+The empty list selects no March. Arrivals never join later groups or receive
+a second origin flip. For example:
+
+```json
+{"marches":[{"origin":"Provincia","destination":"Sequani","warbands":2}]}
+```
+
+The successive `german_guided_ambush` requests expose fresh
+`defenders_by_region` and `remaining_regions`. Respond with one `region` and
+`defender`. Each able Region must act once; the executor chooses order and
+targets. No independent decline or repeated Region is accepted. Printed
+Hidden superiority, Fort protection, and German-only Ambush requirements
+remain in force, including after defensive cooperation. Zero predicted
+Losses do not by themselves make an Ambush illegal. These choices are
+separate from each physical defender's live reactions. Missing/invalid
+answers remain pending and the complete grant rolls back while awaiting
+later input; save/resume replays accepted earlier choices. Native NPCs
+and raw callback deferral retain the previous whole-grant planner. An
+explicit `use_default` at the March stage delegates the complete grant; at
+a later Ambush request it delegates only the next choice. Old transcripts
+may encounter new requests.
+
 Numeric 58 shaded uses `free_action` / `aduatuca_march`, consulted with the
 Event executor, with engine-owned `acting_faction: Germans`. Respond with
 `destination` and ordered `marches`, each containing `origin` and integer

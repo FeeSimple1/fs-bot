@@ -1,0 +1,104 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "72e0594e5d79d68b04208068e1b410666a930941",
+    "dirty": true,
+    "source_sha256": "b7f6503a9c85976edeac8e0c467a2a7191a525269f5b03086cc23701e66d28f1"
+  },
+  "python": "3.12.14",
+  "python_files": 473,
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "7567",
+    "time": "212.803",
+    "timestamp": "2026-11-04T16:16:08.508183+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "targeted_suite": {
+    "passed": 89
+  },
+  "legacy_fallback_regression": {
+    "passed": 1
+  },
+  "parent_behavior_proof": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "20",
+    "skipped": "0",
+    "tests": "20",
+    "time": "0.443",
+    "timestamp": "2026-11-04T16:10:54.850894+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "bot_comparison": {
+    "games": 10,
+    "scenarios": 5,
+    "seeds": [
+      1,
+      2
+    ],
+    "edition": "legacy",
+    "all_completed": true,
+    "all_gameplay_fields_and_final_hashes_equal": true,
+    "excluded": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "72e0594e5d79d68b04208068e1b410666a930941",
+      "dirty": true,
+      "source_sha256": "b7f6503a9c85976edeac8e0c467a2a7191a525269f5b03086cc23701e66d28f1",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 299,
+    "event_turns": 86,
+    "events_ok": 83,
+    "partial": 0,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "eaa6752960cd325500dea444db5a69e05e36d9912ddeb1e683983bfc65cf8480"
+  },
+  "mixed_hashes": [
+    0,
+    987
+  ],
+  "mixed_complete_json_equal": true,
+  "mixed_executions_with_replay": 40,
+  "original_audit": {
+    "closed": 21,
+    "open": 29,
+    "total": 50,
+    "percent": 42
+  },
+  "be01_remaining": [
+    4,
+    17
+  ]
+}

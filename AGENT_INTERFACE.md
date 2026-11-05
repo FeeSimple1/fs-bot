@@ -489,7 +489,7 @@ and Ally identity gaps recorded separately by the audit remain open.
 | `winter_uprising_timing` | A66; full `card_text`, `region, holder, forced` | `{"activate":true}` or `{"activate":false}`, or explicit default |
 | `winter_uprising_placement` | A66; full `card_text`, `region, holder, forced, beneficiary, regions, tribes, allies, warbands` | `{"allies":[tribe,...],"warbands":[{"region":name,"count":integer},...]}` or explicit default |
 | `quarters_plan` | `faction, errors` | relocation/payment object described below, or explicit default |
-| `quarters_provincia` | `faction, original_moves, legal_moves, errors` | `{"moves":[[piece,origin,"Provincia",count],...]}`, `{"decline":true}`, or explicit default |
+| `quarters_provincia` | `faction, original_moves, legal_moves, errors` | `{"moves":[[piece,origin,"Provincia",count,visibility],...]}`, `{"decline":true}`, or explicit default |
 | `quarters_payment` | `faction, reason`, optional `errors` | `{"payments":{...}}` using the existing Roman quartering allocation shape, or explicit default |
 | `spring_leader` | `faction, leader, source, reason, legal_regions, can_defer`; mid-action offers add `window`, scenario ties may set `equal_priority` | `{"region":name}`, `{"defer":true}` only when offered, or explicit default |
 | `winter_campaign` | `card_id, remaining_actions`, optional `errors` | one paid action, combined Command+SA, or decline; see the Winter section below |
@@ -1104,9 +1104,15 @@ is `cards.kinship.validate_response(state, response)`.
 ### Quarters
 
 A `quarters_plan` response maps the acting faction to relocations:
-`{"Belgae":[["Warband","Morini","Atrebates",2]]}` is a shape example.
-Each entry is `[piece_type, origin, destination, count]`; legality depends on
-the current board and any host agreement. `{"Belgae":[]}` chooses no
+`{"Belgae":[["Warband","Morini","Atrebates",2,"Revealed"]]}` is a shape example.
+Entries are `[piece_type, origin, destination, count, visibility]` for exact
+Hidden/Revealed/Scouted Warband or Auxilia cohorts. Visibility is preserved;
+this is relocation, without March's hiding procedure. Counts must be positive
+integers and fit the selected physical cohort, including repeated entries.
+Legions and Leaders use four entries without visibility. Legacy four-entry
+Warband/Auxilia rows remain supported and consume Hidden, then Revealed, then
+Scouted pieces. Mixed legacy/exact rows reserve cohorts in plan order.
+Legality also depends on the current board and any host agreement. `{"Belgae":[]}` chooses no
 relocations. Arrivals cannot make a second adjacent relocation in the same
 step; Roman movement to Provincia is a later step.
 
@@ -1120,9 +1126,13 @@ The printed free capacity and available Resources still apply. See
 
 If an intervening Leader entry changes Supply after adjacent relocations,
 `quarters_provincia` reopens only the remaining Provincia moves. Completed
-adjacent moves stay completed. `legal_moves` entries use their final count as
-the maximum offered; explicit default retains only still-legal original
-moves, while decline chooses none. A changed relocation outcome then requests
+adjacent moves stay completed. `legal_moves` retains four-entry summary rows
+whose final count is the maximum offered across all visibility cohorts.
+Response moves accept the same optional fifth visibility as `quarters_plan`;
+aggregate counts must fit both that maximum and live selected cohorts.
+Explicit default retains only still-legal original moves and their exact
+visibility, trimming or dropping unavailable cohorts without substituting
+another visibility. Decline chooses none. A changed relocation outcome then requests
 `quarters_payment` for the pieces actually left outside Provincia, before
 payment or loss rolls. Explicit default uses standard payments.
 

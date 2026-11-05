@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Quarters visibility](reviews/quarters-visibility-2026-11-04.md):
+  exact physical relocations, continuation capacity and durable replay.
+
+
 - [4 November Devastate casualties](reviews/devastate-losses-2026-11-04.md):
   exact owner choices, cohort validation, NPC priority and durable replay.
 

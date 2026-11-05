@@ -1,6 +1,6 @@
 # Build plan and maintenance roadmap
 
-Updated 3 November 2026. The original pre-implementation plan is retained in
+Updated 4 November 2026. The original pre-implementation plan is retained in
 Git history. The engine now has implementations for all eight original build
 phases; those phase labels are an architectural map, not a list of unbuilt
 features or a certification that every rule interaction is correct.
@@ -42,7 +42,12 @@ At that checkpoint original progress was 30/50 closed (60%), 20 open.
 The [4 November Devastate repair](docs/reviews/devastate-losses-2026-11-04.md)
 closes CMD-DEVASTATE-LOSSES with exact physical-owner casualty requests,
 whole-plan validation and source-correct default visibility priorities.
-Current original progress is 31/50 closed (62%), 19 open.
+At that checkpoint original progress was 31/50 closed (62%), 19 open.
+
+The [4 November Quarters repair](docs/reviews/quarters-visibility-2026-11-04.md)
+closes WS-F05 with exact visibility cohorts for adjacent and Provincia moves,
+terminal/durable support, original-piece capacity and continuation validation.
+Current original progress is 32/50 closed (64%), 18 open.
 
 ## Existing implementation
 
@@ -115,7 +120,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 31 of 50 closed (62%) and 19 open; these are finding counts, not
+now records 32 of 50 closed (64%) and 18 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

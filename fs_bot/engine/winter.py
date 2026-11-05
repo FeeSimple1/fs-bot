@@ -339,7 +339,8 @@ def _quarters_phase(state, relocations=None):
         state: Game state dict. Modified in place.
         relocations: Optional dict of pre-made relocation decisions,
             keyed by faction. Each value is a list of
-            (piece_type, from_region, to_region, count) tuples.
+            (piece_type, from_region, to_region, count) tuples, optionally
+            followed by exact Hidden/Revealed/Scouted visibility.
 
     Returns:
         Dict with phase results.

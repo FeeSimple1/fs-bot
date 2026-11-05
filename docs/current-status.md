@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Quarters visibility — WS-F05 closed
+
+The [Quarters repair](reviews/quarters-visibility-2026-11-04.md) lets owners
+select exact Hidden/Revealed/Scouted Warband and Auxilia cohorts for adjacent
+relocations and Roman Provincia moves. Original adjacent cohorts are reserved
+before applying any arrivals. Provincia continuations check both offered totals
+and live visibility capacity; defaults trim unavailable selected cohorts rather
+than substitute another visibility. Terminal and durable interfaces support the
+same choices, with pending/save/resume and exact replay. Legacy four-entry plans
+retain their Hidden/Revealed/Scouted fallback.
+
+**Original bundle is now 32/50 closed (64%), 18 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**8,104 tests pass**, including 56 new cases; 129 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. See the report
+for the frozen source digest and evidence bounds.
+
+
 ### 4 November Devastate casualties — CMD-DEVASTATE-LOSSES closed
 
 The [casualty repair](reviews/devastate-losses-2026-11-04.md) asks each affected
@@ -31,7 +53,7 @@ own-piece removal now follows §8.4.1's Scouted/Revealed/Hidden priority. Legion
 still go to Fallen. Terminal, preview isolation and durable later-Region
 rollback/save/resume/replay are covered. Ariovistus still excludes Devastate.
 
-**Original bundle is now 31/50 closed (62%), 19 open.** Counts measure findings,
+**At that checkpoint: 31/50 closed (62%), 19 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.
@@ -905,7 +927,7 @@ for reproduction commands and compatibility limits.
 | Successor and Litaviccus (45) | Threat March uses the actual Leader’s movement allowance. Pooled Aedui Warbands count for Ambush strength without bypassing Leader range; ordinary Battle remains available when Ambush is not. | `test_census_planner_regressions.py` |
 | Winter Uprising and Interlude | The Interlude executes Uprising and Winter Campaign before changing Forces and scenario. Forced Arverni phases handle an empty target set; Aedui/Belgic A63 ownership remains effective afterward. | `test_winter_uprising_regressions.py` |
 | Winter Campaign | Humans can take up to two paid actions, including standalone Special Abilities. A63 records and activates its proper owner. Bot plans honor the remaining action budget before selecting dependent actions such as Settle/Rally. After-Harvest Harassment no longer tries to look up the Winter marker as an Event. | `test_winter_campaign_decisions.py`, `test_winter_harassment_order.py` |
-| Quarters | All human factions choose relocations and payments. Complete adjacent relocation groups are validated against pre-step Control, and original visibility is preserved so arrivals cannot move again. Supply Lines use the resulting board. Invalid destinations, static-piece movement and negative payments are rejected; losses apply to the actual unpaid pieces. | `test_quarters_decisions.py`, `test_quarters_relocation_step.py` |
+| Quarters | All human factions choose relocations and payments, including exact visibility cohorts and Roman Provincia continuations. Complete adjacent relocation groups are validated against pre-step Control, and original visibility is preserved so arrivals cannot move again. Supply Lines use the resulting board. Invalid destinations, static-piece movement and negative payments are rejected; losses apply to the actual unpaid pieces. | `test_quarters_decisions.py`, `test_quarters_relocation_step.py`, `test_quarters_visibility.py` |
 | Saves | Production loading validates board structure and pending-turn cursors before resuming, with readable errors for malformed saves. | `test_save_validation.py` |
 | Human replay | Default reactive responses are recorded. Actual terminal games from every playable seat replay to the same final state. Explicitly rejected human Events retain their pending turn; legal ineffective Events remain permitted. | `test_cli_playthroughs.py`, `test_german_allegiances.py`, `test_resumable_turns.py` |
 | Morbihan display | During A20’s “as if there” Ambush, human loss choices show physical Arverni Warband origins and actual Roman losses, with the temporary battle calculation identified separately. | `test_morbihan_display.py` |

@@ -1,11 +1,20 @@
 """Human Quarters relocation and piece-specific payment menus (§6.3/A6.3)."""
 from fs_bot import rules_consts as rc
-from fs_bot.board.pieces import count_pieces
+from fs_bot.board.pieces import count_pieces, count_pieces_by_state
 from fs_bot.engine.quarters import (
     validate_quarters_plan, preview_relocations, quartering_inventory,
     quartering_cost, quartering_allocations,
 )
 from fs_bot.cli.menus import prompt_choice
+
+
+def _entry(piece, origin, destination, count, visibility):
+    entry = (piece, origin, destination, count)
+    return entry + (visibility,) if visibility is not None else entry
+
+
+def _label(piece, visibility):
+    return piece + (f' ({visibility})' if visibility is not None else '')
 
 
 def collect_provincia(state, faction, request, stdin, stdout):
@@ -19,19 +28,41 @@ def collect_provincia(state, faction, request, stdin, stdout):
     ])
     if selection != 'choose':
         return {'use_default': True} if selection == 'default' else {'decline': True}
-    remaining = list(request['legal_moves'])
+    remaining = []
+    for piece, origin, destination, maximum in request['legal_moves']:
+        if piece in rc.FLIPPABLE_PIECES:
+            for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED):
+                count = min(maximum, count_pieces_by_state(state, origin, faction, piece, visibility))
+                if count:
+                    remaining.append((piece, origin, destination, count, visibility))
+        else:
+            remaining.append((piece, origin, destination, maximum, None))
     moves = []
+    from fs_bot.engine.quarters import validate_provincia_response, QuartersError
     while remaining:
+        options = []
+        for index, (piece, origin, destination, maximum, visibility) in enumerate(remaining):
+            counts = []
+            for count in range(1, maximum + 1):
+                try:
+                    validate_provincia_response(state, request, {'moves': moves + [
+                        _entry(piece, origin, destination, count, visibility)]})
+                except QuartersError:
+                    continue
+                counts.append(count)
+            if counts:
+                options.append((f'{_label(piece, visibility)} from {origin} (up to {counts[-1]})',
+                                (index, counts)))
+        if not options:
+            break
         selected = prompt_choice(stdin, stdout, 'Add a Provincia relocation?',
-            [('Finish relocations', None)] + [
-                (f'{piece} from {origin} (up to {count})', index)
-                for index, (piece, origin, destination, count) in enumerate(remaining)])
+                                 [('Finish relocations', None)] + options)
         if selected is None:
             break
-        piece, origin, destination, maximum = remaining.pop(selected)
-        count = prompt_choice(stdin, stdout, 'How many pieces?',
-                              [(str(n), n) for n in range(1, maximum + 1)])
-        moves.append([piece, origin, destination, count])
+        index, counts = selected
+        piece, origin, destination, maximum, visibility = remaining.pop(index)
+        count = prompt_choice(stdin, stdout, 'How many pieces?', [(str(n), n) for n in counts])
+        moves.append(_entry(piece, origin, destination, count, visibility))
     return {'moves': moves}
 
 
@@ -67,29 +98,33 @@ def collect_quarters_plan(state, faction, request, stdin, stdout):
                      else (rc.WARBAND, rc.LEADER))
             for origin in state['spaces']:
                 for piece in types:
-                    number = count_pieces(preview, origin, faction, piece)
-                    if not number:
-                        continue
-                    destinations = []
-                    for destination in state['spaces']:
-                        attempt = moves + [(piece, origin, destination, 1)]
-                        if not validate_quarters_plan(state, {faction: attempt}, faction=faction):
-                            destinations.append(destination)
-                    if destinations:
-                        candidates.append((f'{piece} from {origin}', (piece, origin, number, destinations)))
-            selected = prompt_choice(stdin, stdout, 'Add a Quarters relocation?',
-                                     [('Finish relocations', None)] + candidates)
+                    states = ((rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
+                              if piece in rc.FLIPPABLE_PIECES else (None,))
+                    for visibility in states:
+                        number = (count_pieces(preview, origin, faction, piece) if visibility is None
+                                  else count_pieces_by_state(preview, origin, faction, piece, visibility))
+                        if not number:
+                            continue
+                        destinations = []
+                        for destination in state['spaces']:
+                            attempt = moves + [_entry(piece, origin, destination, 1, visibility)]
+                            if not validate_quarters_plan(state, {faction: attempt}, faction=faction):
+                                destinations.append(destination)
+                        if destinations:
+                            candidates.append((f'{_label(piece, visibility)} from {origin}',
+                                               (piece, origin, number, destinations, visibility)))
+            selected = prompt_choice(stdin, stdout, 'Add a relocation?', [('Finished relocations', None)] + candidates)
             if selected is None:
                 break
-            piece, origin, number, destinations = selected
+            piece, origin, number, destinations, visibility = selected
             destination = prompt_choice(stdin, stdout, 'Destination (other factions must agree):',
                                         [(r, r) for r in destinations])
             counts = [n for n in range(1, number + 1)
-                      if not validate_quarters_plan(state, {faction: moves + [(piece, origin, destination, n)]},
-                                                    faction=faction)]
+                      if not validate_quarters_plan(state, {faction: moves + [
+                          _entry(piece, origin, destination, n, visibility)]}, faction=faction)]
             number = prompt_choice(stdin, stdout, 'How many pieces?', [(str(n), n) for n in counts])
-            moves.append((piece, origin, destination, number))
-            stdout.write(f'Planned: {number} {piece}, {origin} to {destination}.\n')
+            moves.append(_entry(piece, origin, destination, number, visibility))
+            stdout.write(f'Planned: {number} {_label(piece, visibility)}, {origin} to {destination}.\n')
     plan = {faction: moves}
     if faction == rc.ROMANS:
         preview = preview_relocations(state, faction, moves)

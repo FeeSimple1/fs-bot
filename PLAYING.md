@@ -16,6 +16,13 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+During Quarters, choose Hidden, Revealed or Scouted Warbands/Auxilia separately,
+including how many of each relocate. Their visibility stays the same. Only
+pieces originally present can take the adjacent step; Roman arrivals may then
+take the later Provincia step if eligible. If Supply changes and the remaining
+Provincia choices reopen, the menu again offers exact visibility cohorts.
+`b`/`board` remains available at these prompts.
+
 When Devastate takes casualties, each human owner chooses its own losses by
 piece type and visibility. You may lose a Legion instead of Auxilia, or select
 Hidden, Revealed or Scouted Warbands as offered. Remove the entire required

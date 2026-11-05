@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "9230d5dbafbd5b5d38909e51158028c868449e34",
-    "python_sha256": "74e4310e2a919068cfe64db4630968bcc2941f16223e0f64de0e3d9ef4b52cf7",
-    "python_files": 494,
+    "commit": "0a006caca41b297ec8842d51d973bcf2c9f29e55",
+    "python_sha256": "8dc4932e3aef23aa039773d005d44c7a492f1618d4b44d054f1b2fa68254c13d",
+    "python_files": 495,
     "working_tree_changes": true,
-    "note": "Exact Devastate owner casualties close CMD-DEVASTATE-LOSSES; related default visibility and preselected-map validation defects are corrected. See reviews/devastate-losses-2026-11-04.md."
+    "note": "Exact Quarters visibility cohorts close WS-F05, including Provincia continuation, terminal/durable choices and replay. See reviews/quarters-visibility-2026-11-04.md."
   },
   "total": 50,
-  "closed": 31,
-  "open": 19,
+  "closed": 32,
+  "open": 18,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -34,7 +34,8 @@
     "BATTLE-BESIEGE-CHOICE closes with exact Roman physical targets at the pre-Loss step, optional decline, terminal/durable support and live validation. Native NPC defaults remain supported. See reviews/besiege-choice-2026-11-04.md.",
     "WS-F03 closes with exact mandatory Belgica allocations, real Winter Track transfers, terminal/durable support and replay. Related positive post-Interlude release is repaired; WS-F02 remains open for expedition/marker choices. See reviews/harvest-legions-2026-11-04.md.",
     "BE-10 closes with actual Roman-owned next-two-facedown data before the existing benefit choice, private console rendering and durable replay. Native defaults and deck/RNG state remain unchanged. See reviews/gallic-shouts-peek-2026-11-04.md.",
-    "CMD-DEVASTATE-LOSSES closes with exact physical-owner requests, visibility/Legion choice, complete validation before mutation and durable later-Region replay. Default casualty priority is corrected per \u00a78.4.1. See reviews/devastate-losses-2026-11-04.md."
+    "CMD-DEVASTATE-LOSSES closes with exact physical-owner requests, visibility/Legion choice, complete validation before mutation and durable later-Region replay. Default casualty priority is corrected per \u00a78.4.1. See reviews/devastate-losses-2026-11-04.md.",
+    "WS-F05 closes with exact Hidden/Revealed/Scouted relocation cohorts, original adjacent-piece capacity and Roman continuation validation, including terminal/durable save/resume/replay. Legacy four-entry default plans remain supported. See reviews/quarters-visibility-2026-11-04.md."
   ],
   "findings": [
     {
@@ -406,7 +407,9 @@
       "id": "WS-F05",
       "title": "Quarters cannot select which visibility cohort relocates",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/quarters-visibility-2026-11-04.md",
+      "disposition": "Owners select exact visibility cohorts in adjacent and Roman Provincia relocations; terminal/durable support, frozen original cohorts, continuation capacity and deterministic replay. Legacy four-entry plans remain supported."
     },
     {
       "id": "WS-F06",

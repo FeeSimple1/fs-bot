@@ -4,6 +4,18 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Quarters visibility choices, 4 November 2026
+
+- Let owners choose exact Hidden/Revealed/Scouted Warband and Auxilia cohorts
+  for adjacent Quarters relocations and Roman movement to Provincia.
+- Reserve original adjacent cohorts before movement; validate aggregate totals
+  and visibility capacities in Roman continuations. Preserve cohort intent
+  when an explicit default trims an invalidated Provincia plan.
+- Add exact terminal menus and durable pending/save/resume/replay coverage.
+  Keep four-entry legacy relocation plans and their Hidden-first default.
+- Close WS-F05: 32/50 original findings closed (64%), 18 open.
+  See the [report](docs/reviews/quarters-visibility-2026-11-04.md).
+
 ## Unreleased — Devastate owner casualties, 4 November 2026
 
 - Ask each affected physical owner for exact Devastate casualties by type and

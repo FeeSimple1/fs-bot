@@ -22,6 +22,9 @@ before choosing its benefit. [Repair and validation](docs/reviews/gallic-shouts-
 Devastate now asks each human owner for exact casualties, including visibility
 and Legion choices. [Repair and validation](docs/reviews/devastate-losses-2026-11-04.md).
 
+Quarters now lets owners select exact Hidden/Revealed/Scouted relocation cohorts,
+including Roman Provincia continuations. [Repair and validation](docs/reviews/quarters-visibility-2026-11-04.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.
@@ -133,7 +136,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**31 of 50 findings are closed (62%); 19 remain open** in the
+**32 of 50 findings are closed (64%); 18 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

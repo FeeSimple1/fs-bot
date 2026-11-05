@@ -153,14 +153,50 @@ def _controller(state, region):
     return next((f for f, flag in rc.FACTION_CONTROL.items() if flag == control), None)
 
 
-def _move(state, faction, piece, origin, destination, count):
+def relocation_parts(move):
+    """Read legacy four-entry moves or an exact fifth visibility entry."""
+    _need(isinstance(move, (list, tuple)) and len(move) in (4, 5),
+          'Each relocation needs piece, origin, destination, count and optional visibility')
+    piece, origin, destination, count = move[:4]
+    _need(all(isinstance(value, str) for value in (piece, origin, destination)),
+          'Quarters moves must name pieces and Regions')
+    _nonnegative(count, 'Relocation count')
+    _need(count > 0 and (piece != rc.LEADER or count == 1),
+          'Relocation count must be positive (one for a Leader)')
+    visibility = move[4] if len(move) == 5 else None
+    if len(move) == 5:
+        _need(piece in rc.FLIPPABLE_PIECES and visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED),
+              'Explicit Quarters visibility requires Hidden/Revealed/Scouted mobile pieces')
+    return piece, origin, destination, count, visibility
+
+
+def _reserve_states(remaining, origin, piece, count, visibility):
+    states = (visibility,) if visibility is not None else (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
+    _need(count <= sum(remaining.get((origin, piece, ps), 0) for ps in states),
+          'Cannot relocate unavailable visibility cohorts or move arrivals again')
+    allocated = []
+    for ps in states:
+        amount = min(count, remaining.get((origin, piece, ps), 0))
+        if amount:
+            remaining[origin, piece, ps] -= amount
+            allocated.append((ps, amount))
+            count -= amount
+    return allocated
+
+
+def _state_budget(state, faction):
+    return {(r, p, ps): count_pieces_by_state(state, r, faction, p, ps)
+            for r in get_playable_regions_for_state(state, faction)
+            for p in rc.FLIPPABLE_PIECES for ps in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)}
+
+
+def _move(state, faction, piece, origin, destination, count, visibility=None):
     if piece in rc.FLIPPABLE_PIECES:
-        for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED):
-            amount = min(count, count_pieces_by_state(state, origin, faction, piece, visibility))
-            if amount:
-                move_piece(state, origin, destination, faction, piece,
-                           count=amount, piece_state=visibility)
-                count -= amount
+        available = {(origin, piece, ps): count_pieces_by_state(state, origin, faction, piece, ps)
+                     for ps in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)}
+        allocated = _reserve_states(available, origin, piece, count, visibility)
+        for ps, amount in allocated:
+            move_piece(state, origin, destination, faction, piece, count=amount, piece_state=ps)
     elif count:
         move_piece(state, origin, destination, faction, piece, count=count)
 
@@ -187,16 +223,10 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
              else (rc.LEADER, rc.WARBAND))
     adjacent, provincia = [], []
     for move in moves:
-        _need(isinstance(move, (list, tuple)) and len(move) == 4,
-              'Each relocation must contain piece, origin, destination, and count')
-        piece, origin, destination, count = move
+        piece, origin, destination, count, visibility = relocation_parts(move)
         _need(piece in types, 'Only the faction\'s mobile pieces may relocate in Quarters')
-        _need(isinstance(origin, str) and isinstance(destination, str)
-              and origin in playable and destination in playable and origin != destination,
+        _need(origin in playable and destination in playable and origin != destination,
               f'Quarters relocation requires distinct playable Regions: {origin} to {destination}')
-        _nonnegative(count, 'Relocation count')
-        _need(count > 0 and (piece != rc.LEADER or count == 1),
-              'Relocation count must be positive (one for a Leader)')
         (provincia if faction == rc.ROMANS and destination == rc.PROVINCIA
          else adjacent).append(tuple(move))
     # Only pieces present before the adjacent step may take that step.
@@ -212,7 +242,8 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
     # a Legion and its accompanying Auxilia are not separate rules steps,
     # and their arrival can remove the agreeing host's Control. Supply
     # Lines are explicitly determined after this whole adjacent step.
-    for piece, origin, destination, count in adjacent:
+    for move in adjacent:
+        piece, origin, destination, count, visibility = relocation_parts(move)
         _need(destination in get_adjacent_for_state(sim, origin, faction),
               'Quarters relocation must be to an adjacent Region')
         _need(not _is_devastated(sim, destination), 'Quarters destination is Devastated')
@@ -227,14 +258,9 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
             _need(permissions[key], f'{host} did not agree to Quarters in {destination}')
         remaining[origin, piece] -= count
         if piece in rc.FLIPPABLE_PIECES:
-            # Allocate the original pieces now. Earlier Hidden arrivals
-            # must not replace an origin's Revealed/Scouted departing pieces.
-            for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED):
-                amount = min(count, remaining_states[origin, piece, visibility])
-                if amount:
-                    allocated.append((piece, origin, destination, amount, visibility))
-                    remaining_states[origin, piece, visibility] -= amount
-                    count -= amount
+            # Reserve original cohorts before arrivals are physically moved.
+            for ps, amount in _reserve_states(remaining_states, origin, piece, count, visibility):
+                allocated.append((piece, origin, destination, amount, ps))
         else:
             allocated.append((piece, origin, destination, count, None))
     for piece, origin, destination, count, visibility in allocated:
@@ -253,7 +279,7 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
             if regions:
                 supply_agreements[host] = _host_agrees(
                     sim, rc.ROMANS, host, regions[0], 'supply_line')
-    supplied = {origin for piece, origin, _, _ in provincia
+    supplied = {origin for piece, origin, _, _, _ in map(relocation_parts, provincia)
                 if piece != rc.LEADER and has_supply_line(sim, origin, rc.ROMANS,
                                                          agreements=supply_agreements)}
     if _live and faction == rc.ROMANS:
@@ -274,15 +300,17 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
             provincia = _reconsider_provincia(sim, request)
             if _outcome is not None:
                 _outcome['reconsider_quartering'] = True
-        for index, (piece, origin, destination, count) in enumerate(provincia):
+        for index, move in enumerate(provincia):
+            piece, origin, destination, count, visibility = relocation_parts(move)
             window(sim, 'quarters_provincia_move', faction=faction,
                    region=origin, index=index)
-            _move(sim, faction, piece, origin, destination, count)
+            _move(sim, faction, piece, origin, destination, count, visibility)
         refresh_all_control(sim)
         if _outcome is not None:
             _outcome['moves'] = adjacent + [tuple(move) for move in provincia]
         return sim
-    for piece, origin, destination, count in provincia:
+    for move in provincia:
+        piece, origin, destination, count, visibility = relocation_parts(move)
         _need(count <= count_pieces(sim, origin, faction, piece),
               'Cannot relocate unavailable Roman pieces to Provincia')
         # A direct adjacent move into friendly Provincia is also legal in
@@ -292,7 +320,7 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
                            and not _is_devastated(sim, rc.PROVINCIA))
         _need(piece == rc.LEADER or origin in supplied or direct_adjacent,
               f'{origin} has no agreed Supply Line to Provincia')
-        _move(sim, faction, piece, origin, destination, count)
+        _move(sim, faction, piece, origin, destination, count, visibility)
     refresh_all_control(sim)
     return sim
 
@@ -361,17 +389,15 @@ def validate_provincia_response(state, request, response):
     _need(isinstance(response['moves'], (list, tuple)), 'Provincia moves must be a list')
     remaining = {(piece, origin, destination): count
                  for piece, origin, destination, count in request['legal_moves']}
+    states = _state_budget(state, rc.ROMANS)
     for move in response['moves']:
-        _need(isinstance(move, (list, tuple)) and len(move) == 4,
-              'Each Provincia move needs piece, origin, destination, and count')
-        piece, origin, destination, count = move
-        _need(all(isinstance(value, str) for value in (piece, origin, destination)),
-              'Provincia moves must name offered pieces and Regions')
+        piece, origin, destination, count, visibility = relocation_parts(move)
         key = (piece, origin, destination)
         _need(key in remaining, f'{origin} has no agreed Supply Line to Provincia')
-        _need(type(count) is int and 0 < count <= remaining[key],
-              'Provincia move selects unavailable pieces')
+        _need(count <= remaining[key], 'Provincia move selects unavailable pieces')
         remaining[key] -= count
+        if piece in rc.FLIPPABLE_PIECES:
+            _reserve_states(states, origin, piece, count, visibility)
     return response
 
 
@@ -388,12 +414,22 @@ def _reconsider_provincia(state, request):
                 continue
         if response is None or response.get('use_default') is True:
             remaining = {(p, origin, dest): n for p, origin, dest, n in request['legal_moves']}
+            states = _state_budget(state, rc.ROMANS)
             result = []
-            for p, origin, dest, n in request['original_moves']:
+            for move in request['original_moves']:
+                p, origin, dest, n, visibility = relocation_parts(move)
                 count = min(n, remaining.get((p, origin, dest), 0))
+                if p in rc.FLIPPABLE_PIECES:
+                    available = sum(states.get((origin, p, ps), 0) for ps in
+                                    ((visibility,) if visibility is not None else
+                                     (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)))
+                    count = min(count, available)
                 if count:
-                    result.append((p, origin, dest, count))
+                    entry = (p, origin, dest, count)
+                    result.append(entry + (visibility,) if visibility is not None else entry)
                     remaining[p, origin, dest] -= count
+                    if p in rc.FLIPPABLE_PIECES:
+                        _reserve_states(states, origin, p, count, visibility)
             return result
         return [] if response.get('decline') else response['moves']
 

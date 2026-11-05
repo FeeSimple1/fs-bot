@@ -145,6 +145,9 @@ def validate_response(state, request, response):
     if kind == 'ballistae_target':
         from fs_bot.engine.ballistae_choice import validate_response as validate_ballistae
         return validate_ballistae(state, request, response)
+    if kind == 'slingers_region':
+        from fs_bot.engine.slingers_choice import validate_response as validate_slingers
+        return validate_slingers(state, request, response)
     if kind == "march_cohort":
         from fs_bot.engine.march_choices import validate_response as validate_cohort
         return validate_cohort(request, response)

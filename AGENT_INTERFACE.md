@@ -812,6 +812,31 @@ and `b`/`board` inspection. Older cross-revision transcripts that passed this
 formerly automatic step may stop for the newly required choice. This repair
 does not close BE-09's separate Card 13/59 Region-selection gaps.
 
+`slingers_region` goes to Romans at the start of an enemy's ordinary or free
+Battle plan when Roman Auxilia are present in any selected Battle Region.
+The request contains `attacker`, ordered `legal_regions`, `defenders` and
+per-Region `auxilia` counts. Return `{"region":"Mandubii"}` for one offered
+Region or explicit `{"use_default":true}`. Card 13 unshaded says to choose
+one Region, so there is no decline. An offered Region with zero or one Auxilia
+is legal even when it causes zero pre-fire Losses. A Region without either
+of the planned combatants is not offered. Romans may be defending or a third
+party while another Faction is the defender.
+
+The selection applies once during that Command, before the chosen Battle.
+Live Auxilia there inflict one-half Loss each, rounded down, or one each when
+both Slingers and Germanic Horse are unshaded, as their printed Tips specify.
+That initial-fire bonus does not depend on which Region has Horse's separate
+ordinary-Battle bonus. The default now follows §8.3.3's first applicable
+selected Region, replacing the old most-Auxilia heuristic.
+
+Terminal play supports `b`/`board` inspection. Missing or invalid durable
+responses remain pending with board, payments and RNG restored. An accepted
+Region survives a later casualty prompt, save/load and replay. Previews never
+consume live input. Older replays can stop at the new choice or diverge from
+the corrected NPC priority/fire rate. The private prospective Battle queue
+used by numeric 67's NPC branch still chooses Slingers automatically; its
+Roman choice and Card 59's own Region decisions remain open under BE-09.
+
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
 or when leaving part of the carried group behind (`dropoff`). For a request
 with `count: 2` and sufficient offered counts, a response can be

@@ -85,7 +85,13 @@ Original progress at that checkpoint was 39/50 closed (78%), 11 open.
 The [5 November Ballistae repair](docs/reviews/ballistae-choice-2026-11-05.md)
 adds owner-scoped optional post-Ambush removals for Card 10 shaded and excludes
 Provincia's permanent Fort. BE-09 remains open for Cards 13 and 59. Current
-original progress remains 39/50 closed (78%), 11 open.
+original progress at that checkpoint remained 39/50 closed (78%), 11 open.
+
+The [5 November Slingers repair](docs/reviews/slingers-choice-2026-11-05.md)
+adds Roman selection for ordinary/free Battle plans, the printed combined
+Horse pre-fire bonus and first-applicable NPC priority. BE-09 still includes
+the prospective queue and Card 59 Region decisions. Current original progress
+remains 39/50 closed (78%), 11 open.
 
 ## Existing implementation
 

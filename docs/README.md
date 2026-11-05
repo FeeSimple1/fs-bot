@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [5 November Slingers choice](reviews/slingers-choice-2026-11-05.md)
+  covers Roman ordinary/free Battle Region selection, pre-fire and pending replay.
+
 - [5 November Ballistae choice](reviews/ballistae-choice-2026-11-05.md)
   covers optional owner-scoped post-Ambush removals and pending Region replay.
 

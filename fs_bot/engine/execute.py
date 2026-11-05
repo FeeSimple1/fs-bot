@@ -3784,15 +3784,15 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
 
     # Card 13 unshaded (Balearic Slingers): on an ENEMY Battle Command the
     # Romans choose 1 Region — Auxilia there first inflict 1/2 Loss each on
-    # the attacker, then the Battle resolves. NP choice: most Roman Auxilia.
+    # the attacker, then the Battle resolves. §8.3.3 uses the first applicable
+    # selected Region for the NPC default; humans choose independently.
     _c13_region = None
     if (not _skip_absent_targets and faction != _RO_B
             and _ica_b(state, 13, _EU_B) and _plan_regions):
-        _cands = [(count_pieces(state, r, _RO_B, _AUX_B), r)
-                  for r in sorted(set(_plan_regions))]
-        _cands = [c for c in _cands if c[0] > 0]
-        if _cands:
-            _c13_region = max(_cands)[1]
+        _c13_region = next((r for r in _plan_regions
+                            if count_pieces(state, r, _RO_B, _AUX_B) > 0), None)
+        from fs_bot.engine.slingers_choice import choose_region
+        _c13_region = choose_region(state, faction, battle_plan, _c13_region)
 
     # Card 59 unshaded (Germanic Horse): Romans may inflict 1 Loss per
     # Auxilia (not 1/2) in 1 Region per Battle Command — attack AND
@@ -3972,7 +3972,10 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             if _c13_region == region:
                 from fs_bot.battle.losses import resolve_losses as _rl13
                 _aux = count_pieces(state, region, _RO_B, _AUX_B)
-                _pre = int(_aux * 0.5)
+                # Card 13/59 Tips: having both unshaded capabilities makes
+                # this initial fire one Loss per Auxilia, independently of
+                # the separate Region receiving Horse's ordinary Battle bonus.
+                _pre = _aux if _ica_b(state, 59, _EU_B) else _aux // 2
                 if _pre > 0:
                     _rl13(state, region, faction, _pre)
                 _c13_region = None  # once per Command

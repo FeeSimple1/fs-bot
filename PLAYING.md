@@ -75,6 +75,15 @@ Region, including a free Event Ambush. The prompt shows the physical owner
 and the Citadel's Tribe, and `b`/`board` inspects the live post-combat board.
 Provincia's permanent Fort can never be removed and is excluded.
 
+Unshaded Balearic Slingers now asks Romans to select one of the enemy's
+ordinary/free Battle Regions before combat. You can use it while defending
+or when the attacker is fighting a third Faction. The menu shows Roman
+Auxilia counts; a selected Region with zero or one Auxilia can cause zero
+initial Losses. There is no separate decline. If both Slingers and Germanic
+Horse are unshaded, the initial fire inflicts one Loss per Auxilia. Slingers
+is used only once in the Command. The private prospective Battle queue still
+uses an automatic Slingers selection and remains a recorded interface gap.
+
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;
 Scouted pieces instead lose their marker and remain Revealed. You still pay

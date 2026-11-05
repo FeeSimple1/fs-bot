@@ -90,6 +90,12 @@ explicit default delegation. Each Region is separate; use the live request's
 surviving targets. The [agent interface](AGENT_INTERFACE.md) describes the
 physical identities and save/replay behavior.
 
+A Roman `slingers_region` request selects one offered Region for unshaded
+Balearic Slingers before an enemy ordinary/free Battle plan. Return an offered
+`region` or explicit default. There is no decline; zero-Loss Regions can still
+be legal choices. Its accepted answer survives later Battle reactions.
+The [agent interface](AGENT_INTERFACE.md) lists the prospective-queue limit.
+
 ## Quick start (for the assistant)
 
 You are about to PLAY one faction against the built-in bots.

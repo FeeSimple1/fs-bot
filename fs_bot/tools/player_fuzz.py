@@ -272,6 +272,8 @@ def make_random_reactive(seats, rng):
         if kind == 'ballistae_target':
             return ({'decline': True} if rng.random() < 0.5
                     else {'target': rng.choice(request['targets'])})
+        if kind == 'slingers_region':
+            return {'region': rng.choice(request['legal_regions'])}
         if kind == "raid_intimidate":
             if rng.random() < 0.25:
                 return {"decline": True}

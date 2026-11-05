@@ -52,6 +52,12 @@ Request kinds
   target, decline or explicit default. Provincia's permanent Fort is excluded.
   Raw None retains the existing Citadel-before-Fort default.
 
+- ``slingers_region`` — Romans select one Region for Card 13 unshaded before
+  an enemy's ordinary/free Battle plan. Request carries attacker, legal_regions,
+  defenders and Roman auxilia counts. Return {"region": <offered Region>} or
+  explicit default. A zero-Auxilia Region is legal; there is no decline.
+  The private prospective Battle queue still uses its existing automatic use.
+
 - ``raid_intimidate`` — A3.4.3 optional simultaneous Intimidate by the
   German Warbands that just Raided with Ariovistus. Request carries trusted
   region, raiders, max_removals, and physical target entries. Response is

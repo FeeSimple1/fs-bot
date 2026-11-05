@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 5 November Slingers Region — BE-09 advanced, still open
+
+The [Slingers repair](reviews/slingers-choice-2026-11-05.md) offers Romans one
+Region in an enemy ordinary/free Battle plan, including third-party pre-fire.
+It permits legal zero-Loss selections, validates live combatants and preserves
+accepted Regions across later casualties, rollback/save/resume and replay.
+The printed Card 13/59 Tip now supplies one initial Loss per Auxilia when both
+capabilities are unshaded. The NPC default follows §8.3.3's first applicable
+Region rather than the old most-Auxilia heuristic.
+
+**Original bundle remains 39/50 closed (78%), 11 open.** BE-09 retains the
+private prospective queue's Roman Slingers choice and Card 59's own Region
+choices. Separate mechanics leads, two source questions, twelve provisional
+rulings and 34 unverified inventory rows retain their dispositions.
+
+**8,624 tests pass**, including 44 new cases, with 235 focused tests passing.
+Ten standard NPC records/final hashes match the parent, mixed-seat results
+agree across hash seeds with zero hard findings or partials, and the historical
+100-game balance guard passes its unchanged band. The report records the
+frozen source, protected inputs, evidence and cross-revision replay limit.
+
 ### 5 November Ballistae choice — BE-09 advanced, still open
 
 The [Ballistae repair](reviews/ballistae-choice-2026-11-05.md) asks Card 10

@@ -90,6 +90,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             if kind == 'ballistae_target':
                 from fs_bot.cli.ballistae import collect_ballistae
                 return collect_ballistae(state, faction, request, stdin, stdout)
+            if kind == 'slingers_region':
+                from fs_bot.cli.slingers import collect_slingers
+                return collect_slingers(state, faction, request, stdin, stdout)
             if kind == "march_cohort":
                 from fs_bot.cli.march_choices import collect_march_cohort
                 return collect_march_cohort(state, faction, request, stdin, stdout)

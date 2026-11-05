@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-05",
   "tested_source": {
-    "commit": "502749f7341da46d8b7108043fbb8de22184bae6",
-    "python_sha256": "9f1e25a3b40487698e087aab9287d73564a63f7c0a2df9eb432810352ba132f6",
-    "python_files": 526,
+    "commit": "4789ba3f594889b145148f75130eecca153dbee0",
+    "python_sha256": "d8a561bf3092f6fc210910f69c7db3433135dfc325338608c649414dc2b16eb2",
+    "python_files": 529,
     "working_tree_changes": true,
-    "note": "PR-13 mandatory queue windows close BE-09. See reviews/capability-queue-2026-11-05.md."
+    "note": "Numeric 19/22 optional quantities and physical selections advance BE-06/07/08. Original counts unchanged; see reviews/base-piece-choices-2026-11-05.md."
   },
   "total": 50,
   "closed": 40,
@@ -46,7 +46,8 @@
     "Ordinary/free Battle Card 13 Roman Region choices are repaired, together with the combined Horse pre-fire rate and first-applicable NPC priority. BE-09 retains the prospective queue and Card 59 Region choices. See reviews/slingers-choice-2026-11-05.md.",
     "Ordinary/free Battle Card 59 Roman/Gallic Region choices, Roman decline, Abatis protection and nested flag scoping are repaired. BE-09 retains the private prospective queue. See reviews/horse-choice-2026-11-05.md.",
     "Optional unshaded Horse queue use/reserve/decline and PR-11 forecast choices are repaired. Mandatory Card 13/59-shaded timing awaits Q-CAPABILITY-QUEUE-TIMING. Original counts remain unchanged. See reviews/horse-queue-2026-11-05.md.",
-    "BE-09 closes with mandatory Slingers/shaded Horse live queue choices under owner-adopted provisional PR-13, final-candidate use, reservation expiry, pending replay and isolated human forecast branching. Subject to official correction. See reviews/capability-queue-2026-11-05.md."
+    "BE-09 closes with mandatory Slingers/shaded Horse live queue choices under owner-adopted provisional PR-13, final-candidate use, reservation expiry, pending replay and isolated human forecast branching. Subject to official correction. See reviews/capability-queue-2026-11-05.md.",
+    "Lucterius 19U and Hostages 22U now offer exact optional totals and visibility, with removal-only and mixed Hostages actions plus correct Gallic Auxilia-to-Warband replacement. BE-06 retains mandatory Roman allocations on 3S/5S; BE-07/08 retain other cards. See reviews/base-piece-choices-2026-11-05.md."
   ],
   "findings": [
     {
@@ -232,13 +233,20 @@
       "id": "BE-06",
       "title": "Event contracts cannot express smaller quantities or removal-only choices",
       "severity": "medium",
-      "status": "open"
+      "status": "open",
+      "disposition": "Numeric 19U optional Auxilia/Warband totals and 22U removal-only/mixed actions are repaired. Numeric 3S/5S mandatory Roman split allocations remain open.",
+      "partial_reports": [
+        "reviews/base-piece-choices-2026-11-05.md"
+      ]
     },
     {
       "id": "BE-07",
       "title": "Several direct Event removals cannot select physical visibility or exact Allied Tribe",
       "severity": "medium",
-      "status": "open"
+      "status": "open",
+      "partial_repairs": [
+        "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. Other listed cards remain open. See reviews/base-piece-choices-2026-11-05.md."
+      ]
     },
     {
       "id": "BE-08",
@@ -246,7 +254,8 @@
       "severity": "medium",
       "status": "open",
       "partial_repairs": [
-        "Card 49 now has a legal marker collector and live owner casualty requests; unsafe executor piece_removals are rejected. Other listed Event schema shapes remain open. See reviews/drought-losses-2026-11-04.md."
+        "Card 49 now has a legal marker collector and live owner casualty requests; unsafe executor piece_removals are rejected. Other listed Event schema shapes remain open. See reviews/drought-losses-2026-11-04.md.",
+        "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. Other listed cards remain open. See reviews/base-piece-choices-2026-11-05.md."
       ]
     },
     {

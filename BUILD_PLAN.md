@@ -111,6 +111,11 @@ This closes BE-09; current original progress is 40/50 closed (80%), 10 open.
 Two unadopted source questions and thirteen provisional rulings remain separate.
 
 
+The [5 November Lucterius/Hostages repair](docs/reviews/base-piece-choices-2026-11-05.md)
+adds optional totals, exact physical identities and removal-only Hostages.
+BE-06 retains numeric 3/5 Roman allocations; BE-07/08 retain other cards.
+Original progress remains 40/50 closed (80%), 10 open.
+
 ## Existing implementation
 
 | Original phase | Implemented components | Main locations |

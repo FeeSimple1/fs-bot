@@ -127,6 +127,9 @@ def validate_response(state, request, response):
     if kind == 'drought_loss':
         from fs_bot.cards.drought import validate_response as validate_drought
         return validate_drought(state, request, response)
+    if kind == 'event_piece_choice':
+        from fs_bot.cards.base_piece_choices import validate_response as validate_pieces
+        return validate_pieces(state, request, response)
     if kind == 'event_up_to':
         from fs_bot.cards.expansion_up_to import validate_response as validate_up_to
         return validate_up_to(state, request, response)

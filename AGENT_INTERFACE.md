@@ -515,7 +515,44 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
-| `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
+| `event_piece_choice` goes to the executor for unshaded numeric 19 (Lucterius)
+and 22 (Hostages), on the live Event-step board. The request carries `card_id`,
+`owner`, `legal_regions`, `available` physical cohorts, and `max_count` (six
+for 19, four for 22). A cohort carries `region`, `target_faction`, `piece_type`,
+`piece_state` and its available `count`. Lucterius also reports the Roman
+Auxilia Available pool and its five-piece placement maximum.
+
+For 19 respond `{"choice":"auxilia","count":2}` or
+`{"choice":"warbands","removals":[<cohorts with chosen counts>]}`.
+Zero Auxilia or an empty removal list is legal. Auxilia placement is in
+Provincia and is capped by actual Available; removals must total at most six
+Arverni Warbands within one Region of Provincia. Counts and visibility are
+exact. Use the same `choice`/`count`/`removals` keys in authored `event_params`.
+
+For 22 respond `{"selections":[<cohorts with chosen counts and action>]}`.
+Each entry adds `"action":"remove"` or `"action":"replace"`; mix actions
+across at most four physical pieces in total, including zero. Only Warbands
+and Auxilia in the executor's currently Controlled Regions are offered.
+An explicitly selected group can remove own pieces and can finish its selected
+removals even if removing them loses Control. Replacement places the executor's
+Hidden Auxilia (Romans) or Warbands (other factions), subject to Available.
+If no replacement is Available, remove the selected original pieces anyway
+(§5.1.1). For authored params use `{"piece_choices":[<entries>]}`. Do not mix
+that new plan with legacy `replacements`.
+
+Both exact plans are collected after the `19.piece_choice` or `22.piece_choice`
+Event timing window and validated before their aggregate mutation. The terminal
+supports `b`/`board`, smaller totals, exact visibility and removal-only choices.
+Missing/invalid durable replies stay pending with board/RNG rollback, stable
+IDs, save/load and exact replay. Previews do not consume live choices or RNG.
+Raw `None` or explicit `{"use_default":true}` retains the delegated plan.
+Legacy explicit `choice`/`removal_regions` (19) and `replacements` (22) remain
+supported. The legacy Gallic Hostages path also now correctly replaces Roman
+Auxilia with its own Warbands. Older histories can stop at the new request or
+vary under that corrected replacement. Shaded 19/22 are unchanged; numeric
+3/5 Roman removal allocations remain an open part of BE-06.
+
+`march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |
 | `voluntary_removal` | `faction, options, window`; may include engine-owned `cohorts` | `{"operations":[...]}`, `{"done":true}`, or explicit default (no removals) |

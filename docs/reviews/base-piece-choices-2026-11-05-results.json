@@ -1,0 +1,297 @@
+{
+  "date": "2026-11-05",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "4789ba3f594889b145148f75130eecca153dbee0",
+    "dirty": true,
+    "source_sha256": "d8a561bf3092f6fc210910f69c7db3433135dfc325338608c649414dc2b16eb2"
+  },
+  "python_files": 529,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "new_tests": 89,
+  "targeted_passed": 294,
+  "parent_proof": {
+    "behavioral_failures": 6,
+    "controls_passed": 2,
+    "accepted_passed": 8
+  },
+  "bots": {
+    "games": 10,
+    "all_completed_and_audited": true,
+    "gameplay_and_final_hashes_equal": true,
+    "interlude_exercised": {
+      "scenario": "The Gallic War",
+      "seed": 1
+    },
+    "excluded": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "4789ba3f594889b145148f75130eecca153dbee0",
+      "dirty": true,
+      "source_sha256": "d8a561bf3092f6fc210910f69c7db3433135dfc325338608c649414dc2b16eb2",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 313,
+    "event_turns": 86,
+    "events_ok": 81,
+    "partial": 0,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "49711d2b842841b9fdff834055390ef5f09c4cccde2c2a5f762845d9fda2baf2",
+    "records": [
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 33,
+        "event_turns": 14,
+        "events_ok": 13,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "e2a7bb3dbf17abcd"
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 36,
+        "event_turns": 11,
+        "events_ok": 10,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "5ef58925b65b9a4c"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 12,
+        "event_turns": 6,
+        "events_ok": 6,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "2292b8ed8868d85f"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 2,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 60,
+        "event_turns": 10,
+        "events_ok": 10,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "234dbcec6846552c"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 40,
+        "event_turns": 13,
+        "events_ok": 11,
+        "rejected": 2,
+        "findings": [],
+        "partial": 0,
+        "digest": "7dd3034330018b5b"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 43,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "cb5eab60b34d2946"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 1,
+        "seats": [
+          "Germans",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 41,
+        "event_turns": 9,
+        "events_ok": 8,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "c1ffb8a98bdf07f1"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 2,
+        "seats": [
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 14,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "4bf5d57d535d16f7"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 27,
+        "event_turns": 4,
+        "events_ok": 4,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "73e36b1eb7e34e64"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 2,
+        "seats": [
+          "Germans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 7,
+        "event_turns": 1,
+        "events_ok": 1,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "01d686a6f2551217"
+      }
+    ]
+  },
+  "mixed_complete_json_equal": true,
+  "hash_seeds": [
+    0,
+    987
+  ],
+  "mixed_executions_including_replay": 40,
+  "balance": {
+    "games": 100,
+    "band_percentage_points": 15,
+    "maximum_absolute_delta_percentage_points": 15,
+    "historical_baseline_winner_changes": 36,
+    "baseline_unchanged": true,
+    "passed": true
+  },
+  "progress": {
+    "closed": 40,
+    "total": 50,
+    "percent": 80,
+    "open": 10
+  },
+  "remaining": "BE-06 advances for numeric 19/22; mandatory Roman allocations on numeric 3/5 remain. BE-07 physical-choice and BE-08 schema rows retain other cards. Two unadopted source questions and thirteen provisional rulings remain. Original bundle stays 40/50 closed. Separate mechanics leads and source questions retain their dispositions.",
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8858",
+    "time": "232.550",
+    "timestamp": "2026-11-05T17:21:48.268828+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "python": "3.12.14",
+  "commands": [
+    "python -m pytest -q --junitxml=/tmp/fs-base-piece-full.xml",
+    "python -m pytest -q fs_bot/tests/test_base_piece_choices.py fs_bot/tests/test_card_effects.py fs_bot/tests/test_param_schema.py fs_bot/tests/test_human_plan.py fs_bot/tests/test_event_action_windows.py fs_bot/tests/test_event_timing_planning.py fs_bot/tests/test_event_timing_review.py fs_bot/tests/test_assistant_session.py fs_bot/tests/test_player_fuzz.py",
+    "python -m pytest -q fs_bot/tests/test_base_piece_choices.py --junitxml=/tmp/fs-base-piece-directed.xml",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.run_batch --games 2 --workers 2 --out OUT",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-2 --out OUT.json",
+    "PYTHONHASHSEED=987 python -m fs_bot.tools.player_fuzz --seeds 1-2 --out OUT.json",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.balance_smoke --seeds 1-20",
+    "python -m pytest -q /tmp/test_base_piece_parent_proof.py --junitxml=OUT.xml",
+    "PYTHONPATH=. python /tmp/fs-base-piece-verify.py",
+    "PYTHONPATH=. python /tmp/fs-base-piece-package.py"
+  ],
+  "source_reconstruction_verified": true,
+  "compatibility_limit": "Older histories can stop at the new live request or diverge under corrected Gallic Hostages replacements. Legacy explicit plans retain their contract. Expanded human choices change the fuzz agent decision sequence."
+}

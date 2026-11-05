@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [5 November Lucterius and Hostages choices](reviews/base-piece-choices-2026-11-05.md)
+  covers optional quantities, exact physical removals, replacement type and durable replay.
+
 - [5 November mandatory queue capabilities](reviews/capability-queue-2026-11-05.md)
   implements provisional PR-13, closes BE-09, and validates live/forecast choices.
 

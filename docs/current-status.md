@@ -21,6 +21,33 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 5 November Lucterius/Hostages quantities — BE-06/07/08 advanced
+
+The [piece-choice repair](reviews/base-piece-choices-2026-11-05.md) adds live
+executor choices for unshaded numeric 19/22. Lucterius allows zero-to-five
+Auxilia or zero-to-six exact Arverni Warbands nearby; Hostages allows zero-to-four
+exact physical pieces and mixed removal-only/replacement actions. Hidden,
+Revealed and Scouted identities are preserved. Gallic Hostages replacements
+of Roman Auxilia now correctly place their own Warbands. Unavailable
+replacements still remove the original pieces under §5.1.1.
+
+Both frontends support inspection, strict pending validation, board/RNG
+rollback, save/load and deterministic replay. Choices use the actual Event-step
+board after its timing window; previews consume no live input or RNG. Legacy
+explicit plans and raw delegation remain supported.
+
+**Original bundle remains 40/50 closed (80%), 10 open.** BE-06 still includes
+mandatory Roman removal allocations on numeric 3/5. BE-07 physical-choice and
+BE-08 schema findings retain other cards. Two unadopted source questions,
+thirteen provisional rulings and 34 separate unverified inventory rows retain
+their dispositions. No new source ruling was needed.
+
+**8,858 tests pass**, including 89 new cases; 294 focused tests pass. Ten paired
+NPC records/final hashes match the parent. Mixed-seat JSON matches across hash
+seeds with zero hard findings or partials. The unchanged 100-game balance guard
+passes. The report records the exact source, protected inputs, evidence and
+cross-revision replay limit.
+
 ### 5 November mandatory queue capabilities — PR-13 adopted, BE-09 closed
 
 The [mandatory queue repair](reviews/capability-queue-2026-11-05.md) implements

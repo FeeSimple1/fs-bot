@@ -64,6 +64,10 @@ Battles, including after Retreat arrivals. Slingers and shaded Horse now offer
 mandatory use/reserve windows under [provisional PR-13](docs/provisional-rulings.md#pr-13).
 [Mandatory queue repair and validation](docs/reviews/capability-queue-2026-11-05.md).
 
+Lucterius and Hostages now offer their optional quantities and exact physical
+piece choices, including Hostages removal without replacement.
+[Repair and validation](docs/reviews/base-piece-choices-2026-11-05.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.

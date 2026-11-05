@@ -218,6 +218,19 @@ def make_random_reactive(seats, rng):
             return {"region": region, "defender": defender}
         if kind == 'drought_loss':
             return {'piece': rng.choice(request['targets'])}
+        if kind == 'event_piece_choice':
+            if request['card_id'] == 19 and rng.random() < 0.5:
+                return {'choice': 'auxilia', 'count': rng.randrange(6)}
+            entries, remaining = [], request['max_count']
+            for cohort in request['available']:
+                count = rng.randrange(min(remaining, cohort['count']) + 1)
+                if count:
+                    entries.append(dict(cohort, count=count))
+                    if request['card_id'] == 22:
+                        entries[-1]['action'] = rng.choice(('remove', 'replace'))
+                    remaining -= count
+            return ({'choice': 'warbands', 'removals': entries} if request['card_id'] == 19
+                    else {'selections': entries})
         if kind == 'event_up_to':
             if request['card_id'] == 'A40':
                 regions = list(request['legal_regions'])

@@ -935,6 +935,12 @@ def execute_card_19(state, shaded=False):
     """
     if not shaded:
         params = state.get("event_params", {})
+        from fs_bot.cards.base_piece_choices import choose, apply
+        _event_step(state, "19.piece_choice")
+        selected = choose(state, 19, params)
+        if selected is not None:
+            apply(state, 19, selected)
+            return
         choice = params.get("choice", "auxilia")  # "warbands" or "auxilia"
         if choice == "warbands":
             # Remove up to 6 Arverni Warbands within 1 of Provincia
@@ -1059,6 +1065,12 @@ def execute_card_22(state, shaded=False):
     if not shaded:
         # Unshaded: Replace up to 4 Warbands/Auxilia in controlled Regions
         params = state.get("event_params", {})
+        from fs_bot.cards.base_piece_choices import choose, apply
+        _event_step(state, "22.piece_choice")
+        selected = choose(state, 22, params)
+        if selected is not None:
+            apply(state, 22, selected)
+            return
         replacements = params.get("replacements", [])
         executing = state.get("executing_faction")
         count_done = 0
@@ -1083,9 +1095,7 @@ def execute_card_22(state, shaded=False):
                     and count_pieces(state, region, target_faction,
                                      piece_type) > 0):
                 remove_piece(state, region, target_faction, piece_type)
-                replace_type = WARBAND if piece_type == WARBAND else AUXILIA
-                if executing == ROMANS:
-                    replace_type = AUXILIA
+                replace_type = AUXILIA if executing == ROMANS else WARBAND
                 if get_available(state, executing, replace_type) > 0:
                     place_piece(state, region, executing, replace_type)
                 count_done += 1

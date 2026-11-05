@@ -18,6 +18,15 @@ typed response.
 
 Request kinds
 -------------
+- ``event_piece_choice`` — the executor selects numeric 19/22 unshaded
+  quantities and exact physical cohorts at the live Event step. Request carries
+  card_id, owner, available cohorts, legal_regions and max_count. Card 19 returns
+  {"choice":"auxilia","count":0..5} or {"choice":"warbands","removals":[...]};
+  Card 22 returns {"selections":[...]}. Cohorts carry region, target_faction,
+  piece_type, piece_state and count; Hostages also needs action remove/replace.
+  Empty lists are legal. Raw None or explicit use_default retains legacy plans.
+  Authored params use choice/count/removals (19) or piece_choices (22).
+
 - ``drought_loss`` — each physical owner selects its exact Card 49 casualty.
 - ``event_up_to`` — executor-owned A40/A51/A60 optional quantities/cohorts.
 - ``devastate_losses`` — each physical owner chooses its exact §4.3.2 losses.

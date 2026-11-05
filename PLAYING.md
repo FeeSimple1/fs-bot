@@ -106,6 +106,15 @@ you reserve, the benefit expires unused without replaying combat. This follows
 correction. Selecting a protected or zero-Auxilia Battle never bypasses the
 capability's printed effect. Saved decisions and replay retain these choices.
 
+Unshaded Lucterius now lets the Event executor choose either zero to five
+Auxilia in Provincia or zero to six nearby Arverni Warbands to remove. Select
+exact Regions and Hidden/Revealed/Scouted pieces. Unshaded Hostages lets you
+select zero to four Warbands/Auxilia in Regions you Control, choosing removal
+only or replacement for each selected cohort. You can mix the actions. Your
+replacement is Roman Auxilia or your faction's Warband; an unavailable
+replacement leaves the original removed. Use `b`/`board` to inspect before
+choosing. These live choices survive pending replies, saving and replay.
+
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;
 Scouted pieces instead lose their marker and remain Revealed. You still pay

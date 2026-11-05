@@ -8,11 +8,13 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
-### Q-CAPABILITY-QUEUE-TIMING — reserving mandatory one-Region capabilities (5 November 2026)
+<a id="q-capability-queue-timing--reserving-mandatory-one-region-capabilities-5-november-2026"></a>
+
+### [PROVISIONAL PR-13] Q-CAPABILITY-QUEUE-TIMING — reserving mandatory one-Region capabilities (5 November 2026)
 
 Numeric 67's private prospective Battle queue selects a Region only if its
 defender is present when reached. Retreat from an earlier Battle can create a
-later Battle that did not exist at the start. The remaining BE-09 repair needs
+later Battle that did not exist at the start. The then-remaining BE-09 repair needed
 a live human choice for Card 13 unshaded and Card 59 shaded in that queue.
 
 Card 13 says, “Romans choose 1 Region per enemy Battle Command.” Card 59
@@ -28,21 +30,22 @@ Battle, or attempting to force use at the last actual Battle. Upfront selection
 omits later arrivals. The last actual Battle is not always identifiable before
 its combat, so compulsory final use could require retroactive resolution.
 
-**Recommendation, not adopted:** allow use in the current actual Battle or
+**Adopted project ruling, 5 November 2026 — [PR-13](docs/provisional-rulings.md#pr-13):** allow use in the current actual Battle or
 reservation while later queue candidates remain, with no guarantee that
 another eligible Battle will occur. The final queue candidate offers use
 here without a reservation or general decline. If no later Battle occurs
 after an earlier reservation, the unused effect expires without rewinding
 combat or creating a Battle. This preserves the owner's timing choice while
 letting every selected use act on a real Battle. Apply this policy to Card 13
-unshaded and Card 59 shaded only after owner adoption, subject to official
-correction. Its absence is still an open interface gap, not an adopted rule.
+unshaded and Card 59 shaded. The owner adopted the recommendation: “Adopt that
+provisionally subject to official correction.” This is a project interpretation,
+subject to official correction, rather than an official source clarification.
 
 Card 59 unshaded explicitly says “Romans may”; its use/reserve/decline path is
 independent of this question and is implemented with ordinary one-use limits.
-The PR-11 forecast branches those newly available optional human responses
-without consuming live choices. PR-11 is not a ruling on mandatory capability
-timing. No external-source search was made for this new question.
+The PR-11 forecast branches available human responses, including the PR-13
+mandatory windows, without consuming live choices. PR-11 is not a ruling on
+mandatory capability timing. No external-source search was made for this new question.
 
 
 ### Q-LITAVICCUS-NP-PREDICTION — Belgic target selection on shaded 45 (3 November 2026)

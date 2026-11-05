@@ -110,7 +110,7 @@ branches every roll and legal human casualty choice, as Divination does.
             nonlocal score, leader_risk
             kind = request.get('kind')
             npc = faction in sim['non_player_factions']
-            if kind == 'horse_window':
+            if kind in ('horse_window', 'capability_window'):
                 rng.loss = False
                 if not npc:
                     return {'action': rng.choose(tuple(request['actions']),

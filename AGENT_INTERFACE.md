@@ -834,9 +834,8 @@ responses remain pending with board, payments and RNG restored. An accepted
 Region survives a later casualty prompt, save/load and replay. Previews never
 consume live input. Older replays can stop at the new choice or diverge from
 the corrected NPC priority/fire rate. The private prospective Battle queue
-used by numeric 67's NPC branch still chooses Slingers automatically pending
-Q-CAPABILITY-QUEUE-TIMING. Horse's ordinary/free-plan choices and optional
-unshaded queue windows are implemented.
+used by numeric 67's NPC branch uses the PR-13 live windows below. Horse's
+ordinary/free-plan choices and optional unshaded queue windows are implemented.
 
 `horse_region` goes to Card 59's owner before an ordinary/free Battle plan.
 Unshaded belongs to Romans and offers their actual attacking/defending Battles;
@@ -863,7 +862,7 @@ accepted selections through later casualties, save/load and exact replay.
 Terminal `b`/`board` inspection and isolated previews remain available.
 Older histories can stop for the new choice or diverge from corrected defaults.
 The private prospective queue now offers optional unshaded Horse windows.
-Slingers and shaded Horse remain automatic pending the source question below.
+Slingers and shaded Horse use the mandatory PR-13 window below.
 
 `horse_window` restores optional unshaded Horse timing in a prospective queue.
 It is offered to Romans only when a candidate has actually become a Battle,
@@ -883,11 +882,26 @@ earlier acceptance, rollback/save/resume/replay remain supported. PR-11's
 forecast branches these optional human choices and conservatively ranks the
 lower predicted Legion Losses; it consumes no live decisions or RNG.
 
-Card 13 unshaded and Card 59 shaded still use automatic activation in this
-queue pending [Q-CAPABILITY-QUEUE-TIMING](QUESTIONS.md#q-capability-queue-timing--reserving-mandatory-one-region-capabilities-5-november-2026).
-Their wording lacks "may" and does not resolve a reserved mandatory choice
-when no later Battle occurs. The recommended use-or-reserve policy is not yet
-adopted. Their ordinary/free-plan Region menus remain implemented.
+`capability_window` implements [PR-13](docs/provisional-rulings.md#pr-13)
+for Card 13 unshaded and Card 59 shaded in prospective queues. It carries
+`card_id`, `side`, `owner`, `region`, `attacker`, `defender`, live Roman
+`auxilia`, current `blocked` status, `potential_regions` and `actions`.
+Respond `{"action":"activate"}` or, while later candidates remain,
+`{"action":"reserve"}`. There is no general decline. The final candidate,
+if it becomes a Battle, offers only activation. Reserving may expire unused
+if no later eligible Battle occurs; resolution never rewinds or invents a Battle.
+Human selection can consume the use in a zero-Auxilia/protected Battle, without
+bypassing the printed effects. Default delegation retains first-applicable use,
+skipping a zero-Auxilia Slingers Battle or protected Horse Battle. Such internal
+deferral is not an additional human action at the final window.
+
+The owner receives the live request after Battle selection/payment and before
+pre-fire. Each capability's use is independent. Terminal inspection, strict
+pending validation, rollback, earlier accepted responses, save/load and replay
+are supported. PR-11 prediction branches legal human responses without live
+input or random-state consumption. Older cross-revision histories can stop at
+the newly required request or diverge under expanded forecasts. PR-13 remains
+provisional, subject to official correction.
 
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
 or when leaving part of the carried group behind (`dropoff`). For a request

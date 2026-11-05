@@ -10,7 +10,7 @@ their game outcomes are not a baseline for a later rules revision.
 
 This page includes the 24 October adoption of six and 29 October adoption
 of three additional rulings, the 2 November adoption of PR-10/PR-11,
-and the 3 November adoption of PR-12
+the 3 November adoption of PR-12, and the 5 November adoption of PR-13
 ([provisional register](provisional-rulings.md)), the follow-up
 repairs, and the 23 October implementation review. The
 [provisional-ruling report](reviews/provisional-rulings-2026-10-24.md)
@@ -20,6 +20,31 @@ its own revision, source digest and outcome evidence; earlier checkpoint
 measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
+
+### 5 November mandatory queue capabilities — PR-13 adopted, BE-09 closed
+
+The [mandatory queue repair](reviews/capability-queue-2026-11-05.md) implements
+owner-adopted provisional PR-13, subject to official correction. Card 13
+unshaded and Card 59 shaded offer use here or reservation while later queue
+candidates remain. The final candidate, if it becomes a Battle, offers only
+use here. A reservation can expire without a later actual eligible Battle;
+combat never rewinds. Actual Retreat arrivals get fresh live windows.
+
+Both frontends preserve pending choices, earlier reservation, rollback,
+save/resume and replay. PR-11's isolated forecast branches offered human
+responses. Default use retains first-applicable priorities, including skipping
+attacking Horse where active Abatis prevents doubling.
+
+**Original bundle is 40/50 closed (80%), 10 open.** This closes BE-09 after
+the preceding Ballistae, Slingers and Horse repairs. Two unadopted source
+questions, thirteen provisional rulings, 34 unverified inventory rows and
+separate mechanics leads retain their own dispositions.
+
+**8,769 tests pass**, including 53 new cases, with 279 focused tests passing.
+Ten standard NPC records/final hashes match the parent, mixed-seat results
+agree across hash seeds with zero hard findings or partials, and the historical
+100-game balance guard passes its unchanged band. The report records the
+frozen source, protected inputs, evidence and cross-revision replay limit.
 
 ### 5 November optional Horse queue — BE-09 advanced, mandatory timing unresolved
 
@@ -1183,7 +1208,7 @@ for reproduction commands and compatibility limits.
 
 ## Adopted provisional rulings
 
-On 24/29 October and 2/3 November 2026 (America/Chicago), the owner adopted the following
+On 24/29 October and 2/3/5 November 2026 (America/Chicago), the owner adopted the following
 project policies. **Each is subject to possible later correction if an
 authoritative source is found.** The [ruling register](provisional-rulings.md)
 records their exact scope and rationale; the
@@ -1205,6 +1230,7 @@ claiming official errata or designer confirmation.
 | [PR-10: Automatic Arverni Event Command](provisional-rulings.md#pr-10) | While At War, first possible permitted Command in phase order, retaining inherent Ambush. |
 | [PR-11: Numeric Arduenna prediction](provisional-rulings.md#pr-11) | Conservative Legion Loss forecast, printed Roman NPC Retreat and Vercingetorix Harassment safety; actual choices/dice resolve live. |
 | [PR-12: Litaviccus target prediction](provisional-rulings.md#pr-12) | Belgic bot maximizes predicted Legion Losses, using printed NPC Roman Retreat or the lower human standing/Retreat forecast; printed Battle/Frost restrictions remain. |
+| [PR-13: Mandatory queue capabilities](provisional-rulings.md#pr-13) | Actual Battle use/reserve choices, compulsory use if the final queued candidate becomes a Battle, and unused expiry if no later eligible Battle occurs. |
 
 PR-06 recovers the order from saved `played_cards` without changing
 `current_card`. A state with no recoverable preceding Event uses the current

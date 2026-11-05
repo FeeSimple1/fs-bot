@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-05",
   "tested_source": {
-    "commit": "fee12ab101a2aa079ed4c295295f39ac2ad1f02a",
-    "python_sha256": "0b00cd086e6c6b5956ee0bdaa831617b168b67de39b2e3553abe1dfe65cfe958",
-    "python_files": 523,
+    "commit": "502749f7341da46d8b7108043fbb8de22184bae6",
+    "python_sha256": "9f1e25a3b40487698e087aab9287d73564a63f7c0a2df9eb432810352ba132f6",
+    "python_files": 526,
     "working_tree_changes": true,
-    "note": "Optional unshaded Horse queue windows advance BE-09. Mandatory queue timing awaits Q-CAPABILITY-QUEUE-TIMING; no ruling adopted. See reviews/horse-queue-2026-11-05.md."
+    "note": "PR-13 mandatory queue windows close BE-09. See reviews/capability-queue-2026-11-05.md."
   },
   "total": 50,
-  "closed": 39,
-  "open": 11,
+  "closed": 40,
+  "open": 10,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -45,7 +45,8 @@
     "Card 10 shaded optional post-Ambush removal is repaired. BE-09 remains open for Card 13 unshaded and Card 59 both-side Region choices. See reviews/ballistae-choice-2026-11-05.md.",
     "Ordinary/free Battle Card 13 Roman Region choices are repaired, together with the combined Horse pre-fire rate and first-applicable NPC priority. BE-09 retains the prospective queue and Card 59 Region choices. See reviews/slingers-choice-2026-11-05.md.",
     "Ordinary/free Battle Card 59 Roman/Gallic Region choices, Roman decline, Abatis protection and nested flag scoping are repaired. BE-09 retains the private prospective queue. See reviews/horse-choice-2026-11-05.md.",
-    "Optional unshaded Horse queue use/reserve/decline and PR-11 forecast choices are repaired. Mandatory Card 13/59-shaded timing awaits Q-CAPABILITY-QUEUE-TIMING. Original counts remain unchanged. See reviews/horse-queue-2026-11-05.md."
+    "Optional unshaded Horse queue use/reserve/decline and PR-11 forecast choices are repaired. Mandatory Card 13/59-shaded timing awaits Q-CAPABILITY-QUEUE-TIMING. Original counts remain unchanged. See reviews/horse-queue-2026-11-05.md.",
+    "BE-09 closes with mandatory Slingers/shaded Horse live queue choices under owner-adopted provisional PR-13, final-candidate use, reservation expiry, pending replay and isolated human forecast branching. Subject to official correction. See reviews/capability-queue-2026-11-05.md."
   ],
   "findings": [
     {
@@ -252,14 +253,15 @@
       "id": "BE-09",
       "title": "Human Capability activation/Region choices use unconditional NPC priorities",
       "severity": "high",
-      "status": "open",
-      "disposition": "Card 10 shaded targets, ordinary/free Card 13/59 Region choices and optional unshaded Horse queue windows are repaired. Mandatory Card 13/59-shaded queue timing remains automatic pending Q-CAPABILITY-QUEUE-TIMING.",
+      "status": "closed",
+      "disposition": "Card 10 shaded, ordinary/free Card 13/59 choices, optional Horse queue windows and mandatory PR-13 queue choices are repaired, including human forecast branches and durable replay. PR-13 is provisional, subject to official correction.",
       "partial_reports": [
         "reviews/ballistae-choice-2026-11-05.md",
         "reviews/slingers-choice-2026-11-05.md",
         "reviews/horse-choice-2026-11-05.md",
         "reviews/horse-queue-2026-11-05.md"
-      ]
+      ],
+      "report": "reviews/capability-queue-2026-11-05.md"
     },
     {
       "id": "BE-10",

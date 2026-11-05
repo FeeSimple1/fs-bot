@@ -14,7 +14,7 @@ references and canonical constants remain read-only.
 | [Agent interface](../AGENT_INTERFACE.md) | Turn plans, typed decision requests, validation, and session contracts |
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
-| [Provisional rulings](provisional-rulings.md) | Twelve owner-adopted interpretations, each subject to later authoritative correction |
+| [Provisional rulings](provisional-rulings.md) | Thirteen owner-adopted interpretations, each subject to later authoritative correction |
 | [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
 | [Developer instructions](../CLAUDE.md) | Source hierarchy, implementation constraints, tests, and commit discipline |
 | [Maintenance roadmap](../BUILD_PLAN.md) | Existing components and further validation work |
@@ -23,6 +23,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [5 November mandatory queue capabilities](reviews/capability-queue-2026-11-05.md)
+  implements provisional PR-13, closes BE-09, and validates live/forecast choices.
 
 - [5 November optional Horse queue](reviews/horse-queue-2026-11-05.md)
   covers live reservation, Retreat arrivals, forecast choices and a new source question.

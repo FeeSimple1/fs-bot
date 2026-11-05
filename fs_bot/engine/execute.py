@@ -3889,17 +3889,21 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             if _skip_absent_targets:
                 # §8.3.3: a limited-Region NP Capability is used where first
                 # applicable. Absent prospective targets consume no use.
+                from fs_bot.engine.capability_queue import choose_window as mandatory_window
+                potential = [row['region'] for row in battle_plan[battle_index + 1:]
+                             if row.get('region') is not None]
                 auxilia_here = count_pieces(state, region, _RO_B, _AUX_B) > 0
                 if (13 not in _queue_capabilities_used and faction != _RO_B
-                        and _ica_b(state, 13, _EU_B) and auxilia_here):
-                    _c13_region = region
-                    _queue_capabilities_used.add(13)
+                        and _ica_b(state, 13, _EU_B)):
+                    choice = mandatory_window(state, 13, _RO_B, region, faction,
+                                              defender, potential, applicable=auxilia_here)
+                    if choice == 'activate':
+                        _c13_region = region
+                        _queue_capabilities_used.add(13)
                 if ('59u' not in _queue_capabilities_used
                         and _ica_b(state, 59, _EU_B) and auxilia_here
                         and _RO_B in (faction, defender)):
                     from fs_bot.engine.horse_queue import choose_window
-                    potential = [row['region'] for row in battle_plan[battle_index + 1:]
-                                 if row.get('region') is not None]
                     choice = choose_window(state, region, faction, defender, potential)
                     if choice != 'reserve':
                         _queue_capabilities_used.add('59u')
@@ -3907,10 +3911,15 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                         state.setdefault('event_modifiers', {})['card59_unshaded_region'] = region
                 if '59s' not in _queue_capabilities_used and _ica_b(state, 59, _ES_B):
                     owner = _gco_b(state, 59)
-                    if ((owner == faction and not (citadel_at_start or fort_at_start))
-                            or (owner == defender and not citadel_at_start)):
-                        state.setdefault('event_modifiers', {})['card59_shaded_region'] = region
-                        _queue_capabilities_used.add('59s')
+                    if owner in (faction, defender):
+                        from fs_bot.engine.horse_choice import attack_blocked
+                        blocked = (attack_blocked(state, region, faction, defender)
+                                   if owner == faction else citadel_at_start)
+                        choice = mandatory_window(state, 59, owner, region, faction,
+                            defender, potential, applicable=not blocked, blocked=blocked)
+                        if choice == 'activate':
+                            state.setdefault('event_modifiers', {})['card59_shaded_region'] = region
+                            _queue_capabilities_used.add('59s')
             elite.ensure_selected(state, region)
 
             is_ambush = intrinsic_german_ambush or (sa == _SA_AMBUSH and region in sa_regions)

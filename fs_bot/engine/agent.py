@@ -56,15 +56,22 @@ Request kinds
   an enemy's ordinary/free Battle plan. Request carries attacker, legal_regions,
   defenders and Roman auxilia counts. Return {"region": <offered Region>} or
   explicit default. A zero-Auxilia Region is legal; there is no decline.
-  The private prospective Battle queue still uses its existing automatic use.
+  The private prospective Battle queue uses capability_window under PR-13.
 
 - ``horse_region`` — Card 59's Roman or Gallic owner selects a Region in an
   ordinary/free Battle plan. Request carries side, owner, attacker, legal_regions,
   defenders, auxilia and current blocked status. Return one offered region or
   explicit default. Only unshaded permits {"decline": True}. Shaded can select
   a currently protected Region; its live Fort/Citadel restrictions still apply.
-  The private prospective queue uses horse_window for unshaded; shaded remains
-  automatic pending Q-CAPABILITY-QUEUE-TIMING.
+  The private prospective queue uses horse_window for unshaded and
+  capability_window for shaded.
+
+- ``capability_window`` — PR-13 mandatory Slingers/shaded Horse at a live
+  prospective Battle. Request carries card_id, side, owner, region, attacker,
+  defender, auxilia, blocked, potential_regions and actions. Choose activate or
+  reserve while later candidates remain; final candidate offers only activate.
+  No decline. Reservation may expire unused if no later Battle occurs. Explicit
+  delegation uses the first applicable Region, preserving NPC behavior.
 
 - ``horse_window`` — unshaded Horse at an actual selected prospective Battle.
   Request carries region, attacker, defender, auxilia, actions and potential_regions

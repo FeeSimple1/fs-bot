@@ -277,7 +277,7 @@ def make_random_reactive(seats, rng):
         if kind == 'horse_region':
             return ({'decline': True} if request['may_decline'] and rng.random() < 0.25
                     else {'region': rng.choice(request['legal_regions'])})
-        if kind == 'horse_window':
+        if kind in ('horse_window', 'capability_window'):
             return {'action': rng.choice(request['actions'])}
         if kind == "raid_intimidate":
             if rng.random() < 0.25:

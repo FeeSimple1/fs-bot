@@ -101,9 +101,15 @@ at that checkpoint remained 39/50 closed (78%), 11 open.
 
 The [5 November Horse queue repair](docs/reviews/horse-queue-2026-11-05.md)
 adds optional unshaded use/reserve/decline windows and corresponding PR-11
-forecast branches. Mandatory Card 13/59-shaded queue timing remains open as
-Q-CAPABILITY-QUEUE-TIMING, with a recommendation awaiting adoption. Original
-progress remains 39/50 closed (78%), 11 open.
+forecast branches. At that checkpoint, mandatory Card 13/59-shaded queue timing
+remained open as Q-CAPABILITY-QUEUE-TIMING, with a recommendation awaiting
+adoption. Original progress was 39/50 closed (78%), 11 open.
+
+The [5 November mandatory queue repair](docs/reviews/capability-queue-2026-11-05.md)
+implements owner-adopted provisional PR-13 for Slingers and shaded Horse.
+This closes BE-09; current original progress is 40/50 closed (80%), 10 open.
+Two unadopted source questions and thirteen provisional rulings remain separate.
+
 
 ## Existing implementation
 
@@ -176,7 +182,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 39 of 50 closed (78%) and 11 open; these are finding counts, not
+now records 40 of 50 closed (80%) and 10 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

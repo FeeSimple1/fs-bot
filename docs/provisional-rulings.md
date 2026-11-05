@@ -2,7 +2,8 @@
 
 **PR-01–PR-06 adopted on 24 October 2026; PR-07–PR-09 adopted on
 29 October 2026; PR-10–PR-11 adopted on 2 November 2026;
-PR-12 adopted on 3 November 2026 (America/Chicago).** These twelve rulings determine the
+PR-12 adopted on 3 November 2026; PR-13 adopted on 5 November 2026
+(America/Chicago).** These thirteen rulings determine the
 engine's behavior where the available sources conflict or leave a procedure
 unspecified. For the first six, the owner instructed:
 "Use each of these. Mark them as subject to possible later correction if
@@ -29,6 +30,7 @@ remain unchanged.
 | [PR-10](#pr-10) | At War automatic Arverni choose the first possible permitted Event Command in Rally–March–Raid–Battle order; Battle retains inherent Ambush. | No supported single-Command adaptation of the Arverni Phase. |
 | [PR-11](#pr-11) | Numeric 67's non-player Arverni maximize conservative predicted Legion Losses, using printed NPC Retreat and March safety conditions. | Generic gathering and Command choice did not establish the printed maximum. |
 | [PR-12](#pr-12) | Numeric 45's non-player Belgae maximize predicted Legion Losses using actual NPC Roman Retreat and the lower forecast across human standing/Retreat responses. | Largest Roman stack could be chosen even when another Battle forced more Legion Losses. |
+| [PR-13](#pr-13) | Mandatory Slingers/shaded Horse can use or reserve while later queue candidates remain; the final queued candidate requires use if it becomes a Battle, and reservations may expire if no later Battle occurs. | Automatic first-applicable use even for human owners. |
 
 ## Sources and research scope
 
@@ -413,6 +415,42 @@ to numeric 67.
 authoritative source is found. The maximum-Legion objective, combined-force
 effect and mandatory Ambush are printed requirements; the human-response
 prediction is the project adaptation.
+
+<a id="pr-13"></a>
+
+## PR-13: Mandatory capabilities in prospective Battle queues
+
+**Adopted:** 5 November 2026 (America/Chicago). The owner instructed:
+“Adopt that provisionally subject to official correction.”
+
+**Ruling:** At an actual Battle in a prospective queue, the owner of Card 13
+unshaded or Card 59 shaded can use its one-Region effect here or reserve it
+while later queue candidates remain. Later candidates are not promised Battles.
+The final queued candidate, if it becomes an actual Battle, offers use here
+with no reservation or general decline. If reservation is followed by no later
+actual eligible Battle, the effect expires unused. Do not rewind combat or
+create a Battle. Activation consumes the Command's one use; reservation does
+not. Actual piece presence and Fort/Citadel/Abatis protections still govern
+the effect. Non-player/default use remains the first applicable Region per
+§8.3.3. Ordinary/free-plan Region choices retain their existing contract.
+
+**Basis:** Card 13 unshaded requires Romans to choose one Region per enemy
+Battle Command, and Card 59 shaded doubles enemy Losses in one Region per
+Battle Command. Neither has unshaded Horse's “may”. Section 5.1.3 requires
+possible Event effects to be fulfilled. Numeric 67's queue can acquire a later
+Battle through Retreat arrivals, but the supplied references give no procedure
+for reserving a mandatory choice when the last actual Battle cannot yet be
+known. The owner adopted the recorded use-or-reserve recommendation. No new
+external research was authorized or performed for this question.
+
+**Prediction:** PR-11's isolated forecast includes these offered human
+use/reserve responses, preserving the lower Legion-Loss evaluation and
+non-player first-applicable use. Actual choices are collected only during
+live resolution; prediction consumes no live input or RNG.
+
+**Status:** Provisional and subject to official correction. This supplies the
+queue timing procedure only; it does not convert the capabilities into
+optional general declines or alter their printed effects.
 
 ## Later corrections and evidence
 

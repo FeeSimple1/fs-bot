@@ -1,8 +1,8 @@
 """Optional unshaded Horse use as prospective Battles actually become selected.
 
 Card 59 unshaded says 'may', so reserving or declining the benefit is legal
-even if no later Battle occurs. Mandatory Card 13/59-shaded windows remain a
-source question; see Q-CAPABILITY-QUEUE-TIMING in QUESTIONS.md.
+even if no later Battle occurs. Mandatory Card 13/59-shaded windows use
+PR-13 in capability_queue.py.
 """
 from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces

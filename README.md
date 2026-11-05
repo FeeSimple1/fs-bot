@@ -60,8 +60,9 @@ Region choices, including defensive use and Roman decline. Abatis correctly
 blocks its attacking bonus. [Repair and validation](docs/reviews/horse-choice-2026-11-05.md).
 
 Unshaded Horse now offers live use/reserve/decline windows in prospective
-Battles, including after Retreat arrivals. Mandatory queue-capability timing
-awaits a source ruling. [Repair and validation](docs/reviews/horse-queue-2026-11-05.md).
+Battles, including after Retreat arrivals. Slingers and shaded Horse now offer
+mandatory use/reserve windows under [provisional PR-13](docs/provisional-rulings.md#pr-13).
+[Mandatory queue repair and validation](docs/reviews/capability-queue-2026-11-05.md).
 
 ## Play
 
@@ -179,7 +180,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**39 of 50 findings are closed (78%); 11 remain open** in the
+**40 of 50 findings are closed (80%); 10 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

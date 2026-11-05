@@ -1,5 +1,9 @@
 # Optional Horse in prospective Battles — 5 November 2026
 
+**Subsequent disposition, 5 November:** the owner adopted provisional PR-13.
+The [mandatory queue follow-up](capability-queue-2026-11-05.md) implements it
+and closes BE-09. The measurements below describe this earlier revision.
+
 Client date follows America/Chicago. Parent
 `fee12ab101a2aa079ed4c295295f39ac2ad1f02a`.
 Frozen Python digest

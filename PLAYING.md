@@ -81,8 +81,7 @@ or when the attacker is fighting a third Faction. The menu shows Roman
 Auxilia counts; a selected Region with zero or one Auxilia can cause zero
 initial Losses. There is no separate decline. If both Slingers and Germanic
 Horse are unshaded, the initial fire inflicts one Loss per Auxilia. Slingers
-is used only once in the Command. The private prospective Battle queue still
-uses an automatic Slingers selection and remains a recorded interface gap.
+is used only once in the Command. The prospective queue uses the live PR-13 choices below.
 
 Germanic Horse now asks its owner to select a Region in ordinary/free Battle
 plans. Romans may decline the unshaded bonus. The shaded Gallic owner selects
@@ -92,16 +91,20 @@ A defending owner's Citadel blocks its counterattack doubling; Abatis alone
 does not. Choosing a currently blocked Region does not bypass that restriction.
 Use `b`/`board` to inspect the live position. The chosen Region survives later
 casualty prompts and saving, and its bonus expires with that Battle Command.
-The private prospective queue's mandatory capability choices remain an
-interface gap; optional unshaded Horse now has the live window below.
+Prospective queues use the live windows below.
 
 In a prospective Battle queue, unshaded Horse now offers a fresh Roman choice
 as each actual Battle becomes eligible. Use it here, save it for a later
 Battle if offered, or decline for the rest of the Command. Saving does not
 spend the use and does not guarantee a later Battle. A Retreat can create a
 new eligible window. Once used or declined, no second activation is possible.
-The mandatory Slingers/shaded-Horse queue choices await the recorded source
-question; their automatic behavior remains a known limit.
+Slingers and shaded Horse offer use here or save for later while candidates
+remain. At the final candidate, if it becomes a Battle, use here is the only
+action. There is no general decline. If no later eligible Battle occurs after
+you reserve, the benefit expires unused without replaying combat. This follows
+[provisional PR-13](docs/provisional-rulings.md#pr-13), subject to official
+correction. Selecting a protected or zero-Auxilia Battle never bypasses the
+capability's printed effect. Saved decisions and replay retain these choices.
 
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;

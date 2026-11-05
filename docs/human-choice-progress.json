@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "e42b213dcfd57105f13f9ae44674fdd20b243a6a",
-    "python_sha256": "b33a8d39c1fcb3ba138527c95393986493eccf847b3193356d7c706249306037",
-    "python_files": 501,
+    "commit": "a7fc41005705d0255034b4239d9f5091d28176c0",
+    "python_sha256": "51e1c13b45ee217dcbeeaabea806ea094575b8cac1fe54258a1948b5ac5edf2c",
+    "python_files": 502,
     "working_tree_changes": true,
-    "note": "Drought physical-owner losses close BE-05; its part of BE-08 is repaired while the grouped schema finding remains open. See reviews/drought-losses-2026-11-04.md."
+    "note": "Grouped exact Scout allocation closes CMD-SCOUT-ALLOCATION, preserving physical owners and legacy plans. See reviews/scout-allocations-2026-11-04.md."
   },
   "total": 50,
-  "closed": 34,
-  "open": 16,
+  "closed": 35,
+  "open": 15,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -37,7 +37,8 @@
     "CMD-DEVASTATE-LOSSES closes with exact physical-owner requests, visibility/Legion choice, complete validation before mutation and durable later-Region replay. Default casualty priority is corrected per \u00a78.4.1. See reviews/devastate-losses-2026-11-04.md.",
     "WS-F05 closes with exact Hidden/Revealed/Scouted relocation cohorts, original adjacent-piece capacity and Roman continuation validation, including terminal/durable save/resume/replay. Legacy four-entry default plans remain supported. See reviews/quarters-visibility-2026-11-04.md.",
     "EXP-08 closes with zero-to-maximum A40S/A51U/A60U executor choices, exact Warband visibility, actual-placement compensation and terminal/durable save/resume/replay. Related A51 Scouted omission is corrected. See reviews/expansion-up-to-2026-11-04.md.",
-    "BE-05 closes with exact Drought physical-owner choices, German restrictions, protected Fort, corrected defaults and later-Region replay. Its BE-08 schema portion is repaired; other BE-08 shapes remain open. See reviews/drought-losses-2026-11-04.md."
+    "BE-05 closes with exact Drought physical-owner choices, German restrictions, protected Fort, corrected defaults and later-Region replay. Its BE-08 schema portion is repaired; other BE-08 shapes remain open. See reviews/drought-losses-2026-11-04.md.",
+    "CMD-SCOUT-ALLOCATION closes with one Auxilia budget across exact faction/visibility targets, terminal and durable support, physical-owner consent and rollback/replay. See reviews/scout-allocations-2026-11-04.md."
   ],
   "findings": [
     {
@@ -75,7 +76,9 @@
       "id": "CMD-SCOUT-ALLOCATION",
       "title": "Scout cannot allocate one Auxilia across factions or choose Warband visibility",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/scout-allocations-2026-11-04.md",
+      "disposition": "Grouped Scout Reveal shares each Auxilia across up to two exact targets, with physical ownership, live cohort validation, terminal menus and durable rollback/replay. Legacy NPC rows are retained."
     },
     {
       "id": "CMD-SEIZE-TRIBES",

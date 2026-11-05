@@ -489,7 +489,11 @@ physical owners as well as visibility where relevant.
 Roman Build planning permits both a Fort and the legal Ally action in one
 Region. Scout planning updates the position after each move, prevents the
 same counter moving twice, and offers the arriving Hidden Auxilia for
-Reveal. Under shaded Vercingetorix's Elite, the Arverni choose the actual
+Reveal. Choose how many Hidden Auxilia to flip in a Region, then choose up to
+two Warbands per Auxilia by faction and visibility. One Auxilia can Scout one
+Belgic and one Arverni Warband; you can select Revealed targets while leaving
+Hidden ones alone. `b`/`board` shows the planning board. Agreed Diviciacus loans
+retain their physical owners. Under shaded Vercingetorix's Elite, the Arverni choose the actual
 Warbands treated as Legions; casualty choices distinguish those counters.
 If Vercingetorix's arrival changes Roman Quarters Supply, the Romans can
 revise their remaining Provincia moves and payments after completed adjacent

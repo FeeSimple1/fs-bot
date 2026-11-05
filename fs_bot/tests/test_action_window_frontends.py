@@ -211,12 +211,18 @@ def test_scout_preview_excludes_arrivals_from_second_move_but_allows_reveal(monk
             return None
         if prompt == 'Move Auxilia INTO:':
             return rc.SEQUANI
-        if prompt.startswith('How many'):
+        if prompt == 'How many Hidden Auxilia to Reveal?':
+            return 1
+        if prompt == 'How many Auxilia?':
             return 2
+        if prompt == 'How many Warbands?':
+            return 2
+        if prompt == 'Scout which Warbands?':
+            return next(v for _, v in choices if v and v[:2] == (rc.ARVERNI, rc.HIDDEN))
         if prompt == 'Scout Reveal?':
             reveal[0] += 1
             if reveal[0] == 1:
-                return next(v for _, v in choices if v and v[:2] == (rc.SEQUANI, rc.ARVERNI))
+                return next(v for _, v in choices if v and v[0] == rc.SEQUANI)
             return None
         raise AssertionError(prompt)
     monkeypatch.setattr(roman_timing, 'prompt_choice', pick)

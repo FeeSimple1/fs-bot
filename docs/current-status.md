@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Scout allocation — CMD-SCOUT-ALLOCATION closed
+
+The [Scout repair](reviews/scout-allocations-2026-11-04.md) shares one Auxilia's
+two-Warband capacity across exact factions and visibility cohorts. Terminal
+and durable plans validate the full group and physical owners against the live
+board. Invalid grouped plans restore prior moves and flips. Diviciacus consent
+sees every selected faction, and later owner choices survive save/resume/replay.
+Card 12 and movement restrictions remain in force; legacy bot rows still work.
+
+**Original bundle is now 35/50 closed (70%), 15 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**8,320 tests pass**, including 60 new cases; 337 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. The 100-game
+balance check passes its unchanged band. See the report
+for frozen source provenance and evidence bounds.
+
+
 ### 4 November Drought casualties — BE-05 closed
 
 The [Drought batch](reviews/drought-losses-2026-11-04.md) asks each eligible
@@ -32,7 +53,7 @@ own-piece priorities. Terminal and durable choices support later-owner/Region
 rollback/save/resume and exact replay. Unsafe executor override maps are rejected.
 Drought's BE-08 menu shape is repaired; that grouped finding remains open.
 
-**Original bundle is now 34/50 closed (68%), 16 open.** Counts measure findings,
+**At that checkpoint: 34/50 closed (68%), 16 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.

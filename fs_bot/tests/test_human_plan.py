@@ -258,10 +258,10 @@ class TestHumanPlanCollection:
         sa_regions, extra = result
         if sa_regions is not None:
             assert isinstance(extra, dict) and "build_plan" in extra
-        # Scout with no moves/targets must return the (None, None) shape.
-        stdin = _io.StringIO("n\n" * 6)
+        # Finish both Scout menus without choosing any moves or targets.
+        stdin = _io.StringIO("1\n1\n")
         result = _SA_COLLECTORS["Scout"](st, rc.ROMANS, stdin, out)
-        assert isinstance(result, tuple) and len(result) == 2
+        assert result == (None, None)
 
     def test_build_offers_march_destination(self):
         # Sec.4.1 after-Command SA: a March's destination must appear in

@@ -5711,6 +5711,36 @@ def _execute_entreat(state, faction, bot_action):
 
 
 def _execute_scout(state, faction, bot_action):
+    """Grouped human Scout plans are one atomic allocation, including moves."""
+    plan = _sa_detail(bot_action, 'scout_plan')
+    if plan is not None and not isinstance(plan, dict):
+        return {'executed': False, 'sa': _SA_SCOUT, 'errors': [{'error': 'Scout plan must be an object'}]}
+    rows = (plan or {}).get('scout_targets', [])
+    if not isinstance(rows, list) or any(not isinstance(t, dict) for t in rows):
+        return {'executed': False, 'sa': _SA_SCOUT, 'errors': [{'error': 'Scout targets must be a list of objects'}]}
+    exact = any('targets' in t or 'auxilia_count' in t for t in rows)
+    if exact and any(not isinstance(t.get('region'), str) for t in rows):
+        return {'executed': False, 'sa': _SA_SCOUT, 'errors': [{'error': 'Scout requires named Regions'}]}
+    if not exact:
+        return _execute_scout_plan(state, faction, bot_action)
+    moves = plan.get('auxilia_moves', [])
+    if (set(plan) - {'auxilia_moves', 'scout_targets', 'movement_timing_actions'}
+            or not isinstance(moves, list) or any(not isinstance(m, dict)
+                or not {'from_region', 'to_region', 'count', 'piece_state'} <= set(m)
+                or not all(isinstance(m[key], str) for key in ('from_region', 'to_region')) for m in moves)):
+        return {'executed': False, 'sa': _SA_SCOUT, 'errors': [{'error': 'Grouped Scout needs concrete movement entries'}]}
+    from fs_bot.engine.spring import atomic
+    try:
+        with atomic(state):
+            result = _execute_scout_plan(state, faction, bot_action)
+            if result.get('errors'):
+                raise CommandError(result['errors'][0]['error'])
+        return result
+    except _EXEC_ERRORS as exc:
+        return {'executed': False, 'sa': _SA_SCOUT, 'errors': [{'error': str(exc)}]}
+
+
+def _execute_scout_plan(state, faction, bot_action):
     """Roman Scout (§4.2.2). The bot's node_r_scout computes a complete plan
     (auxilia_moves + scout_targets) but the SA is emitted without it; we
     recompute it against the current board and execute: move Auxilia, then
@@ -5747,6 +5777,8 @@ def _execute_scout(state, faction, bot_action):
     from fs_bot.rules_consts import EVENT_SHADED as _ES12s
     _targets = plan.get("scout_targets", []) or []
     if _ica12s(state, 12, _ES12s) and _targets:
+        if any('targets' in t or 'auxilia_count' in t for t in _targets) and len({t.get('region') for t in _targets}) > 1:
+            raise CommandError('Card 12 shaded limits Scout Reveal to one Region')
         _first_r = _targets[0].get("region")
         _targets = [t for t in _targets if t.get("region") == _first_r]
 
@@ -5754,6 +5786,19 @@ def _execute_scout(state, faction, bot_action):
         region = tgt.get("region")
         _timing_plan_step(state, faction, bot_action, 'scout_reveal',
                           entry=tgt, index=index, region=region)
+        if 'targets' in tgt or 'auxilia_count' in tgt:
+            try:
+                if (set(tgt) - {'region', 'auxilia_count', 'targets', 'physical_owners', 'timing_actions'}
+                        or 'auxilia_count' not in tgt or not isinstance(tgt.get('targets'), list)
+                        or any(not isinstance(t, dict) or 'piece_state' not in t for t in tgt['targets'])):
+                    raise CommandError('Grouped Scout needs one Auxilia count and exact faction/visibility targets')
+                result = _sa_scout_reveal(state, region, tgt['auxilia_count'], tgt['targets'],
+                                        physical_owners=tgt.get('physical_owners'))
+                done.append({'region': region, 'revealed': sum(n for _, n in result['warbands_revealed']),
+                             'auxilia_flipped': result['auxilia_flipped'], 'targets': tgt['targets']})
+            except _EXEC_ERRORS as exc:
+                errors.append({'region': region, 'error': str(exc)})
+            continue
         enemy = tgt.get("enemy")
         want = tgt.get("hidden", 0)  # Hidden enemy Warbands to Reveal
         if want <= 0:

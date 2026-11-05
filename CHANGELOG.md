@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Scout allocation, 4 November 2026
+
+- Share each Reveal group's Auxilia budget across exact factions and
+  Hidden/Revealed/Scouted Warband cohorts; validate aggregate counts before flips.
+- Use grouped choices in both terminal modes and durable action validation.
+  Retain native NPC/legacy rows, movement ledgers and Card 12's Region limit.
+- Preserve physical Diviciacus owners and expose grouped targets to agreement
+  checks. Roll back invalid or pending grouped operations, including prior moves.
+- Close CMD-SCOUT-ALLOCATION: 35/50 original findings closed (70%), 15 open.
+  See the [report](docs/reviews/scout-allocations-2026-11-04.md).
+
 ## Unreleased — Drought owner casualties, 4 November 2026
 
 - Ask each human physical owner for exact Card 49 casualties in every

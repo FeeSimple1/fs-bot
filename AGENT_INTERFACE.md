@@ -173,12 +173,32 @@ Fort/Subdue/Ally passes for existing controllers and the §8.8.1 non-player
 procedure; controllers should add the field to express human Region order.
 An empty ordered plan is `{ "region_order": [] }`.
 
-Scout
-movement entries can name `physical_owners` when Diviciacus lends counters;
-their counts must total that move and use only still-unmoved pieces.
-Arrivals may participate in subsequent Scout Reveal, but may not Scout-move
-again. A Scout target's legacy `hidden` field specifies the requested total
-Warbands to Scout, including eligible Revealed Warbands.
+Scout movement entries can name `physical_owners` when Diviciacus lends
+counters; their counts must total that move and use only still-unmoved pieces.
+Arrivals may participate in subsequent Scout Reveal. The grouped Reveal row
+allocates one `auxilia_count` to an exact `targets` list in the same Region:
+
+```json
+{"scout_plan":{"auxilia_moves":[],"scout_targets":[{"region":"Morini","auxilia_count":1,"targets":[{"faction":"Belgae","piece_state":"Hidden","count":1},{"faction":"Arverni","piece_state":"Revealed","count":1}]}]}}
+```
+
+That one Hidden Auxilia Scouts both selected Warbands. A row may target up to
+two Warbands per Auxilia, across factions and Hidden/Revealed/Scouted cohorts;
+an already-Scouted target needs no additional marker. Counts must fit the
+actual available Auxilia and target cohorts, including repeated targets.
+A grouped row can name `physical_owners` to specify Roman and agreed Aedui
+counter counts; omission uses the existing physical-owner request when a
+choice is needed. An older transcript that used automatic allocation for mixed
+loans may now need an owner response. Any `timing_actions` on that row run before the whole
+allocation. Shaded Titus Labienus limits Reveal to one Region. Invalid grouped
+plans restore their Scout movements and earlier Reveal steps; previews use
+copies and never consume live answers or RNG. Terminal planning and durable
+validation use the same grouped shape.
+
+Legacy `region`/`enemy`/`hidden` rows still use their old per-row count and
+Hidden-before-Revealed selection, including eligible Revealed Warbands. Bots
+continue to emit those rows. Use grouped rows to share Auxilia across factions
+or select exact visibility.
 For Trade under shaded River Commerce (39), `details.trade_region` names
 one Region; `details.sa_details.trade_region` is also accepted. If both are
 present they must agree. A non-string or a field attached to another Special

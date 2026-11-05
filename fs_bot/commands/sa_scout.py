@@ -1,7 +1,7 @@
 """
 Scout Special Ability — §4.2.2 (Roman).
 
-Scout may accompany any type of Command. No Britannia (§4.1.3).
+Scout may accompany any type of Command, subject to §4.1.3.
 
 Two capabilities:
 1. Scout Movement: Move Auxilia from any Regions to adjacent Regions
@@ -19,23 +19,19 @@ from fs_bot.rules_consts import (
     # Factions
     ROMANS,
     # Piece types
-    AUXILIA, WARBAND, FLIPPABLE_PIECES,
+    AUXILIA, WARBAND,
     # Piece states
     HIDDEN, REVEALED, SCOUTED,
     # Leaders
     CAESAR,
     # Regions
     BRITANNIA,
-    # Scenarios
-    ARIOVISTUS_SCENARIOS,
-    # Markers
-    MARKER_SCOUTED,
 )
 from fs_bot.board.pieces import (
     count_pieces_by_state,
     move_piece, flip_piece,
 )
-from fs_bot.map.map_data import is_adjacent, get_adjacent
+from fs_bot.map.map_data import is_adjacent
 from fs_bot.commands.common import CommandError, check_leader_proximity
 
 
@@ -162,127 +158,96 @@ def scout_move(state, movements, *, after_movements=None):
         clear_scout_cohorts(state)
 
 
-def scout_reveal(state, region, auxilia_count, targets):
-    """Execute Scout reveal — flip Auxilia to Revealed to Reveal Warbands.
+def scout_reveal_owners(state, region):
+    """Hidden Auxilia by physical owner, including agreed Aedui cooperation."""
+    from fs_bot import rules_consts as rc
+    from fs_bot.engine.diviciacus import KEY
+    context = state.get(KEY, {})
+    total = count_pieces_by_state(state, region, ROMANS, AUXILIA, HIDDEN)
+    if context.get('faction') == ROMANS and region in context.get('pieces', {}):
+        borrowed = context['pieces'][region].get(HIDDEN, 0)
+        return {ROMANS: total - borrowed, rc.AEDUI: borrowed}
+    return {ROMANS: total}
 
-    §4.2.2: "each Hidden Auxilia piece may flip to Revealed in order to
-    Reveal up to two Warbands (flip from Hidden to Revealed, or leave
-    Revealed, 1.4.3) in that Region and place Scouted markers on them"
 
-    Requires region within one of Caesar or with Successor.
+def scout_reveal(state, region, auxilia_count, targets, *, physical_owners=None):
+    """§4.2.2: one Auxilia allocation Scouts up to two targets per piece.
 
-    Args:
-        state: Game state dict. Modified in place.
-        region: Region where Scout Reveal occurs.
-        auxilia_count: Number of Hidden Auxilia to flip to Revealed.
-        targets: List of dicts, each with:
-            "faction": Faction whose Warbands to reveal.
-            "count": Number of Warbands to reveal (max 2 per Auxilia
-                flipped).
-
-    Returns:
-        dict with:
-            "auxilia_flipped": Number of Auxilia flipped.
-            "warbands_revealed": List of (faction, count) revealed.
-            "scouted_placed": List of (faction, count) Scouted markers.
-
-    Raises:
-        CommandError: If reveal violates rules.
+    Targets name faction/count and optionally an exact piece_state. Legacy
+    count-only rows retain Hidden/Revealed allocation and partial
+    fulfillment; explicit cohorts must be available in full. Already-Scouted
+    targets need no new marker. Validate/reserve all targets before flipping.
     """
-    scenario = state["scenario"]
+    from fs_bot.engine.spring import atomic
+    with atomic(state):
+        return _scout_reveal(state, region, auxilia_count, targets, physical_owners)
 
-    # Check Leader proximity — within 1 of Caesar or with Successor
-    valid, reason = check_leader_proximity(
-        state, region, ROMANS, CAESAR, "Scout Reveal"
-    )
+
+def _scout_reveal(state, region, auxilia_count, targets, physical_owners):
+    from fs_bot import rules_consts as rc
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    from fs_bot.engine.diviciacus import choose_owners, validate_response
+    if region not in get_playable_regions_for_state(state, ROMANS):
+        raise CommandError('Scout Reveal requires a playable Region')
+    valid, reason = check_leader_proximity(state, region, ROMANS, CAESAR, 'Scout Reveal')
     if not valid:
         raise CommandError(reason)
-
-    # Check Hidden Auxilia available
-    hidden_auxilia = count_pieces_by_state(
-        state, region, ROMANS, AUXILIA, HIDDEN
-    )
-    if hidden_auxilia < auxilia_count:
-        raise CommandError(
-            f"Only {hidden_auxilia} Hidden Auxilia in {region}, "
-            f"need {auxilia_count}"
-        )
-
-    # Total Warbands to reveal: max 2 per Auxilia flipped — §4.2.2
-    max_reveals = auxilia_count * 2
-    total_targets = sum(t["count"] for t in targets)
-    if total_targets > max_reveals:
-        raise CommandError(
-            f"Can only reveal up to {max_reveals} Warbands with "
-            f"{auxilia_count} Auxilia (2 per Auxilia), but {total_targets} "
-            f"requested"
-        )
-
-    result = {
-        "auxilia_flipped": auxilia_count,
-        "warbands_revealed": [],
-        "scouted_placed": [],
-    }
-
-    # Flip Auxilia from Hidden to Revealed
-    flip_piece(state, region, ROMANS, AUXILIA,
-               count=auxilia_count,
-               from_state=HIDDEN, to_state=REVEALED)
-
-    # Reveal target Warbands and place Scouted markers
+    if type(auxilia_count) is not int or auxilia_count < 0:
+        raise CommandError('Scout Auxilia count must be a nonnegative integer')
+    if not isinstance(targets, (list, tuple)):
+        raise CommandError('Scout targets must be a list')
+    total = 0
     for target in targets:
-        target_faction = target["faction"]
-        target_count = target["count"]
-
-        if target_faction == ROMANS:
-            raise CommandError("Cannot Scout-reveal Roman pieces")
-
-        # Check Hidden Warbands available for this faction
-        hidden_warbands = count_pieces_by_state(
-            state, region, target_faction, WARBAND, HIDDEN
-        )
-        # Also count Revealed (already revealed stay Revealed but get Scouted)
-        revealed_warbands = count_pieces_by_state(
-            state, region, target_faction, WARBAND, REVEALED
-        )
-
-        # §4.2.2: "Reveal up to two Warbands (flip from Hidden to Revealed,
-        # or leave Revealed, 1.4.3) in that Region and place Scouted markers
-        # on them (if none already)."
-        # Warbands already Scouted don't get re-scouted.
-        scouted_warbands = count_pieces_by_state(
-            state, region, target_faction, WARBAND, SCOUTED
-        )
-
-        # Flip Hidden Warbands to Scouted (Revealed + Scouted marker)
-        hidden_to_flip = min(target_count, hidden_warbands)
-        remaining = target_count - hidden_to_flip
-
-        if hidden_to_flip > 0:
-            # Flip Hidden → Scouted (which is Revealed + Scouted marker)
-            flip_piece(state, region, target_faction, WARBAND,
-                       count=hidden_to_flip,
-                       from_state=HIDDEN, to_state=SCOUTED)
-            result["scouted_placed"].append(
-                (target_faction, hidden_to_flip)
-            )
-
-        # Revealed Warbands → Scouted (place Scouted marker)
-        if remaining > 0:
-            revealed_to_scout = min(remaining, revealed_warbands)
-            if revealed_to_scout > 0:
-                flip_piece(state, region, target_faction, WARBAND,
-                           count=revealed_to_scout,
-                           from_state=REVEALED, to_state=SCOUTED)
-                result["scouted_placed"].append(
-                    (target_faction, revealed_to_scout)
-                )
-            remaining -= revealed_to_scout
-
-        result["warbands_revealed"].append(
-            (target_faction, target_count - remaining)
-        )
-
-    return result
-
-
+        if (not isinstance(target, dict) or set(target) - {'faction', 'count', 'piece_state'}
+                or target.get('faction') not in rc.FACTIONS or target['faction'] == ROMANS):
+            raise CommandError('Scout targets must name non-Roman Warbands')
+        if type(target.get('count')) is not int or target['count'] <= 0:
+            raise CommandError('Scout target counts must be positive integers')
+        if 'piece_state' in target and target['piece_state'] not in (HIDDEN, REVEALED, SCOUTED):
+            raise CommandError('Scout targets must name a valid physical visibility')
+        total += target['count']
+    if total > 2 * auxilia_count:
+        raise CommandError(f'Can only reveal up to {2 * auxilia_count} Warbands with '
+                           f'{auxilia_count} Auxilia (2 per Auxilia), but {total} requested')
+    available = scout_reveal_owners(state, region)
+    if sum(available.values()) < auxilia_count:
+        raise CommandError(f'Only {sum(available.values())} Hidden Auxilia in {region}, need {auxilia_count}')
+    remaining = {(f, ps): count_pieces_by_state(state, region, f, WARBAND, ps)
+                 for f in rc.FACTIONS if f != ROMANS for ps in (HIDDEN, REVEALED, SCOUTED)}
+    allocated, counts = [], []
+    for target in targets:
+        faction, count = target['faction'], target['count']
+        states = (target['piece_state'],) if 'piece_state' in target else (HIDDEN, REVEALED)
+        capacity = sum(remaining[faction, ps] for ps in states)
+        if 'piece_state' in target and count > capacity:
+            raise CommandError('Scout selects unavailable physical Warbands')
+        count = min(count, capacity)
+        counts.append((faction, count))
+        for ps in states:
+            amount = min(count, remaining[faction, ps])
+            if amount:
+                allocated.append((faction, ps, amount))
+                remaining[faction, ps] -= amount
+                count -= amount
+    if physical_owners is not None:
+        try:
+            validate_response({'available': available, 'count': auxilia_count}, {'counts': physical_owners})
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
+        allocation = physical_owners
+    elif len(available) > 1:
+        allocation = choose_owners(state, ROMANS, region, auxilia_count, available, 'scout_reveal')
+    else:
+        allocation = {ROMANS: auxilia_count}
+    for owner, count in allocation.items():
+        if count:
+            flip_piece(state, region, ROMANS, AUXILIA, count=count,
+                       from_state=HIDDEN, to_state=REVEALED,
+                       physical_owner=owner if len(available) > 1 else None)
+    placed = []
+    for faction, ps, count in allocated:
+        if ps != SCOUTED:
+            flip_piece(state, region, faction, WARBAND, count=count,
+                       from_state=ps, to_state=SCOUTED)
+            placed.append((faction, count))
+    return {'auxilia_flipped': auxilia_count, 'warbands_revealed': counts, 'scouted_placed': placed}

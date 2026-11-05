@@ -946,69 +946,9 @@ def _tribe_in_region(state, tribe, region):
 
 
 def _collect_scout(state, faction, stdin, stdout, *, pending=None):
-    """Roman Scout SA (Sec.4.2.2) -- player moves Auxilia, then Reveals."""
-    from fs_bot.cli.action_windows import available
-    if available(state):
-        from fs_bot.cli.roman_timing import collect_scout
-        return collect_scout(state, faction, stdin, stdout, pending=pending)
-    from fs_bot.rules_consts import (ROMANS, AUXILIA, WARBAND, HIDDEN,
-                                     REVEALED, BRITANNIA, CAESAR, FACTIONS)
-    from fs_bot.board.pieces import (count_pieces_by_state,
-                                     get_leader_in_region, find_leader)
-    moves = []
-    sources = [r for r in _regions_with_pieces(state, ROMANS)
-               if count_pieces(state, r, ROMANS, AUXILIA) > 0
-               and r != BRITANNIA]
-    while sources:
-        if not prompt_yes_no(stdin, stdout, "Move Auxilia?", default=False):
-            break
-        src = prompt_choice(stdin, stdout, "Move Auxilia FROM:",
-                            [(r, r) for r in sources])
-        dests = [d for d in sorted(get_adjacent_for_state(state, src, ROMANS))
-                 if d != BRITANNIA]
-        dst = prompt_choice(stdin, stdout, "  INTO which Region?",
-                            [(d, d) for d in dests])
-        avail = count_pieces(state, src, ROMANS, AUXILIA)
-        n = prompt_choice(stdin, stdout, f"  How many? (of {avail})",
-                          [(str(k), k) for k in range(1, avail + 1)])
-        for ps in (REVEALED, HIDDEN):
-            c = min(n, count_pieces_by_state(state, src, ROMANS,
-                                             AUXILIA, ps))
-            if c > 0:
-                moves.append({"from_region": src, "to_region": dst,
-                              "count": c, "piece_state": ps})
-                n -= c
-        sources = [r for r in _regions_with_pieces(state, ROMANS)
-                   if count_pieces(state, r, ROMANS, AUXILIA) > 0
-                   and r != BRITANNIA]
-    # Reveal targets -- within 1 of Caesar (same Region as Successor),
-    # needs a Hidden Roman Auxilia there (Sec.4.2.2).
-    targets = []
-    caesar_region = find_leader(state, ROMANS)
-    if caesar_region is not None:
-        named = get_leader_in_region(state, caesar_region, ROMANS) == CAESAR
-        for r in sorted(_regions_with_pieces(state, ROMANS)):
-            if count_pieces_by_state(state, r, ROMANS, AUXILIA, HIDDEN) == 0:
-                continue
-            in_range = (r == caesar_region
-                        or (named and is_adjacent(r, caesar_region)))
-            if not in_range:
-                continue
-            for enemy in FACTIONS:
-                if enemy == ROMANS:
-                    continue
-                hid = count_pieces_by_state(state, r, enemy, WARBAND, HIDDEN)
-                if hid > 0 and prompt_yes_no(
-                        stdin, stdout,
-                        f"Reveal {enemy} Warbands in {r}?", default=True):
-                    targets.append({"region": r, "enemy": enemy,
-                                    "hidden": hid})
-    if not moves and not targets:
-        return None, None
-    regions = sorted({m["from_region"] for m in moves}
-                     | {t["region"] for t in targets})
-    return regions, {"scout_plan": {"auxilia_moves": moves,
-                                    "scout_targets": targets}}
+    """Use the same physical Scout planner with or without timing windows."""
+    from fs_bot.cli.roman_timing import collect_scout
+    return collect_scout(state, faction, stdin, stdout, pending=pending)
 
 
 _SA_COLLECTORS = {

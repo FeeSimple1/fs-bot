@@ -128,10 +128,15 @@ def _targets(action, region):
     scout = details.get('scout_plan')
     if scout is None:
         scout = (details.get('sa_details') or {}).get('scout_plan')
-    # _execute_scout consumes region/enemy/hidden entries, not a nested
-    # reveals/targets shape. Inspect exactly the targets it will Reveal.
+    # Inspect both legacy enemy/hidden rows and grouped physical targets;
+    # lending consent must see every faction that the Scout will affect.
     for entry in (scout or {}).get('scout_targets', []):
-        if entry.get('region') == region and entry.get('hidden', 0) > 0:
+        if entry.get('region') != region:
+            continue
+        if isinstance(entry.get('targets'), list):
+            result.extend(t.get('faction') for t in entry['targets']
+                          if isinstance(t, dict) and type(t.get('count')) is int and t['count'] > 0)
+        elif entry.get('hidden', 0) > 0:
             result.append(entry.get('enemy'))
     return result
 

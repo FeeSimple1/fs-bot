@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Scout allocations](reviews/scout-allocations-2026-11-04.md):
+  shared cross-faction Reveal capacity, visibility and physical owners.
+
+
 - [4 November Drought casualties](reviews/drought-losses-2026-11-04.md):
   physical-owner choices, named Tribes, default priorities and durable replay.
 

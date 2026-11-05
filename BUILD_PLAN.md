@@ -58,7 +58,12 @@ The [4 November Drought batch](docs/reviews/drought-losses-2026-11-04.md)
 closes BE-05 with physical-owner casualties, exact Tribes/visibility/Leaders,
 source-correct default losses and durable later-Region replay. Drought's part
 of BE-08 is repaired; its other generated-schema defects remain open.
-Current original progress is 34/50 closed (68%), 16 open.
+At that checkpoint original progress was 34/50 closed (68%), 16 open.
+
+The [4 November Scout repair](docs/reviews/scout-allocations-2026-11-04.md)
+closes CMD-SCOUT-ALLOCATION with shared Auxilia capacity across exact factions
+and visibility cohorts, physical-owner choices and atomic grouped execution.
+Current original progress is 35/50 closed (70%), 15 open.
 
 ## Existing implementation
 
@@ -131,7 +136,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 34 of 50 closed (68%) and 16 open; these are finding counts, not
+now records 35 of 50 closed (70%) and 15 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

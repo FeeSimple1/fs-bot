@@ -183,26 +183,48 @@ def collect_scout(state, faction, stdin, stdout, *, pending=None):
             if not check_leader_proximity(sim, region, faction, rc.CAESAR, 'Scout Reveal')[0]:
                 continue
             hidden = count_pieces_by_state(sim, region, faction, rc.AUXILIA, rc.HIDDEN)
-            if not hidden:
-                continue
-            for enemy in rc.FACTIONS:
-                if enemy == faction:
-                    continue
-                count = sum(count_pieces_by_state(sim, region, enemy, rc.WARBAND, visibility)
-                            for visibility in (rc.HIDDEN, rc.REVEALED))
-                maximum = min(count, hidden * 2)
-                if maximum:
-                    options.append((f'Scout {enemy} Warbands in {region} (up to {maximum})',
-                                    (region, enemy, maximum)))
+            if hidden:
+                options.append((f'Scout in {region} ({hidden} Hidden Auxilia)', (region, hidden)))
         with inspect_board(sim, stdout):
             selected = prompt_choice(stdin, stdout, 'Scout Reveal?', options)
             if selected is None:
                 break
-            region, enemy, maximum = selected
-            count = prompt_choice(stdin, stdout, 'How many Warbands?',
-                                  [(str(n), n) for n in range(1, maximum + 1)])
-        scout_reveal(sim, region, (count + 1) // 2, [{'faction': enemy, 'count': count}])
-        entry = {'region': region, 'enemy': enemy, 'hidden': count}
+            region, hidden = selected
+            auxilia = prompt_choice(stdin, stdout, 'How many Hidden Auxilia to Reveal?',
+                                    [(str(n), n) for n in range(1, hidden + 1)])
+            chosen, used, capacity = [], {}, 2 * auxilia
+            while capacity:
+                choices = [('Finish target selection', None)]
+                for enemy in rc.FACTIONS:
+                    if enemy == faction:
+                        continue
+                    for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED):
+                        count = count_pieces_by_state(sim, region, enemy, rc.WARBAND, visibility)
+                        maximum = min(capacity, count - used.get((enemy, visibility), 0))
+                        if maximum:
+                            choices.append((f'{enemy} {visibility} Warbands (up to {maximum})',
+                                            (enemy, visibility, maximum)))
+                if len(choices) == 1:
+                    break
+                selected = prompt_choice(stdin, stdout, 'Scout which Warbands?', choices)
+                if selected is None:
+                    break
+                enemy, visibility, maximum = selected
+                count = prompt_choice(stdin, stdout, 'How many Warbands?',
+                                      [(str(n), n) for n in range(1, maximum + 1)])
+                chosen.append({'faction': enemy, 'piece_state': visibility, 'count': count})
+                used[enemy, visibility] = used.get((enemy, visibility), 0) + count
+                capacity -= count
+            entry = {'region': region, 'auxilia_count': auxilia, 'targets': chosen}
+            from fs_bot.commands.sa_scout import scout_reveal_owners
+            available = scout_reveal_owners(sim, region)
+            if all(available.values()) and len(available) > 1 and auxilia < sum(available.values()):
+                from fs_bot.cli.diviciacus import collect_pieces
+                entry['physical_owners'] = collect_pieces(sim, faction, {
+                    'available': available, 'count': auxilia, 'phase': 'scout_reveal',
+                    'region': region, 'piece_type': rc.AUXILIA,
+                }, stdin, stdout)['counts']
+        scout_reveal(sim, region, auxilia, chosen, physical_owners=entry.get('physical_owners'))
         if carried:
             entry['timing_actions'] = carried
         targets.append(entry)

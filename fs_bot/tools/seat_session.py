@@ -142,6 +142,9 @@ def validate_response(state, request, response):
     if kind == 'besiege_target':
         from fs_bot.engine.besiege_choice import validate_response as validate_besiege
         return validate_besiege(state, request, response)
+    if kind == 'ballistae_target':
+        from fs_bot.engine.ballistae_choice import validate_response as validate_ballistae
+        return validate_ballistae(state, request, response)
     if kind == "march_cohort":
         from fs_bot.engine.march_choices import validate_response as validate_cohort
         return validate_cohort(request, response)

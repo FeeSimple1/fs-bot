@@ -269,6 +269,9 @@ def make_random_reactive(seats, rng):
             return {'placements': placements}
         if kind == 'besiege_target':
             return {'target': rng.choice(request['targets'])}
+        if kind == 'ballistae_target':
+            return ({'decline': True} if rng.random() < 0.5
+                    else {'target': rng.choice(request['targets'])})
         if kind == "raid_intimidate":
             if rng.random() < 0.25:
                 return {"decline": True}

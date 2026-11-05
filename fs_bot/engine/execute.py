@@ -4059,15 +4059,8 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             # Citadel first (higher value; Q13 tribe sync applied).
             if (is_ambush and _ica_b(state, 10, _ES_B)
                     and _gco_b(state, 10) == faction):
-                from fs_bot.rules_consts import (CITADEL as _CIT10,
-                                                 FORT as _F10)
-                from fs_bot.board.pieces import (
-                    clear_allied_tribe as _cat10, remove_piece as _rp10)
-                if count_pieces(state, region, defender, _CIT10) > 0:
-                    _rp10(state, region, defender, _CIT10)
-                    _cat10(state, region, defender, _CIT10)
-                elif count_pieces(state, region, defender, _F10) > 0:
-                    _rp10(state, region, defender, _F10)
+                from fs_bot.engine.ballistae_choice import remove_after_ambush
+                remove_after_ambush(state, region, faction, defender)
 
             battles.append({"region": region, "defender": defender,
                             "is_ambush": is_ambush,

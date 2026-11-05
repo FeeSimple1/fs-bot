@@ -1,13 +1,13 @@
 {
   "audit_commit": "7e72fe7eda33c58b2f83457c39edf5b295a04f77",
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
-  "updated": "2026-11-04",
+  "updated": "2026-11-05",
   "tested_source": {
-    "commit": "7f13084de6658176a5ee10020f9345d9cbcd49e2",
-    "python_sha256": "ac4fcb5a00dda78552ba079ee794aaa432211199e5d176629bb9e008ab0e3cf8",
-    "python_files": 511,
+    "commit": "c3886d9df4e1ede47d4c10cd0948cd351ec358ba",
+    "python_sha256": "586197007c4d62450434c5e1a37a904560b32098ad52bec979538fea47c9909a",
+    "python_files": 514,
     "working_tree_changes": true,
-    "note": "Printed setup options close WS-F08. See reviews/setup-options-2026-11-04.md."
+    "note": "Card 10 shaded owner choice advances BE-09; Card 13/59 Region choices remain open. See reviews/ballistae-choice-2026-11-05.md."
   },
   "total": 50,
   "closed": 39,
@@ -41,7 +41,8 @@
     "CMD-SCOUT-ALLOCATION closes with one Auxilia budget across exact faction/visibility targets, terminal and durable support, physical-owner consent and rollback/replay. See reviews/scout-allocations-2026-11-04.md.",
     "WS-F02 closes with Roman-owned Interlude expedition and marker requests, exact physical allocations and full Winter rollback. WS-F01 force reductions and Cisalpina choices remain open. See reviews/interlude-roman-choices-2026-11-04.md.",
     "BATTLE-LOSS-IDENTITY closes with ordinary exact visibility and named Allied Tribe casualties. Saved generic requests require matching board signatures, and new responses use offered identities. See reviews/battle-loss-identity-2026-11-04.md.",
-    "BATTLE-RAMPAGE-VICTIM closes with exact target-owned pieces and mixed dispositions. Host consent is collected once, destination restrictions apply and the primitive validates atomically. Verified older durable prompts retain their recorded contract. See reviews/rampage-victims-2026-11-04.md."
+    "BATTLE-RAMPAGE-VICTIM closes with exact target-owned pieces and mixed dispositions. Host consent is collected once, destination restrictions apply and the primitive validates atomically. Verified older durable prompts retain their recorded contract. See reviews/rampage-victims-2026-11-04.md.",
+    "Card 10 shaded optional post-Ambush removal is repaired. BE-09 remains open for Card 13 unshaded and Card 59 both-side Region choices. See reviews/ballistae-choice-2026-11-05.md."
   ],
   "findings": [
     {
@@ -248,7 +249,9 @@
       "id": "BE-09",
       "title": "Human Capability activation/Region choices use unconditional NPC priorities",
       "severity": "high",
-      "status": "open"
+      "status": "open",
+      "partial_report": "reviews/ballistae-choice-2026-11-05.md",
+      "disposition": "Card 10 shaded now asks its owner after each Ambush for an exact surviving Fort/Citadel or decline. Cards 13 unshaded and 59 both-side Region choices remain open."
     },
     {
       "id": "BE-10",

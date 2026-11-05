@@ -68,6 +68,13 @@ Losses, even if those Losses are zero or the Defender declared Retreat.
 Use `b`/`board` to inspect before choosing. Removing the Citadel preserves its
 normal halving for that Battle unless Ballistae cancels that protection.
 
+If your Faction owns shaded Ballistae, each completed Ambush with a surviving
+defending Fort or Citadel now asks whether to remove it. You may decline.
+The choice comes after all Battle Losses and Reveal; it is independent in each
+Region, including a free Event Ambush. The prompt shows the physical owner
+and the Citadel's Tribe, and `b`/`board` inspects the live post-combat board.
+Provincia's permanent Fort can never be removed and is excluded.
+
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;
 Scouted pieces instead lose their marker and remain Revealed. You still pay

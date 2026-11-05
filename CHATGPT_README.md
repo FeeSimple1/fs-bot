@@ -84,6 +84,12 @@ Sudden Frost requires all players' agreement at setup. Saved origins retain
 these choices for resume and replay. The [playing guide](PLAYING.md) explains
 the exact deck effects and Gallic War Interlude behavior.
 
+A `ballistae_target` request belongs to the owning Gallic Faction after its
+Ambush. Return one complete offered `target` object, `{"decline":true}`, or
+explicit default delegation. Each Region is separate; use the live request's
+surviving targets. The [agent interface](AGENT_INTERFACE.md) describes the
+physical identities and save/replay behavior.
+
 ## Quick start (for the assistant)
 
 You are about to PLAY one faction against the built-in bots.

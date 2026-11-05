@@ -46,6 +46,12 @@ Request kinds
   type priority and deterministic Tribe identity. Durable human responses
   require a legal selection, decline or explicit delegation.
 
+- ``ballistae_target`` — Card 10 shaded's owner may remove one surviving
+  defending Fort/Citadel after Ambush. Request carries region, attacker,
+  defender and targets {piece_type, tribe, owner}. Respond with one offered
+  target, decline or explicit default. Provincia's permanent Fort is excluded.
+  Raw None retains the existing Citadel-before-Fort default.
+
 - ``raid_intimidate`` — A3.4.3 optional simultaneous Intimidate by the
   German Warbands that just Raided with Ariovistus. Request carries trusted
   region, raiders, max_removals, and physical target entries. Response is

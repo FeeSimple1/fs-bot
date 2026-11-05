@@ -47,6 +47,10 @@ Sudden Frost, Even Initiative and the shorter Great Revolt are selectable
 at setup and retained through saves and replay.
 [Repair and validation](docs/reviews/setup-options-2026-11-04.md).
 
+Shaded Ballistae now asks its owner whether to remove a surviving defending
+Fort or Citadel after each Ambush, with terminal and durable replay support.
+[Repair and validation](docs/reviews/ballistae-choice-2026-11-05.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.

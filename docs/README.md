@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [5 November Ballistae choice](reviews/ballistae-choice-2026-11-05.md)
+  covers optional owner-scoped post-Ambush removals and pending Region replay.
+
 - [4 November setup options](reviews/setup-options-2026-11-04.md)
   covers Sudden Frost, Even Initiative, short Great Revolt and saved replay.
 

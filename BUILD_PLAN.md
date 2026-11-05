@@ -80,7 +80,12 @@ At that checkpoint original progress was 38/50 closed (76%), 12 open.
 The [4 November setup-option repair](docs/reviews/setup-options-2026-11-04.md)
 closes WS-F08 with Sudden Frost, Even Initiative and short Great Revolt
 configuration, saved origins and deterministic replay.
-Current original progress is 39/50 closed (78%), 11 open.
+Original progress at that checkpoint was 39/50 closed (78%), 11 open.
+
+The [5 November Ballistae repair](docs/reviews/ballistae-choice-2026-11-05.md)
+adds owner-scoped optional post-Ambush removals for Card 10 shaded and excludes
+Provincia's permanent Fort. BE-09 remains open for Cards 13 and 59. Current
+original progress remains 39/50 closed (78%), 11 open.
 
 ## Existing implementation
 

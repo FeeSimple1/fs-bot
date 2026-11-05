@@ -792,6 +792,26 @@ retain the legacy Citadel/Ally/Settlement type priority and deterministic Tribe
 selection. Terminal play offers named choices, decline and `b`/`board` inspection.
 Previews never consume a live choice; accepted requests and responses replay.
 
+`ballistae_target` goes to Card 10 shaded's owning Gallic seat after its
+Ambush has fully resolved, including combat casualties and Reveal. It offers
+only surviving defending Forts or Citadels. Choose an entire offered `target`
+object, such as
+`{"target":{"piece_type":"Citadel","tribe":"Sequani","owner":"Arverni"}}`,
+or respond `{"decline":true}` to leave every surviving target. This optional
+removal causes no additional saving roll. Its target retains its physical
+owner, and removing a Citadel clears exactly that Tribe's allegiance.
+Provincia's permanent Roman Fort is never offered (§1.4.2).
+
+Each Ambush Region has its own live request, including Event-granted Ambushes.
+The Event executor and capability owner can differ. Invalid or missing durable
+responses stay pending, with the entire Battle action and RNG restored until
+the choice can be completed. Earlier accepted Region choices survive a later
+pause and save/load/replay. Raw `None` and explicit `{"use_default":true}` retain
+the Citadel-before-Fort default. Terminal play supports named targets, decline
+and `b`/`board` inspection. Older cross-revision transcripts that passed this
+formerly automatic step may stop for the newly required choice. This repair
+does not close BE-09's separate Card 13/59 Region-selection gaps.
+
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
 or when leaving part of the carried group behind (`dropoff`). For a request
 with `count: 2` and sufficient offered counts, a response can be

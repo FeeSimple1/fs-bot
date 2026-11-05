@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 5 November Ballistae choice — BE-09 advanced, still open
+
+The [Ballistae repair](reviews/ballistae-choice-2026-11-05.md) asks Card 10
+shaded's owner whether to remove a surviving defending Fort or Citadel after
+Ambush. Both human interfaces offer the live physical target or decline,
+including after Event-granted Ambushes. Named Citadel allegiance and physical
+ownership remain synchronized. Provincia's permanent Fort is excluded.
+Later-Region pending choices retain accepted earlier responses across saving,
+loading and replay.
+
+**Original bundle remains 39/50 closed (78%), 11 open.** BE-09 still tracks
+Balearic Slingers (13 unshaded) and Germanic Horse (59, both sides) Region
+choices. Separate mechanics leads, two source questions, twelve provisional
+rulings and 34 unverified inventory rows retain their dispositions.
+
+**8,580 tests pass**, including 47 new cases, with 349 focused tests passing.
+Ten standard NPC records/final hashes match the parent, mixed-seat results
+agree across hash seeds with zero hard findings or partials, and the historical
+100-game balance guard passes its unchanged band. The report records the
+frozen source, protected inputs, evidence and cross-revision replay limit.
+
 ### 4 November printed setup options — WS-F08 closed
 
 The [setup-option repair](reviews/setup-options-2026-11-04.md) adds Sudden

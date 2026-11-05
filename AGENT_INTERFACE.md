@@ -470,6 +470,7 @@ and Ally identity gaps recorded separately by the audit remain open.
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag; copy entries intact; hard pieces still roll |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
+| `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
 | `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |
@@ -607,6 +608,24 @@ does not replace `current_card` or use the upcoming card. If no preceding
 Event can be recovered, the compatibility fallback uses card 63/A63's
 scenario-appropriate order, then the game-run faction. See the
 [ruling register](docs/provisional-rulings.md#pr-06) for scope and status.
+
+`besiege_target` goes to the Roman seat immediately before Battle Losses when
+Besiege applies. It offers each physical defending Citadel or Ally disc by
+Tribe, plus a German Settlement in Ariovistus. Choose an entire offered
+`target` object; a piece type alone is insufficient. For example,
+`{"target":{"piece_type":"Ally","tribe":"Helvetii"}}`. The engine removes
+exactly that physical target and clears only its Tribe's allegiance. A
+Settlement removal clears no Tribe. `{"decline":true}` omits the optional
+removal while the announced Besiege/active Ballistae rules still apply.
+
+Choices are built from the live board after Retreat declarations and before
+Losses, including a zero-Loss Battle. An originally defending Citadel still
+halves Losses after removal, unless Ballistae cancels it. Each Battle Region
+has a separate request. Invalid or missing durable responses remain pending
+through rollback/save/resume. Raw callback `None` and explicit `use_default`
+retain the legacy Citadel/Ally/Settlement type priority and deterministic Tribe
+selection. Terminal play offers named choices, decline and `b`/`board` inspection.
+Previews never consume a live choice; accepted requests and responses replay.
 
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
 or when leaving part of the carried group behind (`dropoff`). For a request

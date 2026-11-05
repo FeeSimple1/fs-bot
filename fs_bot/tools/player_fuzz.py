@@ -216,6 +216,8 @@ def make_random_reactive(seats, rng):
                        for defender in sorted(defenders)]
             region, defender = rng.choice(choices)
             return {"region": region, "defender": defender}
+        if kind == 'besiege_target':
+            return {'target': rng.choice(request['targets'])}
         if kind == "raid_intimidate":
             if rng.random() < 0.25:
                 return {"decline": True}

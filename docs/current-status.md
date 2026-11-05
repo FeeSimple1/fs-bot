@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Besiege physical targets — BATTLE-BESIEGE-CHOICE closed
+
+The [Besiege repair](reviews/besiege-choice-2026-11-04.md) asks the Roman for
+an exact Citadel/Allied Tribe or German Settlement, or an explicit decline,
+at the pre-Loss step of each selected Battle. Terminal and durable sessions
+support the choice; invalid or absent responses remain pending across rollback
+and save/resume. Only the chosen Tribe's allegiance clears. Zero Losses,
+Retreat declarations, Citadel halving and Ballistae retain their printed behavior.
+Native NPC defaults remain supported.
+
+**Original bundle is now 28/50 closed (56%), 22 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**7,917 tests pass**, including 37 new cases; 398 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. See the report
+for the frozen source digest and evidence bounds.
+
+
 ### 4 November March hide in place — MARCH-HIDE-IN-PLACE closed
 
 The [March repair](reviews/march-stay-2026-11-04.md) accepts explicit empty
@@ -31,7 +52,7 @@ keep legacy destination planning. Frost, Limited Commands and Event-required
 destinations retain their constraints. Staying in Britannia does not cross it.
 Accepted ordinary and free-Event choices survive durable save/resume.
 
-**Original bundle is now 27/50 closed (54%), 23 open.** Counts measure findings,
+**At that checkpoint: 27/50 closed (54%), 23 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.

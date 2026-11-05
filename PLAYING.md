@@ -16,6 +16,13 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+When Roman Besiege applies in Battle, choose the exact defending Citadel or
+Allied Tribe to remove. Ariovistus also offers a German Settlement. You may
+leave every piece by declining the removal. The prompt appears before Battle
+Losses, even if those Losses are zero or the Defender declared Retreat.
+Use `b`/`board` to inspect before choosing. Removing the Citadel preserves its
+normal halving for that Battle unless Ballistae cancels that protection.
+
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;
 Scouted pieces instead lose their marker and remain Revealed. You still pay

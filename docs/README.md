@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Besiege choice](reviews/besiege-choice-2026-11-04.md): named Roman
+  physical targets, optional decline, Citadel protection and durable replay.
+
+
 - [4 November March stay](reviews/march-stay-2026-11-04.md): paid origin hiding
   without movement, terminal/API choice, save/resume and compatibility evidence.
 

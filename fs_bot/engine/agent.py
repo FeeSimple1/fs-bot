@@ -18,6 +18,14 @@ typed response.
 
 Request kinds
 -------------
+- ``besiege_target`` — the Roman's optional physical removal (§4.2.3/A4.2.3)
+  immediately before Battle Losses. Request carries region, defender and
+  ``targets`` objects {piece_type, tribe}; a Settlement has tribe None.
+  Respond {"target": <one offered object>} or {"decline": True} to leave
+  every piece. Raw None or explicit use_default retains the existing NPC
+  type priority and deterministic Tribe identity. Durable human responses
+  require a legal selection, decline or explicit delegation.
+
 - ``raid_intimidate`` — A3.4.3 optional simultaneous Intimidate by the
   German Warbands that just Raided with Ariovistus. Request carries trusted
   region, raiders, max_removals, and physical target entries. Response is

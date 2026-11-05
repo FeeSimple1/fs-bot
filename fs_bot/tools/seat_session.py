@@ -124,6 +124,9 @@ def validate_response(state, request, response):
     if kind in ("council_selection", "council_choice"):
         from fs_bot.cards.council import validate_response as validate_council
         return validate_council(state, request, response)
+    if kind == 'besiege_target':
+        from fs_bot.engine.besiege_choice import validate_response as validate_besiege
+        return validate_besiege(state, request, response)
     if kind == "march_cohort":
         from fs_bot.engine.march_choices import validate_response as validate_cohort
         return validate_cohort(request, response)

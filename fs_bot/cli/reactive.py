@@ -67,6 +67,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             if kind == "diviciacus_pieces":
                 from fs_bot.cli.diviciacus import collect_pieces
                 return collect_pieces(state, faction, request, stdin, stdout)
+            if kind == 'besiege_target':
+                from fs_bot.cli.besiege import collect_besiege
+                return collect_besiege(state, faction, request, stdin, stdout)
             if kind == "march_cohort":
                 from fs_bot.cli.march_choices import collect_march_cohort
                 return collect_march_cohort(state, faction, request, stdin, stdout)

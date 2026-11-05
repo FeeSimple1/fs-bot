@@ -22,8 +22,13 @@ legacy controller plans. At that checkpoint the original bundle was 26/50 closed
 
 The [4 November March stay repair](docs/reviews/march-stay-2026-11-04.md)
 closes MARCH-HIDE-IN-PLACE: explicit empty routes select paid origins for their
-visibility procedure without movement. Current original progress is 27/50
+visibility procedure without movement. At that checkpoint original progress was 27/50
 closed (54%), 23 open.
+
+The [4 November Besiege repair](docs/reviews/besiege-choice-2026-11-04.md)
+closes BATTLE-BESIEGE-CHOICE with exact Roman physical targets, decline,
+terminal/durable requests and replay. Current original progress is 28/50 closed
+(56%), 22 open.
 
 ## Existing implementation
 
@@ -96,7 +101,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 27 of 50 closed (54%) and 23 open; these are finding counts, not
+now records 28 of 50 closed (56%) and 22 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

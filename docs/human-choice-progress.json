@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "518172beac3c5c348ad50fb6529ae89d81cd80f7",
-    "python_sha256": "9b50d0f5cc54ba02385b1647f76f41cea84ef48f8cb54a8a741162ed212441fb",
-    "python_files": 483,
+    "commit": "45568e3f98c21fd27e400d7177fe028e9837e02a",
+    "python_sha256": "fd297a94d10e34ff52875da001f4ba6f97e739e2b027e4846b2972d9bd2bddbe",
+    "python_files": 486,
     "working_tree_changes": true,
-    "note": "Explicit empty March routes close MARCH-HIDE-IN-PLACE. See reviews/march-stay-2026-11-04.md."
+    "note": "Physical Besiege target requests close BATTLE-BESIEGE-CHOICE. See reviews/besiege-choice-2026-11-04.md."
   },
   "total": 50,
-  "closed": 27,
-  "open": 23,
+  "closed": 28,
+  "open": 22,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -30,7 +30,8 @@
     "CMD-RAMPAGE-COUNT closes with exact human counts and source-required all-able NPC quantities; BATTLE-RAMPAGE-VICTIM and CV-PERSISTENCE remain open. See reviews/rampage-quantity-2026-11-04.md.",
     "CMD-SEIZE-TRIBES closes with exact ordinary dispersal subsets, all scarce-marker candidates, Forage-only and adapter migration. Native NPC selection remains supported. See reviews/seize-tribes-2026-11-04.md.",
     "CMD-BUILD-ORDER closes with exact region_order in both collectors and execution. Legacy controller and source-required NP passes remain supported. See reviews/build-order-2026-11-04.md.",
-    "MARCH-HIDE-IN-PLACE closes with paid stay choices, whole-origin hiding/Scouted handling, terminal/API support and durable acceptance. Missing-route planning and NPC priorities remain supported. See reviews/march-stay-2026-11-04.md."
+    "MARCH-HIDE-IN-PLACE closes with paid stay choices, whole-origin hiding/Scouted handling, terminal/API support and durable acceptance. Missing-route planning and NPC priorities remain supported. See reviews/march-stay-2026-11-04.md.",
+    "BATTLE-BESIEGE-CHOICE closes with exact Roman physical targets at the pre-Loss step, optional decline, terminal/durable support and live validation. Native NPC defaults remain supported. See reviews/besiege-choice-2026-11-04.md."
   ],
   "findings": [
     {
@@ -116,7 +117,9 @@
       "id": "BATTLE-BESIEGE-CHOICE",
       "title": "Besiege uses automatic target priority instead of Roman choice",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/besiege-choice-2026-11-04.md",
+      "disposition": "Roman chooses exact Citadel/Ally Tribe or German Settlement before Losses, with decline, live validation and durable replay."
     },
     {
       "id": "BATTLE-RAMPAGE-VICTIM",

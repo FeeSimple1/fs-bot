@@ -4,6 +4,16 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Physical Besiege target choice, 4 November 2026
+
+- Ask the Roman at the pre-Loss Besiege step to choose an exact Citadel/Ally
+  Tribe or German Settlement in Ariovistus, or decline the optional removal.
+- Preserve unselected allegiances, Citadel halving, Ballistae and legacy
+  non-player defaults; add terminal and durable pending-response support.
+- Validate both offered and live targets; preserve save/resume and replay.
+- Close BATTLE-BESIEGE-CHOICE: 28/50 original findings closed (56%), 22 open.
+  See the [report](docs/reviews/besiege-choice-2026-11-04.md).
+
 ## Unreleased — March hide in place, 4 November 2026
 
 - Accept explicit empty March routes as paid origin selections with whole-origin

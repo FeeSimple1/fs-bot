@@ -210,18 +210,24 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     # "Before and in addition to any Losses... the (Roman) Attacker may
     # automatically remove (Subdue) a Defending Citadel or Allied Tribe"
     # Ariovistus: also Settlements — A4.2.3
-    if (besiege_target is not None
-            and count_pieces(state, region, defending_faction, besiege_target) > 0):
-        besiege_piece = besiege_target
-        if besiege_piece == SETTLEMENT:
-            # A4.2.3: "may remove a Settlement instead of an Ally"
-            remove_piece(state, region, defending_faction, SETTLEMENT, 1)
+    selected_besiege = None
+    if besiege_target is not None:
+        if attacking_faction == ROMANS:
+            from fs_bot.engine.besiege_choice import choose_target
+            selected_besiege = choose_target(state, region, defending_faction, besiege_target)
         else:
-            remove_piece(state, region, defending_faction, besiege_piece, 1)
-            # Keep state["tribes"] in sync with the removed Ally/Citadel.
+            selected_besiege = {'piece_type': besiege_target, 'tribe': None}
+    if (selected_besiege is not None and count_pieces(
+            state, region, defending_faction, selected_besiege['piece_type']) > 0):
+        besiege_piece = selected_besiege['piece_type']
+        tribe = selected_besiege['tribe']
+        remove_piece(state, region, defending_faction, besiege_piece, 1)
+        if besiege_piece != SETTLEMENT:
             clear_allied_tribe(state, region, defending_faction,
-                               besiege_piece)
+                               besiege_piece, tribe=tribe)
         result["besiege"] = {"removed": besiege_piece}
+        if tribe is not None:
+            result['besiege']['tribe'] = tribe
 
     # ── Step 3: Attack ──
     from fs_bot.battle import elite

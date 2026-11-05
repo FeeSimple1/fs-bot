@@ -33,6 +33,7 @@ from fs_bot.rules_consts import (
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, ALL_SCENARIOS,
 )
 from fs_bot.state.setup import setup_scenario
+from fs_bot.state.setup_options import SETUP_OPTION_HELP, setup_option_values
 from fs_bot.engine.game_engine import (
     get_sop_factions, start_game, play_card, ActionRejected,
 )
@@ -226,6 +227,10 @@ def _parse_args(argv):
         help=("Use the optional Diviciacus Leader and replacement card 38 "
               "in an original scenario. Saved games retain this choice."),
     )
+    for key, help_text in SETUP_OPTION_HELP.items():
+        p.add_argument("--" + key.replace("_", "-"),
+                       action=argparse.BooleanOptionalAction, default=None,
+                       help=help_text + ". Saved games retain this choice.")
     p.add_argument(
         "--save", default=None, metavar="FILE",
         help="Autosave the game to FILE after every card.",
@@ -309,6 +314,14 @@ def main(argv=None, stdin=None, stdout=None):
             return 2
         card_edition = state.get("card_edition", "legacy")
         diviciacus_option = state.get("diviciacus_option", False)
+        setup_options = setup_option_values(state)
+        for key, saved_value in setup_options.items():
+            supplied = getattr(args, key)
+            if supplied is not None and supplied != saved_value:
+                stdout.write("Cannot change --" + key.replace("_", "-")
+                             + " when loading or replaying a game; "
+                             "start a new game to change it.\n")
+                return 2
         if (args.diviciacus_option is not None
                 and args.diviciacus_option != diviciacus_option):
             stdout.write("Cannot change --diviciacus-option when loading or "
@@ -335,7 +348,8 @@ def main(argv=None, stdin=None, stdout=None):
             state = setup_scenario(scenario, seed=seed,
                                    card_edition=card_edition,
                                    diviciacus_option=diviciacus_option,
-                                   human_factions=meta.get("setup_human_factions", ()))
+                                   human_factions=meta.get("setup_human_factions", ()),
+                                   **setup_options)
         elif state.get("interlude_completed") and GERMANS in faction_modes:
             # Older snapshots saved the original seats after the Interlude.
             faction_modes[ARVERNI] = faction_modes.pop(GERMANS)
@@ -375,10 +389,15 @@ def main(argv=None, stdin=None, stdout=None):
         meta["setup_human_factions"] = [
             f for f, mode in faction_modes.items() if mode == "human"
         ]
-        state = setup_scenario(scenario, seed=seed,
-                               card_edition=args.card_edition or "legacy",
-                               diviciacus_option=bool(args.diviciacus_option),
-                               human_factions=meta["setup_human_factions"])
+        try:
+            state = setup_scenario(
+                scenario, seed=seed, card_edition=args.card_edition or "legacy",
+                diviciacus_option=bool(args.diviciacus_option),
+                human_factions=meta["setup_human_factions"],
+                **{key: bool(getattr(args, key)) for key in SETUP_OPTION_HELP})
+        except ValueError as exc:
+            stdout.write(f"Cannot set up game: {exc}\n")
+            return 2
 
     initial_modes = dict(meta.get("initial_faction_modes") or faction_modes)
     if state.get("interlude_completed") and GERMANS not in initial_modes:
@@ -386,6 +405,7 @@ def main(argv=None, stdin=None, stdout=None):
     meta.update({"scenario": scenario, "seed": seed,
                  "card_edition": state.get("card_edition", "legacy"),
                  "diviciacus_option": state.get("diviciacus_option", False),
+                 **setup_option_values(state),
                  "initial_faction_modes": initial_modes,
                  "faction_modes": dict(faction_modes)})
     # Non-player factions = bots (the engine uses this for tiebreak;

@@ -43,6 +43,10 @@ Battle casualties now offer exact visibility and named Allied Tribes.
 Rampage targets now choose exact pieces and can mix removal with Retreat.
 [Repair and validation](docs/reviews/rampage-victims-2026-11-04.md).
 
+Sudden Frost, Even Initiative and the shorter Great Revolt are selectable
+at setup and retained through saves and replay.
+[Repair and validation](docs/reviews/setup-options-2026-11-04.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.
@@ -80,6 +84,11 @@ See [Playing](PLAYING.md) for timing, decisions, saves, and edition details.
 Original scenarios also support `--diviciacus-option`, independently of
 card edition. This replaces card 38 with O38 and enables the optional
 Diviciacus Leader rules. The choice is saved with the game.
+
+Additional setup flags are `--sudden-frost`, `--even-initiative` (except Pax
+Gallica?), and `--short-great-revolt` (Great Revolt only). Sudden Frost requires
+all players' agreement at setup. The same flags are available to assistant
+`init`; see [Playing](PLAYING.md) for their deck and timing effects.
 
 ## Documentation
 
@@ -154,7 +163,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**38 of 50 findings are closed (76%); 12 remain open** in the
+**39 of 50 findings are closed (78%); 11 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

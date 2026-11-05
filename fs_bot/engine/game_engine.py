@@ -136,6 +136,12 @@ def draw_card(state):
         raise IndexError("Deck is empty — cannot draw")
 
     card_id = deck.pop(0)
+    # §2.3.8 Sudden Frost: switch the two showing cards before any Event
+    # actions. Only Winter enters played history; the Event stays atop the
+    # draw deck for the next Year (or is left unplayed when the game ends).
+    if (state.get("sudden_frost") and not is_winter_card(card_id)
+            and deck and is_winter_card(deck[0])):
+        card_id, deck[0] = deck[0], card_id
     state["played_cards"].append(card_id)
     state["current_card"] = card_id
     # Bots read state["current_card_id"]; engine writes state["current_card"].
@@ -198,6 +204,8 @@ def is_frost(state):
     Returns:
         True if Frost is active.
     """
+    if state.get("sudden_frost"):
+        return False
     current = state["current_card"]
     upcoming = state["next_card"]
     if current is None or upcoming is None:

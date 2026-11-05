@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November setup options](reviews/setup-options-2026-11-04.md)
+  covers Sudden Frost, Even Initiative, short Great Revolt and saved replay.
+
 - [4 November Rampage victims](reviews/rampage-victims-2026-11-04.md)
   covers target-owned physical pieces, mixed dispositions and shared Retreat.
 

@@ -33,6 +33,7 @@ import tempfile
 
 import fs_bot.rules_consts as rc
 from fs_bot.state.setup import setup_scenario
+from fs_bot.state.setup_options import SETUP_OPTION_HELP, setup_option_values
 from fs_bot.state.serialize import save_game, load_game, encode, decode
 from fs_bot.engine.game_engine import (start_game, play_card, ACTION_EVENT,
                                        get_sop_factions, ActionRejected)
@@ -58,6 +59,8 @@ def cmd_init(args):
         setup_args["card_edition"] = args.card_edition
     if getattr(args, "diviciacus_option", False):
         setup_args["diviciacus_option"] = True
+    setup_args.update({key: getattr(args, key, False)
+                       for key in SETUP_OPTION_HELP if getattr(args, key, False)})
     st = setup_scenario(args.scenario, **setup_args)
     factions = set(get_sop_factions(st))
     if args.seat not in factions:
@@ -71,6 +74,7 @@ def cmd_init(args):
             "setup_human_factions": [args.seat],
             "card_edition": st.get("card_edition", "legacy"),
             "diviciacus_option": st.get("diviciacus_option", False),
+            **setup_option_values(st),
             "initial_faction_modes": {f: "human" if f == args.seat else "bot"
                                       for f in factions},
             "human_snapshots": encode(display.snapshots)}
@@ -253,7 +257,8 @@ def cmd_replay(args):
                    "seat": saved["origin_seat"],
                    "initial_seat": meta.get("initial_seat", saved["origin_seat"]),
                    "card_edition": meta.get("card_edition", "legacy"),
-                   "diviciacus_option": origin.get("diviciacus_option", False)}
+                   "diviciacus_option": origin.get("diviciacus_option", False),
+                   **setup_option_values(origin)}
     if "setup_human_factions" in meta:
         replay_meta["setup_human_factions"] = list(meta["setup_human_factions"])
     view = HumanTurnDisplay(sys.stdout)
@@ -302,6 +307,9 @@ def main(argv=None):
                     default="legacy")
     pi.add_argument("--diviciacus-option", action="store_true",
                     help="Enable the optional Leader in an original scenario")
+    for key, help_text in SETUP_OPTION_HELP.items():
+        pi.add_argument("--" + key.replace("_", "-"), action="store_true",
+                        help=help_text)
     pi.set_defaults(func=cmd_init)
     pp = sub.add_parser("play")
     pp.add_argument("--dir", default="llm_play")

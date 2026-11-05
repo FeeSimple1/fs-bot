@@ -253,6 +253,10 @@ def validate_state(state):
         # behind an unrelated arithmetic exception.
         return errors
     scenario = state["scenario"]
+    from fs_bot.state.setup_options import SETUP_OPTION_HELP
+    for key in SETUP_OPTION_HELP:
+        if key in state and type(state[key]) is not bool:
+            errors.append(f"{key} must be true or false")
     # The optional original-scenario Diviciacus and carried Interlude
     # components use exactly the same inventory limits as piece operations.
     from fs_bot.board.pieces import _get_caps

@@ -21,6 +21,26 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November printed setup options — WS-F08 closed
+
+The [setup-option repair](reviews/setup-options-2026-11-04.md) adds Sudden
+Frost, Even Initiative and the shorter Great Revolt to the setup API, terminal
+flags and assistant initialization. Exact deck composition, pre-action Winter
+switches, scenario restrictions and saved choices are validated. The Gallic War
+retains its explicit Interlude deck replacement. Standard setups retain their
+previous card order, RNG consumption and board hashes.
+
+**Original bundle is now 39/50 closed (78%), 11 open.** Shared-player ownership,
+ordinary Battle Retreat and other recorded findings remain open. Separate
+mechanics leads, two source questions, twelve provisional rulings and 34
+unverified inventory rows retain their dispositions.
+
+**8,533 tests pass**, including 68 new cases, with 545 focused tests passing.
+All 34 optional-setup games complete and audit cleanly. Ten standard NPC
+records/final hashes match the parent, mixed-seat results agree across hash
+seeds, and the historical 100-game balance guard passes its unchanged band.
+The report records source identity, protected inputs and raw evidence.
+
 ### 4 November Rampage victims — BATTLE-RAMPAGE-VICTIM closed
 
 The [Rampage victim repair](reviews/rampage-victims-2026-11-04.md) gives the target exact
@@ -31,7 +51,7 @@ failure. Host consent is collected once. Forced expansion Arverni removals
 retain their source priority. Terminal and durable sessions support physical
 selection, earlier accepted Regions, save/resume and deterministic replay.
 
-**Original bundle is now 38/50 closed (76%), 12 open.** Ordinary Battle Retreat
+**At that checkpoint, 38/50 were closed (76%), 12 open.** Ordinary Battle Retreat
 survivor choices remain open. Separate Circumvallation mechanics, the NPC
 Intimidate targeting lead, two source questions, twelve provisional rulings
 and 34 unverified inventory rows retain their recorded dispositions.

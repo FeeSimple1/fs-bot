@@ -331,6 +331,11 @@ def format_state_summary(state):
     lines.append(f"Cards 11/30/39/44/54: {card_edition_label(state)}")
     if state.get("diviciacus_option"):
         lines.append("Diviciacus Leader option: enabled (card O38)")
+    for key, label in (("sudden_frost", "Sudden Frost"),
+                       ("even_initiative", "Even Initiative (initial deck)"),
+                       ("short_great_revolt", "Short Great Revolt")):
+        if state.get(key):
+            lines.append(f"{label}: enabled")
     lines.append(SEP)
 
     # Cards

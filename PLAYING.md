@@ -199,6 +199,23 @@ This is separate from the five-card edition choice. It does not change the
 Gallic War Interlude's existing A38 replacement. The option cannot change
 when loading or replaying a game.
 
+Three other printed options are available as new-game flags, including when
+using the setup wizard. They also work with `llm_seat init`.
+
+| Flag | Effect | Availability |
+|---|---|---|
+| `--sudden-frost` | When Winter is exposed next, switch it with the current Event and conduct Winter immediately. The Event starts the next Year unless the game ends. | Any scenario, with every player's agreement at setup |
+| `--even-initiative` | Shuffle four first-symbol piles, deal equal numbers into a pool until it reaches or exceeds the needed count, then shuffle and deal the scenario's Events. | Every initial scenario except Pax Gallica? |
+| `--short-great-revolt` | Use 30 Events in six piles, with Winter shuffled into piles 3 and 6. | The Great Revolt only |
+
+Even Initiative selects 30 Events from a 32-card pool, 45 from a 48-card pool,
+or all 60 selected cards. The final partial selection can make the finished
+deck's initiative counts unequal. The Gallic War Interlude still explicitly
+replaces the first-half deck with its printed Pax Gallica? deck. Even
+Initiative applies to the initial deck, and Sudden Frost continues in the
+second half. The option flags are saved and cannot change during load or
+replay. Older saves select the standard rules for any absent option.
+
 ## How a turn works
 
 Each Event card shows the initiative order. When it is your turn the

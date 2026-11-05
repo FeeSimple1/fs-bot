@@ -75,7 +75,12 @@ At that checkpoint original progress was 37/50 closed (74%), 13 open.
 
 The [4 November Rampage victim repair](docs/reviews/rampage-victims-2026-11-04.md) closes
 BATTLE-RAMPAGE-VICTIM with exact pieces and mixed dispositions.
-Current original progress is 38/50 closed (76%), 12 open.
+At that checkpoint original progress was 38/50 closed (76%), 12 open.
+
+The [4 November setup-option repair](docs/reviews/setup-options-2026-11-04.md)
+closes WS-F08 with Sudden Frost, Even Initiative and short Great Revolt
+configuration, saved origins and deterministic replay.
+Current original progress is 39/50 closed (78%), 11 open.
 
 ## Existing implementation
 
@@ -148,7 +153,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 38 of 50 closed (76%) and 12 open; these are finding counts, not
+now records 39 of 50 closed (78%) and 11 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

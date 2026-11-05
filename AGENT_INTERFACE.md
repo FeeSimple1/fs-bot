@@ -32,6 +32,24 @@ enumerate options and dry-run a candidate move before committing it.
 
 ---
 
+## Optional setup
+
+`setup_scenario` accepts boolean keyword arguments `sudden_frost`,
+`even_initiative`, and `short_great_revolt`, all defaulting to `False`.
+Non-booleans and scenario-invalid combinations raise `ValueError` before
+setup. Both terminal startup and `llm_seat init` expose the matching flags
+`--sudden-frost`, `--even-initiative`, and `--short-great-revolt`.
+
+Sudden Frost requires all players' agreement and switches a showing Winter
+with its preceding Event before any Event action or carnyx activation. The
+unplayed Event remains atop the deck for the next Year. Even Initiative
+balances the pool before final selection and is unavailable in Pax Gallica?.
+The 30-Event/two-Winter short deck is Great Revolt only. See
+[Playing](PLAYING.md) for precise deck composition and the explicit Gallic War
+Interlude deck replacement. Enabled selections are saved in state and origin
+snapshots. Metadata records all three booleans. Missing legacy fields mean
+`False`. Default setup preserves the previous RNG consumption and board hash.
+
 ## 1. Top-level turns — `decision_func`
 
 `run_game(state, decision_func, execute=True)` calls

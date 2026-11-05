@@ -78,6 +78,12 @@ Region, explicitly decline, or explicitly request the default. A missing
 answer stays pending. A complete turn plan may instead supply
 `details.trade_region`; see the [agent interface](AGENT_INTERFACE.md).
 
+New sessions can add `--sudden-frost`, `--even-initiative` (except Pax
+Gallica?), and `--short-great-revolt` (Great Revolt only) to `llm_seat init`.
+Sudden Frost requires all players' agreement at setup. Saved origins retain
+these choices for resume and replay. The [playing guide](PLAYING.md) explains
+the exact deck effects and Gallic War Interlude behavior.
+
 ## Quick start (for the assistant)
 
 You are about to PLAY one faction against the built-in bots.

@@ -73,6 +73,37 @@ from fs_bot.rules_consts import (
 from fs_bot.state.state_schema import build_initial_state, validate_state
 from fs_bot.board.pieces import place_piece, remove_piece, PieceError
 from fs_bot.board.control import refresh_all_control
+from fs_bot.state.setup_options import validate_setup_options
+
+
+def _select_events(state, all_events, num_events):
+    """Select the Event pool per A Setup's Even Initiative option.
+
+    Deal complete four-card rounds before shuffling the selected pool. A
+    30/45-Event deck therefore draws from 32/48 balanced cards, respectively.
+    The ordinary path retains its original shuffle and RNG consumption.
+    """
+    rng = state["rng"]
+    if not state.get("even_initiative"):
+        rng.shuffle(all_events)
+        return all_events[:num_events]
+
+    from fs_bot.cards.card_data import get_faction_order
+    factions = (ROMANS, GERMANS if state["scenario"] in ARIOVISTUS_SCENARIOS
+                else ARVERNI, AEDUI, BELGAE)
+    piles = {faction: [] for faction in factions}
+    for card in all_events:
+        first = get_faction_order(card, state["scenario"])[0]
+        if first == ARVERNI and state["scenario"] in ARIOVISTUS_SCENARIOS:
+            first = GERMANS
+        piles[first].append(card)
+    for pile in piles.values():
+        rng.shuffle(pile)
+    pool = []
+    for index in range((num_events + 3) // 4):
+        pool.extend(piles[faction][index] for faction in factions)
+    rng.shuffle(pool)
+    return pool[:num_events]
 
 
 def _set_tribe_allied(state, tribe, faction):
@@ -161,10 +192,7 @@ def _build_base_deck(state, num_events, winter_positions):
     # All base event card numbers
     all_events = [CARD_O38 if card == 38 and state.get("diviciacus_option") else card
                   for card in CARD_NAMES_BASE]
-    rng.shuffle(all_events)
-
-    # Take only the needed events
-    events = all_events[:num_events]
+    events = _select_events(state, all_events, num_events)
 
     # Deal into piles of 5
     num_piles = num_events // 5
@@ -229,10 +257,7 @@ def _build_ariovistus_deck(state, num_events, winter_positions):
 
     # The full deck is base_kept + ario_cards (should be 72 total)
     all_events = base_kept + ario_cards
-    rng.shuffle(all_events)
-
-    # Take only the needed events
-    events = all_events[:num_events]
+    events = _select_events(state, all_events, num_events)
 
     # Deal into piles of 5
     num_piles = num_events // 5
@@ -722,7 +747,10 @@ def _setup_great_revolt(state):
     # --- Deck ---
     # Deal 45 Events into 9 piles of 5.
     # Winter in 3rd, 6th, 9th piles.
-    _build_base_deck(state, 45, [3, 6, 9])
+    if state.get("short_great_revolt"):
+        _build_base_deck(state, 30, [3, 6])
+    else:
+        _build_base_deck(state, 45, [3, 6, 9])
 
 
 # ============================================================================
@@ -928,7 +956,9 @@ _SETUP_FUNCTIONS = {
 
 
 def setup_scenario(scenario, seed=None, *, card_edition="legacy",
-                   diviciacus_option=False, human_factions=()):
+                   diviciacus_option=False, human_factions=(),
+                   sudden_frost=False, even_initiative=False,
+                   short_great_revolt=False):
     """Set up a scenario and return the initial game state.
 
     Args:
@@ -936,6 +966,9 @@ def setup_scenario(scenario, seed=None, *, card_edition="legacy",
         seed: Optional RNG seed for deterministic replay.
         card_edition: Saved selection for the five optional revised cards.
         diviciacus_option: Use O38 and its Leader in an original scenario.
+        sudden_frost: Use §2.3.8's option agreed by all players at setup.
+        even_initiative: Use A Setup's balanced first-symbol card selection.
+        short_great_revolt: Use 30 Events and two Winters in The Great Revolt.
         human_factions: Factions assigned to humans for this new game. A
             sole human Belgae seat receives Ambiorix in The Great Revolt.
             Multiple human factions do not establish player ownership.
@@ -950,11 +983,18 @@ def setup_scenario(scenario, seed=None, *, card_edition="legacy",
     if scenario not in _SETUP_FUNCTIONS:
         raise ValueError(f"Unknown scenario: {scenario}")
 
+    options = dict(sudden_frost=sudden_frost, even_initiative=even_initiative,
+                   short_great_revolt=short_great_revolt)
+    validate_setup_options(scenario, options)
+
     from fs_bot.cards.edition import validate_card_edition
     validate_card_edition(card_edition)
     state = build_initial_state(scenario, seed=seed,
                                 diviciacus_option=diviciacus_option)
     state["card_edition"] = card_edition
+    # Omit disabled fields to preserve standard-game board hashes and old
+    # replay signatures. Their saved meaning is False, including legacy saves.
+    state.update({key: value for key, value in options.items() if value})
     _SETUP_FUNCTIONS[scenario](state)
 
     # The Great Revolt, "Players and Victory": a player running only the

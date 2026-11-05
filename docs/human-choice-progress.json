@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "70587e632ab35cc1f7f8a44a0f0e8eefb81be23a",
-    "python_sha256": "2747a7a23f8ffb0b5769caf2ef0c1b39fdb98f730076a142644ad3c7a720f987",
-    "python_files": 509,
+    "commit": "7f13084de6658176a5ee10020f9345d9cbcd49e2",
+    "python_sha256": "ac4fcb5a00dda78552ba079ee794aaa432211199e5d176629bb9e008ab0e3cf8",
+    "python_files": 511,
     "working_tree_changes": true,
-    "note": "Exact Rampage victim pieces and mixed dispositions close BATTLE-RAMPAGE-VICTIM. See reviews/rampage-victims-2026-11-04.md."
+    "note": "Printed setup options close WS-F08. See reviews/setup-options-2026-11-04.md."
   },
   "total": 50,
-  "closed": 38,
-  "open": 12,
+  "closed": 39,
+  "open": 11,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -452,7 +452,9 @@
       "id": "WS-F08",
       "title": "Three printed setup options have no selection or implementation",
       "severity": "low",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/setup-options-2026-11-04.md",
+      "disposition": "Selectable Sudden Frost, Even Initiative and short Great Revolt with exact deck algorithms, scenario restrictions, terminal/durable support, saved origins and deterministic replay. Standard setup hashes and RNG consumption retained."
     },
     {
       "id": "WS-F09",

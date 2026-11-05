@@ -18,6 +18,12 @@ typed response.
 
 Request kinds
 -------------
+- ``harvest_legions`` — Pax first-Harvest placement, including after Interlude.
+  Request carries count and legal_regions; respond with
+  {"placements": {region: positive_count, ...}} totaling exactly count.
+  No decline: all Winter Track Legions must be placed in Belgica.
+  Raw None or explicit default preserves the established concentrated placement.
+
 - ``besiege_target`` — the Roman's optional physical removal (§4.2.3/A4.2.3)
   immediately before Battle Losses. Request carries region, defender and
   ``targets`` objects {piece_type, tribe}; a Settlement has tribe None.

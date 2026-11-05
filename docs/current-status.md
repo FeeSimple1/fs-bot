@@ -21,6 +21,29 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Harvest Legions — WS-F03 closed
+
+The [Harvest repair](reviews/harvest-legions-2026-11-04.md) lets Romans allocate
+all actual Winter Track Legions among any Belgica Regions, with a terminal
+prompt and durable save/resume. Placement uses the piece helper rather than
+changing map counters directly. Invalid/partial/outside allocations remain
+pending. Legacy concentration and its result shape remain supported.
+A related source correction releases a positive expedition reserve at the first
+post-Interlude Harvest; the old path recorded only the empty-box exception and
+never released nonempty reserves. WS-F02's expedition/marker choices remain open.
+
+**Original bundle is now 29/50 closed (58%), 21 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**7,963 tests pass**, including 46 new cases; 250 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. The 100-game
+balance check passes against the unchanged historical baseline and 15-point
+band. See the report for the frozen source digest and evidence bounds.
+
+
 ### 4 November Besiege physical targets — BATTLE-BESIEGE-CHOICE closed
 
 The [Besiege repair](reviews/besiege-choice-2026-11-04.md) asks the Roman for
@@ -31,7 +54,7 @@ and save/resume. Only the chosen Tribe's allegiance clears. Zero Losses,
 Retreat declarations, Citadel halving and Ballistae retain their printed behavior.
 Native NPC defaults remain supported.
 
-**Original bundle is now 28/50 closed (56%), 22 open.** Counts measure findings,
+**At that checkpoint: 28/50 closed (56%), 22 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.

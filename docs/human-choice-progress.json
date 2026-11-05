@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "45568e3f98c21fd27e400d7177fe028e9837e02a",
-    "python_sha256": "fd297a94d10e34ff52875da001f4ba6f97e739e2b027e4846b2972d9bd2bddbe",
-    "python_files": 486,
+    "commit": "d1ecfcda97d8a582500742b5776832f619c6754e",
+    "python_sha256": "a18ff10f42b7be8f71f9531f4fe131019d65cfccb7c429332ce720fab1535a81",
+    "python_files": 489,
     "working_tree_changes": true,
-    "note": "Physical Besiege target requests close BATTLE-BESIEGE-CHOICE. See reviews/besiege-choice-2026-11-04.md."
+    "note": "Exact first-Harvest allocations close WS-F03; positive post-Interlude reserve release is a related mechanics repair. See reviews/harvest-legions-2026-11-04.md."
   },
   "total": 50,
-  "closed": 28,
-  "open": 22,
+  "closed": 29,
+  "open": 21,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -31,7 +31,8 @@
     "CMD-SEIZE-TRIBES closes with exact ordinary dispersal subsets, all scarce-marker candidates, Forage-only and adapter migration. Native NPC selection remains supported. See reviews/seize-tribes-2026-11-04.md.",
     "CMD-BUILD-ORDER closes with exact region_order in both collectors and execution. Legacy controller and source-required NP passes remain supported. See reviews/build-order-2026-11-04.md.",
     "MARCH-HIDE-IN-PLACE closes with paid stay choices, whole-origin hiding/Scouted handling, terminal/API support and durable acceptance. Missing-route planning and NPC priorities remain supported. See reviews/march-stay-2026-11-04.md.",
-    "BATTLE-BESIEGE-CHOICE closes with exact Roman physical targets at the pre-Loss step, optional decline, terminal/durable support and live validation. Native NPC defaults remain supported. See reviews/besiege-choice-2026-11-04.md."
+    "BATTLE-BESIEGE-CHOICE closes with exact Roman physical targets at the pre-Loss step, optional decline, terminal/durable support and live validation. Native NPC defaults remain supported. See reviews/besiege-choice-2026-11-04.md.",
+    "WS-F03 closes with exact mandatory Belgica allocations, real Winter Track transfers, terminal/durable support and replay. Related positive post-Interlude release is repaired; WS-F02 remains open for expedition/marker choices. See reviews/harvest-legions-2026-11-04.md."
   ],
   "findings": [
     {
@@ -380,7 +381,9 @@
       "id": "WS-F03",
       "title": "Pax first-Harvest Legion placement is automatically concentrated in one Region",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/harvest-legions-2026-11-04.md",
+      "disposition": "Roman chooses exact mandatory first-Harvest allocations among any Belgica Regions; real reserve transfers and durable replay. Positive post-Interlude release repaired separately."
     },
     {
       "id": "WS-F04",

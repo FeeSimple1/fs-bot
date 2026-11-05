@@ -470,6 +470,7 @@ and Ally identity gaps recorded separately by the audit remain open.
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag; copy entries intact; hard pieces still roll |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
+| `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
 | `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
@@ -608,6 +609,24 @@ does not replace `current_card` or use the upcoming card. If no preceding
 Event can be recovered, the compatibility fallback uses card 63/A63's
 scenario-appropriate order, then the game-run faction. See the
 [ruling register](docs/provisional-rulings.md#pr-06) for scope and status.
+
+`harvest_legions` goes to the Roman seat at the start of the first Pax Gallica
+Harvest, including the corresponding first Harvest after the Gallic War
+Interlude if the expedition left Legions on the Winter Track. Choose any
+allocation among the three Belgica Regions, including an empty Region or one
+with enemy Control. For example, `{"placements":{"Morini":1,"Nervii":2}}`.
+Omit zero entries; counts must be positive integers and total the entire offered
+count. This is required placement, so `decline`, partial totals, booleans and
+outside Regions are invalid. The request reflects actual Winter Track supply;
+an empty box makes no request and creates no Legions.
+
+Invalid/missing durable input remains pending across rollback and save/resume.
+Raw None or explicit `use_default` keeps the existing concentrated NPC choice:
+the most Roman Legions plus Auxilia, with sorted-first tie breaking. The default
+result keeps `{region,legions}`; a human allocation returns `{placements,legions}`
+in `phases.harvest_belgica_legions`. CLI allocation prompts support board
+inspection. Each Legion transfers from the Winter box through the piece helper;
+it is not taken from the Senate's Legions Track or Available.
 
 `besiege_target` goes to the Roman seat immediately before Battle Losses when
 Besiege applies. It offers each physical defending Citadel or Ally disc by

@@ -1,0 +1,920 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "d1ecfcda97d8a582500742b5776832f619c6754e",
+    "dirty": true,
+    "source_sha256": "a18ff10f42b7be8f71f9531f4fe131019d65cfccb7c429332ce720fab1535a81"
+  },
+  "python_files": 489,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "targeted_passed": 250,
+  "new_tests": 46,
+  "parent_proof": {
+    "behavioral_failures": 3,
+    "controls_passed": 3,
+    "deselected": 40
+  },
+  "bots": {
+    "games": 10,
+    "all_completed_and_audited": true,
+    "all_gameplay_fields_and_final_hashes_equal": true,
+    "excluded": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "d1ecfcda97d8a582500742b5776832f619c6754e",
+      "dirty": true,
+      "source_sha256": "a18ff10f42b7be8f71f9531f4fe131019d65cfccb7c429332ce720fab1535a81",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 247,
+    "event_turns": 77,
+    "events_ok": 75,
+    "partial": 0,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "5dd20da48e8e672b85654f641f6c17d22945141edf1962c89cbdf9c4e84151cb",
+    "records": [
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 34,
+        "event_turns": 12,
+        "events_ok": 11,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "a93cf5e6567c42d3"
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 35,
+        "event_turns": 12,
+        "events_ok": 12,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "255198c8b90e2501"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 12,
+        "event_turns": 4,
+        "events_ok": 4,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "f32b3d1f0f45dabf"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 2,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 42,
+        "event_turns": 8,
+        "events_ok": 8,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "2b2d353fdc890419"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 17,
+        "event_turns": 6,
+        "events_ok": 6,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "3fd3a9131abd9d92"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 20,
+        "event_turns": 8,
+        "events_ok": 8,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "e18795c44034687d"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 1,
+        "seats": [
+          "Germans",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 40,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "f2b25632cc05c4b7"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 2,
+        "seats": [
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 14,
+        "event_turns": 6,
+        "events_ok": 6,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "d304e3f8a86c685e"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 26,
+        "event_turns": 10,
+        "events_ok": 9,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "786978a3c4b6d6c6"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 2,
+        "seats": [
+          "Germans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 7,
+        "event_turns": 2,
+        "events_ok": 2,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "57f6ca4359831469"
+      }
+    ]
+  },
+  "mixed_complete_json_equal": true,
+  "hash_seeds": [
+    0,
+    987
+  ],
+  "mixed_executions_including_replay": 40,
+  "original_progress": {
+    "closed": 29,
+    "total": 50,
+    "percent": 58,
+    "open": 21
+  },
+  "remaining": "CV-PERSISTENCE, BATTLE-RAMPAGE-VICTIM, BE-09 and the NPC Intimidate targeting lead remain open",
+  "balance_smoke": {
+    "games": 100,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "scenarios": [
+      "Pax Gallica?",
+      "Reconquest of Gaul",
+      "The Great Revolt",
+      "Ariovistus",
+      "The Gallic War"
+    ],
+    "band_percentage_points": 15,
+    "maximum_absolute_delta_percentage_points": 15,
+    "historical_baseline_winner_changes": 35,
+    "baseline_unchanged": true,
+    "passed": true,
+    "results": [
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 1,
+        "winner": "Romans",
+        "cards": 24
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 2,
+        "winner": "Romans",
+        "cards": 25
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 3,
+        "winner": "Romans",
+        "cards": 40
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 4,
+        "winner": "Aedui",
+        "cards": 27
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 5,
+        "winner": "Aedui",
+        "cards": 56
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 6,
+        "winner": "Romans",
+        "cards": 27
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 7,
+        "winner": "Romans",
+        "cards": 25
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 8,
+        "winner": "Romans",
+        "cards": 26
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 9,
+        "winner": "Romans",
+        "cards": 23
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 10,
+        "winner": "Romans",
+        "cards": 24
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 11,
+        "winner": "Belgae",
+        "cards": 42
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 12,
+        "winner": "Aedui",
+        "cards": 71
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 13,
+        "winner": "Romans",
+        "cards": 27
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 14,
+        "winner": "Arverni",
+        "cards": 26
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 15,
+        "winner": "Belgae",
+        "cards": 42
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 16,
+        "winner": "Aedui",
+        "cards": 25
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 17,
+        "winner": "Romans",
+        "cards": 26
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 18,
+        "winner": "Romans",
+        "cards": 23
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 19,
+        "winner": "Arverni",
+        "cards": 70
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 20,
+        "winner": "Romans",
+        "cards": 38
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 1,
+        "winner": "Romans",
+        "cards": 13
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 2,
+        "winner": "Belgae",
+        "cards": 30
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 3,
+        "winner": "Aedui",
+        "cards": 63
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 4,
+        "winner": "Romans",
+        "cards": 32
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 5,
+        "winner": "Aedui",
+        "cards": 11
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 6,
+        "winner": "Romans",
+        "cards": 15
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 7,
+        "winner": "Belgae",
+        "cards": 62
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 8,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 9,
+        "winner": "Romans",
+        "cards": 28
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 10,
+        "winner": "Belgae",
+        "cards": 47
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 11,
+        "winner": "Belgae",
+        "cards": 63
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 12,
+        "winner": "Romans",
+        "cards": 27
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 13,
+        "winner": "Aedui",
+        "cards": 43
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 14,
+        "winner": "Aedui",
+        "cards": 13
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 15,
+        "winner": "Romans",
+        "cards": 31
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 16,
+        "winner": "Aedui",
+        "cards": 16
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 17,
+        "winner": "Aedui",
+        "cards": 12
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 18,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 19,
+        "winner": "Romans",
+        "cards": 60
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 20,
+        "winner": "Aedui",
+        "cards": 62
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 1,
+        "winner": "Arverni",
+        "cards": 46
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 2,
+        "winner": "Arverni",
+        "cards": 43
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 3,
+        "winner": "Belgae",
+        "cards": 45
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 4,
+        "winner": "Aedui",
+        "cards": 45
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 5,
+        "winner": "Aedui",
+        "cards": 46
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 6,
+        "winner": "Romans",
+        "cards": 43
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 7,
+        "winner": "Romans",
+        "cards": 47
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 8,
+        "winner": "Belgae",
+        "cards": 31
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 9,
+        "winner": "Romans",
+        "cards": 46
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 10,
+        "winner": "Belgae",
+        "cards": 29
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 11,
+        "winner": "Arverni",
+        "cards": 47
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 12,
+        "winner": "Aedui",
+        "cards": 43
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 13,
+        "winner": "Arverni",
+        "cards": 43
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 14,
+        "winner": "Belgae",
+        "cards": 46
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 15,
+        "winner": "Arverni",
+        "cards": 47
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 16,
+        "winner": "Aedui",
+        "cards": 43
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 17,
+        "winner": "Arverni",
+        "cards": 12
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 18,
+        "winner": "Arverni",
+        "cards": 43
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 19,
+        "winner": "Aedui",
+        "cards": 45
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 20,
+        "winner": "Arverni",
+        "cards": 43
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 1,
+        "winner": "Romans",
+        "cards": 46
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 2,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 3,
+        "winner": "Belgae",
+        "cards": 45
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 4,
+        "winner": "Romans",
+        "cards": 15
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 5,
+        "winner": "Germans",
+        "cards": 46
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 6,
+        "winner": "Romans",
+        "cards": 15
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 7,
+        "winner": "Germans",
+        "cards": 47
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 8,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 9,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 10,
+        "winner": "Belgae",
+        "cards": 47
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 11,
+        "winner": "Romans",
+        "cards": 15
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 12,
+        "winner": "Aedui",
+        "cards": 43
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 13,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 14,
+        "winner": "Germans",
+        "cards": 46
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 15,
+        "winner": "Germans",
+        "cards": 47
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 16,
+        "winner": "Aedui",
+        "cards": 43
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 17,
+        "winner": "Romans",
+        "cards": 47
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 18,
+        "winner": "Romans",
+        "cards": 43
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 19,
+        "winner": "Romans",
+        "cards": 31
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 20,
+        "winner": "Romans",
+        "cards": 43
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 1,
+        "winner": "Belgae",
+        "cards": 88
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 2,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 3,
+        "winner": "Romans",
+        "cards": 70
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 4,
+        "winner": "Romans",
+        "cards": 15
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 5,
+        "winner": "Belgae",
+        "cards": 71
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 6,
+        "winner": "Romans",
+        "cards": 15
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 7,
+        "winner": "Belgae",
+        "cards": 71
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 8,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 9,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 10,
+        "winner": "Romans",
+        "cards": 72
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 11,
+        "winner": "Romans",
+        "cards": 15
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 12,
+        "winner": "Romans",
+        "cards": 43
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 13,
+        "winner": "Romans",
+        "cards": 14
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 14,
+        "winner": "Aedui",
+        "cards": 71
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 15,
+        "winner": "Belgae",
+        "cards": 73
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 16,
+        "winner": "Aedui",
+        "cards": 43
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 17,
+        "winner": "Aedui",
+        "cards": 105
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 18,
+        "winner": "Arverni",
+        "cards": 69
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 19,
+        "winner": "Romans",
+        "cards": 31
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 20,
+        "winner": "Romans",
+        "cards": 101
+      }
+    ]
+  },
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "7963",
+    "time": "218.926",
+    "timestamp": "2026-11-05T03:35:26.951280+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "parent_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "3",
+    "skipped": "0",
+    "tests": "6",
+    "time": "0.616",
+    "timestamp": "2026-11-05T03:30:09.186205+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "python": "3.12.14"
+}

@@ -16,6 +16,13 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+At the first Pax Gallica Harvest, distribute the three Winter Track Legions
+among any Belgica Regions: Atrebates, Morini and Nervii. You may split them or
+place all together, regardless of existing Roman pieces or enemy Control.
+All offered Legions must be placed; `b`/`board` remains available. The same choice
+applies at the first Harvest after the Gallic War Interlude when its expedition
+left Legions in the Winter box. An empty box places none.
+
 When Roman Besiege applies in Battle, choose the exact defending Citadel or
 Allied Tribe to remove. Ariovistus also offers a German Settlement. You may
 leave every piece by declining the removal. The prompt appears before Battle

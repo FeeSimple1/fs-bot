@@ -216,6 +216,12 @@ def make_random_reactive(seats, rng):
                        for defender in sorted(defenders)]
             region, defender = rng.choice(choices)
             return {"region": region, "defender": defender}
+        if kind == 'harvest_legions':
+            placements = {}
+            for _ in range(request['count']):
+                region = rng.choice(request['legal_regions'])
+                placements[region] = placements.get(region, 0) + 1
+            return {'placements': placements}
         if kind == 'besiege_target':
             return {'target': rng.choice(request['targets'])}
         if kind == "raid_intimidate":

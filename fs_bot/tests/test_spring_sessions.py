@@ -163,8 +163,10 @@ def test_file_frontend_spring_pending_invalid_save_resume_and_replay(
     meta = {'seat': rc.ROMANS, 'scenario': state['scenario'], 'seed': 13,
             'human_snapshots': encode(display.snapshots)}
     session = SeatSession(state, meta, [], display)
-    # Quarters is the earlier human decision in this actual Winter.
-    session.data['queue'] = [{'response': {'use_default': True}}]
+    # Explicitly delegate Quarters and the mandatory first-Harvest allocation
+    # before testing the later Spring choice in this actual Winter.
+    session.data['queue'] = [{'response': {'use_default': True}},
+                             {'response': {'use_default': True}}]
     save_game(state, directory / 'save.json', meta=meta, log=[])
     args = SimpleNamespace(dir=str(directory))
     assert llm_seat.cmd_play(args) == 0
@@ -190,6 +192,7 @@ def test_file_frontend_spring_pending_invalid_save_resume_and_replay(
     assert get_leader_in_region(resolved, rc.PROVINCIA, rc.ROMANS) == rc.SUCCESSOR
     choices = [entry for entry in final_log if entry.get('reactive') == 'spring_leader']
     assert len(choices) == 1 and decode(choices[0]['response']) == {'region': rc.PROVINCIA}
+    assert len([entry for entry in final_log if entry.get('reactive') == 'harvest_legions']) == 1
     assert not final_meta['assistant_session']['journal']
     args.output_dir = str(tmp_path / 'replayed')
     assert llm_seat.cmd_replay(args) == 0

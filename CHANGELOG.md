@@ -4,6 +4,18 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — First-Harvest Legion allocation, 4 November 2026
+
+- Let Romans allocate all first-Harvest Winter Track Legions among any Belgica
+  Regions, with terminal board inspection and durable response validation.
+- Transfer the actual reserve through `place_piece(from_winter_track=True)`;
+  preserve legacy NPC concentration and the default result shape.
+- Apply the Pax Harvest after Interlude to a positive expedition reserve;
+  previously only the empty-box exception was recorded, stranding those Legions.
+- Close WS-F03: 29/50 original findings closed (58%), 21 open. The related
+  reserve release is a mechanics follow-up; WS-F02 remains open.
+  See the [report](docs/reviews/harvest-legions-2026-11-04.md).
+
 ## Unreleased — Physical Besiege target choice, 4 November 2026
 
 - Ask the Roman at the pre-Loss Besiege step to choose an exact Citadel/Ally

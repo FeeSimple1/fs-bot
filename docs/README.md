@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Harvest Legions](reviews/harvest-legions-2026-11-04.md): exact
+  Belgica allocations, post-Interlude reserve release, census and replay.
+
+
 - [4 November Besiege choice](reviews/besiege-choice-2026-11-04.md): named Roman
   physical targets, optional decline, Citadel protection and durable replay.
 

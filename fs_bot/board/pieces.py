@@ -321,7 +321,7 @@ def _ensure_faction_pieces_structure(state, region, faction):
 
 
 def place_piece(state, region, faction, piece_type, count=1, *,
-                from_legions_track=False, from_fallen=False,
+                from_legions_track=False, from_fallen=False, from_winter_track=False,
                 leader_name=None, piece_state=None):
     """Place piece(s) from Available (or Legions track) onto the map.
 
@@ -333,6 +333,7 @@ def place_piece(state, region, faction, piece_type, count=1, *,
         count: Number of pieces to place (default 1).
         from_legions_track: If True, place Legions from track (not Available).
         from_fallen: If True, place Legions from Fallen box.
+        from_winter_track: If True, take Roman Legions from the Winter box.
         leader_name: For Leaders, specify which leader (CAESAR, etc.).
         piece_state: For flippable pieces, HIDDEN or REVEALED.
             Defaults to HIDDEN per §1.4.3.
@@ -346,6 +347,9 @@ def place_piece(state, region, faction, piece_type, count=1, *,
     _validate_region(state, region)
     _validate_visibility(piece_state)
     _validate_piece_exists_in_scenario(state, faction, piece_type)
+    if from_winter_track and (piece_type != LEGION or faction != ROMANS
+                              or from_fallen or from_legions_track):
+        raise PieceError("Winter Track placement requires Roman Legions and one source")
     f_pieces = state["spaces"][region].get("pieces", {}).get(faction, {})
 
     if piece_type == LEADER:
@@ -372,7 +376,12 @@ def place_piece(state, region, faction, piece_type, count=1, *,
     if piece_type == LEGION:
         if faction != ROMANS:
             raise PieceError("Only Romans have Legions")
-        if from_fallen:
+        if from_winter_track:
+            available = state.get("winter_track_legions", 0)
+            if available < count:
+                raise PieceError(f"Only {available} Winter Track Legions, need {count}")
+            state["winter_track_legions"] -= count
+        elif from_fallen:
             if state.get("fallen_legions", 0) < count:
                 raise PieceError(
                     f"Only {state.get('fallen_legions', 0)} Fallen Legions "
@@ -393,7 +402,7 @@ def place_piece(state, region, faction, piece_type, count=1, *,
                     break
         else:
             raise PieceError(
-                "Must specify from_legions_track=True or from_fallen=True "
+                "Must specify from_legions_track=True, from_fallen=True or from_winter_track=True "
                 "when placing Legions — Legions are not in Available (§1.4.1)"
             )
         f_pieces = _ensure_faction_pieces_structure(state, region, faction)

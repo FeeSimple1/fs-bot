@@ -1257,13 +1257,9 @@ def run_winter_round(state, is_final=False,
     # before normal harvest.
     action_windows.window(state, 'winter_harvest')
     if consume_first_harvest_no_belgica:
-        # Per A2.1: "If there are no Legions on the Winter Track, do
-        # not place any in Belgica during that Harvest Phase." The
-        # Pax Gallica 1st-Winter rule otherwise would place 3 Legions
-        # from the Winter Track in Belgica — for the Gallic War
-        # post-Interlude path, that placement is conditional on
-        # winter_track_legions > 0. We just record the exception in
-        # the result.
+        # A2.1 repeats the Pax first Harvest after Interlude, except
+        # that an empty Winter Track places no Legions. Consume the
+        # one-shot gate even when empty; placement uses its reserve below.
         state["first_harvest_after_interlude_pending"] = False
         result["phases"]["harvest_special"] = {
             "no_belgica_legions_if_track_empty": True,
@@ -1272,24 +1268,16 @@ def run_winter_round(state, is_final=False,
         }
 
     n_bel = fws.get("harvest_place_legions_in_belgica", 0)
+    if consume_first_harvest_no_belgica:
+        # A2.1 repeats the Pax first Harvest after Interlude, except when
+        # the expedition left no Legions in this box. The old flag only
+        # recorded the exception and never released a positive reserve.
+        n_bel = state.get("winter_track_legions", 0)
     if n_bel:
-        # "At the start of that Harvest Phase, the Romans place the
-        # three Legions from the Winter Track into any Belgica
-        # Region(s)." NP default (documented): all into the Belgica
-        # Region with the most Roman pieces (sorted-first on ties).
-        from fs_bot.rules_consts import BELGICA_REGIONS
-        from fs_bot.board.pieces import count_pieces as _cp
-        k = min(n_bel, state.get("winter_track_legions", 0))
-        if k > 0:
-            dest = max(sorted(BELGICA_REGIONS),
-                       key=lambda r: _cp(state, r, ROMANS, LEGION)
-                       + _cp(state, r, ROMANS, AUXILIA))
-            pieces = state["spaces"][dest]["pieces"].setdefault(ROMANS, {})
-            pieces[LEGION] = pieces.get(LEGION, 0) + k
-            state["winter_track_legions"] -= k
-            refresh_all_control(state)
-            result["phases"]["harvest_belgica_legions"] = {
-                "region": dest, "legions": k}
+        from fs_bot.engine.harvest_legions import place_harvest_legions
+        placement = place_harvest_legions(state, n_bel)
+        if placement is not None:
+            result["phases"]["harvest_belgica_legions"] = placement
     result["phases"]["harvest"] = harvest_phase(state)
 
     # Cards 63/A63 grant any two paid Commands/SAs, with explicit human

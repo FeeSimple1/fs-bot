@@ -851,7 +851,8 @@ def _constrain_bot_action(bot_action, allowed, *, state=None, faction=None,
 @free_action
 def _resolve_free_command(state, faction, allowed_regions=None,
                           exclude_commands=None, limited=False, with_sa=False,
-                          _planner=None, _consult=True, allow_decline=True):
+                          _planner=None, _consult=True, allow_decline=True,
+                          _event_context=None):
     """Execute one *free* Command for ``faction`` using its real flowchart.
 
     Event cards that grant "a free Command" (e.g. card 9 Mons Cevenna, card 70
@@ -878,6 +879,12 @@ def _resolve_free_command(state, faction, allowed_regions=None,
                "allowed_regions": sorted(allowed_regions) if allowed_regions is not None else None,
                "max_regions": 1 if limited else None, "with_sa": with_sa,
                "free": True}
+    if _event_context is not None:
+        # Trusted Event presentation only; it cannot override Command scope,
+        # cost or SA legality. Private cards travel only to this beneficiary.
+        for key in ('card_id', 'private_cards', 'alternative'):
+            if key in _event_context:
+                request[key] = _event_context[key]
     if not allow_decline:
         request["allow_decline"] = False
     # A caller may already have accepted an explicit interface default (for
@@ -2317,19 +2324,17 @@ def _resolve_card64_belgae_rally(state):
 
 
 def _resolve_card35_roman(state, faction):
-    """Card 35 Gallic Shouts (unshaded): "Romans may look at the next 2
-    facedown cards and either execute a free Limited Command or be Eligible."
+    """Let Romans see their private two-card peek before choosing the benefit.
 
-    The beneficiary is the ROMANS regardless of who executed the Event (the
-    card's Tip contemplates another Faction executing it *for* the Romans).
-    The peek lets the Romans pick the better option. We model the choice by
-    outcome: take the free Limited Command if it does something; otherwise take
-    the alternative and be Eligible (the peek is the information that drives
-    this either/or — it has no board effect of its own). "Be Eligible" is
-    recorded in state["stay_eligible"] so the Sec.2.3.6 reset cannot clobber
-    it when the Romans themselves executed the Event."""
+    The beneficiary is Rome regardless of the Event executor. Keep the legacy
+    free Limited Command / Eligible fallback, and give human interfaces the
+    actual facedown cards plus an explicit label for the Eligible alternative.
+    """
     from fs_bot.rules_consts import ELIGIBLE, ROMANS
-    res = _resolve_free_command(state, ROMANS, limited=True)
+    from fs_bot.cards.council import private_cards
+    res = _resolve_free_command(state, ROMANS, limited=True, _event_context={
+        'card_id': 35, 'private_cards': private_cards(state),
+        'alternative': 'eligible'})
     if res.get("executed"):
         return [{"free_action": "free_command", "flag": "card_35",
                  "faction": ROMANS, "result": res}]
@@ -2337,7 +2342,8 @@ def _resolve_card35_roman(state, faction):
     state.setdefault("stay_eligible", []).append(ROMANS)
     return [{"free_action": "stay_eligible", "flag": "card_35",
              "executed": True, "faction": ROMANS,
-             "note": "no effective Limited Command; chose to be Eligible"}]
+             "note": ("Romans chose to be Eligible" if res.get('reason') == 'free Command declined'
+                      else "no effective Limited Command; chose to be Eligible")}]
 
 
 def _resolve_card35_gallic(state, faction):

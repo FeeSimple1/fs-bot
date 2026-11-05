@@ -18,6 +18,12 @@ typed response.
 
 Request kinds
 -------------
+- Card 35 unshaded's Roman ``free_action`` request carries card_id 35,
+  private_cards (the next two facedown cards, after the face-up next card),
+  and alternative "eligible". Choose a legal free Limited Command, or
+  {"decline": True} to take Eligible. Only the Roman beneficiary receives
+  that private presentation, regardless of who executed the Event.
+
 - ``harvest_legions`` — Pax first-Harvest placement, including after Interlude.
   Request carries count and legal_regions; respond with
   {"placements": {region: positive_count, ...}} totaling exactly count.

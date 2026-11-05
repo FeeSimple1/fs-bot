@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Gallic Shouts private peek, 4 November 2026
+
+- Put the actual next two facedown cards, text and initiative metadata into
+  the Roman Card 35 unshaded decision, excluding the already face-up next card.
+- Present the private briefing in the terminal before its free Limited
+  Command/Become Eligible choice; share Council's existing card rendering.
+- Keep private data out of public receipts/modifiers/board snapshots, preserve
+  native defaults and deck/RNG state, and cover pending save/resume/replay.
+- Close BE-10: 30/50 original findings closed (60%), 20 open.
+  See the [report](docs/reviews/gallic-shouts-peek-2026-11-04.md).
+
 ## Unreleased — First-Harvest Legion allocation, 4 November 2026
 
 - Let Romans allocate all first-Harvest Winter Track Legions among any Belgica

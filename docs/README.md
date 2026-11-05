@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Gallic Shouts peek](reviews/gallic-shouts-peek-2026-11-04.md):
+  Roman-owned private cards before the benefit choice, console and replay.
+
+
 - [4 November Harvest Legions](reviews/harvest-legions-2026-11-04.md): exact
   Belgica allocations, post-Interlude reserve release, census and replay.
 

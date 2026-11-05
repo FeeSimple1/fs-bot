@@ -32,8 +32,12 @@ terminal/durable requests and replay. At that checkpoint original progress was 2
 
 The [4 November Harvest repair](docs/reviews/harvest-legions-2026-11-04.md)
 closes WS-F03 with exact Belgica allocations and repairs positive post-Interlude
-reserves remaining stranded. Current original progress is 29/50 closed (58%),
+reserves remaining stranded. At that checkpoint original progress was 29/50 closed (58%),
 21 open; Interlude expedition ownership itself remains WS-F02.
+
+The [4 November Gallic Shouts peek repair](docs/reviews/gallic-shouts-peek-2026-11-04.md)
+closes BE-10 with Roman-owned private card data before the benefit decision.
+Current original progress is 30/50 closed (60%), 20 open.
 
 ## Existing implementation
 
@@ -106,7 +110,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 29 of 50 closed (58%) and 21 open; these are finding counts, not
+now records 30 of 50 closed (60%) and 20 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

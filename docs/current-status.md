@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Gallic Shouts peek — BE-10 closed
+
+The [peek repair](reviews/gallic-shouts-peek-2026-11-04.md) supplies the actual
+next two facedown cards in the Roman Card 35 unshaded request, with active
+edition/scenario text and initiative metadata. The face-up next card is excluded.
+The terminal presents the briefing before a free Limited Command or Become
+Eligible. Only the Roman beneficiary receives that private presentation;
+public Event receipts/modifiers and board snapshots do not acquire hidden data.
+Deck order and RNG are untouched. Durable missing/invalid input remains pending
+across rollback/save/resume; Council's private rendering is preserved.
+
+**Original bundle is now 30/50 closed (60%), 20 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**7,998 tests pass**, including 35 new cases; 120 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. See the report
+for the frozen source digest and evidence bounds.
+
+
 ### 4 November Harvest Legions — WS-F03 closed
 
 The [Harvest repair](reviews/harvest-legions-2026-11-04.md) lets Romans allocate
@@ -32,7 +54,7 @@ A related source correction releases a positive expedition reserve at the first
 post-Interlude Harvest; the old path recorded only the empty-box exception and
 never released nonempty reserves. WS-F02's expedition/marker choices remain open.
 
-**Original bundle is now 29/50 closed (58%), 21 open.** Counts measure findings,
+**At that checkpoint: 29/50 closed (58%), 21 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.

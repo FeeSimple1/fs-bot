@@ -16,6 +16,13 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+Gallic Shouts unshaded privately shows the Roman player the next two facedown
+cards, including text and initiative information, before the free Limited
+Command/Become Eligible choice. The already face-up next card is excluded.
+This benefit belongs to Romans even if another Faction played the Event.
+The console labels the alternative **Become Eligible**; `b`/`board` remains
+available, and the peek neither draws nor rearranges cards.
+
 At the first Pax Gallica Harvest, distribute the three Winter Track Legions
 among any Belgica Regions: Atrebates, Morini and Nervii. You may split them or
 place all together, regardless of existing Roman pieces or enemy Control.

@@ -84,6 +84,10 @@ def collect_free_action(state, faction, request, stdin, stdout):
     if request.get('morasses_ambush'):
         from fs_bot.cli.morasses import collect_morasses_battle
         return collect_morasses_battle(state, faction, request, stdin, stdout)
+    if 'private_cards' in request:
+        from fs_bot.cli.private_cards import show_private_cards
+        source = 'Gallic Shouts' if request.get('card_id') == 35 else 'Event'
+        show_private_cards(faction, request['private_cards'], source, stdout)
     actor = request.get("acting_faction", faction)
     message = f"{faction}: Event grants a free action."
     if actor != faction:
@@ -91,7 +95,9 @@ def collect_free_action(state, faction, request, stdin, stdout):
     while True:
         options = [("Plan the action", "plan"), ("Use bot default", "default")]
         if request.get("allow_decline", True):
-            options.append(("Decline", "decline"))
+            label = ("Become Eligible" if request.get('alternative') == 'eligible'
+                     else "Decline")
+            options.append((label, "decline"))
         with inspect_board(state, stdout):
             choice = prompt_choice(stdin, stdout, message, options)
         if choice != "plan":

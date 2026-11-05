@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "d1ecfcda97d8a582500742b5776832f619c6754e",
-    "python_sha256": "a18ff10f42b7be8f71f9531f4fe131019d65cfccb7c429332ce720fab1535a81",
-    "python_files": 489,
+    "commit": "6e1b04d53c639d7503925d57dafdff22b01e4471",
+    "python_sha256": "61faa08aa203d0af35e2c934093898fc5c5ed6836c100643d3fc21c3b097bdd8",
+    "python_files": 491,
     "working_tree_changes": true,
-    "note": "Exact first-Harvest allocations close WS-F03; positive post-Interlude reserve release is a related mechanics repair. See reviews/harvest-legions-2026-11-04.md."
+    "note": "Actual Roman private-card presentation closes BE-10. See reviews/gallic-shouts-peek-2026-11-04.md."
   },
   "total": 50,
-  "closed": 29,
-  "open": 21,
+  "closed": 30,
+  "open": 20,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -32,7 +32,8 @@
     "CMD-BUILD-ORDER closes with exact region_order in both collectors and execution. Legacy controller and source-required NP passes remain supported. See reviews/build-order-2026-11-04.md.",
     "MARCH-HIDE-IN-PLACE closes with paid stay choices, whole-origin hiding/Scouted handling, terminal/API support and durable acceptance. Missing-route planning and NPC priorities remain supported. See reviews/march-stay-2026-11-04.md.",
     "BATTLE-BESIEGE-CHOICE closes with exact Roman physical targets at the pre-Loss step, optional decline, terminal/durable support and live validation. Native NPC defaults remain supported. See reviews/besiege-choice-2026-11-04.md.",
-    "WS-F03 closes with exact mandatory Belgica allocations, real Winter Track transfers, terminal/durable support and replay. Related positive post-Interlude release is repaired; WS-F02 remains open for expedition/marker choices. See reviews/harvest-legions-2026-11-04.md."
+    "WS-F03 closes with exact mandatory Belgica allocations, real Winter Track transfers, terminal/durable support and replay. Related positive post-Interlude release is repaired; WS-F02 remains open for expedition/marker choices. See reviews/harvest-legions-2026-11-04.md.",
+    "BE-10 closes with actual Roman-owned next-two-facedown data before the existing benefit choice, private console rendering and durable replay. Native defaults and deck/RNG state remain unchanged. See reviews/gallic-shouts-peek-2026-11-04.md."
   ],
   "findings": [
     {
@@ -232,7 +233,9 @@
       "id": "BE-10",
       "title": "Gallic Shouts does not present its private two-card peek",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/gallic-shouts-peek-2026-11-04.md",
+      "disposition": "Actual next two facedown cards, active text and initiative metadata go only to the Roman benefit request before choosing; terminal and durable replay supported."
     },
     {
       "id": "BE-11",

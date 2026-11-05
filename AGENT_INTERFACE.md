@@ -610,6 +610,27 @@ Event can be recovered, the compatibility fallback uses card 63/A63's
 scenario-appropriate order, then the game-run faction. See the
 [ruling register](docs/provisional-rulings.md#pr-06) for scope and status.
 
+Card 35 unshaded sends its Roman beneficiary a normal `free_action` /
+`event_command` request with additive presentation fields: `card_id:35`,
+`alternative:"eligible"`, and `private_cards`. Each private card contains
+`card_id,title,text,faction_order,np_symbols,is_winter,has_carnyx_trigger`, using
+the active scenario and card edition. The already face-up `next_card` is
+excluded: live deck entries 1 and 2 are the two facedown cards, with fewer
+entries reported near deck end. Winter is identified without invented Event
+text. Reading does not draw, reveal publicly, reorder or consume RNG.
+
+After reading, submit a legal free Limited Command (one origin/Region, no SA),
+or `{"decline":true}` to take the existing Become Eligible alternative.
+`{"use_default":true}` retains the established bot choice. The terminal prints
+this private briefing before the choice and labels that alternative **Become
+Eligible**. Requests go to Romans regardless of who played the Event. Private
+card data belongs in the Roman request and trusted session journal; public
+Event results, modifiers and board snapshots do not acquire it. The legacy
+Boolean `card_35_roman_peek` receipt is unchanged and contains no card data.
+Existing raw agents receive additive request fields; historical logs retain
+their revision-specific meaning. Missing/malformed durable input remains
+pending through rollback/save/resume; accepted requests and choices replay.
+
 `harvest_legions` goes to the Roman seat at the start of the first Pax Gallica
 Harvest, including the corresponding first Harvest after the Gallic War
 Interlude if the expedition left Legions on the Winter Track. Choose any

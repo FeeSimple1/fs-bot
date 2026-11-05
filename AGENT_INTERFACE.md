@@ -128,7 +128,27 @@ reference. March plans additionally accept exact per-origin `routes`
 ({origin: [region, ...]}), per-origin subset `groups`
 ({origin: {piece_type: count, "Leader": bool}}), and §3.3.2
 `extra_groups` ([{origin, route, group}] — further groups from the
-post-departure remainder of an origin). The Roman Build and Scout
+post-departure remainder of an origin).
+
+For an origin that stays in place, supply an explicit empty route in
+`details.routes` (or `details.march_plan.routes`):
+
+```json
+{"command":"March","sa":"No SA","details":{"origins":["Morini"],"destinations":[],"routes":{"Morini":[]}}}
+```
+
+This selects and pays for Morini, runs its normal whole-origin visibility
+procedure, and moves no pieces. No moving-group allocation or Harassment
+choice is needed. The result has `executed: true`, `stayed_origins: ["Morini"]`
+and an empty `marches` list. Mixed moving/staying origins use their selected
+order and share the origin Resource budget. An extra moving group from the
+same origin does not add cost or repeat its visibility flip. Missing routes
+retain their legacy destination-planning behavior; they do not imply a stay.
+Frost and Limited Command restrictions still apply. Event-required destinations
+reject an empty route; unrestricted free March may stay at no Resource cost.
+Staying in Britannia does not itself enter or leave it for the SA prohibition.
+
+The Roman Build and Scout
 Special Abilities accept player plans (`build_plan`
 {forts, subdue, allies, region_order} and `scout_plan` {auxilia_moves,
 scout_targets}); without one, the bots' flowchart plans run instead.

@@ -4225,9 +4225,10 @@ def _collect_march_moves(state, faction, bot_action):
     plan = details.get("march_plan") or details
     if "explicit_moves" in plan:
         return list(plan["explicit_moves"]), []
-    origins, destinations = plan.get("origins"), plan.get("destinations")
+    origins, destinations = plan.get("origins"), plan.get("destinations", [])
+    routes = plan.get("routes") or {}
     if not (isinstance(origins, list) and isinstance(destinations, list)
-            and origins and destinations):
+            and origins and (destinations or any(routes.get(o) == [] for o in origins))):
         moves = plan_expand_march_moves(state, faction, plan)
         if plan.get("allowed_origins") is not None:
             moves = [m for m in moves if m["origin"] in plan["allowed_origins"]]
@@ -4252,6 +4253,12 @@ def _collect_march_moves(state, faction, bot_action):
             available = {pt: (value if cap.get(pt) else None) if pt == LEADER
                          else min(value or 0, int(cap.get(pt, 0) or 0))
                          for pt, value in available.items()}
+        # An explicit empty route selects the origin solely for its mandatory
+        # visibility procedure (§§3.2.2, 3.3.2, A3.4.2). A missing route still
+        # uses the legacy destination chooser; never infer a stay from failure.
+        if origin in routes and routes[origin] == []:
+            moves.append({"origin": origin, "path": [], "stay": True})
+            continue
         allowance = _max_steps_for_group(state, origin, faction, available)
         if max_steps is not None:
             allowance = min(allowance, max_steps)
@@ -4290,7 +4297,7 @@ def _select_affordable_march_moves(state, faction, moves, *, free=False):
     budget = state["resources"].get(faction, 0)
     for move in moves:
         origin, path = move.get("origin"), move.get("path") or []
-        if (origin not in playable or not path or
+        if (origin not in playable or (not path and move.get("stay") is not True) or
                 any(dest not in playable or get_adjacency_type(src, dest) is None
                     for src, dest in zip([origin] + path, path))):
             errors.append({"origin": origin, "error": "invalid March route"})
@@ -4363,7 +4370,7 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
                          moving_only=False):
     """Bill origins once, before moving; a threat-March SA runs after payment.
 
-    Only affordable origins with an actual mobile group and adjacent route
+    Only affordable origins with a mobile group and an adjacent route or explicit stay
     are selected. Multiple groups/steps never incur additional origin fees.
     Free Event Commands and base-game German movement remain free.
     """
@@ -4375,7 +4382,7 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
     if total_cost:
         state["resources"][faction] -= total_cost
     sa_result = before_move() if selected and before_move is not None else None
-    marched = []
+    marched, stayed = [], []
     flipped_origins = set()
     for move in selected:
         origin = move["origin"]
@@ -4384,16 +4391,20 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
                                            group_cap=move.get("group"),
                                            flipped_origins=flipped_origins,
                                            moving_only=moving_only)
+            if move.get("stay") is True and not move["path"]:
+                stayed.append(origin)
             if final != origin:
                 entry = {k: v for k, v in move.items() if k not in ("path", "group")}
                 entry["final_region"] = final
                 marched.append(entry)
         except _EXEC_ERRORS as exc:
             errors.append({"origin": origin, "error": str(exc)})
-    result = {"executed": bool(marched), "command": _CMD_MARCH,
+    result = {"executed": bool(marched or stayed), "command": _CMD_MARCH,
               "marches": marched, "deferred_origins": list(dict.fromkeys(deferred)),
               "errors": errors, "total_cost": total_cost, "origin_costs": costs}
-    if not marched:
+    if stayed:
+        result["stayed_origins"] = list(dict.fromkeys(stayed))
+    if not marched and not stayed:
         result["reason"] = "nothing marchable within available Resources or legal routes"
     if sa_result is not None:
         result["sa_execution"] = sa_result

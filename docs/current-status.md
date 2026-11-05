@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November March hide in place — MARCH-HIDE-IN-PLACE closed
+
+The [March repair](reviews/march-stay-2026-11-04.md) accepts explicit empty
+routes and offers a terminal stay choice. An affordable selected origin pays
+its March cost and runs whole-origin hiding/Scouted handling without moving.
+Results distinguish `stayed_origins` from actual `marches`; missing routes
+keep legacy destination planning. Frost, Limited Commands and Event-required
+destinations retain their constraints. Staying in Britannia does not cross it.
+Accepted ordinary and free-Event choices survive durable save/resume.
+
+**Original bundle is now 27/50 closed (54%), 23 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**7,880 tests pass**, including 40 new cases; 203 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. See the report
+for the frozen source digest and evidence bounds.
+
+
 ### 4 November player Build ordering — CMD-BUILD-ORDER closed
 
 The [Build repair](reviews/build-order-2026-11-04.md) adds exact `region_order`
@@ -30,7 +51,7 @@ stable. Legacy plans and the source-required §8.8.1 NP passes remain supported.
 Malformed orders are rejected before an accompanying Command; pending turn and
 Event SA responses survive rollback and save/resume.
 
-**Original bundle is now 26/50 closed (52%), 24 open.** This counts findings,
+**At that checkpoint: 26/50 closed (52%), 24 open.** This counts findings,
 not effort or complete rules compliance. CV-PERSISTENCE, full Rampage victim
 choices, NPC Intimidate targeting, two source questions, twelve provisional
 rulings and 34 unverified inventory rows retain their separate dispositions.

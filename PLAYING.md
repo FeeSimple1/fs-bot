@@ -16,6 +16,14 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
+the origin without moving a group. All its Revealed Auxilia or Warbands hide;
+Scouted pieces instead lose their marker and remain Revealed. You still pay
+that origin's normal March cost, doubled by Devastation as usual. No group
+quantity or Harassment prompt follows for that stay. You can combine staying
+origins with moving origins; Frost still prohibits ordinary March. Events
+requiring a specific destination offer movement routes only.
+
 For Roman Build, pick Regions in the order you want to resolve them. The
 planner completes each Region before moving to the next: an optional Fort,
 then either Subdue or place one Roman Ally. Resources, Control and Supply

@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — March hide in place, 4 November 2026
+
+- Accept explicit empty March routes as paid origin selections with whole-origin
+  visibility handling and no movement, moving cohort or Harassment rolls.
+- Offer a terminal stay choice, preserve missing-route legacy behavior and
+  report successful selections in `stayed_origins`.
+- Preserve Frost, Limited Command, free-action Region/destination constraints,
+  once-per-origin costs and Scouted handling; allow an SA with a stay in Britannia.
+- Close MARCH-HIDE-IN-PLACE: 27/50 original findings closed (54%), 23 open.
+  See the [report](docs/reviews/march-stay-2026-11-04.md).
+
 ## Unreleased — Player Build Region order, 4 November 2026
 
 - Preserve selected Region order in both Build collectors and execution using

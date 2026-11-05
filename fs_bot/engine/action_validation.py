@@ -209,7 +209,10 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
         for part in parts:
             details = part.get("details") or {}
             plan = details.get("march_plan") or details
-            regions = list(plan.get("origins") or [])
+            routes = plan.get("routes") or {}
+            # Staying in Britannia does not enter or leave it (§4.1.3).
+            regions = [r for r in plan.get("origins") or []
+                       if routes.get(r) != []]
             regions.extend(plan.get("destinations") or [])
             for route in (plan.get("routes") or {}).values():
                 regions.extend(route)

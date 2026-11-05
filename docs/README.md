@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November March stay](reviews/march-stay-2026-11-04.md): paid origin hiding
+  without movement, terminal/API choice, save/resume and compatibility evidence.
+
+
 - [4 November Build ordering](reviews/build-order-2026-11-04.md): explicit player
   Region order, legacy NP compatibility, replay and validation evidence.
 

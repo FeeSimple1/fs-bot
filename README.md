@@ -7,6 +7,9 @@ assistant-controlled seats, and reproducible automated games.
 Roman Build now preserves the player's selected Region order, including
 Ally/Subdue before a Fort elsewhere. [Repair and validation](docs/reviews/build-order-2026-11-04.md).
 
+March also supports paying for an origin and hiding its pieces without moving.
+[Stay-in-place repair and validation](docs/reviews/march-stay-2026-11-04.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.
@@ -118,7 +121,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**26 of 50 findings are closed (52%); 24 remain open** in the
+**27 of 50 findings are closed (54%); 23 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

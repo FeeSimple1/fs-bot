@@ -273,7 +273,8 @@ def _collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
 def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
     origins_c = [r for r in _regions_with_pieces(state, faction)
                  if r not in excluded and _mobile_count(state, r, faction) > 0
-                 and _march_routes(state, r, faction)]
+                 and (state.get("_cli_required_destinations") is None
+                      or _march_routes(state, r, faction))]
     if not origins_c:
         return None
     origins = _pick_regions(stdin, stdout, "March OUT of which Region(s)?",
@@ -289,22 +290,27 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
     routes = {}
     for o in origins:
         candidates = _march_routes(state, o, faction)
-        if not candidates:
+        options = [(" → ".join(path), path) for path in candidates]
+        if state.get("_cli_required_destinations") is None:
+            options.append(("Stay here (hide pieces; pay March cost)", []))
+        if not options:
             continue
         route = prompt_choice(stdin, stdout,
                               f"  March the {o} group along which route?",
-                              [(" → ".join(path), path) for path in candidates])
+                              options)
         routes[o] = route
+        if not route:
+            continue
         d = route[-1]
         if d not in destinations:
             destinations.append(d)
-    if not destinations:
-        return None
     # Sec.3.2.2: the marching group is the player's own selection -- offer a
     # subset per origin (all-mobile remains the default).
     groups = {}
     from fs_bot.board.pieces import get_leader_in_region
     for o in origins:
+        if routes[o] == []:
+            continue  # No moving group to allocate; the whole origin hides.
         cap = {}
         partial = False
         for pt in (LEGION, AUXILIA, WARBAND):
@@ -341,7 +347,7 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
             state, faction, o, routes[o], cap, stdin, stdout)
         if routes[o] is None:
             return None
-    destinations = list(dict.fromkeys(route[-1] for route in routes.values()))
+    destinations = list(dict.fromkeys(route[-1] for route in routes.values() if route))
     plan = {"origins": origins, "destinations": destinations,
             "routes": routes}
     if groups:

@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "56a99cbf30f5692778b6371971940c3aaeff2a17",
-    "python_sha256": "1b860ce3d2df175c359dfedb25b016d0965f7efbb195804909e958738fcd1f81",
-    "python_files": 482,
+    "commit": "518172beac3c5c348ad50fb6529ae89d81cd80f7",
+    "python_sha256": "9b50d0f5cc54ba02385b1647f76f41cea84ef48f8cb54a8a741162ed212441fb",
+    "python_files": 483,
     "working_tree_changes": true,
-    "note": "Explicit player Build Region order closes CMD-BUILD-ORDER. See reviews/build-order-2026-11-04.md."
+    "note": "Explicit empty March routes close MARCH-HIDE-IN-PLACE. See reviews/march-stay-2026-11-04.md."
   },
   "total": 50,
-  "closed": 26,
-  "open": 24,
+  "closed": 27,
+  "open": 23,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -29,7 +29,8 @@
     "CMD-INTIMIDATE-TRIBE closes with named physical disc choices in ordinary, Raid-linked and A45 Intimidate; Circumvallation group tracking and the NPC pre-Battle targeting lead remain open separately. See reviews/intimidate-tribes-2026-11-04.md.",
     "CMD-RAMPAGE-COUNT closes with exact human counts and source-required all-able NPC quantities; BATTLE-RAMPAGE-VICTIM and CV-PERSISTENCE remain open. See reviews/rampage-quantity-2026-11-04.md.",
     "CMD-SEIZE-TRIBES closes with exact ordinary dispersal subsets, all scarce-marker candidates, Forage-only and adapter migration. Native NPC selection remains supported. See reviews/seize-tribes-2026-11-04.md.",
-    "CMD-BUILD-ORDER closes with exact region_order in both collectors and execution. Legacy controller and source-required NP passes remain supported. See reviews/build-order-2026-11-04.md."
+    "CMD-BUILD-ORDER closes with exact region_order in both collectors and execution. Legacy controller and source-required NP passes remain supported. See reviews/build-order-2026-11-04.md.",
+    "MARCH-HIDE-IN-PLACE closes with paid stay choices, whole-origin hiding/Scouted handling, terminal/API support and durable acceptance. Missing-route planning and NPC priorities remain supported. See reviews/march-stay-2026-11-04.md."
   ],
   "findings": [
     {
@@ -133,7 +134,9 @@
       "id": "MARCH-HIDE-IN-PLACE",
       "title": "March requires movement and cannot only hide at a selected origin",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/march-stay-2026-11-04.md",
+      "disposition": "Explicit empty routes select paid origins for hiding without moving; terminal stay choice and durable turn/Event acceptance."
     },
     {
       "id": "BE-01",

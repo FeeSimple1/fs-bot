@@ -3839,17 +3839,17 @@ class TestHumanExecutionPath:
     ``player_action`` (human), so a mixed human/bot game resolves human turns
     through the same machinery — Item 4."""
 
-    def _player_seize(self, region):
+    def _player_seize(self, region, tribes):
         return {"action": "command", "player_action": {
             "command": "Seize", "regions": [region], "sa": "No SA",
-            "sa_regions": [], "details": {"disperse_regions": [region]}}}
+            "sa_regions": [], "details": {"disperse_tribes": {region: tribes}}}}
 
     def test_human_seize_plan_executes(self):
         st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=3)
         region = _first_dispersible_region(st)
         assert region is not None
         before = count_dispersed_on_map(st)
-        res = execute_decision(st, ROMANS, self._player_seize(region))
+        res = execute_decision(st, ROMANS, self._player_seize(region, get_dispersible_tribes(st, region)))
         assert res["executed"] is True
         assert res["command"] == "Seize"
         assert count_dispersed_on_map(st) == before + res["tribes_dispersed_total"]

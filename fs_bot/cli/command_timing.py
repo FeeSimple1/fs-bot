@@ -3,7 +3,7 @@
 from fs_bot import rules_consts as rc
 from fs_bot.cli.action_windows import planning_copy, prepare, inspect_board
 from fs_bot.cli.display import HumanTurnDisplay
-from fs_bot.cli.menus import prompt_choice, prompt_yes_no
+from fs_bot.cli.menus import prompt_choice
 
 
 def collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
@@ -99,7 +99,7 @@ def collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
 def collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
     from fs_bot.board.pieces import count_pieces
     from fs_bot.cli.human_plan import _playable_regions, _pick_regions
-    from fs_bot.commands.seize import get_dispersible_tribes, calculate_forage
+    from fs_bot.commands.seize import get_dispersible_tribes, calculate_forage, count_dispersed_on_map
     sim = planning_copy(state)
     stdout.write('Seize planning reserves Dispersed markers and estimates Forage. '
                  'Rally checks and Harassment are resolved during execution; '
@@ -112,7 +112,7 @@ def collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
         return None
     picked = _pick_regions(stdin, stdout, 'Seize in which Region(s)?', candidates,
                            single=single, max_regions=state.get('_cli_command_max_regions'))
-    regions, dispersals, carried, stages = [], [], [], {}
+    regions, dispersals, carried, stages = [], {}, [], {}
     for region in picked:
         sim, timing = prepare(sim, faction, stdin, stdout, stage='seize_region',
                               region=region, index=len(regions))
@@ -120,13 +120,20 @@ def collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
         view.before_decision(sim, faction)
         if not count_pieces(sim, region, faction):
             continue
-        tribes = get_dispersible_tribes(sim, region)
+        tribes = get_dispersible_tribes(sim, region, limit_to_markers=False)
+        markers = rc.MAX_DISPERSED_MARKERS - count_dispersed_on_map(sim)
+        chosen = []
         with inspect_board(sim, stdout):
-            disperse = bool(tribes) and prompt_yes_no(stdin, stdout,
-                f'Disperse Subdued Tribes in {region}?', default=True)
-        chosen = tribes if disperse else []
-        if disperse:
-            dispersals.append(region)
+            while tribes and markers:
+                tribe = prompt_choice(stdin, stdout,
+                    f'Disperse which Tribe in {region}? ({markers} markers available)',
+                    [(t, t) for t in tribes] + [('Finish Dispersal (Forage still occurs)', None)])
+                if tribe is None:
+                    break
+                chosen.append(tribe)
+                tribes.remove(tribe)
+                markers -= 1
+        dispersals[region] = chosen
         if carried:
             stages[f'seize_region:{len(regions)}'] = carried
         regions.append(region)
@@ -137,7 +144,7 @@ def collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
             sim['tribes'][tribe]['status'] = rc.DISPERSED
         sim['resources'][faction] = min(rc.MAX_RESOURCES,
             sim['resources'][faction] + calculate_forage(sim, region, chosen))
-    details = {'_regions': regions, 'disperse_regions': dispersals}
+    details = {'_regions': regions, 'disperse_tribes': dispersals}
     if stages:
         details['stage_timing_actions'] = stages
     if carried:

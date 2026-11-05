@@ -385,7 +385,10 @@ texts and changes since your previous decision. Type **`b`** or **`board`**
 at a menu or yes/no prompt to inspect the full board, including piece
 states, Tribes, markers, available forces, and active capabilities.
 Planning displays are labelled as previews; inspecting them does not alter
-the live game. Seize planning reserves markers and estimates Forage, while
+the live game. For Seize, choose the exact Subdued Tribes to Disperse, or
+finish without choosing any to Forage only. You may choose any legal Tribe
+even when only one marker remains; a selected Tribe cannot be chosen twice.
+Seize planning reserves markers across your ordered Regions and estimates Forage, while
 Rally checks and Harassment resolve during execution. Later decisions use
 the actual changes, including intervening Leader entry.
 

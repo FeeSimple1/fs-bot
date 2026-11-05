@@ -795,8 +795,12 @@ def _constrain_bot_action(bot_action, allowed, *, state=None, faction=None,
         if not regs:
             return None
         ba["regions"] = regs
-        d["disperse_regions"] = [r for r in (d.get("disperse_regions") or [])
-                                 if r in allowed]
+        if 'disperse_tribes' in d:
+            d['disperse_tribes'] = {r: tribes for r, tribes in d['disperse_tribes'].items()
+                                    if r in allowed}
+        else:
+            d["disperse_regions"] = [r for r in (d.get("disperse_regions") or [])
+                                     if r in allowed]
     elif cmd == _CMD_MARCH:
         if state is not None and faction is not None:
             # Expand plans have singular origins and implicit Leader moves;
@@ -3436,11 +3440,17 @@ def _execute_seize(state, faction, bot_action):
     should occur). In each dispersal region we Disperse the Subdued tribes
     the rules allow (`get_dispersible_tribes`, which already enforces Roman
     Control and the 4-marker cap); remaining regions still Forage.
+    Human ordinary and Event plans instead provide exact ``disperse_tribes``
+    maps. Those identities are retained and revalidated on the live Region.
 
     The accompanying Build Special Activity is executed by the orchestration
     layer (_execute_sa, reported under ``sa_execution``), not here.
     """
     details = bot_action.get("details") or {}
+    from fs_bot.commands.seize import seize_plan_error
+    error = seize_plan_error(dict(bot_action, command=_CMD_SEIZE), state=state)
+    if error:
+        return {'executed': False, 'command': _CMD_SEIZE, 'errors': [{'error': error}]}
     regions = [r for r in (bot_action.get("regions") or []) if isinstance(r, str)]
     disperse_regions = {r for r in (details.get("disperse_regions") or [])
                         if isinstance(r, str)}
@@ -3450,8 +3460,8 @@ def _execute_seize(state, faction, bot_action):
     forage_total = 0
     errors = []
 
-    from fs_bot.cards.roman_event_grants import seize_flags, SEIZE_GRANT
-    exact_tribes = details.get("disperse_tribes") if state.get(SEIZE_GRANT) else None
+    from fs_bot.cards.roman_event_grants import seize_flags
+    exact_tribes = details.get("disperse_tribes")
     for index, region in enumerate(regions):
         as_if_control, no_rally, no_harassment = seize_flags(state, region)
         _timing_plan_step(state, faction, bot_action, 'seize_region',

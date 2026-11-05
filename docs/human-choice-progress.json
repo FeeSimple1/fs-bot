@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "4cfeb2c4e58685f96a2287490d405d37df553558",
-    "python_sha256": "dacec83d00c491620202ef3253150227ec68addb7bae6793a6241891a18583f0",
-    "python_files": 480,
+    "commit": "f05e1f3662094d7f9b693e5986396ffe0e1286f4",
+    "python_sha256": "2b7e97d346ddd9772c0b8945d02a75e9cfaa0806535584d9a0eb91e8dc96d757",
+    "python_files": 481,
     "working_tree_changes": true,
-    "note": "Rampage actor quantity closes CMD-RAMPAGE-COUNT; NPC all-able quantity corrected per 8.5.1. Full victim choices and CV-PERSISTENCE remain open. See reviews/rampage-quantity-2026-11-04.md."
+    "note": "Ordinary Seize exact Tribe choices close CMD-SEIZE-TRIBES; separate mechanics follow-ups remain open. See reviews/seize-tribes-2026-11-04.md."
   },
   "total": 50,
-  "closed": 24,
-  "open": 26,
+  "closed": 25,
+  "open": 25,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -27,7 +27,8 @@
     "Numeric17 Roman-owned German groups and single Ambush choices are repaired. BE-01 remains open for numeric4. See reviews/germanic-chieftains-2026-11-04.md.",
     "BE-01 closes after numeric4 Roman-owned optional choices and post-March marker placement. Separate verified high-priority CV-PERSISTENCE defects are not part of the original 50; see reviews/circumvallation-persistence-followup-2026-11-04.md.",
     "CMD-INTIMIDATE-TRIBE closes with named physical disc choices in ordinary, Raid-linked and A45 Intimidate; Circumvallation group tracking and the NPC pre-Battle targeting lead remain open separately. See reviews/intimidate-tribes-2026-11-04.md.",
-    "CMD-RAMPAGE-COUNT closes with exact human counts and source-required all-able NPC quantities; BATTLE-RAMPAGE-VICTIM and CV-PERSISTENCE remain open. See reviews/rampage-quantity-2026-11-04.md."
+    "CMD-RAMPAGE-COUNT closes with exact human counts and source-required all-able NPC quantities; BATTLE-RAMPAGE-VICTIM and CV-PERSISTENCE remain open. See reviews/rampage-quantity-2026-11-04.md.",
+    "CMD-SEIZE-TRIBES closes with exact ordinary dispersal subsets, all scarce-marker candidates, Forage-only and adapter migration. Native NPC selection remains supported. See reviews/seize-tribes-2026-11-04.md."
   ],
   "findings": [
     {
@@ -69,7 +70,8 @@
       "id": "CMD-SEIZE-TRIBES",
       "title": "Seize only offers all-or-none dispersal for a Region",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/seize-tribes-2026-11-04.md"
     },
     {
       "id": "CMD-INTIMIDATE-TRIBE",

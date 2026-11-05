@@ -150,7 +150,7 @@ def build_recruit(state, faction, p, single):
 
 
 def build_seize(state, faction, p, single):
-    from fs_bot.commands.seize import get_dispersible_tribes
+    from fs_bot.commands.seize import get_dispersible_tribes, count_dispersed_on_map
     cand = [r for r in get_playable_regions(state["scenario"],
                                             state.get("capabilities"))
             if count_pieces(state, r, rc.ROMANS) > 0]
@@ -159,10 +159,15 @@ def build_seize(state, faction, p, single):
     cand.sort(key=lambda r: -(len(_subdued(state, r))
                               + len(get_dispersible_tribes(state, r))))
     picked = cand[:1 if single else p.get("max_regions", 2)]
-    disperse = [r for r in picked if get_dispersible_tribes(state, r)
-                and p.get("disperse", True)]
-    return {"command": "Seize", "regions": [],
-            "details": {"_regions": picked, "disperse_regions": disperse}}
+    markers = rc.MAX_DISPERSED_MARKERS - count_dispersed_on_map(state)
+    disperse = {}
+    for region in picked:
+        chosen = (get_dispersible_tribes(state, region)[:markers]
+                  if p.get('disperse', True) else [])
+        disperse[region] = chosen
+        markers -= len(chosen)
+    return {"command": rc.CMD_SEIZE, "regions": picked,
+            "details": {"disperse_tribes": disperse}}
 
 
 _BUILDERS = {"Rally": build_rally, "Battle": build_battle, "March": build_march,

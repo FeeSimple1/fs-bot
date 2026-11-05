@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Ordinary Seize Tribe identity, 4 November 2026
+
+- Extend exact `disperse_tribes` maps to ordinary Seize; preserve explicit
+  Forage-only, ordered Regions and interrupted Command portions.
+- Offer all legal Tribes with scarce markers, reserve the shared budget on
+  detached planning boards, and reject duplicate/malformed physical identities.
+- Migrate the synthetic human-policy builder, Arduenna witness and human
+  test fixtures to the exact contract; native NPC selection remains supported.
+- Close CMD-SEIZE-TRIBES: 25/50 original findings closed (50%), 25 open.
+  See the [report](docs/reviews/seize-tribes-2026-11-04.md).
+
 ## Unreleased — Rampage quantity, 4 November 2026
 
 - Let humans choose exact positive `count` per Rampage Region, including more

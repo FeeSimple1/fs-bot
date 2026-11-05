@@ -19,7 +19,7 @@ from fs_bot.rules_consts import (
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL,
-    PROVINCIA, CMD_SEIZE, TRIBE_TO_CITY, TRIBE_REMI,
+    PROVINCIA, CMD_SEIZE, TRIBE_TO_CITY, TRIBE_REMI, SA_BUILD, SA_SCOUT,
     # Piece states
     HIDDEN,
     # Costs
@@ -121,7 +121,7 @@ def count_dispersed_on_map(state):
     return count
 
 
-def get_dispersible_tribes(state, region, as_if_control=False):
+def get_dispersible_tribes(state, region, as_if_control=False, *, limit_to_markers=True):
     """Get Subdued tribes in a region that can receive Dispersed markers.
 
     Requirements (§3.2.3):
@@ -134,6 +134,9 @@ def get_dispersible_tribes(state, region, as_if_control=False):
         state: Game state dict.
         region: Region name constant.
         as_if_control: Treat the Region as Roman-Controlled for Dispersal.
+        limit_to_markers: Legacy automatic selection stops at the remaining
+            marker count. False offers every legal identity for human choice;
+            the selected subset still has to fit the marker budget.
 
     Returns:
         List of tribe name constants that can be Dispersed.
@@ -154,7 +157,7 @@ def get_dispersible_tribes(state, region, as_if_control=False):
     remaining_markers = MAX_DISPERSED_MARKERS - current_dispersed
 
     for tribe in tribes:
-        if len(result) >= remaining_markers:
+        if limit_to_markers and len(result) >= remaining_markers:
             break
 
         tribe_state = state.get("tribes", {}).get(tribe, {})
@@ -168,6 +171,53 @@ def get_dispersible_tribes(state, region, as_if_control=False):
         result.append(tribe)
 
     return result
+
+
+def seize_plan_error(action, *, require_exact=False, state=None):
+    """Validate authored identities without predicting later Control/Allies.
+
+    Earlier Special Abilities or timing actions may make a currently Allied
+    Tribe Subdued. Membership and the plan's shape do not depend on that.
+    Legacy NPC disperse_regions remain supported when exact input is absent.
+    """
+    if action.get('command') != CMD_SEIZE:
+        return None
+    details = action.get('details') or {}
+    if not isinstance(details, dict):
+        return 'Seize details must be an object'
+    parts = details.get('command_parts')
+    if parts:
+        if (not isinstance(parts, list) or len(parts) != 2
+                or any(not isinstance(p, dict) for p in parts)
+                or action.get('sa_timing') != 'during'
+                or action.get('sa') not in (SA_BUILD, SA_SCOUT)):
+            return 'Interrupted Seize needs two portions and one accompanying Special Ability'
+        for part in parts:
+            part_details = part.get('details') or {}
+            if (part.get('command') != CMD_SEIZE or not isinstance(part_details, dict)
+                    or 'command_parts' in part_details):
+                return 'Seize portions must be Seize plans without nested interruptions'
+            error = seize_plan_error(part, require_exact=require_exact, state=state)
+            if error:
+                return error
+        return None
+    if 'disperse_tribes' not in details:
+        return 'Supply disperse_tribes for every Seize Region (empty lists mean Forage only)' if require_exact else None
+    regions, selected = action.get('regions'), details['disperse_tribes']
+    if (not isinstance(regions, list) or any(not isinstance(r, str) for r in regions)
+            or len(regions) != len(set(regions)) or not isinstance(selected, dict)
+            or set(selected) != set(regions)):
+        return 'disperse_tribes must map each selected Seize Region to its exact list'
+    if 'disperse_regions' in details:
+        return 'Choose exact disperse_tribes instead of mixing it with disperse_regions'
+    for region, tribes in selected.items():
+        if (not isinstance(tribes, list) or any(not isinstance(t, str) for t in tribes)
+                or len(tribes) != len(set(tribes))):
+            return 'Each Seize Region needs a list of distinct Tribe names'
+        if state is not None and (region not in ALL_REGION_DATA or
+                not set(tribes) <= set(get_tribes_in_region(region, state['scenario']))):
+            return 'Choose Tribes belonging to their selected Seize Region'
+    return None
 
 
 # ============================================================================
@@ -486,6 +536,10 @@ def _seize_in_region(state, region, tribes_to_disperse=None,
 
     if tribes_to_disperse is None:
         tribes_to_disperse = []
+    if (not isinstance(tribes_to_disperse, (list, tuple))
+            or any(not isinstance(t, str) for t in tribes_to_disperse)
+            or len(tribes_to_disperse) != len(set(tribes_to_disperse))):
+        raise CommandError('Seize dispersals must be distinct Tribe names')
 
     result = {
         "region": region,

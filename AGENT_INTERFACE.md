@@ -121,7 +121,7 @@ Omit the field to retain the existing reactive `diviciacus_pieces` request.
 This mapping is separate from Belgic Enlist's `warband_mix`.
 
 The per-command `details` shapes (battle_plan, raid_plan, rally_plan,
-recruit_plan, March origins/destinations, disperse_regions, and Event
+recruit_plan, March origins/destinations, exact disperse_tribes, and Event
 `card_id`/`text_preference`/`event_params`) are exactly what
 `fs_bot/cli/human_plan.py` builds for the interactive CLI — use it as the
 reference. March plans additionally accept exact per-origin `routes`
@@ -1002,6 +1002,42 @@ the maximum offered; explicit default retains only still-legal original
 moves, while decline chooses none. A changed relocation outcome then requests
 `quarters_payment` for the pieces actually left outside Provincia, before
 payment or loss rolls. Explicit default uses standard payments.
+
+### Ordinary Seize Tribe choices
+
+Human Seize plans use `details.disperse_tribes`, mapping every selected Region
+to its ordered list of exact Tribe names. An empty list explicitly chooses
+Forage without Dispersal:
+
+```json
+{"command":"Seize","regions":["Mandubii","Carnutes"],"sa":"No SA","sa_regions":[],"details":{"disperse_tribes":{"Mandubii":["Lingones"],"Carnutes":[]}}}
+```
+
+Tribes must belong to their selected Region and lists must be distinct.
+Missing maps, null/malformed lists, extra/missing Region keys and mixed
+`disperse_tribes`/legacy `disperse_regions` contracts are rejected. Interrupted
+Seize uses a separate exact map in each of its two actual Command portions;
+fictitious/nested portions cannot conceal an unselected dispersal plan.
+Current Subdued status, Roman Control and the shared four-marker limit are
+rechecked at each Region's resolution after preceding effects. Invalid live
+choices are not silently replaced or truncated. Forage-only remains legal
+when no markers remain or Romans lack Control but still have pieces there.
+
+Both ordinary terminal paths offer every legal Tribe even if only one marker
+remains, reserve markers across ordered Regions, retain `b`/`board`, and
+estimate Forage without rolling Rally or Harassment dice or consuming live
+input/RNG. Intervening Rally/timing effects can still change later eligibility.
+Accepted named plans persist through Rally pauses, save/resume and journals.
+Arduenna's mechanical witness and the synthetic human-policy builder emit the
+same exact contract. The latter now puts selected Regions in `regions`,
+rather than leaving them unused in `details._regions`.
+
+NPC legacy `disperse_regions` plans keep their automatic selection path;
+raw legacy mechanical callers remain supported. Human submissions need the
+exact map, so old human transcripts may need adjustment. Save schema is
+unchanged and exact cross-revision replay is not promised. Event-specific
+Control, Rally and Harassment exceptions still require trusted grant scope;
+ordinary exact maps cannot supply those exceptions themselves.
 
 ### Rampage quantity
 

@@ -109,8 +109,9 @@ def test_interrupted_agreement_leaves_no_force_context():
     before = physical(state)
     with pytest.raises(EOFError):
         execute_decision(state, rc.ROMANS, {'player_action': {
-            'command': 'Seize', 'sa': 'No SA',
-            'details': {'diviciacus_regions': [rc.CARNUTES]}}})
+            'command': 'Seize', 'regions': [rc.CARNUTES], 'sa': 'No SA',
+            'details': {'diviciacus_regions': [rc.CARNUTES],
+                        'disperse_tribes': {rc.CARNUTES: []}}}})
     assert KEY not in state and physical(state) == before
 
 

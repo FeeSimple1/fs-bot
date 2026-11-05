@@ -52,6 +52,9 @@ def test_captured_zero_resource_recruit_stays_possible_for_human_but_not_risk_av
     assert selected != decision
     assert encode({k: v for k, v in state.items() if k != 'decision_agent'}) == before
     if selected['action'] != ACTION_PASS:
+        # Planning above must never consult/copy live input. A now-valid
+        # Seize fallback can legitimately open Rally decisions in live play.
+        state.pop('decision_agent')
         result = execute_decision(state, rc.ROMANS, selected)
         assert result['executed'] and not result.get('errors')
 

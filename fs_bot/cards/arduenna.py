@@ -169,7 +169,7 @@ def command_witness(state, actor, *, regions=TARGETS, request=None):
     for region in regions:
         if actor == rc.ROMANS:
             candidates.append({'command': rc.CMD_SEIZE, 'regions': [region],
-                               'details': {'disperse_regions': []}})
+                               'details': {'disperse_tribes': {region: []}}})
         else:
             candidates.append({'command': rc.CMD_RAID, 'regions': [region],
                 'details': {'raid_plan': [{'region': region, 'target': None}]}})

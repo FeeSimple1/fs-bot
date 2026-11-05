@@ -41,7 +41,7 @@ def position(faction, scenario=rc.SCENARIO_GREAT_REVOLT):
 
 def seize(*regions):
     return {'command': rc.CMD_SEIZE, 'regions': list(regions), 'sa': 'No SA',
-            'details': {'disperse_regions': []}}
+            'details': {'disperse_tribes': {region: [] for region in regions}}}
 
 
 def entreat(*regions, timing='before'):

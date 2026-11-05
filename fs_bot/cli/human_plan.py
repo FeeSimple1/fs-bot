@@ -12,7 +12,7 @@ of the "no illegal moves" hard-block in menus.prompt_action -- the executors and
 mechanic functions remain the final validators.
 
 The plan shapes mirror what each command executor consumes (engine/execute.py):
-Seize ``regions`` + ``details['disperse_regions']``; Raid ``details['raid_plan']``;
+Seize ``regions`` + exact ``details['disperse_tribes']``; Raid ``details['raid_plan']``;
 Rally ``details['rally_plan']``; Battle ``details['battle_plan']``; Recruit
 ``details['recruit_plan']``; March ``details['origins']`` + ``['destinations']``.
 """
@@ -433,25 +433,8 @@ def _collect_recruit(state, faction, stdin, stdout, single, *, excluded=()):
 
 
 def _collect_seize(state, faction, stdin, stdout, single, *, excluded=()):
-    from fs_bot.cli.action_windows import available
-    if available(state):
-        from fs_bot.cli.command_timing import collect_seize
-        return collect_seize(state, faction, stdin, stdout, single, excluded=excluded)
-    from fs_bot.commands.seize import get_dispersible_tribes
-    regions = _playable_regions(state, faction)
-    cand = [r for r in regions if r not in excluded and count_pieces(state, r, ROMANS) > 0]
-    if not cand:
-        return None
-    picked = _pick_regions(stdin, stdout, "Seize in which Region(s)?",
-                           cand, single=single,
-                           max_regions=state.get("_cli_command_max_regions"))
-    disperse = []
-    for r in picked:
-        if get_dispersible_tribes(state, r) and prompt_yes_no(
-                stdin, stdout, f"  Disperse Subdued Tribes in {r}?",
-                default=True):
-            disperse.append(r)
-    return {"_regions": picked, "disperse_regions": disperse}
+    from fs_bot.cli.command_timing import collect_seize
+    return collect_seize(state, faction, stdin, stdout, single, excluded=excluded)
 
 
 def _citadel_upgrade_tribes(state, region, faction):

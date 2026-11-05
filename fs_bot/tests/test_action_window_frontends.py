@@ -348,7 +348,7 @@ def test_seize_planning_reserves_markers_without_rolling_any_dice(monkeypatch):
         place_piece(state, region, rc.ROMANS, rc.AUXILIA, 2)
     _decline_removal(monkeypatch)
     monkeypatch.setattr(human_plan, '_pick_regions', lambda *args, **kwargs: [rc.CARNUTES, rc.MANDUBII])
-    monkeypatch.setattr(command_timing, 'prompt_yes_no', lambda *args, **kwargs: True)
+    monkeypatch.setattr(command_timing, 'prompt_choice', lambda stdin, stdout, prompt, choices: choices[0][1])
     captured = []
     original = command_timing.prepare
     def prepare(sim, *args, **kwargs):
@@ -358,7 +358,9 @@ def test_seize_planning_reserves_markers_without_rolling_any_dice(monkeypatch):
     before = encode(board_copy(state))
     details = command_timing.collect_seize(state, rc.ROMANS, io.StringIO(), io.StringIO(), False)
     assert details['_regions'] == [rc.CARNUTES, rc.MANDUBII]
-    assert details['disperse_regions'] == [rc.CARNUTES, rc.MANDUBII]
+    assert details['disperse_tribes'] == {
+        rc.CARNUTES: [rc.TRIBE_CARNUTES, rc.TRIBE_AULERCI],
+        rc.MANDUBII: [rc.TRIBE_MANDUBII, rc.TRIBE_SENONES]}
     assert encode(board_copy(state)) == before
     assert captured[1]['rng'].getstate() == state['rng'].getstate()
     assert sum(info.get('status') == rc.DISPERSED for info in captured[1]['tribes'].values()) == 2

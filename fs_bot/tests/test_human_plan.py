@@ -58,15 +58,21 @@ class TestHumanPlanCollection:
         rom_regions = [r for r in get_playable_regions(st["scenario"], st.get("capabilities"))
                        if count_pieces(st, r, ROMANS) > 0]
         pick_idx = rom_regions.index(target) + 1
-        # Seize(3); pick target Region; (done)=len after one pick if >1; disperse y.
+        # Seize(3); select a Region and a particular Subdued Tribe.
         seq = ["3", str(pick_idx)]
         if len(rom_regions) > 1:
             seq.append(str(len(rom_regions)))
-        seq.extend(["y", "n"])  # Disperse; decline a Resource gift.
+        candidates = get_dispersible_tribes(st, target, limit_to_markers=False)
+        chosen = candidates[-1]
+        seq.append(chosen)
+        if len(candidates) > 1 and count_dispersed_on_map(st) < 3:
+            seq.append('Finish Dispersal (Forage still occurs)')
+        seq.append('n')  # Decline a Resource gift.
         stdin, stdout = _io(seq)
         action = collect_player_action(st, ROMANS, ACTION_COMMAND, stdin, stdout)
         assert action["command"] == "Seize"
         assert target in action["regions"]
+        assert action['details']['disperse_tribes'][target] == [chosen]
         before = count_dispersed_on_map(st)
         res = execute_decision(st, ROMANS, {"player_action": action})
         assert res["executed"] is True

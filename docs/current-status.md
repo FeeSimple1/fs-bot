@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November ordinary Seize Tribes — CMD-SEIZE-TRIBES closed
+
+The [Tribe repair](reviews/seize-tribes-2026-11-04.md) extends exact
+`disperse_tribes` maps to ordinary Seize, including Forage-only, ordered Regions
+and interrupted Command portions. Both menus offer every legal Tribe even
+with one marker left, reserve the shared marker budget and consume no live
+Rally/Harassment dice. Missing/malformed named choices are rejected; accepted
+plans survive Rally pauses and save/resume. Legacy NPC selection is preserved.
+The synthetic human-policy builder and Arduenna witness use the same contract.
+**7,808 tests pass**, including 54 new cases; 312 targeted tests pass. Ten
+bot gameplay records/final hashes match the parent. Forty mixed executions
+agree across hash seeds with zero hard findings and zero partials.
+
+**Original bundle is now 25/50 closed (50%), 25 open.** This measures original
+finding counts, not equal effort or complete rules compliance. The separate
+Circumvallation mechanics, full Rampage victim choices and NPC Intimidate
+lead remain open.
+
+
 ### 4 November Rampage quantity — CMD-RAMPAGE-COUNT closed
 
 The [quantity repair](reviews/rampage-quantity-2026-11-04.md) carries a human's

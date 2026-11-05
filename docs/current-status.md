@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November expansion optional quantities — EXP-08 closed
+
+The [three-Event batch](reviews/expansion-up-to-2026-11-04.md) restores zero-to-
+maximum choices on A40 shaded, A51 unshaded and A60 unshaded. The executor
+selects Alpine Tribes Regions, exact Bibrax visibility cohorts and the Remi
+Auxilia/Resources tradeoff. Live requests follow compulsory placements and
+support terminal inspection, pending rollback/save/resume and identical replay.
+Typed plans can pre-author the same choices. A51 now includes Scouted Warbands;
+A60 refunds reflect actual unplaced pieces, including an unavailable Ally.
+
+**Original bundle is now 33/50 closed (66%), 17 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**8,191 tests pass**, including 87 new cases; 292 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. The 100-game
+historical balance check passes its unchanged baseline and 15-point band.
+See the report for the frozen source digest and evidence bounds.
+
+
 ### 4 November Quarters visibility — WS-F05 closed
 
 The [Quarters repair](reviews/quarters-visibility-2026-11-04.md) lets owners
@@ -32,7 +54,7 @@ than substitute another visibility. Terminal and durable interfaces support the
 same choices, with pending/save/resume and exact replay. Legacy four-entry plans
 retain their Hidden/Revealed/Scouted fallback.
 
-**Original bundle is now 32/50 closed (64%), 18 open.** Counts measure findings,
+**At that checkpoint: 32/50 closed (64%), 18 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.

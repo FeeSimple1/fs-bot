@@ -16,6 +16,14 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+Three expansion Events now ask how much of their optional effect you want:
+Alpine Tribes shaded lets you select zero to three eligible Regions; Siege of
+Bibrax unshaded lets you remove zero to six exact Belgic Warbands by visibility;
+Iccius & Andecomborius unshaded lets you place fewer Auxilia for more Roman
+Resources. Zero is allowed. Bibrax's four troops/Fort and Iccius's Roman Ally
+remain compulsory as possible. The Event's executor chooses, even when Romans
+receive the benefit. `b`/`board` is available at each live prompt.
+
 During Quarters, choose Hidden, Revealed or Scouted Warbands/Auxilia separately,
 including how many of each relocate. Their visibility stays the same. Only
 pieces originally present can take the adjacent step; Roman arrivals may then

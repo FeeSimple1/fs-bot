@@ -18,6 +18,7 @@ typed response.
 
 Request kinds
 -------------
+- ``event_up_to`` — executor-owned A40/A51/A60 optional quantities/cohorts.
 - ``devastate_losses`` — each physical owner chooses its exact §4.3.2 losses.
   Request carries faction, region, count and available cohort objects
   {piece_type,piece_state,count}. Return {"removals":[cohort objects]} totaling

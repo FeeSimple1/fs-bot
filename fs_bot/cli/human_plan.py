@@ -1440,6 +1440,13 @@ def _collect_timed_event_entries(state, faction, card_id, shaded, params,
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
+    from fs_bot.cards.expansion_up_to import supported as optional_quantity
+    if optional_quantity(card_id, shaded):
+        if card_id == 'A51':
+            kind = prompt_choice(stdin, stdout, 'Siege of Bibrax: which pieces to place?',
+                                 [(AUXILIA, AUXILIA), (WARBAND, WARBAND)])
+            return {'piece_type': kind}
+        return {}  # Optional quantities are chosen on their live step's board.
     if card_id == 67 or (card_id in (35, 46) and shaded):
         from fs_bot.cli.gallic_event_grants import collect_params
         return collect_params(state, faction, card_id, shaded, stdin, stdout)

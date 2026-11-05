@@ -3849,12 +3849,10 @@ def execute_card_A40(state, shaded=False):
                     place_piece(state, region, pfac, piece_type, count=to_place)
                     region_count[region] += to_place
     else:
-        non_roman = 0
-        for region in adj_cisalpina:
-            if not is_controlled_by(state, region, ROMANS):
-                non_roman += 1
-        drain = min(non_roman, 3)
-        _cap_resources(state, ROMANS, -5 * drain)
+        from fs_bot.cards.expansion_up_to import validate_params, choose
+        validate_params('A40', params)
+        selected = choose(state, 'A40', params)['regions']
+        _cap_resources(state, ROMANS, -5 * len(selected))
         if faction:
             state["eligibility"][faction] = ELIGIBLE
             state.setdefault("stay_eligible", []).append(faction)
@@ -3933,6 +3931,8 @@ def execute_card_A51(state, shaded=False):
     from fs_bot.rules_consts import ATREBATES, TRIBE_REMI, TRIBE_TO_REGION
     params = state.get("event_params", {})
     if not shaded:
+        from fs_bot.cards.expansion_up_to import validate_params, choose
+        validate_params('A51', params)
         t_info = state.get("tribes", {}).get(TRIBE_REMI)
         if not t_info:
             return
@@ -3965,16 +3965,10 @@ def execute_card_A51(state, shaded=False):
             except PieceError:
                 pass  # Max forts reached
         _event_step(state, "A51.warbands")
-        # Remove up to 6 Belgic Warbands
-        removed = 0
-        if region:
-            for ps in (HIDDEN, REVEALED):
-                c = count_pieces_by_state(state, region, BELGAE, WARBAND, ps)
-                to_remove = min(c, 6 - removed)
-                if to_remove > 0:
-                    remove_piece(state, region, BELGAE, WARBAND,
-                                 count=to_remove, piece_state=ps)
-                    removed += to_remove
+        # The executor chooses exact cohorts after the compulsory placements.
+        for entry in choose(state, 'A51', params)['removals']:
+            remove_piece(state, region, BELGAE, WARBAND,
+                         count=entry['count'], piece_state=entry['piece_state'])
     else:
         # Remove up to 5 non-Legion non-Leader Roman/Aedui from Atrebates
         removals = params.get("removals", [])
@@ -4165,6 +4159,8 @@ def execute_card_A60(state, shaded=False):
     from fs_bot.rules_consts import ATREBATES, TRIBE_REMI, TRIBE_TO_REGION
     params = state.get("event_params", {})
     if not shaded:
+        from fs_bot.cards.expansion_up_to import validate_params, choose
+        validate_params('A60', params)
         region = TRIBE_TO_REGION.get(TRIBE_REMI)
         t_info = state.get("tribes", {}).get(TRIBE_REMI)
         if t_info and region:
@@ -4175,7 +4171,8 @@ def execute_card_A60(state, shaded=False):
             _event_step(state, "A60.auxilia")
             # Place up to 4 Auxilia
             avail = get_available(state, ROMANS, AUXILIA)
-            to_place = min(4, avail)
+            selected = choose(state, 'A60', params)['count']
+            to_place = min(selected, avail)
             if to_place > 0:
                 place_piece(state, region, ROMANS, AUXILIA, count=to_place)
             _event_step(state, "A60.resources")

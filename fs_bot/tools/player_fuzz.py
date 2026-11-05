@@ -216,6 +216,20 @@ def make_random_reactive(seats, rng):
                        for defender in sorted(defenders)]
             region, defender = rng.choice(choices)
             return {"region": region, "defender": defender}
+        if kind == 'event_up_to':
+            if request['card_id'] == 'A40':
+                regions = list(request['legal_regions'])
+                rng.shuffle(regions)
+                return {'regions': regions[:rng.randint(0, request['max_count'])]}
+            if request['card_id'] == 'A60':
+                return {'count': rng.randint(0, min(4, request['available_count']))}
+            remaining, entries = request['max_count'], []
+            for entry in request['available']:
+                count = rng.randint(0, min(remaining, entry['count']))
+                if count:
+                    entries.append(dict(entry, count=count))
+                    remaining -= count
+            return {'removals': entries}
         if kind == 'devastate_losses':
             pieces=[(entry['piece_type'],entry['piece_state']) for entry in request['available']
                     for _ in range(entry['count'])]

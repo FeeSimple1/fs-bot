@@ -124,6 +124,9 @@ def validate_response(state, request, response):
     if kind in ("council_selection", "council_choice"):
         from fs_bot.cards.council import validate_response as validate_council
         return validate_council(state, request, response)
+    if kind == 'event_up_to':
+        from fs_bot.cards.expansion_up_to import validate_response as validate_up_to
+        return validate_up_to(state, request, response)
     if kind == 'devastate_losses':
         from fs_bot.engine.devastate_losses import validate_response as validate_devastate
         return validate_devastate(state,request,response)

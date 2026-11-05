@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Expansion optional quantities, 4 November 2026
+
+- Restore executor-owned zero-to-maximum choices for A40 shaded Regions,
+  A51 unshaded exact Belgic Warbands, and A60 unshaded Auxilia/Resources.
+- Support authored parameters and live terminal/durable `event_up_to` requests;
+  preserve compulsory prefixes, rollback/save/resume, pending IDs and replay.
+- Include Scouted Warbands in A51 removals and retain NPC enemy visibility
+  priority. A60 compensation uses actual Auxilia and Ally placements.
+- Close EXP-08: 33/50 original findings closed (66%), 17 open.
+  See the [report](docs/reviews/expansion-up-to-2026-11-04.md).
+
 ## Unreleased — Quarters visibility choices, 4 November 2026
 
 - Let owners choose exact Hidden/Revealed/Scouted Warband and Auxilia cohorts

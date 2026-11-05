@@ -470,6 +470,7 @@ and Ally identity gaps recorded separately by the audit remain open.
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag; copy entries intact; hard pieces still roll |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
+| `event_up_to` | `card_id, shaded, faction, max_count`; A40 `legal_regions`; A51 `region, available` visibility/count cohorts; A60 `region, available_count` | A40 `{"regions":[...]}`; A51 `{"removals":[{"piece_state":...,"count":n},...]}`; A60 `{"count":n}`; or explicit default |
 | `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
@@ -610,6 +611,37 @@ does not replace `current_card` or use the upcoming card. If no preceding
 Event can be recovered, the compatibility fallback uses card 63/A63's
 scenario-appropriate order, then the game-run faction. See the
 [ruling register](docs/provisional-rulings.md#pr-06) for scope and status.
+
+`event_up_to` gives the Event executor the optional quantity choices on A40
+shaded and A51/A60 unshaded (§5.1). It is a live request at the relevant step;
+A51 has already performed its compulsory troop/Fort placements, and A60 its
+Roman Ally placement, before asking. No choice transfers to a beneficiary.
+
+- A40 selects zero to three distinct offered Regions within one of Cisalpina,
+  without Roman Control. Each selected Region costs Romans five Resources;
+  Stay Eligible applies even when the list is empty.
+- A51 selects zero to six actual Belgic Warbands at Remi, naming exact Hidden,
+  Revealed or Scouted counts. Duplicate entries share physical capacity.
+  Selecting none does not cancel the compulsory four troops and Fort.
+- A60 selects zero to four Auxilia. Pieces actually placed are limited by
+  current Available forces; each unplaced Auxilia yields Romans two Resources,
+  plus two independently if the Roman Ally could not be placed. The 45 cap
+  applies. The terminal offers counts up to current availability.
+
+Author plans may supply these choices directly as A40 `event_params.regions`,
+A51 `event_params.warband_removals` (same entries as response `removals`), or A60
+`event_params.auxilia_count`. A51 also accepts `piece_type` Auxilia or Warband
+(the latter means Aedui Warbands). Unknown/wrong-side fields, malformed counts,
+illegal Regions and overclaimed cohorts are rejected atomically. A60 authored
+counts may request up to four even when fewer are Available; partial execution
+and compensation use actual placements. A51's Remi prerequisite still applies.
+
+Omitted choices ask the live executor. Missing/invalid durable input remains
+pending, including after rollback/save/resume of the compulsory prefix. Raw
+None or explicit `{"use_default":true}` uses maximum quantities and the existing
+Hidden/Revealed/Scouted enemy-removal priority. Previews do not consume input or
+RNG. These additional live decisions can require responses when replaying an
+older transcript that omitted the choice. Terminal prompts support `b`/`board`.
 
 `devastate_losses` goes separately to each affected physical owner at the live
 Devastate step (§4.3.2). Arverni lose one in four Warbands; each other Faction

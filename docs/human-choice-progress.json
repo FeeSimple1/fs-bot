@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "0a006caca41b297ec8842d51d973bcf2c9f29e55",
-    "python_sha256": "8dc4932e3aef23aa039773d005d44c7a492f1618d4b44d054f1b2fa68254c13d",
-    "python_files": 495,
+    "commit": "feaed4bce9f1be8ebe2a514f074332958e091ee6",
+    "python_sha256": "e81fb7e8e9c8db1965ce44ebcb13b4f3d40f6d6507341ada0a0b6d6d25652c58",
+    "python_files": 498,
     "working_tree_changes": true,
-    "note": "Exact Quarters visibility cohorts close WS-F05, including Provincia continuation, terminal/durable choices and replay. See reviews/quarters-visibility-2026-11-04.md."
+    "note": "The A40S/A51U/A60U optional-quantity batch closes EXP-08, with live/authored choices, physical cohorts and durable replay. See reviews/expansion-up-to-2026-11-04.md."
   },
   "total": 50,
-  "closed": 32,
-  "open": 18,
+  "closed": 33,
+  "open": 17,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -35,7 +35,8 @@
     "WS-F03 closes with exact mandatory Belgica allocations, real Winter Track transfers, terminal/durable support and replay. Related positive post-Interlude release is repaired; WS-F02 remains open for expedition/marker choices. See reviews/harvest-legions-2026-11-04.md.",
     "BE-10 closes with actual Roman-owned next-two-facedown data before the existing benefit choice, private console rendering and durable replay. Native defaults and deck/RNG state remain unchanged. See reviews/gallic-shouts-peek-2026-11-04.md.",
     "CMD-DEVASTATE-LOSSES closes with exact physical-owner requests, visibility/Legion choice, complete validation before mutation and durable later-Region replay. Default casualty priority is corrected per \u00a78.4.1. See reviews/devastate-losses-2026-11-04.md.",
-    "WS-F05 closes with exact Hidden/Revealed/Scouted relocation cohorts, original adjacent-piece capacity and Roman continuation validation, including terminal/durable save/resume/replay. Legacy four-entry default plans remain supported. See reviews/quarters-visibility-2026-11-04.md."
+    "WS-F05 closes with exact Hidden/Revealed/Scouted relocation cohorts, original adjacent-piece capacity and Roman continuation validation, including terminal/durable save/resume/replay. Legacy four-entry default plans remain supported. See reviews/quarters-visibility-2026-11-04.md.",
+    "EXP-08 closes with zero-to-maximum A40S/A51U/A60U executor choices, exact Warband visibility, actual-placement compensation and terminal/durable save/resume/replay. Related A51 Scouted omission is corrected. See reviews/expansion-up-to-2026-11-04.md."
   ],
   "findings": [
     {
@@ -336,7 +337,9 @@
       "id": "EXP-08",
       "title": "Three explicit up-to effects have no human quantity choice",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/expansion-up-to-2026-11-04.md",
+      "disposition": "Executor-owned A40S Regions, A51U physical Warband removals and A60U Auxilia quantities, including explicit zero, compulsory prefixes, compensation and durable replay."
     },
     {
       "id": "EXP-09",

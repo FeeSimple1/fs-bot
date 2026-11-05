@@ -4,6 +4,19 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Roman Interlude choices, 4 November 2026
+
+- Ask Romans whether to conduct the Britannia expedition, with exact Harvest
+  and Britannia Legion origins, Auxilia visibility and quantities above the
+  printed minimums.
+- Offer one Dispersed or Dispersed-Gathering marker to preserve through Spring,
+  including a choice to keep none and accurate Spring result counts.
+- Pause terminal and durable sessions at both choices. Restore the entire
+  Winter on interruption and replay accepted expedition choices once.
+- Transfer Harvest Legions through the piece helper with inventory checks.
+- Close WS-F02, bringing original progress to 36/50 closed (72%), 14 open.
+  See the [report](docs/reviews/interlude-roman-choices-2026-11-04.md).
+
 ## Unreleased — Scout allocation, 4 November 2026
 
 - Share each Reveal group's Auxilia budget across exact factions and

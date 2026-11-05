@@ -500,7 +500,7 @@ def place_piece(state, region, faction, piece_type, count=1, *,
 
 def remove_piece(state, region, faction, piece_type, count=1, *,
                  to_available=True, to_fallen=False, to_track=False,
-                 to_removed=False, piece_state=None):
+                 to_removed=False, to_winter_track=False, piece_state=None):
     """Remove piece(s) from the map.
 
     Args:
@@ -514,6 +514,7 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
         to_track: If True, Legions go to Legions track.
         to_removed: If True, Legions are removed by Event (for Arverni
             victory tracking).
+        to_winter_track: If True, Roman Legions go to the Harvest box.
         piece_state: For flippable pieces, specify which state to remove from.
             If None, removes Hidden first, then Revealed, then Scouted.
 
@@ -525,6 +526,9 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
         return
     _validate_region(state, region)
     _validate_visibility(piece_state)
+    if to_winter_track and (faction != ROMANS or piece_type != LEGION
+                            or to_fallen or to_track or to_removed):
+        raise PieceError("Only Roman Legions can move directly to the Winter track")
     space = state["spaces"].get(region, {})
     f_pieces = space.get("pieces", {}).get(faction, {})
 
@@ -565,7 +569,9 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
             if capacity < count:
                 raise PieceError(f"Not enough room on Legions track (need {count})")
         f_pieces[LEGION] = current - count
-        if to_fallen:
+        if to_winter_track:
+            state["winter_track_legions"] = state.get("winter_track_legions", 0) + count
+        elif to_fallen:
             state["fallen_legions"] = state.get("fallen_legions", 0) + count
         elif to_track:
             # Add to lowest available row

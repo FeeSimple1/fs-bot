@@ -239,6 +239,28 @@ def make_random_reactive(seats, rng):
             for cell in pieces[:request['count']]:counts[cell]=counts.get(cell,0)+1
             return {'removals':[{'piece_type':cell[0],'piece_state':cell[1],'count':count}
                                 for cell,count in counts.items()]}
+        if kind == 'interlude_marker':
+            return {'tribe': rng.choice([None] + [row['tribe'] for row in request['markers']])}
+        if kind == 'interlude_expedition':
+            if not request['can_conduct'] or rng.random() < 0.5:
+                return {'conduct': False}
+            origins = [region for region, count in request['legions'].items() for _ in range(count)]
+            rng.shuffle(origins)
+            harvest, legions = {}, {}
+            for region in origins[:request['harvest_count']]:
+                harvest[region] = harvest.get(region, 0) + 1
+            available = origins[request['harvest_count']:]
+            count = rng.randint(request['minimum_legions'], len(available))
+            for region in available[:count]:
+                legions[region] = legions.get(region, 0) + 1
+            cohorts = [index for index, row in enumerate(request['auxilia']) for _ in range(row['count'])]
+            rng.shuffle(cohorts)
+            selected = {}
+            for index in cohorts[:rng.randint(request['minimum_auxilia'], len(cohorts))]:
+                selected[index] = selected.get(index, 0) + 1
+            return {'conduct': True, 'harvest': harvest, 'legions': legions,
+                    'auxilia': [dict(request['auxilia'][index], count=count)
+                                for index, count in selected.items()]}
         if kind == 'harvest_legions':
             placements = {}
             for _ in range(request['count']):

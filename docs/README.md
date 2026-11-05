@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Roman Interlude choices](reviews/interlude-roman-choices-2026-11-04.md)
+  covers exact expedition forces, Spring marker preservation and durable Winter retries.
+
 - [4 November Scout allocations](reviews/scout-allocations-2026-11-04.md):
   shared cross-faction Reveal capacity, visibility and physical owners.
 

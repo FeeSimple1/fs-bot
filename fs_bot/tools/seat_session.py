@@ -133,6 +133,9 @@ def validate_response(state, request, response):
     if kind == 'devastate_losses':
         from fs_bot.engine.devastate_losses import validate_response as validate_devastate
         return validate_devastate(state,request,response)
+    if kind in ('interlude_expedition', 'interlude_marker'):
+        from fs_bot.engine.interlude_choices import validate_response as validate_interlude
+        return validate_interlude(state, request, response)
     if kind == 'harvest_legions':
         from fs_bot.engine.harvest_legions import validate_response as validate_harvest
         return validate_harvest(state, request, response)

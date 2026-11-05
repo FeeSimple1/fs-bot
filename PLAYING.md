@@ -567,3 +567,18 @@ printed-label question: both O38 sides are Capabilities under §5.3. Bots
 therefore decline either side in the final year; this does not restrict a
 human's Event selection. See the [29 October rules report](docs/reviews/rulings-trade-2026-10-29.md)
 for the evidence and the narrower remaining Capability-removal question.
+
+### Roman Interlude decisions
+
+In The Gallic War, human Romans choose whether to conduct the Britannia
+expedition after Adjust Forces. A conducted expedition reserves exactly three
+Legions for the Harvest box and sends the Roman Leader, at least three other
+Legions and at least one Auxilia to Britannia. Choose each origin and count,
+including the Auxilia's visibility. Larger expedition forces are permitted.
+The menus reserve Harvest Legions first so a counter cannot be used twice.
+Use `b` or `board` while allocating pieces to inspect the current position.
+
+Before Interlude Spring, Romans can preserve one offered Dispersed or
+Dispersed-Gathering marker as it is, or keep none. An interrupted answer pauses
+Winter. Saving and resuming retains an accepted expedition while awaiting the
+later marker choice.

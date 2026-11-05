@@ -494,6 +494,8 @@ and Ally identity gaps recorded separately by the audit remain open.
 | `event_up_to` | `card_id, shaded, faction, max_count`; A40 `legal_regions`; A51 `region, available` visibility/count cohorts; A60 `region, available_count` | A40 `{"regions":[...]}`; A51 `{"removals":[{"piece_state":...,"count":n},...]}`; A60 `{"count":n}`; or explicit default |
 | `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
+| `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
+| `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
 | `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
@@ -1507,3 +1509,36 @@ without spending an action. Preview validation never consumes live input or RNG.
 `replay --output-dir DIR` reconstructs the saved session from its origin and
 complete human decision log, verifies request context, and compares the final
 board and RNG with the live save. It never overwrites the live game.
+
+### Roman Interlude allocations
+
+`interlude_expedition` belongs to Romans. The request lists Legion counts by
+Region and Auxilia cohorts with `region`, `piece_state` and `count`, using the
+board after Adjust Forces and Cisalpina relocation. When the expedition is
+possible, answer `{"conduct":false}` or provide its entire allocation.
+
+```json
+{"conduct":true,"harvest":{"Provincia":3},"legions":{"Morini":3},"auxilia":[{"region":"Morini","piece_state":"Revealed","count":1}]}
+```
+
+`harvest` must total exactly three. `legions` must total at least three, and
+its combined counts with `harvest` must fit each offered Region. `auxilia`
+selects at least one exact offered counter. Repeated cohort entries share the
+same physical capacity. The Roman Leader moves to Britannia automatically
+when conducting. A missing or invalid durable response remains pending.
+If the force is insufficient, the printed decline consequence applies.
+
+`interlude_marker` is offered when an eligible marker exists. Select one of
+its named Tribes, or `{"tribe":null}` to preserve none. The chosen face survives
+Spring. This later choice can pause while the accepted expedition remains in
+the session journal. Replaying the transaction applies the expedition once.
+
+For either request, `{"use_default":true}` explicitly delegates to existing
+NPC behavior. Raw `None` callbacks retain their fallback behavior. The raw
+`britannia_decision=True/False` API and a raw conduct-only true dictionary
+retain their minimum-force defaults. Durable human expedition responses need
+the complete allocation or explicit default. Unsupported allocation fields
+that older raw calls silently ignored are now rejected. Raw
+`roman_dispersed_keep` validates that the named Tribe has an eligible marker.
+Older transcripts that passed Interlude automatically may require these new
+Roman responses when resumed or replayed.

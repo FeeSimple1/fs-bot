@@ -1141,6 +1141,21 @@ def run_winter_round(state, is_final=False,
                      relocations=None,
                      britannia_decision=None,
                      roman_dispersed_keep=None):
+    """Pause or reject Winter without advancing counters or completed effects."""
+    from fs_bot.engine.spring import atomic
+    with atomic(state):
+        return _run_winter_round(
+            state, is_final=is_final,
+            first_senate_after_interlude=first_senate_after_interlude,
+            relocations=relocations, britannia_decision=britannia_decision,
+            roman_dispersed_keep=roman_dispersed_keep)
+
+
+def _run_winter_round(state, is_final=False,
+                      first_senate_after_interlude=False,
+                      relocations=None,
+                      britannia_decision=None,
+                      roman_dispersed_keep=None):
     """Execute the full Winter Round per §6.0 / A6.0.
 
     Calls each phase in order. Stops early if Victory Phase ends the game.

@@ -1,0 +1,294 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "aec38386839b7a6e3653c9b6b12812cf36de6657",
+    "dirty": true,
+    "source_sha256": "0f1171979d2ee624a2697545a6f68054f23e8e05a4e5dce025f843af66fe0f39"
+  },
+  "python_files": 505,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "new_tests": 53,
+  "targeted_passed": 330,
+  "parent_proof": {
+    "behavioral_failures": 4,
+    "controls_passed": 2,
+    "accepted_passed": 6
+  },
+  "bots": {
+    "games": 10,
+    "all_completed_and_audited": true,
+    "gameplay_and_final_hashes_equal": true,
+    "interlude_exercised": {
+      "scenario": "The Gallic War",
+      "seed": 1
+    },
+    "excluded": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "aec38386839b7a6e3653c9b6b12812cf36de6657",
+      "dirty": true,
+      "source_sha256": "0f1171979d2ee624a2697545a6f68054f23e8e05a4e5dce025f843af66fe0f39",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 356,
+    "event_turns": 96,
+    "events_ok": 90,
+    "partial": 0,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "d899b5732da10db5a8d41c4028974e2428e8dfb6f9c9ee35e0c4c6abb319c3e1",
+    "records": [
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 32,
+        "event_turns": 13,
+        "events_ok": 13,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "03e062cbf960618b"
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 36,
+        "event_turns": 11,
+        "events_ok": 10,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "5ef58925b65b9a4c"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 12,
+        "event_turns": 6,
+        "events_ok": 6,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "2292b8ed8868d85f"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 2,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 62,
+        "event_turns": 19,
+        "events_ok": 17,
+        "rejected": 2,
+        "findings": [],
+        "partial": 0,
+        "digest": "60276fd712d5e0dc"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 83,
+        "event_turns": 14,
+        "events_ok": 12,
+        "rejected": 2,
+        "findings": [],
+        "partial": 0,
+        "digest": "5f9818a0ef4b9e9e"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 43,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "cb5eab60b34d2946"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 1,
+        "seats": [
+          "Germans",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 40,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "0c66e1dd96614108"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 2,
+        "seats": [
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 14,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "4bf5d57d535d16f7"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 27,
+        "event_turns": 5,
+        "events_ok": 4,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "edb1faed9ece11b2"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 2,
+        "seats": [
+          "Germans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 7,
+        "event_turns": 1,
+        "events_ok": 1,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "01d686a6f2551217"
+      }
+    ]
+  },
+  "mixed_complete_json_equal": true,
+  "hash_seeds": [
+    0,
+    987
+  ],
+  "mixed_executions_including_replay": 40,
+  "balance": {
+    "games": 100,
+    "band_percentage_points": 15,
+    "maximum_absolute_delta_percentage_points": 15,
+    "historical_baseline_winner_changes": 35,
+    "baseline_unchanged": true,
+    "passed": true
+  },
+  "progress": {
+    "closed": 36,
+    "total": 50,
+    "percent": 72,
+    "open": 14
+  },
+  "remaining": "WS-F01 force reductions and Cisalpina relocations remain open; separate mechanics leads and source questions retain their dispositions.",
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8373",
+    "time": "430.115",
+    "timestamp": "2026-11-05T05:55:44.471441+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "python": "3.12.14",
+  "commands": [
+    "python -m pytest -q --junitxml=/tmp/fs-interlude-accepted-full.xml",
+    "python -m pytest -q fs_bot/tests/test_interlude_roman_choices.py fs_bot/tests/test_interlude.py fs_bot/tests/test_interlude_leader_choices.py fs_bot/tests/test_pieces.py fs_bot/tests/test_harvest_legions.py fs_bot/tests/test_cli_decision_journeys.py fs_bot/tests/test_winter.py fs_bot/tests/test_winter_uprising_sessions.py",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.run_batch --games 2 --workers 2 --out OUT",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-2 --out OUT.json",
+    "PYTHONHASHSEED=987 python -m fs_bot.tools.player_fuzz --seeds 1-2 --out OUT.json",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.balance_smoke --seeds 1-20",
+    "PYTHONPATH=. python -m pytest -q /tmp/test_interlude_roman_parent_proof.py --junitxml=OUT.xml",
+    "PYTHONPATH=. python /tmp/fs-interlude-verify.py",
+    "PYTHONPATH=. python /tmp/fs-interlude-package.py"
+  ]
+}

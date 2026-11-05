@@ -85,9 +85,6 @@ from fs_bot.rules_consts import (
     PAX_GALLICA_START_BELGAE, PAX_GALLICA_START_ROMANS,
     PAX_GALLICA_DECK_EVENTS, PAX_GALLICA_WINTER_PILES,
     INTERLUDE_DIVICIACUS_CARD,
-    BRITANNIA_EXPEDITION_LEGIONS_TO_TRACK,
-    BRITANNIA_EXPEDITION_MIN_LEGIONS_TO_BRITANNIA,
-    BRITANNIA_EXPEDITION_MIN_AUXILIA_TO_BRITANNIA,
     # Cards
     CARD_NAMES_BASE, WINTER_CARD,
     CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
@@ -1217,35 +1214,9 @@ def _cisalpina_relocation(state):
 
 
 def _np_should_conduct_britannia(state):
-    """A8.8.9 / Interlude rule: NP Romans conduct expedition if able.
-
-    Per A2.1: 'Non-player Romans conduct it if able, A8.8.9.'
-    A8.8.9 does not exist in the reference documents (Chapter A8 stops at
-    A8.8.8, then jumps to A8.9) — the cited rule is missing, so there is no
-    additional strategic/score criterion to apply. "If able" is therefore
-    resolved against the physical requirements the scenario itself states:
-    the Romans must move 3 Legions to the Harvest-Phase box PLUS the Roman
-    Leader, 3 or more further Legions, and 1 or more Auxilia to Britannia.
-    Thus NP Romans conduct the expedition iff they have those pieces on the
-    map: >= 6 Legions, >= 1 Auxilia, and the Roman Leader. See QUESTIONS.md.
-    """
-    # The scenario requires "the Roman Leader ... from the map to Britannia".
-    if find_leader(state, ROMANS) is None:
-        return False
-    legions_on_map = 0
-    aux_on_map = 0
-    for region in state["spaces"]:
-        legions_on_map += count_pieces(state, region, ROMANS, LEGION)
-        aux_on_map += count_pieces(state, region, ROMANS, AUXILIA)
-    need_legions = (
-        BRITANNIA_EXPEDITION_LEGIONS_TO_TRACK
-        + BRITANNIA_EXPEDITION_MIN_LEGIONS_TO_BRITANNIA
-    )
-    if legions_on_map < need_legions:
-        return False
-    if aux_on_map < BRITANNIA_EXPEDITION_MIN_AUXILIA_TO_BRITANNIA:
-        return False
-    return True
+    """The scenario directs NPC Romans to conduct the expedition if able."""
+    from fs_bot.engine.interlude_choices import expedition_request
+    return expedition_request(state)['can_conduct']
 
 
 def _shift_senate_one_box(state, direction):
@@ -1286,14 +1257,12 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
     """Britannia Expedition step.
 
     britannia_decision may be:
-        - None: use NP logic (A8.8.9 / "conduct if able")
+        - None: ask human Romans, or use the "conduct if able" NPC default
         - True: conduct (player Roman chose to)
         - False: decline
-        - dict: {"conduct": bool, "legions_from": {region: count}, ...}
-          for player-customized choices (only "conduct" is required).
+        - dict: exact harvest, legions and auxilia allocations plus conduct.
+          A raw conduct-only true retains the legacy minimum allocation.
     """
-    from fs_bot.rules_consts import ROMAN_CONTROL, BELGIC_CONTROL
-
     result = {
         "conducted": False,
         "decision_source": "np",
@@ -1305,99 +1274,23 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
         "senate_shift": None,
     }
 
-    # Resolve decision
-    if britannia_decision is None:
-        conduct = _np_should_conduct_britannia(state)
-        result["decision_source"] = "np"
-    elif isinstance(britannia_decision, bool):
-        conduct = britannia_decision
-        result["decision_source"] = "player_bool"
-        # If a player wants to conduct but is unable, refuse.
-        if conduct and not _np_should_conduct_britannia(state):
-            conduct = False
-            result["decision_source"] = "player_unable"
-    elif isinstance(britannia_decision, dict):
-        conduct = bool(britannia_decision.get("conduct", False))
-        result["decision_source"] = "player_dict"
-        if conduct and not _np_should_conduct_britannia(state):
-            conduct = False
-            result["decision_source"] = "player_unable"
-    else:
-        conduct = bool(britannia_decision)
-
-    if conduct:
-        result["conducted"] = True
-        # Place 3 Legions onto Winter track's Harvest Phase box.
-        # We use the existing winter_track_legions field for this.
-        need = BRITANNIA_EXPEDITION_LEGIONS_TO_TRACK
-        for region in list(state["spaces"].keys()):
-            if need <= 0:
-                break
-            n = count_pieces(state, region, ROMANS, LEGION)
-            take = min(n, need)
-            if take > 0:
-                # Remove from map -> they sit on the Winter Track.
-                # Use to_removed=False: we send them through Fallen as
-                # transit, then re-shelf them as winter_track_legions.
-                space = state["spaces"][region]["pieces"][ROMANS]
-                space[LEGION] = space.get(LEGION, 0) - take
-                state["winter_track_legions"] = (
-                    state.get("winter_track_legions", 0) + take
-                )
-                result["legions_to_harvest_box"] += take
-                need -= take
-
-        # Caesar to Britannia (from wherever he is; from Available if
-        # not on map -- in which case we still need to bring him out).
+    from fs_bot.engine.interlude_choices import choose_expedition
+    plan, result['decision_source'] = choose_expedition(state, britannia_decision)
+    if plan['conduct']:
+        result['conducted'] = True
+        for region, count in plan['harvest'].items():
+            remove_piece(state, region, ROMANS, LEGION, count, to_winter_track=True)
+            result['legions_to_harvest_box'] += count
         caesar_region = find_leader(state, ROMANS)
-        if caesar_region is not None and caesar_region != BRITANNIA:
-            move_piece(state, caesar_region, BRITANNIA, ROMANS, LEADER)
-            result["caesar_to_britannia"] = True
-        elif caesar_region == BRITANNIA:
-            result["caesar_to_britannia"] = True
-        elif state["available"].get(ROMANS, {}).get(LEADER, 0) > 0:
-            place_piece(
-                state, BRITANNIA, ROMANS, LEADER, leader_name=CAESAR,
-            )
-            result["caesar_to_britannia"] = True
-
-        # 3+ Legions to Britannia
-        need_legions_b = BRITANNIA_EXPEDITION_MIN_LEGIONS_TO_BRITANNIA
-        for region in list(state["spaces"].keys()):
-            if need_legions_b <= 0:
-                break
-            if region == BRITANNIA:
-                continue
-            n = count_pieces(state, region, ROMANS, LEGION)
-            take = min(n, need_legions_b)
-            if take > 0:
-                move_piece(
-                    state, region, BRITANNIA, ROMANS, LEGION, take,
-                )
-                result["legions_to_britannia"] += take
-                need_legions_b -= take
-
-        # 1+ Auxilia to Britannia
-        need_aux = BRITANNIA_EXPEDITION_MIN_AUXILIA_TO_BRITANNIA
-        for region in list(state["spaces"].keys()):
-            if need_aux <= 0:
-                break
-            if region == BRITANNIA:
-                continue
-            for ps in (HIDDEN, REVEALED, SCOUTED):
-                n = count_pieces_by_state(
-                    state, region, ROMANS, AUXILIA, ps,
-                )
-                t = min(n, need_aux)
-                if t > 0:
-                    move_piece(
-                        state, region, BRITANNIA, ROMANS, AUXILIA, t,
-                        piece_state=ps,
-                    )
-                    need_aux -= t
-                    result["auxilia_to_britannia"] += t
-                if need_aux <= 0:
-                    break
+        move_piece(state, caesar_region, BRITANNIA, ROMANS, LEADER)
+        result['caesar_to_britannia'] = True
+        for region, count in plan['legions'].items():
+            move_piece(state, region, BRITANNIA, ROMANS, LEGION, count)
+            result['legions_to_britannia'] += count
+        for row in plan['auxilia']:
+            move_piece(state, row['region'], BRITANNIA, ROMANS, AUXILIA,
+                       row['count'], piece_state=row['piece_state'])
+            result['auxilia_to_britannia'] += row['count']
 
         # Senate shift 1 box down (toward Adulation)
         _shift_senate_one_box(state, "down")
@@ -1508,6 +1401,8 @@ def _step5_spring(state, roman_dispersed_keep=None):
     # whose Dispersed / Dispersed-Gathering status should NOT be
     # cycled by Spring. Save its current status, run Spring, then
     # restore.
+    from fs_bot.engine.interlude_choices import choose_marker
+    roman_dispersed_keep = choose_marker(state, roman_dispersed_keep)
     saved = None
     if roman_dispersed_keep is not None:
         tinfo = state["tribes"].get(roman_dispersed_keep)
@@ -1527,6 +1422,9 @@ def _step5_spring(state, roman_dispersed_keep=None):
         if tinfo is not None:
             tinfo["status"] = saved["status"]
             tinfo["allied_faction"] = saved["allied_faction"]
+            key = ("dispersed_flipped" if saved["status"] == MARKER_DISPERSED
+                   else "dispersed_gathering_removed")
+            spring_result[key] -= 1
 
     # "Put the Winter marker in the Quarters box" — flag for the next
     # Winter Round so harvest/senate phases know we're in the first
@@ -1732,6 +1630,15 @@ def _build_pax_gallica_deck_for_interlude(state):
 
 def run_interlude(state, *, britannia_decision=None,
                   roman_dispersed_keep=None):
+    """Restore the entire Interlude when a human choice pauses or is invalid."""
+    from fs_bot.engine.spring import atomic
+    with atomic(state):
+        return _run_interlude(state, britannia_decision=britannia_decision,
+                              roman_dispersed_keep=roman_dispersed_keep)
+
+
+def _run_interlude(state, *, britannia_decision=None,
+                   roman_dispersed_keep=None):
     """Execute the full Gallic War Interlude.
 
     Should only be called for SCENARIO_GALLIC_WAR after the 3rd Victory
@@ -1741,11 +1648,12 @@ def run_interlude(state, *, britannia_decision=None,
     Args:
         state: Game state dict (mutated in place).
         britannia_decision: Optional bool or dict for player Roman
-            choice on the Britannia expedition. None -> use NP logic
-            (A8.8.9 / "conduct if able").
+            choice on the Britannia expedition. None asks human Romans,
+            with the existing "conduct if able" default for NPCs/delegation.
         roman_dispersed_keep: Optional tribe constant — the one tribe
             whose Dispersed / Dispersed-Gathering status the Romans
-            choose to keep through Spring. None -> keep none.
+            choose to keep through Spring. None asks human Romans when
+            eligible markers exist, with keep-none as the NPC default.
 
     Returns:
         Dict summarizing each step's outcome.

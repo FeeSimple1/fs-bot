@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Roman Interlude choices — WS-F02 closed
+
+The [Roman Interlude repair](reviews/interlude-roman-choices-2026-11-04.md) asks the Roman player
+whether to conduct the expedition, which three Legions to reserve for Harvest,
+which additional Legions and exact Auxilia cohorts to send to Britannia, and
+which optional Dispersed marker to preserve through Spring. The full allocation
+is checked before movement. Both human frontends retain board inspection,
+pending decisions and accepted earlier choices across save/resume/replay.
+The direct Winter API also restores its counter and board on interruption.
+
+**Original bundle is now 36/50 closed (72%), 14 open.** WS-F01 still tracks
+force reductions and Cisalpina relocations. Separate Circumvallation mechanics,
+full Rampage victim choices, the NPC Intimidate targeting lead, two source
+questions, twelve provisional rulings and 34 unverified inventory rows retain
+their recorded dispositions.
+
+**8,373 tests pass**, including 53 new cases, with 330 focused tests passing.
+Ten audited NPC gameplay records and final hashes match the parent, including
+an Interlude. Mixed-seat replays agree across hash seeds with zero hard findings
+or partials. The 100-game historical balance check passes its existing band.
+The report contains source identity, compatibility limits and archived evidence.
+
 ### 4 November Scout allocation — CMD-SCOUT-ALLOCATION closed
 
 The [Scout repair](reviews/scout-allocations-2026-11-04.md) shares one Auxilia's
@@ -30,7 +52,7 @@ board. Invalid grouped plans restore prior moves and flips. Diviciacus consent
 sees every selected faction, and later owner choices survive save/resume/replay.
 Card 12 and movement restrictions remain in force; legacy bot rows still work.
 
-**Original bundle is now 35/50 closed (70%), 15 open.** Counts measure findings,
+**At that checkpoint, 35/50 were closed (70%), 15 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.

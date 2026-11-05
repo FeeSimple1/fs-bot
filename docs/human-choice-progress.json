@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "a7fc41005705d0255034b4239d9f5091d28176c0",
-    "python_sha256": "51e1c13b45ee217dcbeeaabea806ea094575b8cac1fe54258a1948b5ac5edf2c",
-    "python_files": 502,
+    "commit": "aec38386839b7a6e3653c9b6b12812cf36de6657",
+    "python_sha256": "0f1171979d2ee624a2697545a6f68054f23e8e05a4e5dce025f843af66fe0f39",
+    "python_files": 505,
     "working_tree_changes": true,
-    "note": "Grouped exact Scout allocation closes CMD-SCOUT-ALLOCATION, preserving physical owners and legacy plans. See reviews/scout-allocations-2026-11-04.md."
+    "note": "Roman Interlude expedition and Spring marker choices close WS-F02. See reviews/interlude-roman-choices-2026-11-04.md."
   },
   "total": 50,
-  "closed": 35,
-  "open": 15,
+  "closed": 36,
+  "open": 14,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -38,7 +38,8 @@
     "WS-F05 closes with exact Hidden/Revealed/Scouted relocation cohorts, original adjacent-piece capacity and Roman continuation validation, including terminal/durable save/resume/replay. Legacy four-entry default plans remain supported. See reviews/quarters-visibility-2026-11-04.md.",
     "EXP-08 closes with zero-to-maximum A40S/A51U/A60U executor choices, exact Warband visibility, actual-placement compensation and terminal/durable save/resume/replay. Related A51 Scouted omission is corrected. See reviews/expansion-up-to-2026-11-04.md.",
     "BE-05 closes with exact Drought physical-owner choices, German restrictions, protected Fort, corrected defaults and later-Region replay. Its BE-08 schema portion is repaired; other BE-08 shapes remain open. See reviews/drought-losses-2026-11-04.md.",
-    "CMD-SCOUT-ALLOCATION closes with one Auxilia budget across exact faction/visibility targets, terminal and durable support, physical-owner consent and rollback/replay. See reviews/scout-allocations-2026-11-04.md."
+    "CMD-SCOUT-ALLOCATION closes with one Auxilia budget across exact faction/visibility targets, terminal and durable support, physical-owner consent and rollback/replay. See reviews/scout-allocations-2026-11-04.md.",
+    "WS-F02 closes with Roman-owned Interlude expedition and marker requests, exact physical allocations and full Winter rollback. WS-F01 force reductions and Cisalpina choices remain open. See reviews/interlude-roman-choices-2026-11-04.md."
   ],
   "findings": [
     {
@@ -394,7 +395,9 @@
       "id": "WS-F02",
       "title": "Roman Interlude expedition and marker-preservation choices are unreachable in human sessions",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/interlude-roman-choices-2026-11-04.md",
+      "disposition": "Romans choose expedition or decline, exact Legion/Auxilia cohorts and one preserved Spring marker. Both human frontends retain pending IDs, accepted choices and rollback/save/resume/replay."
     },
     {
       "id": "WS-F03",

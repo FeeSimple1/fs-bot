@@ -1072,6 +1072,9 @@ class TestRampage:
         place_hidden_warbands(state, NERVII, BELGAE, 2)
         place_piece(state, NERVII, ROMANS, AUXILIA, 2, piece_state=REVEALED)
 
+        place_piece(state, ATREBATES, ROMANS, ALLY)
+        state['tribes'][TRIBE_ATREBATES]['allied_faction'] = ROMANS
+
         result = rampage(state, NERVII, ROMANS, 1, [
             {"action": "retreat", "piece_type": AUXILIA,
              "piece_state": REVEALED, "retreat_region": ATREBATES},

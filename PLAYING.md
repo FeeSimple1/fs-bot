@@ -327,8 +327,13 @@ Hidden Belgic Warbands currently available; there is no two-Warband cap.
 Only that many flip, leaving the others Hidden. Skip the Region to decline
 Rampage there. Quantity is checked again at execution if the Command changes
 the available force. NPC Belgae use all able Warbands, while preserving the
-last enemy piece before Battle. The victim's full piece-by-piece choice
-interface remains a separate known limitation.
+last enemy piece before Battle. The target chooses the exact affected pieces
+and, for each, removal or Retreat. All pieces that Retreat share one selected
+legal destination. Removed Legions go to Fallen without a die roll. The menus
+show each piece's visibility and support `b` or `board` inspection. A target
+without a legal refuge can still choose which pieces to remove. Arverni in
+Ariovistus are removed automatically. If a later Region pauses, saving and
+resuming retains the earlier accepted victim choice.
 
 Intimidate now lets you choose the exact Allied Tribe to remove, including
 after Raid and through A45. Later choices cannot reuse the selected disc,

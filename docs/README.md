@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Rampage victims](reviews/rampage-victims-2026-11-04.md)
+  covers target-owned physical pieces, mixed dispositions and shared Retreat.
+
 - [4 November Battle casualty identities](reviews/battle-loss-identity-2026-11-04.md)
   covers ordinary visibility, named Allied Tribes and saved-prompt compatibility.
 

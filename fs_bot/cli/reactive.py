@@ -148,6 +148,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
                 legal = list(request.get("legal_regions") or [])
                 ctx = request.get("context") or {}
                 if ctx.get("rampage"):
+                    if 'pieces' in request:
+                        from fs_bot.cli.rampage import collect_victims
+                        return collect_victims(state, faction, request, stdin, stdout)
                     stdout.write(
                         f"\n{faction}: {request.get('attacker')} Rampages "
                         f"in {request.get('region')} -- "

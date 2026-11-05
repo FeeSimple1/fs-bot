@@ -164,6 +164,9 @@ def validate_response(state, request, response):
         from fs_bot.commands.march import validate_harassment_response
         return validate_harassment_response(request, response)
     if kind == RETREAT:
+        if request.get('context', {}).get('rampage') and 'pieces' in request:
+            from fs_bot.engine.rampage_choices import validate_response as validate_victims
+            return validate_victims(state, request, response)
         if not isinstance(response, dict) or type(response.get("retreat")) is not bool:
             raise ValueError("Retreat requires {retreat: true/false, region: ...}.")
         destination = response.get("region")
@@ -403,11 +406,14 @@ class SeatSession:
                              if entry["assistant_response"] is not None
                              else {"use_default": True})}
 
-    def _saved_loss_request(self, state, request):
-        """Finish a recorded old casualty prompt only on its exact saved board."""
-        if request.get('kind') != LOSS_ORDER:
+    def _saved_physical_request(self, state, request):
+        """Finish recorded old physical choices only on their exact saved board."""
+        if request.get('kind') == LOSS_ORDER:
+            from fs_bot.battle.losses import compatible_loss_request as compatible
+        elif request.get('kind') == RETREAT and request.get('context', {}).get('rampage'):
+            from fs_bot.engine.rampage_choices import compatible_request as compatible
+        else:
             return request
-        from fs_bot.battle.losses import compatible_loss_request
         journal = self.data['journal']
         decision_id = f'd{len(self.log) + self.cursor + 1:06d}'
         records = ([journal[self.cursor]] if self.cursor < len(journal) else [])
@@ -417,7 +423,7 @@ class SeatSession:
             records.append(pending)
         for record in records:
             saved = decode(record.get('assistant_request', record.get('request', {})))
-            if not compatible_loss_request(request, saved):
+            if not compatible(request, saved):
                 continue
             _, signatures = _decision_signatures(state, saved)
             signature = record.get('assistant_signature', record.get('signature'))
@@ -431,7 +437,7 @@ class SeatSession:
         request = dict(request, faction=faction)
         if self._skip_legacy_window(state, request):
             return None
-        request = self._saved_loss_request(state, request)
+        request = self._saved_physical_request(state, request)
         signature, compatible_signatures = _decision_signatures(state, request)
         journal = self.data["journal"]
         if self.cursor < len(journal):

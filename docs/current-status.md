@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Rampage victims — BATTLE-RAMPAGE-VICTIM closed
+
+The [Rampage victim repair](reviews/rampage-victims-2026-11-04.md) gives the target exact
+Warband/Auxilia/Legion selection and a remove-or-Retreat choice for each piece.
+All Retreating pieces use one legal destination. Complete validation precedes
+Belgic flips and target mutations, and the low-level operation restores on
+failure. Host consent is collected once. Forced expansion Arverni removals
+retain their source priority. Terminal and durable sessions support physical
+selection, earlier accepted Regions, save/resume and deterministic replay.
+
+**Original bundle is now 38/50 closed (76%), 12 open.** Ordinary Battle Retreat
+survivor choices remain open. Separate Circumvallation mechanics, the NPC
+Intimidate targeting lead, two source questions, twelve provisional rulings
+and 34 unverified inventory rows retain their recorded dispositions.
+
+**8,465 tests pass**, including 42 new cases, with 469 focused tests passing.
+Ten audited NPC records/final hashes match the parent. Mixed-seat runs agree
+across hash seeds with zero hard findings or partials. The 100-game historical
+balance guard passes its existing band. The report records source provenance,
+raw evidence, protected inputs and the older terminal replay compatibility limit.
+
 ### 4 November physical Battle casualties — BATTLE-LOSS-IDENTITY closed
 
 The [Battle casualty repair](reviews/battle-loss-identity-2026-11-04.md) offers exact ordinary
@@ -32,7 +53,7 @@ choices after each removal or saving roll. Recorded old generic prompts can
 finish on their verified original board, including accepted earlier casualties
 and saved second-loss prompts. New prompts require their actual offered entries.
 
-**Original bundle is now 37/50 closed (74%), 13 open.** Full Retreat and
+**At that checkpoint, 37/50 were closed (74%), 13 open.** Full Retreat and
 Rampage victim choices remain open. The separate Circumvallation mechanics,
 NPC Intimidate targeting lead, two source questions, twelve provisional rulings
 and 34 unverified inventory rows retain their recorded dispositions.

@@ -33,7 +33,7 @@ from fs_bot.rules_consts import (
     LEADER, LEGION, AUXILIA, WARBAND, FORT, CITADEL,
     FLIPPABLE_PIECES,
     # Piece states
-    HIDDEN, REVEALED,
+    HIDDEN, REVEALED, SCOUTED,
     # Leaders
     AMBIORIX, BODUOGNATUS,
     SA_RAMPAGE,
@@ -164,7 +164,16 @@ def validate_rampage_target(state, region, target_faction):
 
 
 def rampage(state, region, target_faction, warbands_to_flip,
-            target_actions):
+            target_actions, *, retreat_regions=None):
+    """Apply one complete Rampage transaction, including any agreed Retreat."""
+    from fs_bot.engine.spring import atomic
+    with atomic(state):
+        return _rampage(state, region, target_faction, warbands_to_flip,
+                        target_actions, retreat_regions=retreat_regions)
+
+
+def _rampage(state, region, target_faction, warbands_to_flip,
+             target_actions, *, retreat_regions=None):
     """Execute Rampage in a region.
 
     §4.5.2: Belgae flip Hidden Warbands to Revealed. For each flipped
@@ -192,22 +201,62 @@ def rampage(state, region, target_faction, warbands_to_flip,
     """
     scenario = state["scenario"]
 
-    # Validate we have enough Hidden Warbands
-    hidden_wb = count_pieces_by_state(
-        state, region, BELGAE, WARBAND, HIDDEN
-    )
-    if hidden_wb < warbands_to_flip:
-        raise CommandError(
-            f"Only {hidden_wb} Hidden Belgic Warbands in {region}, "
-            f"need {warbands_to_flip}"
-        )
-
-    # Must have matching target actions
-    if len(target_actions) != warbands_to_flip:
-        raise CommandError(
-            f"Need exactly {warbands_to_flip} target actions, "
-            f"got {len(target_actions)}"
-        )
+    from collections import Counter
+    from fs_bot.engine.rampage_choices import victim_pieces, validate_response
+    if type(warbands_to_flip) is not int or warbands_to_flip < 0:
+        raise CommandError('Rampage requires a nonnegative integer Warband count')
+    if not isinstance(target_actions, list) or len(target_actions) != warbands_to_flip:
+        raise CommandError(f'Need exactly {warbands_to_flip} target actions')
+    if warbands_to_flip == 0:
+        return {'warbands_flipped': 0, 'target_removed': [], 'target_retreated': []}
+    valid, reason = validate_rampage_region(state, region)
+    if valid:
+        valid, reason = validate_rampage_target(state, region, target_faction)
+    if not valid:
+        raise CommandError(reason)
+    if warbands_to_flip > count_pieces_by_state(state, region, BELGAE, WARBAND, HIDDEN):
+        raise CommandError('Rampage count exceeds Hidden Belgic Warbands')
+    pool = victim_pieces(state, region, target_faction)
+    available = Counter(pool)
+    normalized, destinations = [], set()
+    for entry in target_actions:
+        if (not isinstance(entry, dict)
+                or set(entry) - {'action', 'piece_type', 'piece_state', 'retreat_region'}
+                or entry.get('piece_type') not in (WARBAND, AUXILIA, LEGION)
+                or entry.get('piece_state') not in (None, HIDDEN, REVEALED, SCOUTED)):
+            raise CommandError('Rampage needs physical mobile pieces and valid dispositions')
+        piece, visibility = entry['piece_type'], entry.get('piece_state')
+        if piece in FLIPPABLE_PIECES and visibility is None:
+            visibility = next((ps for ps in (HIDDEN, REVEALED, SCOUTED)
+                               if available[piece, ps] > 0), None)
+        if available[piece, visibility] <= 0:
+            raise CommandError('Rampage selects an unavailable physical piece')
+        available[piece, visibility] -= 1
+        action = entry.get('action')
+        if action == 'retreat':
+            if target_faction == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
+                raise CommandError('Arverni cannot Retreat in Ariovistus — must remove')
+            destination = entry.get('retreat_region')
+            if not isinstance(destination, str):
+                raise CommandError('Must specify retreat_region for Rampage retreat')
+            destinations.add(destination)
+        elif entry.get('retreat_region') is not None:
+            raise CommandError('A removed Rampage victim cannot name a Retreat destination')
+        normalized.append({'action': action, 'piece_type': piece, 'piece_state': visibility})
+    if len(destinations) > 1:
+        raise CommandError('Rampage victims must share one Retreat destination')
+    destination = next(iter(destinations), None)
+    if destination is not None and retreat_regions is None:
+        from fs_bot.engine.execute import _retreat_destinations
+        retreat_regions = _retreat_destinations(state, region, target_faction, rampage=True)
+    request = {'region': region, 'defender': target_faction, 'pieces': pool,
+               'context': {'num_pieces': warbands_to_flip}, 'legal_regions': retreat_regions or []}
+    try:
+        validate_response(state, request, {'actions': normalized, 'retreat_region': destination})
+    except ValueError as exc:
+        raise CommandError(str(exc)) from exc
+    target_actions = [dict(entry, **({'retreat_region': destination} if entry['action'] == 'retreat' else {}))
+                      for entry in normalized]
 
     result = {
         "warbands_flipped": warbands_to_flip,
@@ -226,12 +275,6 @@ def rampage(state, region, target_faction, warbands_to_flip,
         piece_type = action_info["piece_type"]
         piece_state = action_info.get("piece_state")
 
-        if piece_type not in (WARBAND, AUXILIA, LEGION):
-            raise CommandError(
-                f"Rampage can only affect Warbands, Auxilia, or Legions, "
-                f"not {piece_type}"
-            )
-
         if action == "remove":
             # A4.5 NOTE: "When Rampage Targets Arverni, they are removed
             # rather than Retreating" in Ariovistus.
@@ -244,24 +287,7 @@ def rampage(state, region, target_faction, warbands_to_flip,
             result["target_removed"].append((piece_type, 1))
 
         elif action == "retreat":
-            retreat_region = action_info.get("retreat_region")
-            if retreat_region is None:
-                raise CommandError(
-                    "Must specify retreat_region for Rampage retreat"
-                )
-
-            # A4.5 NOTE: Arverni never retreat in Ariovistus
-            if (target_faction == ARVERNI
-                    and scenario in ARIOVISTUS_SCENARIOS):
-                raise CommandError(
-                    "Arverni cannot Retreat in Ariovistus — must remove"
-                )
-
-            # Retreat to adjacent controlled region
-            if not is_adjacent(region, retreat_region):
-                raise CommandError(
-                    f"{retreat_region} is not adjacent to {region}"
-                )
+            retreat_region = action_info['retreat_region']
 
             # Move the piece
             if piece_type == LEGION:

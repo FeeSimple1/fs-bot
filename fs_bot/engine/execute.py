@@ -5390,14 +5390,14 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
     return (False, None)
 
 
-def _retreat_destinations(state, region, faction):
+def _retreat_destinations(state, region, faction, *, rampage=False):
     """Adjacent Regions a faction may Retreat into (§8.4.3 + §1.5.2).
 
     Includes Regions the faction Controls, plus Regions Controlled by another
     Faction that agrees to the Retreat (np_agrees_to_retreat — Aedui/Romans
     per §8.6.6/§8.8.6). Returns a list (possibly empty).
     """
-    from fs_bot.rules_consts import FACTIONS
+    from fs_bot.rules_consts import FACTIONS, GERMANS, ARVERNI, ARIOVISTUS_SCENARIOS
     from fs_bot.map.map_data import get_adjacent
     from fs_bot.board.control import is_controlled_by
 
@@ -5408,6 +5408,8 @@ def _retreat_destinations(state, region, faction):
             continue
         for c in FACTIONS:
             if c == faction:
+                continue
+            if rampage and (c == GERMANS or (c == ARVERNI and state['scenario'] in ARIOVISTUS_SCENARIOS)):
                 continue
             if is_controlled_by(state, r, c):
                 # The controlling Faction agrees? Agent hook (§1.5.2) for a
@@ -5485,12 +5487,8 @@ def _execute_rampage(state, faction, bot_action):
         if hidden_belgic <= 0:
             continue
 
-        # Build the ordered pool of target pieces to lose (lowest value 1st).
-        pool = []
-        for pt in (WARBAND, AUXILIA):
-            for ps in (SCOUTED, REVEALED, HIDDEN):
-                pool += [(pt, ps)] * _count_state(state, region, target, pt, ps)
-        pool += [(LEGION, None)] * count_pieces(state, region, target, LEGION)
+        from fs_bot.engine.rampage_choices import victim_pieces, validate_response, target_actions, legacy_destination
+        pool = victim_pieces(state, region, target)
         if not pool:
             if 'count' in entry:
                 errors.append({'region': region, 'target': target,
@@ -5510,39 +5508,37 @@ def _execute_rampage(state, faction, bot_action):
             n = min(n, max(0, count_pieces(state, region, target) - 1))
         if n == 0:
             continue
-        dest = _best_retreat_destination(state, region, target)
         force_remove = (scenario in ARIOVISTUS_SCENARIOS and target == ARVERNI)
-        # §4.5.2: the TARGET chooses remove or Retreat (A4.5 forces
-        # removal for a Rampaged Arverni in Ariovistus — no choice). A
-        # player target is consulted via the RETREAT hook with a rampage
-        # context; deferring keeps the NP default (§8.4.1/§8.4.3:
-        # Retreat to save pieces when a destination exists).
-        if (not force_remove
-                and target not in state.get("non_player_factions", set())):
+        legal = [] if force_remove else sorted(_retreat_destinations(state, region, target, rampage=True))
+        dest = max(legal, key=lambda r: count_pieces(state, r, target)) if legal else None
+        actions = None
+        if not force_remove and target not in state.get('non_player_factions', set()):
             from fs_bot.engine.agent import consult_agent, RETREAT
-            legal = sorted(_retreat_destinations(state, region, target))
-            resp = consult_agent(state, target, {
-                "kind": RETREAT, "region": region, "attacker": faction,
-                "defender": target, "is_ambush": False,
-                "legal_regions": legal,
-                "context": {"rampage": True, "num_pieces": n}})
-            if isinstance(resp, dict):
-                if resp.get("retreat") and resp.get("region") in legal:
-                    dest = resp["region"]
-                else:
-                    dest = None    # the player chose removal
-
-        actions = []
-        for i in range(n):
-            pt, ps = pool[i]
-            if dest is not None and not force_remove:
-                actions.append({"action": "retreat", "piece_type": pt,
-                                "piece_state": ps, "retreat_region": dest})
-            else:
-                actions.append({"action": "remove", "piece_type": pt,
-                                "piece_state": ps})
+            request = {'kind': RETREAT, 'region': region, 'attacker': faction,
+                       'defender': target, 'is_ambush': False, 'legal_regions': legal,
+                       'context': {'rampage': True, 'num_pieces': n}, 'pieces': pool}
+            response = consult_agent(state, target, request)
+            delegated = (response is None or (isinstance(response, dict)
+                         and set(response) == {'use_default'} and response['use_default'] is True))
+            if not delegated:
+                try:
+                    if isinstance(response, dict) and 'actions' in response:
+                        validate_response(state, request, response)
+                        actions = target_actions(response)
+                    else:
+                        # Recorded old prompts and raw adapters retain their
+                        # all-or-none disposition and default physical subset.
+                        dest = legacy_destination(response, legal)
+                except (ValueError, TypeError) as exc:
+                    errors.append({'region': region, 'target': target, 'error': str(exc)})
+                    continue
+        if actions is None:
+            actions = [{'action': 'retreat' if dest is not None else 'remove',
+                        'piece_type': piece, 'piece_state': visibility,
+                        **({'retreat_region': dest} if dest is not None else {})}
+                       for piece, visibility in pool[:n]]
         try:
-            _sa_rampage(state, region, target, n, actions)
+            _sa_rampage(state, region, target, n, actions, retreat_regions=legal)
             done.append({"region": region, "target": target, "count": n})
         except _EXEC_ERRORS as exc:
             errors.append({"region": region, "target": target,

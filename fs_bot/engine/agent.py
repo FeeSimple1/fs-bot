@@ -102,9 +102,13 @@ Request kinds
   See AGENT_INTERFACE.md for their response format and scope.
 
 The ``RETREAT`` kind also carries ``context={"rampage": True, "num_pieces"}``
-for a Rampage target's remove-vs-Retreat choice (§4.5.2): respond
-``{"retreat": True, "region": <legal>}`` to Retreat the affected pieces or
-``{"retreat": False}`` to remove them; defer for the NP default.
+for a Rampage target (§4.5.2). Fresh requests include exact ``pieces`` pairs.
+Respond with ``{"actions":[{"action":"remove" or "retreat", "piece_type":...,
+"piece_state":...}, ...], "retreat_region": destination_or_None}``.
+Choose one piece per affected Belgic Warband. All Retreating victims share the
+one offered destination. Raw legacy adapters and verified old saved prompts
+can retain their all-or-none ``{"retreat":bool,"region":...}`` contract.
+
 """
 
 RETREAT = "retreat"

@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "b4613aeb3ed0664d85bf3d2f306b5dd07fd7be84",
-    "python_sha256": "07631b40b8ce8a911c3b6ef8fc886dbd9435a2dced5601370f3c3510b8c6e99c",
-    "python_files": 506,
+    "commit": "70587e632ab35cc1f7f8a44a0f0e8eefb81be23a",
+    "python_sha256": "2747a7a23f8ffb0b5769caf2ef0c1b39fdb98f730076a142644ad3c7a720f987",
+    "python_files": 509,
     "working_tree_changes": true,
-    "note": "Ordinary physical Battle casualty choices close BATTLE-LOSS-IDENTITY. See reviews/battle-loss-identity-2026-11-04.md."
+    "note": "Exact Rampage victim pieces and mixed dispositions close BATTLE-RAMPAGE-VICTIM. See reviews/rampage-victims-2026-11-04.md."
   },
   "total": 50,
-  "closed": 37,
-  "open": 13,
+  "closed": 38,
+  "open": 12,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -40,7 +40,8 @@
     "BE-05 closes with exact Drought physical-owner choices, German restrictions, protected Fort, corrected defaults and later-Region replay. Its BE-08 schema portion is repaired; other BE-08 shapes remain open. See reviews/drought-losses-2026-11-04.md.",
     "CMD-SCOUT-ALLOCATION closes with one Auxilia budget across exact faction/visibility targets, terminal and durable support, physical-owner consent and rollback/replay. See reviews/scout-allocations-2026-11-04.md.",
     "WS-F02 closes with Roman-owned Interlude expedition and marker requests, exact physical allocations and full Winter rollback. WS-F01 force reductions and Cisalpina choices remain open. See reviews/interlude-roman-choices-2026-11-04.md.",
-    "BATTLE-LOSS-IDENTITY closes with ordinary exact visibility and named Allied Tribe casualties. Saved generic requests require matching board signatures, and new responses use offered identities. See reviews/battle-loss-identity-2026-11-04.md."
+    "BATTLE-LOSS-IDENTITY closes with ordinary exact visibility and named Allied Tribe casualties. Saved generic requests require matching board signatures, and new responses use offered identities. See reviews/battle-loss-identity-2026-11-04.md.",
+    "BATTLE-RAMPAGE-VICTIM closes with exact target-owned pieces and mixed dispositions. Host consent is collected once, destination restrictions apply and the primitive validates atomically. Verified older durable prompts retain their recorded contract. See reviews/rampage-victims-2026-11-04.md."
   ],
   "findings": [
     {
@@ -140,7 +141,9 @@
       "id": "BATTLE-RAMPAGE-VICTIM",
       "title": "Rampage target cannot choose affected pieces or per-piece removal versus Retreat",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/rampage-victims-2026-11-04.md",
+      "disposition": "The target chooses exact mobile pieces and each removal/Retreat disposition, sharing one legal destination. Complete validation and atomic primitive execution preserve physical cohorts, Fallen, saved choices and replay. Forced expansion Arverni removal remains automatic."
     },
     {
       "id": "MARCH-DROPOFF",

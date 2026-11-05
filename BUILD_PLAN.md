@@ -71,7 +71,11 @@ transactional Winter retries. At that checkpoint original progress was 36/50 clo
 
 The [4 November Battle casualty identity repair](docs/reviews/battle-loss-identity-2026-11-04.md)
 closes BATTLE-LOSS-IDENTITY with exact ordinary visibility and named Ally discs.
-Current original progress is 37/50 closed (74%), 13 open.
+At that checkpoint original progress was 37/50 closed (74%), 13 open.
+
+The [4 November Rampage victim repair](docs/reviews/rampage-victims-2026-11-04.md) closes
+BATTLE-RAMPAGE-VICTIM with exact pieces and mixed dispositions.
+Current original progress is 38/50 closed (76%), 12 open.
 
 ## Existing implementation
 
@@ -144,7 +148,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 37 of 50 closed (74%) and 13 open; these are finding counts, not
+now records 38 of 50 closed (76%) and 12 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)
@@ -179,8 +183,9 @@ repairs one marker boundary. The [Intimidate Tribe repair](docs/reviews/intimida
 closes CMD-INTIMIDATE-TRIBE and makes those removals identify their physical
 discs; it does not implement persistent marked-group tracking. The
 [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md) closes
-CMD-RAMPAGE-COUNT and removes the artificial NPC two-Warband cap; full victim
-choices remain BATTLE-RAMPAGE-VICTIM. The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md)
+CMD-RAMPAGE-COUNT and removes the artificial NPC two-Warband cap. The
+[physical victim repair](docs/reviews/rampage-victims-2026-11-04.md) closes
+BATTLE-RAMPAGE-VICTIM with owner-selected pieces and mixed dispositions. The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md)
 closes CMD-SEIZE-TRIBES and shares exact ordinary/Event dispersal contracts.
 Next address the remaining [Circumvallation persistent-effect defects](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
 Continue with the remaining Event ownership, quantity

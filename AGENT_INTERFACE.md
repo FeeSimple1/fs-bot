@@ -1284,9 +1284,32 @@ unchanged, but older human plans need the field and cross-revision replay is
 not promised. A paused victim request carries the exact quantity in
 `context.num_pieces`; accepted actor plans keep their count through save/resume.
 
-Victim piece selection and per-piece remove/Retreat choices remain the open
-BATTLE-RAMPAGE-VICTIM finding. This quantity repair preserves that existing
-reaction interface and does not claim full Rampage choice coverage.
+The target's `retreat` request also includes `pieces`, a list of eligible
+`[piece_type,piece_state]` pairs, repeated for separate counters. Respond with
+one exact disposition per `context.num_pieces` and one shared destination.
+
+```json
+{"actions":[{"action":"remove","piece_type":"Legion","piece_state":null},{"action":"retreat","piece_type":"Auxilia","piece_state":"Revealed"}],"retreat_region":"Atrebates"}
+```
+
+Each action is `remove` or `retreat`. A removal-only response uses
+`retreat_region:null`. Every Retreating piece uses the same offered Region.
+Choose only offered physical cohorts, including exact visibility. This is the
+target's response, supplied through its reactive channel. It is independent of
+the Belgic actor's chosen count. Missing, incomplete, stale or overclaimed
+fresh durable responses remain pending. Explicit default delegation is allowed.
+
+Host consent is requested once for each candidate refuge. Rampage excludes
+No Control and Germanic Control. Expansion Arverni cannot Retreat or agree to
+a Retreat into their Control. The low-level operation validates all actions
+before flipping Warbands and restores on failure.
+
+Raw adapters can retain all-or-none `{"retreat":bool,"region":...}` responses
+and the established default physical subset. Older durable journal entries,
+pending prompts and replay expectations can finish that recorded contract only
+on their matching original board and legal options. New durable requests use
+exact actions. Older terminal replays containing two recorded rounds of host
+consent may need that Rampage segment recorded again.
 
 ### Other paid and optional grants
 

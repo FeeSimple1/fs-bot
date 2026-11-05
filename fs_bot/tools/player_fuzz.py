@@ -310,6 +310,16 @@ def make_random_reactive(seats, rng):
             return {"choice": rng.choice(request["options"])}
         if kind == RETREAT:
             legal = list(request.get("legal_regions") or [])
+            if request.get('context', {}).get('rampage') and 'pieces' in request:
+                pool = list(request['pieces'])
+                rng.shuffle(pool)
+                destination = rng.choice(legal) if legal else None
+                actions = [{'piece_type': piece, 'piece_state': visibility,
+                            'action': 'retreat' if destination is not None and rng.random() < 0.5 else 'remove'}
+                           for piece, visibility in pool[:request['context']['num_pieces']]]
+                if not any(action['action'] == 'retreat' for action in actions):
+                    destination = None
+                return {'actions': actions, 'retreat_region': destination}
             choices = [None] + legal
             pick = choices[rng.randrange(len(choices))]
             return {"retreat": pick is not None, "region": pick}

@@ -162,7 +162,9 @@ def test_victim_pending_request_receives_exact_quantity_and_saves_resumes(tmp_pa
     path=tmp_path/'victim.json';save_game(state,path,meta=session.meta,log=session.log)
     restored,meta,log=load_game(path)
     resumed=SeatSession(restored,meta,log,HumanTurnDisplay(StringIO()));restored['decision_agent']=resumed.reactive
-    resumed.import_inbox({'decision_id':pending['id'],'response':{'retreat':False}})
+    response={'actions':[{'action':'remove','piece_type':pt,'piece_state':ps}
+                         for pt,ps in request['pieces'][:3]],'retreat_region':None}
+    resumed.import_inbox({'decision_id':pending['id'],'response':response})
     with _action_transaction(restored,_driver(resumed)):
         result=_execute_rampage(restored,rc.BELGAE,action(3))
     resumed.finish()

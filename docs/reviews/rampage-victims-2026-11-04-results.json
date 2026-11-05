@@ -1,0 +1,295 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "70587e632ab35cc1f7f8a44a0f0e8eefb81be23a",
+    "dirty": true,
+    "source_sha256": "2747a7a23f8ffb0b5769caf2ef0c1b39fdb98f730076a142644ad3c7a720f987"
+  },
+  "python_files": 509,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "new_tests": 42,
+  "targeted_passed": 469,
+  "parent_proof": {
+    "behavioral_failures": 5,
+    "controls_passed": 2,
+    "accepted_passed": 7
+  },
+  "bots": {
+    "games": 10,
+    "all_completed_and_audited": true,
+    "gameplay_and_final_hashes_equal": true,
+    "interlude_exercised": {
+      "scenario": "The Gallic War",
+      "seed": 1
+    },
+    "excluded": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "70587e632ab35cc1f7f8a44a0f0e8eefb81be23a",
+      "dirty": true,
+      "source_sha256": "2747a7a23f8ffb0b5769caf2ef0c1b39fdb98f730076a142644ad3c7a720f987",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 314,
+    "event_turns": 91,
+    "events_ok": 85,
+    "partial": 0,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "2d71a817ecdd8b562116a2d6cd4298a29d5377c5e2f12651c9c64371a8c35ac4",
+    "records": [
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 32,
+        "event_turns": 13,
+        "events_ok": 13,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "03e062cbf960618b"
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 36,
+        "event_turns": 11,
+        "events_ok": 10,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "5ef58925b65b9a4c"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 12,
+        "event_turns": 6,
+        "events_ok": 6,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "2292b8ed8868d85f"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 2,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 62,
+        "event_turns": 16,
+        "events_ok": 14,
+        "rejected": 2,
+        "findings": [],
+        "partial": 0,
+        "digest": "e13cb1839fbca705"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 40,
+        "event_turns": 13,
+        "events_ok": 11,
+        "rejected": 2,
+        "findings": [],
+        "partial": 0,
+        "digest": "7dd3034330018b5b"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 43,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "cb5eab60b34d2946"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 1,
+        "seats": [
+          "Germans",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 41,
+        "event_turns": 9,
+        "events_ok": 8,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "c1ffb8a98bdf07f1"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 2,
+        "seats": [
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 14,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "4bf5d57d535d16f7"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 27,
+        "event_turns": 4,
+        "events_ok": 4,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "73e36b1eb7e34e64"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 2,
+        "seats": [
+          "Germans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 7,
+        "event_turns": 1,
+        "events_ok": 1,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "01d686a6f2551217"
+      }
+    ]
+  },
+  "mixed_complete_json_equal": true,
+  "hash_seeds": [
+    0,
+    987
+  ],
+  "mixed_executions_including_replay": 40,
+  "balance": {
+    "games": 100,
+    "band_percentage_points": 15,
+    "maximum_absolute_delta_percentage_points": 15,
+    "historical_baseline_winner_changes": 35,
+    "baseline_unchanged": true,
+    "passed": true
+  },
+  "progress": {
+    "closed": 38,
+    "total": 50,
+    "percent": 76,
+    "open": 12
+  },
+  "remaining": "Ordinary Battle Retreat survivor choices and other findings remain open. Separate mechanics leads and source questions retain their dispositions.",
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8465",
+    "time": "291.567",
+    "timestamp": "2026-11-05T06:35:05.320533+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "python": "3.12.14",
+  "compatibility_limit": "Older terminal replays with two recorded host-consent rounds may need their Rampage segment recorded again. Verified old durable prompts and raw all-or-none adapters are supported.",
+  "commands": [
+    "python -m pytest -q --junitxml=/tmp/fs-rampage-victim-full.xml",
+    "python -m pytest -q fs_bot/tests/test_rampage*.py fs_bot/tests/test_special_activities.py fs_bot/tests/test_execute_integration.py fs_bot/tests/test_assistant_session.py fs_bot/tests/test_agent_interface.py fs_bot/tests/test_battle_loss_identity.py fs_bot/tests/test_battle_action_windows.py",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.run_batch --games 2 --workers 2 --out OUT",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-2 --out OUT.json",
+    "PYTHONHASHSEED=987 python -m fs_bot.tools.player_fuzz --seeds 1-2 --out OUT.json",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.balance_smoke --seeds 1-20",
+    "PYTHONPATH=. python -m pytest -q /tmp/test_rampage_victim_parent_proof.py --junitxml=OUT.xml",
+    "PYTHONPATH=. python /tmp/fs-rampage-victim-verify.py",
+    "PYTHONPATH=. python /tmp/fs-rampage-victim-package.py"
+  ]
+}

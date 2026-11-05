@@ -40,6 +40,9 @@ marker to preserve through Spring. [Repair and validation](docs/reviews/interlud
 Battle casualties now offer exact visibility and named Allied Tribes.
 [Repair and validation](docs/reviews/battle-loss-identity-2026-11-04.md).
 
+Rampage targets now choose exact pieces and can mix removal with Retreat.
+[Repair and validation](docs/reviews/rampage-victims-2026-11-04.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.
@@ -151,7 +154,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**37 of 50 findings are closed (74%); 13 remain open** in the
+**38 of 50 findings are closed (76%); 12 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

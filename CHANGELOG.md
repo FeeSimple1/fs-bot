@@ -4,6 +4,19 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Rampage victim choices, 4 November 2026
+
+- Let the target select exact pieces and mix removal with Retreat, sharing
+  one legal destination. Preserve Auxilia/Warband visibility and Legion Fallen.
+- Validate the complete selection before mutation and resolve the primitive
+  atomically, including raw-call failures and duplicate physical claims.
+- Collect host consent once and apply printed destination restrictions.
+  Expansion Arverni removal is automatic.
+- Retain verified older durable prompts and raw adapter defaults. Fresh human
+  prompts require complete physical choices. Terminal menus permit inspection.
+- Close BATTLE-RAMPAGE-VICTIM, bringing original progress to 38/50 (76%), 12 open.
+  See the [report](docs/reviews/rampage-victims-2026-11-04.md).
+
 ## Unreleased — Physical Battle casualties, 4 November 2026
 
 - Offer each human's ordinary Hidden, Revealed and Scouted Warbands/Auxilia

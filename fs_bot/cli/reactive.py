@@ -67,6 +67,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             if kind == "diviciacus_pieces":
                 from fs_bot.cli.diviciacus import collect_pieces
                 return collect_pieces(state, faction, request, stdin, stdout)
+            if kind == 'devastate_losses':
+                from fs_bot.cli.devastate_losses import collect_devastate_losses
+                return collect_devastate_losses(state,faction,request,stdin,stdout)
             if kind == 'harvest_legions':
                 from fs_bot.cli.harvest_legions import collect_harvest_legions
                 return collect_harvest_legions(state, faction, request, stdin, stdout)

@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Devastate casualties](reviews/devastate-losses-2026-11-04.md):
+  exact owner choices, cohort validation, NPC priority and durable replay.
+
+
 - [4 November Gallic Shouts peek](reviews/gallic-shouts-peek-2026-11-04.md):
   Roman-owned private cards before the benefit choice, console and replay.
 

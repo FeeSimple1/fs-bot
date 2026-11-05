@@ -16,6 +16,14 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+When Devastate takes casualties, each human owner chooses its own losses by
+piece type and visibility. You may lose a Legion instead of Auxilia, or select
+Hidden, Revealed or Scouted Warbands as offered. Remove the entire required
+count; Legions go directly to Fallen, without a die roll. Leaders and static
+pieces are protected. `b`/`board` is available. All owner choices are gathered
+before that Region's pieces and marker change. Non-player/default losses follow
+the printed priority, removing Scouted before Revealed before Hidden soft pieces.
+
 Gallic Shouts unshaded privately shows the Roman player the next two facedown
 cards, including text and initiative information, before the free Limited
 Command/Become Eligible choice. The already face-up next card is excluded.

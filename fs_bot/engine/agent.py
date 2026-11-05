@@ -18,6 +18,12 @@ typed response.
 
 Request kinds
 -------------
+- ``devastate_losses`` — each physical owner chooses its exact §4.3.2 losses.
+  Request carries faction, region, count and available cohort objects
+  {piece_type,piece_state,count}. Return {"removals":[cohort objects]} totaling
+  exactly count, or explicit default; no decline. Legions use piece_state None
+  and go to Fallen. Leaders, Allies, Forts and Citadels are not candidates.
+
 - Card 35 unshaded's Roman ``free_action`` request carries card_id 35,
   private_cards (the next two facedown cards, after the face-up next card),
   and alternative "eligible". Choose a legal free Limited Command, or

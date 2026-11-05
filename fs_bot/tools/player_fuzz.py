@@ -216,6 +216,13 @@ def make_random_reactive(seats, rng):
                        for defender in sorted(defenders)]
             region, defender = rng.choice(choices)
             return {"region": region, "defender": defender}
+        if kind == 'devastate_losses':
+            pieces=[(entry['piece_type'],entry['piece_state']) for entry in request['available']
+                    for _ in range(entry['count'])]
+            rng.shuffle(pieces);counts={}
+            for cell in pieces[:request['count']]:counts[cell]=counts.get(cell,0)+1
+            return {'removals':[{'piece_type':cell[0],'piece_state':cell[1],'count':count}
+                                for cell,count in counts.items()]}
         if kind == 'harvest_legions':
             placements = {}
             for _ in range(request['count']):

@@ -124,6 +124,9 @@ def validate_response(state, request, response):
     if kind in ("council_selection", "council_choice"):
         from fs_bot.cards.council import validate_response as validate_council
         return validate_council(state, request, response)
+    if kind == 'devastate_losses':
+        from fs_bot.engine.devastate_losses import validate_response as validate_devastate
+        return validate_devastate(state,request,response)
     if kind == 'harvest_legions':
         from fs_bot.engine.harvest_legions import validate_response as validate_harvest
         return validate_harvest(state, request, response)

@@ -19,6 +19,9 @@ after Interlude when its Winter box holds Legions. [Repair and validation](docs/
 Gallic Shouts now presents the Roman player's actual private two-card peek
 before choosing its benefit. [Repair and validation](docs/reviews/gallic-shouts-peek-2026-11-04.md).
 
+Devastate now asks each human owner for exact casualties, including visibility
+and Legion choices. [Repair and validation](docs/reviews/devastate-losses-2026-11-04.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.
@@ -130,7 +133,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**30 of 50 findings are closed (60%); 20 remain open** in the
+**31 of 50 findings are closed (62%); 19 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

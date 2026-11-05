@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "6e1b04d53c639d7503925d57dafdff22b01e4471",
-    "python_sha256": "61faa08aa203d0af35e2c934093898fc5c5ed6836c100643d3fc21c3b097bdd8",
-    "python_files": 491,
+    "commit": "9230d5dbafbd5b5d38909e51158028c868449e34",
+    "python_sha256": "74e4310e2a919068cfe64db4630968bcc2941f16223e0f64de0e3d9ef4b52cf7",
+    "python_files": 494,
     "working_tree_changes": true,
-    "note": "Actual Roman private-card presentation closes BE-10. See reviews/gallic-shouts-peek-2026-11-04.md."
+    "note": "Exact Devastate owner casualties close CMD-DEVASTATE-LOSSES; related default visibility and preselected-map validation defects are corrected. See reviews/devastate-losses-2026-11-04.md."
   },
   "total": 50,
-  "closed": 30,
-  "open": 20,
+  "closed": 31,
+  "open": 19,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -33,7 +33,8 @@
     "MARCH-HIDE-IN-PLACE closes with paid stay choices, whole-origin hiding/Scouted handling, terminal/API support and durable acceptance. Missing-route planning and NPC priorities remain supported. See reviews/march-stay-2026-11-04.md.",
     "BATTLE-BESIEGE-CHOICE closes with exact Roman physical targets at the pre-Loss step, optional decline, terminal/durable support and live validation. Native NPC defaults remain supported. See reviews/besiege-choice-2026-11-04.md.",
     "WS-F03 closes with exact mandatory Belgica allocations, real Winter Track transfers, terminal/durable support and replay. Related positive post-Interlude release is repaired; WS-F02 remains open for expedition/marker choices. See reviews/harvest-legions-2026-11-04.md.",
-    "BE-10 closes with actual Roman-owned next-two-facedown data before the existing benefit choice, private console rendering and durable replay. Native defaults and deck/RNG state remain unchanged. See reviews/gallic-shouts-peek-2026-11-04.md."
+    "BE-10 closes with actual Roman-owned next-two-facedown data before the existing benefit choice, private console rendering and durable replay. Native defaults and deck/RNG state remain unchanged. See reviews/gallic-shouts-peek-2026-11-04.md.",
+    "CMD-DEVASTATE-LOSSES closes with exact physical-owner requests, visibility/Legion choice, complete validation before mutation and durable later-Region replay. Default casualty priority is corrected per \u00a78.4.1. See reviews/devastate-losses-2026-11-04.md."
   ],
   "findings": [
     {
@@ -56,7 +57,9 @@
       "id": "CMD-DEVASTATE-LOSSES",
       "title": "Devastate omits each human owner\u2019s casualty choice",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/devastate-losses-2026-11-04.md",
+      "disposition": "Each physical owner selects exact type/visibility casualties; rounded totals, Fallen, full validation, source-correct default priority and durable later-Region replay."
     },
     {
       "id": "CMD-RAMPAGE-COUNT",

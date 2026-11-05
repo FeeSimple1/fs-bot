@@ -4,6 +4,18 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Devastate owner casualties, 4 November 2026
+
+- Ask each affected physical owner for exact Devastate casualties by type and
+  visibility; preserve zero-loss skips, rounded quantities and Legions to Fallen.
+- Collect and validate all choices before mutation. Reject short, overlarge,
+  wrong-owner/type/cohort plans, including previously truncated trusted tuples.
+- Correct §8.4.1 default priority to Scouted/Revealed/Hidden, preserving stealth
+  before hard pieces; retain explicit legacy tuple None-visibility semantics.
+- Add terminal, pending-response, later-Region save/resume and replay coverage.
+- Close CMD-DEVASTATE-LOSSES: 31/50 original findings closed (62%), 19 open.
+  See the [report](docs/reviews/devastate-losses-2026-11-04.md).
+
 ## Unreleased — Gallic Shouts private peek, 4 November 2026
 
 - Put the actual next two facedown cards, text and initiative metadata into

@@ -470,6 +470,7 @@ and Ally identity gaps recorded separately by the audit remain open.
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag; copy entries intact; hard pieces still roll |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
+| `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
 | `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
@@ -609,6 +610,28 @@ does not replace `current_card` or use the upcoming card. If no preceding
 Event can be recovered, the compatibility fallback uses card 63/A63's
 scenario-appropriate order, then the game-run faction. See the
 [ruling register](docs/provisional-rulings.md#pr-06) for scope and status.
+
+`devastate_losses` goes separately to each affected physical owner at the live
+Devastate step (§4.3.2). Arverni lose one in four Warbands; each other Faction
+loses one in three total Warbands/Auxilia/Legions, rounded down. The request's
+`available` list names physical visibility cohorts; Legions have `piece_state:null`.
+For example, `{"removals":[{"piece_type":"Legion","piece_state":null,"count":1}]}`
+selects a Legion instead of Auxilia when one Roman casualty is required.
+Only offered cohorts of that request's owner may be removed. Counts must be
+positive integers totaling the exact requirement. Leaders, Allies, Forts and
+Citadels do not count and cannot absorb the losses. Legions go to Fallen.
+
+All owner counts and choices are collected/validated before any casualty or
+marker mutation. Zero losses produce no prompt. The terminal offers bounded
+per-cohort quantities and board inspection. Missing/malformed durable input
+retains the pending decision and earlier accepted choices through whole-action
+rollback/save/resume, including a later Region. Raw None or explicit delegation
+uses §8.4.1's own-piece priority: Scouted, then Revealed, then Hidden soft pieces,
+then Legions. Named choices add `removal_details` to the mechanic result;
+`removed` retains grouped type totals. Trusted low-level `devastate_region`
+preselected tuple maps remain supported but must specify exact losses;
+legacy soft-piece None visibility retains its H/R/S fallback. Normal actor plans
+select Devastate Regions; each casualty request belongs to the affected owner.
 
 Card 35 unshaded sends its Roman beneficiary a normal `free_action` /
 `event_command` request with additive presentation fields: `card_id:35`,

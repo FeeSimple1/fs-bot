@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Devastate casualties — CMD-DEVASTATE-LOSSES closed
+
+The [casualty repair](reviews/devastate-losses-2026-11-04.md) asks each affected
+owner for exact physical losses, including visibility and Roman Legion choices.
+All owner plans are validated before mutation; malformed/short/overlarge
+supplied maps no longer silently truncate or omit losses. Non-player/default
+own-piece removal now follows §8.4.1's Scouted/Revealed/Hidden priority. Legions
+still go to Fallen. Terminal, preview isolation and durable later-Region
+rollback/save/resume/replay are covered. Ariovistus still excludes Devastate.
+
+**Original bundle is now 31/50 closed (62%), 19 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**8,048 tests pass**, including 50 new cases; 283 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. See the report
+for the frozen source digest and evidence bounds.
+
+
 ### 4 November Gallic Shouts peek — BE-10 closed
 
 The [peek repair](reviews/gallic-shouts-peek-2026-11-04.md) supplies the actual
@@ -32,7 +53,7 @@ public Event receipts/modifiers and board snapshots do not acquire hidden data.
 Deck order and RNG are untouched. Durable missing/invalid input remains pending
 across rollback/save/resume; Council's private rendering is preserved.
 
-**Original bundle is now 30/50 closed (60%), 20 open.** Counts measure findings,
+**At that checkpoint: 30/50 closed (60%), 20 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.

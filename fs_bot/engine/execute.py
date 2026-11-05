@@ -4959,7 +4959,7 @@ def _execute_settle(state, faction, bot_action):
 
 
 def _execute_devastate(state, faction, bot_action):
-    """Arverni/Aedui Devastate (§4.3.1) — Devastate each sa_region."""
+    """Arverni Devastate (§4.3.2), with each affected owner choosing losses."""
     regions = [r for r in (bot_action.get("sa_regions") or [])
                if isinstance(r, str)]
     done, errors = [], []

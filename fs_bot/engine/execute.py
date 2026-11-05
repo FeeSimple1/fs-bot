@@ -3895,9 +3895,16 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _c13_region = region
                     _queue_capabilities_used.add(13)
                 if ('59u' not in _queue_capabilities_used
-                        and _ica_b(state, 59, _EU_B) and auxilia_here):
-                    state.setdefault('event_modifiers', {})['card59_unshaded_region'] = region
-                    _queue_capabilities_used.add('59u')
+                        and _ica_b(state, 59, _EU_B) and auxilia_here
+                        and _RO_B in (faction, defender)):
+                    from fs_bot.engine.horse_queue import choose_window
+                    potential = [row['region'] for row in battle_plan[battle_index + 1:]
+                                 if row.get('region') is not None]
+                    choice = choose_window(state, region, faction, defender, potential)
+                    if choice != 'reserve':
+                        _queue_capabilities_used.add('59u')
+                    if choice == 'activate':
+                        state.setdefault('event_modifiers', {})['card59_unshaded_region'] = region
                 if '59s' not in _queue_capabilities_used and _ica_b(state, 59, _ES_B):
                     owner = _gco_b(state, 59)
                     if ((owner == faction and not (citadel_at_start or fort_at_start))

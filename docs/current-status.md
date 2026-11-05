@@ -21,6 +21,29 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 5 November optional Horse queue — BE-09 advanced, mandatory timing unresolved
+
+The [queue repair](reviews/horse-queue-2026-11-05.md) offers Romans use here,
+reserve or decline for optional unshaded Horse as actual Battles become
+selected. Reservation consumes no use; activation/decline ends the Command's
+windows. Retreat arrivals can create a later window, and a reserved effect
+can expire unused. Both frontends retain pending and earlier accepted choices
+across save/load/replay. PR-11 forecasts branch the optional human responses.
+
+**Original bundle remains 39/50 closed (78%), 11 open.** Mandatory Card 13 and
+59-shaded queue choices remain open as
+[Q-CAPABILITY-QUEUE-TIMING](../QUESTIONS.md#q-capability-queue-timing--reserving-mandatory-one-region-capabilities-5-november-2026).
+The supplied text does not settle reservation when no later Battle occurs.
+The recommendation is recorded, not adopted. There are now three open source
+questions, twelve adopted provisional rulings and 34 unverified inventory rows,
+separate from the original bundle and other mechanics leads.
+
+**8,716 tests pass**, including 28 new cases, with 226 focused tests passing.
+Ten standard NPC records/final hashes match the parent, mixed-seat results
+agree across hash seeds with zero hard findings or partials, and the historical
+100-game balance guard passes its unchanged band. The report records the
+frozen source, protected inputs, evidence and cross-revision replay limit.
+
 ### 5 November Horse Region — BE-09 advanced, still open
 
 The [Horse repair](reviews/horse-choice-2026-11-05.md) offers Card 59's owner

@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [5 November optional Horse queue](reviews/horse-queue-2026-11-05.md)
+  covers live reservation, Retreat arrivals, forecast choices and a new source question.
+
 - [5 November Horse choice](reviews/horse-choice-2026-11-05.md)
   covers Roman/Gallic Battle Regions, defensive bonuses, Abatis and flag isolation.
 

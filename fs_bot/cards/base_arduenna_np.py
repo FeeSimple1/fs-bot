@@ -79,7 +79,7 @@ branches every roll and legal human casualty choice, as Divination does.
                 if self.index < len(script):
                     result = script[self.index]
                     self.index += 1
-                    if stage[0] in ('agreement', 'retreat'):
+                    if stage[0] in ('agreement', 'retreat', 'horse'):
                         self.reactions.append((stage, result))
                     return result
                 key = (stage, _signature(sim), self.faction, self.loss,
@@ -110,6 +110,12 @@ branches every roll and legal human casualty choice, as Divination does.
             nonlocal score, leader_risk
             kind = request.get('kind')
             npc = faction in sim['non_player_factions']
+            if kind == 'horse_window':
+                rng.loss = False
+                if not npc:
+                    return {'action': rng.choose(tuple(request['actions']),
+                        ('horse', faction, dumps(request, sort_keys=True)))}
+                return None
             if kind == AGREEMENT:
                 rng.loss = False
                 if not npc:

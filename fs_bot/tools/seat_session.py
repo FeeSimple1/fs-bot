@@ -151,6 +151,9 @@ def validate_response(state, request, response):
     if kind == 'horse_region':
         from fs_bot.engine.horse_choice import validate_response as validate_horse
         return validate_horse(state, request, response)
+    if kind == 'horse_window':
+        from fs_bot.engine.horse_queue import validate_response as validate_window
+        return validate_window(state, request, response)
     if kind == "march_cohort":
         from fs_bot.engine.march_choices import validate_response as validate_cohort
         return validate_cohort(request, response)

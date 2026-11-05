@@ -97,7 +97,13 @@ The [5 November Horse repair](docs/reviews/horse-choice-2026-11-05.md) adds
 ordinary/free Battle Card 59 choices for both sides, Roman decline, live
 protection checks and nested Command flag isolation. BE-09 remains open for
 the private prospective queue's Card 13/59 choices. Current original progress
-remains 39/50 closed (78%), 11 open.
+at that checkpoint remained 39/50 closed (78%), 11 open.
+
+The [5 November Horse queue repair](docs/reviews/horse-queue-2026-11-05.md)
+adds optional unshaded use/reserve/decline windows and corresponding PR-11
+forecast branches. Mandatory Card 13/59-shaded queue timing remains open as
+Q-CAPABILITY-QUEUE-TIMING, with a recommendation awaiting adoption. Original
+progress remains 39/50 closed (78%), 11 open.
 
 ## Existing implementation
 

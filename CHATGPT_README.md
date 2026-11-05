@@ -102,6 +102,11 @@ permits `{"decline":true}`. Shaded protection data is informational; choosing
 a guarded Region does not bypass its protection. See the
 [agent interface](AGENT_INTERFACE.md) for the prospective-queue limitation.
 
+In a prospective queue, `horse_window` offers `activate`, `reserve` when a
+later candidate exists, or `decline` for the whole Command. Use only an action
+from the request. Future candidates may not become actual Battles. See the
+[agent interface](AGENT_INTERFACE.md) for the mandatory-capability source question.
+
 ## Quick start (for the assistant)
 
 You are about to PLAY one faction against the built-in bots.

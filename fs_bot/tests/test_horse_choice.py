@@ -364,7 +364,7 @@ def test_accepted_region_survives_later_casualty_pause_and_replay(tmp_path):
     assert all(key not in restored.get('event_modifiers', {}) for key in FLAGS)
 
 
-def test_prospective_queue_remains_automatic(monkeypatch):
+def test_prospective_queue_raw_delegation_retains_first_use(monkeypatch):
     state, _, attacker, _, action = position()
     seen = agent_for(state, {'decline': True})
     combat = record_combat(monkeypatch)

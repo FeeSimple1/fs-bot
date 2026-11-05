@@ -63,7 +63,14 @@ Request kinds
   defenders, auxilia and current blocked status. Return one offered region or
   explicit default. Only unshaded permits {"decline": True}. Shaded can select
   a currently protected Region; its live Fort/Citadel restrictions still apply.
-  The private prospective queue retains automatic activation.
+  The private prospective queue uses horse_window for unshaded; shaded remains
+  automatic pending Q-CAPABILITY-QUEUE-TIMING.
+
+- ``horse_window`` — unshaded Horse at an actual selected prospective Battle.
+  Request carries region, attacker, defender, auxilia, actions and potential_regions
+  (future queue candidates, which may never become Battles). Return one offered
+  action: activate here, reserve for a later Battle, or decline for the Command.
+  Raw None/explicit default activates here. Reservation consumes no use.
 
 - ``raid_intimidate`` — A3.4.3 optional simultaneous Intimidate by the
   German Warbands that just Raided with Ariovistus. Request carries trusted

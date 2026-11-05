@@ -92,7 +92,16 @@ A defending owner's Citadel blocks its counterattack doubling; Abatis alone
 does not. Choosing a currently blocked Region does not bypass that restriction.
 Use `b`/`board` to inspect the live position. The chosen Region survives later
 casualty prompts and saving, and its bonus expires with that Battle Command.
-The private prospective queue's automatic choices remain an interface gap.
+The private prospective queue's mandatory capability choices remain an
+interface gap; optional unshaded Horse now has the live window below.
+
+In a prospective Battle queue, unshaded Horse now offers a fresh Roman choice
+as each actual Battle becomes eligible. Use it here, save it for a later
+Battle if offered, or decline for the rest of the Command. Saving does not
+spend the use and does not guarantee a later Battle. A Retreat can create a
+new eligible window. Once used or declined, no second activation is possible.
+The mandatory Slingers/shaded-Horse queue choices await the recorded source
+question; their automatic behavior remains a known limit.
 
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;

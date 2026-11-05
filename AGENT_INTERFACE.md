@@ -834,8 +834,9 @@ responses remain pending with board, payments and RNG restored. An accepted
 Region survives a later casualty prompt, save/load and replay. Previews never
 consume live input. Older replays can stop at the new choice or diverge from
 the corrected NPC priority/fire rate. The private prospective Battle queue
-used by numeric 67's NPC branch still chooses Slingers automatically; its
-Roman choice and Card 59's own Region decisions remain open under BE-09.
+used by numeric 67's NPC branch still chooses Slingers automatically pending
+Q-CAPABILITY-QUEUE-TIMING. Horse's ordinary/free-plan choices and optional
+unshaded queue windows are implemented.
 
 `horse_region` goes to Card 59's owner before an ordinary/free Battle plan.
 Unshaded belongs to Romans and offers their actual attacking/defending Battles;
@@ -861,8 +862,32 @@ outer Command's selection. Both frontends preserve pending responses,
 accepted selections through later casualties, save/load and exact replay.
 Terminal `b`/`board` inspection and isolated previews remain available.
 Older histories can stop for the new choice or diverge from corrected defaults.
-The private prospective queue still automatically activates both Horse and
-Slingers and remains open under BE-09.
+The private prospective queue now offers optional unshaded Horse windows.
+Slingers and shaded Horse remain automatic pending the source question below.
+
+`horse_window` restores optional unshaded Horse timing in a prospective queue.
+It is offered to Romans only when a candidate has actually become a Battle,
+with Roman participation and Auxilia present. It carries `region`, `attacker`,
+`defender`, the current `auxilia` count, offered `actions` and
+`potential_regions`. Those later queue candidates may never become Battles.
+Respond `{"action":"activate"}` to use Horse here, `{"action":"reserve"}`
+to save it if offered, or `{"action":"decline"}` to decline for the remainder
+of the Command. Explicit default activates here, preserving NPC behavior.
+
+Reservation consumes no use. The next actual eligible Battle offers a new
+window, including a Region reached by Retreat arrivals. Activation or whole-
+Command decline prevents any second use/request. No future candidate means
+no reservation option. If a reserved opportunity never occurs, the optional
+unshaded effect expires unused. Terminal inspection and durable pending,
+earlier acceptance, rollback/save/resume/replay remain supported. PR-11's
+forecast branches these optional human choices and conservatively ranks the
+lower predicted Legion Losses; it consumes no live decisions or RNG.
+
+Card 13 unshaded and Card 59 shaded still use automatic activation in this
+queue pending [Q-CAPABILITY-QUEUE-TIMING](QUESTIONS.md#q-capability-queue-timing--reserving-mandatory-one-region-capabilities-5-november-2026).
+Their wording lacks "may" and does not resolve a reserved mandatory choice
+when no later Battle occurs. The recommended use-or-reserve policy is not yet
+adopted. Their ordinary/free-plan Region menus remain implemented.
 
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
 or when leaving part of the carried group behind (`dropoff`). For a request

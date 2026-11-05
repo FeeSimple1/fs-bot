@@ -67,6 +67,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             if kind == "diviciacus_pieces":
                 from fs_bot.cli.diviciacus import collect_pieces
                 return collect_pieces(state, faction, request, stdin, stdout)
+            if kind == 'drought_loss':
+                from fs_bot.cli.drought import collect_loss
+                return collect_loss(state, faction, request, stdin, stdout)
             if kind == 'event_up_to':
                 from fs_bot.cli.expansion_up_to import collect_choice
                 return collect_choice(state, faction, request, stdin, stdout)

@@ -216,6 +216,8 @@ def make_random_reactive(seats, rng):
                        for defender in sorted(defenders)]
             region, defender = rng.choice(choices)
             return {"region": region, "defender": defender}
+        if kind == 'drought_loss':
+            return {'piece': rng.choice(request['targets'])}
         if kind == 'event_up_to':
             if request['card_id'] == 'A40':
                 regions = list(request['legal_regions'])

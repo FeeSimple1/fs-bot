@@ -28,6 +28,9 @@ including Roman Provincia continuations. [Repair and validation](docs/reviews/qu
 Three expansion Events now offer their printed optional quantities, exact
 Warband targets, and the Auxilia/Resources tradeoff. [Batch repair and validation](docs/reviews/expansion-up-to-2026-11-04.md).
 
+Drought now lets every human owner select exact casualties, including named
+Tribes, visibility and Leaders. [Repair and validation](docs/reviews/drought-losses-2026-11-04.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.
@@ -139,7 +142,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**33 of 50 findings are closed (66%); 17 remain open** in the
+**34 of 50 findings are closed (68%); 16 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

@@ -4,6 +4,19 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Drought owner casualties, 4 November 2026
+
+- Ask each human physical owner for exact Card 49 casualties in every
+  Devastated Region, with visibility, Tribe, Leader and Legion choices.
+- Enforce German Warbands before Allies, permanent-Fort protection, Legion
+  Fallen and Diviciacus removal. Correct default own-piece removal priority.
+- Reject unsafe executor-authored `piece_removals` maps; support JSON-safe
+  owner responses and legal marker menus instead of lossy inferred parameters.
+- Preserve timing windows, preview isolation, later-owner/Region rollback,
+  pending IDs, save/resume and deterministic replay.
+- Close BE-05: 34/50 original findings closed (68%), 16 open. BE-08 remains
+  open for its other shapes. See the [report](docs/reviews/drought-losses-2026-11-04.md).
+
 ## Unreleased — Expansion optional quantities, 4 November 2026
 
 - Restore executor-owned zero-to-maximum choices for A40 shaded Regions,

@@ -470,6 +470,7 @@ and Ally identity gaps recorded separately by the audit remain open.
 | `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag; copy entries intact; hard pieces still roll |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
+| `drought_loss` | `card_id:49, faction, region, targets` exact physical piece objects | `{"piece":<one offered target>}` or explicit default; no decline |
 | `event_up_to` | `card_id, shaded, faction, max_count`; A40 `legal_regions`; A51 `region, available` visibility/count cohorts; A60 `region, available_count` | A40 `{"regions":[...]}`; A51 `{"removals":[{"piece_state":...,"count":n},...]}`; A60 `{"count":n}`; or explicit default |
 | `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
@@ -611,6 +612,35 @@ does not replace `current_card` or use the upcoming card. If no preceding
 Event can be recovered, the compatibility fallback uses card 63/A63's
 scenario-appropriate order, then the game-run faction. See the
 [ruling register](docs/provisional-rulings.md#pr-06) for scope and status.
+
+`drought_loss` belongs separately to each physical owner in each Devastated
+Region on Card 49, after Resources are halved and the new marker is placed.
+Choose exactly one offered target under `piece`: soft pieces name `piece_type`
+and `piece_state`; Allied Tribes/Citadels name `piece_type` and `tribe`; Leaders
+name `piece_type` and `leader_name`; Legions, Forts and Settlements name only
+`piece_type`. For example, `{"piece":{"piece_type":"Auxilia","piece_state":"Revealed"}}`
+selects one Revealed Auxilia instead of a Legion. Legions go directly to Fallen;
+Diviciacus leaves play. Exact Tribe removals update physical backing/allegiance.
+Only the requested owner's pieces can be selected. German Allied Tribes are
+not offered while German Warbands remain; the permanent Provincia Fort is
+never offered. Empty/protected-only owners receive no request. Base Germans
+and expansion Arverni are game-run and remain automatic.
+
+Missing/invalid durable answers retain pending IDs and earlier accepted owner
+choices through whole-Event rollback/save/resume, including a later Region.
+The terminal offers exact pieces with board inspection. Raw None or explicit
+default uses reverse own-piece priority: Scouted/Revealed/Hidden soft pieces,
+ordinary Allies before City/Remi Allies, then structures, Legions and Leaders;
+equal eligible Tribes use state RNG. Previews consume no live choices/RNG.
+
+The old executor-authored Python `piece_removals` map is rejected explicitly.
+It could control another owner's casualty and cannot safely migrate by guessing
+consent. Use the JSON-safe owner response above. Card 49 Event parameters now
+accept `devastate_region` and existing `stage_timing_actions`; a specified marker
+Region must be playable and not already Devastated. The terminal offers legal
+marker locations. Omitted marker selection retains the existing automatic
+fallback; broader NPC marker targeting is outside this casualty repair.
+Older transcripts that omitted owner decisions may require new responses.
 
 `event_up_to` gives the Event executor the optional quantity choices on A40
 shaded and A51/A60 unshaded (§5.1). It is a live request at the relevant step;

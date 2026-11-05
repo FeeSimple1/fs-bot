@@ -52,7 +52,13 @@ At that checkpoint original progress was 32/50 closed (64%), 18 open.
 The [4 November expansion quantity batch](docs/reviews/expansion-up-to-2026-11-04.md)
 closes EXP-08 with executor-owned A40S/A51U/A60U live choices, exact physical
 removals, zero quantities, actual-placement compensation and durable replay.
-Current original progress is 33/50 closed (66%), 17 open.
+At that checkpoint original progress was 33/50 closed (66%), 17 open.
+
+The [4 November Drought batch](docs/reviews/drought-losses-2026-11-04.md)
+closes BE-05 with physical-owner casualties, exact Tribes/visibility/Leaders,
+source-correct default losses and durable later-Region replay. Drought's part
+of BE-08 is repaired; its other generated-schema defects remain open.
+Current original progress is 34/50 closed (68%), 16 open.
 
 ## Existing implementation
 
@@ -125,7 +131,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 33 of 50 closed (66%) and 17 open; these are finding counts, not
+now records 34 of 50 closed (68%) and 16 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

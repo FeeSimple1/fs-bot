@@ -1440,6 +1440,11 @@ def _collect_timed_event_entries(state, faction, card_id, shaded, params,
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
+    if card_id == 49:
+        from fs_bot.cards.drought import marker_regions
+        regions = marker_regions(state)
+        return ({'devastate_region': prompt_choice(stdin, stdout, 'Drought: place the Devastated marker:',
+                    [(r, r) for r in regions])} if regions else {})
     from fs_bot.cards.expansion_up_to import supported as optional_quantity
     if optional_quantity(card_id, shaded):
         if card_id == 'A51':

@@ -2035,90 +2035,27 @@ def execute_card_49(state, shaded=False):
 
     Source: Card Reference, card 49
     """
-    # Step 1: Halve all faction Resources (rounded down)
+    from fs_bot.cards.drought import validate_params, marker_regions, remove_loss
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    params = state.get("event_params")
+    if params is None:
+        params = {}
+    validate_params(state, params)
     for faction in FACTIONS:
-        if faction in state["resources"]:
-            state["resources"][faction] = state["resources"][faction] // 2
-
-    _event_step(state, "49.devastation")
-    # Step 2: Place 1 Devastated marker in a Region without one
-    params = state.get("event_params", {})
-    devastate_region = params.get("devastate_region")
-    if devastate_region is None:
-        # Auto-select: first region without Devastated marker
-        for region in state["spaces"]:
-            markers = state.get("markers", {}).get(region, set())
-            if MARKER_DEVASTATED not in markers:
-                devastate_region = region
-                break
-    if devastate_region:
-        _add_region_marker(state, devastate_region, MARKER_DEVASTATED)
-
-    # Step 3: Each Faction removes 1 piece from each Devastated Region
-    for region in state["spaces"]:
-        markers = state.get("markers", {}).get(region, set())
-        if MARKER_DEVASTATED not in markers:
+        if faction in state['resources']:
+            state['resources'][faction] //= 2
+    _event_step(state, '49.devastation')
+    validate_params(state, params)
+    legal = marker_regions(state)
+    region = params.get('devastate_region', legal[0] if legal else None)
+    if region is not None:
+        _add_region_marker(state, region, MARKER_DEVASTATED)
+    playable = set(get_playable_regions_for_state(state))
+    for region in state['spaces']:
+        if region not in playable or MARKER_DEVASTATED not in state.get('markers', {}).get(region, {}):
             continue
-        for faction in _event_entries(state, f"49.removals.{region}", FACTIONS):
-            if count_pieces(state, region, faction) == 0:
-                continue
-            # Choose which piece to remove (per Tips: each Faction
-            # chooses; bot defaults prioritize least-valuable first)
-            # Use event_params piece_removal overrides if specified
-            removal_overrides = params.get("piece_removals", {})
-            override_key = (faction, region)
-            if override_key in removal_overrides:
-                pt = removal_overrides[override_key]
-                if pt == LEGION:
-                    remove_piece(state, region, ROMANS, LEGION,
-                                 to_fallen=True)
-                elif pt == LEADER:
-                    remove_piece(state, region, faction, LEADER)
-                elif pt in (AUXILIA, WARBAND):
-                    remove_piece(state, region, faction, pt)
-                else:
-                    remove_piece(state, region, faction, pt)
-                    if pt in (ALLY, CITADEL):
-                        clear_allied_tribe(state, region, faction, pt)
-                continue
-            # Default bot removal priority:
-            # Romans: Legion (to Fallen) > Auxilia > Fort > Ally > Leader
-            if faction == ROMANS:
-                if count_pieces(state, region, ROMANS, LEGION) > 0:
-                    remove_piece(state, region, ROMANS, LEGION,
-                                 to_fallen=True)
-                elif count_pieces(state, region, ROMANS, AUXILIA) > 0:
-                    remove_piece(state, region, ROMANS, AUXILIA)
-                elif count_pieces(state, region, ROMANS, FORT) > 0:
-                    try:
-                        remove_piece(state, region, ROMANS, FORT)
-                    except PieceError:
-                        pass  # Permanent Fort in Provincia
-                elif count_pieces(state, region, ROMANS, ALLY) > 0:
-                    remove_piece(state, region, ROMANS, ALLY)
-                    clear_allied_tribe(state, region, ROMANS, ALLY)
-                elif get_leader_in_region(state, region, ROMANS) is not None:
-                    remove_piece(state, region, ROMANS, LEADER)
-            elif faction == GERMANS:
-                # Germans: Warbands before Allied Tribes per Tips
-                if count_pieces(state, region, GERMANS, WARBAND) > 0:
-                    remove_piece(state, region, GERMANS, WARBAND)
-                elif count_pieces(state, region, GERMANS, ALLY) > 0:
-                    remove_piece(state, region, GERMANS, ALLY)
-                    clear_allied_tribe(state, region, GERMANS, ALLY)
-            else:
-                # Gallic factions: Warband > Ally > Citadel > Leader
-                if count_pieces(state, region, faction, WARBAND) > 0:
-                    remove_piece(state, region, faction, WARBAND)
-                elif count_pieces(state, region, faction, ALLY) > 0:
-                    remove_piece(state, region, faction, ALLY)
-                    clear_allied_tribe(state, region, faction, ALLY)
-                elif count_pieces(state, region, faction, CITADEL) > 0:
-                    remove_piece(state, region, faction, CITADEL)
-                    clear_allied_tribe(state, region, faction, CITADEL)
-                elif get_leader_in_region(
-                        state, region, faction) is not None:
-                    remove_piece(state, region, faction, LEADER)
+        for faction in _event_entries(state, f'49.removals.{region}', FACTIONS):
+            remove_loss(state, region, faction)
     refresh_all_control(state)
 
 def execute_card_50(state, shaded=False):

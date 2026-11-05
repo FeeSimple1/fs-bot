@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "feaed4bce9f1be8ebe2a514f074332958e091ee6",
-    "python_sha256": "e81fb7e8e9c8db1965ce44ebcb13b4f3d40f6d6507341ada0a0b6d6d25652c58",
-    "python_files": 498,
+    "commit": "e42b213dcfd57105f13f9ae44674fdd20b243a6a",
+    "python_sha256": "b33a8d39c1fcb3ba138527c95393986493eccf847b3193356d7c706249306037",
+    "python_files": 501,
     "working_tree_changes": true,
-    "note": "The A40S/A51U/A60U optional-quantity batch closes EXP-08, with live/authored choices, physical cohorts and durable replay. See reviews/expansion-up-to-2026-11-04.md."
+    "note": "Drought physical-owner losses close BE-05; its part of BE-08 is repaired while the grouped schema finding remains open. See reviews/drought-losses-2026-11-04.md."
   },
   "total": 50,
-  "closed": 33,
-  "open": 17,
+  "closed": 34,
+  "open": 16,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -36,7 +36,8 @@
     "BE-10 closes with actual Roman-owned next-two-facedown data before the existing benefit choice, private console rendering and durable replay. Native defaults and deck/RNG state remain unchanged. See reviews/gallic-shouts-peek-2026-11-04.md.",
     "CMD-DEVASTATE-LOSSES closes with exact physical-owner requests, visibility/Legion choice, complete validation before mutation and durable later-Region replay. Default casualty priority is corrected per \u00a78.4.1. See reviews/devastate-losses-2026-11-04.md.",
     "WS-F05 closes with exact Hidden/Revealed/Scouted relocation cohorts, original adjacent-piece capacity and Roman continuation validation, including terminal/durable save/resume/replay. Legacy four-entry default plans remain supported. See reviews/quarters-visibility-2026-11-04.md.",
-    "EXP-08 closes with zero-to-maximum A40S/A51U/A60U executor choices, exact Warband visibility, actual-placement compensation and terminal/durable save/resume/replay. Related A51 Scouted omission is corrected. See reviews/expansion-up-to-2026-11-04.md."
+    "EXP-08 closes with zero-to-maximum A40S/A51U/A60U executor choices, exact Warband visibility, actual-placement compensation and terminal/durable save/resume/replay. Related A51 Scouted omission is corrected. See reviews/expansion-up-to-2026-11-04.md.",
+    "BE-05 closes with exact Drought physical-owner choices, German restrictions, protected Fort, corrected defaults and later-Region replay. Its BE-08 schema portion is repaired; other BE-08 shapes remain open. See reviews/drought-losses-2026-11-04.md."
   ],
   "findings": [
     {
@@ -208,7 +209,9 @@
       "id": "BE-05",
       "title": "Drought substitutes casualty priorities for every faction\u2019s own selection",
       "severity": "high",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/drought-losses-2026-11-04.md",
+      "disposition": "Each physical owner chooses one exact Drought loss per Devastated Region, with named Tribes/visibility/Leaders, German restrictions, source-correct defaults and durable later-Region replay."
     },
     {
       "id": "BE-06",
@@ -226,7 +229,10 @@
       "id": "BE-08",
       "title": "Generated CLI Event schema cannot express several legal handler inputs",
       "severity": "medium",
-      "status": "open"
+      "status": "open",
+      "partial_repairs": [
+        "Card 49 now has a legal marker collector and live owner casualty requests; unsafe executor piece_removals are rejected. Other listed Event schema shapes remain open. See reviews/drought-losses-2026-11-04.md."
+      ]
     },
     {
       "id": "BE-09",

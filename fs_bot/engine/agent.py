@@ -18,6 +18,7 @@ typed response.
 
 Request kinds
 -------------
+- ``drought_loss`` — each physical owner selects its exact Card 49 casualty.
 - ``event_up_to`` — executor-owned A40/A51/A60 optional quantities/cohorts.
 - ``devastate_losses`` — each physical owner chooses its exact §4.3.2 losses.
   Request carries faction, region, count and available cohort objects

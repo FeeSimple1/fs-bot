@@ -16,6 +16,14 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+Drought now asks each human owner which single piece to lose in every
+Devastated Region. Choose exact visibility, a named Allied Tribe/Citadel, or a
+Leader, Fort or Legion as offered. Legions go to Fallen. Germans must lose
+Warbands before Allied Tribes; Provincia's permanent Fort cannot be removed.
+The Event executor chooses the new marker location, while each owner chooses
+its own losses. `b`/`board` remains available, and interrupted choices can resume
+without halving Resources or applying earlier casualties twice.
+
 Three expansion Events now ask how much of their optional effect you want:
 Alpine Tribes shaded lets you select zero to three eligible Regions; Siege of
 Bibrax unshaded lets you remove zero to six exact Belgic Warbands by visibility;

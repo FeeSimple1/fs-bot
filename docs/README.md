@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Drought casualties](reviews/drought-losses-2026-11-04.md):
+  physical-owner choices, named Tribes, default priorities and durable replay.
+
+
 - [4 November expansion optional quantities](reviews/expansion-up-to-2026-11-04.md):
   A40S/A51U/A60U choices, physical removals, compensation and durable replay.
 

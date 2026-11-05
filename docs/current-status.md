@@ -21,6 +21,30 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Drought casualties — BE-05 closed
+
+The [Drought batch](reviews/drought-losses-2026-11-04.md) asks each eligible
+physical owner for one exact loss in every Devastated Region. Visibility,
+Tribes, Citadels, Leaders, Forts, Settlements and Legions are represented;
+German Warbands-before-Allies and permanent Provincia Fort protection apply.
+Default losses now preserve Roman Legions and Hidden pieces according to
+own-piece priorities. Terminal and durable choices support later-owner/Region
+rollback/save/resume and exact replay. Unsafe executor override maps are rejected.
+Drought's BE-08 menu shape is repaired; that grouped finding remains open.
+
+**Original bundle is now 34/50 closed (68%), 16 open.** Counts measure findings,
+not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
+victim choices, NPC Intimidate targeting, two source questions, twelve
+provisional rulings and 34 unverified inventory rows retain their dispositions.
+
+**8,260 tests pass**, including 69 new cases; 284 targeted tests pass. All ten
+native-bot games audit cleanly: nine match parent, and the one changed game's
+first divergence is traced to the corrected Drought casualty. Forty mixed
+executions agree across hash seeds with zero hard findings or partials. The
+100-game historical balance check passes its unchanged baseline and band.
+See the report for frozen source provenance and evidence bounds.
+
+
 ### 4 November expansion optional quantities — EXP-08 closed
 
 The [three-Event batch](reviews/expansion-up-to-2026-11-04.md) restores zero-to-
@@ -31,7 +55,7 @@ support terminal inspection, pending rollback/save/resume and identical replay.
 Typed plans can pre-author the same choices. A51 now includes Scouted Warbands;
 A60 refunds reflect actual unplaced pieces, including an unavailable Ally.
 
-**Original bundle is now 33/50 closed (66%), 17 open.** Counts measure findings,
+**At that checkpoint: 33/50 closed (66%), 17 open.** Counts measure findings,
 not effort or full rules compliance. Separate CV-PERSISTENCE, full Rampage
 victim choices, NPC Intimidate targeting, two source questions, twelve
 provisional rulings and 34 unverified inventory rows retain their dispositions.

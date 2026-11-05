@@ -254,6 +254,15 @@ Allies need legal empty Tribe spaces. German Settlements create additional
 Homes, but Cisalpina itself is excluded. Later owners see earlier moves;
 game-run Arverni evacuate automatically. Use `board` or `b` at each choice.
 
+Rampage lets the Belgae choose how many Hidden Warbands to Reveal in each
+selected Region. Choose one through the number of eligible enemy pieces and
+Hidden Belgic Warbands currently available; there is no two-Warband cap.
+Only that many flip, leaving the others Hidden. Skip the Region to decline
+Rampage there. Quantity is checked again at execution if the Command changes
+the available force. NPC Belgae use all able Warbands, while preserving the
+last enemy piece before Battle. The victim's full piece-by-piece choice
+interface remains a separate known limitation.
+
 Intimidate now lets you choose the exact Allied Tribe to remove, including
 after Raid and through A45. Later choices cannot reuse the selected disc,
 and a City's Citadel is not offered as an Ally. Assistant plans name the

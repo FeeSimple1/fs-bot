@@ -161,6 +161,10 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
             return f"{sa} cannot accompany {command} (§4)"
         if sa == "Ambush" and faction == AEDUI and len(set(action.get("sa_regions") or [])) > 1:
             return "Aedui Ambush is limited to one Region (§4.4.3)"
+    from fs_bot.commands.sa_rampage import human_plan_error as rampage_plan_error
+    error = rampage_plan_error(action)
+    if error:
+        return error
     if ("command_parts" in details
             and not isinstance(details["command_parts"], list)):
         return "Command portions must be a list"

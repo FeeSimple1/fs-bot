@@ -21,6 +21,24 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November Rampage quantity — CMD-RAMPAGE-COUNT closed
+
+The [quantity repair](reviews/rampage-quantity-2026-11-04.md) carries a human's
+exact positive `count` through both Rampage menus and execution. It rejects
+invalid/overlarge counts before victim reactions, preserves unselected Hidden
+Warbands, and supports accepted actor/victim save/resume. The artificial NPC
+two-Warband cap is also corrected: §8.5.1 uses all able Warbands while leaving
+the last enemy piece before Battle. Repeated Regions are rejected per §4.1.
+**7,754 tests pass**, including 48 new cases; 348 targeted tests pass. Ten
+audited bot games retain their winners, with one traced final-state change.
+The unchanged 100-game/15-point balance guard passes; mixed runs have zero
+hard findings and one traced generated Rally partial per ten-case matrix.
+
+**Original bundle is now 24/50 closed (48%), 26 open.** Full victim piece
+selection and per-piece remove/Retreat remain BATTLE-RAMPAGE-VICTIM. The separate
+Circumvallation mechanics and NPC Intimidate targeting lead remain open.
+
+
 ### 4 November Intimidate Tribe identity — CMD-INTIMIDATE-TRIBE closed
 
 The [Tribe repair](reviews/intimidate-tribes-2026-11-04.md) lets humans choose

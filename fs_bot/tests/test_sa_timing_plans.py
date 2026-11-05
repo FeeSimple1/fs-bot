@@ -197,7 +197,7 @@ def test_rampage_timing_preview_and_execution_include_scouted_warbands():
     refresh_all_control(state)
     before = encode(state)
     entries, extra = collect_rampage(state, rc.BELGAE,
-        StringIO(f'{DONE}\n{rc.TREVERI}\n{rc.ARVERNI}\n{DONE}\n'), StringIO())
+        StringIO(f'{DONE}\n{rc.TREVERI}\n{rc.ARVERNI}\n1\n{DONE}\n'), StringIO())
     assert len(entries) == 1 and entries[0]['timing_actions']
     assert encode(state) == before
     sim = deepcopy(state)

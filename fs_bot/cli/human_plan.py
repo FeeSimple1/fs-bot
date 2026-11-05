@@ -650,17 +650,22 @@ def _collect_entreat(state, faction, stdin, stdout, *, pending=None):
 
 def _collect_rampage(state, faction, stdin, stdout, *, pending=None):
     """Belgic Rampage (Sec.4.5.2): Regions with Hidden Belgic Warbands and an
-    enemy; each entry names the target Faction."""
+    enemy; each entry names the target Faction and exact quantity."""
     from fs_bot.cli.action_windows import available
     if available(state):
         from fs_bot.cli.sa_timing import collect_rampage
         return collect_rampage(state, faction, stdin, stdout)
     from fs_bot.rules_consts import HIDDEN
     from fs_bot.board.pieces import count_pieces_by_state
+    from fs_bot.commands.sa_rampage import validate_rampage_region, validate_rampage_target, rampage_capacity
+    def targets(region):
+        return [f for f in _enemies_in_region(state, region, faction)
+                if validate_rampage_target(state, region, f)[0]
+                and rampage_capacity(state, region, f)]
     cands = [r for r in _regions_with_pieces(state, faction)
              if count_pieces_by_state(state, r, faction, WARBAND,
                                       HIDDEN) > 0
-             and _enemies_in_region(state, r, faction)]
+             and validate_rampage_region(state, r)[0] and targets(r)]
     if not cands:
         return None, None
     picked = _pick_regions(stdin, stdout, "Rampage in which Region(s)?",
@@ -668,9 +673,11 @@ def _collect_rampage(state, faction, stdin, stdout, *, pending=None):
     entries = []
     for r in picked:
         target = prompt_choice(stdin, stdout, f"  Rampage target in {r}?",
-                               [(f, f) for f in
-                                _enemies_in_region(state, r, faction)])
-        entries.append({"region": r, "target": target})
+                               [(f, f) for f in targets(r)])
+        capacity = rampage_capacity(state, r, target)
+        count = prompt_choice(stdin, stdout, f'  How many Hidden Belgic Warbands Rampage in {r}?',
+                              [(str(n), n) for n in range(1, capacity + 1)])
+        entries.append({"region": r, "target": target, 'count': count})
     if not entries:
         return None, None
     return entries, None      # plan rides in sa_regions

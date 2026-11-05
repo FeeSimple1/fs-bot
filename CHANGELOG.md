@@ -4,6 +4,18 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Rampage quantity, 4 November 2026
+
+- Let humans choose exact positive `count` per Rampage Region, including more
+  than two, with both terminal planners and durable quantity validation.
+- Reject overlarge quantities before victim reactions instead of clamping;
+  preserve accepted actor counts and victim context through save/resume.
+- Apply §8.5.1's all-able-Warbands NPC default, retaining its before-Battle
+  last-enemy-piece restriction. Reject duplicate Region entries per §4.1.
+- Close CMD-RAMPAGE-COUNT: 24/50 original findings closed (48%), 26 open.
+  Full victim choices and Circumvallation mechanics remain open. See the
+  [report](docs/reviews/rampage-quantity-2026-11-04.md).
+
 ## Unreleased — Intimidate Allied Tribe identity, 4 November 2026
 
 - Carry exact `target_tribe` choices through ordinary, intrinsic Raid and

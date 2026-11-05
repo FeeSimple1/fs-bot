@@ -274,7 +274,7 @@ def collect_intimidate(state, faction, stdin, stdout):
 
 def collect_rampage(state, faction, stdin, stdout):
     from fs_bot.cli.human_plan import _playable_regions
-    from fs_bot.commands.sa_rampage import validate_rampage_region, validate_rampage_target
+    from fs_bot.commands.sa_rampage import validate_rampage_region, validate_rampage_target, rampage_capacity
     from fs_bot.engine.execute import _execute_rampage
     plan = Planning(state, faction, stdin, stdout)
     entries, selected = [], set()
@@ -297,7 +297,10 @@ def collect_rampage(state, faction, stdin, stdout):
         if region is None:
             break
         target = plan.choose(f'Rampage target in {region}?', [(f, f) for f in choices[region]])
-        entry = {'region': region, 'target': target}
+        capacity = rampage_capacity(plan.state, region, target)
+        count = plan.choose(f'How many Hidden Belgic Warbands Rampage in {region}?',
+                            [(str(n), n) for n in range(1, capacity + 1)])
+        entry = {'region': region, 'target': target, 'count': count}
         # Opponent declarations remain live choices at execution; this is
         # the same detached, default-outcome preview used by other Commands.
         _execute_rampage(plan.state, faction, {'command': rc.CMD_RALLY,

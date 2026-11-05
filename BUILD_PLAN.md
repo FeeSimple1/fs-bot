@@ -87,7 +87,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 23 of 50 closed (46%) and 27 open; these are finding counts, not
+now records 24 of 50 closed (48%) and 26 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)
@@ -120,7 +120,10 @@ restores numeric17's Roman-owned German groups and single Ambush.
 The [no-Romans cleanup repair](docs/reviews/circumvallation-no-romans-2026-11-04.md)
 repairs one marker boundary. The [Intimidate Tribe repair](docs/reviews/intimidate-tribes-2026-11-04.md)
 closes CMD-INTIMIDATE-TRIBE and makes those removals identify their physical
-discs; it does not implement persistent marked-group tracking. Next address the remaining [Circumvallation persistent-effect defects](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
+discs; it does not implement persistent marked-group tracking. The
+[Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md) closes
+CMD-RAMPAGE-COUNT and removes the artificial NPC two-Warband cap; full victim
+choices remain BATTLE-RAMPAGE-VICTIM. Next address the remaining [Circumvallation persistent-effect defects](docs/reviews/circumvallation-persistence-followup-2026-11-04.md).
 Continue with the remaining Event ownership, quantity
 and exact-choice findings, then ordinary physical choices/timing and
 seasonal ownership. Base-card counterparts remain separate findings even

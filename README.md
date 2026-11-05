@@ -111,7 +111,9 @@ closes FE-01: `b`/`board` at Command menus show the position after the preceding
 The [Intimidate Tribe repair](docs/reviews/intimidate-tribes-2026-11-04.md)
 closes CMD-INTIMIDATE-TRIBE with exact disc choices across ordinary, Raid-linked
 and A45 uses.
-**23 of 50 findings are closed (46%); 27 remain open** in the
+The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
+closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
+**24 of 50 findings are closed (48%); 26 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

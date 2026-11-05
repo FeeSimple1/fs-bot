@@ -36,6 +36,7 @@ from fs_bot.rules_consts import (
     HIDDEN, REVEALED,
     # Leaders
     AMBIORIX, BODUOGNATUS,
+    SA_RAMPAGE,
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
 )
@@ -46,6 +47,36 @@ from fs_bot.board.pieces import (
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import is_adjacent
 from fs_bot.commands.common import CommandError, check_leader_proximity
+
+
+def rampage_capacity(state, region, target_faction):
+    """§4.5.2: one affected mobile piece per selected Hidden Warband."""
+    return min(count_pieces_by_state(state, region, BELGAE, WARBAND, HIDDEN),
+               sum(count_pieces(state, region, target_faction, piece)
+                   for piece in (WARBAND, AUXILIA, LEGION)))
+
+
+def human_plan_error(action):
+    """Human target entries choose quantity; omission is only an NPC default.
+
+    Dynamic availability is checked when Rampage resolves, after the Command
+    and any authorized timing actions, rather than on the starting board.
+    """
+    if action.get('sa') != SA_RAMPAGE:
+        return None
+    entries = action.get('sa_regions')
+    if not isinstance(entries, list) or not entries or any(not isinstance(e, dict) for e in entries):
+        return 'Rampage needs Region/target entries with an explicit count'
+    regions = []
+    for entry in entries:
+        if not isinstance(entry.get('region'), str) or entry.get('target') not in (ROMANS, ARVERNI, AEDUI):
+            return 'Each Rampage entry needs a Region and Roman or Gallic target'
+        regions.append(entry['region'])
+        if type(entry.get('count')) is not int or entry['count'] < 1:
+            return 'Choose a positive integer count for each Rampage Region'
+    if len(regions) != len(set(regions)):
+        return 'Select each Rampage Region only once (§4.1)'
+    return None
 
 
 def validate_rampage_region(state, region):

@@ -1003,6 +1003,38 @@ moves, while decline chooses none. A changed relocation outcome then requests
 `quarters_payment` for the pieces actually left outside Provincia, before
 payment or loss rolls. Explicit default uses standard payments.
 
+### Rampage quantity
+
+For a human Rampage, each `sa_regions` entry supplies `region`, `target` and
+an explicit positive integer `count` of Hidden Belgic Warbands to Reveal:
+
+```json
+{"command":"Rally","sa":"Rampage","sa_regions":[{"region":"Treveri","target":"Romans","count":1}],"details":{"rally_plan":{"steps":[{"region":"Treveri","action":"place_warbands","count":0}]}}}
+```
+
+The full Rally/Rampage plan still needs its normal legal prerequisites.
+Count may exceed two, up to both current Hidden Belgic Warbands and the
+eligible target Warbands/Auxilia/Legions. Availability is checked when Rampage
+resolves, after its preceding Command/timing actions. An overlarge quantity
+is rejected rather than reduced. Omit a Region to decline Rampage there;
+each selected Region is one nonempty application against one target Faction.
+Repeated Regions and missing, zero, Boolean, fractional or malformed human
+counts are invalid. Durable missing choices remain pending. Both terminal
+planners author the field, retain board inspection and preview the chosen
+quantity without changing the live board.
+
+Legacy NPC/default entries without `count` use all able Hidden Warbands per
+§8.5.1. For NPC-controlled Belgae, the before-Battle default leaves at least one
+enemy piece; that NPC restriction does not clamp an explicit human count. This corrects the former
+artificial two-Warband default and can change bot outcomes. Save schema is
+unchanged, but older human plans need the field and cross-revision replay is
+not promised. A paused victim request carries the exact quantity in
+`context.num_pieces`; accepted actor plans keep their count through save/resume.
+
+Victim piece selection and per-piece remove/Retreat choices remain the open
+BATTLE-RAMPAGE-VICTIM finding. This quantity repair preserves that existing
+reaction interface and does not claim full Rampage choice coverage.
+
 ### Other paid and optional grants
 
 Ordinary German Intimidate uses one or two Hidden Warbands per Region;

@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "70c571cca14380c33f310b45c02cf615143b3ed0",
-    "python_sha256": "5179ad47b36917a8447e1e4dbe8b122f7e795e1d499736e68b0b66eb0e019d76",
-    "python_files": 479,
+    "commit": "4cfeb2c4e58685f96a2287490d405d37df553558",
+    "python_sha256": "dacec83d00c491620202ef3253150227ec68addb7bae6793a6241891a18583f0",
+    "python_files": 480,
     "working_tree_changes": true,
-    "note": "Intimidate exact Allied Tribe choices close CMD-INTIMIDATE-TRIBE; CV-PERSISTENCE remains separately open. See reviews/intimidate-tribes-2026-11-04.md."
+    "note": "Rampage actor quantity closes CMD-RAMPAGE-COUNT; NPC all-able quantity corrected per 8.5.1. Full victim choices and CV-PERSISTENCE remain open. See reviews/rampage-quantity-2026-11-04.md."
   },
   "total": 50,
-  "closed": 23,
-  "open": 27,
+  "closed": 24,
+  "open": 26,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -26,7 +26,8 @@
     "Numeric65 executor-owned March and all-able Ambush choices are repaired. BE-01 remains open for 4/17. See reviews/german-guidance-2026-11-04.md.",
     "Numeric17 Roman-owned German groups and single Ambush choices are repaired. BE-01 remains open for numeric4. See reviews/germanic-chieftains-2026-11-04.md.",
     "BE-01 closes after numeric4 Roman-owned optional choices and post-March marker placement. Separate verified high-priority CV-PERSISTENCE defects are not part of the original 50; see reviews/circumvallation-persistence-followup-2026-11-04.md.",
-    "CMD-INTIMIDATE-TRIBE closes with named physical disc choices in ordinary, Raid-linked and A45 Intimidate; Circumvallation group tracking and the NPC pre-Battle targeting lead remain open separately. See reviews/intimidate-tribes-2026-11-04.md."
+    "CMD-INTIMIDATE-TRIBE closes with named physical disc choices in ordinary, Raid-linked and A45 Intimidate; Circumvallation group tracking and the NPC pre-Battle targeting lead remain open separately. See reviews/intimidate-tribes-2026-11-04.md.",
+    "CMD-RAMPAGE-COUNT closes with exact human counts and source-required all-able NPC quantities; BATTLE-RAMPAGE-VICTIM and CV-PERSISTENCE remain open. See reviews/rampage-quantity-2026-11-04.md."
   ],
   "findings": [
     {
@@ -55,7 +56,8 @@
       "id": "CMD-RAMPAGE-COUNT",
       "title": "Rampage forces two Warbands instead of the actor\u2019s chosen quantity",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/rampage-quantity-2026-11-04.md"
     },
     {
       "id": "CMD-SCOUT-ALLOCATION",

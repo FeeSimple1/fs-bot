@@ -5437,9 +5437,9 @@ def _execute_rampage(state, faction, bot_action):
     """Belgic Rampage (§4.5.2) — routes the TARGET's remove-vs-Retreat choice.
 
     For each flipped Hidden Belgic Warband the target must remove or Retreat
-    one piece. The bot's rampage plan gives ``{region, target}``; we flip up
-    to 2 Warbands (capped by Hidden Belgic Warbands present and by how many
-    target pieces are available). The target loses its lowest-value mobile
+    one piece. Human entries give ``{region, target, count}``; legacy NPC
+    entries omit count and use all able Warbands (§8.5.1), capped by available
+    target pieces and leaving one enemy piece before Battle. The target loses its lowest-value mobile
     pieces first (Warbands, then Auxilia, then Legions — §8.4.1), and
     Retreats them to save them when a legal destination exists (§8.4.3),
     otherwise removes them. In Ariovistus a Rampaged Arverni target is removed
@@ -5456,6 +5456,11 @@ def _execute_rampage(state, faction, bot_action):
     if not plan:
         return {"executed": False, "sa": _SA_RAMPAGE,
                 "reason": "no rampage plan with targets"}
+    regions = [entry.get('region') for entry in plan]
+    if (any(not isinstance(region, str) for region in regions)
+            or len(regions) != len(set(regions))):
+        return {'executed': False, 'sa': _SA_RAMPAGE, 'rampages': [],
+                'errors': [{'error': 'Select each Rampage Region only once (§4.1)'}]}
 
     scenario = state["scenario"]
     done, errors = [], []
@@ -5485,10 +5490,20 @@ def _execute_rampage(state, faction, bot_action):
                 pool += [(pt, ps)] * _count_state(state, region, target, pt, ps)
         pool += [(LEGION, None)] * count_pieces(state, region, target, LEGION)
         if not pool:
+            if 'count' in entry:
+                errors.append({'region': region, 'target': target,
+                               'error': 'Rampage count exceeds the eligible target pieces'})
             continue
 
-        n = min(2, hidden_belgic, len(pool))
-        if (bot_action.get("command") == _CMD_BATTLE and
+        if 'count' in entry:
+            n = entry['count']
+            if type(n) is not int or not 1 <= n <= min(hidden_belgic, len(pool)):
+                errors.append({'region': region, 'target': target,
+                               'error': 'Rampage count must fit the Hidden Warbands and eligible target pieces'})
+                continue
+        else:
+            n = min(hidden_belgic, len(pool))
+        if ('count' not in entry and bot_action.get("command") == _CMD_BATTLE and
                 faction in state.get("non_player_factions", set())):
             n = min(n, max(0, count_pieces(state, region, target) - 1))
         if n == 0:

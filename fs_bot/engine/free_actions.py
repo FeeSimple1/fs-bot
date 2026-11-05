@@ -322,6 +322,10 @@ def _validate_plan(state, faction, request, action):
             return f'{faction} cannot execute {sa}.'
         if not standalone and not compatible_sa(cmd, sa):
             return f'{sa} cannot accompany {cmd}.'
+    from fs_bot.commands.sa_rampage import human_plan_error as rampage_plan_error
+    error = rampage_plan_error(action)
+    if error:
+        return error
     if request.get('morasses_ambush'):
         from fs_bot.rules_consts import AEDUI, SA_AMBUSH
         plan = (action.get('details') or {}).get('battle_plan') or []

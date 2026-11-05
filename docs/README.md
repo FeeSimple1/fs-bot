@@ -26,6 +26,7 @@ references and canonical constants remain read-only.
 
 | Document or artifact | Scope |
 |---|---|
+| [4 November Rampage quantity](reviews/rampage-quantity-2026-11-04.md) | Exact actor quantity, full NPC quantity, durable counts and unchanged 100-game balance guard; closes CMD-RAMPAGE-COUNT |
 | [4 November Intimidate Tribe identity](reviews/intimidate-tribes-2026-11-04.md) | Exact Allied Tribe discs across ordinary, Raid-linked and A45 Intimidate; closes CMD-INTIMIDATE-TRIBE |
 | [4 November Circumvallation no-Romans cleanup](reviews/circumvallation-no-romans-2026-11-04.md) | Marker ends after last physical Roman departure or casualty; other persistent effects remain open |
 | [4 November Circumvallation choices](reviews/circumvallation-2026-11-04.md) | Roman-owned optional March and post-March marker; closes original BE-01 |

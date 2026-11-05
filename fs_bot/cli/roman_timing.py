@@ -8,7 +8,7 @@ from fs_bot.commands.common import CommandError
 
 
 def collect_build(state, faction, stdin, stdout, *, pending=None):
-    """Preview Forts, then Subdue, then Allies in the executor's order."""
+    """Preview each selected Region completely in player order (§4.1)."""
     from fs_bot.cli.human_plan import _regions_with_pieces, _pick_regions
     from fs_bot.commands.sa_build import (
         validate_build_region, build_fort, build_subdue, build_place_ally,
@@ -42,9 +42,9 @@ def collect_build(state, faction, stdin, stdout, *, pending=None):
             return False
         return True
 
-    for stage, key in (('build_fort', 'forts'), ('build_subdue', 'subdue'),
-                       ('build_ally', 'allies')):
-        for region in picked:
+    for region in picked:
+        for stage, key in (('build_fort', 'forts'), ('build_subdue', 'subdue'),
+                           ('build_ally', 'allies')):
             if key != 'forts' and (region in seized or region in tribe_regions):
                 continue
             sim, timing = prepare(sim, faction, stdin, stdout, stage=stage,
@@ -85,6 +85,8 @@ def collect_build(state, faction, stdin, stdout, *, pending=None):
                     build_place_ally(sim, region, selected)
                 tribe_regions.add(region)
             carried = []
+    plan['region_order'] = [r for r in picked if r in plan['forts'] or any(
+        e['region'] == r for key in ('subdue', 'allies') for e in plan[key])]
     extra = {'build_plan': plan}
     if stages or carried:
         extra['sa_details'] = {}
@@ -92,7 +94,7 @@ def collect_build(state, faction, stdin, stdout, *, pending=None):
             extra['sa_details']['stage_timing_actions'] = stages
         if carried:
             extra['sa_details']['after_sa_timing_actions'] = carried
-    if not any(plan.values()):
+    if not plan['region_order']:
         # No operation was authored. The outer collector can keep explicitly
         # selected timing actions rather than silently turning them into Pass.
         return (picked, extra) if carried else (None, None)

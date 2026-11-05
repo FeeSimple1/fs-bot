@@ -130,9 +130,30 @@ reference. March plans additionally accept exact per-origin `routes`
 `extra_groups` ([{origin, route, group}] — further groups from the
 post-departure remainder of an origin). The Roman Build and Scout
 Special Abilities accept player plans (`build_plan`
-{forts, subdue, allies} and `scout_plan` {auxilia_moves,
+{forts, subdue, allies, region_order} and `scout_plan` {auxilia_moves,
 scout_targets}); without one, the bots' flowchart plans run instead.
-Build permits both a Fort and the legal Ally operation in a Region. Scout
+Build permits both a Fort and the legal Ally operation in a Region. Supply
+`build_plan.region_order` as an array naming exactly the Regions with operations,
+each once. The executor completes each Region in that order: its optional Fort,
+then either one Subdue or one Ally placement. For example:
+
+```json
+{"build_plan":{"forts":["Aedui"],"allies":[{"region":"Sequani","tribe":"Helvetii"}],"region_order":["Sequani","Aedui"]}}
+```
+
+This spends on the Sequani Ally before the Aedui Fort. Entries retain their
+category indices for `build_fort:N`, `build_subdue:N`, and `build_ally:N` timing
+keys; those windows execute in Region order, not numeric/category order.
+Top-level `details.build_plan` takes precedence over a nested non-null
+`details.sa_details.build_plan`. Duplicate/missing/extra Region names and more
+than one Fort or Tribe operation per Region are rejected before an accompanying
+human Command. Card 12 shaded rejects an ordered plan selecting multiple Regions.
+Both terminal collectors emit `region_order`. Omission retains the older
+Fort/Subdue/Ally passes for existing controllers and the §8.8.1 non-player
+procedure; controllers should add the field to express human Region order.
+An empty ordered plan is `{ "region_order": [] }`.
+
+Scout
 movement entries can name `physical_owners` when Diviciacus lends counters;
 their counts must total that move and use only still-unmoved pieces.
 Arrivals may participate in subsequent Scout Reveal, but may not Scout-move

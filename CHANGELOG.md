@@ -4,6 +4,17 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Player Build Region order, 4 November 2026
+
+- Preserve selected Region order in both Build collectors and execution using
+  `build_plan.region_order`; resolve a Fort before the optional Tribe operation
+  in each Region. Preserve legacy controller and §8.8.1 NP passes.
+- Validate exact Region coverage, uniqueness and per-Region operation limits
+  before an accompanying human Command; retain timing category indices.
+- Keep invalid turn/Event plans pending across rollback and save/resume.
+- Close CMD-BUILD-ORDER: 26/50 original findings closed (52%), 24 open.
+  See the [report](docs/reviews/build-order-2026-11-04.md).
+
 ## Unreleased — Ordinary Seize Tribe identity, 4 November 2026
 
 - Extend exact `disperse_tribes` maps to ordinary Seize; preserve explicit

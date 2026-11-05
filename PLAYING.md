@@ -16,6 +16,13 @@ ordering is available. At Command prompts, `b`/`board` shows the planning
 position after preceding operations, including a Fort built before March.
 Planning leaves the live game unchanged until the action is submitted.
 
+For Roman Build, pick Regions in the order you want to resolve them. The
+planner completes each Region before moving to the next: an optional Fort,
+then either Subdue or place one Roman Ally. Resources, Control and Supply
+eligibility are checked on the evolving position. This allows an Ally in one
+Region before a Fort in another. Non-player Romans retain their published
+Fort/Subdue/Ally priorities. See the [Build report](docs/reviews/build-order-2026-11-04.md).
+
 For Mons Cevenna (card 9), choose the first March's origin, exact mobile
 pieces and adjacent destination within Provincia, Sequani and Arverni.
 All pieces at the selected origin undergo the normal March visibility flip.

@@ -21,6 +21,26 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November player Build ordering — CMD-BUILD-ORDER closed
+
+The [Build repair](reviews/build-order-2026-11-04.md) adds exact `region_order`
+to player plans and both collectors. Each Region resolves its optional Fort
+then one Tribe operation before the next Region. Category timing indices remain
+stable. Legacy plans and the source-required §8.8.1 NP passes remain supported.
+Malformed orders are rejected before an accompanying Command; pending turn and
+Event SA responses survive rollback and save/resume.
+
+**Original bundle is now 26/50 closed (52%), 24 open.** This counts findings,
+not effort or complete rules compliance. CV-PERSISTENCE, full Rampage victim
+choices, NPC Intimidate targeting, two source questions, twelve provisional
+rulings and 34 unverified inventory rows retain their separate dispositions.
+
+**7,840 tests pass**, including 32 new cases; 121 targeted tests pass. Ten
+native-bot gameplay records/final hashes match parent. Forty mixed executions
+agree across hash seeds with zero hard findings or partials. See the report
+for the frozen source digest and evidence bounds.
+
+
 ### 4 November ordinary Seize Tribes — CMD-SEIZE-TRIBES closed
 
 The [Tribe repair](reviews/seize-tribes-2026-11-04.md) extends exact
@@ -34,7 +54,7 @@ The synthetic human-policy builder and Arduenna witness use the same contract.
 bot gameplay records/final hashes match the parent. Forty mixed executions
 agree across hash seeds with zero hard findings and zero partials.
 
-**Original bundle is now 25/50 closed (50%), 25 open.** This measures original
+**At that checkpoint: 25/50 closed (50%), 25 open.** This measures original
 finding counts, not equal effort or complete rules compliance. The separate
 Circumvallation mechanics, full Rampage victim choices and NPC Intimidate
 lead remain open.

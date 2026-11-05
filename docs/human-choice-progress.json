@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-04",
   "tested_source": {
-    "commit": "f05e1f3662094d7f9b693e5986396ffe0e1286f4",
-    "python_sha256": "2b7e97d346ddd9772c0b8945d02a75e9cfaa0806535584d9a0eb91e8dc96d757",
-    "python_files": 481,
+    "commit": "56a99cbf30f5692778b6371971940c3aaeff2a17",
+    "python_sha256": "1b860ce3d2df175c359dfedb25b016d0965f7efbb195804909e958738fcd1f81",
+    "python_files": 482,
     "working_tree_changes": true,
-    "note": "Ordinary Seize exact Tribe choices close CMD-SEIZE-TRIBES; separate mechanics follow-ups remain open. See reviews/seize-tribes-2026-11-04.md."
+    "note": "Explicit player Build Region order closes CMD-BUILD-ORDER. See reviews/build-order-2026-11-04.md."
   },
   "total": 50,
-  "closed": 25,
-  "open": 25,
+  "closed": 26,
+  "open": 24,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -28,7 +28,8 @@
     "BE-01 closes after numeric4 Roman-owned optional choices and post-March marker placement. Separate verified high-priority CV-PERSISTENCE defects are not part of the original 50; see reviews/circumvallation-persistence-followup-2026-11-04.md.",
     "CMD-INTIMIDATE-TRIBE closes with named physical disc choices in ordinary, Raid-linked and A45 Intimidate; Circumvallation group tracking and the NPC pre-Battle targeting lead remain open separately. See reviews/intimidate-tribes-2026-11-04.md.",
     "CMD-RAMPAGE-COUNT closes with exact human counts and source-required all-able NPC quantities; BATTLE-RAMPAGE-VICTIM and CV-PERSISTENCE remain open. See reviews/rampage-quantity-2026-11-04.md.",
-    "CMD-SEIZE-TRIBES closes with exact ordinary dispersal subsets, all scarce-marker candidates, Forage-only and adapter migration. Native NPC selection remains supported. See reviews/seize-tribes-2026-11-04.md."
+    "CMD-SEIZE-TRIBES closes with exact ordinary dispersal subsets, all scarce-marker candidates, Forage-only and adapter migration. Native NPC selection remains supported. See reviews/seize-tribes-2026-11-04.md.",
+    "CMD-BUILD-ORDER closes with exact region_order in both collectors and execution. Legacy controller and source-required NP passes remain supported. See reviews/build-order-2026-11-04.md."
   ],
   "findings": [
     {
@@ -84,7 +85,9 @@
       "id": "CMD-BUILD-ORDER",
       "title": "Build reorders all Regions by operation type",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "reviews/build-order-2026-11-04.md",
+      "disposition": "Explicit player Region order with per-Region Fort then optional Tribe action; stable timing indices and legacy NP passes."
     },
     {
       "id": "BATTLE-LOSS-TIERS",

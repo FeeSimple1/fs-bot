@@ -303,3 +303,68 @@ def _has_roman_ally(state, region):
 def _has_any_roman_piece(state, region):
     """Check if region has any Roman piece."""
     return count_pieces(state, region, ROMANS) > 0
+
+
+def build_plan_operations(plan):
+    """Expand a plan, retaining legacy NP passes or explicit human Region order.
+
+    §4.1 lets players choose Region order; §4.2.1 resolves the Fort before
+    the optional Tribe action there. §8.8.1 instead specifies NP passes.
+    Category indices stay stable for existing timing-action keys.
+    """
+    if not isinstance(plan, dict):
+        raise CommandError("Build plan must be an object")
+    operations = []
+    for kind in ('forts', 'subdue', 'allies'):
+        entries = plan.get(kind, [])
+        if not isinstance(entries, list):
+            raise CommandError(f"Build {kind} must be a list")
+        for index, entry in enumerate(entries):
+            if kind == 'forts':
+                region = entry
+            else:
+                if not isinstance(entry, dict) or not isinstance(entry.get('tribe'), str):
+                    raise CommandError("Build Tribe entries need a Region and Tribe")
+                region = entry.get('region')
+            if not isinstance(region, str):
+                raise CommandError("Build entries need a Region name")
+            operations.append((kind, index, region, entry))
+    if 'region_order' not in plan:
+        return operations  # Backward-compatible grouped plans and §8.8.1 NP.
+    order = plan['region_order']
+    if (not isinstance(order, list) or any(not isinstance(r, str) for r in order)
+            or len(order) != len(set(order))):
+        raise CommandError("Build region_order must list each Region once (§4.1)")
+    if set(order) != {op[2] for op in operations}:
+        raise CommandError("Build region_order must name exactly the Regions with operations")
+    for region in order:
+        selected = [op for op in operations if op[2] == region]
+        if sum(op[0] == 'forts' for op in selected) > 1:
+            raise CommandError("Build may place only one Fort per Region")
+        if sum(op[0] != 'forts' for op in selected) > 1:
+            raise CommandError("Build may place or subdue only one Ally per Region (§4.2.1)")
+    return [op for region in order for op in operations if op[2] == region]
+
+
+def build_plan_error(action, state=None):
+    """Check a supplied Build plan without board changes or agent calls."""
+    from fs_bot.rules_consts import SA_BUILD
+    if action.get('sa') != SA_BUILD:
+        return None
+    details = action.get('details') or {}
+    plan = details.get('build_plan')
+    if plan is None:
+        plan = (details.get('sa_details') or {}).get('build_plan')
+    if plan is None:
+        return None
+    try:
+        operations = build_plan_operations(plan)
+        if state is not None and 'region_order' in plan:
+            from fs_bot.cards.capabilities import is_capability_active
+            from fs_bot.rules_consts import EVENT_SHADED
+            if (is_capability_active(state, 12, EVENT_SHADED)
+                    and len({op[2] for op in operations}) > 1):
+                return "Card 12 shaded limits Build to one Region"
+    except CommandError as exc:
+        return str(exc)
+    return None

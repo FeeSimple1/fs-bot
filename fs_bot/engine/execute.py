@@ -5149,15 +5149,7 @@ def _execute_build(state, faction, bot_action):
 
 
 def _execute_build_plan(state, faction, bot_action):
-    """Roman Build (§4.2.1).
-
-    The Roman bot's node_r_build computes a complete build_plan
-    ({forts:[region], subdue:[{region,tribe}], allies:[{region,tribe}]}) but
-    the accompanying Build SA is emitted without it. We recompute the plan
-    against the current (post-Command) board via node_r_build and execute it:
-    Forts, then Subdue (target_faction derived from the tribe's current
-    Allied faction — a lookup, not a choice), then place Allies.
-    """
+    """Build in explicit player Region order, or the legacy NP passes."""
     # A player-supplied plan (CLI collector) takes precedence — the SA is
     # the PLAYER'S choice (§4.2.1); bots recompute via their flowchart.
     plan = _sa_detail(bot_action, "build_plan")
@@ -5173,30 +5165,23 @@ def _execute_build_plan(state, faction, bot_action):
             return {"executed": False, "sa": _SA_BUILD,
                     "reason": f"build plan unavailable: {exc!r}"}
 
+    from fs_bot.commands.sa_build import build_plan_operations
+    try:
+        operations = build_plan_operations(plan)
+    except CommandError as exc:
+        return {"executed": False, "sa": _SA_BUILD, "reason": str(exc)}
+
     # Card 12 shaded: "Build and Scout Reveal are maximum 1 Region."
     # §8.3.3: non-players apply limited-Region Capabilities in the FIRST
     # Regions that apply — trim the plan to its first Region overall.
     from fs_bot.cards.capabilities import is_capability_active as _ica12
     from fs_bot.rules_consts import EVENT_SHADED as _ES12
     if _ica12(state, 12, _ES12):
-        _first = None
-        for _k in ("forts", "subdue", "allies"):
-            for _e in plan.get(_k, []) or []:
-                _r = _e if isinstance(_e, str) else _e.get("region")
-                if _r is not None:
-                    _first = _r
-                    break
-            if _first is not None:
-                break
-        if _first is not None:
-            plan = {
-                "forts": [r for r in (plan.get("forts") or [])
-                          if r == _first],
-                "subdue": [e for e in (plan.get("subdue") or [])
-                           if e.get("region") == _first],
-                "allies": [e for e in (plan.get("allies") or [])
-                           if e.get("region") == _first],
-            }
+        regions = list(dict.fromkeys(op[2] for op in operations))
+        if 'region_order' in plan and len(regions) > 1:
+            return {"executed": False, "sa": _SA_BUILD,
+                    "reason": "Card 12 shaded limits Build to one Region"}
+        operations = [op for op in operations if op[2] == regions[0]] if regions else []
 
     done, errors = [], []
     from fs_bot.commands.sa_build import validate_build_region
@@ -5216,43 +5201,33 @@ def _execute_build_plan(state, faction, bot_action):
         if ally_action and region in tribe_action_regions:
             raise CommandError("Build may place or subdue only one Ally per Region (§4.2.1)")
 
-    for index, region in enumerate(plan.get("forts", []) or []):
-        _timing_plan_step(state, faction, bot_action, 'build_fort',
+    for kind, index, region, entry in operations:
+        action = {'forts': 'fort', 'subdue': 'subdue', 'allies': 'ally'}[kind]
+        tribe = entry.get('tribe') if isinstance(entry, dict) else None
+        _timing_plan_step(state, faction, bot_action, 'build_' + action,
+                          entry=entry if isinstance(entry, dict) else None,
                           index=index, region=region)
         try:
-            validate_region(region)
-            _sa_build_fort(state, region)
-            done.append(("fort", region))
+            validate_region(region, ally_action=kind != 'forts')
+            if kind == 'forts':
+                _sa_build_fort(state, region)
+            elif kind == 'subdue':
+                target = state.get('tribes', {}).get(tribe, {}).get('allied_faction')
+                if target is None:
+                    if 'region_order' not in plan:
+                        continue  # Legacy NP plans may become stale.
+                    raise CommandError("Build Subdue needs an Allied Tribe")
+                _sa_build_subdue(state, region, tribe, target)
+            else:
+                _sa_build_ally(state, region, tribe)
+            if kind != 'forts':
+                tribe_action_regions.add(region)
+            done.append((action, region) if kind == 'forts' else (action, region, tribe))
         except _EXEC_ERRORS as exc:
-            errors.append({"action": "fort", "region": region,
-                           "error": str(exc)})
-    for index, entry in enumerate(plan.get("subdue", []) or []):
-        region, tribe = entry.get("region"), entry.get("tribe")
-        _timing_plan_step(state, faction, bot_action, 'build_subdue',
-                          entry=entry, index=index, region=region)
-        target = state.get("tribes", {}).get(tribe, {}).get("allied_faction")
-        if target is None:
-            continue
-        try:
-            validate_region(region, ally_action=True)
-            _sa_build_subdue(state, region, tribe, target)
-            tribe_action_regions.add(region)
-            done.append(("subdue", region, tribe))
-        except _EXEC_ERRORS as exc:
-            errors.append({"action": "subdue", "region": region,
-                           "tribe": tribe, "error": str(exc)})
-    for index, entry in enumerate(plan.get("allies", []) or []):
-        region, tribe = entry.get("region"), entry.get("tribe")
-        _timing_plan_step(state, faction, bot_action, 'build_ally',
-                          entry=entry, index=index, region=region)
-        try:
-            validate_region(region, ally_action=True)
-            _sa_build_ally(state, region, tribe)
-            tribe_action_regions.add(region)
-            done.append(("ally", region, tribe))
-        except _EXEC_ERRORS as exc:
-            errors.append({"action": "ally", "region": region,
-                           "tribe": tribe, "error": str(exc)})
+            error = {"action": action, "region": region, "error": str(exc)}
+            if kind != 'forts':
+                error['tribe'] = tribe
+            errors.append(error)
     result = {"executed": len(done) > 0, "sa": _SA_BUILD,
               "actions": done, "errors": errors}
     if not done and not errors:

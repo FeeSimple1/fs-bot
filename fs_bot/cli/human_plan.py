@@ -929,6 +929,8 @@ def _collect_build(state, faction, stdin, stdout, *, pending=None):
             plan["allies"].append({"region": r, "tribe": t})
     if not (plan["forts"] or plan["subdue"] or plan["allies"]):
         return None, None
+    plan['region_order'] = [r for r in picked if r in plan['forts'] or any(
+        e['region'] == r for key in ('subdue', 'allies') for e in plan[key])]
     return picked, {"build_plan": plan}
 
 

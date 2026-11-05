@@ -302,6 +302,10 @@ def _validate_plan(state, faction, request, action):
     error = validate_region_uniqueness(action)
     if error:
         return error
+    from fs_bot.commands.sa_build import build_plan_error
+    error = build_plan_error(action, state)
+    if error:
+        return error
     from fs_bot.commands.seize import seize_plan_error
     error = seize_plan_error(action, require_exact=True, state=state)
     if error:

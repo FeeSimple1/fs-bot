@@ -16,6 +16,10 @@ retains its exact tested revision and reproducible results. Use
 [PLAYING.md](PLAYING.md) for terminal play and
 [AGENT_INTERFACE.md](AGENT_INTERFACE.md) for external controllers.
 
+The [4 November Build repair](docs/reviews/build-order-2026-11-04.md) closes
+CMD-BUILD-ORDER with explicit player Region order, preserving NP passes and
+legacy controller plans. The original bundle is 26/50 closed (52%), 24 open.
+
 ## Existing implementation
 
 | Original phase | Implemented components | Main locations |
@@ -87,7 +91,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 25 of 50 closed (50%) and 25 open; these are finding counts, not
+now records 26 of 50 closed (52%) and 24 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

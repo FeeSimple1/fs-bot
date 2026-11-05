@@ -24,6 +24,10 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Build ordering](reviews/build-order-2026-11-04.md): explicit player
+  Region order, legacy NP compatibility, replay and validation evidence.
+
+
 | Document or artifact | Scope |
 |---|---|
 | [4 November ordinary Seize Tribes](reviews/seize-tribes-2026-11-04.md) | Exact ordinary subsets, last-marker identity, Forage-only and durable choice; closes CMD-SEIZE-TRIBES |

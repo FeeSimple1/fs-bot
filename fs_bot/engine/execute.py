@@ -60,6 +60,7 @@ from fs_bot.commands.seize import execute_harassment_loss as _seize_harass_loss
 from fs_bot.rules_consts import HARASSMENT_WARBANDS_PER_LOSS as _HWB_PER_LOSS
 from fs_bot.cards.card_effects import execute_event
 from fs_bot.engine.action_windows import sop_action, window as _timing_window
+from fs_bot.engine.horse_choice import command_scope as _horse_command_scope
 
 # Mechanic functions raise CommandError on rule violations and PieceError
 # on invalid piece operations (e.g. a plan gone stale against the board).
@@ -3720,6 +3721,7 @@ def _execute_rally_steps(state, faction, steps, *, ordered=False,
 
 
 @_diviciacus_command_scope
+@_horse_command_scope
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _full_loss_warbands=0, _double_auxilia=False, _ambush_anywhere=False,
                     _battle_observer=None, _full_loss_cohort=None, _require_ambush=False,
@@ -3794,39 +3796,11 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
         from fs_bot.engine.slingers_choice import choose_region
         _c13_region = choose_region(state, faction, battle_plan, _c13_region)
 
-    # Card 59 unshaded (Germanic Horse): Romans may inflict 1 Loss per
-    # Auxilia (not 1/2) in 1 Region per Battle Command — attack AND
-    # counterattack (Tip). NP choice: the Region with most Roman Auxilia.
-    if not _skip_absent_targets and _ica_b(state, 59, _EU_B) and _plan_regions:
-        _cands = [(count_pieces(state, r, _RO_B, _AUX_B), r)
-                  for r in sorted(set(_plan_regions))]
-        _cands = [c for c in _cands if c[0] > 0]
-        if _cands:
-            state.setdefault("event_modifiers", {})[
-                "card59_unshaded_region"] = max(_cands)[1]
-
-    # Card 59 shaded: the owning Gallic Faction doubles the enemy's Losses
-    # in 1 Region per Battle Command — when attacking AND when defending
-    # (card Tips) — unless blocked by Fort/Citadel per the Tips.
-    if not _skip_absent_targets and _ica_b(state, 59, _ES_B) and _plan_regions:
-        _owner59 = _gco_b(state, 59)
-        if _owner59 == faction:
-            state.setdefault("event_modifiers", {})[
-                "card59_shaded_region"] = sorted(set(_plan_regions))[0]
-        elif _owner59 is not None:
-            # The owner is DEFENDING in this command: their counterattack
-            # doubles in 1 Region (NP choice: most owner pieces).
-            _def_regions = sorted({
-                e.get("region") for e in battle_plan
-                if e.get("region") is not None
-                and (e.get("target") == _owner59
-                     or _owner59 in (e.get("targets") or []))})
-            if _def_regions:
-                _best = max(_def_regions,
-                            key=lambda r: (count_pieces(state, r, _owner59),
-                                           r))
-                state.setdefault("event_modifiers", {})[
-                    "card59_shaded_region"] = _best
+    # Card 59 Tips: one selected Region for attack or Counterattack. Human
+    # owners choose independently; the NPC default follows §8.3.3.
+    if not _skip_absent_targets:
+        from fs_bot.engine.horse_choice import select_for_command
+        select_for_command(state, faction, battle_plan)
 
     battles = []
     errors = []
@@ -4069,10 +4043,6 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                             "is_ambush": is_ambush,
                             "besiege": besiege_target,
                             "result": res})
-
-    # Clear the per-Command card 59 region flags.
-    for _k59 in ("card59_unshaded_region", "card59_shaded_region"):
-        state.get("event_modifiers", {}).pop(_k59, None)
 
     result = {
         "executed": len(battles) > 0,

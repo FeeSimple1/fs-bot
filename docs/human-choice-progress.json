@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-05",
   "tested_source": {
-    "commit": "12097614a156f17b9252ac057337c0198f697a6b",
-    "python_sha256": "c3d6381742446be9489e203652053fe1596fdb0f5eac7a4f1c33c1afce87e205",
-    "python_files": 517,
+    "commit": "1322980ee13241feba3057cdb04a2cd8a00349a5",
+    "python_sha256": "693cfe397282ec48411d56011afbf5c600f836858376ddd08430e1eb2fc190a2",
+    "python_files": 520,
     "working_tree_changes": true,
-    "note": "Ordinary/free Battle Slingers choices advance BE-09. Prospective-queue Slingers and Card 59 Region decisions remain open. See reviews/slingers-choice-2026-11-05.md."
+    "note": "Ordinary/free Battle Horse choices advance BE-09. Prospective-queue Card 13/59 choices remain open. See reviews/horse-choice-2026-11-05.md."
   },
   "total": 50,
   "closed": 39,
@@ -43,7 +43,8 @@
     "BATTLE-LOSS-IDENTITY closes with ordinary exact visibility and named Allied Tribe casualties. Saved generic requests require matching board signatures, and new responses use offered identities. See reviews/battle-loss-identity-2026-11-04.md.",
     "BATTLE-RAMPAGE-VICTIM closes with exact target-owned pieces and mixed dispositions. Host consent is collected once, destination restrictions apply and the primitive validates atomically. Verified older durable prompts retain their recorded contract. See reviews/rampage-victims-2026-11-04.md.",
     "Card 10 shaded optional post-Ambush removal is repaired. BE-09 remains open for Card 13 unshaded and Card 59 both-side Region choices. See reviews/ballistae-choice-2026-11-05.md.",
-    "Ordinary/free Battle Card 13 Roman Region choices are repaired, together with the combined Horse pre-fire rate and first-applicable NPC priority. BE-09 retains the prospective queue and Card 59 Region choices. See reviews/slingers-choice-2026-11-05.md."
+    "Ordinary/free Battle Card 13 Roman Region choices are repaired, together with the combined Horse pre-fire rate and first-applicable NPC priority. BE-09 retains the prospective queue and Card 59 Region choices. See reviews/slingers-choice-2026-11-05.md.",
+    "Ordinary/free Battle Card 59 Roman/Gallic Region choices, Roman decline, Abatis protection and nested flag scoping are repaired. BE-09 retains the private prospective queue. See reviews/horse-choice-2026-11-05.md."
   ],
   "findings": [
     {
@@ -251,10 +252,11 @@
       "title": "Human Capability activation/Region choices use unconditional NPC priorities",
       "severity": "high",
       "status": "open",
-      "disposition": "Card 10 shaded optional targets and ordinary/free Battle Card 13 Roman Region choices are repaired. Card 13 in the prospective Battle queue and Card 59 both-side Region choices remain open.",
+      "disposition": "Card 10 shaded optional targets and ordinary/free Battle Card 13/59 owner Region choices are repaired. The private prospective Battle queue still chooses Card 13/59 activation automatically.",
       "partial_reports": [
         "reviews/ballistae-choice-2026-11-05.md",
-        "reviews/slingers-choice-2026-11-05.md"
+        "reviews/slingers-choice-2026-11-05.md",
+        "reviews/horse-choice-2026-11-05.md"
       ]
     },
     {

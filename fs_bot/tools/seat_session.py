@@ -148,6 +148,9 @@ def validate_response(state, request, response):
     if kind == 'slingers_region':
         from fs_bot.engine.slingers_choice import validate_response as validate_slingers
         return validate_slingers(state, request, response)
+    if kind == 'horse_region':
+        from fs_bot.engine.horse_choice import validate_response as validate_horse
+        return validate_horse(state, request, response)
     if kind == "march_cohort":
         from fs_bot.engine.march_choices import validate_response as validate_cohort
         return validate_cohort(request, response)

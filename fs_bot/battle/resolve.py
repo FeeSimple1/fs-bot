@@ -661,7 +661,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
     # Region unless the Defender has Fort/Citadel (at-start state).
     if (state.get("event_modifiers", {}).get(
             "card59_shaded_region") == region
-            and not (had_fort_at_start or had_citadel_at_start)):
+            and not (had_fort_at_start or had_citadel_at_start or _abatis_active)):
         from fs_bot.cards.capabilities import get_capability_owner
         if get_capability_owner(state, 59) == attacking_faction:
             total *= 2

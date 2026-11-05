@@ -58,6 +58,13 @@ Request kinds
   explicit default. A zero-Auxilia Region is legal; there is no decline.
   The private prospective Battle queue still uses its existing automatic use.
 
+- ``horse_region`` — Card 59's Roman or Gallic owner selects a Region in an
+  ordinary/free Battle plan. Request carries side, owner, attacker, legal_regions,
+  defenders, auxilia and current blocked status. Return one offered region or
+  explicit default. Only unshaded permits {"decline": True}. Shaded can select
+  a currently protected Region; its live Fort/Citadel restrictions still apply.
+  The private prospective queue retains automatic activation.
+
 - ``raid_intimidate`` — A3.4.3 optional simultaneous Intimidate by the
   German Warbands that just Raided with Ariovistus. Request carries trusted
   region, raiders, max_removals, and physical target entries. Response is

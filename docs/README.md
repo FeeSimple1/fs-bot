@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [5 November Horse choice](reviews/horse-choice-2026-11-05.md)
+  covers Roman/Gallic Battle Regions, defensive bonuses, Abatis and flag isolation.
+
 - [5 November Slingers choice](reviews/slingers-choice-2026-11-05.md)
   covers Roman ordinary/free Battle Region selection, pre-fire and pending replay.
 

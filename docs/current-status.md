@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 5 November Horse Region — BE-09 advanced, still open
+
+The [Horse repair](reviews/horse-choice-2026-11-05.md) offers Card 59's owner
+one ordinary/free Battle Region for attack or defense, with Roman unshaded
+decline. Exact combatants, current protection and live choices are validated.
+Active Abatis now blocks shaded attacking doubling in both loss calculators.
+Each Command isolates and clears its flags, including interrupted and nested
+Battles. Non-player/default selection follows first-applicable selected order.
+Both frontends retain accepted Regions through later casualties and replay.
+
+**Original bundle remains 39/50 closed (78%), 11 open.** BE-09 now retains
+the private prospective queue's automatic Card 13/59 choices. Separate
+mechanics leads, two source questions, twelve provisional rulings and 34
+unverified inventory rows retain their dispositions.
+
+**8,688 tests pass**, including 64 new cases, with 364 focused tests passing.
+Nine of ten NPC records/final hashes match the parent; the changed game is
+traced to corrected Horse selection and reproduced by restoring the old policy.
+Mixed-seat results agree across hash seeds with zero hard findings or partials, and the historical
+100-game balance guard passes its unchanged band. The report records the
+frozen source, protected inputs, evidence and cross-revision replay limit.
+
 ### 5 November Slingers Region — BE-09 advanced, still open
 
 The [Slingers repair](reviews/slingers-choice-2026-11-05.md) offers Romans one

@@ -837,6 +837,33 @@ the corrected NPC priority/fire rate. The private prospective Battle queue
 used by numeric 67's NPC branch still chooses Slingers automatically; its
 Roman choice and Card 59's own Region decisions remain open under BE-09.
 
+`horse_region` goes to Card 59's owner before an ordinary/free Battle plan.
+Unshaded belongs to Romans and offers their actual attacking/defending Battles;
+third-party Roman presence alone does not make a normal Horse Battle bonus.
+Shaded belongs to the recorded Gallic owner and offers that owner's actual
+attacking/defending Battles. Ranked defender lists use the actual first target.
+The request carries `side`, `owner`, `attacker`, ordered `legal_regions`,
+`defenders`, Roman `auxilia` counts and the shaded side's current `blocked`
+status. Return one offered `region` or explicit `use_default` delegation.
+
+Only unshaded says "may" and accepts `{"decline":true}`. Shaded selects one
+Region; selecting a currently protected Region is legal, but does not bypass
+its live protection. Attack doubling is blocked by a defending Fort/Citadel
+or active Abatis. The owner's defensive counterattack is blocked by its own
+Citadel, while Abatis alone permits doubling. Existing A31 cancellation of
+Abatis is respected. Auxilia's unshaded full-Loss rate still precedes normal
+halving and rounding. Zero-Auxilia Regions can be selected. Non-player/default
+selection uses the first currently applicable selected Battle per §8.3.3.
+
+Each Battle Command scopes and clears its own Horse flags on completion or
+interruption; an inner Battle temporarily replaces and then restores its
+outer Command's selection. Both frontends preserve pending responses,
+accepted selections through later casualties, save/load and exact replay.
+Terminal `b`/`board` inspection and isolated previews remain available.
+Older histories can stop for the new choice or diverge from corrected defaults.
+The private prospective queue still automatically activates both Horse and
+Slingers and remains open under BE-09.
+
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
 or when leaving part of the carried group behind (`dropoff`). For a request
 with `count: 2` and sufficient offered counts, a response can be

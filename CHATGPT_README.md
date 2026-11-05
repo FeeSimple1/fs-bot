@@ -96,6 +96,12 @@ Balearic Slingers before an enemy ordinary/free Battle plan. Return an offered
 be legal choices. Its accepted answer survives later Battle reactions.
 The [agent interface](AGENT_INTERFACE.md) lists the prospective-queue limit.
 
+A `horse_region` request belongs to Card 59's Roman or Gallic owner. Select
+an offered `region`, or explicitly delegate. Only the unshaded Roman request
+permits `{"decline":true}`. Shaded protection data is informational; choosing
+a guarded Region does not bypass its protection. See the
+[agent interface](AGENT_INTERFACE.md) for the prospective-queue limitation.
+
 ## Quick start (for the assistant)
 
 You are about to PLAY one faction against the built-in bots.

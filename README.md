@@ -55,6 +55,10 @@ Balearic Slingers now offers the Roman Region choice for ordinary/free Battle
 plans and applies the printed Germanic Horse pre-fire bonus.
 [Repair and validation](docs/reviews/slingers-choice-2026-11-05.md).
 
+Germanic Horse now offers its Roman/Gallic owner's ordinary/free Battle
+Region choices, including defensive use and Roman decline. Abatis correctly
+blocks its attacking bonus. [Repair and validation](docs/reviews/horse-choice-2026-11-05.md).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.

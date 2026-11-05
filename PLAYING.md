@@ -84,6 +84,16 @@ Horse are unshaded, the initial fire inflicts one Loss per Auxilia. Slingers
 is used only once in the Command. The private prospective Battle queue still
 uses an automatic Slingers selection and remains a recorded interface gap.
 
+Germanic Horse now asks its owner to select a Region in ordinary/free Battle
+plans. Romans may decline the unshaded bonus. The shaded Gallic owner selects
+one Region for attack or counterattack; its menu shows current protection.
+A defending Fort, Citadel or active Abatis blocks attacking Horse doubling.
+A defending owner's Citadel blocks its counterattack doubling; Abatis alone
+does not. Choosing a currently blocked Region does not bypass that restriction.
+Use `b`/`board` to inspect the live position. The chosen Region survives later
+casualty prompts and saving, and its bonus expires with that Battle Command.
+The private prospective queue's automatic choices remain an interface gap.
+
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;
 Scouted pieces instead lose their marker and remain Revealed. You still pay

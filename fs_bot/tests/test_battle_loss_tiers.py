@@ -149,7 +149,7 @@ def test_saved_second_tier_replays_the_accepted_first_loss(tmp_path):
     state = _state(rc.SCENARIO_GREAT_REVOLT, rc.AEDUI, rc.WARBAND, rc.ALLY)
     session, driver = _session(state, rc.AEDUI)
     before = encode(board_copy(state))
-    session.import_inbox([{'response': [[rc.WARBAND, None]]}])
+    session.import_inbox([{'response': [[rc.WARBAND, rc.HIDDEN]]}])
     with pytest.raises(DecisionPending):
         with _action_transaction(state, driver):
             resolve_losses(state, rc.CARNUTES, rc.AEDUI, 2)
@@ -157,20 +157,20 @@ def test_saved_second_tier_replays_the_accepted_first_loss(tmp_path):
     assert len(session.data['journal']) == 1
     pending = copy.deepcopy(session.data['pending'])
     assert pending['id'] == 'd000002'
-    assert decode(pending['request'])['pieces'] == [(rc.ALLY, None)]
+    assert decode(pending['request'])['pieces'] == [(rc.ALLY, None, None, rc.TRIBE_CARNUTES)]
     path = tmp_path / 'second_tier.json'
     save_game(state, path, meta=session.meta, log=session.log)
     state, meta, log = load_game(path, validate=True)
     session, driver = _session(state, rc.AEDUI, meta, log)
     session.import_inbox({'decision_id': pending['id'],
-                          'response': [[rc.ALLY, None]]})
+                          'response': [[rc.ALLY, None, None, rc.TRIBE_CARNUTES]]})
     with _action_transaction(state, driver):
         result = resolve_losses(state, rc.CARNUTES, rc.AEDUI, 2)
     session.finish()
     assert result['removed'] == [(rc.WARBAND, 1), (rc.ALLY, 1)]
     assert [entry['assistant_id'] for entry in log] == ['d000001', 'd000002']
     assert [decode(entry['assistant_response']) for entry in log] == [
-        [[rc.WARBAND, None]], [[rc.ALLY, None]]]
+        [[rc.WARBAND, rc.HIDDEN]], [[rc.ALLY, None, None, rc.TRIBE_CARNUTES]]]
     assert session.data['pending'] is None
     assert session.data['journal'] == []
     assert validate_state(state) == []
@@ -213,7 +213,7 @@ def test_surviving_retreat_fort_keeps_mobile_pieces_ineligible():
 
     state['decision_agent'] = choose
     result = resolve_losses(state, rc.CARNUTES, rc.ROMANS, 4, is_retreat=True)
-    assert offered == [[(rc.FORT, None)]] * 3 + [[(rc.AUXILIA, None)]]
+    assert offered == [[(rc.FORT, None)]] * 3 + [[(rc.AUXILIA, rc.HIDDEN)]]
     assert result['rolls'] == [(rc.FORT, 4, False), (rc.FORT, 4, False),
                                (rc.FORT, 1, True)]
     assert result['removed'] == [(rc.FORT, 1), (rc.AUXILIA, 1)]
@@ -236,8 +236,8 @@ def test_full_battle_filters_attack_and_counterattack_requests():
                             retreat_declaration=False)
     assert result['attack']['removed'] == [(rc.WARBAND, 1)]
     assert result['counterattack']['removed'] == [(rc.AUXILIA, 1)]
-    assert requests == [(rc.AEDUI, [(rc.WARBAND, None)] * 4),
-                        (rc.ROMANS, [(rc.AUXILIA, None)] * 2)]
+    assert requests == [(rc.AEDUI, [(rc.WARBAND, rc.HIDDEN)] * 4),
+                        (rc.ROMANS, [(rc.AUXILIA, rc.HIDDEN)] * 2)]
     assert count_pieces(state, rc.CARNUTES, rc.AEDUI, rc.ALLY) == 1
     assert count_pieces(state, rc.CARNUTES, rc.ROMANS, rc.FORT) == 1
     assert validate_state(state) == []
@@ -255,7 +255,7 @@ def test_settlement_and_ally_remain_owner_choices_in_the_static_tier():
 
     state['decision_agent'] = choose
     result = resolve_losses(state, rc.CARNUTES, rc.GERMANS, 1, is_retreat=True)
-    assert requests == [[(rc.ALLY, None), (rc.SETTLEMENT, None)]]
+    assert requests == [[(rc.ALLY, None, None, rc.TRIBE_CARNUTES), (rc.SETTLEMENT, None)]]
     assert result['removed'] == [(rc.SETTLEMENT, 1)]
     assert count_pieces(state, rc.CARNUTES, rc.GERMANS, rc.ALLY) == 1
     assert count_pieces(state, rc.CARNUTES, rc.GERMANS, rc.WARBAND) == 1
@@ -276,7 +276,8 @@ def test_diviciacus_remains_after_both_mobile_and_static_tiers(retreat):
     state['decision_agent'] = choose_leader
     result = resolve_losses(state, rc.CARNUTES, rc.AEDUI, 2, is_retreat=retreat)
     expected = [rc.ALLY, rc.WARBAND] if retreat else [rc.WARBAND, rc.ALLY]
-    assert requests == [[(piece, None)] for piece in expected]
+    assert requests == [[(rc.ALLY, None, None, rc.TRIBE_CARNUTES) if piece == rc.ALLY
+                         else (rc.WARBAND, rc.HIDDEN)] for piece in expected]
     assert result['removed'] == [(piece, 1) for piece in expected]
     assert result['rolls'] == []
     assert count_pieces(state, rc.CARNUTES, rc.AEDUI, rc.LEADER) == 1

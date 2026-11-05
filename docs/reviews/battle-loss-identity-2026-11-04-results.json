@@ -1,0 +1,294 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Chicago",
+  "source": {
+    "commit": "b4613aeb3ed0664d85bf3d2f306b5dd07fd7be84",
+    "dirty": true,
+    "source_sha256": "07631b40b8ce8a911c3b6ef8fc886dbd9435a2dced5601370f3c3510b8c6e99c"
+  },
+  "python_files": 506,
+  "protected_files": 49,
+  "protected_files_unchanged": true,
+  "new_tests": 50,
+  "targeted_passed": 519,
+  "parent_proof": {
+    "behavioral_failures": 28,
+    "controls_passed": 8,
+    "deselected": 14
+  },
+  "bots": {
+    "games": 10,
+    "all_completed_and_audited": true,
+    "gameplay_and_final_hashes_equal": true,
+    "interlude_exercised": {
+      "scenario": "The Gallic War",
+      "seed": 1
+    },
+    "excluded": [
+      "commit",
+      "seconds",
+      "source_sha256"
+    ]
+  },
+  "mixed": {
+    "metadata": {
+      "metadata_version": 1,
+      "tool": "player_fuzz",
+      "commit": "b4613aeb3ed0664d85bf3d2f306b5dd07fd7be84",
+      "dirty": true,
+      "source_sha256": "07631b40b8ce8a911c3b6ef8fc886dbd9435a2dced5601370f3c3510b8c6e99c",
+      "scenarios": [
+        "Pax Gallica?",
+        "The Great Revolt",
+        "Reconquest of Gaul",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "seeds": [
+        1,
+        2
+      ],
+      "card_edition": "legacy",
+      "reactive": true,
+      "events": true,
+      "replay": true,
+      "python": "3.12.14"
+    },
+    "games": 10,
+    "human_turns": 356,
+    "event_turns": 96,
+    "events_ok": 90,
+    "partial": 0,
+    "hard_findings": 0,
+    "by_kind": {},
+    "batch_digest": "d899b5732da10db5a8d41c4028974e2428e8dfb6f9c9ee35e0c4c6abb319c3e1",
+    "records": [
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 32,
+        "event_turns": 13,
+        "events_ok": 13,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "03e062cbf960618b"
+      },
+      {
+        "scenario": "Pax Gallica?",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Pax Gallica?",
+        "human_turns": 36,
+        "event_turns": 11,
+        "events_ok": 10,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "5ef58925b65b9a4c"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 1,
+        "seats": [
+          "Arverni",
+          "Belgae"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 12,
+        "event_turns": 6,
+        "events_ok": 6,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "2292b8ed8868d85f"
+      },
+      {
+        "scenario": "The Great Revolt",
+        "seed": 2,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Great Revolt",
+        "human_turns": 62,
+        "event_turns": 19,
+        "events_ok": 17,
+        "rejected": 2,
+        "findings": [],
+        "partial": 0,
+        "digest": "60276fd712d5e0dc"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Arverni",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 83,
+        "event_turns": 14,
+        "events_ok": 12,
+        "rejected": 2,
+        "findings": [],
+        "partial": 0,
+        "digest": "5f9818a0ef4b9e9e"
+      },
+      {
+        "scenario": "Reconquest of Gaul",
+        "seed": 2,
+        "seats": [
+          "Arverni",
+          "Belgae",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Reconquest of Gaul",
+        "human_turns": 43,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "cb5eab60b34d2946"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 1,
+        "seats": [
+          "Germans",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 40,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "0c66e1dd96614108"
+      },
+      {
+        "scenario": "Ariovistus",
+        "seed": 2,
+        "seats": [
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "Ariovistus",
+        "human_turns": 14,
+        "event_turns": 9,
+        "events_ok": 9,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "4bf5d57d535d16f7"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 1,
+        "seats": [
+          "Aedui",
+          "Romans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 27,
+        "event_turns": 5,
+        "events_ok": 4,
+        "rejected": 1,
+        "findings": [],
+        "partial": 0,
+        "digest": "edb1faed9ece11b2"
+      },
+      {
+        "scenario": "The Gallic War",
+        "seed": 2,
+        "seats": [
+          "Germans"
+        ],
+        "card_edition": "legacy",
+        "game_completed": true,
+        "ending_scenario": "The Gallic War",
+        "human_turns": 7,
+        "event_turns": 1,
+        "events_ok": 1,
+        "rejected": 0,
+        "findings": [],
+        "partial": 0,
+        "digest": "01d686a6f2551217"
+      }
+    ]
+  },
+  "mixed_complete_json_equal": true,
+  "hash_seeds": [
+    0,
+    987
+  ],
+  "mixed_executions_including_replay": 40,
+  "balance": {
+    "games": 100,
+    "band_percentage_points": 15,
+    "maximum_absolute_delta_percentage_points": 15,
+    "historical_baseline_winner_changes": 35,
+    "baseline_unchanged": true,
+    "passed": true
+  },
+  "progress": {
+    "closed": 37,
+    "total": 50,
+    "percent": 74,
+    "open": 13
+  },
+  "remaining": "Retreat and Rampage survivor choices and the other original findings remain open. Separate mechanics leads and source questions retain their dispositions.",
+  "full_suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8423",
+    "time": "284.611",
+    "timestamp": "2026-11-05T06:16:42.316247+01:00",
+    "hostname": "4b20a6456691"
+  },
+  "python": "3.12.14",
+  "commands": [
+    "python -m pytest -q --junitxml=/tmp/fs-battle-identity-full.xml",
+    "python -m pytest -q fs_bot/tests/test_battle*.py fs_bot/tests/test_diviciacus*.py fs_bot/tests/test_assistant_session.py fs_bot/tests/test_agent_interface.py fs_bot/tests/test_litaviccus*.py",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.run_batch --games 2 --workers 2 --out OUT",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.player_fuzz --seeds 1-2 --out OUT.json",
+    "PYTHONHASHSEED=987 python -m fs_bot.tools.player_fuzz --seeds 1-2 --out OUT.json",
+    "PYTHONHASHSEED=0 python -m fs_bot.tools.balance_smoke --seeds 1-20",
+    "PYTHONPATH=. python -m pytest -q /tmp/test_battle_loss_identity_parent.py -k 'each_human_selects_exact_ordinary_visibility or human_selects_named_ally or city_citadel or litaviccus_casualty or full_battle_attack or legacy_raw_type_priority or npc_and_game_run' --junitxml=/tmp/fs-battle-identity-parent-proof.xml",
+    "PYTHONPATH=. python /tmp/fs-battle-identity-verify.py",
+    "PYTHONPATH=. python /tmp/fs-battle-identity-package.py"
+  ]
+}

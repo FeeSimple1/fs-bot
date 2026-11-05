@@ -496,10 +496,11 @@ def resolve_losses(state, region, faction, num_losses, *,
                 "num_losses": remaining, "is_retreat": is_retreat,
                 "is_ambush": is_ambush, "pieces": list(piece_order)})
             if _resp:
-                _present = set(piece_order)
-                for _e in _resp:
-                    if tuple(_e) in _present:
-                        chosen = tuple(_e)
+                for preference in _resp:
+                    matched = next((entry for entry in piece_order
+                                    if legacy_loss_choice_matches(preference, entry)), None)
+                    if matched is not None:
+                        chosen = matched
                         break
         piece_type, piece_state = chosen[:2]
         physical_owner = chosen[2] if len(chosen) >= 3 else None
@@ -780,11 +781,75 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
     result = diviciacus_losses(state, region, faction, result)
     from fs_bot.battle.elite import loss_choices as elite_losses
     result = elite_losses(state, region, faction, result)
+    result = _human_loss_identities(state, region, faction, result)
     # Humans choose among the offered pieces, so putting Diviciacus last
     # does not enforce "last possible piece". Do not offer him at all until
     # every other eligible piece, including cooperating Auxilia, is gone.
     if is_diviciacus and any(entry[0] != LEADER for entry in result):
         result = [entry for entry in result if entry[0] != LEADER]
+    return result
+
+
+def legacy_loss_choice_matches(preference, candidate):
+    """Match recorded generic choices to the same current physical cohort."""
+    if not isinstance(preference, (tuple, list)):
+        return False
+    preference = tuple(preference)
+    if preference == candidate:
+        return True
+    if len(preference) == 2 and preference[0] == candidate[0] and preference[1] is None:
+        if len(candidate) == 2 and candidate[0] in FLIPPABLE_PIECES:
+            return True
+        return candidate[0] == ALLY and len(candidate) == 4 and candidate[2] is None
+    return (len(preference) == 3 and len(candidate) == 4 and candidate[0] == ALLY
+            and preference == candidate[:3])
+
+
+def compatible_loss_request(current, saved):
+    """Only the added ordinary physical identities may differ from old prompts."""
+    if (not isinstance(saved, dict) or saved.get('kind') != 'loss_order'
+            or {key: value for key, value in current.items() if key != 'pieces'} !=
+               {key: value for key, value in saved.items() if key != 'pieces'}):
+        return False
+    old, new = saved.get('pieces'), current.get('pieces')
+    return (isinstance(old, (list, tuple)) and isinstance(new, (list, tuple))
+            and len(old) == len(new) and all(
+                legacy_loss_choice_matches(before, tuple(after))
+                for before, after in zip(old, new)))
+
+
+def _human_loss_identities(state, region, faction, choices):
+    """Expose ordinary visibility and named Ally discs after force conversions."""
+    if (faction in state.get('non_player_factions', ())
+            or (faction == GERMANS and state['scenario'] in BASE_SCENARIOS)
+            or (faction == ARVERNI and state['scenario'] in ARIOVISTUS_SCENARIOS)):
+        return choices
+    from fs_bot.board.pieces import tribe_has_ally_disc
+    from fs_bot.battle.combined import COMBINED_KEY
+    physical = {key: value for key, value in state.items() if key != COMBINED_KEY}
+    pieces = get_effective_faction_pieces(state, region, faction)
+    remaining = {(piece, visibility): pieces.get(visibility, {}).get(piece, 0)
+                 for piece in FLIPPABLE_PIECES for visibility in (HIDDEN, REVEALED, SCOUTED)}
+    claimed_tribes, result = set(), []
+    for entry in choices:
+        piece, visibility = entry[:2]
+        if piece in FLIPPABLE_PIECES and visibility is None and len(entry) == 2:
+            visibility = next((ps for ps in (HIDDEN, REVEALED, SCOUTED)
+                               if remaining[piece, ps] > 0), None)
+            if visibility is not None:
+                remaining[piece, visibility] -= 1
+                entry = (piece, visibility)
+        elif piece == ALLY and len(entry) < 4:
+            owner = entry[2] if len(entry) == 3 else None
+            tribe = next((tribe for tribe in sorted(state.get('tribes', {}))
+                          if tribe not in claimed_tribes
+                          and tribe_has_ally_disc(physical, region, tribe, owner or faction)), None)
+            if tribe is not None:
+                claimed_tribes.add(tribe)
+                entry = (ALLY, None, owner, tribe)
+            # Older raw positions can contain an unattached disc. Keep its
+            # generic casualty entry when no physical Tribe record exists.
+        result.append(entry)
     return result
 
 

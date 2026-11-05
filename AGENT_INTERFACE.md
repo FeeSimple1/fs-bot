@@ -482,8 +482,8 @@ inventing pieces, regions, owners, or internal grant flags.
 For each Battle Loss, `LOSS_ORDER.pieces` contains only the currently legal
 tier: Allies/Forts/Citadels/Settlements first when retreating, last otherwise.
 Diviciacus remains the last possible casualty. Later losses rebuild the legal
-options, including when a hard piece survives its die roll. Exact visibility
-and Ally identity gaps recorded separately by the audit remain open.
+options, including when a hard piece survives its die roll. Ordinary human
+Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 
 | `request["kind"]` | request fields | response |
 |---|---|---|
@@ -1542,3 +1542,31 @@ that older raw calls silently ignored are now rejected. Raw
 `roman_dispersed_keep` validates that the named Tribe has an eligible marker.
 Older transcripts that passed Interlude automatically may require these new
 Roman responses when resumed or replayed.
+
+### Physical Battle casualty entries
+
+New human `loss_order` requests offer ordinary flippable pieces as
+`[piece_type,piece_state]`, such as `["Warband","Revealed"]`. Copy the offered
+entries into an ordered response list. Repeated entries represent separate
+counters and may be selected only as often as offered. A hard piece that saves
+can be selected again in the following Loss request.
+
+An ordinary Ally disc is `["Ally",null,null,tribe]`. The third position is a
+physical owner when a combined force uses one, giving
+`["Ally",null,"Aedui",tribe]`, for example. The fourth position of an Ally
+entry names its actual Tribe. Elite Warbands retain their existing fourth
+`"elite"` tag. A City whose disc has become a Citadel is excluded from Ally
+disc choices. Legions, Leaders, Forts, Citadels and Settlements retain their
+existing shapes and saving-roll rules.
+
+Fresh durable responses must use the exact offered entries or explicit default.
+A stale visibility, invented Tribe, foreign owner or overclaimed duplicate
+remains pending. Raw explicit generic priority lists keep their wildcard
+meaning within the legal current tier. Raw callbacks may defer normally.
+
+Recorded old casualty journals, replay expectations and pending prompts can
+finish with their older generic entries only when the original board signature
+and the rest of the request match. The compatibility path changes only the
+added ordinary physical distinctions and retains the recorded response and ID.
+A changed board or unrelated request cannot use that path. New decisions
+continue using exact physical choices.

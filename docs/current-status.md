@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 4 November physical Battle casualties — BATTLE-LOSS-IDENTITY closed
+
+The [Battle casualty repair](reviews/battle-loss-identity-2026-11-04.md) offers exact ordinary
+Warband/Auxilia visibility and named Allied Tribes within the current mandatory
+loss tier. A City represented by a Citadel is excluded from the Ally-disc
+choices. Cooperating Allied Tribes retain their physical owners and names.
+Both frontends use the identities offered for that specific Loss, rebuilding
+choices after each removal or saving roll. Recorded old generic prompts can
+finish on their verified original board, including accepted earlier casualties
+and saved second-loss prompts. New prompts require their actual offered entries.
+
+**Original bundle is now 37/50 closed (74%), 13 open.** Full Retreat and
+Rampage victim choices remain open. The separate Circumvallation mechanics,
+NPC Intimidate targeting lead, two source questions, twelve provisional rulings
+and 34 unverified inventory rows retain their recorded dispositions.
+
+**8,423 tests pass**, including 50 new cases, and 519 focused tests pass.
+Ten audited NPC records/final hashes match the parent. Mixed-seat replays agree
+across hash seeds with zero hard findings or partials. The 100-game historical
+balance guard passes its existing band. Source identity, compatibility checks
+and raw evidence are recorded in the report.
+
 ### 4 November Roman Interlude choices — WS-F02 closed
 
 The [Roman Interlude repair](reviews/interlude-roman-choices-2026-11-04.md) asks the Roman player
@@ -31,7 +53,7 @@ is checked before movement. Both human frontends retain board inspection,
 pending decisions and accepted earlier choices across save/resume/replay.
 The direct Winter API also restores its counter and board on interruption.
 
-**Original bundle is now 36/50 closed (72%), 14 open.** WS-F01 still tracks
+**At that checkpoint, 36/50 were closed (72%), 14 open.** WS-F01 still tracks
 force reductions and Cisalpina relocations. Separate Circumvallation mechanics,
 full Rampage victim choices, the NPC Intimidate targeting lead, two source
 questions, twelve provisional rulings and 34 unverified inventory rows retain

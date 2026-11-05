@@ -430,6 +430,8 @@ def test_old_loss_journal_replays_without_inserting_elite_choice(monkeypatch):
     origin = deepcopy(board)
     with monkeypatch.context() as patch:
         patch.setattr(SeatSession, 'supports_action_windows', False)
+        from fs_bot.battle import losses
+        patch.setattr(losses, '_human_loss_identities', lambda state, region, faction, choices: choices)
         old, old_driver = _session(board)
         old.import_inbox([{'response': [[rc.WARBAND, None]]}])
         result = _transaction_loss(board, old_driver, live_windows=False)

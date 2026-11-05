@@ -4,6 +4,18 @@ Entries describe repository changes. Package metadata alone does not imply
 that an artifact has been published or that every rules interaction has been
 verified. Revision-specific results remain in the validation reports.
 
+## Unreleased — Physical Battle casualties, 4 November 2026
+
+- Offer each human's ordinary Hidden, Revealed and Scouted Warbands/Auxilia
+  separately, along with each physical Allied Tribe that has a disc.
+- Preserve named Tribe affiliation and physical owners when removing a
+  selected casualty, including Litaviccus's cooperating Allies.
+- Show visibility and Tribe names in terminal menus with board inspection.
+- Finish recorded older generic casualty prompts only when the saved board
+  and request match. Fresh durable prompts require their offered entries.
+- Close BATTLE-LOSS-IDENTITY, bringing original progress to 37/50 (74%), 13 open.
+  See the [report](docs/reviews/battle-loss-identity-2026-11-04.md).
+
 ## Unreleased — Roman Interlude choices, 4 November 2026
 
 - Ask Romans whether to conduct the Britannia expedition, with exact Harvest

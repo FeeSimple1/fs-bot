@@ -67,8 +67,11 @@ At that checkpoint original progress was 35/50 closed (70%), 15 open.
 
 The [4 November Roman Interlude repair](docs/reviews/interlude-roman-choices-2026-11-04.md)
 closes WS-F02 with exact expedition forces and marker preservation, including
-transactional Winter retries. Current original progress is 36/50 closed (72%),
-14 open.
+transactional Winter retries. At that checkpoint original progress was 36/50 closed (72%), 14 open.
+
+The [4 November Battle casualty identity repair](docs/reviews/battle-loss-identity-2026-11-04.md)
+closes BATTLE-LOSS-IDENTITY with exact ordinary visibility and named Ally discs.
+Current original progress is 37/50 closed (74%), 13 open.
 
 ## Existing implementation
 
@@ -141,7 +144,7 @@ closes EXP-07 and EXP-10. The
 [Event validation batch](docs/reviews/event-validation-2026-11-03.md) closes
 BE-11, BE-12 and EXP-09, completing the audit's mandatory-Event/illegal-plan
 repair group. The [progress register](docs/human-choice-progress.json)
-now records 36 of 50 closed (72%) and 14 open; these are finding counts, not
+now records 37 of 50 closed (74%) and 13 open; these are finding counts, not
 equal effort units. The [planning-board inspection repair](docs/reviews/planning-board-inspection-2026-11-03.md) closes FE-01. The [named-faction Event repair](docs/reviews/named-event-effects-2026-11-02.md) closes BE-04
 (Roman and Arverni optional effects, plus related A18 removal corrections).
 The [Colony follow-up](docs/reviews/colony-event-defaults-2026-11-02.md)

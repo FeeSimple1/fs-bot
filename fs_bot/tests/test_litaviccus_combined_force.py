@@ -81,7 +81,8 @@ def test_aedui_static_force_takes_losses_and_clears_its_own_tribe(actor, piece):
     assert state['tribes'][tribe]['allied_faction'] is None
     casualties = [request for who, request in requests
                   if who == actor and request['kind'] == 'loss_order']
-    assert casualties and casualties[0]['pieces'] == [(piece, None, rc.AEDUI)]
+    expected = (piece, None, rc.AEDUI, tribe) if piece == rc.ALLY else (piece, None, rc.AEDUI)
+    assert casualties and casualties[0]['pieces'] == [expected]
     assert validate_state(state) == []
 
 
@@ -145,7 +146,7 @@ def test_two_leaders_each_contribute_but_diviciacus_absorbs_last(actor, leader):
     event(state, actor, choose=choose)
     assert count_pieces(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA) == 6
     assert observed[0] == [(rc.LEADER, None, actor)]
-    assert observed[1] == [(rc.ALLY, None, rc.AEDUI)]
+    assert observed[1] == [(rc.ALLY, None, rc.AEDUI, rc.TRIBE_CARNUTES)]
     assert observed[2] == [(rc.LEADER, None, rc.AEDUI)]
     assert state['rng'].getstate() == expected_rng.getstate()
     assert get_leader_in_region(state, rc.CARNUTES, actor) is None

@@ -24,6 +24,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [4 November Battle casualty identities](reviews/battle-loss-identity-2026-11-04.md)
+  covers ordinary visibility, named Allied Tribes and saved-prompt compatibility.
+
 - [4 November Roman Interlude choices](reviews/interlude-roman-choices-2026-11-04.md)
   covers exact expedition forces, Spring marker preservation and durable Winter retries.
 

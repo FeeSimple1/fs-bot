@@ -14,12 +14,14 @@ kinds. Input exhaustion interrupts the action so it can be saved and resumed.
 
 from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
-from fs_bot.rules_consts import WARBAND
+from fs_bot.rules_consts import WARBAND, ALLY
 
 
 def _fmt_piece(piece):
     ptype, pstate = piece[:2]
     label = f"{ptype} ({pstate})" if pstate else str(ptype)
+    if ptype == ALLY and len(piece) >= 4 and piece[3] is not None:
+        label = f"{piece[3]} {label}"
     if len(piece) >= 3 and piece[2] is not None:
         label = f"{piece[2]} {label}"
     if len(piece) == 4 and piece[3] == 'elite':
@@ -177,20 +179,22 @@ def make_cli_reactive(human_factions, stdin, stdout):
                     f"\n{faction}: order pieces to absorb "
                     f"{request.get('num_losses')} Loss(es) in "
                     f"{request.get('region')} (hard pieces still roll).\n")
-                chosen, remaining = [], list(pieces)
-                while remaining:
-                    opts = [(_fmt_piece(p), i)
-                            for i, p in enumerate(remaining)]
-                    if chosen:
-                        opts.append(("(default order for the rest)", None))
-                    pick = prompt_choice(
-                        stdin, stdout,
-                        f"Next piece to absorb a Loss "
-                        f"({len(chosen)} ordered):", opts)
-                    if pick is None:
-                        break
-                    chosen.append(remaining.pop(pick))
-                return chosen or None
+                from fs_bot.cli.action_windows import inspect_board
+                with inspect_board(state, stdout):
+                    chosen, remaining = [], list(pieces)
+                    while remaining:
+                        opts = [(_fmt_piece(p), i)
+                                for i, p in enumerate(remaining)]
+                        if chosen:
+                            opts.append(("(default order for the rest)", None))
+                        pick = prompt_choice(
+                            stdin, stdout,
+                            f"Next piece to absorb a Loss "
+                            f"({len(chosen)} ordered):", opts)
+                        if pick is None:
+                            break
+                        chosen.append(remaining.pop(pick))
+                    return chosen or None
 
             if kind == AGREEMENT:
                 rt = request.get("request_type") or "agreement"

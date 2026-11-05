@@ -582,3 +582,17 @@ Before Interlude Spring, Romans can preserve one offered Dispersed or
 Dispersed-Gathering marker as it is, or keep none. An interrupted answer pauses
 Winter. Saving and resuming retains an accepted expedition while awaiting the
 later marker choice.
+
+### Exact Battle casualties
+
+When absorbing Battle Losses, choose the exact Hidden, Revealed or Scouted
+Warband/Auxilia offered in the current tier. Ally discs appear by Tribe name,
+with the physical owner's name when the piece is lent to another Battle force.
+Choosing a Tribe clears that Tribe's allegiance while preserving other Allies
+and any City represented by a surviving Citadel. Hard pieces still use their
+normal saving rolls. Use `b` or `board` to inspect the live position.
+
+Each Loss rebuilds the available choices. An interrupted later casualty can
+be saved and resumed with earlier accepted choices retained. Existing saved
+generic casualty prompts finish under their recorded contract when their board
+still matches. New casualty prompts distinguish the physical pieces.

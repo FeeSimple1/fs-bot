@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "aff594f4598403543f155fc42018e18ea52df92b",
-    "python_sha256": "4568344a721ef5fae9ad7a256e14f3bb9ea5889c5c506ec135272ddd9e249743",
-    "python_files": 532,
+    "commit": "6d0edd2659c881deadda2e10ce23035fa3770f01",
+    "python_sha256": "a1b5dfdd182bb4355eed9f7257049782f576d884c05f330b169eb5a3184c0ae4",
+    "python_files": 534,
     "working_tree_changes": true,
-    "note": "Shaded A17 advances EXP-11. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-shaded-publius-licinius-crassus-a17."
+    "note": "Shaded A58 advances EXP-11. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-shaded-aduatuci-a58."
   },
   "total": 50,
   "closed": 41,
@@ -51,7 +51,8 @@
     "BE-06 closes with shaded numeric 3/5 Roman-owned mandatory allocations, exact visibility, and durable choices. BE-07/08 retain other cards. See current-status.md#5-november-roman-event-removals.",
     "Shaded A5 now gives Rome exact removals and completes delegated play. See current-status.md#5-november-shaded-gallia-togata-a5.",
     "Unshaded A36 now offers exact German removals to the executor and applies the printed Region scope.",
-    "Shaded A17 now offers exact Auxilia removals in one Region and applies the German bot's printed Region limits. EXP-11 remains open for A58 and A69."
+    "Shaded A17 now offers exact Auxilia removals in one Region and applies the German bot's printed Region limits.",
+    "Shaded A58 now offers exact Roman Ally and Auxilia replacements in one Belgica Region and confines its Ambush there. EXP-11 remains open for A69."
   ],
   "findings": [
     {
@@ -414,7 +415,8 @@
       "partial_repairs": [
         "Shaded A5 offers Roman-owned Region and visibility allocations and completes the mandatory removals on delegation. See current-status.md#5-november-shaded-gallia-togata-a5.",
         "Unshaded A36 offers the executor the exact removal of Settlements and Warbands across its three Regions and handles Scouted Warbands on delegation. See current-status.md#5-november-unshaded-usipetes--tencteri-a36.",
-        "Shaded A17 offers one Region and exact Roman Auxilia cohorts, including Scouted, and preserves Roman ineligibility. See current-status.md#6-november-shaded-publius-licinius-crassus-a17."
+        "Shaded A17 offers one Region and exact Roman Auxilia cohorts, including Scouted, and preserves Roman ineligibility. See current-status.md#6-november-shaded-publius-licinius-crassus-a17.",
+        "Shaded A58 offers the executor exact Roman Ally and Auxilia replacements and confines its follow-on Ambush to the selected Region. See current-status.md#6-november-shaded-aduatuci-a58."
       ]
     },
     {

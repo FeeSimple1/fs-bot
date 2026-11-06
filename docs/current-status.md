@@ -21,6 +21,33 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Aduatuci A58
+
+The executor selects one Belgica Region for the named Roman Ally disc
+and three exact Auxilia, to the extent each type is present. The terminal
+and assistant expose Hidden, Revealed and Scouted cohorts. An unavailable
+replacement still removes its Roman source under §5.1.1. The granted
+Ambush uses the post-replacement board, is confined to the chosen
+Region and retains the executor's ordinary Ambush requirements under
+§5.4. Partial delegated plays can now carry out an available replacement
+or Ambush even when the Region lacks one of the printed target types.
+
+Three parent probes reproduced the missing live choice, the Ambush
+outside the selected Region, and omitted partial replacement of Scouted
+Auxilia. All pass on the repair. Older histories may pause for the new
+selection or diverge under the scoped Ambush.
+
+All 8,965 tests pass, including 21 new cases. Twenty paired bot games
+match the parent's gameplay and final state
+hashes. Twenty mixed-seat cases match across both hash seeds, with no
+hard findings and one partial action also present in the parent matrix.
+The 100-game balance check passes within the existing band. Four winners
+differ from the parent. In both expansion scenarios, seed 5 skips the
+previously ineffective A58 and seed 14 replaces a Roman Ally in Atrebates
+even though there are no Auxilia there.
+
+**EXP-11 advances for A58. The original bundle is 41/50 closed (82%), 9 open.**
+
 ### 6 November shaded Publius Licinius Crassus A17
 
 Under A Card Reference A17 and §§5.1 and 5.1.3, the executor selects one

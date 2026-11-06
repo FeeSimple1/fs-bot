@@ -220,10 +220,14 @@ def make_random_reactive(seats, rng):
             return {'piece': rng.choice(request['targets'])}
         if kind == 'event_piece_choice':
             target = {}
-            if request['card_id'] == 'A17':
+            if 'required_by_region' in request:
                 amounts = request['required_by_region']
-                region = rng.choice([name for name, count in amounts.items() if count])
+                allies = request.get('ally_tribes_by_region', {})
+                candidates = [name for name, count in amounts.items() if count or allies.get(name)]
+                region = rng.choice(candidates or list(amounts))
                 target['region'] = region
+                if request['card_id'] == 'A58':
+                    target['ally_tribe'] = rng.choice(allies[region]) if allies[region] else None
                 request = dict(request, required={rc.AUXILIA: amounts[region]},
                                available=[row for row in request['available'] if row['region'] == region])
             if 'required' in request:

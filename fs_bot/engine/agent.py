@@ -19,11 +19,13 @@ typed response.
 Request kinds
 -------------
 - ``event_piece_choice`` — Romans select 3/5/A5 shaded removals, or the
-  executor selects A17 shaded or A36 and numeric 19/22 unshaded physical cohorts.
+  executor selects A17/A58 shaded or A36 and numeric 19/22 unshaded physical cohorts.
   Requests carry card_id, owner and available cohorts. Cards 3/5/A5/A36 specify a
   required total per piece type and take {"selections":[...]}. A17 specifies
   required_by_region and takes {"region":...,"selections":[...]}. Cards 19/22
-  specify legal_regions and max_count. Card 19 returns
+  specify legal_regions and max_count. A58 also takes ally_tribe from its
+  chosen Region, or null when that Region has no Roman Ally disc.
+  Card 19 returns
   {"choice":"auxilia","count":0..5} or {"choice":"warbands","removals":[...]};
   Card 22 returns {"selections":[...]}. Cohorts carry region, target_faction,
   piece_type, piece_state and count; Hostages also needs action remove/replace.

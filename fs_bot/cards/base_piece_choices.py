@@ -59,14 +59,18 @@ def a36_removal_request(state):
 
 
 def a17_removal_request(state):
-    regions = get_playable_regions_for_state(state, rc.ROMANS)
-    request = _required_removal_request(state, 'A17', state.get('executing_faction'),
-                                        rc.ROMANS, regions, {rc.AUXILIA: A17_LIMIT})
+    return auxilia_region_request(state, 'A17', get_playable_regions_for_state(state, rc.ROMANS),
+                                  A17_LIMIT)
+
+
+def auxilia_region_request(state, card_id, regions, limit):
+    request = _required_removal_request(state, card_id, state.get('executing_faction'),
+                                        rc.ROMANS, regions, {rc.AUXILIA: limit})
     request.pop('required')
     totals = Counter()
     for entry in request['available']:
         totals[entry['region']] += entry['count']
-    request['required_by_region'] = {region: min(A17_LIMIT, totals[region]) for region in regions}
+    request['required_by_region'] = {region: min(limit, totals[region]) for region in regions}
     return request
 
 
@@ -97,18 +101,14 @@ def validate_response(state, request, response):
     if not isinstance(response, dict):
         raise ValueError('Choose an explicit Event quantity or piece list')
     card = request['card_id']
+    if card == 'A58':
+        from fs_bot.cards.aduatuci import validate_response as validate_aduatuci
+        return validate_aduatuci(state, request, response)
     if card == 'A17':
-        if (set(response) != {'region', 'selections'} or not isinstance(response['region'], str)
-                or not isinstance(response['selections'], list)):
+        if set(response) != {'region', 'selections'}:
             raise ValueError('Choose one Region and its exact Auxilia removals')
-        live = a17_removal_request(state)
-        region = response['region']
-        required = request['required_by_region'].get(region)
-        if required is None or required != live['required_by_region'].get(region):
-            raise ValueError('Choose an offered Region with its live Auxilia total')
-        used = _validate_cohorts(request, live, response['selections'])
-        if any(key[0] != region for key in used) or sum(used.values()) != required:
-            raise ValueError('Remove the required Auxilia from the single selected Region')
+        validate_region_auxilia(request, a17_removal_request(state),
+                                response['region'], response['selections'])
         return response
     if card in ROMAN_TOTALS or card == 'A36':
         live = a36_removal_request(state) if card == 'A36' else roman_removal_request(state, card)
@@ -136,6 +136,17 @@ def validate_response(state, request, response):
     if sum(used.values()) > request['max_count']:
         raise ValueError('Selection exceeds the Event total')
     return response
+
+
+def validate_region_auxilia(request, live, region, selections):
+    if not isinstance(region, str) or not isinstance(selections, list):
+        raise ValueError('Choose one Region and its exact Auxilia removals')
+    required = request['required_by_region'].get(region)
+    if required is None or required != live['required_by_region'].get(region):
+        raise ValueError('Choose an offered Region with its live Auxilia total')
+    used = _validate_cohorts(request, live, selections)
+    if any(key[0] != region for key in used) or sum(used.values()) != required:
+        raise ValueError('Remove the required Auxilia from the single selected Region')
 
 
 def _validate_cohorts(request, live, entries, *, with_action=False):

@@ -1780,10 +1780,15 @@ def _resolve_free_actions_scoped(state, faction):
         results.extend(_resolve_card_A69_ambush(state, faction))
     if mods.get("card_A58_free_ambush"):
         _event_step(state, "grant.card_A58_free_ambush")
-        from fs_bot.rules_consts import ROMANS as _ROM
+        from fs_bot.battle.resolve import resolve_battle
+        from fs_bot.cards.aduatuci import can_ambush
+        region = mods["card_A58_free_ambush"]
+        ambushes = []
+        if can_ambush(state, region, faction):
+            ambushes.append({"region": region, "defender": _ROMANS_F,
+                             "result": resolve_battle(state, region, faction, _ROMANS_F, is_ambush=True)})
         results.append({"free_action": "ambush", "flag": "card_A58",
-                        "ambushes": _faction_ambush_sweep(state, faction,
-                                                          only_faction=_ROM)})
+                        "ambushes": ambushes})
     if mods.get("card_A45_free_intimidate"):
         _event_step(state, "grant.card_A45_free_intimidate")
         results.extend(_resolve_card_A45_intimidate(state))
@@ -2646,27 +2651,6 @@ def _roman_german_setup_marches(state, march_limit):
             used.add(source)
             marched.append({"source": source, "dest": destination, "warbands": number})
     return marched
-
-
-def _faction_ambush_sweep(state, attacker, only_faction=None):
-    """Ambush in every Region where ``attacker`` is able (Hidden-majority,
-    Loss-causing). Returns the list of ambush results. ``only_faction``
-    restricts the defender (e.g. card A58 shaded Ambushes Romans only)."""
-    from fs_bot.board.control import refresh_all_control
-    from fs_bot.map.map_data import get_playable_regions
-    from fs_bot.battle.resolve import resolve_battle
-    out = []
-    for region in get_playable_regions(state["scenario"], state.get("capabilities")):
-        tgt = _faction_ambush_target(state, region, attacker, only_faction)
-        if tgt is None:
-            continue
-        try:
-            res = resolve_battle(state, region, attacker, tgt, is_ambush=True)
-            out.append({"region": region, "defender": tgt, "result": res})
-        except _EXEC_ERRORS as exc:
-            out.append({"region": region, "executed": False, "reason": repr(exc)})
-    refresh_all_control(state)
-    return out
 
 
 def _german_setup_marches(state, march_limit):
@@ -6382,23 +6366,9 @@ def _derive_card_44(state, faction, shaded):
 
 
 def _derive_card_A58(state, faction, shaded):
-    """Card A58 Aduatuca (shaded): in 1 Belgica Region, replace 1 Roman Ally
-    and 3 Auxilia with the acting Faction's, then free Ambush Romans. Choose a
-    Belgica Region with a Roman-allied Tribe and Roman Auxilia. (Unshaded is
-    the Roman Battle+Seize, executed not derived.)"""
-    if not shaded:
-        return None
-    from fs_bot.rules_consts import ROMANS, AUXILIA, BELGICA_REGIONS
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.map.map_data import get_tribes_in_region
-    for R in BELGICA_REGIONS:
-        if count_pieces(state, R, ROMANS, AUXILIA) <= 0:
-            continue
-        for t in get_tribes_in_region(R, state["scenario"]):
-            ti = state.get("tribes", {}).get(t)
-            if ti and ti.get("allied_faction") == ROMANS:
-                return {"region": R, "ally_tribe": t}
-    return None
+    """Only shaded A58 needs a Non-player replacement plan."""
+    from fs_bot.cards.aduatuci import derive_params
+    return derive_params(state, faction) if shaded else None
 
 
 # Registry of per-card event_param derivers (extend as cards gain faithful

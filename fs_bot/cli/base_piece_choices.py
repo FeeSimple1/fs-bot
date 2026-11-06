@@ -8,14 +8,21 @@ from fs_bot.rules_consts import AUXILIA
 def collect_choice(state, faction, request, stdin, stdout):
     card = request['card_id']
     with inspect_board(state, stdout):
-        if card == 'A17':
+        if 'required_by_region' in request:
             amounts = request['required_by_region']
-            region = prompt_choice(stdin, stdout, 'Choose the single A17 removal Region:', [
-                (f'{name} ({count} Auxilia to remove)', name) for name, count in amounts.items()
+            verb = 'replace' if card == 'A58' else 'remove'
+            region = prompt_choice(stdin, stdout, f'Choose the single {card} removal Region:', [
+                (f'{name} ({count} Auxilia to {verb})', name) for name, count in amounts.items()
             ])
+            target = {'region': region}
+            if card == 'A58':
+                tribes = request['ally_tribes_by_region'][region]
+                target['ally_tribe'] = (prompt_choice(stdin, stdout, 'Choose the Roman Ally:', [
+                    (tribe, tribe) for tribe in tribes
+                ]) if tribes else None)
             local = dict(request, required={AUXILIA: amounts[region]},
                          available=[row for row in request['available'] if row['region'] == region])
-            response = {'region': region, **_required_removals(local, stdin, stdout)}
+            response = {**target, **_required_removals(local, stdin, stdout)}
             return validate_response(state, request, response)
         if 'required' in request:
             return validate_response(state, request, _required_removals(request, stdin, stdout))

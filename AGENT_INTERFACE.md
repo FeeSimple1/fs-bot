@@ -593,6 +593,18 @@ A legacy Region-only plan keeps that Region and delegates visibility.
 Older histories may reach the new prompt or diverge under revised bot
 Region and visibility selection.
 
+Shaded Aduatuci (A58) sends `event_piece_choice` to the executing faction.
+Its `required_by_region` counts and `ally_tribes_by_region` lists cover
+playable Belgica Regions. Respond with
+`{"region":...,"ally_tribe":...,"selections":[...]}`. Use a listed Roman
+Ally disc or `null` when the chosen Region has none. The Auxilia cohorts
+must come from that Region and total three or all present if fewer.
+Authored Event parameters use `region`, `ally_tribe` and `piece_choices`.
+An older Region-only plan can delegate the piece identities. The Ambush
+uses the board after the replacements and takes place in the chosen Region
+if legal. Earlier histories may pause at the new choice or diverge if they
+previously relied on a broader Ambush.
+
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |

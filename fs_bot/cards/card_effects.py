@@ -4020,39 +4020,16 @@ def execute_card_A58(state, shaded=False):
 
     Source: A Card Reference, card A58
     """
-    from fs_bot.rules_consts import BELGICA_REGIONS
-    params = state.get("event_params", {})
-    faction = state.get("executing_faction")
     if not shaded:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A58_roman_battle_seize"] = True
     else:
-        region = params.get("region")
-        if region and region in BELGICA_REGIONS:
-            # Replace 1 Roman Ally
-            ally_tribe = params.get("ally_tribe")
-            if ally_tribe:
-                t_info = state.get("tribes", {}).get(ally_tribe)
-                if (t_info and t_info.get("allied_faction") == ROMANS
-                        and _tribe_region(state, ally_tribe) == region):
-                    _unally_tribe(state, ally_tribe)
-                    if faction:
-                        _ally_tribe(state, ally_tribe, faction)
-            # Replace 3 Auxilia with Warbands
-            replaced = 0
-            for _ in _event_entries(state, "A58.auxilia_replacements", range(3)):
-                for ps in (HIDDEN, REVEALED):
-                    if count_pieces_by_state(state, region, ROMANS,
-                                             AUXILIA, ps) > 0:
-                        remove_piece(state, region, ROMANS, AUXILIA,
-                                     piece_state=ps)
-                        if faction and get_available(state, faction,
-                                                     WARBAND) > 0:
-                            place_piece(state, region, faction, WARBAND)
-                        replaced += 1
-                        break
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_A58_free_ambush"] = True
+        from fs_bot.cards.aduatuci import resolve_replacements
+        _event_step(state, "A58.piece_choice")
+        params = state.get("event_params") or {}
+        region = resolve_replacements(state, params, params.get("region"), params.get("ally_tribe"))
+        if region is not None:
+            state.setdefault("event_modifiers", {})["card_A58_free_ambush"] = region
 
 def execute_card_A60(state, shaded=False):
     """Card A60: Iccius & Andecomborius — Roman Ally at Remi / Replace.

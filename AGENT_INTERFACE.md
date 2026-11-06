@@ -582,6 +582,17 @@ Selections may span Regions and are validated together. A response with
 among tied Regions and the printed own or enemy visibility priorities.
 Older replays may reach the new choice or diverge under the corrected default.
 
+Shaded Publius Licinius Crassus (A17) sends `event_piece_choice` to the
+executing faction after `A17.piece_choice`. The request lists the required
+Auxilia count for each playable Region in `required_by_region`. Respond
+with `{"region":...,"selections":[...]}`, using exact cohorts from that
+one Region. Authored Event plans use `region` and `piece_choices`. The
+count is four, capped by the Auxilia present in the chosen Region, and
+Rome becomes ineligible through the next card even when the count is zero.
+A legacy Region-only plan keeps that Region and delegates visibility.
+Older histories may reach the new prompt or diverge under revised bot
+Region and visibility selection.
+
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |

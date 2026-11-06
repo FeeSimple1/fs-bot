@@ -1,6 +1,6 @@
-"""Exact physical piece selections for 3/5/A5/A36 and numeric 19/22.
+"""Exact physical piece selections for 3/5/A5/A17/A36 and numeric 19/22.
 
-Card Reference 3/5/19/22, A Card Reference A5/A36 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/19/22, A Card Reference A5/A17/A36 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
@@ -18,6 +18,7 @@ GARRISON_TOTALS = {rc.LEGION: 1, rc.AUXILIA: 2}
 ROMAN_TOTALS = {3: {rc.LEGION: 2}, 5: GARRISON_TOTALS, 'A5': GARRISON_TOTALS}
 A36_TOTALS = {rc.SETTLEMENT: 2, rc.WARBAND: 8}
 A36_REGIONS = (rc.MORINI, rc.NERVII, rc.TREVERI)
+A17_LIMIT = 4
 LEGACY_ROMAN_KEYS = {'legion_removal_regions', 'legion_removal_region', 'auxilia_removal_regions'}
 A5_LEGACY_KEYS = {'legion_region', 'auxilia_removals'}
 
@@ -57,6 +58,18 @@ def a36_removal_request(state):
                                      rc.GERMANS, A36_REGIONS, A36_TOTALS)
 
 
+def a17_removal_request(state):
+    regions = get_playable_regions_for_state(state, rc.ROMANS)
+    request = _required_removal_request(state, 'A17', state.get('executing_faction'),
+                                        rc.ROMANS, regions, {rc.AUXILIA: A17_LIMIT})
+    request.pop('required')
+    totals = Counter()
+    for entry in request['available']:
+        totals[entry['region']] += entry['count']
+    request['required_by_region'] = {region: min(A17_LIMIT, totals[region]) for region in regions}
+    return request
+
+
 def _required_removal_request(state, card_id, owner, target, regions, limits):
     available = []
     totals = Counter()
@@ -84,6 +97,19 @@ def validate_response(state, request, response):
     if not isinstance(response, dict):
         raise ValueError('Choose an explicit Event quantity or piece list')
     card = request['card_id']
+    if card == 'A17':
+        if (set(response) != {'region', 'selections'} or not isinstance(response['region'], str)
+                or not isinstance(response['selections'], list)):
+            raise ValueError('Choose one Region and its exact Auxilia removals')
+        live = a17_removal_request(state)
+        region = response['region']
+        required = request['required_by_region'].get(region)
+        if required is None or required != live['required_by_region'].get(region):
+            raise ValueError('Choose an offered Region with its live Auxilia total')
+        used = _validate_cohorts(request, live, response['selections'])
+        if any(key[0] != region for key in used) or sum(used.values()) != required:
+            raise ValueError('Remove the required Auxilia from the single selected Region')
+        return response
     if card in ROMAN_TOTALS or card == 'A36':
         live = a36_removal_request(state) if card == 'A36' else roman_removal_request(state, card)
         if set(response) != {'selections'} or not isinstance(response['selections'], list):
@@ -164,6 +190,69 @@ def _consult(state, request):
     owner = request['owner']
     return (consult_agent(state, owner, request)
             if owner in rc.FACTIONS and not state.get('_diviciacus_preview') else None)
+
+
+def a17_np_regions(state, faction):
+    """Best shaded A17 Regions under the actor's instructions and §§8.3.1, 8.3.4."""
+    playable = get_playable_regions_for_state(state, rc.ROMANS)
+    candidates = {region: min(A17_LIMIT, count_pieces(state, region, rc.ROMANS, rc.AUXILIA))
+                  for region in playable}
+    candidates = {region: n for region, n in candidates.items() if n}
+    if faction == rc.GERMANS:
+        core = set(rc.GERMANIA_REGIONS) | {
+            region for region in playable if count_pieces(state, region, rc.GERMANS, rc.SETTLEMENT)
+        }
+        adjacent = {neighbor for region in core for neighbor in get_adjacent_for_state(state, region)}
+        tiers = (core, adjacent)
+    elif faction == rc.BELGAE:
+        tiers = (set(rc.BELGICA_REGIONS), playable)
+    else:
+        tiers = (playable,)
+    for tier in tiers:
+        eligible = {region: n for region, n in candidates.items() if region in tier}
+        if eligible:
+            best = max(eligible.values())
+            return [region for region, n in eligible.items() if n == best]
+    return []
+
+
+def resolve_a17_removals(state, params, region):
+    """Apply a live one-Region choice or the historical Region-only plan."""
+    from fs_bot.board.pieces import remove_piece
+    from fs_bot.bots.bot_common import random_select
+    from fs_bot.cards.card_effects import _event_entries
+
+    request = a17_removal_request(state)
+    required = request['required_by_region']
+    if 'piece_choices' in params:
+        response = {'region': region, 'selections': params['piece_choices']}
+    else:
+        response = (_consult(state, request)
+                    if region is None and any(required.values()) else None)
+    if response is not None and not _default(response):
+        validate_response(state, request, response)
+        for entry in response['selections']:
+            remove_piece(state, response['region'], rc.ROMANS, rc.AUXILIA,
+                         count=entry['count'], piece_state=entry['piece_state'])
+        return
+
+    owner = request['owner']
+    if region is None:
+        regions = a17_np_regions(state, owner)
+        if not regions and owner not in state.get('non_player_factions', ()):
+            regions = [candidate for candidate, n in required.items() if n]
+        if not regions:
+            return
+        region = random_select(state, regions)
+    if not isinstance(region, str) or region not in required:
+        raise ValueError('Choose a playable Region for shaded A17')
+    states = reversed(STATES) if owner == rc.ROMANS else STATES
+    visibility_order = tuple(states)
+    for _ in _event_entries(state, 'A17.removals', range(A17_LIMIT)):
+        for visibility in visibility_order:
+            if count_pieces_by_state(state, region, rc.ROMANS, rc.AUXILIA, visibility):
+                remove_piece(state, region, rc.ROMANS, rc.AUXILIA, piece_state=visibility)
+                break
 
 
 def resolve_a36_removals(state, params):

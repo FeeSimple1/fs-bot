@@ -76,6 +76,9 @@ delegated removals. [Ariovistus repair and validation](docs/current-status.md#5-
 Unshaded Usipetes & Tencteri (A36) offers exact choices of German Settlements
 and Warbands across its three Regions. [Repair and validation](docs/current-status.md#5-november-unshaded-usipetes--tencteri-a36).
 
+Shaded Publius Licinius Crassus (A17) offers exact Auxilia choices in one
+Region and applies the German bot's geographic limits. [Repair and validation](docs/current-status.md#6-november-shaded-publius-licinius-crassus-a17).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.

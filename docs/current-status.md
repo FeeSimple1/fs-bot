@@ -21,6 +21,33 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Publius Licinius Crassus A17
+
+Under A Card Reference A17 and §§5.1 and 5.1.3, the executor selects one
+playable Region and four Roman Auxilia there, or all present if fewer.
+Both player interfaces expose the exact Hidden, Revealed and Scouted
+cohorts. The selection is validated before removing pieces or setting
+Roman ineligibility, which lasts through the next card even when there
+are zero removals.
+
+German bot instructions restrict its choices to Germania or Settlement
+Regions, then their neighbors. With no target there, it declines the
+Event. The Belgic bot still prioritizes Belgica. Ties on actual removals
+use seeded choice. A legacy Region-only plan keeps its Region and can
+now remove Scouted Auxilia. Older histories may encounter the new choice
+or diverge under the corrected bot selection.
+
+All 8,944 tests pass, including 18 new cases. Three probes against the
+parent reproduced the missing player choice, the
+failure to remove Scouted Auxilia on a Region-only plan, and the German
+bot's acceptance of an out-of-scope target. All pass on this revision.
+Twenty paired bot games match the parent's gameplay and final state hashes.
+The 100-game balance check passes within its existing band and matches all
+100 parent winners. Twenty mixed-seat cases match across both hash seeds
+and match the parent's results apart from source metadata.
+
+**EXP-11 advances for A17. The original bundle is 41/50 closed (82%), 9 open.**
+
 ### 5 November unshaded Usipetes & Tencteri A36
 
 A Card Reference A36 and §§5.1 and 5.1.3 require the executing faction to

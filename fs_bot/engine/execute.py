@@ -6185,49 +6185,13 @@ def _derive_card_A66(state, faction, shaded):
 
 
 def _derive_card_A17(state, faction, shaded):
-    """A17 (shaded): "Remove 4 Auxilia from any 1 Region." Choose the Region
-    per the acting Faction's Ariovistus instruction:
-      German: most Roman Auxilia removable from Germania or where a German
-              Settlement, then adjacent to Germania/Settlement; else none.
-      Belgic: Belgica Regions first.
-      Other:  most Roman Auxilia.
-    The unshaded side is the Roman free March+Battle (executed, not derived).
-    """
+    """Shaded A17 chooses among the best Regions for the acting Non-player."""
     if not shaded:
         return None
-    from fs_bot.rules_consts import (ROMANS, GERMANS, BELGAE, AUXILIA,
-                                     SETTLEMENT, GERMANIA_REGIONS,
-                                     BELGICA_REGIONS)
-    from fs_bot.board.pieces import count_pieces
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    scen = state["scenario"]
-    playable = get_playable_regions(scen, state.get("capabilities"))
-    cands = [(r, count_pieces(state, r, ROMANS, AUXILIA)) for r in sorted(playable)]
-    cands = [(r, n) for r, n in cands if n > 0]
-    if not cands:
-        return None
-    if faction == GERMANS:
-        settlement_regions = {r for r in sorted(playable)
-                              if count_pieces(state, r, GERMANS, SETTLEMENT) > 0}
-        core = set(GERMANIA_REGIONS) | settlement_regions
-        adj = set()
-        for r in core:
-            adj.update(get_adjacent(r, scen))
-        def gkey(item):
-            r, n = item
-            tier = 0 if r in core else (1 if r in adj else 2)
-            return (tier, -n)
-        cands.sort(key=gkey)
-        # German instruction targets Roman pieces near Germania; if the best
-        # is neither in/adjacent to Germania nor a Settlement, still allowed
-        # ("any 1 Region") — pick most Auxilia.
-        return {"region": cands[0][0]}
-    if faction == BELGAE:
-        belgica = set(BELGICA_REGIONS)
-        cands.sort(key=lambda it: (0 if it[0] in belgica else 1, -it[1]))
-        return {"region": cands[0][0]}
-    cands.sort(key=lambda it: -it[1])
-    return {"region": cands[0][0]}
+    from fs_bot.bots.bot_common import random_select
+    from fs_bot.cards.base_piece_choices import a17_np_regions
+    regions = a17_np_regions(state, faction)
+    return {"region": random_select(state, regions)} if regions else None
 
 
 def _derive_card_11(state, faction, shaded):

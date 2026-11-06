@@ -12,6 +12,9 @@ from fs_bot import rules_consts as rc
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 'A17' and shaded and faction == rc.GERMANS:
+        from fs_bot.cards.base_piece_choices import a17_np_regions
+        return bool(a17_np_regions(state, faction))
     if card_id == 67 and faction == rc.ARVERNI and state['scenario'] not in rc.ARIOVISTUS_SCENARIOS:
         from fs_bot.cards.base_arduenna_np import available
         return available(state)

@@ -2,11 +2,21 @@
 from fs_bot.cards.base_piece_choices import FIELDS, validate_response
 from fs_bot.cli.menus import prompt_choice
 from fs_bot.cli.action_windows import inspect_board
+from fs_bot.rules_consts import AUXILIA
 
 
 def collect_choice(state, faction, request, stdin, stdout):
     card = request['card_id']
     with inspect_board(state, stdout):
+        if card == 'A17':
+            amounts = request['required_by_region']
+            region = prompt_choice(stdin, stdout, 'Choose the single A17 removal Region:', [
+                (f'{name} ({count} Auxilia to remove)', name) for name, count in amounts.items()
+            ])
+            local = dict(request, required={AUXILIA: amounts[region]},
+                         available=[row for row in request['available'] if row['region'] == region])
+            response = {'region': region, **_required_removals(local, stdin, stdout)}
+            return validate_response(state, request, response)
         if 'required' in request:
             return validate_response(state, request, _required_removals(request, stdin, stdout))
         if card == 19:

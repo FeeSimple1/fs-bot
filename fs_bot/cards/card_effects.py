@@ -3025,21 +3025,15 @@ def execute_card_A17(state, shaded=False):
 
     Source: A Card Reference, card A17
     """
-    params = state.get("event_params", {})
     if not shaded:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A17_roman_march_battle"] = True
         state["event_modifiers"]["card_A17_double_auxilia_losses"] = True
     else:
-        region = params.get("region")
-        if region:
-            for _ in _event_entries(state, "A17.removals", range(4)):
-                for ps in (HIDDEN, REVEALED):
-                    if count_pieces_by_state(state, region, ROMANS,
-                                             AUXILIA, ps) > 0:
-                        remove_piece(state, region, ROMANS, AUXILIA,
-                                     piece_state=ps)
-                        break
+        from fs_bot.cards.base_piece_choices import resolve_a17_removals
+        _event_step(state, "A17.piece_choice")
+        params = state.get("event_params") or {}
+        resolve_a17_removals(state, params, params.get("region"))
         state["eligibility"][ROMANS] = INELIGIBLE
         # "Ineligible through NEXT card" — persistent flag,
         # consumed by adjust_eligibility (else clobbered).

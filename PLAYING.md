@@ -126,6 +126,10 @@ which German Settlements and Warbands to remove in Morini, Nervii and
 Treveri. Select exact Warband visibility, including Scouted. Remove two
 Settlements and eight Warbands when enough are present.
 
+Shaded Publius Licinius Crassus (A17) lets the faction playing the Event
+choose one Region and the exact Roman Auxilia to remove there. Remove four
+or all present if fewer. Rome is ineligible through the next card.
+
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;
 Scouted pieces instead lose their marker and remain Revealed. You still pay

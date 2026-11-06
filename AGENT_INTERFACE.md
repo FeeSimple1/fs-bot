@@ -616,6 +616,19 @@ in advance, set `event_params.region` and `piece_choices`. Legacy
 Event fills any shortfall within the selected Region. Older histories may
 pause at the new choice or diverge under the corrected removals.
 
+Unshaded Indutiomarus (60) sends `event_piece_choice` to the executor
+after `60.piece_choice`. Its `required_by_region` gives the number of
+eligible pieces in Treveri and each adjacent Region, capped at six.
+Respond `{"region":...,"selections":[...]}` with that Region's exact
+total. Each Belgic Ally row includes `tribe`, `piece_state: null` and
+`count: 1`. Copy the Tribe into the selection. Warband rows use their
+exact visibility and omit `tribe`. To author the choice in advance, set
+`event_params.region` and `piece_choices`. Legacy `removals` entries
+remain ordered single-piece preferences with their original timing
+windows. The Event fills any shortfall within the chosen Region.
+Older histories may pause for the new choice or diverge under the
+corrected removals.
+
 Shaded Pompey (3) and Gallia Togata (5/A5) send `event_piece_choice` to
 the Romans, including when another faction executes the Event. After the
 `3.piece_choice`, `5.piece_choice` or `A5.piece_choice` timing window, the request includes

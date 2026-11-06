@@ -17,12 +17,12 @@ def collect_choice(state, faction, request, stdin, stdout):
         if 'required_by_region' in request:
             amounts = request['required_by_region']
             verb = 'replace' if card == 'A58' else 'remove'
-            label = {24: 'Roman pieces', 58: WARBAND}.get(card, AUXILIA)
+            label = {24: 'Roman pieces', 58: WARBAND, 60: 'Belgic pieces'}.get(card, AUXILIA)
             region = prompt_choice(stdin, stdout, f'Choose the single {card} removal Region:', [
                 (f'{name} ({count} {label} to {verb})', name) for name, count in amounts.items()
             ])
             available = [row for row in request['available'] if row['region'] == region]
-            if card == 24:
+            if card in (24, 60):
                 selections = _pick_removals(available, amounts[region], request['owner'], label, stdin, stdout)
                 return validate_response(state, request, {'region': region, 'selections': selections})
             target = {'region': region}
@@ -82,8 +82,9 @@ def _pick_removals(available, remaining, owner, label, stdin, stdout):
     selected = []
     while remaining:
         index = prompt_choice(stdin, stdout, f'{owner}: remove {remaining} {label}:', [
-            (f"{entry['region']}: {entry['target_faction']} {entry['piece_state'] or ''} "
-             f"{entry['piece_type']} ({entry['count']})", index)
+            (f"{entry['region']}: {entry['target_faction']} "
+             f"{entry['piece_state'] + ' ' if entry['piece_state'] else ''}"
+             f"{entry['piece_type']}{' at ' + entry['tribe'] if 'tribe' in entry else ''} ({entry['count']})", index)
             for index, entry in enumerate(budget) if entry['count']
         ])
         entry = budget[index]

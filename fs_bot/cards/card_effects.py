@@ -2277,31 +2277,9 @@ def execute_card_60(state, shaded=False):
     Source: Card Reference, card 60
     """
     from fs_bot.rules_consts import TREVERI, UBII, TRIBE_TREVERI, TRIBE_UBII
-    params = state.get("event_params", {})
     if not shaded:
-        region = params.get("region", TREVERI)
-        removals = params.get("removals", [])
-        total = 0
-        for r in _event_entries(state, "60.removals", removals):
-            if total >= 6:
-                break
-            rtype = r.get("type", WARBAND)
-            if rtype == ALLY:
-                tribe = r.get("tribe")
-                tribe_info = state.get("tribes", {}).get(tribe)
-                if (tribe_info
-                        and tribe_info.get("allied_faction") == BELGAE
-                        and _tribe_region(state, tribe) == region
-                        and _tribe_piece_type(state, tribe) == ALLY):
-                    # "(not Citadels)" — Ally discs in the named Region only
-                    _unally_tribe(state, tribe)
-                    total += 1
-            else:
-                for ps in (HIDDEN, REVEALED):
-                    if count_pieces_by_state(state, region, BELGAE, WARBAND, ps) > 0:
-                        remove_piece(state, region, BELGAE, WARBAND, piece_state=ps)
-                        total += 1
-                        break
+        from fs_bot.cards.base_piece_choices import resolve_indutiomarus_removals
+        resolve_indutiomarus_removals(state, state.get("event_params", {}))
     else:
         # Remove Ally/marker from Treveri and Ubii, place pieces
         for region, tribe in _event_entries(state, "60.tribes", ((TREVERI, TRIBE_TREVERI), (UBII, TRIBE_UBII))):

@@ -144,6 +144,11 @@ Fort and remove nine Belgic or Germanic Warbands there in any mix. If
 fewer than nine are present, remove all of them. Choose each group by
 faction and visibility.
 
+Unshaded Indutiomarus (60) lets the executor choose Treveri or one
+adjacent Region and remove any mix of six Belgic Warbands and Allies.
+Choose Warbands by visibility and Allies by Tribe. Citadels are protected.
+If the chosen Region has fewer than six eligible pieces, remove all of them.
+
 Shaded Pompey and both versions of Gallia Togata ask the Roman player which pieces to
 remove, even when another faction plays the Event. Split Legions or Auxilia
 across Regions and choose the exact visibility of each Auxilia. Remove as

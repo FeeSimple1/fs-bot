@@ -230,7 +230,7 @@ def make_random_reactive(seats, rng):
                 target['region'] = region
                 if request['card_id'] == 'A58':
                     target['ally_tribe'] = rng.choice(allies[region]) if allies[region] else None
-                kind = {24: None, 58: rc.WARBAND}.get(request['card_id'], rc.AUXILIA)
+                kind = {24: None, 58: rc.WARBAND, 60: None}.get(request['card_id'], rc.AUXILIA)
                 request = dict(request, required={kind: amounts[region]},
                                available=[row for row in request['available'] if row['region'] == region])
             if 'required' in request:

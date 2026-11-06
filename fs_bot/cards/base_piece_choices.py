@@ -1,6 +1,6 @@
-"""Exact physical piece selections for 3/5/6/7/11/19/22/24/31/58/A5/A17/A36/A69.
+"""Exact physical piece selections for base and expansion Events.
 
-Card Reference 3/5/6/7/11/19/22/24/31/58, A Card Reference
+Card Reference 3/5/6/7/11/19/22/24/31/58/60, A Card Reference
 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
@@ -27,6 +27,7 @@ ALAUDAE_STEPS = ((rc.LEGION, '7.legion_removal', 'legion_removal_region'),
 NUMIDIANS_LIMIT = 4
 ADUATUCA_LIMIT = 9
 ADUATUCA_FACTIONS = (rc.BELGAE, rc.GERMANS)
+INDUTIOMARUS_LIMIT = 6
 COTUATUS_FACTIONS = {'roman': (rc.ROMANS,), 'aedui': (rc.AEDUI,),
                      'third': (rc.ROMANS, rc.AEDUI)}
 LEGACY_ROMAN_KEYS = {'legion_removal_regions', 'legion_removal_region', 'auxilia_removal_regions'}
@@ -127,10 +128,31 @@ def aduatuca_request(state):
                                    ADUATUCA_FACTIONS)
 
 
+def indutiomarus_request(state):
+    from fs_bot.cards.card_effects import _tribe_piece_type, _tribe_region
+
+    regions = sorted((rc.TREVERI, *get_adjacent_for_state(state, rc.TREVERI)))
+    owner = state.get('executing_faction')
+    warbands = _required_removal_request(state, 60, owner, rc.BELGAE, regions,
+                                         {rc.WARBAND: INDUTIOMARUS_LIMIT})['available']
+    allies = []
+    for tribe, info in sorted(state['tribes'].items()):
+        region = _tribe_region(state, tribe)
+        if (region in regions and info.get('allied_faction') == rc.BELGAE
+                and _tribe_piece_type(state, tribe) == rc.ALLY):
+            allies.append({'region': region, 'target_faction': rc.BELGAE, 'piece_type': rc.ALLY,
+                           'piece_state': None, 'count': 1, 'tribe': tribe})
+    return _regional_request(60, owner, regions, allies + warbands, INDUTIOMARUS_LIMIT)
+
+
 def _region_removal_request(state, card_id, regions, kinds, limit, targets=(rc.ROMANS,)):
     owner = state.get('executing_faction')
     available = [entry for faction in targets for entry in _required_removal_request(
         state, card_id, owner, faction, regions, dict.fromkeys(kinds, limit))['available']]
+    return _regional_request(card_id, owner, regions, available, limit)
+
+
+def _regional_request(card_id, owner, regions, available, limit):
     totals = Counter()
     for entry in available:
         totals[entry['region']] += entry['count']
@@ -175,13 +197,15 @@ def validate_response(state, request, response):
     if card == 'A58':
         from fs_bot.cards.aduatuci import validate_response as validate_aduatuci
         return validate_aduatuci(state, request, response)
-    if card in (24, 58, 'A17'):
+    if card in (24, 58, 60, 'A17'):
         if set(response) != {'region', 'selections'}:
             raise ValueError('Choose one Region and its exact removals')
         if card == 24:
             live = sappers_request(state)
         elif card == 58:
             live = aduatuca_request(state)
+        elif card == 60:
+            live = indutiomarus_request(state)
         else:
             live = a17_removal_request(state)
         validate_region_removals(request, live, response['region'], response['selections'])
@@ -235,24 +259,31 @@ def validate_region_removals(request, live, region, selections):
 
 
 def _validate_cohorts(request, live, entries, *, with_action=False):
-    offered = {tuple(e[k] for k in FIELDS): e['count'] for e in request['available']}
-    available = {tuple(e[k] for k in FIELDS): e['count'] for e in live['available']}
-    required = {*FIELDS, 'count'}
-    if with_action:
-        required.add('action')
+    offered = {_cohort_key(e): e['count'] for e in request['available']}
+    available = {_cohort_key(e): e['count'] for e in live['available']}
+    base_fields = {*FIELDS, 'count', 'action'} if with_action else {*FIELDS, 'count'}
     used = Counter()
     for entry in entries:
-        if (not isinstance(entry, dict) or set(entry) != required
+        if not isinstance(entry, dict):
+            raise ValueError('Each selection needs exact physical identity and a positive count')
+        named = request['card_id'] == 60 and entry.get('piece_type') == rc.ALLY
+        required = base_fields | {'tribe'} if named else base_fields
+        if (set(entry) != required or (named and not isinstance(entry['tribe'], str))
                 or type(entry['count']) is not int or entry['count'] <= 0
                 or any(not isinstance(entry[k], str) for k in FIELDS[:-1])
                 or (entry['piece_state'] is not None and not isinstance(entry['piece_state'], str))
                 or (with_action and entry['action'] not in ('remove', 'replace'))):
             raise ValueError('Each selection needs exact physical identity and a positive count')
-        cohort = tuple(entry[k] for k in FIELDS)
+        cohort = _cohort_key(entry)
         used[cohort] += entry['count']
         if used[cohort] > min(offered.get(cohort, 0), available.get(cohort, 0)):
             raise ValueError('Selection exceeds an offered live physical cohort or Region scope')
     return used
+
+
+def _cohort_key(entry):
+    key = tuple(entry[field] for field in FIELDS)
+    return (*key, entry['tribe']) if 'tribe' in entry else key
 
 
 def choose(state, card_id, params):
@@ -445,6 +476,15 @@ def resolve_aduatuca_removals(state, params):
 
     _event_step(state, '58.piece_choice')
     request = aduatuca_request(state)
+    response = _region_removal_choice(state, request, params)
+    if response is None:
+        response = _aduatuca_default(state, request, region)
+    if response is not None:
+        _remove_cohorts(state, response['selections'])
+
+
+def _region_removal_choice(state, request, params):
+    region = params.get('region')
     if 'piece_choices' in params:
         response = {'region': region, 'selections': params['piece_choices']}
     elif (region is None and any(request['required_by_region'].values())
@@ -453,11 +493,8 @@ def resolve_aduatuca_removals(state, params):
     else:
         response = None
     if response is None or _default(response):
-        response = _aduatuca_default(state, request, region)
-        if response is None:
-            return
-    validate_response(state, request, response)
-    _remove_cohorts(state, response['selections'])
+        return None
+    return validate_response(state, request, response)
 
 
 def _aduatuca_default(state, request, region):
@@ -483,10 +520,10 @@ def _aduatuca_default(state, request, region):
     enemy = sorted((entry for entry in local if entry['target_faction'] != owner),
                    key=lambda entry: STATES.index(entry['piece_state']))
     own = [entry for entry in reversed(local) if entry['target_faction'] == owner]
-    return {'region': region, 'selections': _aduatuca_cohorts(enemy + own, amounts[region])}
+    return {'region': region, 'selections': _take_cohorts(enemy + own, amounts[region])}
 
 
-def _aduatuca_cohorts(entries, remaining):
+def _take_cohorts(entries, remaining):
     selections = []
     for entry in entries:
         if not remaining:
@@ -513,7 +550,7 @@ def _legacy_aduatuca_removals(state, region, removals):
             raise ValueError('Aduatuca requires a live Roman Fort')
         cohorts = [row for row in aduatuca_request(state)['available']
                    if row['region'] == region and row['target_faction'] == entry['faction']]
-        picked = _aduatuca_cohorts(cohorts, min(remaining, entry.get('count', 1)))
+        picked = _take_cohorts(cohorts, min(remaining, entry.get('count', 1)))
         _remove_cohorts(state, picked)
         remaining -= sum(row['count'] for row in picked)
     if remaining:
@@ -523,6 +560,75 @@ def _legacy_aduatuca_removals(state, region, removals):
         request['required_by_region'][region] = min(remaining, request['required_by_region'][region])
         response = _aduatuca_default(state, request, region)
         _remove_cohorts(state, response['selections'])
+
+
+def resolve_indutiomarus_removals(state, params):
+    """Remove six Belgic pieces, as far as possible, in one Region near Treveri."""
+    from fs_bot.cards.card_effects import _event_step
+
+    if 'removals' in params:
+        if 'piece_choices' in params:
+            raise ValueError('Choose one Indutiomarus removal plan format')
+        _legacy_indutiomarus_removals(state, params.get('region', rc.TREVERI), params['removals'])
+        return
+
+    _event_step(state, '60.piece_choice')
+    request = indutiomarus_request(state)
+    response = _region_removal_choice(state, request, params)
+    selections = (response['selections'] if response is not None else
+                  _indutiomarus_default(state, request, params.get('region')))
+    _remove_cohorts(state, selections)
+
+
+def _indutiomarus_default(state, request, region, limit=INDUTIOMARUS_LIMIT):
+    from fs_bot.bots.bot_common import is_ally_in_city_or_remi, random_select
+
+    amounts = request['required_by_region']
+    own = request['owner'] == rc.BELGAE
+    if region is None:
+        if not any(amounts.values()):
+            return []
+        allies = Counter(row['region'] for row in request['available'] if row['piece_type'] == rc.ALLY)
+        scores = {name: (0 if own else min(allies[name], total), total)
+                  for name, total in amounts.items()}
+        best = max(scores.values())
+        tied = [name for name, score in scores.items() if score == best]
+        region = random_select(state, tied) if request['owner'] in state.get('non_player_factions', ()) else tied[0]
+    if not isinstance(region, str) or region not in amounts:
+        raise ValueError('Indutiomarus requires Treveri or one adjacent Region')
+
+    def priority(entry):
+        if entry['piece_type'] == rc.ALLY:
+            return 0 if is_ally_in_city_or_remi(entry['tribe'], state['scenario']) else 1
+        return 2 + STATES.index(entry['piece_state'])
+
+    local = [row for row in request['available'] if row['region'] == region]
+    return _take_cohorts(sorted(local, key=priority, reverse=own), min(limit, amounts[region]))
+
+
+def _legacy_indutiomarus_removals(state, region, removals):
+    from fs_bot.cards.card_effects import _event_entries
+
+    if not isinstance(region, str) or region not in indutiomarus_request(state)['required_by_region']:
+        raise ValueError('Indutiomarus requires Treveri or one adjacent Region')
+    if not isinstance(removals, list):
+        raise ValueError('Indutiomarus removal preferences must be a list')
+    remaining = INDUTIOMARUS_LIMIT
+    for entry in _event_entries(state, '60.removals', removals):
+        if not remaining:
+            break
+        if not isinstance(entry, dict) or entry.get('type', rc.WARBAND) not in (rc.ALLY, rc.WARBAND):
+            raise ValueError('Indutiomarus preferences require an Ally or Warband')
+        kind = entry.get('type', rc.WARBAND)
+        cohorts = [row for row in indutiomarus_request(state)['available']
+                   if row['region'] == region and row['piece_type'] == kind
+                   and (kind == rc.WARBAND or row['tribe'] == entry.get('tribe'))]
+        picked = _take_cohorts(cohorts, 1)
+        _remove_cohorts(state, picked)
+        remaining -= len(picked)
+    if remaining:
+        _remove_cohorts(state, _indutiomarus_default(state, indutiomarus_request(state),
+                                                    region, limit=remaining))
 
 
 def relocate_marcus_antonius_auxilia(state, params):
@@ -861,9 +967,13 @@ def _apply_required_removals(state, request, entries):
 
 def _remove_cohorts(state, entries):
     from fs_bot.board.pieces import remove_piece
+    from fs_bot.cards.card_effects import _unally_tribe
 
     for entry in entries:
         kind = entry['piece_type']
+        if 'tribe' in entry:
+            _unally_tribe(state, entry['tribe'])
+            continue
         remove_piece(state, entry['region'], entry['target_faction'], kind,
                      count=entry['count'], piece_state=entry['piece_state'],
                      to_track=kind == rc.LEGION)

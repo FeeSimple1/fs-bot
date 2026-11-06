@@ -21,6 +21,35 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November unshaded Indutiomarus 60
+
+Under Card Reference 60 and §§5.1–5.1.3, the executor chooses one Region,
+Treveri or an adjacent Region, and removes six Belgic Warbands and/or
+Allies, to the extent possible there. Each offered Ally names its Tribe
+and excludes Citadels. Warbands retain exact Hidden, Revealed and Scouted
+cohorts through selection. Both menus use the post-window board and the
+assistant preserves the pending choice across save and resume.
+
+The parent probe offered no choice and left both Allies and all
+Warbands in place. The repaired probe removes the Senones Ally and five
+Scouted Warbands while leaving the Mandubii Ally. Non-players check
+for a target within scope and prioritize removing enemy Allies under
+§§8.3.1 and 8.4.1. Legacy entry lists keep their order and timing windows.
+Older histories may pause at the new choice or diverge under the
+corrected removals.
+
+All 9,074 tests pass, including 13 new cases. Twenty paired bot games
+retain all winners and change two final boards, with no integrity errors.
+Twenty mixed-seat games match across two hash seeds, with zero hard
+findings and zero partial actions. The 100-game balance check passes
+with a largest shift of 10 percentage points against the reviewed
+baseline. Three winners change from the parent. In each case unshaded
+Indutiomarus previously took no pieces and now removes Belgic Allies,
+with Warbands also removed in two games.
+
+**BE-07 advances for unshaded 60. The original audit remains 42/50 closed
+(84%), with 8 open.**
+
 ### 6 November unshaded Aduatuca 58
 
 Under Card Reference 58 and §§5.1–5.1.3, the executor selects one Region

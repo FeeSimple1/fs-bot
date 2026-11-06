@@ -21,6 +21,29 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Cotuatus & Conconnetodumnus 31
+
+The executor names one Roman Ally, one Aedui Ally, and a further Roman or
+Aedui Ally, as available under Card Reference 31 and §§5.1–5.1.3. Each
+choice uses the current board, excludes Citadels, and keeps the Tribe and
+its disc in sync. The terminal and durable assistant can choose between
+several Allies in one Region. A later pending choice survives save/load
+and rejects invalid replies while preserving earlier accepted choices.
+
+The parent probe reproduced automatic removal of different named Allies
+from the same Region. The probe now receives the three live offers and
+removes the selected Allies. Earlier histories may pause for the new
+choice if they have no target recorded for the relevant slot.
+
+All 8,992 tests pass, including 12 new cases. Twenty paired bot games
+match the parent's gameplay and final-state hashes. Twenty mixed-seat
+games match across both hash seeds, with zero hard findings and zero
+partial actions. The 100-game balance check passes, and all winners
+and card counts match the parent.
+
+**BE-07 advances for shaded 31. The original audit remains 42/50 closed
+(84%), with 8 open.**
+
 ### 6 November unshaded Bellovaci A69
 
 Under A Card Reference A69 and §§5.1–5.1.3, the executor selects four

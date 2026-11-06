@@ -1,6 +1,6 @@
-"""Exact physical piece selections for 3/5/A5/A17/A36/A69 and numeric 19/22.
+"""Exact physical piece selections for 3/5/19/22/31/A5/A17/A36/A69.
 
-Card Reference 3/5/19/22, A Card Reference A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/19/22/31, A Card Reference A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
@@ -19,6 +19,8 @@ ROMAN_TOTALS = {3: {rc.LEGION: 2}, 5: GARRISON_TOTALS, 'A5': GARRISON_TOTALS}
 A36_TOTALS = {rc.SETTLEMENT: 2, rc.WARBAND: 8}
 A36_REGIONS = (rc.MORINI, rc.NERVII, rc.TREVERI)
 A17_LIMIT = 4
+COTUATUS_FACTIONS = {'roman': (rc.ROMANS,), 'aedui': (rc.AEDUI,),
+                     'third': (rc.ROMANS, rc.AEDUI)}
 LEGACY_ROMAN_KEYS = {'legion_removal_regions', 'legion_removal_region', 'auxilia_removal_regions'}
 A5_LEGACY_KEYS = {'legion_region', 'auxilia_removals'}
 
@@ -69,6 +71,19 @@ def a17_removal_request(state):
                                   A17_LIMIT)
 
 
+def cotuatus_request(state, slot):
+    from fs_bot.cards.card_effects import _tribe_piece_type, _tribe_region
+
+    factions = COTUATUS_FACTIONS[slot]
+    targets = [{'tribe': tribe, 'region': _tribe_region(state, tribe),
+                'target_faction': info['allied_faction']}
+               for tribe, info in sorted(state['tribes'].items())
+               if info.get('allied_faction') in factions
+               and _tribe_piece_type(state, tribe) == rc.ALLY]
+    return {'kind': KIND, 'card_id': 31, 'owner': state.get('executing_faction'),
+            'slot': slot, 'targets': targets}
+
+
 def auxilia_region_request(state, card_id, regions, limit):
     request = _required_removal_request(state, card_id, state.get('executing_faction'),
                                         rc.ROMANS, regions, {rc.AUXILIA: limit})
@@ -107,6 +122,13 @@ def validate_response(state, request, response):
     if not isinstance(response, dict):
         raise ValueError('Choose an explicit Event quantity or piece list')
     card = request['card_id']
+    if card == 31:
+        live = cotuatus_request(state, request['slot'])['targets']
+        if (set(response) != {'tribe'}
+                or not any(row['tribe'] == response['tribe'] and row in live
+                           for row in request['targets'])):
+            raise ValueError('Choose an offered Roman or Aedui Ally for this removal')
+        return response
     if card == 'A58':
         from fs_bot.cards.aduatuci import validate_response as validate_aduatuci
         return validate_aduatuci(state, request, response)
@@ -212,6 +234,50 @@ def _consult(state, request):
     owner = request['owner']
     return (consult_agent(state, owner, request)
             if owner in rc.FACTIONS and not state.get('_diviciacus_preview') else None)
+
+
+def resolve_cotuatus(state, params):
+    """Remove a Roman Ally, an Aedui Ally, then a further Roman or Aedui Ally."""
+    from fs_bot.board.pieces import clear_allied_tribe, remove_piece
+    from fs_bot.cards.card_effects import _event_step, _unally_tribe
+
+    third_faction = params.get('third_ally_faction')
+    if third_faction is not None and third_faction not in COTUATUS_FACTIONS['third']:
+        raise ValueError('The third Ally must be Roman or Aedui')
+    initial_allies = {(faction, region) for faction in COTUATUS_FACTIONS['third']
+                      for region in state['spaces'] if count_pieces(state, region, faction, rc.ALLY)}
+    for slot, factions in COTUATUS_FACTIONS.items():
+        if slot != 'roman':
+            _event_step(state, f'31.{slot}_ally')
+        tribe = params.get(f'{slot}_ally_tribe')
+        region = params.get(f'{slot}_ally_region')
+        fixed_faction = third_faction if slot == 'third' else factions[0]
+        legacy = region is not None or (slot == 'third' and third_faction is not None)
+        if tribe is not None and legacy:
+            raise ValueError('Choose the named Ally or the legacy Region/faction for each removal')
+        if not legacy and (tribe is not None or state.get('decision_agent') is not None):
+            request = cotuatus_request(state, slot)
+            response = {'tribe': tribe} if tribe is not None else None
+            if response is None and request['targets']:
+                response = _consult(state, request)
+            if response is not None and not _default(response):
+                validate_response(state, request, response)
+                _unally_tribe(state, response['tribe'])
+                continue
+
+        # Preserve the existing delegated and Region-only selection order.
+        if not fixed_faction or region is None:
+            candidates = (fixed_faction,) if fixed_faction else factions
+            fixed_faction, region = next(
+                ((faction, name) for faction in candidates for name in state['spaces']
+                 if count_pieces(state, name, faction, rc.ALLY)), (None, None))
+        if not region:
+            continue
+        if ((fixed_faction, region) in initial_allies
+                and not count_pieces(state, region, fixed_faction, rc.ALLY)):
+            continue  # Legacy targets removed during an earlier timing window.
+        remove_piece(state, region, fixed_faction, rc.ALLY)
+        clear_allied_tribe(state, region, fixed_faction, rc.ALLY)
 
 
 def a17_np_regions(state, faction):

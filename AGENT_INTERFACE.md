@@ -552,6 +552,17 @@ supported. The legacy Gallic Hostages path also now correctly replaces Roman
 Auxilia with its own Warbands. Older histories can stop at the new request or
 vary under that corrected replacement.
 
+Shaded Cotuatus & Conconnetodumnus (31) sends `event_piece_choice` to the
+executor for each applicable removal. The request identifies the `slot`
+(`roman`, `aedui`, or `third`) and lists `targets` with `tribe`, `region`
+and `target_faction`. Respond `{"tribe": <offered tribe>}` or
+`{"use_default":true}`. Each offer uses the current board after the
+preceding removals and timing windows. Citadels are excluded. Author
+choices in advance with `roman_ally_tribe`, `aedui_ally_tribe`, and
+`third_ally_tribe` in `event_params`. Legacy Region and faction parameters
+remain supported for slots without a named Tribe. An older history with
+unspecified targets may pause at a new choice.
+
 Shaded Pompey (3) and Gallia Togata (5/A5) send `event_piece_choice` to
 the Romans, including when another faction executes the Event. After the
 `3.piece_choice`, `5.piece_choice` or `A5.piece_choice` timing window, the request includes

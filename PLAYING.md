@@ -115,6 +115,11 @@ replacement is Roman Auxilia or your faction's Warband; an unavailable
 replacement leaves the original removed. Use `b`/`board` to inspect before
 choosing. These live choices survive pending replies, saving and replay.
 
+Shaded Cotuatus & Conconnetodumnus (31) lets the executor name one Roman
+Ally, one Aedui Ally, and one additional Ally of either faction. Each
+prompt reflects the pieces still on the board. Citadels are protected,
+and the Event carries out the removals that are possible.
+
 Shaded Pompey and both versions of Gallia Togata ask the Roman player which pieces to
 remove, even when another faction plays the Event. Split Legions or Auxilia
 across Regions and choose the exact visibility of each Auxilia. Remove as

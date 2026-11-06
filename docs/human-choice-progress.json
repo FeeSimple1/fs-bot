@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "e97c7130abcf70aa3788539e1552906f1c9783e1",
-    "python_sha256": "598e2a022a75e5833a1e5d720062a3ce65de423bc466f2070a914d96f553e872",
-    "python_files": 535,
+    "commit": "5033533b4363bdfa83ce2144a043e35ea9dabcae",
+    "python_sha256": "74fe45c5fd175d7cde099fa931069ec334e9d9575bff20d59389d15d4a06ebc7",
+    "python_files": 536,
     "working_tree_changes": true,
-    "note": "Unshaded A69 closes EXP-11. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-unshaded-bellovaci-a69."
+    "note": "Shaded 31 advances BE-07. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-shaded-cotuatus--conconnetodumnus-31."
   },
   "total": 50,
   "closed": 42,
@@ -53,7 +53,8 @@
     "Unshaded A36 now offers exact German removals to the executor and applies the printed Region scope.",
     "Shaded A17 now offers exact Auxilia removals in one Region and applies the German bot's printed Region limits.",
     "Shaded A58 offers exact Roman Ally and Auxilia replacements in one Belgica Region and confines its Ambush there.",
-    "Unshaded A69 closes EXP-11 with exact Belgic Warband removals, independent placement choices and corrected delegated defaults. See current-status.md#6-november-unshaded-bellovaci-a69."
+    "Unshaded A69 closes EXP-11 with exact Belgic Warband removals, independent placement choices and corrected delegated defaults. See current-status.md#6-november-unshaded-bellovaci-a69.",
+    "Shaded 31 now offers the executor named Allied Tribes at each removal step and excludes Citadels. See current-status.md#6-november-shaded-cotuatus--conconnetodumnus-31."
   ],
   "findings": [
     {
@@ -253,7 +254,8 @@
       "status": "open",
       "partial_repairs": [
         "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. See reviews/base-piece-choices-2026-11-05.md.",
-        "Shaded numeric 5 offers exact Hidden, Revealed and Scouted Auxilia removals. Other listed cards remain open. See current-status.md#5-november-roman-event-removals."
+        "Shaded numeric 5 offers exact Hidden, Revealed and Scouted Auxilia removals. See current-status.md#5-november-roman-event-removals.",
+        "Shaded numeric 31 offers exact live Ally removal choices. Other listed cards remain open. See current-status.md#6-november-shaded-cotuatus--conconnetodumnus-31."
       ]
     },
     {

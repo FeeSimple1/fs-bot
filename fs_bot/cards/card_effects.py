@@ -1474,58 +1474,8 @@ def execute_card_31(state, shaded=False):
             place_piece(state, PROVINCIA, ROMANS, LEGION,
                         from_legions_track=True)
     else:
-        # Shaded: Remove 3 Allies total: 1 Roman, 1 Aedui, 1 Roman or Aedui
-        params = state.get("event_params", {})
-        initial_allies = {(fac, region): count_pieces(state, region, fac, ALLY)
-                          for fac in (ROMANS, AEDUI) for region in state["spaces"]}
-
-        def remove_selected_ally(fac, region):
-            if (count_pieces(state, region, fac, ALLY) == 0
-                    and initial_allies.get((fac, region), 0) > 0):
-                return  # An initially legal target was removed at an earlier step.
-            remove_piece(state, region, fac, ALLY)
-            clear_allied_tribe(state, region, fac, ALLY)
-
-        # Remove 1 Roman Ally
-        roman_ally_region = params.get("roman_ally_region")
-        if roman_ally_region is None:
-            for region in state["spaces"]:
-                if count_pieces(state, region, ROMANS, ALLY) > 0:
-                    roman_ally_region = region
-                    break
-        if roman_ally_region:
-            remove_selected_ally(ROMANS, roman_ally_region)
-        _event_step(state, "31.aedui_ally")
-        # Remove 1 Aedui Ally
-        aedui_ally_region = params.get("aedui_ally_region")
-        if aedui_ally_region is None:
-            for region in state["spaces"]:
-                if count_pieces(state, region, AEDUI, ALLY) > 0:
-                    aedui_ally_region = region
-                    break
-        if aedui_ally_region:
-            remove_selected_ally(AEDUI, aedui_ally_region)
-        _event_step(state, "31.third_ally")
-        # Remove 1 more Roman or Aedui Ally (third Ally)
-        third_faction = params.get("third_ally_faction")
-        third_region = params.get("third_ally_region")
-        if third_faction is None:
-            # Auto-select: try Romans first, then Aedui
-            for fac in (ROMANS, AEDUI):
-                for region in state["spaces"]:
-                    if count_pieces(state, region, fac, ALLY) > 0:
-                        third_faction = fac
-                        third_region = region
-                        break
-                if third_faction:
-                    break
-        elif third_region is None:
-            for region in state["spaces"]:
-                if count_pieces(state, region, third_faction, ALLY) > 0:
-                    third_region = region
-                    break
-        if third_region and third_faction:
-            remove_selected_ally(third_faction, third_region)
+        from fs_bot.cards.base_piece_choices import resolve_cotuatus
+        resolve_cotuatus(state, state.get("event_params", {}))
         refresh_all_control(state)
 
 def execute_card_32(state, shaded=False):

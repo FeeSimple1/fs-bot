@@ -219,6 +219,8 @@ def make_random_reactive(seats, rng):
         if kind == 'drought_loss':
             return {'piece': rng.choice(request['targets'])}
         if kind == 'event_piece_choice':
+            if request['card_id'] == 31:
+                return {'tribe': rng.choice(request['targets'])['tribe']}
             target = {}
             if 'required_by_region' in request:
                 amounts = request['required_by_region']

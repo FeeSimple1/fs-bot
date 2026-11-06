@@ -8,6 +8,12 @@ from fs_bot.rules_consts import AUXILIA
 def collect_choice(state, faction, request, stdin, stdout):
     card = request['card_id']
     with inspect_board(state, stdout):
+        if card == 31:
+            tribe = prompt_choice(stdin, stdout, 'Cotuatus: remove which Allied Tribe?', [
+                (f"{row['tribe']} ({row['region']}, {row['target_faction']})", row['tribe'])
+                for row in request['targets']
+            ])
+            return validate_response(state, request, {'tribe': tribe})
         if 'required_by_region' in request:
             amounts = request['required_by_region']
             verb = 'replace' if card == 'A58' else 'remove'

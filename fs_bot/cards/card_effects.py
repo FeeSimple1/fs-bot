@@ -4243,22 +4243,15 @@ def execute_card_A69(state, shaded=False):
     t_info = state.get("tribes", {}).get(TRIBE_BELLOVACI)
     if not shaded:
         if t_info and region:
+            from fs_bot.cards.base_piece_choices import resolve_a69_removals
             # Remove Belgic Ally — piece and tribes dict together
             if t_info.get("allied_faction") == BELGAE:
                 _unally_tribe(state, TRIBE_BELLOVACI)
             _event_step(state, "A69.remove_warbands")
-            # Remove 4 Belgic Warbands
-            removed = 0
-            for ps in (HIDDEN, REVEALED):
-                c = count_pieces_by_state(state, region, BELGAE, WARBAND, ps)
-                to_remove = min(c, 4 - removed)
-                if to_remove > 0:
-                    remove_piece(state, region, BELGAE, WARBAND,
-                                 count=to_remove, piece_state=ps)
-                    removed += to_remove
+            resolve_a69_removals(state, params)
             _event_step(state, "A69.ally")
             # Place Roman/Aedui Ally — the card names those two only.
-            ally_fac = params.get("ally_faction", ROMANS)
+            ally_fac = params.get("ally_faction", AEDUI if faction == AEDUI else ROMANS)
             if ally_fac not in (ROMANS, AEDUI):
                 raise ValueError(
                     f"card A69: the Bellovaci Ally must be Roman or "
@@ -4266,12 +4259,13 @@ def execute_card_A69(state, shaded=False):
             _ally_tribe(state, TRIBE_BELLOVACI, ally_fac)
             _event_step(state, "A69.mobile")
             # Place 4 Warbands or Auxilia — no other piece type.
-            piece_type = params.get("piece_type", AUXILIA)
+            default_type = WARBAND if params.get("piece_faction", ally_fac) == AEDUI else AUXILIA
+            piece_type = params.get("piece_type", default_type)
             if piece_type not in (WARBAND, AUXILIA):
                 raise ValueError(
                     f"card A69: may place Warbands or Auxilia, not "
                     f"{piece_type!r}")
-            pfac = params.get("piece_faction", ally_fac)
+            pfac = params.get("piece_faction", AEDUI if piece_type == WARBAND else ROMANS)
             if pfac not in (ROMANS, AEDUI):
                 raise ValueError(
                     f"card A69: pieces must be Roman or Aedui, not "

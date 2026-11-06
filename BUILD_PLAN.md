@@ -128,7 +128,9 @@ The [shaded A17 repair](docs/current-status.md#6-november-shaded-publius-liciniu
 adds the executor's one-Region Auxilia choice and corrects German bot
 targeting. The [shaded Aduatuci A58 repair](docs/current-status.md#6-november-shaded-aduatuci-a58)
 adds exact Ally and Auxilia choices and confines the Ambush to the same
-Belgica Region. EXP-11 remains open for A69.
+Belgica Region. The [unshaded Bellovaci A69 repair](docs/current-status.md#6-november-unshaded-bellovaci-a69)
+adds exact Belgic Warband removals and closes EXP-11. The original audit
+is 42/50 closed (84%), with 8 open.
 
 ## Existing implementation
 

@@ -605,6 +605,17 @@ uses the board after the replacements and takes place in the chosen Region
 if legal. Earlier histories may pause at the new choice or diverge if they
 previously relied on a broader Ambush.
 
+Unshaded Bellovaci (A69) sends `event_piece_choice` to the executor after
+`A69.remove_warbands`. Reply with `{"selections":[...]}` using the offered
+Hidden, Revealed and Scouted Belgic Warband cohorts in Atrebates. Select
+four or all present if fewer. Use `{"use_default":true}` to delegate or
+provide the same list in `event_params.piece_choices` to author it in
+advance. Set `ally_faction` and `piece_faction` independently to `Romans`
+or `Aedui`. The troop faction determines whether Auxilia or Warbands are
+placed. Older plans can still specify `piece_type`. Without either troop
+field the default troops follow the Ally faction. Earlier histories may
+pause for the choice or diverge under corrected defaults.
+
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |

@@ -82,6 +82,9 @@ Region and applies the German bot's geographic limits. [Repair and validation](d
 Shaded Aduatuci (A58) offers exact Roman replacements and resolves the
 Ambush in the selected Belgica Region. [Repair and validation](docs/current-status.md#6-november-shaded-aduatuci-a58).
 
+Unshaded Bellovaci (A69) offers exact Belgic Warband removals and separate
+Ally and troop choices. [Repair and validation](docs/current-status.md#6-november-unshaded-bellovaci-a69).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.

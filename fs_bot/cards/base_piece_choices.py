@@ -1,6 +1,6 @@
-"""Exact physical piece selections for 3/5/A5/A17/A36 and numeric 19/22.
+"""Exact physical piece selections for 3/5/A5/A17/A36/A69 and numeric 19/22.
 
-Card Reference 3/5/19/22, A Card Reference A5/A17/A36 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/19/22, A Card Reference A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
@@ -58,6 +58,12 @@ def a36_removal_request(state):
                                      rc.GERMANS, A36_REGIONS, A36_TOTALS)
 
 
+def a69_removal_request(state):
+    region = rc.TRIBE_TO_REGION[rc.TRIBE_BELLOVACI]
+    return _required_removal_request(state, 'A69', state.get('executing_faction'),
+                                     rc.BELGAE, (region,), {rc.WARBAND: 4})
+
+
 def a17_removal_request(state):
     return auxilia_region_request(state, 'A17', get_playable_regions_for_state(state, rc.ROMANS),
                                   A17_LIMIT)
@@ -110,8 +116,13 @@ def validate_response(state, request, response):
         validate_region_auxilia(request, a17_removal_request(state),
                                 response['region'], response['selections'])
         return response
-    if card in ROMAN_TOTALS or card == 'A36':
-        live = a36_removal_request(state) if card == 'A36' else roman_removal_request(state, card)
+    if card in ROMAN_TOTALS or card in ('A36', 'A69'):
+        if card == 'A69':
+            live = a69_removal_request(state)
+        elif card == 'A36':
+            live = a36_removal_request(state)
+        else:
+            live = roman_removal_request(state, card)
         if set(response) != {'selections'} or not isinstance(response['selections'], list):
             raise ValueError('Choose exact Event piece removals')
         used = _validate_cohorts(request, live, response['selections'])
@@ -278,6 +289,33 @@ def resolve_a36_removals(state, params):
         return
     validate_response(state, request, response)
     _apply_required_removals(state, request, response['selections'])
+
+
+def resolve_a69_removals(state, params):
+    """Remove four Belgic Warbands at Bellovaci, or all present if fewer."""
+    request = a69_removal_request(state)
+    remaining = request['required'][rc.WARBAND]
+    if 'piece_choices' in params:
+        response = {'selections': params['piece_choices']}
+    else:
+        response = _consult(state, request) if remaining else None
+    if response is not None and not _default(response):
+        validate_response(state, request, response)
+        _apply_required_removals(state, request, response['selections'])
+        return
+
+    # §8.4.1 uses reverse visibility priority when removing one's own pieces.
+    available = request['available']
+    if request['owner'] == rc.BELGAE:
+        available.reverse()
+    selections = []
+    for entry in available:
+        if not remaining:
+            break
+        count = min(remaining, entry['count'])
+        selections.append(dict(entry, count=count))
+        remaining -= count
+    _apply_required_removals(state, request, selections)
 
 
 def _delegate_a36_removals(state, owner):

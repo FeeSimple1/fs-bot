@@ -21,6 +21,32 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November unshaded Bellovaci A69
+
+Under A Card Reference A69 and §§5.1–5.1.3, the executor selects four
+Belgic Warbands in Atrebates, or all present if fewer. Both player
+interfaces expose Hidden, Revealed and Scouted cohorts after the
+removal timing window. The named Belgic Ally is removed first. The
+executor can choose a Roman or Aedui Ally and separately choose Roman
+Auxilia or Aedui Warbands. An Aedui Non-player now chooses its own
+pieces under §8.2.3. Delegation uses §8.4.1 visibility priorities.
+
+Three parent probes reproduced the missing executor choice, omitted
+Scouted removals and incorrect Aedui default beneficiary. All pass on the
+repair. Older histories may pause for the new selection or diverge under
+the corrected defaults.
+
+All 8,980 tests pass, including 15 new cases. The 20 paired bot games
+finish without integrity failures and keep all 20 winners. The two
+expansion seed-1 games diverge after Aedui receives its own pieces. The
+20 mixed-seat cases match across both hash seeds, with no hard findings
+and the same partial action as the parent matrix. The 100-game balance
+check passes within the existing band. Four winners change from the
+parent, in Ariovistus seeds 5 and 17 and The Gallic War seeds 5 and 7.
+All four games trace to the corrected Aedui placement.
+
+**EXP-11 closes. The original bundle is 42/50 closed (84%), 8 open.**
+
 ### 6 November shaded Aduatuci A58
 
 The executor selects one Belgica Region for the named Roman Ally disc

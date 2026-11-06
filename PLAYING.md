@@ -135,6 +135,11 @@ Region, name the Roman Ally to replace, and choose exact Auxilia by
 visibility. The replacements are followed by a free Ambush against Rome in
 that Region if the executor can Ambush there.
 
+Unshaded Bellovaci (A69) lets the executor select four Belgic Warbands in
+Atrebates, or all present if fewer, by exact visibility. Choose the Roman
+or Aedui Ally and choose Roman Auxilia or Aedui Warbands separately. The
+Event places four of the chosen troops, or all Available if fewer.
+
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;
 Scouted pieces instead lose their marker and remain Revealed. You still pay

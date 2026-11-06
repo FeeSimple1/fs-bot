@@ -1382,6 +1382,14 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     available and accepted, else per-key typed prompts."""
     if (card_id in (19, 22, 'A36') and not shaded) or (card_id in (3, 5, 'A5', 'A17', 'A58') and shaded):
         return {}  # Live exact quantities/pieces use the actual Event-step board.
+    if card_id == 'A69':
+        if shaded:
+            return {}  # Shaded Ambush choices are collected at the grant.
+        ally = prompt_choice(stdin, stdout, 'Bellovaci: place whose Ally?',
+                             [(ROMANS, ROMANS), (AEDUI, AEDUI)])
+        troops = prompt_choice(stdin, stdout, 'Bellovaci: place whose troops?',
+                               [('Roman Auxilia', ROMANS), ('Aedui Warbands', AEDUI)])
+        return {'ally_faction': ally, 'piece_faction': troops}
     if card_id == 49:
         from fs_bot.cards.drought import marker_regions
         regions = marker_regions(state)

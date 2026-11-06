@@ -120,6 +120,11 @@ to move to Provincia. Select their origin and visibility. The pieces keep
 their visibility when they arrive. Moving zero pieces still applies the
 card's eligibility effects.
 
+Shaded Alaudae (7) applies when the Legions track starts with seven or
+fewer Legions. Choose one on-map Legion to return to the track, then
+one on-map Auxilia by Region and visibility to return to Available.
+Each removal applies as far as possible.
+
 Shaded Numidians (11) lets the executor remove four Roman Auxilia from
 any Regions, or all on the map if fewer are present. In both editions,
 choose the exact Hidden, Revealed or Scouted Auxilia to return to Available.

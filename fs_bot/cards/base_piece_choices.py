@@ -1,13 +1,13 @@
-"""Exact physical piece selections for 3/5/6/11/19/22/24/31/A5/A17/A36/A69.
+"""Exact physical piece selections for 3/5/6/7/11/19/22/24/31/A5/A17/A36/A69.
 
-Card Reference 3/5/6/11/19/22/24/31, A Card Reference 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/6/7/11/19/22/24/31, A Card Reference 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
 from collections import Counter
 
 from fs_bot import rules_consts as rc
-from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available
+from fs_bot.board.pieces import _count_on_legions_track, count_pieces, count_pieces_by_state, get_available
 from fs_bot.board.control import is_controlled_by
 from fs_bot.map.map_data import get_adjacent_for_state, get_playable_regions_for_state
 
@@ -20,6 +20,9 @@ A36_TOTALS = {rc.SETTLEMENT: 2, rc.WARBAND: 8}
 A36_REGIONS = (rc.MORINI, rc.NERVII, rc.TREVERI)
 A17_LIMIT = 4
 MARCUS_ANTONIUS_LIMIT = 4
+ALAUDAE_TRACK_LIMIT = 7
+ALAUDAE_STEPS = ((rc.LEGION, '7.legion_removal', 'legion_removal_region'),
+                 (rc.AUXILIA, '7.auxilia_removal', 'auxilia_removal_region'))
 NUMIDIANS_LIMIT = 4
 COTUATUS_FACTIONS = {'roman': (rc.ROMANS,), 'aedui': (rc.AEDUI,),
                      'third': (rc.ROMANS, rc.AEDUI)}
@@ -73,6 +76,11 @@ def numidians_removal_request(state):
     return _required_removal_request(state, 11, state.get('executing_faction'), rc.ROMANS,
                                      sorted(state['spaces']),
                                      {rc.AUXILIA: NUMIDIANS_LIMIT})
+
+
+def alaudae_request(state, kind):
+    return _required_removal_request(state, 7, state.get('executing_faction'), rc.ROMANS,
+                                     sorted(state['spaces']), {kind: 1})
 
 
 def a69_removal_request(state):
@@ -163,8 +171,10 @@ def validate_response(state, request, response):
         live = sappers_request(state) if card == 24 else a17_removal_request(state)
         validate_region_removals(request, live, response['region'], response['selections'])
         return response
-    if card in ROMAN_TOTALS or card in (11, 'A36', 'A69'):
-        if card == 11:
+    if card in ROMAN_TOTALS or card in (7, 11, 'A36', 'A69'):
+        if card == 7:
+            live = alaudae_request(state, next(iter(request['required'])))
+        elif card == 11:
             live = numidians_removal_request(state)
         elif card == 'A69':
             live = a69_removal_request(state)
@@ -261,6 +271,78 @@ def _consult(state, request):
     owner = request['owner']
     return (consult_agent(state, owner, request)
             if owner in rc.FACTIONS and not state.get('_diviciacus_preview') else None)
+
+
+def alaudae_effective(state, faction=None):
+    """Check the track and the scope of the German bot's printed instruction."""
+    if _count_on_legions_track(state) > ALAUDAE_TRACK_LIMIT:
+        return False
+    regions = state['spaces']
+    if faction == rc.GERMANS and state['scenario'] in rc.ARIOVISTUS_SCENARIOS:
+        from fs_bot.cards.ambacti_np import german_removal_tiers
+        primary, adjacent = german_removal_tiers(state)
+        regions = primary | adjacent
+    return any(count_pieces(state, region, rc.ROMANS, kind)
+               for region in regions for kind, _, _ in ALAUDAE_STEPS)
+
+
+def resolve_alaudae(state, params):
+    """Check the track once, then collect each removal on its live board."""
+    from fs_bot.cards.card_effects import _event_step
+
+    if _count_on_legions_track(state) > ALAUDAE_TRACK_LIMIT:
+        return
+    exact = 'piece_choices' in params
+    choices = params.get('piece_choices')
+    if exact:
+        if any(key in params for _, _, key in ALAUDAE_STEPS):
+            raise ValueError('Choose one Alaudae removal plan format')
+        if (not isinstance(choices, list)
+                or any(not isinstance(row, dict) or row.get('piece_type') not in (rc.LEGION, rc.AUXILIA)
+                       for row in choices)):
+            raise ValueError('Choose exact Alaudae Legion and Auxilia removals')
+
+    for kind, step, legacy_key in ALAUDAE_STEPS:
+        _event_step(state, step)
+        request = alaudae_request(state, kind)
+        region = params.get(legacy_key)
+        owner = request['owner']
+        if exact:
+            response = {'selections': [row for row in choices if row['piece_type'] == kind]}
+        elif region is None and request['available'] and owner not in state.get('non_player_factions', ()):
+            response = _consult(state, request)
+        else:
+            response = None
+        if response is None or _default(response):
+            response = {'selections': _alaudae_default(state, request, region)}
+        validate_response(state, request, response)
+        _apply_required_removals(state, request, response['selections'])
+
+
+def _alaudae_default(state, request, region):
+    from fs_bot.bots.bot_common import random_select
+
+    owner = request['owner']
+    by_region = {}
+    for row in request['available']:
+        by_region.setdefault(row['region'], []).append(row)
+    if region is None:
+        if not by_region:
+            return []
+        candidates = list(by_region)
+        if owner in state.get('non_player_factions', ()):
+            if owner == rc.GERMANS and state['scenario'] in rc.ARIOVISTUS_SCENARIOS:
+                from fs_bot.cards.ambacti_np import german_removal_tiers
+                primary, adjacent = german_removal_tiers(state)
+                candidates = ([name for name in candidates if name in primary]
+                              or [name for name in candidates if name in adjacent]
+                              or candidates)
+            region = random_select(state, candidates)
+        else:
+            region = next(name for name in state['spaces'] if name in by_region)
+    if not isinstance(region, str) or region not in by_region:
+        raise ValueError('Choose a Region with the selected Alaudae piece')
+    return [dict(by_region[region][-1 if owner == rc.ROMANS else 0], count=1)]
 
 
 def resolve_sappers(state, params):

@@ -18,7 +18,7 @@ def _removal_regions(state):
     return sorted(region for region in rc.ALL_REGIONS if region in state['spaces'])
 
 
-def _german_tiers(state):
+def german_removal_tiers(state):
     primary = set(rc.GERMANIA_REGIONS) | {
         region for region in _removal_regions(state)
         if count_pieces(state, region, rc.GERMANS, rc.SETTLEMENT)}
@@ -38,7 +38,7 @@ def np_available(state, faction, shaded, *, exclude_regions=()):
         return (get_available(state, rc.ROMANS, rc.AUXILIA) > 0
                 and any(count_pieces(state, region, rc.ROMANS) for region in regions))
     if faction == rc.GERMANS and state['scenario'] in rc.ARIOVISTUS_SCENARIOS:
-        primary, adjacent = _german_tiers(state)
+        primary, adjacent = german_removal_tiers(state)
         regions = sorted(primary | adjacent)
     return any(count_pieces(state, region, rc.ROMANS, rc.AUXILIA)
                for region in regions if region not in exclude_regions)
@@ -97,7 +97,7 @@ def default_removals(state, faction, count, *, exclude_regions=()):
     available = {region: number for region, number in available.items() if number}
     remaining = min(count, sum(available.values()))
     german = faction == rc.GERMANS and state['scenario'] in rc.ARIOVISTUS_SCENARIOS
-    primary, adjacent = _german_tiers(state) if german else (set(), set())
+    primary, adjacent = german_removal_tiers(state) if german else (set(), set())
     visibility_order = ((rc.SCOUTED, rc.REVEALED, rc.HIDDEN) if faction == rc.ROMANS
                         else (rc.HIDDEN, rc.REVEALED, rc.SCOUTED))
     result = []

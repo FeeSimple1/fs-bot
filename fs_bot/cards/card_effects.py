@@ -631,32 +631,8 @@ def execute_card_7(state, shaded=False):
         if get_available(state, ROMANS, AUXILIA) >= 1:
             place_piece(state, target, ROMANS, AUXILIA)
     else:
-        # Shaded: If Legions track has 7 or fewer, remove 1 Legion to
-        # track and 1 Auxilia to Available
-        track_count = _count_on_legions_track(state)
-        if track_count <= 7:
-            params = state.get("event_params", {})
-            # Remove 1 Legion from map to track
-            legion_region = params.get("legion_removal_region")
-            if legion_region is None:
-                # Auto-find a region with a Legion
-                for region in state["spaces"]:
-                    if count_pieces(state, region, ROMANS, LEGION) > 0:
-                        legion_region = region
-                        break
-            if legion_region:
-                remove_piece(state, legion_region, ROMANS, LEGION,
-                             to_track=True)
-            _event_step(state, "7.auxilia_removal")
-            # Remove 1 Auxilia from map to Available
-            auxilia_region = params.get("auxilia_removal_region")
-            if auxilia_region is None:
-                for region in state["spaces"]:
-                    if count_pieces(state, region, ROMANS, AUXILIA) > 0:
-                        auxilia_region = region
-                        break
-            if auxilia_region:
-                remove_piece(state, auxilia_region, ROMANS, AUXILIA)
+        from fs_bot.cards.base_piece_choices import resolve_alaudae
+        resolve_alaudae(state, state.get("event_params", {}))
 
 def execute_card_8(state, shaded=False):
     """Card 8: Baggage Trains — CAPABILITY.

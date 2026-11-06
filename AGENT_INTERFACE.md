@@ -562,6 +562,17 @@ origin/count pairs still work. Supply one plan format. A player who defers
 moves zero pieces and still gets the printed eligibility effects. Older
 histories may reach the new prompt or diverge under the corrected movement.
 
+Shaded Alaudae (7) checks the Legions track at the start of resolution.
+At seven or fewer, it sends the executor an `event_piece_choice` for
+each piece type available in order, after `7.legion_removal` and then
+`7.auxilia_removal`. Answer each with `{"selections":[...]}` from that
+request's cohorts. Legions use `piece_state: null` and go to the track.
+Auxilia use their exact visibility and return to Available. For an
+authored plan, put both removals in `event_params.piece_choices`, or use
+the Region-only keys `legion_removal_region` and `auxilia_removal_region`.
+Older histories may pause for a choice or diverge under corrected
+delegated targeting.
+
 Shaded Numidians (11) sends `event_piece_choice` to the executor after
 `11.piece_choice` in both editions. Respond `{"selections":[...]}` with
 the offered Roman Auxilia cohorts, including exact visibility and Region.

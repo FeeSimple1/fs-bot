@@ -21,6 +21,34 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Alaudae 7
+
+Under Card Reference 7 and §§5.1–5.1.3, the executor selects an on-map
+Legion to send to the track and then an Auxilia to return to Available.
+The threshold uses the track count at the start of resolution. A Legion
+returned at seven can raise it to eight before the Auxilia choice. That
+choice uses the current board after the intervening timing window.
+The terminal shows exact cohorts, and an assistant session can save
+after the Legion choice and resume with the Auxilia choice.
+
+The parent probe removed a Hidden Auxilia and offered neither choice.
+The repaired probe removes the selected Legion and Scouted Auxilia.
+Bots skip an ineffective shaded Event. The German bot uses the printed
+Germania and Settlement priority, then their neighboring Regions, with
+an eligible piece in either tier required to execute. Region-only plans
+delegate visibility, and older histories may pause for a new choice or
+diverge under corrected delegated targeting.
+
+All 9,049 tests pass, including 12 new cases. Twenty paired bot games
+complete without integrity errors. Six final boards and four winners
+change from the parent. Twenty mixed-seat games match across two hash
+seeds, with zero hard findings and zero partial actions. The 100-game
+balance check passes with a largest shift of 10 percentage points
+against the reviewed baseline. Eleven winners differ from the parent.
+
+**BE-07 advances for shaded 7. The original audit remains 42/50 closed
+(84%), with 8 open.**
+
 ### 6 November shaded Sappers 24
 
 Under Card Reference 24 and §§5.1–5.1.3, the executor selects one Region

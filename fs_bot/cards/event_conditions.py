@@ -12,6 +12,9 @@ from fs_bot import rules_consts as rc
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 7 and shaded and faction == rc.GERMANS:
+        from fs_bot.cards.base_piece_choices import alaudae_effective
+        return alaudae_effective(state, faction)
     if card_id == 6 and shaded and faction == rc.GERMANS:
         from fs_bot.cards.ambacti_np import np_available
         return np_available(state, faction, True, exclude_regions=(rc.PROVINCIA,))

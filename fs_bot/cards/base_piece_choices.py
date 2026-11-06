@@ -1,6 +1,6 @@
-"""Exact physical piece selections for 3/5/6/11/19/22/31/A5/A17/A36/A69.
+"""Exact physical piece selections for 3/5/6/11/19/22/24/31/A5/A17/A36/A69.
 
-Card Reference 3/5/6/11/19/22/31, A Card Reference 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/6/11/19/22/24/31, A Card Reference 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
@@ -100,8 +100,18 @@ def cotuatus_request(state, slot):
 
 
 def auxilia_region_request(state, card_id, regions, limit):
+    return _region_removal_request(state, card_id, regions, (rc.AUXILIA,), limit)
+
+
+def sappers_request(state):
+    regions = [region for region in sorted(state['spaces'])
+               if count_pieces(state, region, rc.ARVERNI, rc.CITADEL)]
+    return _region_removal_request(state, 24, regions, (rc.LEGION, rc.AUXILIA), 2)
+
+
+def _region_removal_request(state, card_id, regions, kinds, limit):
     request = _required_removal_request(state, card_id, state.get('executing_faction'),
-                                        rc.ROMANS, regions, {rc.AUXILIA: limit})
+                                        rc.ROMANS, regions, dict.fromkeys(kinds, limit))
     request.pop('required')
     totals = Counter()
     for entry in request['available']:
@@ -147,11 +157,11 @@ def validate_response(state, request, response):
     if card == 'A58':
         from fs_bot.cards.aduatuci import validate_response as validate_aduatuci
         return validate_aduatuci(state, request, response)
-    if card == 'A17':
+    if card in (24, 'A17'):
         if set(response) != {'region', 'selections'}:
-            raise ValueError('Choose one Region and its exact Auxilia removals')
-        validate_region_auxilia(request, a17_removal_request(state),
-                                response['region'], response['selections'])
+            raise ValueError('Choose one Region and its exact removals')
+        live = sappers_request(state) if card == 24 else a17_removal_request(state)
+        validate_region_removals(request, live, response['region'], response['selections'])
         return response
     if card in ROMAN_TOTALS or card in (11, 'A36', 'A69'):
         if card == 11:
@@ -188,15 +198,15 @@ def validate_response(state, request, response):
     return response
 
 
-def validate_region_auxilia(request, live, region, selections):
+def validate_region_removals(request, live, region, selections):
     if not isinstance(region, str) or not isinstance(selections, list):
-        raise ValueError('Choose one Region and its exact Auxilia removals')
+        raise ValueError('Choose one Region and its exact removals')
     required = request['required_by_region'].get(region)
     if required is None or required != live['required_by_region'].get(region):
-        raise ValueError('Choose an offered Region with its live Auxilia total')
+        raise ValueError('Choose an offered Region with its live removal total')
     used = _validate_cohorts(request, live, selections)
     if any(key[0] != region for key in used) or sum(used.values()) != required:
-        raise ValueError('Remove the required Auxilia from the single selected Region')
+        raise ValueError('Remove the required pieces from the single selected Region')
 
 
 def _validate_cohorts(request, live, entries, *, with_action=False):
@@ -251,6 +261,78 @@ def _consult(state, request):
     owner = request['owner']
     return (consult_agent(state, owner, request)
             if owner in rc.FACTIONS and not state.get('_diviciacus_preview') else None)
+
+
+def resolve_sappers(state, params):
+    """Remove two Roman pieces in one Arverni Citadel Region, as far as possible."""
+    from fs_bot.board.pieces import remove_piece
+    from fs_bot.cards.card_effects import _event_step
+
+    _event_step(state, '24.piece_choice')
+    request = sappers_request(state)
+    target = params.get('target_region')
+    legacy_counts = {'legions_to_remove', 'auxilia_to_remove'} & params.keys()
+    if 'piece_choices' in params:
+        if legacy_counts:
+            raise ValueError('Choose one Sappers removal plan format')
+        response = {'region': target, 'selections': params['piece_choices']}
+    elif (target is None and not legacy_counts and any(request['required_by_region'].values())
+          and request['owner'] not in state.get('non_player_factions', ())):
+        response = _consult(state, request)
+    else:
+        response = None
+    if response is None or _default(response):
+        response = _sappers_default(state, request, target, params)
+        if response is None:
+            return
+    validate_response(state, request, response)
+    for entry in response['selections']:
+        kind = entry['piece_type']
+        remove_piece(state, entry['region'], rc.ROMANS, kind, count=entry['count'],
+                     piece_state=entry['piece_state'], to_fallen=kind == rc.LEGION)
+
+
+def _sappers_default(state, request, region, params):
+    from fs_bot.bots.bot_common import random_select
+
+    amounts = request['required_by_region']
+    owner = request['owner']
+    own = owner == rc.ROMANS
+    kinds = (rc.AUXILIA, rc.LEGION) if own else (rc.LEGION, rc.AUXILIA)
+    if region is None:
+        if not any(amounts.values()):
+            return None
+        scores = {name: (min(total, count_pieces(state, name, rc.ROMANS, kinds[0])), total)
+                  for name, total in amounts.items()}
+        best = max(scores.values())
+        tied = [name for name, score in scores.items() if score == best]
+        region = random_select(state, tied) if owner in state.get('non_player_factions', ()) else tied[0]
+    if region not in amounts:
+        raise ValueError('Sappers requires a Region with an Arverni Citadel')
+
+    preferred = {rc.LEGION: params.get('legions_to_remove', 0),
+                 rc.AUXILIA: params.get('auxilia_to_remove', 0)}
+    if any(type(n) is not int or n < 0 for n in preferred.values()):
+        raise ValueError('Sappers removal preferences must be nonnegative integers')
+    stock = {kind: count_pieces(state, region, rc.ROMANS, kind) for kind in kinds}
+    remaining = amounts[region]
+    wanted = Counter()
+    # Honor old requested quantities first, then fill the mandatory total.
+    for limits in (preferred, stock):
+        for kind, limit in limits.items():
+            count = min(limit, stock[kind] - wanted[kind], remaining)
+            wanted[kind] += count
+            remaining -= count
+    selections = []
+    cohorts = request['available'][::-1] if own else request['available']
+    for entry in cohorts:
+        if entry['region'] == region:
+            kind = entry['piece_type']
+            count = min(wanted[kind], entry['count'])
+            if count:
+                selections.append(dict(entry, count=count))
+                wanted[kind] -= count
+    return {'region': region, 'selections': selections}
 
 
 def relocate_marcus_antonius_auxilia(state, params):

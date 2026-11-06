@@ -124,6 +124,11 @@ Shaded Numidians (11) lets the executor remove four Roman Auxilia from
 any Regions, or all on the map if fewer are present. In both editions,
 choose the exact Hidden, Revealed or Scouted Auxilia to return to Available.
 
+Shaded Sappers (24) lets the executor choose one Region with an Arverni
+Citadel and remove any mix of two Roman Legions and Auxilia there. If the
+chosen Region has fewer than two eligible pieces, remove all of them.
+Choose Auxilia by visibility. Removed Legions go to Fallen.
+
 Shaded Cotuatus & Conconnetodumnus (31) lets the executor name one Roman
 Ally, one Aedui Ally, and one additional Ally of either faction. Each
 prompt reflects the pieces still on the board. Citadels are protected,

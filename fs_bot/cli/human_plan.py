@@ -1381,7 +1381,7 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
     if ((card_id in (19, 22, 'A36') and not shaded)
-            or (card_id in (3, 5, 6, 11, 31, 'A5', 'A17', 'A58') and shaded)):
+            or (card_id in (3, 5, 6, 11, 24, 31, 'A5', 'A17', 'A58') and shaded)):
         return {}  # Live exact quantities/pieces use the actual Event-step board.
     if card_id == 'A69':
         if shaded:

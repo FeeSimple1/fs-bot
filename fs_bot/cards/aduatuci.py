@@ -2,7 +2,7 @@
 from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available, place_piece, remove_piece
 from fs_bot.bots.bot_common import random_select
-from fs_bot.cards.base_piece_choices import STATES, _consult, _default, auxilia_region_request, validate_region_auxilia
+from fs_bot.cards.base_piece_choices import STATES, _consult, _default, auxilia_region_request, validate_region_removals
 from fs_bot.cards.expansion_validation import source_allies
 from fs_bot.commands.sa_ambush import validate_ambush_region
 from fs_bot.map.map_data import get_playable_regions_for_state
@@ -27,7 +27,7 @@ def validate_response(state, request, response):
         raise ValueError('Choose one Belgica Region, its Roman Ally and exact Auxilia')
     live = make_request(state)
     region = response['region']
-    validate_region_auxilia(request, live, region, response['selections'])
+    validate_region_removals(request, live, region, response['selections'])
     tribe = response['ally_tribe']
     offered = request['ally_tribes_by_region'][region]
     present = live['ally_tribes_by_region'][region]

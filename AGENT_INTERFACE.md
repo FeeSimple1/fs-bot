@@ -572,6 +572,17 @@ Select four or all present if fewer, as specified in `required`. Use
 the required total. Use only one plan format. Older histories may reach
 the new request or diverge where revised Numidians previously did nothing.
 
+Shaded Sappers (24) sends `event_piece_choice` to the executor after
+`24.piece_choice`. Its `required_by_region` gives the total in each Region
+with an Arverni Citadel, capped at two. Respond `{"region":...,"selections":[...]}`
+with that total from a single Region, in any mix of offered Legions and
+Auxilia. Legions use `piece_state: null` and go to Fallen. Auxilia use their
+exact visibility and return to Available. Use `event_params.target_region`
+and `piece_choices` for an authored plan. Legacy quantity fields still set
+the initial priorities, with any shortfall filled from the chosen Region.
+Older histories may pause for the new choice or diverge under corrected
+delegated targeting.
+
 Shaded Cotuatus & Conconnetodumnus (31) sends `event_piece_choice` to the
 executor for each applicable removal. The request identifies the `slot`
 (`roman`, `aedui`, or `third`) and lists `targets` with `tribe`, `region`

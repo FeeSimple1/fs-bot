@@ -17,17 +17,21 @@ def collect_choice(state, faction, request, stdin, stdout):
         if 'required_by_region' in request:
             amounts = request['required_by_region']
             verb = 'replace' if card == 'A58' else 'remove'
+            label = 'Roman pieces' if card == 24 else AUXILIA
             region = prompt_choice(stdin, stdout, f'Choose the single {card} removal Region:', [
-                (f'{name} ({count} Auxilia to {verb})', name) for name, count in amounts.items()
+                (f'{name} ({count} {label} to {verb})', name) for name, count in amounts.items()
             ])
+            available = [row for row in request['available'] if row['region'] == region]
+            if card == 24:
+                selections = _pick_removals(available, amounts[region], request['owner'], label, stdin, stdout)
+                return validate_response(state, request, {'region': region, 'selections': selections})
             target = {'region': region}
             if card == 'A58':
                 tribes = request['ally_tribes_by_region'][region]
                 target['ally_tribe'] = (prompt_choice(stdin, stdout, 'Choose the Roman Ally:', [
                     (tribe, tribe) for tribe in tribes
                 ]) if tribes else None)
-            local = dict(request, required={AUXILIA: amounts[region]},
-                         available=[row for row in request['available'] if row['region'] == region])
+            local = dict(request, required={AUXILIA: amounts[region]}, available=available)
             response = {**target, **_required_removals(local, stdin, stdout)}
             return validate_response(state, request, response)
         if 'required' in request:
@@ -67,16 +71,23 @@ def collect_choice(state, faction, request, stdin, stdout):
 def _required_removals(request, stdin, stdout):
     selected = []
     for kind, remaining in request['required'].items():
-        budget = [dict(entry) for entry in request['available'] if entry['piece_type'] == kind]
-        while remaining:
-            index = prompt_choice(stdin, stdout, f"{request['owner']}: remove {remaining} {kind}:", [
-                (f"{entry['region']}: {entry['piece_state'] or kind} ({entry['count']})", index)
-                for index, entry in enumerate(budget) if entry['count']
-            ])
-            entry = budget[index]
-            count = prompt_choice(stdin, stdout, 'How many?',
-                [(str(n), n) for n in range(1, min(remaining, entry['count']) + 1)])
-            selected.append({k: entry[k] for k in FIELDS} | {'count': count})
-            entry['count'] -= count
-            remaining -= count
+        available = [entry for entry in request['available'] if entry['piece_type'] == kind]
+        selected.extend(_pick_removals(available, remaining, request['owner'], kind, stdin, stdout))
     return {'selections': selected}
+
+
+def _pick_removals(available, remaining, owner, label, stdin, stdout):
+    budget = [dict(entry) for entry in available]
+    selected = []
+    while remaining:
+        index = prompt_choice(stdin, stdout, f'{owner}: remove {remaining} {label}:', [
+            (f"{entry['region']}: {entry['piece_state'] or ''} {entry['piece_type']} ({entry['count']})", index)
+            for index, entry in enumerate(budget) if entry['count']
+        ])
+        entry = budget[index]
+        count = prompt_choice(stdin, stdout, 'How many?',
+            [(str(n), n) for n in range(1, min(remaining, entry['count']) + 1)])
+        selected.append(dict(entry, count=count))
+        entry['count'] -= count
+        remaining -= count
+    return selected

@@ -230,13 +230,15 @@ def make_random_reactive(seats, rng):
                 target['region'] = region
                 if request['card_id'] == 'A58':
                     target['ally_tribe'] = rng.choice(allies[region]) if allies[region] else None
-                request = dict(request, required={rc.AUXILIA: amounts[region]},
+                kind = None if request['card_id'] == 24 else rc.AUXILIA
+                request = dict(request, required={kind: amounts[region]},
                                available=[row for row in request['available'] if row['region'] == region])
             if 'required' in request:
                 selections = []
                 for piece_type, count in request['required'].items():
                     cohorts = [index for index, row in enumerate(request['available'])
-                               if row['piece_type'] == piece_type for _ in range(row['count'])]
+                               if piece_type is None or row['piece_type'] == piece_type
+                               for _ in range(row['count'])]
                     picked = rng.sample(cohorts, count)
                     for index in dict.fromkeys(picked):
                         selections.append(dict(request['available'][index], count=picked.count(index)))

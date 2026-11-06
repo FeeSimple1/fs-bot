@@ -1180,42 +1180,8 @@ def execute_card_24(state, shaded=False):
         if has_citadel and target_faction in state.get("resources", {}):
             _cap_resources(state, target_faction, -10)
     else:
-        # Shaded: In a Region with Arverni Citadel, remove 2
-        # Legions and/or Auxilia (Legions to Fallen)
-        params = state.get("event_params", {})
-        target = params.get("target_region")
-        if target is None:
-            # Auto-find region with Arverni Citadel
-            for region in state["spaces"]:
-                if count_pieces(state, region, ARVERNI, CITADEL) > 0:
-                    target = region
-                    break
-        if target is None:
-            return
-        # Validate target region has Arverni Citadel
-        if count_pieces(state, target, ARVERNI, CITADEL) == 0:
-            return
-        # Remove up to 2 total Legions and/or Auxilia
-        legions_to_remove = params.get("legions_to_remove", 0)
-        auxilia_to_remove = params.get("auxilia_to_remove", 0)
-        total = legions_to_remove + auxilia_to_remove
-        # Clamp to 2 total
-        if total > 2:
-            legions_to_remove = min(legions_to_remove, 2)
-            auxilia_to_remove = min(auxilia_to_remove, 2 - legions_to_remove)
-        if total == 0:
-            # Default: remove Legions first, then Auxilia
-            legions_avail = count_pieces(state, target, ROMANS, LEGION)
-            legions_to_remove = min(legions_avail, 2)
-            auxilia_to_remove = min(
-                count_pieces(state, target, ROMANS, AUXILIA),
-                2 - legions_to_remove)
-        if legions_to_remove > 0:
-            remove_piece(state, target, ROMANS, LEGION,
-                         count=legions_to_remove, to_fallen=True)
-        if auxilia_to_remove > 0:
-            remove_piece(state, target, ROMANS, AUXILIA,
-                         count=auxilia_to_remove)
+        from fs_bot.cards.base_piece_choices import resolve_sappers
+        resolve_sappers(state, state.get("event_params", {}))
 
 def execute_card_25(state, shaded=False):
     """Card 25: Aquitani — Free Battle + extra Losses / CAPABILITY Rally bonus.

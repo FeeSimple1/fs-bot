@@ -21,6 +21,39 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Sappers 24
+
+Under Card Reference 24 and §§5.1–5.1.3, the executor selects one Region
+with an Arverni Citadel and removes two Roman Legions and/or Auxilia,
+or all eligible pieces there if fewer. The terminal and assistant offer
+the current physical cohorts after the Event timing window. Legions go
+to Fallen and Auxilia return to Available. The assistant preserves the
+selection across save and resume.
+
+The parent probe took a Hidden Auxilia when the executor wanted a
+Scouted one. The repaired probe removes the selected Scouted Auxilia
+and sends its accompanying Legion to Fallen. Delegated play applies
+piece priorities and uses a seeded tie-break for equally ranked Regions.
+Bots check for a Roman target in an Arverni Citadel Region before playing
+the shaded Event. Legacy authored counts set the initial priorities
+within their Region. Earlier histories may pause for the new choice or
+diverge under corrected delegated targeting.
+
+All 9,037 tests pass, including 13 new cases. Twenty paired bot games
+complete without integrity errors, with three changed final boards and
+one changed winner. Twenty mixed-seat games match across two hash seeds,
+with zero hard findings and zero partial actions.
+
+The 100-game balance check passes. The largest shift from the reviewed
+baseline is 15 percentage points for Belgae in Reconquest of Gaul. Four
+winners differ from the parent revision, in Pax Gallica? seeds 17 and 19
+and Reconquest of Gaul seeds 1 and 17. Traces show the parent executing
+shaded Sappers with no Roman pieces in any qualifying Region. The repair
+lets the bot proceed to other actions in those positions.
+
+**BE-07 advances for shaded 24. The original audit remains 42/50 closed
+(84%), with 8 open.**
+
 ### 6 November shaded Marcus Antonius 6
 
 Under Card Reference 6 and §§1.4.3 and 5.1, the executor chooses zero to

@@ -1789,23 +1789,9 @@ def execute_card_45(state, shaded=False):
 
     Source: Card Reference, card 45
     """
-    params = state.get("event_params", {})
     if not shaded:
-        # Replace Arverni Warbands with Aedui Warbands in 2 Regions
-        regions = params.get("regions", [])
-        for r_info in _event_entries(state, "45.regions", regions):
-            region = r_info["region"]
-            cnt = min(r_info.get("count", 2), 2)
-            for _ in _event_entries(state, f"45.replacements.{region}", range(cnt)):
-                # Try Hidden first, then Revealed
-                removed = False
-                for ps in (HIDDEN, REVEALED):
-                    if count_pieces_by_state(state, region, ARVERNI, WARBAND, ps) > 0:
-                        remove_piece(state, region, ARVERNI, WARBAND, piece_state=ps)
-                        removed = True
-                        break
-                if removed and get_available(state, AEDUI, WARBAND) > 0:
-                    place_piece(state, region, AEDUI, WARBAND)
+        from fs_bot.cards.litaviccus_replacements import resolve_replacements
+        resolve_replacements(state, state.get("event_params", {}))
         _event_step(state, "45.resources")
         # Transfer 4 Resources from Arverni to Aedui
         transfer = min(state["resources"].get(ARVERNI, 0), 4)

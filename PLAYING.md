@@ -139,6 +139,12 @@ Ally, one Aedui Ally, and one additional Ally of either faction. Each
 prompt reflects the pieces still on the board. Citadels are protected,
 and the Event carries out the removals that are possible.
 
+Unshaded Litaviccus (45) lets the executor replace up to two Arverni
+Warbands with Aedui Warbands in each of up to two Regions. Choose the
+Arverni Warbands by visibility. If an Aedui replacement is unavailable,
+the source Warband is still removed. Arverni transfer up to four
+Resources to Aedui even if the executor chooses zero replacements.
+
 Unshaded Aduatuca (58) lets the executor choose one Region with a Roman
 Fort and remove nine Belgic or Germanic Warbands there in any mix. If
 fewer than nine are present, remove all of them. Choose each group by

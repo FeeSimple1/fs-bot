@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "8c605054feb26d05f0f953748175c9353733f5cb",
-    "python_sha256": "2eb9c12380d5f5168b29c575b9ac7ac5d9fa065a9b518fc594e86625a0b54f4b",
-    "python_files": 541,
+    "commit": "90105a9c34b8b5469d5de88bb3a2780decc1523d",
+    "python_sha256": "53c22b96bc83ebab88ccd8264b58495461c6e8d3e497557836d518a18c507735",
+    "python_files": 543,
     "working_tree_changes": true,
-    "note": "Unshaded 60 advances BE-07. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-unshaded-indutiomarus-60."
+    "note": "Unshaded 45 advances BE-07. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-unshaded-litaviccus-45."
   },
   "total": 50,
   "closed": 42,
@@ -60,7 +60,8 @@
     "Shaded 24 now offers exact Legion and Auxilia removals in one Arverni Citadel Region. See current-status.md#6-november-shaded-sappers-24.",
     "Shaded 7 now offers exact Legion and Auxilia removals at separate timing windows. See current-status.md#6-november-shaded-alaudae-7.",
     "Unshaded 58 now offers exact Belgic and Germanic Warband removals in one Roman Fort Region. See current-status.md#6-november-unshaded-aduatuca-58.",
-    "Unshaded 60 now offers exact Belgic Warband and named Ally removals in Treveri or one adjacent Region. See current-status.md#6-november-unshaded-indutiomarus-60."
+    "Unshaded 60 now offers exact Belgic Warband and named Ally removals in Treveri or one adjacent Region. See current-status.md#6-november-unshaded-indutiomarus-60.",
+    "Unshaded 45 now offers exact optional Arverni Warband replacements in up to two Regions. See current-status.md#6-november-unshaded-litaviccus-45."
   ],
   "findings": [
     {
@@ -267,7 +268,8 @@
         "Shaded numeric 24 offers exact Legions and Auxilia in one Arverni Citadel Region. See current-status.md#6-november-shaded-sappers-24.",
         "Shaded numeric 7 offers exact Legion and Auxilia choices at its two removal steps. See current-status.md#6-november-shaded-alaudae-7.",
         "Unshaded numeric 58 offers exact Warband removals by faction and visibility in one Roman Fort Region. See current-status.md#6-november-unshaded-aduatuca-58.",
-        "Unshaded numeric 60 offers exact Belgic Warband and named Ally removals in Treveri or one adjacent Region, excluding Citadels. Other listed cards remain open. See current-status.md#6-november-unshaded-indutiomarus-60."
+        "Unshaded numeric 60 offers exact Belgic Warband and named Ally removals in Treveri or one adjacent Region, excluding Citadels. See current-status.md#6-november-unshaded-indutiomarus-60.",
+        "Unshaded numeric 45 offers exact Arverni Warband replacements, including Scouted Warbands and the zero option. Other listed cards remain open. See current-status.md#6-november-unshaded-litaviccus-45."
       ]
     },
     {

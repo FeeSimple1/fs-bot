@@ -1,5 +1,5 @@
 """Live Event quantities and physical selections."""
-from fs_bot.cards.base_piece_choices import FIELDS, validate_response
+from fs_bot.cards.base_piece_choices import FIELDS, optional_room, validate_response
 from fs_bot.cli.menus import prompt_choice
 from fs_bot.cli.action_windows import inspect_board
 from fs_bot.rules_consts import AUXILIA, WARBAND
@@ -47,17 +47,25 @@ def collect_choice(state, faction, request, stdin, stdout):
                 return validate_response(state, request, {'choice': choice, 'count': count})
         budget = [dict(e) for e in request['available']]
         selected, remaining = [], request['max_count']
-        prompt = (f"Select Auxilia to move to {request['destination']} (zero is allowed):" if card == 6
-                  else 'Select pieces (zero total is allowed):')
-        while remaining and any(e['count'] for e in budget):
+        if card == 6:
+            prompt = f"Select Auxilia to move to {request['destination']} (zero is allowed):"
+        elif card == 45:
+            prompt = 'Litaviccus: select up to two Warbands in each of up to two Regions:'
+        else:
+            prompt = 'Select pieces (zero total is allowed):'
+        while remaining:
+            limits = [min(e['count'], optional_room(request, selected, e['region'], remaining))
+                      for e in budget]
+            if not any(limits):
+                break
             index = prompt_choice(stdin, stdout, prompt,
                 [('Finish selections', None)] +
                 [(f"{e['region']}: {e['target_faction']} {e['piece_state']} {e['piece_type']} ({e['count']})", i)
-                 for i, e in enumerate(budget) if e['count']])
+                 for i, e in enumerate(budget) if limits[i]])
             if index is None: break
             entry = budget[index]
             count = prompt_choice(stdin, stdout, 'How many?',
-                [(str(n), n) for n in range(1, min(remaining, entry['count']) + 1)])
+                [(str(n), n) for n in range(1, limits[index] + 1)])
             selected.append({k: entry[k] for k in FIELDS} | {'count': count})
             if card == 22:
                 selected[-1]['action'] = prompt_choice(stdin, stdout, 'Hostages: remove or replace?',

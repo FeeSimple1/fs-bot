@@ -1009,6 +1009,10 @@ def is_event_effective(state, card_id, shaded=False):
         from fs_bot.cards.base_piece_choices import sappers_request
         return any(sappers_request(state)["required_by_region"].values())
 
+    if card_id == 45 and not shaded:
+        from fs_bot.cards.litaviccus_replacements import effective
+        return effective(state)
+
     if card_id == 58 and not shaded:
         from fs_bot.cards.base_piece_choices import aduatuca_request
         return any(aduatuca_request(state)["required_by_region"].values())

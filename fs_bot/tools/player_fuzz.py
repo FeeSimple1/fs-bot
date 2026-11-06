@@ -245,9 +245,11 @@ def make_random_reactive(seats, rng):
                 return {**target, 'selections': selections}
             if request['card_id'] == 19 and rng.random() < 0.5:
                 return {'choice': 'auxilia', 'count': rng.randrange(6)}
+            from fs_bot.cards.base_piece_choices import optional_room
             entries, remaining = [], request['max_count']
             for cohort in request['available']:
-                count = rng.randrange(min(remaining, cohort['count']) + 1)
+                room = optional_room(request, entries, cohort['region'], remaining)
+                count = rng.randrange(min(room, cohort['count']) + 1)
                 if count:
                     entries.append(dict(cohort, count=count))
                     if request['card_id'] == 22:

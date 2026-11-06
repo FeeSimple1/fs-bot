@@ -1,6 +1,6 @@
 """Exact physical piece selections for base and expansion Events.
 
-Card Reference 3/5/6/7/11/19/22/24/31/58/60, A Card Reference
+Card Reference 3/5/6/7/11/19/22/24/31/45/58/60, A Card Reference
 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
@@ -25,6 +25,8 @@ ALAUDAE_TRACK_LIMIT = 7
 ALAUDAE_STEPS = ((rc.LEGION, '7.legion_removal', 'legion_removal_region'),
                  (rc.AUXILIA, '7.auxilia_removal', 'auxilia_removal_region'))
 NUMIDIANS_LIMIT = 4
+LITAVICCUS_REGIONS = 2
+LITAVICCUS_PER_REGION = 2
 ADUATUCA_LIMIT = 9
 ADUATUCA_FACTIONS = (rc.BELGAE, rc.GERMANS)
 INDUTIOMARUS_LIMIT = 6
@@ -44,6 +46,13 @@ def choice_request(state, card_id):
         request['destination'] = rc.PROVINCIA
         return request
     regions = get_playable_regions_for_state(state)
+    if card_id == 45:
+        limit = LITAVICCUS_REGIONS * LITAVICCUS_PER_REGION
+        request = _required_removal_request(state, card_id, owner, rc.ARVERNI, sorted(regions),
+                                            {rc.WARBAND: limit})
+        request.pop('required')
+        return dict(request, max_count=limit, max_regions=LITAVICCUS_REGIONS,
+                    max_per_region=LITAVICCUS_PER_REGION)
     if card_id == 19:
         nearby = {rc.PROVINCIA, *get_adjacent_for_state(state, rc.PROVINCIA)}
         regions = [r for r in regions if r in nearby]
@@ -244,7 +253,25 @@ def validate_response(state, request, response):
                              with_action=card == 22)
     if sum(used.values()) > request['max_count']:
         raise ValueError('Selection exceeds the Event total')
+    if card == 45:
+        counts = Counter()
+        for cohort, count in used.items():
+            counts[cohort[0]] += count
+        if len(counts) > request['max_regions'] or any(n > request['max_per_region'] for n in counts.values()):
+            raise ValueError('Litaviccus replaces up to two Warbands in each of up to two Regions')
     return response
+
+
+def optional_room(request, selections, region, remaining):
+    """Return the remaining budget for a Region in an optional selection."""
+    if 'max_regions' not in request:
+        return remaining
+    counts = Counter()
+    for entry in selections:
+        counts[entry['region']] += entry['count']
+    if region not in counts and len(counts) == request['max_regions']:
+        return 0
+    return min(remaining, request['max_per_region'] - counts[region])
 
 
 def validate_region_removals(request, live, region, selections):

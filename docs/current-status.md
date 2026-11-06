@@ -21,6 +21,37 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November unshaded Litaviccus 45
+
+Under Card Reference 45 and §§5.1–5.1.3, the executor selects zero to
+two Arverni Warbands in each of up to two Regions. The terminal and
+assistant show Hidden, Revealed and Scouted sources on the live board.
+Each replacement is a separate timed operation. If a selected cohort
+is gone by that step, the operation leaves other cohorts alone. A
+surviving source is removed even when no Aedui replacement can be
+placed. The independent Arverni-to-Aedui Resource transfer applies
+after the replacements, including when the executor selects zero.
+
+The parent probe transferred Resources without offering a replacement
+choice. The repaired probe replaces the selected Scouted Warband and
+transfers the same Resources. Non-players apply the replacement
+priorities in §§8.3.1 and 8.4.1 and use the seeded RNG for tied Regions.
+Legacy Region/count plans retain their timing windows. Older histories
+may pause at the new choice or diverge under the corrected replacements.
+
+All 9,089 tests pass, including 15 new cases. Twenty paired bot games
+complete without integrity errors, with six changed final boards and
+three changed winners. Twenty mixed-seat games match across both hash
+seeds, with zero hard findings and zero partial actions. The 100-game
+balance check passes with a largest shift of 10 percentage points
+against the reviewed baseline. Five winners differ from the parent.
+Traces show four Arverni Warbands removed in each of those games,
+with Aedui replacements limited by their Available pool. The previous
+revision removed none. Tied Regions also consume seeded draws.
+
+**BE-07 advances for unshaded 45. The original audit remains 42/50 closed
+(84%), with 8 open.**
+
 ### 6 November unshaded Indutiomarus 60
 
 Under Card Reference 60 and §§5.1–5.1.3, the executor chooses one Region,

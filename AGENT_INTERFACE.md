@@ -605,6 +605,18 @@ choices in advance with `roman_ally_tribe`, `aedui_ally_tribe`, and
 remain supported for slots without a named Tribe. An older history with
 unspecified targets may pause at a new choice.
 
+Unshaded Litaviccus (45) sends `event_piece_choice` to the executor
+after `45.piece_choice`. Respond `{"selections":[...]}` with exact
+Arverni Warband cohorts from `available`. The limits are two Regions,
+two Warbands per Region and four total. An empty list selects zero
+replacements. The Arverni-to-Aedui Resource transfer still applies.
+Use `event_params.piece_choices` to author the exact list. Entries
+resolve in order of first Region appearance and then in selection
+order within each Region. Legacy `regions` entries retain their
+Region and replacement timing windows and delegate visibility.
+Older histories may pause for the new choice or diverge under the
+corrected replacements.
+
 Unshaded Aduatuca (58) sends `event_piece_choice` to the executor after
 `58.piece_choice`. Its `required_by_region` gives the number of Belgic
 and Germanic Warbands to remove in each Region with a Roman Fort, capped

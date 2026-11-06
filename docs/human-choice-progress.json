@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-05",
   "tested_source": {
-    "commit": "6f91feb51acfac804e858b6b8a7db94441461ed7",
-    "python_sha256": "3dcbd8bf549f54d18abc596d6fd5910bb08c2eddea678a02392115a893b08a9d",
+    "commit": "e8c11aa9d62dec99638965d5b7bae37128257660",
+    "python_sha256": "b00629c09f48454cd79cd655ec37ede01c450e3507c77bca271facffbc780400",
     "python_files": 530,
     "working_tree_changes": true,
-    "note": "Shaded numeric 3/5 mandatory Roman allocations close BE-06. The tested source is the publishing tree over the listed parent; see current-status.md#5-november-roman-event-removals."
+    "note": "Shaded A5 advances EXP-11. The tested source is the publishing tree over the listed parent; see current-status.md#5-november-shaded-gallia-togata-a5."
   },
   "total": 50,
   "closed": 41,
@@ -48,7 +48,8 @@
     "Optional unshaded Horse queue use/reserve/decline and PR-11 forecast choices are repaired. Mandatory Card 13/59-shaded timing awaits Q-CAPABILITY-QUEUE-TIMING. Original counts remain unchanged. See reviews/horse-queue-2026-11-05.md.",
     "BE-09 closes with mandatory Slingers/shaded Horse live queue choices under owner-adopted provisional PR-13, final-candidate use, reservation expiry, pending replay and isolated human forecast branching. Subject to official correction. See reviews/capability-queue-2026-11-05.md.",
     "Lucterius 19U and Hostages 22U now offer exact optional totals and visibility, with removal-only and mixed Hostages actions plus correct Gallic Auxilia-to-Warband replacement. See reviews/base-piece-choices-2026-11-05.md.",
-    "BE-06 closes with shaded numeric 3/5 Roman-owned mandatory allocations, exact visibility, and durable choices. BE-07/08 retain other cards. See current-status.md#5-november-roman-event-removals."
+    "BE-06 closes with shaded numeric 3/5 Roman-owned mandatory allocations, exact visibility, and durable choices. BE-07/08 retain other cards. See current-status.md#5-november-roman-event-removals.",
+    "Shaded A5 now gives Rome exact removals and completes delegated play. Other EXP-11 cases remain open. See current-status.md#5-november-shaded-gallia-togata-a5."
   ],
   "findings": [
     {
@@ -407,7 +408,10 @@
       "id": "EXP-11",
       "title": "A36 and other removal effects replace human physical-piece selections with fixed priorities",
       "severity": "medium",
-      "status": "open"
+      "status": "open",
+      "partial_repairs": [
+        "Shaded A5 offers Roman-owned Region and visibility allocations and completes the mandatory removals on delegation. See current-status.md#5-november-shaded-gallia-togata-a5."
+      ]
     },
     {
       "id": "EXP-12",

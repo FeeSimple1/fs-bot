@@ -70,6 +70,8 @@ piece choices, including Hostages removal without replacement.
 
 Shaded Pompey and base Gallia Togata give Rome exact removal choices across
 Regions, including Auxilia visibility. [Repair and validation](docs/current-status.md#5-november-roman-event-removals).
+The expansion Gallia Togata (A5) also offers the Roman choice and completes
+delegated removals. [Ariovistus repair and validation](docs/current-status.md#5-november-shaded-gallia-togata-a5).
 
 ## Play
 

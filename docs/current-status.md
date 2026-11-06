@@ -21,6 +21,40 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 5 November shaded Gallia Togata A5
+
+Under A Card Reference A5 and §§5.1 and 5.1.3, the Romans select one Legion
+to return to the track and two Auxilia to return to Available, to the extent
+the map permits. The Roman-owned request offers exact visibility and allows
+splits across Regions, including Cisalpina, in Ariovistus and the first half
+of The Gallic War. The terminal and durable assistant use the shared live
+request and validate the complete response before removing pieces.
+
+The Senate's Adulation position suppresses the shaded effect, including
+Non-player effectiveness evaluation (§8.1.1). When Rome delegates, the
+engine completes the printed removals, using seeded random selection among
+tied Regions and taking Scouted, Revealed and then Hidden Auxilia in the Region
+(§§8.3.1, 8.3.4, 8.4.1). Roman legacy plans keep their selected Regions and
+the default fills any remainder. Older histories may encounter a new Roman
+prompt or differ when a delegated A5 now removes pieces.
+
+Three probes using the parent API reproduce the missing Roman prompt, the
+no-op delegated execution and the ineffective shaded Event being offered
+in Adulation. All three pass on this repair.
+
+All 8,907 tests pass, including 15 new cases. Twenty bot games match the
+parent's gameplay and final state hashes. The 100-game historical balance
+check passes within its existing 15-point band. Four winners differ from the
+parent. In both expansion scenarios, seed 16 now executes the removals and
+seed 17 now declines shaded A5 in Adulation. Twenty mixed-seat cases match
+across hash seeds 0 and 987, with no hard findings and one planned Rally that
+ran out of Resources after its first Region. Removing the obsolete inferred
+A5 parameter menu changed the fuzzer's scratch key pool. Repeating the Rally
+case with the parent key pool reproduced the parent result. The
+[progress register](human-choice-progress.json) records the tested source.
+
+**EXP-11 advances for A5. The original bundle is 41/50 closed (82%), 9 open.**
+
 ### 5 November Roman Event removals
 
 Shaded Pompey (3) and base Gallia Togata (5) give Rome the choice of which
@@ -37,9 +71,9 @@ removals. Legacy Region-priority plans remain available on raw deferral.
 Roman executors can still supply legacy Region parameters. Older sessions
 may encounter a new pending Roman choice on replay.
 
-**BE-06 closes. The original bundle is 41/50 closed (82%), with 9 open.**
+**BE-06 closed at 41/50 (82%), with 9 open.**
 The other physical selections in BE-07 and the expansion A5 selection
-tracked by EXP-11 remain open.
+tracked by EXP-11 were still open at that checkpoint.
 
 All 8,892 tests pass, including 34 new cases. Two behavior probes using the
 parent API reproduce the missing Roman

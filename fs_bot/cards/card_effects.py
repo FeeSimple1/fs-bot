@@ -3012,23 +3012,9 @@ def execute_card_A5(state, shaded=False):
         state["event_modifiers"]["card_A5_remove_non_romans"] = True
     else:
         if state["senate"]["position"] != ADULATION:
-            params = state.get("event_params", {})
-            # Remove 1 Legion to track
-            legion_region = params.get("legion_region")
-            if legion_region and count_pieces(state, legion_region, ROMANS, LEGION) > 0:
-                remove_piece(state, legion_region, ROMANS, LEGION,
-                             to_track=True, to_available=False)
-            # Remove 2 Auxilia to Available
-            auxilia_removals = params.get("auxilia_removals", [])
-            for r in _event_entries(state, "A5.auxilia_removals", auxilia_removals[:2]):
-                region = r.get("region")
-                if region:
-                    for ps in (HIDDEN, REVEALED):
-                        if count_pieces_by_state(state, region, ROMANS,
-                                                 AUXILIA, ps) > 0:
-                            remove_piece(state, region, ROMANS, AUXILIA,
-                                         piece_state=ps)
-                            break
+            from fs_bot.cards.base_piece_choices import resolve_a5_removals
+            _event_step(state, "A5.piece_choice")
+            resolve_a5_removals(state, state.get("event_params") or {})
 
 def execute_card_A17(state, shaded=False):
     """Card A17: Publius Licinius Crassus — Roman March+Battle / Remove Auxilia.

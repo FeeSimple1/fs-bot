@@ -552,19 +552,24 @@ supported. The legacy Gallic Hostages path also now correctly replaces Roman
 Auxilia with its own Warbands. Older histories can stop at the new request or
 vary under that corrected replacement.
 
-Shaded numeric 3 (Pompey) and 5 (Gallia Togata) send `event_piece_choice` to
+Shaded Pompey (3) and Gallia Togata (5/A5) send `event_piece_choice` to
 the Romans, including when another faction executes the Event. After the
-`3.piece_choice` or `5.piece_choice` timing window, the request includes
+`3.piece_choice`, `5.piece_choice` or `A5.piece_choice` timing window, the request includes
 `available` cohorts and `required` totals keyed by piece type. Legions have
 `piece_state: null`. Auxilia have exact Hidden, Revealed or Scouted states.
 Respond `{"selections":[<cohorts with chosen counts>]}`, meeting every
 required total. The board may have fewer pieces than the printed amount.
 Roman executors can also author `event_params.piece_choices` with the same
 entries. Raw deferral and explicit default use the delegated Region-priority
-plan, including legacy Region parameters from Roman executors. Durable sessions
-hold the action pending for Rome and revalidate before moving Legions to
-the track and Auxilia to Available. Older decision histories that predate
-the prompt can pause at the new Roman choice.
+plan, including legacy Region parameters from Roman executors. On A5 the
+legacy keys are `legion_region` and `auxilia_removals` (entries with `region`).
+Delegated A5 uses seeded selection among equal Regions and removes Scouted
+before Revealed before Hidden Auxilia within a Region. If a legacy plan
+covers only part of the required total, the default fills the remainder.
+Durable sessions hold the action pending for Rome and revalidate before
+moving Legions to the track and Auxilia to Available. Older decision
+histories that predate the prompt can pause at the new Roman choice or
+replay differently because delegated A5 now carries out its removals.
 
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |

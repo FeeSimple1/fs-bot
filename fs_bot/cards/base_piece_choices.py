@@ -1,7 +1,8 @@
-"""Exact physical piece selections for numeric 3/5/19/22.
+"""Exact physical piece selections for 3/5/A5 and numeric 19/22.
 
-Card Reference 3/5/19/22, Chapter 5 §§5.1–5.1.3. New live responses are strict;
-legacy explicitly authored region/replacement lists retain their contract.
+Card Reference 3/5/19/22, A Card Reference A5 and Chapter 5 §§5.1–5.1.3.
+Live responses are strict. Authored legacy region and replacement lists
+retain their selection priorities.
 """
 from collections import Counter
 
@@ -13,8 +14,10 @@ from fs_bot.map.map_data import get_adjacent_for_state, get_playable_regions_for
 KIND = 'event_piece_choice'
 STATES = (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
 FIELDS = ('region', 'target_faction', 'piece_type', 'piece_state')
-ROMAN_TOTALS = {3: {rc.LEGION: 2}, 5: {rc.LEGION: 1, rc.AUXILIA: 2}}
+GARRISON_TOTALS = {rc.LEGION: 1, rc.AUXILIA: 2}
+ROMAN_TOTALS = {3: {rc.LEGION: 2}, 5: GARRISON_TOTALS, 'A5': GARRISON_TOTALS}
 LEGACY_ROMAN_KEYS = {'legion_removal_regions', 'legion_removal_region', 'auxilia_removal_regions'}
+A5_LEGACY_KEYS = {'legion_region', 'auxilia_removals'}
 
 
 def choice_request(state, card_id):
@@ -154,7 +157,8 @@ def _consult(state, request):
 
 def remove_roman_pieces(state, card_id, params):
     """Resolve an exact Roman plan, or leave the legacy fallback to the card."""
-    legacy = LEGACY_ROMAN_KEYS & params.keys()
+    legacy_keys = A5_LEGACY_KEYS if card_id == 'A5' else LEGACY_ROMAN_KEYS
+    legacy = legacy_keys & params.keys()
     exact = 'piece_choices' in params
     if (exact or legacy) and state.get('executing_faction') not in (None, rc.ROMANS):
         raise ValueError('Only the Romans can choose their Event removals')
@@ -179,6 +183,64 @@ def remove_roman_pieces(state, card_id, params):
                              count=entry['count'], piece_state=entry['piece_state'],
                              to_track=kind == rc.LEGION)
     return True
+
+
+def resolve_a5_removals(state, params):
+    """Resolve the Roman garrison, filling any missing legacy selections."""
+    from fs_bot.cards.card_effects import _event_entries
+    from fs_bot.board.pieces import remove_piece
+
+    if remove_roman_pieces(state, 'A5', params):
+        return
+
+    legion_region = params.get('legion_region')
+    entries = params.get('auxilia_removals', [])
+    if (not isinstance(legion_region, (str, type(None)))
+            or not isinstance(entries, (list, tuple))
+            or any(not isinstance(entry, dict) or not isinstance(entry.get('region'), str)
+                   for entry in entries)):
+        raise ValueError('Legacy A5 removals must name Roman Regions')
+    regions = get_playable_regions_for_state(state, rc.ROMANS)
+    if legion_region in regions and count_pieces(state, legion_region, rc.ROMANS, rc.LEGION):
+        remove_piece(state, legion_region, rc.ROMANS, rc.LEGION, to_track=True)
+    else:
+        _complete_a5_removals(state, rc.LEGION, GARRISON_TOTALS[rc.LEGION])
+
+    remaining = GARRISON_TOTALS[rc.AUXILIA]
+    for entry in _event_entries(state, 'A5.auxilia_removals', entries[:remaining]):
+        region = entry['region']
+        if region not in regions:
+            continue
+        # Keep the original visibility preference of a Region-only plan.
+        for visibility in STATES:
+            if count_pieces_by_state(state, region, rc.ROMANS, rc.AUXILIA, visibility):
+                remove_piece(state, region, rc.ROMANS, rc.AUXILIA, piece_state=visibility)
+                remaining -= 1
+                break
+    _complete_a5_removals(state, rc.AUXILIA, remaining)
+
+
+def _complete_a5_removals(state, piece_type, remaining):
+    """Use §8.3.1 Region order and §8.4.1 Roman own-piece priority."""
+    from fs_bot.board.pieces import remove_piece
+    from fs_bot.bots.bot_common import random_select
+
+    if not remaining:
+        return
+    by_region = {}
+    for entry in roman_removal_request(state, 'A5')['available']:
+        if entry['piece_type'] == piece_type:
+            by_region.setdefault(entry['region'], []).append(entry)
+    while remaining and by_region:
+        region = random_select(state, list(by_region))
+        # Within the Region, remove Scouted, then Revealed, then Hidden Auxilia.
+        for entry in reversed(by_region.pop(region)):
+            count = min(remaining, entry['count'])
+            remove_piece(state, region, rc.ROMANS, piece_type, count=count,
+                         piece_state=entry['piece_state'], to_track=piece_type == rc.LEGION)
+            remaining -= count
+            if not remaining:
+                break
 
 
 def apply(state, card_id, response):

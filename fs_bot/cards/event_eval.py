@@ -54,7 +54,8 @@ from fs_bot.rules_consts import (
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Leaders
     CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
-    # Legions track
+    # Senate and Legions track
+    ADULATION,
     LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
     # Max resources
     MAX_RESOURCES,
@@ -996,6 +997,9 @@ def is_event_effective(state, card_id, shaded=False):
         from fs_bot.board.pieces import find_leader
         return (find_leader(state, AEDUI) is None
                 and state.get("removed_pieces", {}).get(AEDUI, {}).get(LEADER, 0) > 0)
+
+    if card_id == "A5" and shaded and state.get("senate", {}).get("position") == ADULATION:
+        return False
 
     # Capability cards are always effective per §8.1.1
     # ("Adding or removing a Capability is an effect")

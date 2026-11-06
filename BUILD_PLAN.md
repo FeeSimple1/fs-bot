@@ -120,6 +120,10 @@ The [Roman Event removal repair](docs/current-status.md#5-november-roman-event-r
 closes BE-06 with mandatory allocations for shaded numeric 3/5. BE-07/08
 retain other cards. Original progress is 41/50 closed (82%), 9 open.
 
+The [shaded Gallia Togata A5 repair](docs/current-status.md#5-november-shaded-gallia-togata-a5)
+adds the expansion's Roman removal choice and completes delegated removals.
+Other EXP-11 cards remain open.
+
 ## Existing implementation
 
 | Original phase | Implemented components | Main locations |

@@ -1,6 +1,7 @@
-"""Exact physical piece selections for 3/5/6/7/11/19/22/24/31/A5/A17/A36/A69.
+"""Exact physical piece selections for 3/5/6/7/11/19/22/24/31/58/A5/A17/A36/A69.
 
-Card Reference 3/5/6/7/11/19/22/24/31, A Card Reference 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/6/7/11/19/22/24/31/58, A Card Reference
+11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
@@ -24,6 +25,8 @@ ALAUDAE_TRACK_LIMIT = 7
 ALAUDAE_STEPS = ((rc.LEGION, '7.legion_removal', 'legion_removal_region'),
                  (rc.AUXILIA, '7.auxilia_removal', 'auxilia_removal_region'))
 NUMIDIANS_LIMIT = 4
+ADUATUCA_LIMIT = 9
+ADUATUCA_FACTIONS = (rc.BELGAE, rc.GERMANS)
 COTUATUS_FACTIONS = {'roman': (rc.ROMANS,), 'aedui': (rc.AEDUI,),
                      'third': (rc.ROMANS, rc.AEDUI)}
 LEGACY_ROMAN_KEYS = {'legion_removal_regions', 'legion_removal_region', 'auxilia_removal_regions'}
@@ -117,15 +120,22 @@ def sappers_request(state):
     return _region_removal_request(state, 24, regions, (rc.LEGION, rc.AUXILIA), 2)
 
 
-def _region_removal_request(state, card_id, regions, kinds, limit):
-    request = _required_removal_request(state, card_id, state.get('executing_faction'),
-                                        rc.ROMANS, regions, dict.fromkeys(kinds, limit))
-    request.pop('required')
+def aduatuca_request(state):
+    regions = [region for region in sorted(get_playable_regions_for_state(state))
+               if count_pieces(state, region, rc.ROMANS, rc.FORT)]
+    return _region_removal_request(state, 58, regions, (rc.WARBAND,), ADUATUCA_LIMIT,
+                                   ADUATUCA_FACTIONS)
+
+
+def _region_removal_request(state, card_id, regions, kinds, limit, targets=(rc.ROMANS,)):
+    owner = state.get('executing_faction')
+    available = [entry for faction in targets for entry in _required_removal_request(
+        state, card_id, owner, faction, regions, dict.fromkeys(kinds, limit))['available']]
     totals = Counter()
-    for entry in request['available']:
+    for entry in available:
         totals[entry['region']] += entry['count']
-    request['required_by_region'] = {region: min(limit, totals[region]) for region in regions}
-    return request
+    return {'kind': KIND, 'card_id': card_id, 'owner': owner, 'available': available,
+            'required_by_region': {region: min(limit, totals[region]) for region in regions}}
 
 
 def _required_removal_request(state, card_id, owner, target, regions, limits):
@@ -165,10 +175,15 @@ def validate_response(state, request, response):
     if card == 'A58':
         from fs_bot.cards.aduatuci import validate_response as validate_aduatuci
         return validate_aduatuci(state, request, response)
-    if card in (24, 'A17'):
+    if card in (24, 58, 'A17'):
         if set(response) != {'region', 'selections'}:
             raise ValueError('Choose one Region and its exact removals')
-        live = sappers_request(state) if card == 24 else a17_removal_request(state)
+        if card == 24:
+            live = sappers_request(state)
+        elif card == 58:
+            live = aduatuca_request(state)
+        else:
+            live = a17_removal_request(state)
         validate_region_removals(request, live, response['region'], response['selections'])
         return response
     if card in ROMAN_TOTALS or card in (7, 11, 'A36', 'A69'):
@@ -415,6 +430,99 @@ def _sappers_default(state, request, region, params):
                 selections.append(dict(entry, count=count))
                 wanted[kind] -= count
     return {'region': region, 'selections': selections}
+
+
+def resolve_aduatuca_removals(state, params):
+    """Remove nine Warbands, as far as possible, in the selected Fort Region."""
+    from fs_bot.cards.card_effects import _event_step
+
+    region = params.get('region')
+    if 'removals' in params:
+        if 'piece_choices' in params:
+            raise ValueError('Choose one Aduatuca removal plan format')
+        _legacy_aduatuca_removals(state, region, params['removals'])
+        return
+
+    _event_step(state, '58.piece_choice')
+    request = aduatuca_request(state)
+    if 'piece_choices' in params:
+        response = {'region': region, 'selections': params['piece_choices']}
+    elif (region is None and any(request['required_by_region'].values())
+          and request['owner'] not in state.get('non_player_factions', ())):
+        response = _consult(state, request)
+    else:
+        response = None
+    if response is None or _default(response):
+        response = _aduatuca_default(state, request, region)
+        if response is None:
+            return
+    validate_response(state, request, response)
+    _remove_cohorts(state, response['selections'])
+
+
+def _aduatuca_default(state, request, region):
+    from fs_bot.bots.bot_common import random_select
+
+    amounts = request['required_by_region']
+    owner = request['owner']
+    if region is None:
+        if not any(amounts.values()):
+            return None
+        enemies = Counter()
+        for entry in request['available']:
+            if entry['target_faction'] != owner:
+                enemies[entry['region']] += entry['count']
+        scores = {name: (min(enemies[name], total), total) for name, total in amounts.items()}
+        best = max(scores.values())
+        tied = [name for name, score in scores.items() if score == best]
+        region = random_select(state, tied) if owner in state.get('non_player_factions', ()) else tied[0]
+    if not isinstance(region, str) or region not in amounts:
+        raise ValueError('Aduatuca requires a Region with a Roman Fort')
+    local = [entry for entry in request['available'] if entry['region'] == region]
+    # §8.4.1 orders enemy visibility first, then faction within it.
+    enemy = sorted((entry for entry in local if entry['target_faction'] != owner),
+                   key=lambda entry: STATES.index(entry['piece_state']))
+    own = [entry for entry in reversed(local) if entry['target_faction'] == owner]
+    return {'region': region, 'selections': _aduatuca_cohorts(enemy + own, amounts[region])}
+
+
+def _aduatuca_cohorts(entries, remaining):
+    selections = []
+    for entry in entries:
+        if not remaining:
+            break
+        count = min(remaining, entry['count'])
+        selections.append(dict(entry, count=count))
+        remaining -= count
+    return selections
+
+
+def _legacy_aduatuca_removals(state, region, removals):
+    from fs_bot.cards.card_effects import _event_entries
+
+    if not isinstance(region, str) or region not in aduatuca_request(state)['required_by_region']:
+        raise ValueError('Aduatuca requires a Region with a Roman Fort')
+    if not isinstance(removals, list):
+        raise ValueError('Aduatuca removal preferences must be a list')
+    remaining = ADUATUCA_LIMIT
+    for entry in _event_entries(state, '58.removals', removals):
+        if (not isinstance(entry, dict) or entry.get('faction') not in ADUATUCA_FACTIONS
+                or type(entry.get('count', 1)) is not int or entry.get('count', 1) <= 0):
+            raise ValueError('Aduatuca preferences require a Belgic or Germanic Warband count')
+        if not count_pieces(state, region, rc.ROMANS, rc.FORT):
+            raise ValueError('Aduatuca requires a live Roman Fort')
+        cohorts = [row for row in aduatuca_request(state)['available']
+                   if row['region'] == region and row['target_faction'] == entry['faction']]
+        picked = _aduatuca_cohorts(cohorts, min(remaining, entry.get('count', 1)))
+        _remove_cohorts(state, picked)
+        remaining -= sum(row['count'] for row in picked)
+    if remaining:
+        request = aduatuca_request(state)
+        if region not in request['required_by_region']:
+            raise ValueError('Aduatuca requires a live Roman Fort')
+        request['required_by_region'][region] = min(remaining, request['required_by_region'][region])
+        response = _aduatuca_default(state, request, region)
+        _remove_cohorts(state, response['selections'])
 
 
 def relocate_marcus_antonius_auxilia(state, params):
@@ -747,13 +855,18 @@ def remove_roman_pieces(state, card_id, params):
 
 
 def _apply_required_removals(state, request, entries):
-    from fs_bot.board.pieces import remove_piece
     for kind in request['required']:
-        for entry in entries:
-            if entry['piece_type'] == kind:
-                remove_piece(state, entry['region'], entry['target_faction'], kind,
-                             count=entry['count'], piece_state=entry['piece_state'],
-                             to_track=kind == rc.LEGION)
+        _remove_cohorts(state, (entry for entry in entries if entry['piece_type'] == kind))
+
+
+def _remove_cohorts(state, entries):
+    from fs_bot.board.pieces import remove_piece
+
+    for entry in entries:
+        kind = entry['piece_type']
+        remove_piece(state, entry['region'], entry['target_faction'], kind,
+                     count=entry['count'], piece_state=entry['piece_state'],
+                     to_track=kind == rc.LEGION)
 
 
 def resolve_a5_removals(state, params):

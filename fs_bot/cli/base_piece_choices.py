@@ -2,7 +2,7 @@
 from fs_bot.cards.base_piece_choices import FIELDS, validate_response
 from fs_bot.cli.menus import prompt_choice
 from fs_bot.cli.action_windows import inspect_board
-from fs_bot.rules_consts import AUXILIA
+from fs_bot.rules_consts import AUXILIA, WARBAND
 
 
 def collect_choice(state, faction, request, stdin, stdout):
@@ -17,7 +17,7 @@ def collect_choice(state, faction, request, stdin, stdout):
         if 'required_by_region' in request:
             amounts = request['required_by_region']
             verb = 'replace' if card == 'A58' else 'remove'
-            label = 'Roman pieces' if card == 24 else AUXILIA
+            label = {24: 'Roman pieces', 58: WARBAND}.get(card, AUXILIA)
             region = prompt_choice(stdin, stdout, f'Choose the single {card} removal Region:', [
                 (f'{name} ({count} {label} to {verb})', name) for name, count in amounts.items()
             ])
@@ -31,7 +31,8 @@ def collect_choice(state, faction, request, stdin, stdout):
                 target['ally_tribe'] = (prompt_choice(stdin, stdout, 'Choose the Roman Ally:', [
                     (tribe, tribe) for tribe in tribes
                 ]) if tribes else None)
-            local = dict(request, required={AUXILIA: amounts[region]}, available=available)
+            local = dict(request, required={WARBAND if card == 58 else AUXILIA: amounts[region]},
+                         available=available)
             response = {**target, **_required_removals(local, stdin, stdout)}
             return validate_response(state, request, response)
         if 'required' in request:
@@ -81,7 +82,8 @@ def _pick_removals(available, remaining, owner, label, stdin, stdout):
     selected = []
     while remaining:
         index = prompt_choice(stdin, stdout, f'{owner}: remove {remaining} {label}:', [
-            (f"{entry['region']}: {entry['piece_state'] or ''} {entry['piece_type']} ({entry['count']})", index)
+            (f"{entry['region']}: {entry['target_faction']} {entry['piece_state'] or ''} "
+             f"{entry['piece_type']} ({entry['count']})", index)
             for index, entry in enumerate(budget) if entry['count']
         ])
         entry = budget[index]

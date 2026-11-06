@@ -485,7 +485,7 @@ _BASE_FLAGS = {
     57: (frozenset({FREE_MARCH, FREE_SA, ADDS_RESOURCES}),
          frozenset({REMOVES_ALLIES, PLACES_ALLIES, PLACES_WARBANDS})),
 
-    # Card 58: Aduatuci
+    # Card 58: Aduatuca
     # Un: Remove 9 Belgic/Germanic Warbands from Region with Fort
     # Sh: March Germans to Fort; Ambush Romans
     58: (frozenset({REMOVES_WARBANDS}),
@@ -1008,6 +1008,10 @@ def is_event_effective(state, card_id, shaded=False):
     if card_id == 24 and shaded:
         from fs_bot.cards.base_piece_choices import sappers_request
         return any(sappers_request(state)["required_by_region"].values())
+
+    if card_id == 58 and not shaded:
+        from fs_bot.cards.base_piece_choices import aduatuca_request
+        return any(aduatuca_request(state)["required_by_region"].values())
 
     if card_id == 7 and shaded:
         from fs_bot.cards.base_piece_choices import alaudae_effective

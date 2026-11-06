@@ -139,6 +139,11 @@ Ally, one Aedui Ally, and one additional Ally of either faction. Each
 prompt reflects the pieces still on the board. Citadels are protected,
 and the Event carries out the removals that are possible.
 
+Unshaded Aduatuca (58) lets the executor choose one Region with a Roman
+Fort and remove nine Belgic or Germanic Warbands there in any mix. If
+fewer than nine are present, remove all of them. Choose each group by
+faction and visibility.
+
 Shaded Pompey and both versions of Gallia Togata ask the Roman player which pieces to
 remove, even when another faction plays the Event. Split Legions or Auxilia
 across Regions and choose the exact visibility of each Auxilia. Remove as

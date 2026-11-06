@@ -21,6 +21,30 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November unshaded Aduatuca 58
+
+Under Card Reference 58 and §§5.1–5.1.3, the executor selects one Region
+with a Roman Fort and removes nine Belgic and/or Germanic Warbands, or
+all eligible Warbands there if fewer are present. The terminal and
+assistant offer exact faction and visibility choices from the board
+after the timing window. Each faction's removals return to its own
+Available pool. The assistant preserves the choice across save and resume.
+
+The parent probe offered no choice and left all ten Warbands in place.
+The repaired probe removes eight Hidden Belgic Warbands and one Scouted
+Germanic Warband. Bots check for eligible Warbands at a Fort and use
+§§8.3.1 and 8.4.1 for delegated removals. Existing faction/count plans
+retain their entry order and timing windows. Older histories may pause
+at the new choice or diverge under the corrected removals.
+
+All 9,061 tests pass, including 12 new cases. Twenty paired bot games
+retain every final board and winner with no integrity errors. Twenty mixed-seat games match across two hash seeds,
+with zero hard findings and zero partial actions. The 100-game balance
+check passes with every winner and card count matching the parent.
+
+**BE-07 advances for unshaded 58. The original audit remains 42/50 closed
+(84%), with 8 open.**
+
 ### 6 November shaded Alaudae 7
 
 Under Card Reference 7 and §§5.1–5.1.3, the executor selects an on-map

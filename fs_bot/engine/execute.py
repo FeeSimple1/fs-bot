@@ -6014,35 +6014,6 @@ def _derive_card_68(state, faction, shaded):
     return {"replacements": repl} if repl else None
 
 
-def _derive_card_58(state, faction, shaded):
-    """Card 58 (Aduatuca), unshaded: remove up to 9 Belgic/Germanic Warbands
-    from a Region with a (Roman) Fort. Choose the Fort Region with the most
-    such Warbands. Only a Faction opposed to Belgae/Germans benefits. Shaded
-    (free German March/Battle) deferred."""
-    from fs_bot.rules_consts import (BELGAE, GERMANS, ROMANS, WARBAND, FORT)
-    from fs_bot.board.pieces import count_pieces
-    if shaded or faction in (BELGAE, GERMANS):
-        return None
-    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
-    best = None
-    for region in sorted(playable):
-        if count_pieces(state, region, ROMANS, FORT) <= 0:
-            continue
-        bg = (count_pieces(state, region, BELGAE, WARBAND)
-              + count_pieces(state, region, GERMANS, WARBAND))
-        if bg > 0 and (best is None or bg > best[1]):
-            best = (region, bg)
-    if best is None:
-        return None
-    region = best[0]
-    removals = []
-    for f in (BELGAE, GERMANS):
-        n = count_pieces(state, region, f, WARBAND)
-        if n > 0:
-            removals.append({"faction": f, "count": min(n, 9)})
-    return {"region": region, "removals": removals}
-
-
 def _derive_card_22(state, faction, shaded):
     """Card 22 (Hostages), unshaded: among Regions the acting Faction Controls,
     replace up to 4 enemy Warbands/Auxilia with its own (§8.2.3 — convert
@@ -6522,7 +6493,6 @@ _EVENT_PARAM_DERIVERS = {
     32: _derive_card_32,
     62: _derive_card_62,
     42: _derive_card_42,
-    58: _derive_card_58,
     68: _derive_card_68,
     71: _derive_card_71,
 }

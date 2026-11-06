@@ -605,6 +605,17 @@ choices in advance with `roman_ally_tribe`, `aedui_ally_tribe`, and
 remain supported for slots without a named Tribe. An older history with
 unspecified targets may pause at a new choice.
 
+Unshaded Aduatuca (58) sends `event_piece_choice` to the executor after
+`58.piece_choice`. Its `required_by_region` gives the number of Belgic
+and Germanic Warbands to remove in each Region with a Roman Fort, capped
+at nine. Respond `{"region":...,"selections":[...]}` with that Region's
+exact total, using the offered faction and visibility cohorts. The removed
+pieces return to their respective Available pools. To author the choice
+in advance, set `event_params.region` and `piece_choices`. Legacy
+`removals` entries keep their faction order and timing windows, and the
+Event fills any shortfall within the selected Region. Older histories may
+pause at the new choice or diverge under the corrected removals.
+
 Shaded Pompey (3) and Gallia Togata (5/A5) send `event_piece_choice` to
 the Romans, including when another faction executes the Event. After the
 `3.piece_choice`, `5.piece_choice` or `A5.piece_choice` timing window, the request includes

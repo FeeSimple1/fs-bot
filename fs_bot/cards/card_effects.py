@@ -2231,24 +2231,8 @@ def execute_card_58(state, shaded=False):
     """
     params = state.get("event_params", {})
     if not shaded:
-        region = params.get("region")
-        if region is None:
-            return
-        removals = params.get("removals", [])
-        total_removed = 0
-        for r in _event_entries(state, "58.removals", removals):
-            fac = r.get("faction")
-            cnt = r.get("count", 1)
-            if fac not in (BELGAE, GERMANS):
-                continue
-            for _ in range(cnt):
-                if total_removed >= 9:
-                    break
-                for ps in (HIDDEN, REVEALED):
-                    if count_pieces_by_state(state, region, fac, WARBAND, ps) > 0:
-                        remove_piece(state, region, fac, WARBAND, piece_state=ps)
-                        total_removed += 1
-                        break
+        from fs_bot.cards.base_piece_choices import resolve_aduatuca_removals
+        resolve_aduatuca_removals(state, params)
     else:
         # German March to Fort region + Ambush, 1 Loss per 2 Warbands
         state.setdefault("event_modifiers", {})

@@ -1,6 +1,6 @@
-"""Exact physical piece selections for 3/5/19/22/31/A5/A17/A36/A69.
+"""Exact physical piece selections for 3/5/11/19/22/31/A5/A17/A36/A69.
 
-Card Reference 3/5/19/22/31, A Card Reference A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/11/19/22/31, A Card Reference 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
@@ -19,6 +19,7 @@ ROMAN_TOTALS = {3: {rc.LEGION: 2}, 5: GARRISON_TOTALS, 'A5': GARRISON_TOTALS}
 A36_TOTALS = {rc.SETTLEMENT: 2, rc.WARBAND: 8}
 A36_REGIONS = (rc.MORINI, rc.NERVII, rc.TREVERI)
 A17_LIMIT = 4
+NUMIDIANS_LIMIT = 4
 COTUATUS_FACTIONS = {'roman': (rc.ROMANS,), 'aedui': (rc.AEDUI,),
                      'third': (rc.ROMANS, rc.AEDUI)}
 LEGACY_ROMAN_KEYS = {'legion_removal_regions', 'legion_removal_region', 'auxilia_removal_regions'}
@@ -58,6 +59,12 @@ def roman_removal_request(state, card_id):
 def a36_removal_request(state):
     return _required_removal_request(state, 'A36', state.get('executing_faction'),
                                      rc.GERMANS, A36_REGIONS, A36_TOTALS)
+
+
+def numidians_removal_request(state):
+    return _required_removal_request(state, 11, state.get('executing_faction'), rc.ROMANS,
+                                     sorted(state['spaces']),
+                                     {rc.AUXILIA: NUMIDIANS_LIMIT})
 
 
 def a69_removal_request(state):
@@ -138,8 +145,10 @@ def validate_response(state, request, response):
         validate_region_auxilia(request, a17_removal_request(state),
                                 response['region'], response['selections'])
         return response
-    if card in ROMAN_TOTALS or card in ('A36', 'A69'):
-        if card == 'A69':
+    if card in ROMAN_TOTALS or card in (11, 'A36', 'A69'):
+        if card == 11:
+            live = numidians_removal_request(state)
+        elif card == 'A69':
             live = a69_removal_request(state)
         elif card == 'A36':
             live = a36_removal_request(state)
@@ -278,6 +287,73 @@ def resolve_cotuatus(state, params):
             continue  # Legacy targets removed during an earlier timing window.
         remove_piece(state, region, fixed_faction, rc.ALLY)
         clear_allied_tribe(state, region, fixed_faction, rc.ALLY)
+
+
+def resolve_numidians_removals(state, params):
+    """Both editions require four Roman Auxilia removals, as far as possible."""
+    from fs_bot.cards.card_effects import _event_entries, _event_step
+
+    legacy_keys = {'auxilia_removal_regions', 'removals'} & params.keys()
+    if len(legacy_keys) > 1 or (legacy_keys and 'piece_choices' in params):
+        raise ValueError('Choose one Numidians removal plan format')
+    if not legacy_keys:
+        _event_step(state, '11.piece_choice')
+        request = numidians_removal_request(state)
+        owner = request['owner']
+        response = {'selections': params['piece_choices']} if 'piece_choices' in params else None
+        if response is None and request['required'][rc.AUXILIA]:
+            if owner in state.get('non_player_factions', ()):
+                from fs_bot.cards.ambacti_np import default_removals
+                # Both cards have the same printed Non-player removal instructions.
+                selections = [dict(entry, target_faction=rc.ROMANS, piece_type=rc.AUXILIA)
+                              for entry in default_removals(state, owner, NUMIDIANS_LIMIT)]
+                _apply_required_removals(state, request, selections)
+                return
+            response = _consult(state, request)
+        if response is not None and not _default(response):
+            validate_response(state, request, response)
+            _apply_required_removals(state, request, response['selections'])
+            return
+
+    remaining = NUMIDIANS_LIMIT
+    # §8.4.1 reverses visibility priorities when removing one's own pieces.
+    order = STATES[::-1] if state.get('executing_faction') == rc.ROMANS else STATES
+    if legacy_keys:
+        key = legacy_keys.pop()
+        revised = key == 'removals'
+        step = '11a.removals' if revised else '11.auxilia_removals'
+        for entry in _event_entries(state, step, params[key]):
+            if revised:
+                if not isinstance(entry, dict) or entry.get('faction', rc.ROMANS) != rc.ROMANS:
+                    raise ValueError('Numidians removes only Roman Auxilia')
+                region, count = entry.get('region'), 1
+            else:
+                region, count = entry
+            if region not in state['spaces'] or type(count) is not int or count < 0:
+                raise ValueError('Choose a map Region and a nonnegative Auxilia count')
+            remaining -= _remove_numidians_group(state, region, min(count, remaining), order)
+            if not remaining:
+                return
+
+    for region in _event_entries(state, '11.remaining_auxilia', list(state['spaces'])):
+        if not remaining:
+            break
+        remaining -= _remove_numidians_group(state, region, remaining, order)
+
+
+def _remove_numidians_group(state, region, limit, order):
+    from fs_bot.board.pieces import remove_piece
+
+    removed = 0
+    for visibility in order:
+        count = min(limit - removed, count_pieces_by_state(state, region, rc.ROMANS,
+                                                           rc.AUXILIA, visibility))
+        if count:
+            remove_piece(state, region, rc.ROMANS, rc.AUXILIA, count=count, piece_state=visibility)
+            removed += count
+        if removed == limit:
+            break
+    return removed
 
 
 def a17_np_regions(state, faction):

@@ -552,6 +552,16 @@ supported. The legacy Gallic Hostages path also now correctly replaces Roman
 Auxilia with its own Warbands. Older histories can stop at the new request or
 vary under that corrected replacement.
 
+Shaded Numidians (11) sends `event_piece_choice` to the executor after
+`11.piece_choice` in both editions. Respond `{"selections":[...]}` with
+the offered Roman Auxilia cohorts, including exact visibility and Region.
+Select four or all present if fewer, as specified in `required`. Use
+`{"use_default":true}` to delegate, or supply the same selections in
+`event_params.piece_choices`. Legacy `auxilia_removal_regions` pairs and
+`removals` objects retain their Region priorities and are completed to
+the required total. Use only one plan format. Older histories may reach
+the new request or diverge where revised Numidians previously did nothing.
+
 Shaded Cotuatus & Conconnetodumnus (31) sends `event_piece_choice` to the
 executor for each applicable removal. The request identifies the `slot`
 (`roman`, `aedui`, or `third`) and lists `targets` with `tribe`, `region`

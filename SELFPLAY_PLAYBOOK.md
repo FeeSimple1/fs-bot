@@ -206,6 +206,11 @@ sequencing. Root and independent approvals bind the exact replacement data;
 fresh full-suite and matrix checks remain separate from the diagnostic runs.
 The seed set and 15-point tolerance are unchanged.
 
+The [6 November Numidians repair](docs/current-status.md#6-november-shaded-numidians-11)
+records the original two out-of-band rates, traces the four winner changes
+against its parent, and verifies the refreshed baseline on the same 100
+scenario and seed pairs with the same tolerance.
+
 ## Experimental strategy policies
 
 The repaired `heuristic_selfplay` runner removes the policy-controlled seat from

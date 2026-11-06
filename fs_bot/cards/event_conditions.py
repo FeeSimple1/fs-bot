@@ -51,7 +51,7 @@ def np_event_available(state, card_id, faction, shaded):
         from fs_bot.board.pieces import get_available
         return (unshaded_available(state)
                 and get_available(state, rc.ROMANS, rc.AUXILIA) >= 5)
-    if card_id == 16:
+    if card_id == 16 or (card_id == 11 and shaded):
         from fs_bot.cards.ambacti_np import np_available
         return np_available(state, faction, shaded)
     if card_id == 37:

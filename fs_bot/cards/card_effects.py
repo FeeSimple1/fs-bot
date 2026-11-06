@@ -757,30 +757,8 @@ def execute_card_11(state, shaded=False):
         state["event_modifiers"]["card_11_double_auxilia_losses"] = True
         state["event_modifiers"]["card_11_battle_region"] = target
     else:
-        # Shaded: Remove any 4 Auxilia from anywhere
-        params = state.get("event_params", {})
-        removal_regions = params.get("auxilia_removal_regions", [])
-        removed = 0
-        for region, count in _event_entries(state, "11.auxilia_removals", removal_regions):
-            actual = min(count, 4 - removed,
-                         count_pieces(state, region, ROMANS, AUXILIA))
-            if actual > 0:
-                remove_piece(state, region, ROMANS, AUXILIA, count=actual)
-                removed += actual
-            if removed >= 4:
-                break
-        # Auto-remove if not enough specified
-        if removed < 4:
-            for region in _event_entries(state, "11.remaining_auxilia", list(state["spaces"].keys())):
-                if removed >= 4:
-                    break
-                avail_in_region = count_pieces(
-                    state, region, ROMANS, AUXILIA)
-                actual = min(avail_in_region, 4 - removed)
-                if actual > 0:
-                    remove_piece(state, region, ROMANS, AUXILIA,
-                                 count=actual)
-                    removed += actual
+        from fs_bot.cards.base_piece_choices import resolve_numidians_removals
+        resolve_numidians_removals(state, state.get("event_params", {}))
 
 def execute_card_12(state, shaded=False):
     """Card 12: Titus Labienus — CAPABILITY.
@@ -4336,19 +4314,8 @@ def execute_card_11_ariovistus(state, shaded=False):
         if region:
             state["event_modifiers"]["card_11a_battle_region"] = region
     else:
-        # Remove any 4 Auxilia
-        removals = params.get("removals", [])
-        removed = 0
-        for r in _event_entries(state, "11a.removals", removals):
-            if removed >= 4:
-                break
-            region = r.get("region")
-            fac = r.get("faction", ROMANS)
-            for ps in (HIDDEN, REVEALED):
-                if count_pieces_by_state(state, region, fac, AUXILIA, ps) > 0:
-                    remove_piece(state, region, fac, AUXILIA, piece_state=ps)
-                    removed += 1
-                    break
+        from fs_bot.cards.base_piece_choices import resolve_numidians_removals
+        resolve_numidians_removals(state, params)
 
 def execute_card_30_ariovistus(state, shaded=False):
     """Card 30 (Ariovistus): Vercingetorix's Elite — CAPABILITY.

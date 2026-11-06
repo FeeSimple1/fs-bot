@@ -21,6 +21,54 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Numidians 11
+
+In both editions, the executor chooses exact Roman Auxilia by Region and
+visibility on the current board after `11.piece_choice`. The Event removes
+four, or every Auxilia on the map if fewer are present, under Card Reference
+11, A Card Reference 11 and §§5.1–5.1.3. It returns those pieces to Available.
+The terminal uses a live cohort menu in place of the original tuple input,
+and the assistant preserves the choice across save, retry and replay.
+
+The Non-players use their printed priorities. Belgae select in Belgica
+first. Arverni leave Legions without Auxilia in as many Regions as
+possible. Germans prioritize Germania and Settlement Regions, then their
+neighbors, and decline the Event if neither tier has any Auxilia. A
+German bot that qualifies carries out the remaining printed removals
+after exhausting those tiers.
+
+Both parent probes failed to offer the choice. The original text removed
+Hidden pieces first and the revised text skipped removals without a plan.
+The repair passes both probes, and revised defaults now carry out every
+possible removal, including Scouted Auxilia. Legacy Region priorities still
+work. Older histories may pause for the new choice or diverge under the
+corrected revised default.
+
+All 9,010 tests pass, including 18 new cases. Twenty paired bot games
+complete without integrity errors. Fifteen match the parent's final state
+and nineteen match its winner. Twenty mixed-seat games match across two
+hash seeds, with zero hard findings or partial actions.
+
+The original 100-game guardrail exceeds its 15-point band by 5 points
+for Pax Gallica? Aedui and The Great Revolt Arverni. Each rate had been
+at the band limit in the parent. The paired review found four changed
+winners relative to that revision.
+
+| Scenario and seed | Parent winner | Repaired winner | Numidians difference |
+|---|---|---|---|
+| Pax Gallica? 17 | Romans | Aedui | Belgae take all four Auxilia from Atrebates, the largest eligible Belgica group. |
+| Reconquest of Gaul 3 | Aedui | Belgae | A seeded tie-break selects the same two remaining removals in Treveri and advances the random sequence. |
+| The Great Revolt 16 | Aedui | Arverni | Seeded tie-breaks among three Belgica Regions retain the same removals and advance the random sequence. |
+| The Gallic War 5 | Aedui | Arverni | Revised Numidians removes four Auxilia from Provincia. |
+
+The reviewed refresh replaces 54 records, including 39 winners and 34
+card counts against the prior baseline. It uses the same 100 scenario
+and seed pairs and 15-point band. An independent run against the
+candidate matches all 100 winners and card counts.
+
+**BE-07 and BE-08 advance for shaded 11. The original audit remains 42/50
+closed (84%), with 8 open.**
+
 ### 6 November shaded Cotuatus & Conconnetodumnus 31
 
 The executor names one Roman Ally, one Aedui Ally, and a further Roman or

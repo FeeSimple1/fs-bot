@@ -514,6 +514,7 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `event_up_to` | `card_id, shaded, faction, max_count`; A40 `legal_regions`; A51 `region, available` visibility/count cohorts; A60 `region, available_count` | A40 `{"regions":[...]}`; A51 `{"removals":[{"piece_state":...,"count":n},...]}`; A60 `{"count":n}`; or explicit default |
 | `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
+| `interlude_reduction` | German-owned stage with `stage, minimums, cohorts` | `{"removals":[cohort objects]}` in selection order, or explicit default |
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
@@ -1878,6 +1879,28 @@ without spending an action. Preview validation never consumes live input or RNG.
 `replay --output-dir DIR` reconstructs the saved session from its origin and
 complete human decision log, verifies request context, and compares the final
 board and RNG with the live save. It never overwrites the live game.
+
+### German Interlude reductions
+
+`interlude_reduction` belongs to Germans before the seat becomes Arverni.
+Copy rows from `cohorts` into `{"removals":[...]}`, setting each `count` to
+a positive number within that cohort's capacity. Rows have `region`,
+`piece_type`, `piece_state`, `tribe`, and `count`. Warband cohorts name
+their visibility. Ally rows name an exact Tribe with a count of one.
+
+- `german_permanent` removes exactly 15 Warbands from play. The Available
+  row has null `region` and `piece_state`. Select from the map and Available
+  in any order.
+- `german_quarter` uses the board after Settlement conversion. Return at
+  least the requested count of each type to Available. Within each type,
+  exhaust the cohorts outside Germania before selecting a cohort in
+  Germania. Multiple rows from the same cohort share its offered count.
+
+Either request accepts `{"use_default":true}` to delegate to the seeded
+default. An invalid allocation leaves the request pending. If Winter
+pauses at the second stage, the first answer stays in the journal and
+replays against the restored board when Winter resumes. Older German-seat
+transcripts may pause for these new requests when replayed.
 
 ### Roman Interlude allocations
 

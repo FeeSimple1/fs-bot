@@ -282,6 +282,19 @@ def make_random_reactive(seats, rng):
             for cell in pieces[:request['count']]:counts[cell]=counts.get(cell,0)+1
             return {'removals':[{'piece_type':cell[0],'piece_state':cell[1],'count':count}
                                 for cell,count in counts.items()]}
+        if kind == 'interlude_reduction':
+            cohorts = list(request['cohorts'])
+            rng.shuffle(cohorts)
+            if request['stage'] == 'german_quarter':
+                cohorts.sort(key=lambda row: row['region'] in rc.GERMANIA_REGIONS)
+            needed, removals = dict(request['minimums']), []
+            for row in cohorts:
+                piece_type = row['piece_type']
+                count = min(needed[piece_type], row['count'])
+                if count:
+                    removals.append(dict(row, count=count))
+                    needed[piece_type] -= count
+            return {'removals': removals}
         if kind == 'interlude_marker':
             return {'tribe': rng.choice([None] + [row['tribe'] for row in request['markers']])}
         if kind == 'interlude_expedition':

@@ -21,6 +21,29 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November German Interlude force reductions
+
+Under A2.1, the German player chooses the 15 Warbands removed from play
+from the map and Available. After Settlement conversion, the player returns
+at least one quarter of the on-map Allies and one quarter of the on-map
+Warbands to Available. Each minimum rounds up. The second allocation
+takes Germania last within each piece type. Warbands are selected by
+Region and visibility. Allies are selected by Tribe.
+
+The terminal and assistant offer both stages. The saved Winter transaction
+restores the board when a response is pending, retains an accepted first
+choice, and replays each allocation once. Either stage can use the seeded
+bot procedure. Twenty paired bot games retain all final boards and winners,
+including two completed Interludes. Twenty-one mixed-seat games match
+across two hash seeds without hard findings or partial actions. This includes
+Gallic War seed 13, which exercises both German decisions before the
+Arverni handover. The 100-game balance check passes with every winner
+and card count matching the previous revision.
+
+**WS-F01 advances. Settlement conversion choices, other factions' force
+adjustments and Cisalpina relocation remain open. The original audit stays
+at 44/50 closed (88%), with 6 open.**
+
 ### 6 November shaded Land of Mist and Mystery 57
 
 Under Card Reference 57 and §§5.1–5.1.3, the terminal authors a structured

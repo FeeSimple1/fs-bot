@@ -1,11 +1,57 @@
-"""Roman Interlude choices with board inspection throughout allocation."""
+"""Interlude choices with board inspection throughout allocation."""
+from fs_bot import rules_consts as rc
 from fs_bot.cli.action_windows import inspect_board
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
 from fs_bot.engine.interlude_choices import MARKER, validate_response
+from fs_bot.engine import interlude_reductions as reductions
+
+
+def _collect_reduction(state, request, stdin, stdout):
+    stage = request['stage']
+    permanent = stage == reductions.PERMANENT
+    needed = dict(request['minimums'])
+    remaining = [dict(row) for row in request['cohorts']]
+    removals = []
+    if permanent:
+        stdout.write(f"Remove {needed[rc.WARBAND]} German Warbands from play.\n")
+    else:
+        stdout.write("Return German pieces to Available. Germania goes last for each type.\n")
+    if not prompt_yes_no(stdin, stdout, 'Choose the pieces yourself?', default=True):
+        return {'use_default': True}
+
+    while not permanent or needed[rc.WARBAND]:
+        choices = []
+        if not any(needed.values()):
+            choices.append(('Finish selection', None))
+        for row in reductions.eligible_cohorts(stage, remaining):
+            if row['tribe'] is not None:
+                label = f"{row['tribe']} Ally ({row['region']})"
+            elif row['region'] is None:
+                label = f"Available Warbands ({row['count']})"
+            else:
+                label = f"{row['region']} {row['piece_state']} Warbands ({row['count']})"
+            choices.append((label, row))
+        outstanding = ', '.join(f'{n} {kind}' for kind, n in needed.items() if n)
+        prompt = f'Select a cohort ({outstanding} still required)' if outstanding else 'Select a cohort'
+        row = prompt_choice(stdin, stdout, prompt, choices)
+        if row is None:
+            break
+        kind = row['piece_type']
+        limit = min(row['count'], needed[kind]) if permanent else row['count']
+        count = 1
+        if limit > 1:
+            count = prompt_choice(stdin, stdout, 'How many pieces?',
+                                  [(str(n), n) for n in range(1, limit + 1)])
+        removals.append(dict(row, count=count))
+        row['count'] -= count
+        needed[kind] = max(0, needed[kind] - count)
+    return reductions.validate_response(state, request, {'removals': removals})
 
 
 def collect_interlude(state, faction, request, stdin, stdout):
     with inspect_board(state, stdout):
+        if request['kind'] == reductions.KIND:
+            return _collect_reduction(state, request, stdin, stdout)
         if request['kind'] == MARKER:
             choices = [('Keep no marker', None)] + [
                 (f"{row['tribe']} ({row['status']})", row['tribe']) for row in request['markers']]

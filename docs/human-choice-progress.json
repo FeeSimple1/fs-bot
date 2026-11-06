@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "68c7c5c3173be34478936268cc6855c0d108d398",
-    "python_sha256": "f72d3d3a2b96a49a334b9eb8d891460952522a2190b963e1bf1c26bb58c00af0",
-    "python_files": 550,
+    "commit": "ca660d52757c7c7500a649fcb2dae4976e4eba8a",
+    "python_sha256": "fd9672a7024f649908f90afd7a2f67fd2e51c19295bc1a052c6e363486b0a273",
+    "python_files": 552,
     "working_tree_changes": true,
-    "note": "Shaded 57 closes BE-08. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-shaded-land-of-mist-and-mystery-57."
+    "note": "German Interlude reductions advance WS-F01. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-german-interlude-force-reductions."
   },
   "total": 50,
   "closed": 44,
@@ -65,7 +65,8 @@
     "Unshaded 61 now offers separate same-faction Ally and exact Warband removals in Nervii. See current-status.md#6-november-unshaded-catuvolcus-61.",
     "Shaded 51 closes BE-07 with exact optional Aedui replacements in one Region and a resumable Command using only surviving newly placed Germans. See current-status.md#6-november-shaded-surus-51.",
     "Oppida now offers legal live City choices on both sides. The Sacking and Remi Influence City schemas match their existing named-owner menus. See current-status.md#6-november-oppida-28-city-choices.",
-    "Shaded 57 closes BE-08 with a structured Britannia removal and legal post-removal placement menus. See current-status.md#6-november-shaded-land-of-mist-and-mystery-57."
+    "Shaded 57 closes BE-08 with a structured Britannia removal and legal post-removal placement menus. See current-status.md#6-november-shaded-land-of-mist-and-mystery-57.",
+    "German Interlude permanent and quarter reductions now offer exact owner allocations. WS-F01 remains open for other force adjustments and Cisalpina relocation. See current-status.md#6-november-german-interlude-force-reductions."
   ],
   "findings": [
     {
@@ -460,7 +461,8 @@
       "id": "WS-F01",
       "title": "Interlude force reductions and Cisalpina relocations bypass human owners",
       "severity": "high",
-      "status": "open"
+      "status": "open",
+      "disposition": "German player can choose exact permanent and post-Settlement quarter reductions, with terminal and durable save/replay support. Other force adjustments and Cisalpina relocation are open."
     },
     {
       "id": "WS-F02",

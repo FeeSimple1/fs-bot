@@ -431,6 +431,8 @@ def _adjust_german_forces(state):
         "allies_to_available": 0,
         "warbands_to_available": 0,
     }
+    from fs_bot.cards.card_effects import _unally_tribe
+    from fs_bot.engine.interlude_reductions import PERMANENT, QUARTER, choose_reduction
     from fs_bot.rules_consts import GERMANIC_CONTROL
 
     # 1. Remove Germanic Leader from play.
@@ -438,11 +440,22 @@ def _adjust_german_forces(state):
         result["leader_removed"] = True
 
     # 2. Remove any 15 Germanic Warbands from play (incl. Available).
-    removed_wb = _remove_warbands_anywhere(
-        state, GERMANS, INTERLUDE_GERMAN_WARBANDS_REMOVED, rng,
-        to_removed=True, from_available_first=True,
-    )
-    result["warbands_removed_from_play"] = removed_wb
+    removals = choose_reduction(state, PERMANENT)
+    if removals is None:
+        result["warbands_removed_from_play"] = _remove_warbands_anywhere(
+            state, GERMANS, INTERLUDE_GERMAN_WARBANDS_REMOVED, rng,
+            to_removed=True, from_available_first=True,
+        )
+    else:
+        for row in removals:
+            count, region = row["count"], row["region"]
+            if region is None:
+                state["available"][GERMANS][WARBAND] -= count
+            else:
+                remove_piece(state, region, GERMANS, WARBAND, count,
+                             piece_state=row["piece_state"], to_available=False)
+            _ensure_removed(state, GERMANS, WARBAND, count)
+            result["warbands_removed_from_play"] += count
 
     # 3. Settlements
     settlements_total = 0
@@ -512,6 +525,19 @@ def _adjust_german_forces(state):
 
     # 4. Remove >= 1/4 of total on-map Germanic Allies and 1/4 of
     #    Germanic Warbands on map (Germania last) to Available.
+    removals = choose_reduction(state, QUARTER)
+    if removals is not None:
+        for row in removals:
+            if row["piece_type"] == ALLY:
+                _unally_tribe(state, row["tribe"])
+                result["allies_to_available"] += row["count"]
+            else:
+                remove_piece(state, row["region"], GERMANS, WARBAND, row["count"],
+                             piece_state=row["piece_state"])
+                result["warbands_to_available"] += row["count"]
+        refresh_all_control(state)
+        return result
+
     total_allies = 0
     for region in state["spaces"]:
         total_allies += count_pieces(state, region, GERMANS, ALLY)

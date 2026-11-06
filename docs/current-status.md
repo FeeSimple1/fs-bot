@@ -21,6 +21,33 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 5 November unshaded Usipetes & Tencteri A36
+
+A Card Reference A36 and §§5.1 and 5.1.3 require the executing faction to
+choose two German Settlements and eight German Warbands total from Morini,
+Nervii and Treveri, to the extent each type is present. The terminal and
+durable assistant offer exact Regions and visibility, including Scouted
+Warbands, and validate the whole allocation before removing pieces.
+
+On delegation, the engine uses seeded choices among tied Regions and the
+own or enemy visibility order from §§8.3.1, 8.3.4 and 8.4.1. The bot
+effectiveness check looks only at German Settlements and Warbands in the
+three printed Regions. Older replays may encounter a new prompt or diverge
+under the corrected delegated removals.
+
+Three probes using the parent API reproduce the missed executor prompt,
+Scouted Warbands surviving delegated play and a false effective result
+with targets only outside the printed area. All pass on this repair.
+
+All 8,926 tests pass, including 19 new cases. Twenty paired bot games match
+the parent in gameplay and final state hashes. The 100-game historical
+balance check passes within its existing 15-point band. Two winners differ
+from the parent, both in expansion seed 14 after Aedui delegated A36.
+Twenty mixed-seat cases match across hash seeds and match the parent's
+results apart from source metadata, with no hard findings.
+
+**EXP-11 advances for A36. The original bundle is 41/50 closed (82%), 9 open.**
+
 ### 5 November shaded Gallia Togata A5
 
 Under A Card Reference A5 and §§5.1 and 5.1.3, the Romans select one Legion

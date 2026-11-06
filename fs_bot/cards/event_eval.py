@@ -1001,6 +1001,10 @@ def is_event_effective(state, card_id, shaded=False):
     if card_id == "A5" and shaded and state.get("senate", {}).get("position") == ADULATION:
         return False
 
+    if card_id == "A36" and not shaded:
+        from fs_bot.cards.base_piece_choices import a36_removal_request
+        return any(a36_removal_request(state)["required"].values())
+
     # Capability cards are always effective per §8.1.1
     # ("Adding or removing a Capability is an effect")
     if is_capability_card(card_id, scenario):

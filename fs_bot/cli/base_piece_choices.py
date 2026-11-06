@@ -8,7 +8,7 @@ def collect_choice(state, faction, request, stdin, stdout):
     card = request['card_id']
     with inspect_board(state, stdout):
         if 'required' in request:
-            return validate_response(state, request, _roman_removals(request, stdin, stdout))
+            return validate_response(state, request, _required_removals(request, stdin, stdout))
         if card == 19:
             choice = prompt_choice(stdin, stdout, 'Lucterius: choose one effect:',
                 [('Place up to five Roman Auxilia in Provincia', 'auxilia'),
@@ -39,12 +39,12 @@ def collect_choice(state, faction, request, stdin, stdout):
     return validate_response(state, request, response)
 
 
-def _roman_removals(request, stdin, stdout):
+def _required_removals(request, stdin, stdout):
     selected = []
     for kind, remaining in request['required'].items():
         budget = [dict(entry) for entry in request['available'] if entry['piece_type'] == kind]
         while remaining:
-            index = prompt_choice(stdin, stdout, f"Romans: remove {remaining} {kind}:", [
+            index = prompt_choice(stdin, stdout, f"{request['owner']}: remove {remaining} {kind}:", [
                 (f"{entry['region']}: {entry['piece_state'] or kind} ({entry['count']})", index)
                 for index, entry in enumerate(budget) if entry['count']
             ])

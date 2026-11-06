@@ -571,6 +571,17 @@ moving Legions to the track and Auxilia to Available. Older decision
 histories that predate the prompt can pause at the new Roman choice or
 replay differently because delegated A5 now carries out its removals.
 
+Unshaded Usipetes & Tencteri (A36) sends `event_piece_choice` to the
+executing faction after `A36.piece_choice`. The same `{"selections":[...]}`
+response and `event_params.piece_choices` format apply. The request gives
+separate required totals for German Settlements and Warbands, capped by the
+pieces present in Morini, Nervii and Treveri. For Settlements use
+`piece_state: null`; for Warbands use the offered exact visibility.
+Selections may span Regions and are validated together. A response with
+`{"use_default":true}` delegates the complete effect, with seeded choices
+among tied Regions and the printed own or enemy visibility priorities.
+Older replays may reach the new choice or diverge under the corrected default.
+
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |

@@ -122,7 +122,8 @@ retain other cards. Original progress is 41/50 closed (82%), 9 open.
 
 The [shaded Gallia Togata A5 repair](docs/current-status.md#5-november-shaded-gallia-togata-a5)
 adds the expansion's Roman removal choice and completes delegated removals.
-Other EXP-11 cards remain open.
+The [unshaded Usipetes & Tencteri A36 repair](docs/current-status.md#5-november-unshaded-usipetes--tencteri-a36)
+adds executor-owned physical removals. EXP-11 remains open for A17, A58 and A69.
 
 ## Existing implementation
 

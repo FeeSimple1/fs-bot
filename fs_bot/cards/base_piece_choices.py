@@ -1,6 +1,6 @@
-"""Exact physical piece selections for 3/5/A5 and numeric 19/22.
+"""Exact physical piece selections for 3/5/A5/A36 and numeric 19/22.
 
-Card Reference 3/5/19/22, A Card Reference A5 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/19/22, A Card Reference A5/A36 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
@@ -16,6 +16,8 @@ STATES = (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
 FIELDS = ('region', 'target_faction', 'piece_type', 'piece_state')
 GARRISON_TOTALS = {rc.LEGION: 1, rc.AUXILIA: 2}
 ROMAN_TOTALS = {3: {rc.LEGION: 2}, 5: GARRISON_TOTALS, 'A5': GARRISON_TOTALS}
+A36_TOTALS = {rc.SETTLEMENT: 2, rc.WARBAND: 8}
+A36_REGIONS = (rc.MORINI, rc.NERVII, rc.TREVERI)
 LEGACY_ROMAN_KEYS = {'legion_removal_regions', 'legion_removal_region', 'auxilia_removal_regions'}
 A5_LEGACY_KEYS = {'legion_region', 'auxilia_removals'}
 
@@ -45,19 +47,28 @@ def choice_request(state, card_id):
 
 def roman_removal_request(state, card_id):
     """Offer only on-map cohorts and require all printed removals possible."""
-    limits = ROMAN_TOTALS[card_id]
     regions = get_playable_regions_for_state(state, rc.ROMANS)
+    return _required_removal_request(state, card_id, rc.ROMANS, rc.ROMANS,
+                                     regions, ROMAN_TOTALS[card_id])
+
+
+def a36_removal_request(state):
+    return _required_removal_request(state, 'A36', state.get('executing_faction'),
+                                     rc.GERMANS, A36_REGIONS, A36_TOTALS)
+
+
+def _required_removal_request(state, card_id, owner, target, regions, limits):
     available = []
     totals = Counter()
     for kind in limits:
         for region in regions:
-            for visibility in (STATES if kind == rc.AUXILIA else (None,)):
-                count = (count_pieces_by_state(state, region, rc.ROMANS, kind, visibility)
-                         if visibility else count_pieces(state, region, rc.ROMANS, kind))
+            for visibility in (STATES if kind in (rc.AUXILIA, rc.WARBAND) else (None,)):
+                count = (count_pieces_by_state(state, region, target, kind, visibility)
+                         if visibility else count_pieces(state, region, target, kind))
                 if count:
-                    available.append(dict(zip(FIELDS, (region, rc.ROMANS, kind, visibility)), count=count))
+                    available.append(dict(zip(FIELDS, (region, target, kind, visibility)), count=count))
                     totals[kind] += count
-    return {'kind': KIND, 'card_id': card_id, 'owner': rc.ROMANS,
+    return {'kind': KIND, 'card_id': card_id, 'owner': owner,
             'available': available,
             'required': {kind: min(limit, totals[kind]) for kind, limit in limits.items()}}
 
@@ -73,16 +84,16 @@ def validate_response(state, request, response):
     if not isinstance(response, dict):
         raise ValueError('Choose an explicit Event quantity or piece list')
     card = request['card_id']
-    if card in ROMAN_TOTALS:
-        live = roman_removal_request(state, card)
+    if card in ROMAN_TOTALS or card == 'A36':
+        live = a36_removal_request(state) if card == 'A36' else roman_removal_request(state, card)
         if set(response) != {'selections'} or not isinstance(response['selections'], list):
-            raise ValueError('Choose exact Roman piece removals')
+            raise ValueError('Choose exact Event piece removals')
         used = _validate_cohorts(request, live, response['selections'])
         totals = Counter()
         for (_, _, kind, _), count in used.items():
             totals[kind] += count
         if totals != Counter(request['required']) or totals != Counter(live['required']):
-            raise ValueError('Select the required total of each Roman piece type')
+            raise ValueError('Select the required total of each piece type')
         return response
     if card == 19 and response.get('choice') == 'auxilia':
         if (set(response) != {'choice', 'count'} or type(response['count']) is not int
@@ -155,6 +166,54 @@ def _consult(state, request):
             if owner in rc.FACTIONS and not state.get('_diviciacus_preview') else None)
 
 
+def resolve_a36_removals(state, params):
+    """Collect the executor's exact German removals, or run the delegated plan."""
+    request = a36_removal_request(state)
+    if 'piece_choices' in params:
+        response = {'selections': params['piece_choices']}
+    else:
+        response = _consult(state, request) if any(request['required'].values()) else None
+    if response is None or _default(response):
+        _delegate_a36_removals(state, request['owner'])
+        return
+    validate_response(state, request, response)
+    _apply_required_removals(state, request, response['selections'])
+
+
+def _delegate_a36_removals(state, owner):
+    from fs_bot.board.pieces import remove_piece
+    from fs_bot.bots.bot_common import random_select
+    from fs_bot.cards.card_effects import _event_step
+
+    for kind, step in ((rc.SETTLEMENT, 'A36.settlements'), (rc.WARBAND, 'A36.warbands')):
+        remaining = A36_TOTALS[kind]
+        for index in range(len(A36_REGIONS)):
+            _event_step(state, step, index=index)
+            if not remaining:
+                break
+            by_region = {}
+            for entry in a36_removal_request(state)['available']:
+                if entry['piece_type'] == kind:
+                    by_region.setdefault(entry['region'], []).append(entry)
+            if not by_region:
+                break
+            # No die roll is needed when every remaining counter must go.
+            total = sum(entry['count'] for entries in by_region.values() for entry in entries)
+            region = (random_select(state, list(by_region)) if total > remaining
+                      else next(iter(by_region)))
+            entries = by_region[region]
+            # §8.4.1: use reverse visibility priority for own pieces.
+            if owner == rc.GERMANS:
+                entries.reverse()
+            for entry in entries:
+                count = min(remaining, entry['count'])
+                remove_piece(state, region, rc.GERMANS, kind, count=count,
+                             piece_state=entry['piece_state'])
+                remaining -= count
+                if not remaining:
+                    break
+
+
 def remove_roman_pieces(state, card_id, params):
     """Resolve an exact Roman plan, or leave the legacy fallback to the card."""
     legacy_keys = A5_LEGACY_KEYS if card_id == 'A5' else LEGACY_ROMAN_KEYS
@@ -174,15 +233,18 @@ def remove_roman_pieces(state, card_id, params):
     if response is None or _default(response):
         return False
     validate_response(state, request, response)
+    _apply_required_removals(state, request, response['selections'])
+    return True
+
+
+def _apply_required_removals(state, request, entries):
     from fs_bot.board.pieces import remove_piece
-    # The Legion goes to the track before the Auxilia return to Available.
-    for kind in ROMAN_TOTALS[card_id]:
-        for entry in response['selections']:
+    for kind in request['required']:
+        for entry in entries:
             if entry['piece_type'] == kind:
-                remove_piece(state, entry['region'], rc.ROMANS, kind,
+                remove_piece(state, entry['region'], entry['target_faction'], kind,
                              count=entry['count'], piece_state=entry['piece_state'],
                              to_track=kind == rc.LEGION)
-    return True
 
 
 def resolve_a5_removals(state, params):

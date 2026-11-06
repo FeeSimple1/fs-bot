@@ -73,6 +73,9 @@ Regions, including Auxilia visibility. [Repair and validation](docs/current-stat
 The expansion Gallia Togata (A5) also offers the Roman choice and completes
 delegated removals. [Ariovistus repair and validation](docs/current-status.md#5-november-shaded-gallia-togata-a5).
 
+Unshaded Usipetes & Tencteri (A36) offers exact choices of German Settlements
+and Warbands across its three Regions. [Repair and validation](docs/current-status.md#5-november-unshaded-usipetes--tencteri-a36).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.

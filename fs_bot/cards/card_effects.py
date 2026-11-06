@@ -3680,37 +3680,10 @@ def execute_card_A36(state, shaded=False):
 
     Source: A Card Reference, card A36
     """
-    from fs_bot.rules_consts import (
-        MORINI, NERVII, TREVERI, SUGAMBRI, TRIBE_TO_REGION,
-    )
-    from fs_bot.map.map_data import get_adjacent
-    params = state.get("event_params", {})
-    scenario = state["scenario"]
     if not shaded:
-        # Remove 2 Settlements from target regions
-        target_regions = [MORINI, NERVII, TREVERI]
-        settlements_removed = 0
-        for region in _event_entries(state, "A36.settlements", target_regions):
-            if settlements_removed >= 2:
-                break
-            cnt = count_pieces(state, region, GERMANS, SETTLEMENT)
-            to_remove = min(cnt, 2 - settlements_removed)
-            if to_remove > 0:
-                remove_piece(state, region, GERMANS, SETTLEMENT,
-                             count=to_remove)
-                settlements_removed += to_remove
-        # Remove 8 German Warbands
-        wb_removed = 0
-        for region in _event_entries(state, "A36.warbands", target_regions):
-            if wb_removed >= 8:
-                break
-            for ps in (HIDDEN, REVEALED):
-                c = count_pieces_by_state(state, region, GERMANS, WARBAND, ps)
-                to_remove = min(c, 8 - wb_removed)
-                if to_remove > 0:
-                    remove_piece(state, region, GERMANS, WARBAND,
-                                 count=to_remove, piece_state=ps)
-                    wb_removed += to_remove
+        from fs_bot.cards.base_piece_choices import resolve_a36_removals
+        _event_step(state, "A36.piece_choice")
+        resolve_a36_removals(state, state.get("event_params") or {})
     else:
         from fs_bot.cards.expansion_validation import execute
         execute(state, 'A36')

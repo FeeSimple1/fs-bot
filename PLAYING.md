@@ -121,6 +121,11 @@ across Regions and choose the exact visibility of each Auxilia. Remove as
 many of each printed type as the board allows. Legions return to the Legions
 track and Auxilia return to Available.
 
+Unshaded Usipetes & Tencteri (A36) lets the faction playing the Event choose
+which German Settlements and Warbands to remove in Morini, Nervii and
+Treveri. Select exact Warband visibility, including Scouted. Remove two
+Settlements and eight Warbands when enough are present.
+
 At a March route prompt, **Stay here (hide pieces; pay March cost)** selects
 the origin without moving a group. All its Revealed Auxilia or Warbands hide;
 Scouted pieces instead lose their marker and remain Revealed. You still pay

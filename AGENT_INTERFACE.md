@@ -641,6 +641,20 @@ windows. The Event fills any shortfall within the chosen Region.
 Older histories may pause for the new choice or diverge under the
 corrected removals.
 
+Unshaded Catuvolcus (61) sends two `event_piece_choice` requests to the
+executor, one for each step with eligible targets. After `61.ally_choice`,
+the request has `step: "allies"` and `targets` listing each named Ally
+and its faction. Respond `{"tribes":[...]}` with one or more offered
+Tribes of a single faction. After those removals and `61.warband_choice`,
+the request has `step: "warbands"`, `available` and `required`.
+Respond `{"selections":[...]}` with the required total from the offered
+Nervii Warband cohorts, using exact faction and visibility. Any mix of
+Warband factions is legal. Use `event_params.ally_removals` and
+`piece_choices` for authored choices. Legacy `warband_removals`
+keep their ordered faction preferences and timing windows, and the Event
+fills any shortfall within Nervii. Older histories may pause for the
+new choices or diverge under the corrected removals.
+
 Shaded Pompey (3) and Gallia Togata (5/A5) send `event_piece_choice` to
 the Romans, including when another faction executes the Event. After the
 `3.piece_choice`, `5.piece_choice` or `A5.piece_choice` timing window, the request includes

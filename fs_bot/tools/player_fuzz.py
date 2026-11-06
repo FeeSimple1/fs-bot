@@ -221,6 +221,10 @@ def make_random_reactive(seats, rng):
         if kind == 'event_piece_choice':
             if request['card_id'] == 31:
                 return {'tribe': rng.choice(request['targets'])['tribe']}
+            if request['card_id'] == 61 and request['step'] == 'allies':
+                faction = rng.choice(request['targets'])['target_faction']
+                tribes = [row['tribe'] for row in request['targets'] if row['target_faction'] == faction]
+                return {'tribes': rng.sample(tribes, rng.randint(1, len(tribes)))}
             target = {}
             if 'required_by_region' in request:
                 amounts = request['required_by_region']

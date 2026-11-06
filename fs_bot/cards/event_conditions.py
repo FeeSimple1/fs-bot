@@ -15,6 +15,9 @@ def np_event_available(state, card_id, faction, shaded):
     if card_id == 7 and shaded and faction == rc.GERMANS:
         from fs_bot.cards.base_piece_choices import alaudae_effective
         return alaudae_effective(state, faction)
+    if card_id == 61 and not shaded and faction == rc.AEDUI:
+        from fs_bot.cards.catuvolcus import effective
+        return effective(state, faction)
     if card_id == 6 and shaded and faction == rc.GERMANS:
         from fs_bot.cards.ambacti_np import np_available
         return np_available(state, faction, True, exclude_regions=(rc.PROVINCIA,))

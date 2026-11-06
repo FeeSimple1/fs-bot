@@ -155,6 +155,12 @@ adjacent Region and remove any mix of six Belgic Warbands and Allies.
 Choose Warbands by visibility and Allies by Tribe. Citadels are protected.
 If the chosen Region has fewer than six eligible pieces, remove all of them.
 
+Unshaded Catuvolcus (61) lets the executor choose one or more named
+Allies of a single faction in Nervii. Then choose five Warbands there
+by faction and visibility, or all remaining eligible Warbands if fewer
+are present. The Warbands can come from any combination of factions.
+Each step applies as far as possible.
+
 Shaded Pompey and both versions of Gallia Togata ask the Roman player which pieces to
 remove, even when another faction plays the Event. Split Legions or Auxilia
 across Regions and choose the exact visibility of each Auxilia. Remove as

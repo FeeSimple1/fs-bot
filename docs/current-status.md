@@ -21,6 +21,36 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November unshaded Catuvolcus 61
+
+Under Card Reference 61 and §§5.1–5.1.3, the executor removes one or more
+named Allied Tribes of a single faction from Nervii, then five Warbands
+in any faction and visibility mix there, to the extent each step is
+possible. The terminal and assistant show the choices separately.
+The Warband offer uses the board after the Ally removals and intervening
+timing window. The assistant preserves the accepted Ally choice when
+saving and resuming at the Warband choice.
+
+The parent probe offered neither choice. The repaired probe removes
+the Nervii Ally and five Scouted Arverni Warbands, leaving the Eburones
+Ally. The Aedui Non-player restricts both steps to player Arverni or
+Belgae in the base game, or player Germans or Belgae in Ariovistus, and
+declines if no such targets exist. Legacy Warband plans retain their
+faction order and timing windows. Older histories may pause at the
+new choices or diverge under the corrected removals.
+
+All 9,106 tests pass, including 17 new cases. Twenty paired bot games
+complete without integrity errors, with two changed final boards and
+winners. Twenty mixed-seat games match across two hash seeds, with zero
+hard findings and zero partial actions. The 100-game balance check
+passes with a largest shift of 10 percentage points against the
+reviewed baseline. The two changed winners relative to the parent
+are Ariovistus seed 3 and The Gallic War seed 3. In both games the
+Aedui bot now declines an Event it previously played without effect.
+
+**BE-07 advances for unshaded 61. The original audit remains 42/50 closed
+(84%), with 8 open.**
+
 ### 6 November unshaded Litaviccus 45
 
 Under Card Reference 45 and §§5.1–5.1.3, the executor selects zero to

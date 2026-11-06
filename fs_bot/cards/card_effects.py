@@ -2305,27 +2305,9 @@ def execute_card_61(state, shaded=False):
     Source: Card Reference, card 61
     """
     from fs_bot.rules_consts import NERVII, TRIBE_NERVII, TRIBE_EBURONES
-    params = state.get("event_params", {})
     if not shaded:
-        # Remove Allies of same Faction + 5 Warbands in Nervii
-        ally_removals = params.get("ally_removals", [])
-        for tribe in _event_entries(state, "61.allies", ally_removals):
-            if _tribe_region(state, tribe) == NERVII:
-                _unally_tribe(state, tribe)
-        # Remove 5 Warbands (any faction)
-        wb_removals = params.get("warband_removals", [])
-        removed = 0
-        for r in _event_entries(state, "61.warbands", wb_removals):
-            if removed >= 5:
-                break
-            fac = r.get("faction")
-            cnt = r.get("count", 1)
-            for _ in range(min(cnt, 5 - removed)):
-                for ps in (HIDDEN, REVEALED):
-                    if count_pieces_by_state(state, NERVII, fac, WARBAND, ps) > 0:
-                        remove_piece(state, NERVII, fac, WARBAND, piece_state=ps)
-                        removed += 1
-                        break
+        from fs_bot.cards.catuvolcus import resolve
+        resolve(state, state.get("event_params", {}))
     else:
         # Place Belgic Allies at Nervii and Eburones, replacing existing
         for tribe in _event_entries(state, "61.placements", (TRIBE_NERVII, TRIBE_EBURONES)):

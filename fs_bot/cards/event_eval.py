@@ -1021,6 +1021,10 @@ def is_event_effective(state, card_id, shaded=False):
         from fs_bot.cards.base_piece_choices import indutiomarus_request
         return any(indutiomarus_request(state)["required_by_region"].values())
 
+    if card_id == 61 and not shaded:
+        from fs_bot.cards.catuvolcus import effective
+        return effective(state)
+
     if card_id == 7 and shaded:
         from fs_bot.cards.base_piece_choices import alaudae_effective
         return alaudae_effective(state)

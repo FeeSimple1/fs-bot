@@ -1,6 +1,6 @@
 """Exact physical piece selections for base and expansion Events.
 
-Card Reference 3/5/6/7/11/19/22/24/31/45/58/60, A Card Reference
+Card Reference 3/5/6/7/11/19/22/24/31/45/58/60/61, A Card Reference
 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
@@ -203,6 +203,9 @@ def validate_response(state, request, response):
                            for row in request['targets'])):
             raise ValueError('Choose an offered Roman or Aedui Ally for this removal')
         return response
+    if card == 61 and request['step'] == 'allies':
+        from fs_bot.cards.catuvolcus import validate_allies
+        return validate_allies(state, request, response)
     if card == 'A58':
         from fs_bot.cards.aduatuci import validate_response as validate_aduatuci
         return validate_aduatuci(state, request, response)
@@ -219,11 +222,14 @@ def validate_response(state, request, response):
             live = a17_removal_request(state)
         validate_region_removals(request, live, response['region'], response['selections'])
         return response
-    if card in ROMAN_TOTALS or card in (7, 11, 'A36', 'A69'):
+    if card in ROMAN_TOTALS or card in (7, 11, 61, 'A36', 'A69'):
         if card == 7:
             live = alaudae_request(state, next(iter(request['required'])))
         elif card == 11:
             live = numidians_removal_request(state)
+        elif card == 61:
+            from fs_bot.cards.catuvolcus import choice_request as catuvolcus_request
+            live = catuvolcus_request(state, 'warbands')
         elif card == 'A69':
             live = a69_removal_request(state)
         elif card == 'A36':

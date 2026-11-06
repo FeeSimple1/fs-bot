@@ -14,6 +14,20 @@ def collect_choice(state, faction, request, stdin, stdout):
                 for row in request['targets']
             ])
             return validate_response(state, request, {'tribe': tribe})
+        if card == 61 and request['step'] == 'allies':
+            remaining = request['targets']
+            tribes = []
+            while remaining:
+                options = [('Finish selecting Allies', None)] if tribes else []
+                row = prompt_choice(stdin, stdout, 'Catuvolcus: remove Allies of one faction:',
+                                    options + [(f"{e['tribe']} ({e['target_faction']})", e)
+                                               for e in remaining])
+                if row is None:
+                    break
+                tribes.append(row['tribe'])
+                remaining = [e for e in remaining
+                             if e != row and e['target_faction'] == row['target_faction']]
+            return validate_response(state, request, {'tribes': tribes})
         if 'required_by_region' in request:
             amounts = request['required_by_region']
             verb = 'replace' if card == 'A58' else 'remove'

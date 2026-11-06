@@ -1,4 +1,4 @@
-"""Source-bounded human menus for original Events 40, 41, 42 and 51."""
+"""Source-bounded human menus for original Events 28, 40, 41, 42 and 51."""
 from collections import Counter
 
 from fs_bot import rules_consts as rc
@@ -28,6 +28,30 @@ def collect_params(state, faction, card, shaded, stdin, stdout):
         if actions:
             key = step if index is None else f'{step}:{index}'
             params.setdefault('stage_timing_actions', {})[key] = actions
+
+    if card == 28:
+        from fs_bot.cards.oppida import ally_options, upgrade_options
+
+        params.update(ally_placements=[], citadel_upgrades=[])
+        for key, step, prompt in (
+                ('ally_placements', '28.allies', 'Oppida: place an Ally at which City?'),
+                ('citadel_upgrades', '28.citadels', 'Oppida: upgrade an Ally at which City?')):
+            while True:
+                index = len(params[key])
+                board, actions = stage(step, index)
+                save_tail(step, index, actions)
+                if key == 'ally_placements':
+                    options = [(f'{city} ({owner})', {'tribe': rc.CITY_TO_TRIBE[city], 'faction': owner})
+                               for city, owner in ally_options(board)]
+                else:
+                    options = [(f'{city} ({owner})', city) for city, owner in upgrade_options(board).items()]
+                if not options:
+                    break
+                selection = choose(board, prompt, [('Finish this step', None), *options])
+                if selection is None:
+                    break
+                params[key].append(selection)
+        return params
 
     if card == 40:
         params['placements'] = []

@@ -247,6 +247,7 @@ counts are rejected. Existing entry `timing_actions` and
 
 | Card/side | Parameters and limits |
 |---|---|
+| 28, either side | Ordered `ally_placements: [{tribe, faction}]` at Subdued Cities outside Roman Control, followed by `citadel_upgrades: [city]` using City names such as `"Bibracte"`. Each upgrade uses an Available Citadel of the Ally's faction. Both steps may be empty. |
 | 40 unshaded | `placements: [{region, piece_type, count?, faction?, tribe?}]`; one piece type per Region adjacent to Cisalpina, totaling at most 3 Warbands, 2 Auxilia or 1 Ally there. Count defaults to 1, faction to executor; Ally needs its Tribe. Empty placement still grants Resources. |
 | 41, either side | `ally_placements: [{tribe, region?, faction?, count?}]` (at most 2, own faction, count 1); optional `citadel_upgrade_tribe` and `fort_region`. The executor must have an Ally or Citadel at Avaricum; Control alone is insufficient. Fort placement is Roman-only. All choices are within one Region of Bituriges. |
 | 42 unshaded | `removals: [{tribe, faction?, region?, count?}]`; count 1, with optional `mode: "controlled"` or `"adjacent"`. Choose at most 4 under Roman Control OR at most 2 adjacent to it; omitted mode is inferred only when valid. Zero is permitted. |

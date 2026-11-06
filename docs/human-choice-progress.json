@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "663dbfc17579c1b1a81c82aff0856e770c2ceb5b",
-    "python_sha256": "9e606b289ecf4707a24a42c74ad71171b03d49d900d0db18d751fbd85153d05a",
-    "python_files": 546,
+    "commit": "13bb841867f60b5a32e1ec8ddcb5c7aa9d34d007",
+    "python_sha256": "b16f26c75382894641460536b59918fff18aaaf2fff0682cc01bd922728b0ee4",
+    "python_files": 548,
     "working_tree_changes": true,
-    "note": "Shaded 51 closes BE-07. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-shaded-surus-51."
+    "note": "Oppida and the City schemas advance BE-08. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-oppida-28-city-choices."
   },
   "total": 50,
   "closed": 43,
@@ -63,7 +63,8 @@
     "Unshaded 60 now offers exact Belgic Warband and named Ally removals in Treveri or one adjacent Region. See current-status.md#6-november-unshaded-indutiomarus-60.",
     "Unshaded 45 now offers exact optional Arverni Warband replacements in up to two Regions. See current-status.md#6-november-unshaded-litaviccus-45.",
     "Unshaded 61 now offers separate same-faction Ally and exact Warband removals in Nervii. See current-status.md#6-november-unshaded-catuvolcus-61.",
-    "Shaded 51 closes BE-07 with exact optional Aedui replacements in one Region and a resumable Command using only surviving newly placed Germans. See current-status.md#6-november-shaded-surus-51."
+    "Shaded 51 closes BE-07 with exact optional Aedui replacements in one Region and a resumable Command using only surviving newly placed Germans. See current-status.md#6-november-shaded-surus-51.",
+    "Oppida now offers legal live City choices on both sides. The Sacking and Remi Influence City schemas match their existing named-owner menus. See current-status.md#6-november-oppida-28-city-choices."
   ],
   "findings": [
     {
@@ -286,7 +287,8 @@
         "Card 49 now has a legal marker collector and live owner casualty requests; unsafe executor piece_removals are rejected. Other listed Event schema shapes remain open. See reviews/drought-losses-2026-11-04.md.",
         "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. See reviews/base-piece-choices-2026-11-05.md.",
         "Shaded numeric 11 uses a live removal menu in place of the original tuple-derived prompts. See current-status.md#6-november-shaded-numidians-11.",
-        "Shaded numeric 6 uses a live Auxilia movement menu in place of the tuple-derived prompt. Other listed cards remain open. See current-status.md#6-november-shaded-marcus-antonius-6."
+        "Shaded numeric 6 uses a live Auxilia movement menu in place of the tuple-derived prompt. See current-status.md#6-november-shaded-marcus-antonius-6.",
+        "Oppida uses live City choices after its first phase. Sacking and shaded Remi Influence use City schemas matching their existing owner menus. Shaded 57 remains open. See current-status.md#6-november-oppida-28-city-choices."
       ]
     },
     {

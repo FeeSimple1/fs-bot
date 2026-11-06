@@ -21,6 +21,31 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November Oppida 28 City choices
+
+Under Card Reference 28 and §1.4.2, Oppida first offers eligible
+Gallic Ally placements at Subdued Cities outside Roman Control. Its
+second menu offers City Allies of factions with Available Citadels.
+It uses the board after the first step and recalculates options at
+each timing window, including when the executor reclaims a Citadel.
+Both sides use City names and retain the authored plan format.
+
+The parent schema offered the Aedui Tribe as a Citadel target and
+omitted the City of Bibracte. The repaired menu submits Bibracte and
+upgrades the chosen Ally. The City schemas for Sacking and shaded Remi
+Influence now name the City type explicitly, matching their existing
+owner menus. Oppida's bot defaults and resolver use the same legal
+placement and upgrade options as the terminal.
+
+All 9,130 tests pass, including eight new cases. Twenty paired bot
+games match all previous final boards and winners without integrity
+errors. Twenty mixed-seat games match across two hash seeds, with
+zero hard findings and zero partial actions. The 100-game balance
+check passes and matches every previous winner and card count.
+
+**BE-08 advances. The remaining reported shape is shaded 57's Britannia
+removal. The original audit remains 43/50 closed (86%), with 7 open.**
+
 ### 6 November shaded Surus 51
 
 Under Card Reference 51 and §§5.1–5.1.3 and 5.4, the executor selects

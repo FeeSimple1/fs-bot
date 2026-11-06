@@ -74,11 +74,13 @@ def infer_kind(name, default_node=None):
         # ally_removals of tribe names, ...). Dict-entry lists (moves,
         # placements) resolve to "entries" via loop analysis instead.
         inner = infer_kind(k[:-1])
-        if inner in ("tribe", "leader_name", "piece_state", "piece_type"):
+        if inner in ("city", "tribe", "leader_name", "piece_state", "piece_type"):
             return "list:" + inner
     if "faction" in k:
         return "faction"
-    if "tribe" in k or "city" in k or "colony" in k:
+    if "city" in k:
+        return "city"
+    if "tribe" in k or "colony" in k:
         return "tribe"
     if "leader" in k:
         return "leader_name"
@@ -260,12 +262,13 @@ _OVERRIDES = {
     35: {"faction": {"kind": "faction", "values": tuple(GALLIC_FACTIONS)}},
     46: {"faction": {"kind": "faction", "values": tuple(GALLIC_FACTIONS)}},
     67: {"faction": {"kind": "faction", "values": (ROMANS, *GALLIC_FACTIONS)}},
-    68: {"target_city": {"kind": "tribe", "values": (CITY_ALESIA, CITY_CENABUM)}},
+    68: {"target_city": {"kind": "city", "values": (CITY_ALESIA, CITY_CENABUM)}},
     2: {"legions_from_track": {"kind": "count"},
         "legions_from_fallen": {"kind": "count"}},
     18: {"target_region": {"kind": "region"}},
     "A18": {"target_region": {"kind": "region"}},
-    23: {"target_city": {"kind": "tribe", "values": tuple(CITY_TO_TRIBE)}},
+    23: {"target_city": {"kind": "city", "values": tuple(CITY_TO_TRIBE)}},
+    28: {"citadel_upgrades": {"kind": "list:city"}},
     65: {"replacements": {"kind": "entries", "allow_empty": True,
         "event_step": "65.replacements", "entry_fields": {
             "region": "region", "piece_type": "piece_type", "piece_state": "piece_state",
@@ -439,6 +442,8 @@ def kind_values(state, kind, spec=None):
         return [None, *FACTIONS]
     if kind == "tribe":
         return sorted(state.get("tribes", {}))
+    if kind == "city":
+        return list(CITY_TO_TRIBE)
     if kind == "count":
         return list(range(9))
     if kind == "direction":

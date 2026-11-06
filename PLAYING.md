@@ -529,6 +529,12 @@ dropoffs; pieces that arrive cannot move again from another selected origin.
 Scouted pieces that moved lose their marker during March and can Hide at
 the end; Scouted residents lose their marker at the end and stay Revealed.
 
+Oppida (28) first offers Subdued Cities outside Roman Control for Gallic
+Ally placements. Then choose which City Allies to upgrade with Available
+Citadels of their own factions, including Allies placed during the first
+step. The menus show City names and recalculate the options after each
+placement, upgrade, or voluntary removal.
+
 Remi Influence (68 shaded) asks the Gallic faction allied with Remi whether
 to accept and which City to use: Alesia or Cenabum. That faction receives
 the Citadel and four Warbands as available, even if another player played

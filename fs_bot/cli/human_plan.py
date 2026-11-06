@@ -1467,6 +1467,9 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
         stdout.write(f"Standard choices for this Event: {derived}\n")
         if prompt_yes_no(stdin, stdout, "Use them?", default=True):
             return dict(derived)
+    if card_id == 28:
+        from fs_bot.cli.base_event_limits import collect_params
+        return collect_params(state, faction, card_id, shaded, stdin, stdout)
     from fs_bot.cards.param_schema import card_param_schema
     schema = card_param_schema(card_id, state.get("scenario"),
                                state.get("card_edition"))

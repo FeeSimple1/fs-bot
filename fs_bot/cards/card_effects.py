@@ -1271,48 +1271,23 @@ def execute_card_28(state, shaded=False):
 
     Source: Card Reference, card 28
     """
-    from fs_bot.rules_consts import (
-        CITY_TO_TRIBE, TRIBE_TO_REGION,
-    )
+    from fs_bot.cards.oppida import ally_options, upgrade_options
+    from fs_bot.rules_consts import CITY_TO_TRIBE, TRIBE_TO_CITY, TRIBE_TO_REGION
+
     params = state.get("event_params", {})
-    # Place Gallic Allies at Subdued Cities without Roman Control.
-    # Validation hardened (found via play: the handler accepted ANY
-    # tribe): must be a CITY tribe, currently Subdued, an Ally must be
-    # Available, and the Region must not be Roman-controlled.
-    from fs_bot.board.pieces import get_available as _gav28
-    _city_tribes = set(CITY_TO_TRIBE.values())
     ally_placements = params.get("ally_placements", [])
     for placement in _event_entries(state, "28.allies", ally_placements):
         tribe = placement["tribe"]
         faction = placement["faction"]
-        region = TRIBE_TO_REGION.get(tribe)
-        if region is None or faction not in GALLIC_FACTIONS:
-            continue
-        if tribe not in _city_tribes:
-            continue  # "at Subdued Cities" — City Tribes only
-        t_info = state.get("tribes", {}).get(tribe, {})
-        if (t_info.get("allied_faction") is not None
-                or t_info.get("status") is not None):
-            continue  # not Subdued
-        if _gav28(state, faction, ALLY) < 1:
-            continue  # no Available Ally disc
-        if not is_controlled_by(state, region, ROMANS):
+        if (TRIBE_TO_CITY.get(tribe), faction) in ally_options(state):
             _ally_tribe(state, tribe, faction)
-    # Replace Gallic Allies at Cities with Citadels of same Faction
     citadel_upgrades = params.get("citadel_upgrades", [])
     for city in _event_entries(state, "28.citadels", citadel_upgrades):
-        tribe = CITY_TO_TRIBE.get(city)
-        if tribe is None:
-            continue
-        region = TRIBE_TO_REGION.get(tribe)
-        tribe_info = state.get("tribes", {}).get(tribe)
-        if tribe_info and tribe_info.get("allied_faction") in GALLIC_FACTIONS:
-            fac = tribe_info["allied_faction"]
-            if (count_pieces(state, region, fac, ALLY) > 0
-                    and count_pieces(state, region, fac, CITADEL) == 0
-                    and get_available(state, fac, CITADEL) > 0):
-                remove_piece(state, region, fac, ALLY)
-                place_piece(state, region, fac, CITADEL)
+        faction = upgrade_options(state).get(city)
+        if faction:
+            region = TRIBE_TO_REGION[CITY_TO_TRIBE[city]]
+            remove_piece(state, region, faction, ALLY)
+            place_piece(state, region, faction, CITADEL)
 
 def execute_card_29(state, shaded=False):
     """Card 29: Suebi Mobilize — Remove Dispersed / Germans Phase.

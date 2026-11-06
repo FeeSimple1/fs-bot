@@ -5870,31 +5870,16 @@ def _derive_card_28(state, faction, shaded):
     Subdued City Tribes not under Roman Control, and upgrade its City Allies to
     Citadels (§8.2.3 — the NP benefits itself; §8.3.1 — at Cities). Only a
     Gallic Faction benefits."""
-    from fs_bot.rules_consts import (GALLIC_FACTIONS, CITY_TO_TRIBE,
-                                     TRIBE_TO_REGION, ROMANS, ALLY, CITADEL)
-    from fs_bot.board.control import is_controlled_by
-    from fs_bot.board.pieces import get_available, count_pieces
+    from fs_bot.cards.oppida import ally_options, upgrade_options
+    from fs_bot.rules_consts import GALLIC_FACTIONS, CITY_TO_TRIBE, ALLY, CITADEL
+    from fs_bot.board.pieces import get_available
     if faction not in GALLIC_FACTIONS:
         return None
-    placements, upgrades = [], []
-    avail_ally = get_available(state, faction, ALLY)
-    for city, tribe in CITY_TO_TRIBE.items():
-        region = TRIBE_TO_REGION.get(tribe)
-        ti = state.get("tribes", {}).get(tribe)
-        if not (region and ti):
-            continue
-        if (ti.get("allied_faction") is None
-                and not is_controlled_by(state, region, ROMANS)
-                and len(placements) < avail_ally):
-            placements.append({"tribe": tribe, "faction": faction})
-    avail_cit = get_available(state, faction, CITADEL)
-    for city, tribe in CITY_TO_TRIBE.items():
-        region = TRIBE_TO_REGION.get(tribe)
-        ti = state.get("tribes", {}).get(tribe)
-        if (region and ti and ti.get("allied_faction") == faction
-                and count_pieces(state, region, faction, ALLY) > 0
-                and len(upgrades) < avail_cit):
-            upgrades.append(city)
+    placements = [{"tribe": CITY_TO_TRIBE[city], "faction": faction}
+                  for city, owner in ally_options(state) if owner == faction]
+    placements = placements[:get_available(state, faction, ALLY)]
+    upgrades = [city for city, owner in upgrade_options(state).items() if owner == faction]
+    upgrades = upgrades[:get_available(state, faction, CITADEL)]
     if not placements and not upgrades:
         return None
     return {"ally_placements": placements, "citadel_upgrades": upgrades}

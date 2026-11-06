@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "76464de4a2a364b0aa7a8d0f14ef824f4a8c1536",
-    "python_sha256": "7e9a1a4059570204d11c2020f4ca4e31f68ab91b27f3c0b874ffa58bc7b88925",
-    "python_files": 545,
+    "commit": "663dbfc17579c1b1a81c82aff0856e770c2ceb5b",
+    "python_sha256": "9e606b289ecf4707a24a42c74ad71171b03d49d900d0db18d751fbd85153d05a",
+    "python_files": 546,
     "working_tree_changes": true,
-    "note": "Unshaded 61 advances BE-07. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-unshaded-catuvolcus-61."
+    "note": "Shaded 51 closes BE-07. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-shaded-surus-51."
   },
   "total": 50,
-  "closed": 42,
-  "open": 8,
+  "closed": 43,
+  "open": 7,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -62,7 +62,8 @@
     "Unshaded 58 now offers exact Belgic and Germanic Warband removals in one Roman Fort Region. See current-status.md#6-november-unshaded-aduatuca-58.",
     "Unshaded 60 now offers exact Belgic Warband and named Ally removals in Treveri or one adjacent Region. See current-status.md#6-november-unshaded-indutiomarus-60.",
     "Unshaded 45 now offers exact optional Arverni Warband replacements in up to two Regions. See current-status.md#6-november-unshaded-litaviccus-45.",
-    "Unshaded 61 now offers separate same-faction Ally and exact Warband removals in Nervii. See current-status.md#6-november-unshaded-catuvolcus-61."
+    "Unshaded 61 now offers separate same-faction Ally and exact Warband removals in Nervii. See current-status.md#6-november-unshaded-catuvolcus-61.",
+    "Shaded 51 closes BE-07 with exact optional Aedui replacements in one Region and a resumable Command using only surviving newly placed Germans. See current-status.md#6-november-shaded-surus-51."
   ],
   "findings": [
     {
@@ -259,7 +260,7 @@
       "id": "BE-07",
       "title": "Several direct Event removals cannot select physical visibility or exact Allied Tribe",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "partial_repairs": [
         "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. See reviews/base-piece-choices-2026-11-05.md.",
         "Shaded numeric 5 offers exact Hidden, Revealed and Scouted Auxilia removals. See current-status.md#5-november-roman-event-removals.",
@@ -271,8 +272,10 @@
         "Unshaded numeric 58 offers exact Warband removals by faction and visibility in one Roman Fort Region. See current-status.md#6-november-unshaded-aduatuca-58.",
         "Unshaded numeric 60 offers exact Belgic Warband and named Ally removals in Treveri or one adjacent Region, excluding Citadels. See current-status.md#6-november-unshaded-indutiomarus-60.",
         "Unshaded numeric 45 offers exact Arverni Warband replacements, including Scouted Warbands and the zero option. See current-status.md#6-november-unshaded-litaviccus-45.",
-        "Unshaded numeric 61 offers exact same-faction Allies and separate exact Warband removals. Shaded numeric 51 remains open. See current-status.md#6-november-unshaded-catuvolcus-61."
-      ]
+        "Unshaded numeric 61 offers exact same-faction Allies and separate exact Warband removals. See current-status.md#6-november-unshaded-catuvolcus-61."
+      ],
+      "report": "current-status.md#6-november-shaded-surus-51",
+      "disposition": "All listed physical-choice gaps are repaired, including the previously closed shaded 65 and the final shaded 51 exact Aedui replacements. The Surus German Command uses only surviving replacements."
     },
     {
       "id": "BE-08",

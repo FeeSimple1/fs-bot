@@ -21,6 +21,35 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Surus 51
+
+Under Card Reference 51 and §§5.1–5.1.3 and 5.4, the executor selects
+zero to four Aedui Warbands by visibility in Treveri or one adjacent
+Region. The terminal and assistant offer exact live cohorts. Each
+source and its replacement resolve together. The Event skips a source
+lost in the timing window and removes a surviving source even if its
+German replacement is unavailable.
+
+The parent probe offered neither a replacement nor a German Command.
+The repaired probe replaces the selected Scouted Warband and Marches
+the new German Warband, leaving the resident Germans in Treveri.
+The assistant preserves the selected sources when saving at the German
+Command. Legacy Region/count plans still delegate visibility and keep
+their replacement timing windows. Bots decline shaded Surus if there
+are no Aedui Warbands within scope. Older histories may pause for the
+new choice or diverge under the corrected replacements.
+
+All 9,122 tests pass, including 16 new cases. Twenty paired bot games
+complete without integrity errors, retaining every winner and changing
+one final board. Twenty mixed-seat games match across two hash seeds,
+with zero hard findings and zero partial actions. The 100-game balance
+check passes with a largest shift of five percentage points against
+the reviewed baseline. One winner differs from the parent. In both
+changed cases, the Belgae bot now declines an Event that previously
+had no effect.
+
+**BE-07 closes. The original audit is 43/50 closed (86%), with 7 open.**
+
 ### 6 November unshaded Catuvolcus 61
 
 Under Card Reference 61 and §§5.1–5.1.3, the executor removes one or more

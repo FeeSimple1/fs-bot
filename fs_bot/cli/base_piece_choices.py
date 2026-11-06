@@ -65,6 +65,8 @@ def collect_choice(state, faction, request, stdin, stdout):
             prompt = f"Select Auxilia to move to {request['destination']} (zero is allowed):"
         elif card == 45:
             prompt = 'Litaviccus: select up to two Warbands in each of up to two Regions:'
+        elif card == 51:
+            prompt = 'Surus: select up to four Aedui Warbands in one Region:'
         else:
             prompt = 'Select pieces (zero total is allowed):'
         while remaining:

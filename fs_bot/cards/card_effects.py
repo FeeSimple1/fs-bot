@@ -1951,42 +1951,14 @@ def execute_card_51(state, shaded=False):
 
     Source: Card Reference, card 51
     """
-    params = state.get("event_params", {})
     if not shaded:
         from fs_bot.cards.base_event_limits import execute_surus_unshaded
         execute_surus_unshaded(state)
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_51_aedui_free_command"] = True
     else:
-        # Replace up to 4 Aedui Warbands with German pieces + action
-        from fs_bot.rules_consts import TREVERI
-        from fs_bot.map.map_data import get_adjacent
-        region = params.get("region")
-        count = params.get("count", 4)
-        if type(count) is not int or not 0 <= count <= 4:
-            raise ValueError("Surus replaces zero to four Aedui Warbands")
-        if region and region not in {TREVERI, *get_adjacent(TREVERI, state['scenario'])}:
-            raise ValueError("Surus replacements must be within one Region of Treveri")
-        placed = 0
-        if region:
-            replaced = 0
-            for _ in _event_entries(state, "51.german_replacements", range(count)):
-                for ps in (HIDDEN, REVEALED, SCOUTED):
-                    if count_pieces_by_state(state, region, AEDUI, WARBAND, ps) > 0:
-                        remove_piece(state, region, AEDUI, WARBAND, piece_state=ps)
-                        if get_available(state, GERMANS, WARBAND) > 0:
-                            place_piece(state, region, GERMANS, WARBAND)
-                            placed += 1
-                            _track_event_placement(state, "card_51_german", GERMANS,
-                                                   region, WARBAND, 1)
-                        replaced += 1
-                        break
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_51_german_action"] = True
-        state["event_modifiers"]["card_51_german_cohort"] = [
-            {"region": region, "faction": GERMANS, "count": placed}] if placed else []
-        if region:
-            state["event_modifiers"]["card_51_action_region"] = region
+        from fs_bot.cards.surus import resolve_replacements
+        resolve_replacements(state, state.get("event_params", {}))
 
 def execute_card_52(state, shaded=False):
     """Card 52: Assembly of Gaul — Drain Resources / Free Command.

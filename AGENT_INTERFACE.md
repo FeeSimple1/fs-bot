@@ -1295,7 +1295,18 @@ resolves before the next die or Forage; return an ordinary explicit Rally
 plan, decline, or explicit default. In Ariovistus, the Arverni result uses
 their game-run procedure rather than a player request.
 
-Shaded Surus (51) gives the Event executor an `event_command` request with
+Shaded Surus (51) sends `event_piece_choice` after `51.piece_choice`.
+Respond `{"selections":[...]}` with up to four exact Aedui Warbands from
+Treveri or one adjacent Region. Use the offered visibility cohorts.
+An empty list selects zero. Author the same list in
+`event_params.piece_choices`. Legacy `region` and `count` still work
+together and delegate visibility. The Event skips a selected source that
+leaves during its replacement window. If the German replacement is
+unavailable, the Event still removes the surviving Aedui source. Older histories may pause
+for the new choice or diverge under the corrected replacements.
+
+If any newly placed Warbands survive, Surus gives the Event executor an
+`event_command` request with
 `acting_faction: "Germans"`. Choose March, Raid, or Battle using only the newly
 placed surviving German Warbands, from the offered Region. The grant is free,
 selects one Region, allows no SA and cannot be declined when an action is

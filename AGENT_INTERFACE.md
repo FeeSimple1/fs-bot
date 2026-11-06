@@ -552,6 +552,16 @@ supported. The legacy Gallic Hostages path also now correctly replaces Roman
 Auxilia with its own Warbands. Older histories can stop at the new request or
 vary under that corrected replacement.
 
+Shaded Marcus Antonius (6) sends `event_piece_choice` to the executor after
+`6.piece_choice`. Respond `{"selections":[...]}` with zero to `max_count`
+offered Roman Auxilia, chosen by origin and visibility. The request includes
+the fixed `destination` Provincia and excludes Auxilia already there. Moves
+preserve visibility and use the selected groups in order. The same list can
+be authored as `event_params.piece_choices`. The legacy `auxilia_moves`
+origin/count pairs still work. Supply one plan format. A player who defers
+moves zero pieces and still gets the printed eligibility effects. Older
+histories may reach the new prompt or diverge under the corrected movement.
+
 Shaded Numidians (11) sends `event_piece_choice` to the executor after
 `11.piece_choice` in both editions. Respond `{"selections":[...]}` with
 the offered Roman Auxilia cohorts, including exact visibility and Region.

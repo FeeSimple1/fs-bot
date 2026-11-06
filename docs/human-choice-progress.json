@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "c41565abe645ff8a8e1d326596f109a720e9cb0c",
-    "python_sha256": "3d535f22dbebe6e960b68ed659469b8088f5222fa4c428589d704082235c042f",
+    "commit": "f27b9a3fe388b9b46a560b2b7091d3d0823ccb41",
+    "python_sha256": "60bb4987a70e41ff8a4a88ce19610e890813a64e58c43148de771a42f07ea7bf",
     "python_files": 537,
     "working_tree_changes": true,
-    "note": "Shaded 11 advances BE-07 and BE-08. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-shaded-numidians-11."
+    "note": "Shaded 6 advances BE-07 and BE-08. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-shaded-marcus-antonius-6."
   },
   "total": 50,
   "closed": 42,
@@ -55,7 +55,8 @@
     "Shaded A58 offers exact Roman Ally and Auxilia replacements in one Belgica Region and confines its Ambush there.",
     "Unshaded A69 closes EXP-11 with exact Belgic Warband removals, independent placement choices and corrected delegated defaults. See current-status.md#6-november-unshaded-bellovaci-a69.",
     "Shaded 31 now offers the executor named Allied Tribes at each removal step and excludes Citadels. See current-status.md#6-november-shaded-cotuatus--conconnetodumnus-31.",
-    "Shaded 11 now offers exact Roman Auxilia removals through a live menu in both editions. Non-players apply their printed priorities and complete the removals when eligible. See current-status.md#6-november-shaded-numidians-11."
+    "Shaded 11 now offers exact Roman Auxilia removals through a live menu in both editions. Non-players apply their printed priorities and complete the removals when eligible. See current-status.md#6-november-shaded-numidians-11.",
+    "Shaded 6 now offers exact optional Auxilia moves to Provincia with visibility and eligibility preserved. See current-status.md#6-november-shaded-marcus-antonius-6."
   ],
   "findings": [
     {
@@ -257,7 +258,8 @@
         "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. See reviews/base-piece-choices-2026-11-05.md.",
         "Shaded numeric 5 offers exact Hidden, Revealed and Scouted Auxilia removals. See current-status.md#5-november-roman-event-removals.",
         "Shaded numeric 31 offers exact live Ally removal choices. See current-status.md#6-november-shaded-cotuatus--conconnetodumnus-31.",
-        "Shaded numeric 11 offers exact Hidden, Revealed and Scouted Auxilia removals in both editions. Other listed cards remain open. See current-status.md#6-november-shaded-numidians-11."
+        "Shaded numeric 11 offers exact Hidden, Revealed and Scouted Auxilia removals in both editions. See current-status.md#6-november-shaded-numidians-11.",
+        "Shaded numeric 6 offers exact physical Auxilia movement without changing visibility. Other listed cards remain open. See current-status.md#6-november-shaded-marcus-antonius-6."
       ]
     },
     {
@@ -268,7 +270,8 @@
       "partial_repairs": [
         "Card 49 now has a legal marker collector and live owner casualty requests; unsafe executor piece_removals are rejected. Other listed Event schema shapes remain open. See reviews/drought-losses-2026-11-04.md.",
         "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. See reviews/base-piece-choices-2026-11-05.md.",
-        "Shaded numeric 11 uses a live removal menu in place of the original tuple-derived prompts. Other listed cards remain open. See current-status.md#6-november-shaded-numidians-11."
+        "Shaded numeric 11 uses a live removal menu in place of the original tuple-derived prompts. See current-status.md#6-november-shaded-numidians-11.",
+        "Shaded numeric 6 uses a live Auxilia movement menu in place of the tuple-derived prompt. Other listed cards remain open. See current-status.md#6-november-shaded-marcus-antonius-6."
       ]
     },
     {

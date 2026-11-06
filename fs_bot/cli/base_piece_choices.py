@@ -42,8 +42,10 @@ def collect_choice(state, faction, request, stdin, stdout):
                 return validate_response(state, request, {'choice': choice, 'count': count})
         budget = [dict(e) for e in request['available']]
         selected, remaining = [], request['max_count']
+        prompt = (f"Select Auxilia to move to {request['destination']} (zero is allowed):" if card == 6
+                  else 'Select pieces (zero total is allowed):')
         while remaining and any(e['count'] for e in budget):
-            index = prompt_choice(stdin, stdout, 'Select pieces (zero total is allowed):',
+            index = prompt_choice(stdin, stdout, prompt,
                 [('Finish selections', None)] +
                 [(f"{e['region']}: {e['target_faction']} {e['piece_state']} {e['piece_type']} ({e['count']})", i)
                  for i, e in enumerate(budget) if e['count']])

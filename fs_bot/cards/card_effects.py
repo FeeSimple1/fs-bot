@@ -583,20 +583,8 @@ def execute_card_6(state, shaded=False):
         if battle_region:
             state["event_modifiers"]["card_6_battle_region"] = battle_region
     else:
-        # Shaded: Move up to 4 Auxilia to Provincia
-        params = state.get("event_params", {})
-        moves = params.get("auxilia_moves", [])
-        moved = 0
-        for from_region, count in _event_entries(state, "6.moves", moves):
-            actual = min(count, 4 - moved,
-                         count_pieces(state, from_region, ROMANS, AUXILIA))
-            if actual > 0:
-                for _ in range(actual):
-                    remove_piece(state, from_region, ROMANS, AUXILIA)
-                    place_piece(state, PROVINCIA, ROMANS, AUXILIA)
-                moved += actual
-            if moved >= 4:
-                break
+        from fs_bot.cards.base_piece_choices import relocate_marcus_antonius_auxilia
+        relocate_marcus_antonius_auxilia(state, state.get("event_params", {}))
         _event_step(state, "6.eligibility")
         # Romans Ineligible, Executing Faction Eligible
         state["eligibility"][ROMANS] = INELIGIBLE

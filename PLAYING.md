@@ -115,6 +115,11 @@ replacement is Roman Auxilia or your faction's Warband; an unavailable
 replacement leaves the original removed. Use `b`/`board` to inspect before
 choosing. These live choices survive pending replies, saving and replay.
 
+Shaded Marcus Antonius (6) lets the executor choose up to four Roman Auxilia
+to move to Provincia. Select their origin and visibility. The pieces keep
+their visibility when they arrive. Moving zero pieces still applies the
+card's eligibility effects.
+
 Shaded Numidians (11) lets the executor remove four Roman Auxilia from
 any Regions, or all on the map if fewer are present. In both editions,
 choose the exact Hidden, Revealed or Scouted Auxilia to return to Available.

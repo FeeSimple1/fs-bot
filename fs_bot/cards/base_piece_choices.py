@@ -1,6 +1,6 @@
-"""Exact physical piece selections for 3/5/11/19/22/31/A5/A17/A36/A69.
+"""Exact physical piece selections for 3/5/6/11/19/22/31/A5/A17/A36/A69.
 
-Card Reference 3/5/11/19/22/31, A Card Reference 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
+Card Reference 3/5/6/11/19/22/31, A Card Reference 11/A5/A17/A36/A69 and Chapter 5 §§5.1–5.1.3.
 Live responses are strict. Authored legacy region and replacement lists
 retain their selection priorities.
 """
@@ -19,6 +19,7 @@ ROMAN_TOTALS = {3: {rc.LEGION: 2}, 5: GARRISON_TOTALS, 'A5': GARRISON_TOTALS}
 A36_TOTALS = {rc.SETTLEMENT: 2, rc.WARBAND: 8}
 A36_REGIONS = (rc.MORINI, rc.NERVII, rc.TREVERI)
 A17_LIMIT = 4
+MARCUS_ANTONIUS_LIMIT = 4
 NUMIDIANS_LIMIT = 4
 COTUATUS_FACTIONS = {'roman': (rc.ROMANS,), 'aedui': (rc.AEDUI,),
                      'third': (rc.ROMANS, rc.AEDUI)}
@@ -28,6 +29,13 @@ A5_LEGACY_KEYS = {'legion_region', 'auxilia_removals'}
 
 def choice_request(state, card_id):
     owner = state.get('executing_faction')
+    if card_id == 6:
+        regions = sorted(region for region in state['spaces'] if region != rc.PROVINCIA)
+        request = _required_removal_request(state, card_id, owner, rc.ROMANS, regions,
+                                            {rc.AUXILIA: MARCUS_ANTONIUS_LIMIT})
+        request['max_count'] = request.pop('required')[rc.AUXILIA]
+        request['destination'] = rc.PROVINCIA
+        return request
     regions = get_playable_regions_for_state(state)
     if card_id == 19:
         nearby = {rc.PROVINCIA, *get_adjacent_for_state(state, rc.PROVINCIA)}
@@ -172,7 +180,7 @@ def validate_response(state, request, response):
     if (set(response) != ({'choice', key} if card == 19 else {key})
             or (card == 19 and response['choice'] != 'warbands')
             or not isinstance(response[key], list)):
-        raise ValueError('Choose Lucterius warband removals or Hostages selections')
+        raise ValueError('Choose the Event effect and a list of physical selections')
     used = _validate_cohorts(request, choice_request(state, card), response[key],
                              with_action=card == 22)
     if sum(used.values()) > request['max_count']:
@@ -243,6 +251,63 @@ def _consult(state, request):
     owner = request['owner']
     return (consult_agent(state, owner, request)
             if owner in rc.FACTIONS and not state.get('_diviciacus_preview') else None)
+
+
+def relocate_marcus_antonius_auxilia(state, params):
+    """Move existing Auxilia without changing their visibility (§1.4.3)."""
+    from fs_bot.cards.card_effects import _event_step, _relocate_event_groups
+
+    if 'auxilia_moves' in params:
+        if 'piece_choices' in params:
+            raise ValueError('Choose one Marcus Antonius movement plan format')
+        _legacy_marcus_antonius_moves(state, params['auxilia_moves'])
+        return
+    _event_step(state, '6.piece_choice')
+    request = choice_request(state, 6)
+    owner = request['owner']
+    if 'piece_choices' in params:
+        response = {'selections': params['piece_choices']}
+    elif not request['max_count']:
+        return
+    elif owner in state.get('non_player_factions', ()):
+        from fs_bot.cards.ambacti_np import default_removals
+        selections = [dict(row, target_faction=rc.ROMANS, piece_type=rc.AUXILIA)
+                      for row in default_removals(state, owner, MARCUS_ANTONIUS_LIMIT,
+                                                  exclude_regions=(rc.PROVINCIA,))]
+        response = {'selections': selections}
+    else:
+        response = _consult(state, request)
+    if response is None or _default(response):
+        return  # Preserve the optional zero-move default for a player who defers.
+    validate_response(state, request, response)
+    moves = [(row['region'], rc.PROVINCIA, rc.AUXILIA, row['count'], row['piece_state'], row)
+             for row in response['selections']]
+    _relocate_event_groups(state, rc.ROMANS, '6.moves', moves)
+
+
+def _legacy_marcus_antonius_moves(state, moves):
+    from fs_bot.board.pieces import move_piece
+    from fs_bot.cards.card_effects import _event_entries
+
+    remaining = MARCUS_ANTONIUS_LIMIT
+    for region, limit in _event_entries(state, '6.moves', moves):
+        if region not in state['spaces'] or type(limit) is not int or limit < 0:
+            raise ValueError('Choose an Auxilia origin and a nonnegative count')
+        if region == rc.PROVINCIA:
+            continue
+        limit = min(limit, remaining)
+        for visibility in STATES:
+            count = min(limit, count_pieces_by_state(state, region, rc.ROMANS,
+                                                     rc.AUXILIA, visibility))
+            if count:
+                move_piece(state, region, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA,
+                           count=count, piece_state=visibility)
+                limit -= count
+                remaining -= count
+            if not limit:
+                break
+        if not remaining:
+            break
 
 
 def resolve_cotuatus(state, params):

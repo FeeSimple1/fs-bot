@@ -1,4 +1,4 @@
-"""Card Reference 6: optional Roman Scout, then one double-Auxilia Battle.
+"""Card Reference 6: Roman Scout and Battle, or an optional Auxilia relocation.
 
 §8.1.1 declines a wholly ineffective NP Event; §8.2.3 retains the Roman
 priorities. A human beneficiary chooses both actions on the current board.
@@ -10,8 +10,9 @@ import pytest
 
 from fs_bot import rules_consts as rc
 from fs_bot.board.control import refresh_all_control
-from fs_bot.board.pieces import count_pieces, place_piece
+from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available, place_piece
 from fs_bot.bots.bot_common import should_decline_event
+from fs_bot.cards.base_piece_choices import KIND
 from fs_bot.cards.card_text import get_card_text
 from fs_bot.cards.event_conditions import np_event_available
 from fs_bot.cli.display import HumanTurnDisplay, format_board
@@ -21,7 +22,9 @@ from fs_bot.engine.agent import RETREAT
 from fs_bot.engine.free_actions import (
     execute_free_action_plan, validate_free_action_response,
 )
-from fs_bot.engine.game_engine import ACTION_EVENT, _action_transaction, get_sop_factions
+from fs_bot.engine.game_engine import (
+    ACTION_EVENT, _action_transaction, adjust_eligibility, get_sop_factions,
+)
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.state_schema import build_initial_state, validate_state
 from fs_bot.tools.seat_session import SeatSession, DecisionPending, board_copy
@@ -333,3 +336,169 @@ def test_terminal_can_show_board_then_decline_both_actions(monkeypatch):
     result = ex._resolve_card6_scout_battle(state)
     assert all(item['declined'] for item in result)
     assert output.getvalue().count(format_board(state)) == 2
+
+
+def shaded_event(state, params=None, executor=rc.BELGAE, *, npc=False):
+    action = {'command': rc.FIRST_DID_EVENT, 'regions': [], 'details': {
+        'card_id': 6, 'text_preference': rc.EVENT_SHADED, 'event_params': params or {}}}
+    actor_key = 'bot_action' if npc else 'player_action'
+    return ex.execute_decision(state, executor, {'action': ACTION_EVENT, actor_key: action})
+
+
+def selection(visibility, count, region=rc.SEQUANI, faction=rc.ROMANS):
+    return {'region': region, 'target_faction': faction, 'piece_type': rc.AUXILIA,
+            'piece_state': visibility, 'count': count}
+
+
+@pytest.mark.parametrize('scenario,executor', [
+    (rc.SCENARIO_GREAT_REVOLT, rc.BELGAE),
+    (rc.SCENARIO_ARIOVISTUS, rc.GERMANS),
+])
+def test_shaded_moves_exact_cohorts_without_flipping_or_returning_them(scenario, executor):
+    state = board(scenario)
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 3)
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 2, piece_state=rc.REVEALED)
+    place_piece(state, rc.TREVERI, rc.ROMANS, rc.AUXILIA, 3, piece_state=rc.SCOUTED)
+    place_piece(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA)
+    pool = get_available(state, rc.ROMANS, rc.AUXILIA)
+    choices = [selection(rc.REVEALED, 2), selection(rc.SCOUTED, 2, rc.TREVERI)]
+    assert shaded_event(state, {'piece_choices': choices}, executor)['executed']
+    assert count_pieces(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 3
+    assert count_pieces(state, rc.TREVERI, rc.ROMANS, rc.AUXILIA) == 1
+    assert count_pieces_by_state(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, rc.HIDDEN) == 1
+    for visibility in (rc.REVEALED, rc.SCOUTED):
+        assert count_pieces_by_state(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, visibility) == 2
+    assert get_available(state, rc.ROMANS, rc.AUXILIA) == pool
+    assert validate_state(state) == []
+
+
+@pytest.mark.parametrize('choices', [
+    [selection(rc.REVEALED, 5)],
+    [selection(rc.REVEALED, 3), selection(rc.REVEALED, 1)],
+    [selection(rc.REVEALED, 1, rc.PROVINCIA)],
+    [selection(rc.REVEALED, 1, faction=rc.AEDUI)],
+])
+def test_shaded_invalid_exact_plan_rolls_back_movement_and_eligibility(choices):
+    state = board()
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 3, piece_state=rc.REVEALED)
+    place_piece(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, 2, piece_state=rc.REVEALED)
+    before = encode(board_copy(state))
+    assert shaded_event(state, {'piece_choices': choices})['rejected']
+    assert encode(board_copy(state)) == before
+
+
+def test_shaded_zero_moves_still_applies_both_eligibility_clauses():
+    state = board()
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 4)
+    assert shaded_event(state, {'piece_choices': []})['executed']
+    assert count_pieces(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 4
+    adjust_eligibility(state, {rc.BELGAE: {'action': ACTION_EVENT}})
+    assert state['eligibility'][rc.BELGAE] == rc.ELIGIBLE
+    assert state['eligibility'][rc.ROMANS] == rc.INELIGIBLE
+    adjust_eligibility(state, {})
+    assert state['eligibility'][rc.ROMANS] == rc.ELIGIBLE
+
+
+def test_shaded_legacy_plan_retains_its_origins_and_preserves_visibility():
+    state = board()
+    place_piece(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, 4, piece_state=rc.REVEALED)
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 2, piece_state=rc.REVEALED)
+    params = {'auxilia_moves': [[rc.PROVINCIA, 4], [rc.SEQUANI, 2]]}
+    assert shaded_event(state, params)['executed']
+    assert count_pieces(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 0
+    assert count_pieces_by_state(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, rc.REVEALED) == 6
+
+
+def test_shaded_selected_piece_removed_at_timing_window_is_not_replaced_by_resident():
+    state = board(human=True)
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 3, piece_state=rc.REVEALED)
+    params = {'piece_choices': [selection(rc.REVEALED, 2)], 'stage_timing_actions': {
+        '6.moves:0': [{'kind': 'voluntary_removal', 'response': {'operations': [{
+            'action': 'remove', 'region': rc.SEQUANI, 'piece_type': rc.AUXILIA,
+            'piece_state': rc.REVEALED, 'count': 1, 'cohort': 'event.6.moves.0'}]}}]}}
+    assert shaded_event(state, params, rc.ROMANS)['executed']
+    assert count_pieces(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 1
+    assert count_pieces_by_state(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, rc.REVEALED) == 1
+    assert state['eligibility'][rc.ROMANS] == rc.ELIGIBLE
+
+
+def test_shaded_german_bot_declines_without_a_qualified_origin_and_uses_its_tiers():
+    from fs_bot.bots.german_bot import node_g3b
+
+    state = board(rc.SCENARIO_ARIOVISTUS)
+    place_piece(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, 3)
+    place_piece(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA, 4)
+    assert node_g3b(state) == 'Yes'
+    place_piece(state, rc.SUGAMBRI, rc.ROMANS, rc.AUXILIA, 1, piece_state=rc.REVEALED)
+    place_piece(state, rc.TREVERI, rc.ROMANS, rc.AUXILIA, 1, piece_state=rc.SCOUTED)
+    assert node_g3b(state) == 'No'
+    assert shaded_event(state, executor=rc.GERMANS, npc=True)['executed']
+    assert count_pieces(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA) == 2
+    assert count_pieces(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA) == 7
+    assert count_pieces(state, rc.SUGAMBRI, rc.ROMANS, rc.AUXILIA) == 0
+    assert count_pieces(state, rc.TREVERI, rc.ROMANS, rc.AUXILIA) == 0
+
+
+@pytest.mark.parametrize('executor,preferred', [(rc.BELGAE, rc.ATREBATES), (rc.ARVERNI, rc.MANDUBII)])
+def test_shaded_bots_use_their_printed_priorities(executor, preferred):
+    state = board()
+    place_piece(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA, 4)
+    place_piece(state, preferred, rc.ROMANS, rc.AUXILIA, 1, piece_state=rc.REVEALED)
+    place_piece(state, preferred, rc.ROMANS, rc.LEGION, from_legions_track=True)
+    assert shaded_event(state, executor=executor, npc=True)['executed']
+    assert count_pieces(state, preferred, rc.ROMANS, rc.AUXILIA) == 0
+    assert count_pieces(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA) == 1
+    assert count_pieces_by_state(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, rc.REVEALED) == 1
+
+
+def test_shaded_cli_selects_cohorts_for_the_executor():
+    from fs_bot.cli.human_plan import _collect_event_params
+
+    state = board()
+    state['non_player_factions'].discard(rc.BELGAE)
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 3)
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 2, piece_state=rc.REVEALED)
+    output = StringIO()
+    assert _collect_event_params(state, rc.BELGAE, 6, True, StringIO(), output) == {}
+    state['decision_agent'] = make_cli_reactive([rc.BELGAE], StringIO('board\n3\n2\n1\n'), output)
+    assert shaded_event(state)['executed']
+    assert 'move to Provincia' in output.getvalue()
+    assert count_pieces_by_state(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA, rc.REVEALED) == 2
+
+
+def test_shaded_saved_choice_keeps_id_and_resumes_with_the_same_move(tmp_path):
+    state = board()
+    state['non_player_factions'].discard(rc.BELGAE)
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 4, piece_state=rc.REVEALED)
+
+    def session_for(board, meta=None, log=None):
+        session = SeatSession(board, meta or {'seat': rc.BELGAE}, [] if log is None else log,
+                              HumanTurnDisplay(StringIO()))
+        board['decision_agent'] = lambda b, f, r: session.reactive(b, f, r) if r['kind'] == KIND else None
+        return session
+
+    session = session_for(state)
+    before = encode(board_copy(state))
+    with pytest.raises(DecisionPending):
+        with _action_transaction(state, _driver(session)):
+            shaded_event(state)
+    pending = deepcopy(session.data['pending'])
+    request = decode(pending['request'])
+    assert request['owner'] == rc.BELGAE and request['destination'] == rc.PROVINCIA
+    assert encode(board_copy(state)) == before
+    save_game(state, tmp_path / 'marcus_shaded.json', meta=session.meta, log=session.log)
+    restored, meta, log = load_game(tmp_path / 'marcus_shaded.json', validate=True)
+    resumed = session_for(restored, meta, log)
+    with pytest.raises(DecisionPending):
+        with _action_transaction(restored, _driver(resumed)):
+            shaded_event(restored)
+    assert resumed.data['pending'] == pending
+    choices = [selection(rc.REVEALED, 3)]
+    resumed.import_inbox({'decision_id': pending['id'], 'response': {'selections': choices}})
+    with _action_transaction(restored, _driver(resumed)):
+        assert shaded_event(restored)['executed']
+    resumed.finish()
+    reference = decode(before)
+    assert shaded_event(reference, {'piece_choices': choices})['executed']
+    assert encode(board_copy(restored)) == encode(board_copy(reference))
+    assert len(log) == 1 and validate_state(restored) == []

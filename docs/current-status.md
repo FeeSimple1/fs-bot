@@ -21,6 +21,41 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Marcus Antonius 6
+
+Under Card Reference 6 and §§1.4.3 and 5.1, the executor chooses zero to
+four Roman Auxilia outside Provincia and relocates them there with their
+current visibility. The pieces stay on the map. The terminal and
+assistant offer exact origin and visibility choices, and a selection
+persists across save and resume. An intervening voluntary removal from a
+selected group reduces the group. The eligibility clauses still apply
+even when zero Auxilia move.
+
+Non-players move as many Auxilia as possible under their printed
+priorities, shared with the Numidians and Ambacti removal planners.
+The German bot declines if neither its Germania or Settlement tier nor
+the adjacent tier offers an eligible origin. Only Auxilia arriving from
+other Regions count toward the movement allowance.
+
+The parent live probe received no choice, and the legacy probe returned
+Revealed Auxilia to play as Hidden. Both probes pass after the repair.
+Legacy origin/count pairs retain their order. Older histories may pause
+for the new choice or diverge under corrected movement.
+
+All 9,024 tests pass, including 14 new cases. Twenty paired bot games
+complete without integrity errors and retain all 20 winners. Four final
+boards differ after four Auxilia move to Provincia in each game. The 20
+mixed-seat games match across both hash seeds, with no hard findings and
+one partial Rally due to an unaffordable placement.
+
+The 100-game balance check passes with a maximum shift of 10 percentage
+points. Six winners differ from the parent. Traces show the German bot
+declining in Ariovistus seed 16 and four Auxilia moving in each of the
+other five games.
+
+**BE-07 and BE-08 advance for shaded 6. The original audit remains 42/50
+closed (84%), with 8 open.**
+
 ### 6 November shaded Numidians 11
 
 In both editions, the executor chooses exact Roman Auxilia by Region and

@@ -27,7 +27,7 @@ def _german_tiers(state):
     return primary, adjacent
 
 
-def np_available(state, faction, shaded):
+def np_available(state, faction, shaded, *, exclude_regions=()):
     """Check applicability without drawing a tie-break or the Event die."""
     regions = _regions(state) if not shaded else _removal_regions(state)
     if not shaded:
@@ -40,7 +40,8 @@ def np_available(state, faction, shaded):
     if faction == rc.GERMANS and state['scenario'] in rc.ARIOVISTUS_SCENARIOS:
         primary, adjacent = _german_tiers(state)
         regions = sorted(primary | adjacent)
-    return any(count_pieces(state, region, rc.ROMANS, rc.AUXILIA) for region in regions)
+    return any(count_pieces(state, region, rc.ROMANS, rc.AUXILIA)
+               for region in regions if region not in exclude_regions)
 
 
 def derive_unshaded(state, faction):
@@ -83,7 +84,7 @@ def _arverni_candidates(state, available, remaining):
                 remaining - count) == maximum]
 
 
-def default_removals(state, faction, count):
+def default_removals(state, faction, count, *, exclude_regions=()):
     """Choose physical Auxilia, finishing each selected Region before another.
 
     The German instruction establishes geographic priorities and an Event
@@ -92,7 +93,7 @@ def default_removals(state, faction, count):
     number from anywhere. The caller checks ``np_available`` before NP play.
     """
     available = {region: count_pieces(state, region, rc.ROMANS, rc.AUXILIA)
-                 for region in _removal_regions(state)}
+                 for region in _removal_regions(state) if region not in exclude_regions}
     available = {region: number for region, number in available.items() if number}
     remaining = min(count, sum(available.values()))
     german = faction == rc.GERMANS and state['scenario'] in rc.ARIOVISTUS_SCENARIOS

@@ -545,6 +545,11 @@ inspect the current position before choosing.
 The unshaded “remove all” effects of Ariovistus's Wife (A25), Divico (A26),
 Orgetorix (A30) and Galba (A56) include Scouted Warbands. Printed restrictions
 on Regions, factions and Leaders still apply.
+Shaded Land of Mist and Mystery (57) lets the executor name one Ally or
+Dispersed marker in Britannia. The terminal then offers the legal Gallic
+Ally placement and up to four Available Warbands. The Ally and Warbands
+may belong to different Gallic factions.
+
 Shaded Surus lets the Event executor choose up to four Aedui Warbands
 by visibility in Treveri or one adjacent Region. Zero is allowed. A
 selected Aedui Warband is still removed if its German replacement is

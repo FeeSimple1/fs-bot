@@ -2121,33 +2121,21 @@ def execute_card_57(state, shaded=False):
         # +4 Resources only "if in Britannia" — applied after the free March
         # resolves (_resolve_card57_britannia_march), not unconditionally here.
     else:
-        # Remove Ally or Dispersed from Britannia
+        from fs_bot.cards.land_of_mist import ally_options, remove_target, warband_limits
+
         removal = params.get("removal")
-        if removal:
-            if removal.get("type") == "ally":
-                tribe = removal.get("tribe")
-                if _tribe_region(state, tribe) == BRITANNIA:
-                    _unally_tribe(state, tribe)
-            elif removal.get("type") == "dispersed":
-                tribe = removal.get("tribe")
-                t_info = state.get("tribes", {}).get(tribe)
-                # Disperse is stored in tribe["status"], not the markers dict.
-                if t_info and t_info.get("status") in (
-                        MARKER_DISPERSED, MARKER_DISPERSED_GATHERING):
-                    t_info["status"] = None
+        _event_step(state, "57.removal", prompt=False)
+        remove_target(state, removal)
         _event_step(state, "57.ally")
-        # Place 1 Gallic Ally and up to 4 Warbands
         ally_faction = params.get("ally_faction")
         ally_tribe = params.get("ally_tribe")
-        if (ally_faction and ally_tribe
-                and _tribe_region(state, ally_tribe) == BRITANNIA):
+        if (ally_tribe, ally_faction) in ally_options(state):
             _ally_tribe(state, ally_tribe, ally_faction)
         _event_step(state, "57.warbands")
         wb_faction = params.get("warband_faction")
         wb_count = params.get("warband_count", 0)
         if wb_faction and wb_count > 0:
-            avail = get_available(state, wb_faction, WARBAND)
-            to_place = min(wb_count, avail, 4)
+            to_place = min(wb_count, warband_limits(state).get(wb_faction, 0))
             if to_place > 0:
                 place_piece(state, BRITANNIA, wb_faction, WARBAND,
                             count=to_place)

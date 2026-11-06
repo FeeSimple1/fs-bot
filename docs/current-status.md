@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November shaded Land of Mist and Mystery 57
+
+Under Card Reference 57 and §§5.1–5.1.3, the terminal authors a structured
+Britannia removal with its type and exact Tribe. It offers named Allies
+and either face of a Dispersed marker. A Colony Ally is distinct from
+the original Tribe's Ally. The placement menus use the board after
+the removal and its timing actions, with separate Gallic choices
+and Available-pool limits for the Ally and Warbands.
+
+The parent schema offered a Region string. The repaired schema offers
+removal objects and the resolver rejects targets outside Britannia
+before applying any placement. Existing authored plans can use the
+same removal object and placement fields.
+
+All 9,141 tests pass, including 11 new cases. Twenty paired bot games
+match all previous final boards and winners without integrity errors.
+Twenty mixed-seat games match across both hash seeds, with zero hard
+findings and zero partial actions. The 100-game balance check passes
+and matches every previous winner and card count.
+
+**BE-08 closes. The original audit is 44/50 closed (88%), with 6 open.**
+
 ### 6 November Oppida 28 City choices
 
 Under Card Reference 28 and §1.4.2, Oppida first offers eligible

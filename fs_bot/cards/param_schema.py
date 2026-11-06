@@ -358,7 +358,8 @@ _OVERRIDES = {
     62: {"moves": {"region_pool": "card62_coastal", "entry_values": {
         "piece_type": (WARBAND, AUXILIA, LEGION, LEADER)}}},
     34: {"faction": {"values": ("Romans", "Arverni", "Aedui", "Belgae")}},
-    57: {"faction": {"values": ("Romans", "Arverni", "Aedui", "Belgae")}},
+    57: {"faction": {"values": (ROMANS, *GALLIC_FACTIONS)},
+         "removal": {"kind": "britannia_removal"}},
     66: {"faction": {"values": tuple(GALLIC_FACTIONS)},
          "moves": {"entry_values": {"piece_type": (WARBAND, LEADER)}}},
     26: {"ally_removals": {"kind": "list:tribe", "event_step": "26.removals"},
@@ -444,6 +445,9 @@ def kind_values(state, kind, spec=None):
         return sorted(state.get("tribes", {}))
     if kind == "city":
         return list(CITY_TO_TRIBE)
+    if kind == "britannia_removal":
+        from fs_bot.cards.land_of_mist import removal_options
+        return removal_options(state) or [None]
     if kind == "count":
         return list(range(9))
     if kind == "direction":

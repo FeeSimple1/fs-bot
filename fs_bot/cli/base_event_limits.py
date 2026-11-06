@@ -1,4 +1,4 @@
-"""Source-bounded human menus for original Events 28, 40, 41, 42 and 51."""
+"""Source-bounded human menus for original Events 28, 40, 41, 42, 51 and 57."""
 from collections import Counter
 
 from fs_bot import rules_consts as rc
@@ -171,5 +171,40 @@ def collect_params(state, faction, card, shaded, stdin, stdout):
                 entry['timing_actions'] = actions
             params['replacements'].append(entry)
             selected[(owner, visibility)] += count
+        return params
+
+    if card == 57 and shaded:
+        from fs_bot.cards.land_of_mist import ally_options, removal_options, warband_limits
+
+        board, actions = stage('57.removal')
+        save_tail('57.removal', None, actions)
+        removals = []
+        for target in removal_options(board):
+            tribe = target['tribe']
+            label = (f"{board['tribes'][tribe]['allied_faction']} Ally at {tribe}"
+                     if target['type'] == 'ally' else f"{board['tribes'][tribe]['status']} at {tribe}")
+            removals.append((f'Remove {label}', target))
+        if removals:
+            params['removal'] = choose(board, 'Britannia: which Ally or Dispersed marker?', removals)
+
+        board, actions = stage('57.ally')
+        save_tail('57.ally', None, actions)
+        allies = ally_options(board)
+        if allies:
+            params['ally_tribe'], params['ally_faction'] = choose(
+                board, 'Britannia: place which Gallic Ally?',
+                [(f'{owner} Ally at {tribe}', (tribe, owner)) for tribe, owner in allies])
+
+        board, actions = stage('57.warbands')
+        save_tail('57.warbands', None, actions)
+        available_counts = warband_limits(board)
+        if available_counts:
+            owner = choose(board, 'Britannia: place whose Warbands?',
+                           [('Do not place Warbands', None)] + [(f, f) for f in available_counts])
+            if owner is not None:
+                params['warband_faction'] = owner
+                params['warband_count'] = choose(
+                    board, 'Britannia: how many Warbands?',
+                    [(str(n), n) for n in range(1, available_counts[owner] + 1)])
         return params
     raise ValueError('Unsupported base Event menu')

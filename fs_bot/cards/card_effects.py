@@ -450,9 +450,12 @@ def execute_card_3(state, shaded=False):
         # Legions to track
         track_count = _count_on_legions_track(state)
         if track_count <= 4:
-            # Remove 2 Legions from map to track
-            # Bot chooses which Legions — use event_params or find any
-            params = state.get("event_params", {})
+            from fs_bot.cards.base_piece_choices import remove_roman_pieces
+            _event_step(state, "3.piece_choice")
+            params = state.get("event_params") or {}
+            if remove_roman_pieces(state, 3, params):
+                return
+            # Preserve the delegated region-priority plan.
             regions = params.get("legion_removal_regions", [])
             removed = 0
             for region in _event_entries(state, "3.legion_removals", regions):
@@ -520,7 +523,11 @@ def execute_card_5(state, shaded=False):
     else:
         # Shaded: Unless Adulation, remove 1 Legion to track + 2 Auxilia
         if state["senate"]["position"] != ADULATION:
-            params = state.get("event_params", {})
+            from fs_bot.cards.base_piece_choices import remove_roman_pieces
+            _event_step(state, "5.piece_choice")
+            params = state.get("event_params") or {}
+            if remove_roman_pieces(state, 5, params):
+                return
             legion_region = params.get("legion_removal_region")
             if legion_region is None:
                 for region in state["spaces"]:

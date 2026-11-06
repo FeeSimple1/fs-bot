@@ -21,6 +21,36 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 5 November Roman Event removals
+
+Shaded Pompey (3) and base Gallia Togata (5) give Rome the choice of which
+pieces to remove under Card Reference 3/5 and Chapter 5 §§5.1 and 5.1.3.
+Pompey permits a split of two Legions between Regions when the track holds
+four or fewer. Gallia Togata, outside Adulation, takes one Legion and two
+exact Auxilia from any eligible Regions. Legions return to the track and
+Auxilia to Available. The live choice requires each type's printed total
+to the extent possible from the current map.
+
+Rome receives the request even if another faction executes the Event. The
+terminal and durable session validate the full plan before any selected
+removals. Legacy Region-priority plans remain available on raw deferral.
+Roman executors can still supply legacy Region parameters. Older sessions
+may encounter a new pending Roman choice on replay.
+
+**BE-06 closes. The original bundle is 41/50 closed (82%), with 9 open.**
+The other physical selections in BE-07 and the expansion A5 selection
+tracked by EXP-11 remain open.
+
+All 8,892 tests pass, including 34 new cases. Two behavior probes using the
+parent API reproduce the missing Roman
+request and concentrated removals on `6f91feb`; both pass on the repair.
+Ten audited bot games (seeds 1–2 in each scenario) match the parent in
+gameplay and final state hashes. Ten mixed-seat cases produce identical
+JSON at hash seeds 0 and 987, with 314 human turns, zero hard findings and
+zero partials. The 100-game historical balance check passes within its
+existing 15-percentage-point band. See the [progress register](human-choice-progress.json)
+for the tested source digest.
+
 ### 5 November Lucterius/Hostages quantities — BE-06/07/08 advanced
 
 The [piece-choice repair](reviews/base-piece-choices-2026-11-05.md) adds live
@@ -36,7 +66,7 @@ rollback, save/load and deterministic replay. Choices use the actual Event-step
 board after its timing window; previews consume no live input or RNG. Legacy
 explicit plans and raw delegation remain supported.
 
-**Original bundle remains 40/50 closed (80%), 10 open.** BE-06 still includes
+**At that checkpoint, the original bundle was 40/50 closed (80%), 10 open.** BE-06 still included
 mandatory Roman removal allocations on numeric 3/5. BE-07 physical-choice and
 BE-08 schema findings retain other cards. Two unadopted source questions,
 thirteen provisional rulings and 34 separate unverified inventory rows retain

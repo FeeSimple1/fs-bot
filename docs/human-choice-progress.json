@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-05",
   "tested_source": {
-    "commit": "4789ba3f594889b145148f75130eecca153dbee0",
-    "python_sha256": "d8a561bf3092f6fc210910f69c7db3433135dfc325338608c649414dc2b16eb2",
-    "python_files": 529,
+    "commit": "6f91feb51acfac804e858b6b8a7db94441461ed7",
+    "python_sha256": "3dcbd8bf549f54d18abc596d6fd5910bb08c2eddea678a02392115a893b08a9d",
+    "python_files": 530,
     "working_tree_changes": true,
-    "note": "Numeric 19/22 optional quantities and physical selections advance BE-06/07/08. Original counts unchanged; see reviews/base-piece-choices-2026-11-05.md."
+    "note": "Shaded numeric 3/5 mandatory Roman allocations close BE-06. The tested source is the publishing tree over the listed parent; see current-status.md#5-november-roman-event-removals."
   },
   "total": 50,
-  "closed": 40,
-  "open": 10,
+  "closed": 41,
+  "open": 9,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -47,7 +47,8 @@
     "Ordinary/free Battle Card 59 Roman/Gallic Region choices, Roman decline, Abatis protection and nested flag scoping are repaired. BE-09 retains the private prospective queue. See reviews/horse-choice-2026-11-05.md.",
     "Optional unshaded Horse queue use/reserve/decline and PR-11 forecast choices are repaired. Mandatory Card 13/59-shaded timing awaits Q-CAPABILITY-QUEUE-TIMING. Original counts remain unchanged. See reviews/horse-queue-2026-11-05.md.",
     "BE-09 closes with mandatory Slingers/shaded Horse live queue choices under owner-adopted provisional PR-13, final-candidate use, reservation expiry, pending replay and isolated human forecast branching. Subject to official correction. See reviews/capability-queue-2026-11-05.md.",
-    "Lucterius 19U and Hostages 22U now offer exact optional totals and visibility, with removal-only and mixed Hostages actions plus correct Gallic Auxilia-to-Warband replacement. BE-06 retains mandatory Roman allocations on 3S/5S; BE-07/08 retain other cards. See reviews/base-piece-choices-2026-11-05.md."
+    "Lucterius 19U and Hostages 22U now offer exact optional totals and visibility, with removal-only and mixed Hostages actions plus correct Gallic Auxilia-to-Warband replacement. See reviews/base-piece-choices-2026-11-05.md.",
+    "BE-06 closes with shaded numeric 3/5 Roman-owned mandatory allocations, exact visibility, and durable choices. BE-07/08 retain other cards. See current-status.md#5-november-roman-event-removals."
   ],
   "findings": [
     {
@@ -233,8 +234,9 @@
       "id": "BE-06",
       "title": "Event contracts cannot express smaller quantities or removal-only choices",
       "severity": "medium",
-      "status": "open",
-      "disposition": "Numeric 19U optional Auxilia/Warband totals and 22U removal-only/mixed actions are repaired. Numeric 3S/5S mandatory Roman split allocations remain open.",
+      "status": "closed",
+      "report": "current-status.md#5-november-roman-event-removals",
+      "disposition": "Numeric 19U optional Auxilia/Warband totals and 22U removal-only/mixed actions are repaired. Shaded numeric 3/5 require exact Roman allocations, including split Regions and Auxilia visibility.",
       "partial_reports": [
         "reviews/base-piece-choices-2026-11-05.md"
       ]
@@ -245,7 +247,8 @@
       "severity": "medium",
       "status": "open",
       "partial_repairs": [
-        "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. Other listed cards remain open. See reviews/base-piece-choices-2026-11-05.md."
+        "Numeric 19U/22U have exact physical cohort choices and live menus, bypassing inferred branch/entry shapes. See reviews/base-piece-choices-2026-11-05.md.",
+        "Shaded numeric 5 offers exact Hidden, Revealed and Scouted Auxilia removals. Other listed cards remain open. See current-status.md#5-november-roman-event-removals."
       ]
     },
     {

@@ -1,4 +1,4 @@
-"""Live Lucterius and Hostages quantities and physical selections."""
+"""Live Event quantities and physical selections."""
 from fs_bot.cards.base_piece_choices import FIELDS, validate_response
 from fs_bot.cli.menus import prompt_choice
 from fs_bot.cli.action_windows import inspect_board
@@ -7,6 +7,8 @@ from fs_bot.cli.action_windows import inspect_board
 def collect_choice(state, faction, request, stdin, stdout):
     card = request['card_id']
     with inspect_board(state, stdout):
+        if 'required' in request:
+            return validate_response(state, request, _roman_removals(request, stdin, stdout))
         if card == 19:
             choice = prompt_choice(stdin, stdout, 'Lucterius: choose one effect:',
                 [('Place up to five Roman Auxilia in Provincia', 'auxilia'),
@@ -35,3 +37,21 @@ def collect_choice(state, faction, request, stdin, stdout):
         response = ({'choice': 'warbands', 'removals': selected} if card == 19
                     else {'selections': selected})
     return validate_response(state, request, response)
+
+
+def _roman_removals(request, stdin, stdout):
+    selected = []
+    for kind, remaining in request['required'].items():
+        budget = [dict(entry) for entry in request['available'] if entry['piece_type'] == kind]
+        while remaining:
+            index = prompt_choice(stdin, stdout, f"Romans: remove {remaining} {kind}:", [
+                (f"{entry['region']}: {entry['piece_state'] or kind} ({entry['count']})", index)
+                for index, entry in enumerate(budget) if entry['count']
+            ])
+            entry = budget[index]
+            count = prompt_choice(stdin, stdout, 'How many?',
+                [(str(n), n) for n in range(1, min(remaining, entry['count']) + 1)])
+            selected.append({k: entry[k] for k in FIELDS} | {'count': count})
+            entry['count'] -= count
+            remaining -= count
+    return {'selections': selected}

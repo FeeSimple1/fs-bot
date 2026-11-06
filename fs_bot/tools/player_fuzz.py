@@ -219,6 +219,15 @@ def make_random_reactive(seats, rng):
         if kind == 'drought_loss':
             return {'piece': rng.choice(request['targets'])}
         if kind == 'event_piece_choice':
+            if 'required' in request:
+                selections = []
+                for piece_type, count in request['required'].items():
+                    cohorts = [index for index, row in enumerate(request['available'])
+                               if row['piece_type'] == piece_type for _ in range(row['count'])]
+                    picked = rng.sample(cohorts, count)
+                    for index in dict.fromkeys(picked):
+                        selections.append(dict(request['available'][index], count=picked.count(index)))
+                return {'selections': selections}
             if request['card_id'] == 19 and rng.random() < 0.5:
                 return {'choice': 'auxilia', 'count': rng.randrange(6)}
             entries, remaining = [], request['max_count']

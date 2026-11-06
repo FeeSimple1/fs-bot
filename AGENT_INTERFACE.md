@@ -515,7 +515,8 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
-| `event_piece_choice` goes to the executor for unshaded numeric 19 (Lucterius)
+
+`event_piece_choice` goes to the executor for unshaded numeric 19 (Lucterius)
 and 22 (Hostages), on the live Event-step board. The request carries `card_id`,
 `owner`, `legal_regions`, `available` physical cohorts, and `max_count` (six
 for 19, four for 22). A cohort carries `region`, `target_faction`, `piece_type`,
@@ -549,8 +550,21 @@ Raw `None` or explicit `{"use_default":true}` retains the delegated plan.
 Legacy explicit `choice`/`removal_regions` (19) and `replacements` (22) remain
 supported. The legacy Gallic Hostages path also now correctly replaces Roman
 Auxilia with its own Warbands. Older histories can stop at the new request or
-vary under that corrected replacement. Shaded 19/22 are unchanged; numeric
-3/5 Roman removal allocations remain an open part of BE-06.
+vary under that corrected replacement.
+
+Shaded numeric 3 (Pompey) and 5 (Gallia Togata) send `event_piece_choice` to
+the Romans, including when another faction executes the Event. After the
+`3.piece_choice` or `5.piece_choice` timing window, the request includes
+`available` cohorts and `required` totals keyed by piece type. Legions have
+`piece_state: null`. Auxilia have exact Hidden, Revealed or Scouted states.
+Respond `{"selections":[<cohorts with chosen counts>]}`, meeting every
+required total. The board may have fewer pieces than the printed amount.
+Roman executors can also author `event_params.piece_choices` with the same
+entries. Raw deferral and explicit default use the delegated Region-priority
+plan, including legacy Region parameters from Roman executors. Durable sessions
+hold the action pending for Rome and revalidate before moving Legions to
+the track and Auxilia to Available. Older decision histories that predate
+the prompt can pause at the new Roman choice.
 
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |

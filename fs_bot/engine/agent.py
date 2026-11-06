@@ -18,9 +18,11 @@ typed response.
 
 Request kinds
 -------------
-- ``event_piece_choice`` — the executor selects numeric 19/22 unshaded
-  quantities and exact physical cohorts at the live Event step. Request carries
-  card_id, owner, available cohorts, legal_regions and max_count. Card 19 returns
+- ``event_piece_choice`` — Romans select numeric 3/5 shaded removals, or the
+  executor selects numeric 19/22 unshaded quantities and physical cohorts.
+  Requests carry card_id, owner and available cohorts. Cards 3/5 specify a
+  required total per piece type and take {"selections":[...]}. Cards 19/22
+  specify legal_regions and max_count. Card 19 returns
   {"choice":"auxilia","count":0..5} or {"choice":"warbands","removals":[...]};
   Card 22 returns {"selections":[...]}. Cohorts carry region, target_faction,
   piece_type, piece_state and count; Hostages also needs action remove/replace.

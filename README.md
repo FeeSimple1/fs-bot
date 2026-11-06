@@ -68,6 +68,9 @@ Lucterius and Hostages now offer their optional quantities and exact physical
 piece choices, including Hostages removal without replacement.
 [Repair and validation](docs/reviews/base-piece-choices-2026-11-05.md).
 
+Shaded Pompey and base Gallia Togata give Rome exact removal choices across
+Regions, including Auxilia visibility. [Repair and validation](docs/current-status.md#5-november-roman-event-removals).
+
 ## Play
 
 Python 3.10 or newer is required. Playing uses only the standard library.
@@ -184,7 +187,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**40 of 50 findings are closed (80%); 10 remain open** in the
+**41 of 50 findings are closed (82%); 9 remain open** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

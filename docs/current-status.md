@@ -21,6 +21,32 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November Aedui Interlude force adjustments
+
+Under A2.1, the Aedui player chooses one eligible Citadel after Diviciacus
+leaves play. Bibracte is eligible only when it is the sole Citadel.
+The choice replaces the Citadel with an Ally if a disc is Available and
+removes it otherwise. The subsequent half reductions use the new board
+and offer exact Ally Tribes and Warband visibility, with the Aedui Region
+last for each type.
+
+If Bibracte lacks its own Aedui Ally or Citadel after the reductions,
+the restoration now checks the named Tribe even when a Colony Ally
+occupies the same Region. Saving at the reduction prompt retains the
+accepted Citadel selection. The terminal and assistant support exact
+choices and delegation to the seeded bot.
+
+Twenty paired bot games match the previous final boards and winners.
+Twenty mixed-seat games and twenty directed Aedui Interludes replay
+identically across hash seeds without integrity findings. The 100-game
+balance check passes, with the same winners as the parent revision.
+Gallic War seed 17 lasts 88 cards instead of 69 after Bibracte is
+restored. The targeted replay has no integrity findings.
+
+**WS-F01 and WS-C28 advance. Arverni and Roman force adjustments and
+Cisalpina relocation remain open. The original audit stands at 44/50
+closed (88%), with 6 open.**
+
 ### 6 November Belgic Interlude force reduction
 
 Under A2.1, Belgae choose at least half of the on-map Allies and half

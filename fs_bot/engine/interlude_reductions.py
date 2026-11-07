@@ -10,11 +10,13 @@ KIND = 'interlude_reduction'
 PERMANENT = 'german_permanent'
 QUARTER = 'german_quarter'
 BELGIC_HALF = 'belgic_half'
+AEDUI_HALF = 'aedui_half'
 
 STAGE_RULES = {
     PERMANENT: dict(faction=rc.GERMANS, home_regions=()),
     QUARTER: dict(faction=rc.GERMANS, divisor=4, home_regions=rc.GERMAN_HOME_REGIONS_BASE),
     BELGIC_HALF: dict(faction=rc.BELGAE, divisor=2, home_regions=rc.BELGAE_HOME_REGIONS),
+    AEDUI_HALF: dict(faction=rc.AEDUI, divisor=2, home_regions=rc.AEDUI_HOME_REGIONS),
 }
 
 

@@ -516,6 +516,7 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
 | `interlude_reduction` | Faction-owned stage with `stage, minimums, cohorts` | `{"removals":[cohort objects]}` in selection order, or explicit default |
 | `interlude_settlements` | German-owned choice after permanent Warband removals, with `options` by Region and `required_allies` | `{"allies":{region:tribe,...}}` or explicit default |
+| `interlude_aedui_citadel` | Aedui-owned choice with eligible `regions` and `ally_available` | `{"region":offered_region}` or explicit default |
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
@@ -1920,6 +1921,20 @@ Belgica goes last within each type. Choose Allies by Tribe and Warbands
 by Region and visibility. The surviving forces determine where Ambiorix
 is placed. If a tie needs a `spring_leader` response, the earlier Belgic
 allocation is retained when Winter pauses.
+
+### Aedui Interlude force adjustments
+
+After Diviciacus leaves play, `interlude_aedui_citadel` is offered if more
+than one Citadel can be selected. Respond with one offered Region. Bibracte
+is eligible only when it is the sole Citadel. The chosen Citadel becomes
+an Ally when a disc is Available and is removed otherwise. A sole eligible
+target resolves automatically.
+
+Aedui then receive `aedui_half` in `interlude_reduction`. Use the ordered
+`{"removals":[...]}` contract to meet each offered minimum, taking the
+Aedui Region last for each type. The cohorts and counts reflect the
+Citadel step. Either request accepts `{"use_default":true}`. A save at the
+reduction prompt retains the accepted Citadel selection.
 
 ### Roman Interlude allocations
 

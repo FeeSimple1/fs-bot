@@ -753,6 +753,19 @@ The remaining pieces determine Ambiorix's destination. If multiple
 Regions tie, choose among them. Saving at that prompt retains the
 accepted Belgic removals when Winter resumes.
 
+### Aedui Interlude force adjustments
+
+After Diviciacus leaves play, choose one eligible Aedui Citadel to replace
+with an Ally or remove if no disc is Available. Bibracte goes last. The
+terminal resolves a sole eligible target automatically.
+
+Then choose at least half of the on-map Allies and half of the on-map
+Warbands to return to Available, rounding up each minimum. Take the
+Aedui Region last for each type. The new Ally is eligible for this
+reduction. Choose Allies by Tribe and Warbands by Region and visibility.
+Use `b` or `board` during either choice. Saving at the reduction prompt
+retains the accepted Citadel selection when Winter resumes.
+
 ### Roman Interlude decisions
 
 In The Gallic War, human Romans choose whether to conduct the Britannia

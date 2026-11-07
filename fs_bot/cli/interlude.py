@@ -2,7 +2,9 @@
 from fs_bot import rules_consts as rc
 from fs_bot.cli.action_windows import inspect_board
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
-from fs_bot.engine.interlude_choices import MARKER, SETTLEMENTS, validate_response
+from fs_bot.engine.interlude_choices import (
+    AEDUI_CITADEL, MARKER, SETTLEMENTS, validate_response,
+)
 from fs_bot.engine import interlude_reductions as reductions
 
 
@@ -78,6 +80,13 @@ def collect_interlude(state, faction, request, stdin, stdout):
             return _collect_reduction(state, request, stdin, stdout)
         if request['kind'] == SETTLEMENTS:
             return _collect_settlements(state, request, stdin, stdout)
+        if request['kind'] == AEDUI_CITADEL:
+            prompt = ('Replace which Aedui Citadel with an Ally?' if request['ally_available']
+                      else 'Remove which Aedui Citadel?')
+            choices = [(region, region) for region in request['regions']]
+            region = prompt_choice(stdin, stdout, prompt, choices + [('Use bot selection', None)])
+            response = {'region': region} if region is not None else {'use_default': True}
+            return validate_response(state, request, response)
         if request['kind'] == MARKER:
             choices = [('Keep no marker', None)] + [
                 (f"{row['tribe']} ({row['status']})", row['tribe']) for row in request['markers']]

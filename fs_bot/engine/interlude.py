@@ -48,7 +48,7 @@ from fs_bot.rules_consts import (
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     FLIPPABLE_PIECES,
     # Piece states
-    HIDDEN, REVEALED, SCOUTED,
+    HIDDEN, REVEALED, SCOUTED, ALLIED,
     # Leaders
     CAESAR, VERCINGETORIX, AMBIORIX,
     ARIOVISTUS_LEADER, DIVICIACUS, SUCCESSOR,
@@ -61,10 +61,10 @@ from fs_bot.rules_consts import (
     TREVERI, MANDUBII, VENETI, CARNUTES, PICTONES, BITURIGES,
     SEQUANI,
     # Home regions
-    ROMAN_HOME_REGIONS, AEDUI_HOME_REGIONS,
+    ROMAN_HOME_REGIONS,
     ARVERNI_HOME_REGIONS_ARIOVISTUS,
     # Tribes (used for Cadurci/Volcae and Nori)
-    TRIBE_CADURCI, TRIBE_VOLCAE, TRIBE_NORI,
+    TRIBE_AEDUI, TRIBE_CADURCI, TRIBE_VOLCAE, TRIBE_NORI,
     TRIBE_TO_REGION,
     # Markers
     MARKER_CIRCUMVALLATION, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
@@ -583,7 +583,10 @@ def _adjust_aedui_forces(state):
     - If no Aedui Ally or Citadel at Bibracte, remove whatever is
       there and place Aedui Ally there.
     """
-    rng = state["rng"]
+    from fs_bot.cards.card_effects import _tribe_piece_type
+    from fs_bot.engine.interlude_choices import choose_aedui_citadel
+    from fs_bot.engine.interlude_reductions import AEDUI_HALF
+
     result = {
         "diviciacus_removed": False,
         "citadel_replaced_region": None,
@@ -592,7 +595,6 @@ def _adjust_aedui_forces(state):
         "warbands_to_available": 0,
         "bibracte_replaced": False,
     }
-    from fs_bot.map.map_data import get_tribes_in_region
 
     # Diviciacus removal — A1.4
     aedui_leader_region = find_leader(state, AEDUI)
@@ -613,17 +615,8 @@ def _adjust_aedui_forces(state):
             result["diviciacus_removed"] = True
 
     # Replace 1 Aedui Citadel with an Aedui Ally (Bibracte last).
-    citadel_regions = [
-        r for r in state["spaces"]
-        if count_pieces(state, r, AEDUI, CITADEL) > 0
-    ]
-    non_bibracte = [r for r in citadel_regions if r != AEDUI_REGION]
-    bibracte = [r for r in citadel_regions if r == AEDUI_REGION]
-    rng.shuffle(non_bibracte)
-    rng.shuffle(bibracte)
-    citadel_pick_order = non_bibracte + bibracte
-    if citadel_pick_order:
-        target = citadel_pick_order[0]
+    target = choose_aedui_citadel(state)
+    if target is not None:
         remove_piece(state, target, AEDUI, CITADEL)
         if get_available(state, AEDUI, ALLY) > 0:
             # The CITY TRIBE stays allied — only the piece downgrades.
@@ -635,44 +628,13 @@ def _adjust_aedui_forces(state):
 
     # Remove >= 1/2 of on-map Aedui Allies (not Citadels) and 1/2 of
     # Warbands to Available (Aedui Region last).
-    total_allies = 0
-    for region in state["spaces"]:
-        total_allies += count_pieces(state, region, AEDUI, ALLY)
-    need_allies = _fraction_to_remove(total_allies, 0.5)
-
-    total_wb = 0
-    for region in state["spaces"]:
-        total_wb += count_pieces(state, region, AEDUI, WARBAND)
-    need_wb = _fraction_to_remove(total_wb, 0.5)
-
-    region_order = _np_region_order(
-        state, AEDUI, home_last=True, rng=rng,
-        home_regions=AEDUI_HOME_REGIONS,
-    )
-
-    allies_removed = 0
-    for region in region_order:
-        if allies_removed >= need_allies:
-            break
-        n = count_pieces(state, region, AEDUI, ALLY)
-        take = min(n, need_allies - allies_removed)
-        for _ in range(take):
-            remove_piece(state, region, AEDUI, ALLY)
-            clear_allied_tribe(state, region, AEDUI, ALLY)
-        allies_removed += take
-    result["allies_to_available"] = allies_removed
-
-    wb_removed = _remove_warbands_anywhere(
-        state, AEDUI, need_wb, rng,
-        to_removed=False, region_order=region_order,
-    )
-    result["warbands_to_available"] = wb_removed
+    result.update(_adjust_ally_and_warband_counts(state, AEDUI_HALF))
 
     # Bibracte rule: if no Aedui Ally or Citadel at Bibracte, remove
     # whatever is there and place an Aedui Ally there.
-    bib_allies = count_pieces(state, AEDUI_REGION, AEDUI, ALLY)
-    bib_citadels = count_pieces(state, AEDUI_REGION, AEDUI, CITADEL)
-    if bib_allies == 0 and bib_citadels == 0:
+    bibracte = state["tribes"][TRIBE_AEDUI]
+    if (bibracte.get("allied_faction") != AEDUI
+            or _tribe_piece_type(state, TRIBE_AEDUI) not in (ALLY, CITADEL)):
         # Remove every non-permanent piece in the Aedui Region.
         space = state["spaces"].get(AEDUI_REGION, {})
         for faction in list(space.get("pieces", {}).keys()):
@@ -711,14 +673,7 @@ def _adjust_aedui_forces(state):
         # Then place an Aedui Ally.
         if get_available(state, AEDUI, ALLY) > 0:
             place_piece(state, AEDUI_REGION, AEDUI, ALLY, 1)
-            # Allied tribe attachment
-            tribes = get_tribes_in_region(AEDUI_REGION, state["scenario"])
-            for t in tribes:
-                ti = state["tribes"].get(t)
-                if ti and ti.get("allied_faction") is None:
-                    ti["status"] = "Allied"
-                    ti["allied_faction"] = AEDUI
-                    break
+            bibracte.update(status=ALLIED, allied_faction=AEDUI)
             result["bibracte_replaced"] = True
 
     refresh_all_control(state)

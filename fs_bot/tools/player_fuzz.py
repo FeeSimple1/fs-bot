@@ -297,6 +297,8 @@ def make_random_reactive(seats, rng):
                     removals.append(dict(row, count=count))
                     needed[piece_type] -= count
             return {'removals': removals}
+        if kind == 'interlude_aedui_citadel':
+            return {'region': rng.choice(request['regions'])}
         if kind == 'interlude_settlements':
             options = request['options']
             regions = rng.sample(list(options), request['required_allies'])

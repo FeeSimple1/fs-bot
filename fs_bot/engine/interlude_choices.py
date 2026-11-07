@@ -1,4 +1,4 @@
-"""Settlement, expedition and marker choices in the Gallic War Interlude (A2.1)."""
+"""Citadel, Settlement, expedition and marker choices in the Gallic War Interlude (A2.1)."""
 from fs_bot import rules_consts as rc
 from fs_bot.board.control import is_controlled_by
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, find_leader, get_available
@@ -7,6 +7,7 @@ from fs_bot.engine.agent import consult_agent
 EXPEDITION = 'interlude_expedition'
 MARKER = 'interlude_marker'
 SETTLEMENTS = 'interlude_settlements'
+AEDUI_CITADEL = 'interlude_aedui_citadel'
 
 
 def settlement_request(state):
@@ -39,6 +40,30 @@ def choose_settlement_allies(state):
             if 'allies' in response:
                 return response['allies']
     return {region: tribes[0] for region, tribes in list(options.items())[:required]}
+
+
+def aedui_citadel_request(state):
+    regions = [region for region in state['spaces']
+               if count_pieces(state, region, rc.AEDUI, rc.CITADEL)]
+    outside = [region for region in regions if region != rc.AEDUI_REGION]
+    return dict(kind=AEDUI_CITADEL, regions=outside or regions,
+                ally_available=get_available(state, rc.AEDUI, rc.ALLY) > 0)
+
+
+def choose_aedui_citadel(state):
+    request = aedui_citadel_request(state)
+    regions = request['regions']
+    if len(regions) > 1 and rc.AEDUI not in state.get('non_player_factions', ()):
+        response = consult_agent(state, rc.AEDUI, request)
+        if response is not None:
+            validate_response(state, request, response)
+            if 'region' in response:
+                return response['region']
+    # Bibracte can contain only one Citadel. Shuffling only the legal tier
+    # preserves the old RNG draws from shuffling each tier separately.
+    regions = list(regions)
+    state['rng'].shuffle(regions)
+    return regions[0] if regions else None
 
 
 def expedition_request(state):
@@ -76,6 +101,15 @@ def marker_request(state):
 def validate_response(state, request, response):
     """Validate the complete choice before mutating the Interlude board."""
     if isinstance(response, dict) and set(response) == {'use_default'} and response['use_default'] is True:
+        return response
+    if request['kind'] == AEDUI_CITADEL:
+        current = aedui_citadel_request(state)
+        if (request.get('faction', rc.AEDUI) != rc.AEDUI
+                or current != {key: value for key, value in request.items() if key != 'faction'}):
+            raise ValueError('The offered Aedui Citadels have changed.')
+        if (not isinstance(response, dict) or set(response) != {'region'}
+                or response['region'] not in current['regions']):
+            raise ValueError('Choose a Citadel in one of the offered Regions.')
         return response
     if request['kind'] == SETTLEMENTS:
         current = settlement_request(state)

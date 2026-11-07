@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "43f78c776cb7af21e17c06db463e40f6bf1fef67",
-    "python_sha256": "5cda7ca6c8dae070cb10f1c545cb0278e64581d8ec13a556394737a68ef8fbaa",
-    "python_files": 552,
+    "commit": "957cf506a21f804e61737f826f958045940720fb",
+    "python_sha256": "3176782f66044829dcd4cd17148b50d013062bba3c9abc97f304bc362c844b20",
+    "python_files": 553,
     "working_tree_changes": true,
-    "note": "German Interlude Settlement choices complete WS-C27. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-german-interlude-settlement-conversion."
+    "note": "Exact Belgic Interlude reductions advance WS-F01 and WS-C28. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-belgic-interlude-force-reduction."
   },
   "total": 50,
   "closed": 44,
@@ -67,7 +67,8 @@
     "Oppida now offers legal live City choices on both sides. The Sacking and Remi Influence City schemas match their existing named-owner menus. See current-status.md#6-november-oppida-28-city-choices.",
     "Shaded 57 closes BE-08 with a structured Britannia removal and legal post-removal placement menus. See current-status.md#6-november-shaded-land-of-mist-and-mystery-57.",
     "German Interlude permanent and quarter reductions now offer exact owner allocations. WS-F01 remains open for other force adjustments and Cisalpina relocation. See current-status.md#6-november-german-interlude-force-reductions.",
-    "German Interlude Settlement choices complete WS-C27. WS-F01 still covers other factions' adjustments and Cisalpina relocation. See current-status.md#6-november-german-interlude-settlement-conversion."
+    "German Interlude Settlement choices complete WS-C27. WS-F01 still covers other factions' adjustments and Cisalpina relocation. See current-status.md#6-november-german-interlude-settlement-conversion.",
+    "Belgic Interlude reductions now offer exact owner allocations with Belgica last. WS-C28 advances. See current-status.md#6-november-belgic-interlude-force-reduction."
   ],
   "findings": [
     {
@@ -463,7 +464,7 @@
       "title": "Interlude force reductions and Cisalpina relocations bypass human owners",
       "severity": "high",
       "status": "open",
-      "disposition": "German force adjustments (WS-C27) now support exact permanent removals, Settlement Ally allocations and post-conversion quarter reductions, with terminal and durable save/replay support. Other factions' force adjustments and Cisalpina relocation are open."
+      "disposition": "German force adjustments (WS-C27) and the Belgic portion of WS-C28 now support exact owner allocations with terminal and durable save/replay support. Aedui, Arverni and Roman force adjustments and Cisalpina relocation are open."
     },
     {
       "id": "WS-F02",

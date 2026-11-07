@@ -61,8 +61,8 @@ from fs_bot.rules_consts import (
     TREVERI, MANDUBII, VENETI, CARNUTES, PICTONES, BITURIGES,
     SEQUANI,
     # Home regions
-    ROMAN_HOME_REGIONS, AEDUI_HOME_REGIONS, BELGAE_HOME_REGIONS,
-    ARVERNI_HOME_REGIONS_ARIOVISTUS, GERMAN_HOME_REGIONS_BASE,
+    ROMAN_HOME_REGIONS, AEDUI_HOME_REGIONS,
+    ARVERNI_HOME_REGIONS_ARIOVISTUS,
     # Tribes (used for Cadurci/Volcae and Nori)
     TRIBE_CADURCI, TRIBE_VOLCAE, TRIBE_NORI,
     TRIBE_TO_REGION,
@@ -244,6 +244,47 @@ def _np_region_order(state, faction, *, home_last, rng,
     if home_last:
         return pool_non_home + pool_home
     return pool_home + pool_non_home
+
+
+def _adjust_ally_and_warband_counts(state, stage):
+    """Return each required fraction to Available, preserving seeded defaults."""
+    from fs_bot.cards.card_effects import _unally_tribe
+    from fs_bot.engine.interlude_reductions import STAGE_RULES, choose_reduction
+
+    rules = STAGE_RULES[stage]
+    faction = rules["faction"]
+    removals = choose_reduction(state, stage)
+    allies_removed = warbands_removed = 0
+    if removals is not None:
+        for row in removals:
+            if row["piece_type"] == ALLY:
+                _unally_tribe(state, row["tribe"])
+                allies_removed += row["count"]
+            else:
+                remove_piece(state, row["region"], faction, WARBAND, row["count"],
+                             piece_state=row["piece_state"])
+                warbands_removed += row["count"]
+    else:
+        fraction = 1 / rules["divisor"]
+        total_allies = sum(count_pieces(state, region, faction, ALLY) for region in state["spaces"])
+        total_warbands = sum(count_pieces(state, region, faction, WARBAND) for region in state["spaces"])
+        need_allies = _fraction_to_remove(total_allies, fraction)
+        need_warbands = _fraction_to_remove(total_warbands, fraction)
+        rng = state["rng"]
+        region_order = _np_region_order(state, faction, home_last=True, rng=rng,
+                                        home_regions=rules["home_regions"])
+        for region in region_order:
+            if allies_removed >= need_allies:
+                break
+            take = min(count_pieces(state, region, faction, ALLY), need_allies - allies_removed)
+            for _ in range(take):
+                remove_piece(state, region, faction, ALLY)
+                clear_allied_tribe(state, region, faction, ALLY)
+            allies_removed += take
+        warbands_removed = _remove_warbands_anywhere(
+            state, faction, need_warbands, rng, to_removed=False, region_order=region_order,
+        )
+    return dict(allies_to_available=allies_removed, warbands_to_available=warbands_removed)
 
 
 def _choose_interlude_leader_region(state, faction, leader, *, exclude_leader=False):
@@ -431,7 +472,7 @@ def _adjust_german_forces(state):
         "allies_to_available": 0,
         "warbands_to_available": 0,
     }
-    from fs_bot.cards.card_effects import _ally_tribe, _unally_tribe
+    from fs_bot.cards.card_effects import _ally_tribe
     from fs_bot.engine.interlude_choices import choose_settlement_allies
     from fs_bot.engine.interlude_reductions import PERMANENT, QUARTER, choose_reduction
 
@@ -488,53 +529,7 @@ def _adjust_german_forces(state):
 
     # 4. Remove >= 1/4 of total on-map Germanic Allies and 1/4 of
     #    Germanic Warbands on map (Germania last) to Available.
-    removals = choose_reduction(state, QUARTER)
-    if removals is not None:
-        for row in removals:
-            if row["piece_type"] == ALLY:
-                _unally_tribe(state, row["tribe"])
-                result["allies_to_available"] += row["count"]
-            else:
-                remove_piece(state, row["region"], GERMANS, WARBAND, row["count"],
-                             piece_state=row["piece_state"])
-                result["warbands_to_available"] += row["count"]
-        refresh_all_control(state)
-        return result
-
-    total_allies = 0
-    for region in state["spaces"]:
-        total_allies += count_pieces(state, region, GERMANS, ALLY)
-    need_allies = _fraction_to_remove(total_allies, 0.25)
-
-    total_wb_map = 0
-    for region in state["spaces"]:
-        total_wb_map += count_pieces(state, region, GERMANS, WARBAND)
-    need_wb = _fraction_to_remove(total_wb_map, 0.25)
-
-    region_order = _np_region_order(
-        state, GERMANS, home_last=True, rng=rng,
-        home_regions=GERMAN_HOME_REGIONS_BASE,
-    )
-
-    # Remove Allies
-    allies_removed = 0
-    for region in region_order:
-        if allies_removed >= need_allies:
-            break
-        n = count_pieces(state, region, GERMANS, ALLY)
-        take = min(n, need_allies - allies_removed)
-        for _ in range(take):
-            remove_piece(state, region, GERMANS, ALLY)
-            clear_allied_tribe(state, region, GERMANS, ALLY)
-        allies_removed += take
-    result["allies_to_available"] = allies_removed
-
-    # Remove Warbands
-    wb_removed = _remove_warbands_anywhere(
-        state, GERMANS, need_wb, rng,
-        to_removed=False, region_order=region_order,
-    )
-    result["warbands_to_available"] = wb_removed
+    result.update(_adjust_ally_and_warband_counts(state, QUARTER))
 
     refresh_all_control(state)
     return result
@@ -549,46 +544,10 @@ def _adjust_belgae_forces(state):
     """Belgae: remove >= 1/2 of on-map Allies + 1/2 of on-map Warbands,
     Belgica last. Place Ambiorix in region with most other Belgic pieces.
     """
-    rng = state["rng"]
-    result = {
-        "allies_to_available": 0,
-        "warbands_to_available": 0,
-        "ambiorix_placed": None,
-    }
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.engine.interlude_reductions import BELGIC_HALF
 
-    total_allies = 0
-    for region in state["spaces"]:
-        total_allies += count_pieces(state, region, BELGAE, ALLY)
-    need_allies = _fraction_to_remove(total_allies, 0.5)
-
-    total_wb = 0
-    for region in state["spaces"]:
-        total_wb += count_pieces(state, region, BELGAE, WARBAND)
-    need_wb = _fraction_to_remove(total_wb, 0.5)
-
-    region_order = _np_region_order(
-        state, BELGAE, home_last=True, rng=rng,
-        home_regions=BELGAE_HOME_REGIONS,
-    )
-
-    allies_removed = 0
-    for region in region_order:
-        if allies_removed >= need_allies:
-            break
-        n = count_pieces(state, region, BELGAE, ALLY)
-        take = min(n, need_allies - allies_removed)
-        for _ in range(take):
-            remove_piece(state, region, BELGAE, ALLY)
-            clear_allied_tribe(state, region, BELGAE, ALLY)
-        allies_removed += take
-    result["allies_to_available"] = allies_removed
-
-    wb_removed = _remove_warbands_anywhere(
-        state, BELGAE, need_wb, rng,
-        to_removed=False, region_order=region_order,
-    )
-    result["warbands_to_available"] = wb_removed
+    result = _adjust_ally_and_warband_counts(state, BELGIC_HALF)
+    result["ambiorix_placed"] = None
 
     # The scenario names Ambiorix, even if the first-half Leader was a
     # Successor. Exclude the incumbent from the "most other Belgic pieces"

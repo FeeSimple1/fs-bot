@@ -514,7 +514,7 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `event_up_to` | `card_id, shaded, faction, max_count`; A40 `legal_regions`; A51 `region, available` visibility/count cohorts; A60 `region, available_count` | A40 `{"regions":[...]}`; A51 `{"removals":[{"piece_state":...,"count":n},...]}`; A60 `{"count":n}`; or explicit default |
 | `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
-| `interlude_reduction` | German-owned stage with `stage, minimums, cohorts` | `{"removals":[cohort objects]}` in selection order, or explicit default |
+| `interlude_reduction` | Faction-owned stage with `stage, minimums, cohorts` | `{"removals":[cohort objects]}` in selection order, or explicit default |
 | `interlude_settlements` | German-owned choice after permanent Warband removals, with `options` by Region and `required_allies` | `{"allies":{region:tribe,...}}` or explicit default |
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
@@ -1883,8 +1883,8 @@ board and RNG with the live save. It never overwrites the live game.
 
 ### German Interlude force adjustments
 
-`interlude_reduction` belongs to Germans before the seat becomes Arverni.
-Copy rows from `cohorts` into `{"removals":[...]}`, setting each `count` to
+The German seat receives `german_permanent` and `german_quarter` before it
+becomes Arverni. For an `interlude_reduction` request, copy rows from `cohorts` into `{"removals":[...]}`, setting each `count` to
 a positive number within that cohort's capacity. Rows have `region`,
 `piece_type`, `piece_state`, `tribe`, and `count`. Warband cohorts name
 their visibility. Ally rows name an exact Tribe with a count of one.
@@ -1910,6 +1910,16 @@ invalid allocation leaves the request pending. If Winter pauses, earlier
 answers stay in the journal and replay against the restored board when
 Winter resumes. Older German-seat transcripts may pause for new requests
 when replayed.
+
+### Belgic Interlude force reduction
+
+Belgae receive the `belgic_half` stage of `interlude_reduction`. Use the
+same ordered `{"removals":[...]}` contract or delegate with
+`{"use_default":true}`. Select at least the offered minimum of each type.
+Belgica goes last within each type. Choose Allies by Tribe and Warbands
+by Region and visibility. The surviving forces determine where Ambiorix
+is placed. If a tie needs a `spring_leader` response, the earlier Belgic
+allocation is retained when Winter pauses.
 
 ### Roman Interlude allocations
 

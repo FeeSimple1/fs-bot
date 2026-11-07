@@ -285,8 +285,10 @@ def make_random_reactive(seats, rng):
         if kind == 'interlude_reduction':
             cohorts = list(request['cohorts'])
             rng.shuffle(cohorts)
-            if request['stage'] == 'german_quarter':
-                cohorts.sort(key=lambda row: row['region'] in rc.GERMANIA_REGIONS)
+            from fs_bot.engine.interlude_reductions import STAGE_RULES
+
+            home = STAGE_RULES[request['stage']]['home_regions']
+            cohorts.sort(key=lambda row: row['region'] in home)
             needed, removals = dict(request['minimums']), []
             for row in cohorts:
                 piece_type = row['piece_type']

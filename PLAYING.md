@@ -741,6 +741,18 @@ Use `b` or `board` to inspect the board while selecting. You can delegate
 each choice to the bot. Saving and resuming Winter retains answers you
 have already given.
 
+### Belgic Interlude force reduction
+
+The Belgic player chooses at least half of the on-map Allies and half
+of the on-map Warbands to return to Available, rounding up each minimum.
+Take pieces outside Belgica first for each type. The terminal lists
+Allies by Tribe and Warbands by Region and visibility. Use `b` or `board`
+during selection or delegate to the bot.
+
+The remaining pieces determine Ambiorix's destination. If multiple
+Regions tie, choose among them. Saving at that prompt retains the
+accepted Belgic removals when Winter resumes.
+
 ### Roman Interlude decisions
 
 In The Gallic War, human Romans choose whether to conduct the Britannia

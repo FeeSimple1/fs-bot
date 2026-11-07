@@ -21,6 +21,30 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November Belgic Interlude force reduction
+
+Under A2.1, Belgae choose at least half of the on-map Allies and half
+of the on-map Warbands to return to Available. Each minimum rounds up.
+The menu enforces Belgica last within each piece type. It names the
+Tribe for every Ally disc and distinguishes Hidden, Revealed and
+Scouted Warbands. Citadels are outside the reduction.
+
+The surviving forces determine the candidates for Ambiorix's placement.
+If the human seat pauses at a tie, Winter restores the board and
+retains the accepted reduction in its journal. The terminal and
+assistant support exact allocation and delegation to the seeded bot
+default.
+
+Twenty paired bot games match the previous final boards and winners.
+Twenty-one mixed-seat games match across two hash seeds without hard
+findings or partial actions. This includes Gallic War seed 13, which
+reaches the new Belgic choice. All 100 balance results match the previous
+revision by winner and card count.
+
+**WS-F01 and WS-C28 advance. Aedui, Arverni and Roman force
+adjustments and Cisalpina relocation remain open. The original audit
+stands at 44/50 closed (88%), with 6 open.**
+
 ### 6 November German Interlude Settlement conversion
 
 Under A2.1 and §§1.4.1–1.4.3, after the permanent Warband removal the

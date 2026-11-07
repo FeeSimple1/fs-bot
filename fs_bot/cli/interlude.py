@@ -15,7 +15,10 @@ def _collect_reduction(state, request, stdin, stdout):
     if permanent:
         stdout.write(f"Remove {needed[rc.WARBAND]} German Warbands from play.\n")
     else:
-        stdout.write("Return German pieces to Available. Germania goes last for each type.\n")
+        rules = reductions.STAGE_RULES[stage]
+        home = ", ".join(rules["home_regions"])
+        stdout.write(f"Return {rules['faction']} pieces to Available. "
+                     f"Take {home} last for each type.\n")
     if not prompt_yes_no(stdin, stdout, 'Choose the pieces yourself?', default=True):
         return {'use_default': True}
 

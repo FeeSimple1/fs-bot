@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-06",
   "tested_source": {
-    "commit": "ca660d52757c7c7500a649fcb2dae4976e4eba8a",
-    "python_sha256": "fd9672a7024f649908f90afd7a2f67fd2e51c19295bc1a052c6e363486b0a273",
+    "commit": "43f78c776cb7af21e17c06db463e40f6bf1fef67",
+    "python_sha256": "5cda7ca6c8dae070cb10f1c545cb0278e64581d8ec13a556394737a68ef8fbaa",
     "python_files": 552,
     "working_tree_changes": true,
-    "note": "German Interlude reductions advance WS-F01. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-german-interlude-force-reductions."
+    "note": "German Interlude Settlement choices complete WS-C27. The tested source is the publishing tree over the listed parent. See current-status.md#6-november-german-interlude-settlement-conversion."
   },
   "total": 50,
   "closed": 44,
@@ -66,7 +66,8 @@
     "Shaded 51 closes BE-07 with exact optional Aedui replacements in one Region and a resumable Command using only surviving newly placed Germans. See current-status.md#6-november-shaded-surus-51.",
     "Oppida now offers legal live City choices on both sides. The Sacking and Remi Influence City schemas match their existing named-owner menus. See current-status.md#6-november-oppida-28-city-choices.",
     "Shaded 57 closes BE-08 with a structured Britannia removal and legal post-removal placement menus. See current-status.md#6-november-shaded-land-of-mist-and-mystery-57.",
-    "German Interlude permanent and quarter reductions now offer exact owner allocations. WS-F01 remains open for other force adjustments and Cisalpina relocation. See current-status.md#6-november-german-interlude-force-reductions."
+    "German Interlude permanent and quarter reductions now offer exact owner allocations. WS-F01 remains open for other force adjustments and Cisalpina relocation. See current-status.md#6-november-german-interlude-force-reductions.",
+    "German Interlude Settlement choices complete WS-C27. WS-F01 still covers other factions' adjustments and Cisalpina relocation. See current-status.md#6-november-german-interlude-settlement-conversion."
   ],
   "findings": [
     {
@@ -462,7 +463,7 @@
       "title": "Interlude force reductions and Cisalpina relocations bypass human owners",
       "severity": "high",
       "status": "open",
-      "disposition": "German player can choose exact permanent and post-Settlement quarter reductions, with terminal and durable save/replay support. Other force adjustments and Cisalpina relocation are open."
+      "disposition": "German force adjustments (WS-C27) now support exact permanent removals, Settlement Ally allocations and post-conversion quarter reductions, with terminal and durable save/replay support. Other factions' force adjustments and Cisalpina relocation are open."
     },
     {
       "id": "WS-F02",

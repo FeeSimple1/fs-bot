@@ -2,7 +2,7 @@
 from fs_bot import rules_consts as rc
 from fs_bot.cli.action_windows import inspect_board
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
-from fs_bot.engine.interlude_choices import MARKER, validate_response
+from fs_bot.engine.interlude_choices import MARKER, SETTLEMENTS, validate_response
 from fs_bot.engine import interlude_reductions as reductions
 
 
@@ -48,10 +48,33 @@ def _collect_reduction(state, request, stdin, stdout):
     return reductions.validate_response(state, request, {'removals': removals})
 
 
+def _collect_settlements(state, request, stdin, stdout):
+    remaining = dict(request['options'])
+    required = request['required_allies']
+    stdout.write(f"Choose German Ally placements to replace Settlements ({required} required). "
+                 "The other Settlements convert to Warbands as available.\n")
+    if not prompt_yes_no(stdin, stdout, 'Choose the Ally placements yourself?', default=True):
+        return {'use_default': True}
+    allies = {}
+    while len(allies) < required:
+        region = next(iter(remaining))
+        if len(remaining) > required - len(allies):
+            region = prompt_choice(stdin, stdout, 'Which Settlement gets an Ally?',
+                                   [(name, name) for name in remaining])
+        tribes = remaining.pop(region)
+        tribe = tribes[0] if len(tribes) == 1 else prompt_choice(
+            stdin, stdout, f'Place the Ally at which Tribe in {region}?',
+            [(name, name) for name in tribes])
+        allies[region] = tribe
+    return validate_response(state, request, {'allies': allies})
+
+
 def collect_interlude(state, faction, request, stdin, stdout):
     with inspect_board(state, stdout):
         if request['kind'] == reductions.KIND:
             return _collect_reduction(state, request, stdin, stdout)
+        if request['kind'] == SETTLEMENTS:
+            return _collect_settlements(state, request, stdin, stdout)
         if request['kind'] == MARKER:
             choices = [('Keep no marker', None)] + [
                 (f"{row['tribe']} ({row['status']})", row['tribe']) for row in request['markers']]

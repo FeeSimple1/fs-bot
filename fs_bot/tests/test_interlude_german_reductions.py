@@ -1,4 +1,4 @@
-"""A2.1 German Interlude reductions use the owner's exact counters."""
+"""A2.1 German Interlude choices use the owner's exact counters and Tribes."""
 from copy import deepcopy
 from io import StringIO
 
@@ -7,10 +7,11 @@ import pytest
 from fs_bot import rules_consts as rc
 from fs_bot.board import pieces
 from fs_bot.cards.card_effects import _ally_tribe
-from fs_bot.cli.display import HumanTurnDisplay
+from fs_bot.cli.display import HumanTurnDisplay, format_board
 from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.engine.game_engine import _action_transaction, resolve_winter_card
 from fs_bot.engine.interlude import _adjust_german_forces, run_interlude
+from fs_bot.engine.interlude_choices import SETTLEMENTS, settlement_request
 from fs_bot.engine.interlude_reductions import KIND, PERMANENT, QUARTER, reduction_request
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.setup import setup_scenario
@@ -147,7 +148,7 @@ def _session(state, meta=None, log=None):
     session = SeatSession(state, {'seat': GERMANS} if meta is None else meta,
                           [] if log is None else log, HumanTurnDisplay(StringIO()))
     state['decision_agent'] = lambda board, faction, request: (
-        session.reactive(board, faction, request) if request['kind'] == KIND else None)
+        session.reactive(board, faction, request) if request['kind'] in (KIND, SETTLEMENTS) else None)
     return session
 
 
@@ -213,3 +214,176 @@ def test_invalid_raw_reduction_restores_entire_interlude():
     with pytest.raises(ValueError):
         run_interlude(state)
     assert encode(board_copy(state)) == before
+
+
+def _settlement_position():
+    state = build_initial_state(rc.SCENARIO_GALLIC_WAR, seed=41)
+    for region in (rc.MANDUBII, rc.ARVERNI_REGION, rc.AEDUI_REGION, rc.NERVII):
+        pieces.place_piece(state, region, GERMANS, rc.SETTLEMENT)
+    pieces.place_piece(state, rc.NERVII, rc.BELGAE, rc.WARBAND, 2)
+    for tribe in (rc.TRIBE_MORINI, rc.TRIBE_MENAPII, rc.TRIBE_SUGAMBRI,
+                  rc.TRIBE_SUEBI_NORTH, rc.TRIBE_SUEBI_SOUTH):
+        assert _ally_tribe(state, tribe, GERMANS)
+    state['tribes'][rc.TRIBE_VOLCAE]['status'] = rc.MARKER_DISPERSED
+    state['tribes'][rc.TRIBE_SENONES]['status'] = rc.MARKER_DISPERSED_GATHERING
+    return state
+
+
+def test_scarce_settlement_ally_chooses_exact_region_and_tribe_before_quarter():
+    state = _settlement_position()
+    seen = []
+
+    def agent(board, faction, request):
+        seen.append((faction, request['kind'], request.get('stage')))
+        if request['kind'] == SETTLEMENTS:
+            assert board['removed_pieces'][GERMANS][rc.WARBAND] == 15
+            assert request['options'] == {
+                rc.MANDUBII: [rc.TRIBE_MANDUBII, rc.TRIBE_LINGONES],
+                rc.ARVERNI_REGION: [rc.TRIBE_CADURCI],
+            }
+            assert request['required_allies'] == 1
+            return {'allies': {rc.MANDUBII: rc.TRIBE_LINGONES}}
+        if request.get('stage') == QUARTER:
+            assert any(row['tribe'] == rc.TRIBE_LINGONES for row in request['cohorts'])
+            assert request['minimums'] == {rc.ALLY: 2, rc.WARBAND: 3}
+            return {'removals': [_select(request, 1, tribe=rc.TRIBE_MENAPII),
+                                 _select(request, 1, tribe=rc.TRIBE_MORINI),
+                                 _select(request, 3, region=rc.AEDUI_REGION)]}
+        return None
+
+    state['decision_agent'] = agent
+    result = _adjust_german_forces(state)
+    assert seen == [(GERMANS, KIND, PERMANENT), (GERMANS, SETTLEMENTS, None),
+                    (GERMANS, KIND, QUARTER)]
+    assert result['settlements_replaced_with_ally'] == [rc.MANDUBII]
+    assert dict(result['settlements_replaced_with_warbands']) == {
+        rc.ARVERNI_REGION: 3, rc.AEDUI_REGION: 3, rc.NERVII: 3}
+    assert state['tribes'][rc.TRIBE_LINGONES]['allied_faction'] == GERMANS
+    for tribe in (rc.TRIBE_MANDUBII, rc.TRIBE_ARVERNI, rc.TRIBE_AEDUI, rc.TRIBE_CADURCI):
+        assert state['tribes'][tribe]['allied_faction'] is None
+    assert pieces.count_pieces_by_state(state, rc.NERVII, GERMANS, rc.WARBAND, rc.HIDDEN) == 3
+    assert result['settlements_removed_from_play'] == state['removed_pieces'][GERMANS][rc.SETTLEMENT] == 6
+    assert validate_state(state) == []
+
+
+@pytest.mark.parametrize('plan', [
+    None,
+    {'allies': []},
+    {'allies': {}},
+    {'allies': {rc.MANDUBII: rc.TRIBE_MANDUBII, rc.ARVERNI_REGION: rc.TRIBE_CADURCI}},
+    {'allies': {rc.MANDUBII: rc.TRIBE_SENONES}},
+    {'allies': {rc.ARVERNI_REGION: rc.TRIBE_ARVERNI}},
+    {'allies': {rc.ARVERNI_REGION: rc.TRIBE_VOLCAE}},
+    {'allies': {rc.AEDUI_REGION: rc.TRIBE_AEDUI}},
+    {'allies': {rc.NERVII: rc.TRIBE_NERVII}},
+    {'allies': {rc.ARVERNI_REGION: rc.TRIBE_LINGONES}},
+])
+def test_settlement_validation_rejects_illegal_or_incomplete_allocation(plan):
+    state = _settlement_position()
+    request = dict(settlement_request(state), faction=GERMANS)
+    before = encode(state)
+    with pytest.raises(ValueError, match='Assign exactly 1'):
+        validate_response(state, request, plan)
+    assert encode(state) == before
+
+
+def test_settlement_validation_rechecks_live_control_and_ally_capacity():
+    state = _settlement_position()
+    request = settlement_request(state)
+    plan = {'allies': {rc.MANDUBII: rc.TRIBE_LINGONES}}
+    assert validate_response(state, request, plan) == plan
+    controlled = deepcopy(state)
+    pieces.place_piece(controlled, rc.MANDUBII, rc.AEDUI, rc.WARBAND, 1)
+    assert rc.MANDUBII not in settlement_request(controlled)['options']
+    assert _ally_tribe(state, rc.TRIBE_NERVII, GERMANS)
+    for changed in (controlled, state):
+        with pytest.raises(ValueError, match='changed'):
+            validate_response(changed, request, plan)
+
+
+def test_settlement_cli_shows_board_and_selects_scarce_ally_placement():
+    state = _settlement_position()
+    request = settlement_request(state)
+    region = list(request['options']).index(rc.MANDUBII) + 1
+    tribe = request['options'][rc.MANDUBII].index(rc.TRIBE_LINGONES) + 1
+    output = StringIO()
+    agent = make_cli_reactive({GERMANS}, StringIO(f'board\ny\n{region}\n{tribe}\n'), output)
+    before = encode(state)
+    assert agent(state, GERMANS, request) == {'allies': {rc.MANDUBII: rc.TRIBE_LINGONES}}
+    assert 'Which Settlement gets an Ally?' in output.getvalue()
+    assert rc.TRIBE_LINGONES in output.getvalue() and format_board(state) in output.getvalue()
+    assert encode(state) == before
+
+
+def test_npc_and_explicit_default_use_same_legal_settlement_allocations():
+    state = _settlement_position()
+    npc = deepcopy(state)
+    npc['non_player_factions'] = {GERMANS}
+    state['decision_agent'] = lambda *args: {'use_default': True}
+    npc['decision_agent'] = lambda *args: pytest.fail('Bot consulted human decision agent')
+    player_result = _adjust_german_forces(state)
+    assert player_result == _adjust_german_forces(npc)
+    assert rc.AEDUI_REGION in dict(player_result['settlements_replaced_with_warbands'])
+    assert rc.NERVII in dict(player_result['settlements_replaced_with_warbands'])
+    assert state['rng'].getstate() == npc['rng'].getstate()
+    assert state['spaces'] == npc['spaces'] and state['tribes'] == npc['tribes']
+
+
+def test_winter_retains_permanent_and_settlement_answers_through_quarter_resume(tmp_path):
+    def position():
+        state = _winter_position()
+        pieces.place_piece(state, rc.MANDUBII, GERMANS, rc.SETTLEMENT)
+        pieces.place_piece(state, rc.MANDUBII, GERMANS, rc.WARBAND, 3)
+        return state
+
+    session = _session(position())
+    before = encode(board_copy(session.state))
+    with pytest.raises(DecisionPending):
+        _attempt(session)
+    first = deepcopy(session.data['pending'])
+    request = decode(first['request'])
+    assert request['stage'] == PERMANENT
+    permanent = {'removals': [_select(request, 3, region=None),
+                              _select(request, 8, region=rc.UBII),
+                              _select(request, 4, region=rc.SUGAMBRI)]}
+    session.import_inbox({'decision_id': first['id'], 'response': permanent})
+    with pytest.raises(DecisionPending):
+        _attempt(session)
+    second = deepcopy(session.data['pending'])
+    request = decode(second['request'])
+    assert request['kind'] == SETTLEMENTS and request['faction'] == GERMANS
+    assert request['options'] == {rc.MANDUBII: [rc.TRIBE_MANDUBII, rc.TRIBE_SENONES]}
+    session.import_inbox({'decision_id': second['id'], 'response': {'allies': {}}})
+    with pytest.raises(DecisionPending):
+        _attempt(session)
+    assert session.error and session.data['pending'] == second
+    assert len(session.data['journal']) == 1 and encode(board_copy(session.state)) == before
+
+    conversion = {'allies': {rc.MANDUBII: rc.TRIBE_SENONES}}
+    session.import_inbox({'decision_id': second['id'], 'response': conversion})
+    with pytest.raises(DecisionPending):
+        _attempt(session)
+    third = deepcopy(session.data['pending'])
+    request = decode(third['request'])
+    assert request['stage'] == QUARTER and len({first['id'], second['id'], third['id']}) == 3
+    assert any(row['tribe'] == rc.TRIBE_SENONES for row in request['cohorts'])
+    assert len(session.data['journal']) == 2 and encode(board_copy(session.state)) == before
+
+    path = tmp_path / 'settlement-winter.json'
+    save_game(session.state, path, meta=session.meta, log=session.log)
+    state, meta, log = load_game(path, validate=True)
+    resumed = _session(state, meta, log)
+    resumed.import_inbox({'decision_id': third['id'], 'response': {'use_default': True}})
+    result = _attempt(resumed)
+    resumed.finish()
+    assert len(log) == 3 and state['interlude_completed'] and validate_state(state) == []
+    german = result['winter_result']['interlude']['step2_germans']
+    assert german['settlements_replaced_with_ally'] == [rc.MANDUBII]
+    assert german['settlements_replaced_with_warbands'] == [(rc.SEQUANI, 1)]
+
+    replay = position()
+    plans = {PERMANENT: permanent, SETTLEMENTS: conversion}
+    replay['decision_agent'] = lambda board, faction, request: plans.get(
+        request.get('stage', request['kind']))
+    assert resolve_winter_card(replay) == result
+    assert encode(board_copy(replay)) == encode(board_copy(state))

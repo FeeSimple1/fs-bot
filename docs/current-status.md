@@ -21,6 +21,34 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 6 November German Interlude Settlement conversion
+
+Under A2.1 and §§1.4.1–1.4.3, after the permanent Warband removal the
+German player chooses which eligible Settlements receive Allies and
+which Subdued Tribe each Ally occupies. The allocation uses as many
+eligible Ally discs as the Available pool permits. This respects the
+Aedui and Arverni Tribe stacking restrictions that the previous default
+overlooked. Each remaining Settlement converts to up to three Hidden
+Warbands from Available.
+
+The terminal and assistant offer the choice when more than one allocation
+is legal. The quarter reduction uses the resulting board and includes
+the new Allies by Tribe. Saving while waiting for that reduction preserves
+the prior removal and Settlement answers. The bot and explicit delegation
+use the first legal allocations in the existing map order.
+
+All 9,167 tests pass, including 15 new cases. Twenty paired bot games
+match the previous final boards and winners. Twenty mixed-seat games
+match across two hash seeds without hard findings or partial actions.
+The 100-game balance check passes. Gallic War seed 15 shifts from a
+Roman to a Belgic win after the bot stops placing a German Ally at
+the reserved Aedui Tribe. Its targeted run completes without integrity
+findings.
+
+**WS-C27 is complete. WS-F01 remains open for the other factions' force
+adjustments and Cisalpina relocation. The original audit stands at
+44/50 closed (88%), with 6 open.**
+
 ### 6 November German Interlude force reductions
 
 Under A2.1, the German player chooses the 15 Warbands removed from play

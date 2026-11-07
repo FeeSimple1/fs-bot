@@ -723,18 +723,23 @@ therefore decline either side in the final year; this does not restrict a
 human's Event selection. See the [29 October rules report](docs/reviews/rulings-trade-2026-10-29.md)
 for the evidence and the narrower remaining Capability-removal question.
 
-### German Interlude force reductions
+### German Interlude force adjustments
 
 In The Gallic War, the German player chooses which 15 Warbands leave play
-from the map and Available. After Settlement conversion, a second menu
-lets them return at least a quarter of their on-map Allies and a quarter of
-their on-map Warbands to Available. The menu rounds up each minimum and
-unlocks Germania after the selected type's pieces outside Germania are
-exhausted. Choose Allies by Tribe and Warbands by Region and visibility.
+from the map and Available. Next, choose eligible Subdued Tribes for German
+Allies replacing Settlements under German Control. If Ally discs are
+scarce, choose which eligible Regions get them. Each remaining Settlement
+converts to three Hidden Warbands, as Available permits.
+
+After conversion, choose at least a quarter of the on-map Allies and a
+quarter of the on-map Warbands to return to Available. The menu rounds up
+each minimum and unlocks Germania after the selected type's pieces outside
+Germania are exhausted. Choose Allies by Tribe and Warbands by Region and
+visibility.
 
 Use `b` or `board` to inspect the board while selecting. You can delegate
-either stage to the bot. If you save at the second stage, the first answer
-is retained when you resume Winter.
+each choice to the bot. Saving and resuming Winter retains answers you
+have already given.
 
 ### Roman Interlude decisions
 

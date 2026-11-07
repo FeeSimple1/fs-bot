@@ -431,9 +431,9 @@ def _adjust_german_forces(state):
         "allies_to_available": 0,
         "warbands_to_available": 0,
     }
-    from fs_bot.cards.card_effects import _unally_tribe
+    from fs_bot.cards.card_effects import _ally_tribe, _unally_tribe
+    from fs_bot.engine.interlude_choices import choose_settlement_allies
     from fs_bot.engine.interlude_reductions import PERMANENT, QUARTER, choose_reduction
-    from fs_bot.rules_consts import GERMANIC_CONTROL
 
     # 1. Remove Germanic Leader from play.
     if _remove_leader_from_play(state, GERMANS):
@@ -458,58 +458,21 @@ def _adjust_german_forces(state):
             result["warbands_removed_from_play"] += count
 
     # 3. Settlements
-    settlements_total = 0
-    for region in list(state["spaces"].keys()):
+    allies = choose_settlement_allies(state)
+    for region in state["spaces"]:
         n_set = count_pieces(state, region, GERMANS, SETTLEMENT)
-        if n_set <= 0:
+        if not n_set:
             continue
-        settlements_total += n_set
-        control = state["spaces"][region].get("control")
-        if control == GERMANIC_CONTROL:
-            # Try to place an Ally at a Subdued Tribe in this Region.
-            from fs_bot.map.map_data import get_tribes_in_region
-            tribes = get_tribes_in_region(region, state["scenario"])
-            subdued_tribe = None
-            for t in tribes:
-                tinfo = state["tribes"].get(t)
-                if tinfo and tinfo.get("status") is None \
-                        and tinfo.get("allied_faction") is None:
-                    subdued_tribe = t
-                    break
-            if subdued_tribe is not None and \
-                    get_available(state, GERMANS, ALLY) > 0:
-                # Replace settlement with Ally
-                remove_piece(
-                    state, region, GERMANS, SETTLEMENT, n_set,
-                )
-                state["tribes"][subdued_tribe]["status"] = None
-                state["tribes"][subdued_tribe]["allied_faction"] = GERMANS
-                place_piece(state, region, GERMANS, ALLY, 1)
-                result["settlements_replaced_with_ally"].append(region)
-            else:
-                # Replace with 3 Warbands
-                remove_piece(
-                    state, region, GERMANS, SETTLEMENT, n_set,
-                )
-                avail_wb = get_available(state, GERMANS, WARBAND)
-                place_n = min(3, avail_wb)
-                if place_n > 0:
-                    place_piece(state, region, GERMANS, WARBAND, place_n)
-                result["settlements_replaced_with_warbands"].append(
-                    (region, place_n)
-                )
+        remove_piece(state, region, GERMANS, SETTLEMENT, n_set)
+        if region in allies:
+            if not _ally_tribe(state, allies[region], GERMANS):
+                raise ValueError("German Settlement replacement is no longer available.")
+            result["settlements_replaced_with_ally"].append(region)
         else:
-            # Non-Germanic-Control — replace with 3 Warbands too
-            remove_piece(
-                state, region, GERMANS, SETTLEMENT, n_set,
-            )
-            avail_wb = get_available(state, GERMANS, WARBAND)
-            place_n = min(3, avail_wb)
-            if place_n > 0:
+            place_n = min(3, get_available(state, GERMANS, WARBAND))
+            if place_n:
                 place_piece(state, region, GERMANS, WARBAND, place_n)
-            result["settlements_replaced_with_warbands"].append(
-                (region, place_n)
-            )
+            result["settlements_replaced_with_warbands"].append((region, place_n))
 
     # All Settlements are now off the board. Remove from play permanently.
     settlements_in_avail = state["available"].get(

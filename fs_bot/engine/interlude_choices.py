@@ -1,10 +1,44 @@
-"""Roman expedition and marker choices in the Gallic War Interlude (A2.1)."""
+"""Settlement, expedition and marker choices in the Gallic War Interlude (A2.1)."""
 from fs_bot import rules_consts as rc
-from fs_bot.board.pieces import count_pieces, count_pieces_by_state, find_leader
+from fs_bot.board.control import is_controlled_by
+from fs_bot.board.pieces import count_pieces, count_pieces_by_state, find_leader, get_available
 from fs_bot.engine.agent import consult_agent
 
 EXPEDITION = 'interlude_expedition'
 MARKER = 'interlude_marker'
+SETTLEMENTS = 'interlude_settlements'
+
+
+def settlement_request(state):
+    """Find legal Ally replacements after the permanent German removals."""
+    from fs_bot.commands.rally import _find_subdued_tribe_for_ally
+
+    available = get_available(state, rc.GERMANS, rc.ALLY)
+    options = {}
+    if available:
+        for region in state['spaces']:
+            if (count_pieces(state, region, rc.GERMANS, rc.SETTLEMENT)
+                    and is_controlled_by(state, region, rc.GERMANS)):
+                tribes = [tribe for tribe in _find_subdued_tribe_for_ally(state, region, rc.GERMANS)
+                          if tribe in state['tribes']
+                          and state['tribes'][tribe].get('status') in (None, rc.ALLIED)]
+                if tribes:
+                    options[region] = tribes
+    return dict(kind=SETTLEMENTS, options=options, required_allies=min(available, len(options)))
+
+
+def choose_settlement_allies(state):
+    request = settlement_request(state)
+    options = request['options']
+    required = request['required_allies']
+    has_choice = required < len(options) or any(len(tribes) > 1 for tribes in options.values())
+    if has_choice and rc.GERMANS not in state.get('non_player_factions', ()):
+        response = consult_agent(state, rc.GERMANS, request)
+        if response is not None:
+            validate_response(state, request, response)
+            if 'allies' in response:
+                return response['allies']
+    return {region: tribes[0] for region, tribes in list(options.items())[:required]}
 
 
 def expedition_request(state):
@@ -40,8 +74,19 @@ def marker_request(state):
 
 
 def validate_response(state, request, response):
-    """Validate complete physical allocations before any expedition movement."""
+    """Validate the complete choice before mutating the Interlude board."""
     if isinstance(response, dict) and set(response) == {'use_default'} and response['use_default'] is True:
+        return response
+    if request['kind'] == SETTLEMENTS:
+        current = settlement_request(state)
+        if current != {key: value for key, value in request.items() if key != 'faction'}:
+            raise ValueError('The offered Settlement replacements have changed.')
+        allies = response.get('allies') if isinstance(response, dict) else None
+        if (not isinstance(allies, dict) or set(response) != {'allies'}
+                or len(allies) != current['required_allies']
+                or any(tribe not in current['options'].get(region, ())
+                       for region, tribe in allies.items())):
+            raise ValueError(f"Assign exactly {current['required_allies']} Allies to offered Tribes in distinct Settlement Regions.")
         return response
     if request['kind'] == MARKER:
         if (not isinstance(response, dict) or set(response) != {'tribe'}

@@ -295,6 +295,10 @@ def make_random_reactive(seats, rng):
                     removals.append(dict(row, count=count))
                     needed[piece_type] -= count
             return {'removals': removals}
+        if kind == 'interlude_settlements':
+            options = request['options']
+            regions = rng.sample(list(options), request['required_allies'])
+            return {'allies': {region: rng.choice(options[region]) for region in regions}}
         if kind == 'interlude_marker':
             return {'tribe': rng.choice([None] + [row['tribe'] for row in request['markers']])}
         if kind == 'interlude_expedition':

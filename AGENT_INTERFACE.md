@@ -515,6 +515,7 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
 | `interlude_reduction` | German-owned stage with `stage, minimums, cohorts` | `{"removals":[cohort objects]}` in selection order, or explicit default |
+| `interlude_settlements` | German-owned choice after permanent Warband removals, with `options` by Region and `required_allies` | `{"allies":{region:tribe,...}}` or explicit default |
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
@@ -1880,7 +1881,7 @@ without spending an action. Preview validation never consumes live input or RNG.
 complete human decision log, verifies request context, and compares the final
 board and RNG with the live save. It never overwrites the live game.
 
-### German Interlude reductions
+### German Interlude force adjustments
 
 `interlude_reduction` belongs to Germans before the seat becomes Arverni.
 Copy rows from `cohorts` into `{"removals":[...]}`, setting each `count` to
@@ -1896,11 +1897,19 @@ their visibility. Ally rows name an exact Tribe with a count of one.
   exhaust the cohorts outside Germania before selecting a cohort in
   Germania. Multiple rows from the same cohort share its offered count.
 
-Either request accepts `{"use_default":true}` to delegate to the seeded
-default. An invalid allocation leaves the request pending. If Winter
-pauses at the second stage, the first answer stays in the journal and
-replays against the restored board when Winter resumes. Older German-seat
-transcripts may pause for these new requests when replayed.
+Between these stages, `interlude_settlements` offers German Ally
+placements when there is a choice. Its `options` maps German-controlled
+Settlement Regions to eligible Subdued Tribes. Assign exactly
+`required_allies` in `{"allies":{"Mandubii":"Lingones"}}` form, with one
+offered Tribe per selected Region. When discs are scarce, select which
+Regions get them. Remaining Settlements convert to up to three Hidden
+Warbands each from Available. Forced allocations resolve automatically.
+
+Each request accepts `{"use_default":true}` to delegate to the bot. An
+invalid allocation leaves the request pending. If Winter pauses, earlier
+answers stay in the journal and replay against the restored board when
+Winter resumes. Older German-seat transcripts may pause for new requests
+when replayed.
 
 ### Roman Interlude allocations
 

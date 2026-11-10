@@ -2093,9 +2093,8 @@ def _resolve_fixed_event_battle(state, faction, action, **options):
             forecast = {key: options[key]
                         for key in ('double_auxilia', 'extra_losses', 'ally_first')
                         if key in options}
-            rd, rr = _decide_defender_retreat(
-                state, region, faction, defender, False, **forecast)
-            options.update(retreat_declaration=rd, retreat_region=rr)
+            options.update(_battle_retreat_options(
+                state, region, faction, defender, False, **forecast))
         return resolve_battle(state, region, faction, defender, **options)
 
 
@@ -4011,19 +4010,13 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                                  {'is_ambush': is_ambush})
             try:
                 if _no_retreat_here:
-                    retreat_decl, retreat_region = (False, None)
-                elif force_retreat:
-                    _d, _dest = _decide_defender_retreat(
-                        state, region, faction, defender, is_ambush)
-                    retreat_decl, retreat_region = (True, _dest)
+                    retreat_options = {'retreat_declaration': False}
                 else:
-                    retreat_decl, retreat_region = _decide_defender_retreat(
-                        state, region, faction, defender, is_ambush)
+                    retreat_options = _battle_retreat_options(
+                        state, region, faction, defender, is_ambush, forced=force_retreat)
                 res = resolve_battle(
                     state, region, faction, defender,
                     is_ambush=is_ambush, besiege_target=besiege_target,
-                    retreat_declaration=retreat_decl,
-                    retreat_region=retreat_region,
                     citadel_at_start=citadel_at_start,
                     fort_at_start=fort_at_start,
                     allied_factions=allied_factions,
@@ -4033,6 +4026,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     double_auxilia=_double_auxilia,
                     ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
                                  and faction == _ARV_B and region == PROVINCIA),
+                    **retreat_options,
                 )
             except _EXEC_ERRORS as exc:
                 errors.append({"region": region, "defender": defender,
@@ -5281,9 +5275,20 @@ def _execute_build_plan(state, faction, bot_action):
     return result
 
 
+def _battle_retreat_options(state, region, attacker, defender, is_ambush, *,
+                            forced=False, **forecast):
+    """Carry accepted Step 2 promises to the actual Battle's Step 6."""
+    options = {}
+    if state.get('decision_agent') is not None and defender not in state.get('non_player_factions', ()):
+        forecast['battle_options'] = options
+    declared, destination = _decide_defender_retreat(
+        state, region, attacker, defender, is_ambush, **forecast)
+    return dict(retreat_declaration=declared or forced, retreat_region=destination, **options)
+
+
 def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
                             *, double_auxilia=False, extra_losses=0,
-                            ally_first=False):
+                            ally_first=False, battle_options=None):
     """Route the defending faction's Retreat decision per §8.4.3.
 
     Non-player Retreat rules (non_player_guidelines_summary.txt, §8.4.3):
@@ -5297,49 +5302,44 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
         joining the most friendly pieces ("Leaders join most friendly
         pieces", §8.4.3).
 
-    Scope note: destinations are limited to the defender's OWN Control — the
-    always-available Retreat. Retreat into another Faction's Control requires
-    that Faction's agreement (§1.5.2; only Aedui/Romans might, §8.6.6/§8.8.6);
-    that agreement routing is a separate, documented extension.
+    A fresh player declaration leaves the destination for Step 6. Other
+    factions' Control is usable only with their agreement during Step 2.
     """
     from fs_bot.rules_consts import (
-        ROMANS, GERMANS, ARVERNI, BELGAE, LEGION, AUXILIA, WARBAND, CITADEL,
-        FORT, BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, EVENT_UNSHADED, EVENT_SHADED,
+        ROMANS, GERMANS, LEGION, AUXILIA, WARBAND, CITADEL, FORT, EVENT_SHADED,
     )
     from fs_bot.battle.losses import calculate_losses
     from fs_bot.battle.elite import window
+    from fs_bot.battle.retreat import can_declare
     window(state, 'battle_retreat_choice', region=region,
            attacker=attacker, defender=defender)
 
-    if is_ambush:
-        return (False, None)  # §4.3.3: Defender may not Retreat from Ambush
-    scenario = state["scenario"]
-    if defender == GERMANS and scenario in BASE_SCENARIOS:
-        return (False, None)  # §3.2.4: Germans never Retreat (base)
-    if defender == ARVERNI and scenario in ARIOVISTUS_SCENARIOS:
-        return (False, None)  # A3.2.4: Arverni never Retreat
-    from fs_bot.cards.capabilities import is_capability_active
-    if defender == BELGAE and is_capability_active(state, "A70", EVENT_UNSHADED):
-        # A70 unshaded: "Belgae never Retreat" — no choice exists, so the
-        # agent is not consulted (the battle mechanic refuses regardless).
+    if not can_declare(state, region, attacker, defender, is_ambush):
         return (False, None)
-    if (defender == GERMANS and is_capability_active(state, "A33", EVENT_UNSHADED)
-            and not is_capability_active(state, "A31", EVENT_SHADED)):
-        return (False, None)  # A33 Wailing Women: Germans never Retreat
+    from fs_bot.cards.capabilities import is_capability_active
 
     # Legal Retreat destinations (adjacent Regions the defender Controls, or
     # ones whose controller agrees — §1.5.2).
-    legal = _retreat_destinations(state, region, defender)
+    agreements = {}
+    legal = _retreat_destinations(state, region, defender, agreements=agreements)
 
     # Agent hook: a human/LLM controlling the defender decides the Retreat.
     from fs_bot.engine.agent import consult_agent, RETREAT
-    resp = consult_agent(state, defender, {
+    request = {
         "kind": RETREAT, "region": region, "attacker": attacker,
         "defender": defender, "is_ambush": is_ambush,
-        "legal_regions": sorted(legal)})
-    if resp is not None:
-        if resp.get("retreat") and resp.get("region") in legal:
-            return (True, resp["region"])
+        "legal_regions": sorted(legal)}
+    if battle_options is not None:
+        request['stage'] = 'declare'
+    resp = consult_agent(state, defender, request)
+    if resp is not None and resp != {'use_default': True}:
+        if not isinstance(resp, dict) or resp.get('retreat') is not True:
+            return (False, None)
+        destination = resp.get('region')
+        if destination is None or destination in legal:
+            if battle_options is not None:
+                battle_options['retreat_agreements'] = agreements
+            return (True, destination)
         return (False, None)
 
     # Default NP logic. Condition (3): a Retreat removes no pieces only if a
@@ -5417,7 +5417,7 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
     return (False, None)
 
 
-def _retreat_destinations(state, region, faction, *, rampage=False):
+def _retreat_destinations(state, region, faction, *, rampage=False, agreements=None):
     """Adjacent Regions a faction may Retreat into (§8.4.3 + §1.5.2).
 
     Includes Regions the faction Controls, plus Regions Controlled by another
@@ -5425,18 +5425,20 @@ def _retreat_destinations(state, region, faction, *, rampage=False):
     per §8.6.6/§8.8.6). Returns a list (possibly empty).
     """
     from fs_bot.rules_consts import FACTIONS, GERMANS, ARVERNI, ARIOVISTUS_SCENARIOS
-    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.map.map_data import get_adjacent, get_adjacent_for_state
     from fs_bot.board.control import is_controlled_by
 
     dests = []
-    for r in get_adjacent(region):
+    neighbors = get_adjacent(region) if rampage else get_adjacent_for_state(state, region, faction)
+    expansion = state['scenario'] in ARIOVISTUS_SCENARIOS
+    for r in neighbors:
         if is_controlled_by(state, r, faction):
             dests.append(r)
             continue
         for c in FACTIONS:
             if c == faction:
                 continue
-            if rampage and (c == GERMANS or (c == ARVERNI and state['scenario'] in ARIOVISTUS_SCENARIOS)):
+            if (c == GERMANS and (rampage or not expansion)) or (c == ARVERNI and expansion):
                 continue
             if is_controlled_by(state, r, c):
                 # The controlling Faction agrees? Agent hook (§1.5.2) for a
@@ -5446,10 +5448,13 @@ def _retreat_destinations(state, region, faction, *, rampage=False):
                     "kind": AGREEMENT, "request_type": "retreat_into_control",
                     "requesting_faction": faction,
                     "context": {"region": r, "from_region": region}})
-                agrees = (bool(_a) if _a is not None
-                          else np_agrees_to_retreat(c, faction, state))
+                agrees = (np_agrees_to_retreat(c, faction, state)
+                          if _a is None or _a == {'use_default': True}
+                          else (_a.get('agree') is True if isinstance(_a, dict) else bool(_a)))
                 if agrees:
                     dests.append(r)
+                    if agreements is not None:
+                        agreements[r] = c
                 break
     return dests
 

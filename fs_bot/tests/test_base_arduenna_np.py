@@ -176,15 +176,17 @@ def test_first_roman_retreat_can_supply_second_targets_initially_absent_defender
     assert selected['battle_regions'] == [rc.NERVII, rc.TREVERI]
 
 
-def test_human_standing_does_not_turn_contingent_second_target_into_a_forecast_error():
+def test_human_removal_only_retreat_can_leave_the_second_target_empty():
     state = board()
     state['non_player_factions'].remove(rc.ROMANS)
     place_piece(state, rc.NERVII, rc.ARVERNI, rc.WARBAND, 4)
     place_piece(state, rc.TREVERI, rc.ARVERNI, rc.WARBAND, 10)
     place_piece(state, rc.TREVERI, rc.AEDUI, rc.WARBAND, 11)
     romans(state, rc.NERVII, legions=4)
-    # A player can stand and limit the whole sequence to two Legion Losses.
-    assert policy.predicted_legion_losses(state, [rc.NERVII, rc.TREVERI]) == 2
+    # Standing exposes two Legions. Declaring Retreat exposes one, then the
+    # other three can be removed without creating a second Battle. Those
+    # removals are Step 6 dispositions, not Attack Loss rolls.
+    assert policy.predicted_legion_losses(state, [rc.NERVII, rc.TREVERI]) == 1
 
 
 def test_abatis_saved_roll_consumes_a_loss_even_when_it_changes_no_board_piece():

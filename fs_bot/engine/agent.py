@@ -103,8 +103,13 @@ Request kinds
 - ``RETREAT`` — a Defender's Retreat choice (§3.2.4/§8.4.3).
   request: ``{"kind": RETREAT, "region", "attacker", "defender",
               "is_ambush", "legal_regions": [region, ...]}``
-  response: ``{"retreat": bool, "region": dest_or_None}`` or ``None`` to defer.
-  ``region`` must be one of ``legal_regions`` (else treated as "no retreat").
+  ``stage: "declare"`` asks for ``{"retreat": bool}`` before the Attack.
+  Older ordinary requests accept ``{"retreat": bool, "region": dest_or_None}``.
+
+- ``RETREAT_DISPOSITION`` — the surviving Defenders' Step 6 disposition.
+  Respond with ``{"region": destination_or_None, "stay_leader": bool,
+  "stay_hidden_warbands": n}``. Null removes the survivors that do not stay.
+  Both requests accept the default.
 
 - ``LOSS_ORDER`` — the order in which a Faction absorbs Battle Losses
   (§3.2.4: which pieces to lose; hard pieces still roll).
@@ -164,6 +169,7 @@ can retain their all-or-none ``{"retreat":bool,"region":...}`` contract.
 """
 
 RETREAT = "retreat"
+RETREAT_DISPOSITION = "retreat_disposition"
 LOSS_ORDER = "loss_order"
 AGREEMENT = "agreement"
 HARASSMENT_LOSS = "harassment_loss"

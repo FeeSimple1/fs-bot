@@ -496,7 +496,7 @@ For optional mid-action `spring_leader` requests carrying `window`, raw
 `{"use_default":true}` places Vercingetorix using the established priorities,
 so it is different from deferral. Durable sessions require an actual reply.
 
-The constants `RETREAT`, `LOSS_ORDER`, `AGREEMENT`, and `HARASSMENT_LOSS`
+The constants `RETREAT`, `RETREAT_DISPOSITION`, `LOSS_ORDER`, `AGREEMENT`, and `HARASSMENT_LOSS`
 come from `fs_bot.engine.agent`; other kinds below are literal strings.
 Requests can include additional context. Copy offered values rather than
 inventing pieces, regions, owners, or internal grant flags.
@@ -509,7 +509,8 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 
 | `request["kind"]` | request fields | response |
 |---|---|---|
-| `RETREAT` | `region, attacker, defender, is_ambush, legal_regions` | `{"retreat": bool, "region": dest_or_None}` (region must be in `legal_regions`) |
+| `RETREAT` | `stage:"declare", region, attacker, defender, is_ambush, legal_regions` | `{"retreat":bool}`. Retreat may be declared with an empty `legal_regions`. |
+| `RETREAT_DISPOSITION` | `region, attacker, defender, pieces, legal_regions, can_stay_leader, max_hidden_warbands, default, window` | `{"region":offered_region_or_null,"stay_leader":bool,"stay_hidden_warbands":n}` or explicit default |
 | `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag; copy entries intact; hard pieces still roll |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
 | `drought_loss` | `card_id:49, faction, region, targets` exact physical piece objects | `{"piece":<one offered target>}` or explicit default; no decline |
@@ -525,6 +526,22 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
+
+A Retreat declaration precedes the Attack and fixes the Loss procedure.
+Host agreements are collected during this step. `retreat_disposition`
+uses the mobile pieces that actually survived and the current Control of
+adjacent Regions. A host's agreement applies to its Region if that host
+still Controls it. Against Romans the defender can keep any number of
+surviving Hidden Warbands up to `max_hidden_warbands`, and can keep the
+Leader if `can_stay_leader` is true. A null destination removes the pieces
+that do not stay. Any movement uses one destination for all of them.
+
+An explicit default at declaration delegates Retreat to the existing bot
+policy. At disposition, `default` gives the offered survivor allocation.
+Raw older adapters can still send an offered `region` with the declaration
+to use that destination and the old stay defaults. Verified older assistant
+prompts retain their recorded response format. Rampage uses its own
+`retreat` contract described below.
 
 `event_piece_choice` goes to the executor for unshaded numeric 19 (Lucterius)
 and 22 (Hostages), on the live Event-step board. The request carries `card_id`,
@@ -1825,14 +1842,18 @@ refund occurs. Any negotiated return remains an explicit normal transfer.
 spending live resources or RNG or consuming any human reaction.
 
 ```python
-from fs_bot.engine.agent import RETREAT, AGREEMENT
+from fs_bot.engine.agent import RETREAT, RETREAT_DISPOSITION, AGREEMENT
 
 def reactive(state, faction, request):
     if faction != MY_FACTION:
         return None                       # let the bots handle the rest
     if request["kind"] == RETREAT:
         legal = request["legal_regions"]
+        if request.get("stage") == "declare":
+            return {"retreat": bool(legal)}
         return {"retreat": bool(legal), "region": legal[0] if legal else None}
+    if request["kind"] == RETREAT_DISPOSITION:
+        return request["default"]
     if request["kind"] == AGREEMENT:
         return False                      # refuse to help opponents
     return None                           # default Loss order

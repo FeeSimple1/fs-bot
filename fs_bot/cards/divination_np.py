@@ -287,9 +287,21 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
                           attacker=rc.GERMANS, command=False, double_auxilia=False):
     """Explore legal player absorption choices, merging identical continuations."""
     from fs_bot.battle.resolve import resolve_battle
-    from fs_bot.engine.agent import LOSS_ORDER, AGREEMENT, RETREAT
+    from fs_bot.battle.retreat import disposition_options, disposition_response
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.engine.agent import LOSS_ORDER, AGREEMENT, RETREAT, RETREAT_DISPOSITION
     from fs_bot.state.serialize import encode
     from json import dumps
+    agreements = None
+    if (not command and retreat and attacker == rc.ROMANS
+            and enemy not in state.get('non_player_factions', ())
+            and not _game_run_arverni(state, enemy)):
+        # In the direct Battle forecast, the selected host has already
+        # agreed on this branch. Step 6 can also use own Control or removal.
+        agreements = {}
+        if destination is not None:
+            agreements.update({destination: host for host in rc.FACTIONS if host != enemy
+                               and is_controlled_by(state, destination, host)})
     scripts, branches, complete = [()], set(), set()
     while scripts:
         script = scripts.pop()
@@ -354,10 +366,11 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
                     return rng.choose((False, True), (
                         'agreement', faction, dumps(encode(request), sort_keys=True)))
                 if request.get('kind') == RETREAT:
-                    options = [None, *request.get('legal_regions', [])]
-                    choice = rng.choose(options, ('retreat', faction,
-                                                  dumps(encode(request), sort_keys=True)))
-                    return {'retreat': choice is not None, 'region': choice}
+                    return {'retreat': rng.choose((False, True), ('retreat', faction,
+                                                  dumps(encode(request), sort_keys=True)))}
+            if request.get('kind') == RETREAT_DISPOSITION and not non_player:
+                return disposition_response(rng.choose(disposition_options(request),
+                    ('retreat', faction, dumps(encode(request), sort_keys=True))))
             if request.get('kind') != LOSS_ORDER:
                 return None
             rng.faction, rng.remaining, rng.selected = faction, request['num_losses'], None
@@ -383,7 +396,9 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
                     raise ValueError(f'Invalid Battle outcome preview: {result}')
             else:
                 resolve_battle(sim, region, attacker, enemy,
-                               retreat_declaration=retreat, retreat_region=destination)
+                               retreat_declaration=retreat,
+                               retreat_region=destination if agreements is None else None,
+                               retreat_agreements=agreements)
         except _OutcomeBranch as branch:
             if branch.key not in branches:
                 branches.add(branch.key)
@@ -491,7 +506,9 @@ def _enumerate_battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMAN
                          and len(set(_build_loss_priority(state, region, f))) > 1
                          for f in (enemy, attacker))
     for retreat, destination in retreat_choices:
-        if player_choices:
+        human_stay_choice = (retreat and attacker == rc.ROMANS and enemy not in non_players
+                             and not _game_run_arverni(state, enemy))
+        if player_choices or human_stay_choice:
             yield from _player_loss_outcomes(state, region, enemy, retreat, destination, attacker=attacker)
             continue
         attack_max = _calculate_attack_losses(state, region, attacker, enemy,

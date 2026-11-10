@@ -631,6 +631,12 @@ leaves your turn pending so you can choose again; a partly legal plan
 shows which portions would have no effect before you confirm it. You will
 also be consulted for in-battle decisions on other factions' turns:
 Retreats, loss order, Supply-Line and Trade agreements, and Harassment.
+You declare a Battle Retreat before the Attack, even with no adjacent
+destination. After taking Losses, choose one legal destination for the
+survivors or remove them. Against Romans you may keep the surviving
+Leader and any number of surviving Hidden Warbands in place. The rest move
+together or are removed. Any host agreement must come before the Attack.
+
 When Harassment causes a loss, you can choose an offered soft casualty or a
 saving roll, then choose a hard casualty if the roll requires one. The menus
 also distinguish piece visibility and specific Allied Tribes when relevant.

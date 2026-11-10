@@ -22,7 +22,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
-    MOBILE_PIECES, FLIPPABLE_PIECES,
+    FLIPPABLE_PIECES,
     # Piece states
     HIDDEN, REVEALED, SCOUTED, EVENT_UNSHADED, EVENT_SHADED,
     # Leaders
@@ -39,11 +39,10 @@ from fs_bot.rules_consts import (
 from fs_bot.board.pieces import (
     get_effective_faction_pieces,
     count_pieces, count_pieces_by_state, get_leader_in_region,
-    move_piece, flip_piece, remove_piece, clear_allied_tribe,
+    flip_piece, remove_piece, clear_allied_tribe,
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.cards.capabilities import is_capability_active
-from fs_bot.map.map_data import get_adjacent, is_adjacent
 from fs_bot.battle.losses import (calculate_losses, resolve_losses,
                                   _remove_battle_piece,
                                   card30_arverni_legion_warbands)
@@ -51,6 +50,7 @@ from fs_bot.battle.losses import (calculate_losses, resolve_losses,
 
 from fs_bot.engine.diviciacus import defensive_battle
 from fs_bot.battle.elite import battle_scope
+from fs_bot.battle import retreat
 from fs_bot.battle.excluded_leader import auxilia_only_battle
 
 
@@ -68,7 +68,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                    attacker_stays_hidden=False, allied_factions=(),
                    warband_full_loss=False, auxilia_only_attack=False,
                    no_attacker_leader=False, full_loss_warbands=0,
-                   _full_loss_cohort=None):
+                   _full_loss_cohort=None, retreat_agreements=None):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -88,7 +88,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
             True: Defender Retreats.
             False: Defender does not Retreat.
             None: Auto-determine (forced no retreat for Ambush/Germanic).
-        retreat_region: Region to retreat to (required if retreating).
+        retreat_region: Predetermined or default destination if Retreating.
+        retreat_agreements: Step 2 host promises for a live Step 6 choice.
         attack_loss_order: Optional loss priority for Attack step.
         defend_loss_order: Optional loss priority for Counterattack step.
         citadel_at_start: If provided, overrides the check for whether
@@ -117,75 +118,9 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         "defender_retreated": False,
     }
 
-    # ── Step 2: Determine Retreat ──
-    # Cannot retreat if:
-    # - Ambush — §4.3.3: "The Defender may not Retreat"
-    # - No mobile pieces — §3.2.4: "has only Allied Tribes (discs)
-    #   and/or Citadels"
-    # - Gallic Battle adds Forts to immobile list — §3.3.4: "Allied Tribe
-    #   (disc), Citadel, or Fort pieces"
-    # Base game Germanic attacker: no retreat — §3.4.4: "Skip Step 2"
-    # Base game Germanic defender: no retreat — §3.2.4: "Germans (black
-    #   pieces) never Retreat, either voluntarily or when they are forced
-    #   to by combat"
-    # Ariovistus: Germans CAN retreat and ARE retreated from — A3.2.4
-    # Ariovistus: Arverni never Retreat — A3.2.4
-
-    can_retreat = True
-    if is_ambush:
-        can_retreat = False
-    elif (attacking_faction == GERMANS
-          and scenario in BASE_SCENARIOS):
-        # §3.4.4: Germanic Battle skips Steps 2 and 6
-        can_retreat = False
-    elif (defending_faction == GERMANS
-          and scenario in BASE_SCENARIOS):
-        # §3.2.4: "EXCEPTION: Germans (black pieces) never Retreat,
-        # either voluntarily or when they are forced to by combat"
-        can_retreat = False
-    elif (defending_faction == GERMANS
-          and is_capability_active(state, "A33", EVENT_UNSHADED)
-          and not is_capability_active(state, "A31", EVENT_SHADED)):
-        # A33 Wailing Women: Germans never Retreat, unless A31 shaded
-        # cancels this harmful Event effect in Battle.
-        can_retreat = False
-    elif (defending_faction == BELGAE
-          and is_capability_active(state, "A70", EVENT_UNSHADED)):
-        # A70: Belgae never Retreat.
-        can_retreat = False
-    elif (defending_faction == ARVERNI
-          and scenario in ARIOVISTUS_SCENARIOS):
-        # A3.2.4: "The Arverni never Retreat"
-        can_retreat = False
-
-    # Check if defender has mobile pieces — §3.2.4, §3.3.4
-    if can_retreat:
-        space = state["spaces"][region]
-        d_pieces = get_effective_faction_pieces(state, region, defending_faction)
-        has_mobile = False
-        if d_pieces.get(LEADER) is not None:
-            has_mobile = True
-        for pt in (LEGION,):
-            if d_pieces.get(pt, 0) > 0:
-                has_mobile = True
-        for pt in FLIPPABLE_PIECES:
-            for ps in (HIDDEN, REVEALED, SCOUTED):
-                if d_pieces.get(ps, {}).get(pt, 0) > 0:
-                    has_mobile = True
-        if not has_mobile:
-            can_retreat = False
-
-    if retreat_declaration is True and can_retreat:
-        defender_retreats = True
-    elif retreat_declaration is True and not can_retreat:
-        # Caller declared retreat but can't — forced no retreat
-        defender_retreats = False
-    elif retreat_declaration is False:
-        defender_retreats = False
-    else:
-        # None: auto — default no retreat
-        defender_retreats = False
-
+    # Step 2 has already collected any agreements and declaration.
+    defender_retreats = retreat_declaration is True and retreat.can_declare(
+        state, region, attacking_faction, defending_faction, is_ambush)
     result["defender_retreated"] = defender_retreats
 
     # ── Track if defender started with Citadel/Fort ──
@@ -488,9 +423,9 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     if defender_retreats:
         elite.window(state, 'battle_retreat', region=region,
                      attacker=attacking_faction, defender=defending_faction)
-        retreat_result = _execute_retreat(
+        retreat_result = retreat.execute(
             state, region, defending_faction, attacking_faction,
-            retreat_region=retreat_region,
+            retreat_region=retreat_region, agreements=retreat_agreements,
         )
         result["retreat"] = retreat_result
 
@@ -713,146 +648,3 @@ def _reveal_survivors(state, region, attacking_faction, defending_faction):
                            from_state=HIDDEN, to_state=REVEALED)
             # Scouted Warbands are already Revealed. §4.2.2 removes their
             # marker only when they would hide, or at the end of Winter.
-
-
-def _execute_retreat(state, region, defending_faction, attacking_faction,
-                     *, retreat_region=None):
-    """Step 6 Retreat — Move remaining mobile Defenders.
-
-    §3.2.4: "The Defender must either move all its surviving Leader and
-    Warbands to that Region or remove them."
-    EXCEPTION: "The Defender may opt to have any Retreating Leader and/or
-    Hidden Warbands stay put."
-
-    §3.3.4: "Unlike in a Roman Attack, no Retreating Leaders nor Warbands
-    may stay."
-
-    A3.3.4 note: "Germanic and Gallic Leaders and Warbands Retreating from
-    each other may not stay put; they must reach an adjacent Region under
-    friendly Control or be removed."
-
-    Args:
-        state: Game state dict.
-        region: Battle region.
-        defending_faction: Faction retreating.
-        attacking_faction: Faction that attacked.
-        retreat_region: Adjacent region to retreat to. If None, pieces
-            that cannot retreat are removed.
-
-    Returns:
-        dict with retreat results.
-    """
-    scenario = state["scenario"]
-    result = {
-        "moved": [],
-        "removed": [],
-        "stayed": [],
-    }
-
-    space = state["spaces"][region]
-    d_pieces = get_effective_faction_pieces(state, region, defending_faction)
-
-    # Determine if the "stay" option is available
-    # §3.2.4 (Roman Attack): Leader and Hidden Warbands may stay
-    # §3.3.4 (Gallic Attack): NO Leaders or Warbands may stay
-    # A3.3.4: Germanic and Gallic retreating from each other: may not stay
-    roman_attacking = (attacking_faction == ROMANS)
-
-    # In Ariovistus, Germans retreat like Gauls — A3.2.4
-    # "Germans may declare Retreat and do so the same way as Gallic Factions,
-    # including the option to stay put with their Leader and Hidden Warbands
-    # when facing Romans."
-    can_stay = False
-    if roman_attacking:
-        # Roman Attack: Defender may opt to have Hidden Warbands and/or
-        # Leader stay — §3.2.4
-        can_stay = True
-    # Gallic attack: no staying — §3.3.4
-    # Germanic base attack: no retreat at all (shouldn't reach here)
-
-    # Collect mobile pieces to retreat
-    mobile_pieces = []
-
-    # Leader
-    leader_name = d_pieces.get(LEADER)
-    if leader_name is not None:
-        mobile_pieces.append((LEADER, None, leader_name))
-
-    # Legions
-    legion_count = d_pieces.get(LEGION, 0)
-    if legion_count > 0:
-        mobile_pieces.append((LEGION, None, legion_count))
-
-    # Auxilia — by state
-    for ps in (HIDDEN, REVEALED, SCOUTED):
-        aux_count = d_pieces.get(ps, {}).get(AUXILIA, 0)
-        if aux_count > 0:
-            mobile_pieces.append((AUXILIA, ps, aux_count))
-
-    # Warbands — by state
-    for ps in (HIDDEN, REVEALED, SCOUTED):
-        wb_count = d_pieces.get(ps, {}).get(WARBAND, 0)
-        if wb_count > 0:
-            mobile_pieces.append((WARBAND, ps, wb_count))
-
-    # Process retreat
-    for piece_type, piece_state, count_or_name in mobile_pieces:
-        if piece_type == LEADER:
-            # Leader: may stay if Roman attack and can_stay
-            if can_stay:
-                # Default behavior: Leader stays (for bot, this is a decision)
-                result["stayed"].append((LEADER, 1))
-                continue
-            # Must retreat or be removed
-            if retreat_region is not None:
-                move_piece(state, region, retreat_region,
-                           defending_faction, LEADER)
-                result["moved"].append((LEADER, 1))
-            else:
-                remove_piece(state, region, defending_faction, LEADER)
-                result["removed"].append((LEADER, 1))
-
-        elif piece_type == WARBAND:
-            if can_stay and piece_state == HIDDEN:
-                # Hidden Warbands may stay — §3.2.4
-                result["stayed"].append((WARBAND, count_or_name))
-                continue
-            # Must retreat or be removed
-            if retreat_region is not None:
-                move_piece(state, region, retreat_region,
-                           defending_faction, WARBAND,
-                           count=count_or_name, piece_state=piece_state)
-                result["moved"].append((WARBAND, count_or_name))
-            else:
-                remove_piece(state, region, defending_faction, WARBAND,
-                             count=count_or_name, piece_state=piece_state)
-                result["removed"].append((WARBAND, count_or_name))
-
-        elif piece_type in (LEGION, AUXILIA):
-            # Must retreat or be removed (no stay option)
-            if retreat_region is not None:
-                if piece_type == LEGION:
-                    move_piece(state, region, retreat_region,
-                               defending_faction, piece_type,
-                               count=count_or_name)
-                else:
-                    move_piece(state, region, retreat_region,
-                               defending_faction, piece_type,
-                               count=count_or_name,
-                               piece_state=piece_state)
-                result["moved"].append((piece_type, count_or_name))
-            else:
-                if piece_type == LEGION:
-                    # Legions removed go to Fallen — §1.4.1
-                    remove_piece(state, region, defending_faction, piece_type,
-                                 count=count_or_name, to_fallen=True)
-                else:
-                    remove_piece(state, region, defending_faction, piece_type,
-                                 count=count_or_name,
-                                 piece_state=piece_state)
-                result["removed"].append((piece_type, count_or_name))
-
-    # Allied Tribes, Citadels, and Forts stay in the Region — §3.2.4, §3.3.4
-    # (no action needed — they're not moved)
-
-    return result

@@ -53,7 +53,8 @@ branches every roll and legal human casualty choice, as Divination does.
     from fs_bot.cards.divination_np import _OutcomeBranch, _legal_loss_choices
     from fs_bot.cards.migration import _frost_ok
     from fs_bot.commands.common import free_action_scope
-    from fs_bot.engine.agent import AGREEMENT, LOSS_ORDER, RETREAT
+    from fs_bot.battle.retreat import disposition_options, disposition_response
+    from fs_bot.engine.agent import AGREEMENT, LOSS_ORDER, RETREAT, RETREAT_DISPOSITION
     from fs_bot.engine.execute import _execute_battle
     from fs_bot.engine.free_actions import _result_error
     scripts, branched, completed = [()], set(), set()
@@ -126,10 +127,12 @@ branches every roll and legal human casualty choice, as Divination does.
                 # callback. The following absorption belongs to this side.
                 rng.faction, rng.loss = faction, True
                 if not npc:
-                    choice = rng.choose((None, *request.get('legal_regions', [])),
-                                        ('retreat', faction, dumps(request, sort_keys=True)))
-                    return {'retreat': choice is not None, 'region': choice}
+                    return {'retreat': rng.choose((False, True),
+                            ('retreat', faction, dumps(request, sort_keys=True)))}
                 return None  # The canonical Roman NP Retreat policy.
+            if kind == RETREAT_DISPOSITION and not npc:
+                return disposition_response(rng.choose(disposition_options(request),
+                    ('retreat', faction, dumps(request, sort_keys=True))))
             if kind != LOSS_ORDER:
                 return None
             rng.faction, rng.loss = faction, True

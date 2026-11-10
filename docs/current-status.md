@@ -21,6 +21,40 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Battle Retreat choices
+
+Human defenders now declare Retreat before the Attack and choose the
+disposition of the actual surviving pieces afterward (§§3.2.4, 3.3.4,
+A3.2.4). Against Romans the defender can leave any number of surviving
+Hidden Warbands and choose whether the Leader stays. The rest move together
+to one legal Region or are removed, even if there is no destination.
+The destination check uses current Control and the specific host agreements
+made before the Attack. No Counterattack or Reveal occurs after a Retreat.
+
+The terminal and assistant offer both decisions. The assistant retains
+accepted declarations and Loss choices across a reload. Verified old
+declaration prompts retain their original contract. Older transcripts that
+include now-ineligible declarations can diverge. The detached Battle
+forecasts include removal-only Retreats and the legal Roman-attack stay
+choices where applicable.
+
+All 9,260 tests pass. Thirteen directed cases cover actual survivors, a
+static-only defender, changes in Control, forecast choices and durable
+reloads. Both frontends replayed a removal-only Retreat exactly. Twenty
+paired all-bot records and 100 balance outcomes match the parent. Twenty
+opt-in mixed games completed with zero hard findings and matched across
+hash seeds, exercising 48 survivor choices per pass. The Gallic War
+partial-Command regression now uses seed 21, which still reaches an
+opening Resource gift followed by a partly affordable Command.
+
+**BATTLE-RETREAT-CHOICES closes. The original audit stands at 48/50 closed
+(96%), with two findings open.**
+
+The existing non-player Leader placement is a separate follow-up under
+§8.4.3. In a directed Roman attack on Carnutes, the Belgic bot Retreats
+after losing its only local Warband, but Ambiorix stays in Carnutes even
+though five Belgic Warbands are in the legal destination of Atrebates.
+
 ### 10 November March groups at later origins
 
 Ordinary March now leaves earlier arrivals and transit drop-offs out of

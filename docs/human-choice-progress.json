@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "3cfa07de4d1d28568e76373c850a44a1415b2ccf",
-    "python_sha256": "5a0a36885135e7c416fa5ec84c0c7645a0d14d99b1c7445e3b9ea0587746cd7e",
-    "python_files": 563,
+    "commit": "4860f3ec8db7ad70f7f8e578911dea0429172ac9",
+    "python_sha256": "6d42143ba14c9efe57ead8d989ff35a3735e7524c3edd109c4c44350c4037bdf",
+    "python_files": 565,
     "working_tree_changes": true,
-    "note": "The March origin follow-up is tested on the publishing tree over the listed parent. See current-status.md#10-november-march-groups-at-later-origins."
+    "note": "The Battle Retreat repair is tested on the publishing tree over the listed parent. See current-status.md#10-november-battle-retreat-choices."
   },
   "total": 50,
-  "closed": 47,
-  "open": 3,
+  "closed": 48,
+  "open": 2,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -76,7 +76,8 @@
     "Quarters and Harvest offer exact donor-owned Resource gifts. See current-status.md#10-november-winter-resource-transfers.",
     "Live Command and Event gifts complete WS-F06. The shared-player cap remains part of WS-F09. See current-status.md#10-november-command-and-event-resource-transfers.",
     "Live transit drop-offs complete MARCH-DROPOFF. Earlier arrivals in later origin groups are a separate follow-up. See current-status.md#10-november-ordinary-march-drop-offs.",
-    "The March origin follow-up keeps earlier arrivals and drop-offs out of later groups in the same Command. The original audit counts remain 47 closed and 3 open."
+    "The March origin follow-up keeps earlier arrivals and drop-offs out of later groups in the same Command. The original audit counts remain 47 closed and 3 open.",
+    "BATTLE-RETREAT-CHOICES closes with separate live declaration and survivor disposition. The original audit stands at 48 closed and 2 open. NPC Retreat Leader placement is a separate follow-up."
   ],
   "findings": [
     {
@@ -162,7 +163,9 @@
       "id": "BATTLE-RETREAT-CHOICES",
       "title": "Retreat forces all Hidden defenders and Leader to stay and omits removal-only Retreat",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "current-status.md#10-november-battle-retreat-choices",
+      "disposition": "Defenders declare Retreat before Attack and choose the exact surviving Leader and Hidden Warbands that stay against Romans. The rest move to one currently legal Region or are removed, including without a destination. Terminal and durable assistant use both windows."
     },
     {
       "id": "BATTLE-BESIEGE-CHOICE",

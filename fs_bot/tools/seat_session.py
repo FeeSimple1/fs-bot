@@ -11,7 +11,7 @@ import hashlib
 import json
 import sys
 
-from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
+from fs_bot.engine.agent import RETREAT, RETREAT_DISPOSITION, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
 from fs_bot.engine import action_windows, resource_transfers
 from fs_bot.engine.march_choices import MARCH_DROPOFF, validate_dropoffs
 from fs_bot.engine.game_engine import ActionRejected, ACTION_PASS
@@ -197,15 +197,24 @@ def validate_response(state, request, response):
         if request.get('context', {}).get('rampage') and 'pieces' in request:
             from fs_bot.engine.rampage_choices import validate_response as validate_victims
             return validate_victims(state, request, response)
+        if request.get('stage') == 'declare':
+            if (not isinstance(response, dict) or set(response) - {'retreat', 'region'}
+                    or type(response.get('retreat')) is not bool or response.get('region') is not None):
+                raise ValueError('Declare Retreat with a boolean. The survivors choose a destination after Attack.')
+            return response
         if not isinstance(response, dict) or type(response.get("retreat")) is not bool:
             raise ValueError("Retreat requires {retreat: true/false, region: ...}.")
         destination = response.get("region")
         if response["retreat"]:
-            if destination not in request.get("legal_regions", []):
+            if ((destination is not None or request.get('context', {}).get('rampage'))
+                    and destination not in request.get("legal_regions", [])):
                 raise ValueError("Retreat destination is not a legal region.")
         elif destination is not None:
             raise ValueError("A no-Retreat response must have region null or omit it.")
         return response
+    if kind == RETREAT_DISPOSITION:
+        from fs_bot.battle.retreat import validate_response as validate_disposition
+        return validate_disposition(request, response)
     if kind == LOSS_ORDER:
         if not isinstance(response, list):
             raise ValueError("Loss order must be a list of the offered piece entries.")
@@ -445,6 +454,8 @@ class SeatSession:
             from fs_bot.battle.losses import compatible_loss_request as compatible
         elif request.get('kind') == RETREAT and request.get('context', {}).get('rampage'):
             from fs_bot.engine.rampage_choices import compatible_request as compatible
+        elif request.get('kind') == RETREAT and request.get('stage') == 'declare':
+            from fs_bot.battle.retreat import compatible_declaration as compatible
         else:
             return request
         journal = self.data['journal']

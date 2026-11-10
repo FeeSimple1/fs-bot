@@ -12,7 +12,7 @@ None (defer to the engine's defaults) for bot factions and unknown request
 kinds. Input exhaustion interrupts the action so it can be saved and resumed.
 """
 
-from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
+from fs_bot.engine.agent import RETREAT, RETREAT_DISPOSITION, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
 from fs_bot.rules_consts import WARBAND, ALLY
 
@@ -27,6 +27,30 @@ def _fmt_piece(piece):
     if len(piece) == 4 and piece[3] == 'elite':
         label += ' (as Legion)'
     return label
+
+
+def _retreat_survivors(state, request, stdin, stdout):
+    from fs_bot.cli.action_windows import inspect_board
+    from fs_bot.rules_consts import LEADER
+    region = request['region']
+    survivors = request['pieces']
+    labels = [f"{p['count']} {p.get('leader') or _fmt_piece((p['piece_type'], p['piece_state']))}"
+              for p in survivors]
+    stdout.write(f"\n{request['defender']}: Retreat survivors in {region}: {', '.join(labels)}.\n")
+    stay_leader, stay_hidden, destination = False, 0, None
+    with inspect_board(state, stdout):
+        if request['can_stay_leader']:
+            leader = next(p['leader'] for p in survivors if p['piece_type'] == LEADER)
+            stay_leader = prompt_yes_no(stdin, stdout, f"Keep {leader} in {region}?", default=True)
+        maximum = request['max_hidden_warbands']
+        if maximum:
+            stay_hidden = prompt_choice(stdin, stdout, "How many Hidden Warbands stay?",
+                                        [(str(n), n) for n in range(maximum, -1, -1)])
+        if sum(p['count'] for p in survivors) > stay_hidden + int(stay_leader):
+            destinations = [(f"Retreat to {dest}", dest) for dest in request['legal_regions']]
+            destination = prompt_choice(stdin, stdout, "What do the remaining survivors do?",
+                                        destinations + [("Remove them", None)])
+    return dict(region=destination, stay_leader=stay_leader, stay_hidden_warbands=stay_hidden)
 
 
 def make_cli_reactive(human_factions, stdin, stdout):
@@ -170,6 +194,8 @@ def make_cli_reactive(human_factions, stdin, stdout):
                     options.append((label, option))
                 choice = prompt_choice(stdin, stdout, "Harassment Loss?", options)
                 return {"use_default": True} if choice is None else {"choice": choice}
+            if kind == RETREAT_DISPOSITION:
+                return _retreat_survivors(state, request, stdin, stdout)
             if kind == RETREAT:
                 legal = list(request.get("legal_regions") or [])
                 ctx = request.get("context") or {}
@@ -193,6 +219,11 @@ def make_cli_reactive(human_factions, stdin, stdout):
                     f"\n{faction}: {request.get('attacker')} Battles you in "
                     f"{request.get('region')}"
                     f"{' (Ambush!)' if request.get('is_ambush') else ''}.\n")
+                if request.get('stage') == 'declare':
+                    return {"retreat": prompt_choice(stdin, stdout, "Retreat?", [
+                        ("No Retreat (take Losses in place)", False),
+                        ("Declare Retreat (choose what survivors do after the Attack)", True),
+                    ])}
                 opts = [("No Retreat (take Losses in place)", "stay")]
                 opts += [(f"Retreat to {r}", r) for r in legal]
                 pick = prompt_choice(stdin, stdout, "Retreat?", opts)

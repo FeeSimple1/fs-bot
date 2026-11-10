@@ -36,7 +36,8 @@ def _outcomes(state, region, *, frost=False):
     from fs_bot.cards.divination_np import _OutcomeBranch, _legal_loss_choices
     from fs_bot.cards.migration import _frost_ok
     from fs_bot.commands.common import free_action_scope
-    from fs_bot.engine.agent import AGREEMENT, LOSS_ORDER, RETREAT
+    from fs_bot.battle.retreat import disposition_options, disposition_response
+    from fs_bot.engine.agent import AGREEMENT, LOSS_ORDER, RETREAT, RETREAT_DISPOSITION
     from fs_bot.engine.execute import _execute_card45_battle_plan
     from fs_bot.engine.free_actions import _result_error
 
@@ -117,10 +118,12 @@ def _outcomes(state, region, *, frost=False):
                                   ('agreement', faction, dumps(request, sort_keys=True)))
             if kind == RETREAT:
                 if not npc:
-                    target = rng.choose((None, *request.get('legal_regions', [])),
-                                        ('retreat', faction, dumps(request, sort_keys=True)))
-                    return {'retreat': target is not None, 'region': target}
+                    return {'retreat': rng.choose((False, True),
+                            ('retreat', faction, dumps(request, sort_keys=True)))}
                 return None  # The canonical Roman NP Retreat policy.
+            if kind == RETREAT_DISPOSITION and not npc:
+                return disposition_response(rng.choose(disposition_options(request),
+                    ('retreat', faction, dumps(request, sort_keys=True))))
             if kind == LOSS_ORDER:
                 rng.owner = faction
                 rng.remaining = request['num_losses']

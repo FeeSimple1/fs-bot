@@ -21,6 +21,33 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Non-player Retreat Leader placement
+
+Non-players now choose where their Leader ends a Retreat after the Attack
+and its losses (§8.4.3). They count the pieces that will actually end up
+with the Leader, including surviving static pieces in place and mobile
+survivors that would accompany the Leader to another Region. Against
+Romans, eligible Hidden Warbands stay in place. Where the survivors can
+join their Leader in an adjacent Region, they do so. Equal choices for
+the Leader use the game's seeded random selection (§8.3.4).
+
+The disposition uses current Control and the host agreements already
+obtained before the Attack. Frost forecasts check every tied Leader
+destination. The original human-choice audit remains at 48/50 closed
+(96%), with two findings open.
+
+The terminal and assistant replayed a tied NPC Leader destination exactly.
+An older replay can diverge when the repaired choice moves a Leader or
+uses a new tie roll. The seeded mixed-seat tests still check completion
+and replay. A separate directed fixture now checks the opening gift and
+partial Rally that the former seed no longer reaches.
+
+All 9,271 tests pass, including ten directed Retreat placement cases.
+Twenty mixed-seat games had zero hard findings and matched across hash
+seeds. Five of 20 all-bot records changed. Against the prior revision,
+nine of 100 balance outcomes changed in winner or game length, including
+five winner changes. The existing balance guardrail passed.
+
 ### 10 November Battle Retreat choices
 
 Human defenders now declare Retreat before the Attack and choose the
@@ -50,8 +77,9 @@ opening Resource gift followed by a partly affordable Command.
 **BATTLE-RETREAT-CHOICES closes. The original audit stands at 48/50 closed
 (96%), with two findings open.**
 
-The existing non-player Leader placement is a separate follow-up under
-§8.4.3. In a directed Roman attack on Carnutes, the Belgic bot Retreats
+The [non-player placement repair](#10-november-non-player-retreat-leader-placement)
+addresses a separate finding under §8.4.3. In the original Roman attack on
+Carnutes, the Belgic bot Retreats
 after losing its only local Warband, but Ambiorix stays in Carnutes even
 though five Belgic Warbands are in the legal destination of Atrebates.
 

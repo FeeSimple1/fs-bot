@@ -98,7 +98,7 @@ branches every roll and legal human casualty choice, as Divination does.
                 return self.choose((low, high), ('roll',))
 
             def choice(self, values):
-                return values[0]
+                return self.choose(tuple(values), ('retreat_tie',))
 
             def random(self):
                 return 0.0

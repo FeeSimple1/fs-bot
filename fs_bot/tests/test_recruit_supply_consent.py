@@ -137,13 +137,10 @@ def test_interrupted_supply_query_does_not_leak_cache_or_consume_next_command():
     _no_cache(state)
 
 
-@pytest.mark.parametrize('scenario,seed,expected_partial', [
-    (rc.SCENARIO_ARIOVISTUS, 12, 0), (rc.SCENARIO_GALLIC_WAR, 21, 1)])
-def test_real_mixed_seat_recruit_failures_complete_and_replay(scenario, seed, expected_partial):
+@pytest.mark.parametrize('scenario,seed', [
+    (rc.SCENARIO_ARIOVISTUS, 12), (rc.SCENARIO_GALLIC_WAR, 21)])
+def test_real_mixed_seat_games_complete_and_replay(scenario, seed):
     first = play_game(scenario, seed, card_edition='legacy')
     assert first['game_completed'] and first['findings'] == [], first
-    # In The Gallic War, Belgae give three Resources to the Aedui before
-    # Rally. Morini completes and they can no longer afford Britannia.
-    assert first['partial'] == expected_partial, first
     second = play_game(scenario, seed, card_edition='legacy')
     assert second == first

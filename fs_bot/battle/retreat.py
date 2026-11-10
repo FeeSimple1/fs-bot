@@ -2,7 +2,9 @@
 
 from fs_bot import rules_consts as rc
 from fs_bot.board.control import is_controlled_by
-from fs_bot.board.pieces import count_pieces, get_effective_faction_pieces, move_piece, remove_piece
+from fs_bot.board.pieces import (
+    count_pieces, get_effective_faction_pieces, get_leader_in_region, move_piece, remove_piece,
+)
 from fs_bot.cards.capabilities import is_capability_active
 from fs_bot.engine.agent import RETREAT_DISPOSITION, consult_agent
 from fs_bot.map.map_data import get_adjacent_for_state
@@ -79,14 +81,52 @@ def disposition_response(choice):
     return dict(region=region, stay_leader=leader, stay_hidden_warbands=hidden)
 
 
-def execute(state, region, defender, attacker, *, retreat_region, agreements=None):
+def _non_player_disposition(state, region, defender, destinations, preferred, *,
+                            pieces, hidden, can_keep_leader):
+    """Join a surviving Leader with the most pieces after the Retreat (§8.4.3)."""
+    if not destinations:
+        return None, can_keep_leader
+
+    has_leader = any(piece['piece_type'] == rc.LEADER for piece in pieces)
+    moving = sum(piece['count'] for piece in pieces) - hidden - int(has_leader)
+    if preferred not in destinations:
+        preferred = max(destinations, key=lambda dest: count_pieces(state, dest, defender))
+
+    if not has_leader:
+        if moving:
+            preferred = next((dest for dest in destinations
+                              if get_leader_in_region(state, dest, defender) is not None),
+                             preferred)
+        return preferred, False
+
+    companions = {dest: count_pieces(state, dest, defender) + moving for dest in destinations}
+    if can_keep_leader:
+        # Exclude the Leader himself and the mobile survivors who must leave.
+        companions[region] = count_pieces(state, region, defender) - 1 - moving
+    maximum = max(companions.values())
+    tied = sorted(dest for dest, count in companions.items() if count == maximum)
+    selected = tied[0] if len(tied) == 1 else state['rng'].choice(tied)  # §8.3.4
+    return (preferred, True) if selected == region else (selected, False)
+
+
+def execute(state, region, defender, attacker, *, retreat_region, agreements=None,
+            non_player=None):
     """Apply one survivor allocation after all Attack losses and timing actions."""
     pieces = mobile_pieces(state, region, defender)
     hidden = sum(p['count'] for p in pieces if p['piece_type'] == rc.WARBAND
                  and p['piece_state'] == rc.HIDDEN and attacker == rc.ROMANS)
     leader = attacker == rc.ROMANS and any(p['piece_type'] == rc.LEADER for p in pieces)
+    if non_player is None:
+        non_player = defender in state.get('non_player_factions', ())
+    destinations = [retreat_region] if retreat_region is not None else []
     if agreements is not None and pieces:
         destinations = legal_regions(state, region, defender, agreements)
+
+    if non_player and pieces:
+        retreat_region, leader = _non_player_disposition(
+            state, region, defender, destinations, retreat_region,
+            pieces=pieces, hidden=hidden, can_keep_leader=leader)
+    elif agreements is not None and pieces:
         if retreat_region is not None:
             # A raw legacy answer fixed the destination before Attack.
             if retreat_region not in destinations:

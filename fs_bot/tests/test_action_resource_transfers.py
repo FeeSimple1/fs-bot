@@ -129,6 +129,30 @@ def test_bot_raid_reports_gift_even_when_the_donor_has_nothing_left_to_steal():
     assert state['resources'][rc.ROMANS] == 0 and state['resources'][rc.AEDUI] == 30
 
 
+def test_opening_gift_leaves_partial_rally_repeatable():
+    state = build_initial_state(rc.SCENARIO_GREAT_REVOLT, seed=21)
+    state.update(current_card=70, non_player_factions={rc.ROMANS, rc.ARVERNI})
+    state['resources'].update({rc.BELGAE: 5, rc.AEDUI: 0})
+    for region, tribe in ((rc.MORINI, rc.TRIBE_MORINI), (rc.BRITANNIA, rc.TRIBE_CATUVELLAUNI)):
+        place_piece(state, region, rc.BELGAE, rc.ALLY)
+        state['tribes'][tribe]['allied_faction'] = rc.BELGAE
+    initial = deepcopy(state)
+    decision = {'action': ACTION_COMMAND, 'player_action': {
+        'command': rc.CMD_RALLY, 'details': {
+            'transfers': [{'to': rc.AEDUI, 'amount': 3}],
+            'rally_plan': {'warbands': [rc.MORINI, rc.BRITANNIA]},
+        }}}
+    result = play_only(state, rc.BELGAE, decision)
+    assert result['executed'] and result['transfers'] == [
+        {'from': rc.BELGAE, 'to': rc.AEDUI, 'given': 3}]
+    assert [placement['region'] for placement in result['placements']] == [rc.MORINI]
+    assert result['errors'] == [{'region': rc.BRITANNIA, 'action': 'place_warbands',
+                                'error': 'Belgae has 1 Resources, need 2'}]
+    assert state['resources'][rc.BELGAE] == 1 and state['resources'][rc.AEDUI] == 3
+    assert play_only(initial, rc.BELGAE, deepcopy(decision)) == result
+    assert encode(initial) == encode(state)
+
+
 def test_frumentum_gift_changes_public_treasury_without_financing_the_grant():
     state = build_initial_state(rc.SCENARIO_ARIOVISTUS, seed=41)
     state.update(current_card='A53', non_player_factions={rc.BELGAE, rc.GERMANS})

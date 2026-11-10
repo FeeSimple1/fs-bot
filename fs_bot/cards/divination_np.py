@@ -284,7 +284,8 @@ def _legal_loss_choices(state, region, faction, request):
 
 
 def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
-                          attacker=rc.GERMANS, command=False, double_auxilia=False):
+                          attacker=rc.GERMANS, command=False, double_auxilia=False,
+                          npc_agreements=None):
     """Explore legal player absorption choices, merging identical continuations."""
     from fs_bot.battle.resolve import resolve_battle
     from fs_bot.battle.retreat import disposition_options, disposition_response
@@ -292,9 +293,8 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
     from fs_bot.engine.agent import LOSS_ORDER, AGREEMENT, RETREAT, RETREAT_DISPOSITION
     from fs_bot.state.serialize import encode
     from json import dumps
-    agreements = None
-    if (not command and retreat and attacker == rc.ROMANS
-            and enemy not in state.get('non_player_factions', ())
+    agreements = npc_agreements
+    if (not command and retreat and attacker == rc.ROMANS and agreements is None
             and not _game_run_arverni(state, enemy)):
         # In the direct Battle forecast, the selected host has already
         # agreed on this branch. Step 6 can also use own Control or removal.
@@ -302,6 +302,7 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
         if destination is not None:
             agreements.update({destination: host for host in rc.FACTIONS if host != enemy
                                and is_controlled_by(state, destination, host)})
+        destination = None  # Let the human forecast choose a live disposition.
     scripts, branches, complete = [()], set(), set()
     while scripts:
         script = scripts.pop()
@@ -345,7 +346,7 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
                 return value
 
             def choice(self, values):
-                return values[0]
+                return self.choose(tuple(values), ('retreat_tie',))
 
             def random(self):
                 return 0.0
@@ -397,7 +398,7 @@ def _player_loss_outcomes(state, region, enemy, retreat, destination, *,
             else:
                 resolve_battle(sim, region, attacker, enemy,
                                retreat_declaration=retreat,
-                               retreat_region=destination if agreements is None else None,
+                               retreat_region=destination,
                                retreat_agreements=agreements)
         except _OutcomeBranch as branch:
             if branch.key not in branches:
@@ -454,15 +455,18 @@ def _frost_retreat_choices(state, region, enemy, *, attacker=rc.GERMANS):
         probe['rng'], probe['decision_agent'] = AgreementRng(), agent
         try:
             if enemy in non_players or _game_run_arverni(state, enemy):
-                choices.add(_decide_defender_retreat(
-                    probe, region, attacker, enemy, False))
+                options = {}
+                retreat, destination = _decide_defender_retreat(
+                    probe, region, attacker, enemy, False, battle_options=options)
+                promises = tuple(sorted(options.get('retreat_agreements', {}).items())) if retreat else ()
+                choices.add((retreat, destination, promises))
             else:
                 destinations = _retreat_destinations(probe, region, enemy)
-                choices.update([(False, None), (True, None)])
-                choices.update((True, dest) for dest in destinations)
+                choices.update([(False, None, ()), (True, None, ())])
+                choices.update((True, dest, ()) for dest in destinations)
         except _OutcomeBranch as branch:
             scripts.extend(script + (option,) for option in branch.options)
-    return sorted(choices, key=lambda item: (item[0], item[1] or ''))
+    return sorted(choices, key=lambda item: (item[0], item[1] or '', item[2]))
 
 
 def _battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMANS, command=False,
@@ -505,11 +509,14 @@ def _enumerate_battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMAN
     player_choices = any(f not in non_players and not _game_run_arverni(state, f)
                          and len(set(_build_loss_priority(state, region, f))) > 1
                          for f in (enemy, attacker))
-    for retreat, destination in retreat_choices:
+    for retreat, destination, promises in retreat_choices:
         human_stay_choice = (retreat and attacker == rc.ROMANS and enemy not in non_players
                              and not _game_run_arverni(state, enemy))
-        if player_choices or human_stay_choice:
-            yield from _player_loss_outcomes(state, region, enemy, retreat, destination, attacker=attacker)
+        npc_agreements = dict(promises) if retreat and enemy in non_players else None
+        npc_leader_choice = npc_agreements is not None and get_leader_in_region(state, region, enemy)
+        if player_choices or human_stay_choice or npc_leader_choice:
+            yield from _player_loss_outcomes(state, region, enemy, retreat, destination,
+                                             attacker=attacker, npc_agreements=npc_agreements)
             continue
         attack_max = _calculate_attack_losses(state, region, attacker, enemy,
             is_retreat=retreat, had_citadel_at_start=had_citadel, had_fort_at_start=had_fort)
@@ -524,7 +531,8 @@ def _enumerate_battle_frost_outcomes(state, region, enemy, *, attacker=rc.GERMAN
                     return None
                 sim['decision_agent'] = phase_agent
                 resolve_battle(sim, region, attacker, enemy,
-                    retreat_declaration=retreat, retreat_region=destination)
+                    retreat_declaration=retreat, retreat_region=destination,
+                    retreat_agreements=npc_agreements)
                 refresh_all_control(sim)
                 sim.pop('decision_agent', None)
                 # Equal final boards are the same victory outcome regardless

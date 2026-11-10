@@ -636,6 +636,8 @@ destination. After taking Losses, choose one legal destination for the
 survivors or remove them. Against Romans you may keep the surviving
 Leader and any number of surviving Hidden Warbands in place. The rest move
 together or are removed. Any host agreement must come before the Attack.
+Non-player Leaders end a Retreat where the most of their own pieces can
+join them. Against Romans, non-player Hidden Warbands stay in place.
 
 When Harassment causes a loss, you can choose an offered soft casualty or a
 saving roll, then choose a hard casualty if the roll requires one. The menus

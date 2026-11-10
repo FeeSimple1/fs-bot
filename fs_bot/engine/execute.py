@@ -5279,7 +5279,7 @@ def _battle_retreat_options(state, region, attacker, defender, is_ambush, *,
                             forced=False, **forecast):
     """Carry accepted Step 2 promises to the actual Battle's Step 6."""
     options = {}
-    if state.get('decision_agent') is not None and defender not in state.get('non_player_factions', ()):
+    if state.get('decision_agent') is not None or defender in state.get('non_player_factions', ()):
         forecast['battle_options'] = options
     declared, destination = _decide_defender_retreat(
         state, region, attacker, defender, is_ambush, **forecast)
@@ -5298,9 +5298,8 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
 
     Returns (retreat_declaration, retreat_region):
       - (False, None) if the defender will not or cannot Retreat.
-      - (True, dest)  if it Retreats into an adjacent Region it Controls,
-        joining the most friendly pieces ("Leaders join most friendly
-        pieces", §8.4.3).
+      - (True, dest) if it Retreats and supplies a preliminary destination.
+      - (True, None) for a player who declares and chooses a destination later.
 
     A fresh player declaration leaves the destination for Step 6. Other
     factions' Control is usable only with their agreement during Step 2.
@@ -5329,7 +5328,7 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
         "kind": RETREAT, "region": region, "attacker": attacker,
         "defender": defender, "is_ambush": is_ambush,
         "legal_regions": sorted(legal)}
-    if battle_options is not None:
+    if battle_options is not None and defender not in state.get('non_player_factions', ()):
         request['stage'] = 'declare'
     resp = consult_agent(state, defender, request)
     if resp is not None and resp != {'use_default': True}:
@@ -5338,7 +5337,7 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
         destination = resp.get('region')
         if destination is None or destination in legal:
             if battle_options is not None:
-                battle_options['retreat_agreements'] = agreements
+                battle_options.update(retreat_agreements=agreements, retreat_non_player=False)
             return (True, destination)
         return (False, None)
 
@@ -5347,6 +5346,8 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
     if not legal:
         return (False, None)
     dest = max(sorted(legal), key=lambda r: count_pieces(state, r, defender))
+    if battle_options is not None:
+        battle_options.update(retreat_agreements=agreements, retreat_non_player=True)
 
     # Fixed Event Battles retain their printed Loss modifiers when the
     # defender applies §8.4.3. Aquitani adds its three Losses after halving,

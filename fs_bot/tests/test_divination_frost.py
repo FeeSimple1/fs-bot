@@ -126,7 +126,7 @@ def test_frost_accounts_for_refusing_np_retreat_and_resulting_counterattack():
     # 8.4.3: the NP Romans Retreat to reduce Legion Losses if the Aedui
     # grant a destination. Refusal leaves them in place to Counterattack.
     assert _frost_retreat_choices(st, rc.SEQUANI, rc.ROMANS) == [
-        (False, None), (True, rc.AEDUI_REGION)]
+        (False, None, ()), (True, rc.AEDUI_REGION, ((rc.AEDUI_REGION, rc.AEDUI),))]
     outcomes = list(_battle_frost_outcomes(st, rc.SEQUANI, rc.ROMANS))
     assert any(calculate_victory_margin(o, rc.AEDUI) == 1 for o in outcomes)
     assert not _battle_frost_ok(st, rc.SEQUANI, rc.ROMANS)
@@ -142,7 +142,7 @@ def test_np_refuses_to_stand_when_it_always_has_own_retreat_destination():
     # Do not invent a stand-and-fight branch when 8.4.3 always requires
     # Retreat; only actual legal agreement/decision outcomes are explored.
     assert _frost_retreat_choices(st, rc.SEQUANI, rc.ROMANS) == [
-        (True, rc.AEDUI_REGION)]
+        (True, rc.AEDUI_REGION, ())]
 
 
 def test_possible_np_agreement_die_success_is_included_without_advancing_rng():
@@ -164,7 +164,7 @@ def test_possible_np_agreement_die_success_is_included_without_advancing_rng():
     refresh_all_control(st)
     assert 10 <= calculate_victory_score(st, rc.ROMANS) <= 12
     rng = st['rng'].getstate()
-    assert (True, rc.AEDUI_REGION) in _frost_retreat_choices(st, rc.SEQUANI, rc.ROMANS)
+    assert (True, rc.AEDUI_REGION, ()) in _frost_retreat_choices(st, rc.SEQUANI, rc.ROMANS)
     assert st['rng'].getstate() == rng
 
 

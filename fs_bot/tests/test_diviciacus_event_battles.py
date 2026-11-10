@@ -60,7 +60,7 @@ def test_card2_np_romans_never_lend_to_battle_against_themselves(monkeypatch):
     # Warbands suffice, and Roman Auxilia must stay with their owner.
     place_piece(st, rc.CARNUTES, rc.ROMANS, rc.LEGION, from_legions_track=True)
     monkeypatch.setattr('fs_bot.engine.execute._decide_defender_retreat',
-                        lambda *_: (False, None))
+                        lambda *_, **__: (False, None))
     result = _resolve_card2_battle(st, rc.AEDUI, rc.CARNUTES)
     assert result[0]['result']['attack']['auto_legion_removed'] == 1
     assert count_pieces(st, rc.CARNUTES, rc.ROMANS, rc.AUXILIA) == 1

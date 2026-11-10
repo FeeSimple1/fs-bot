@@ -68,7 +68,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
                    attacker_stays_hidden=False, allied_factions=(),
                    warband_full_loss=False, auxilia_only_attack=False,
                    no_attacker_leader=False, full_loss_warbands=0,
-                   _full_loss_cohort=None, retreat_agreements=None):
+                   _full_loss_cohort=None, retreat_agreements=None, retreat_non_player=None):
     """Resolve a complete Battle in a Region.
 
     This implements Steps 1-6 of the Battle procedure. Step 1 (target
@@ -89,7 +89,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
             False: Defender does not Retreat.
             None: Auto-determine (forced no retreat for Ambush/Germanic).
         retreat_region: Predetermined or default destination if Retreating.
-        retreat_agreements: Step 2 host promises for a live Step 6 choice.
+        retreat_agreements: Step 2 host promises for Step 6.
+        retreat_non_player: Apply bot disposition when the declaration used its policy.
         attack_loss_order: Optional loss priority for Attack step.
         defend_loss_order: Optional loss priority for Counterattack step.
         citadel_at_start: If provided, overrides the check for whether
@@ -426,6 +427,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         retreat_result = retreat.execute(
             state, region, defending_faction, attacking_faction,
             retreat_region=retreat_region, agreements=retreat_agreements,
+            non_player=retreat_non_player,
         )
         result["retreat"] = retreat_result
 

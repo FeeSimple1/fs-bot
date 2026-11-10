@@ -21,6 +21,40 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November mandatory Event effects and physical targets
+
+Unshaded Remi Influence requires at least one eligible Ally replacement
+when its Remi condition applies. Shaded Siege of Bibrax retains its
+optional zero to five removals and uses the selected Ally's Tribe. A
+legacy entry without the Tribe resolves when one physical piece matches.
+Abatis recognizes Scouted Warbands as qualifying pieces (§§1.4.3, 4.2.2).
+
+Shaded Orgetorix, Galba, and Kinship require their printed quantities as
+far as possible (§5.1.3). Orgetorix checks placement supply after clearing
+the two Regions and preserves City slots needed to reach the attainable
+total. Galba checks both placement stages before its Resource gain.
+Kinship checks Warbands and Allies separately and removes eligible sources
+even when the counterpart is unavailable or cannot stack (§5.1.1).
+Terminal plans and non-player defaults use the same current-board choices
+as execution. An incomplete plan rolls back its earlier removals and
+placements.
+
+All 9,411 tests passed, including 20 new regressions. An assistant session
+rejected an incomplete Galba plan, kept the pending turn and board intact,
+and replayed a corrected submission exactly. Twenty all-bot games
+completed with clean audits. The 20 mixed-seat results matched across
+both hash seeds with zero hard findings and three partial plans.
+
+Both balance checks passed against the existing baseline. Across the
+100-game matrix, 12 winners and nine game lengths changed across 13 games
+relative to the parent. Paired replays of those games and the additional
+changed all-bot records first diverged at Remi Influence, Orgetorix, or
+Galba. The ledger records each case.
+
+**Batch 4 closes the final four findings.** The
+[comparison ledger](reviews/comparison-audit-2026-11-10.json) stands at
+**21 of 21 closed, 0 remaining.**
+
 ### 10 November Event prerequisites, targets, and scoring
 
 Shaded Sacking requires a Legion at the executor's Citadel. Assembly of

@@ -1426,6 +1426,10 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     if card_id == 68 and shaded:
         from fs_bot.cli.remi_event_effect import collect_params
         return collect_params(state, faction, card_id, shaded, stdin, stdout)
+    from fs_bot.cards.event_piece_plans import supported as exact_piece_plan
+    if exact_piece_plan(card_id, shaded):
+        from fs_bot.cli.event_piece_plans import collect_params
+        return collect_params(state, faction, card_id, shaded, stdin, stdout)
     from fs_bot.cards.named_event_effects import supported as named_effect
     if named_effect(card_id, shaded):
         from fs_bot.cli.named_event_effects import collect_params

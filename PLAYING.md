@@ -618,12 +618,23 @@ the Event. Only the chosen City's Ally, Citadel and status are cleared;
 other forces in its Region remain. Use `board` or `b` at these menus to
 inspect the current position before choosing.
 
+When unshaded Remi Influence applies, select one or two eligible Allied
+Tribes for Roman replacement. Shaded Siege of Bibrax lets you select up
+to five exact Roman or Aedui pieces in Atrebates, including the named Tribe
+for each Ally. You can finish with zero removals at Bibrax.
+
 The unshaded “remove all” effects of Ariovistus's Wife (A25), Divico (A26),
 Orgetorix (A30) and Galba (A56) include Scouted Warbands. Printed restrictions
 on Regions, factions and Leaders still apply.
 
 A Citadel placed by shaded Orgetorix allies its City Tribe to the Arverni.
 The Event's stacking exception permits an Arverni Citadel at Bibracte.
+After clearing the two Regions, place nine Arverni pieces as far as
+possible. Shaded Galba places its four Warbands and two Allies as far as
+possible before gaining Resources. Shaded Kinship requires the four
+Warband and two Ally replacements as far as the chosen source permits.
+The placement and replacement menus show each legal choice after the
+preceding steps. Abatis can be placed with a Scouted Warband.
 
 Shaded Land of Mist and Mystery (57) lets the executor name one Ally or
 Dispersed marker in Britannia. The terminal then offers the legal Gallic

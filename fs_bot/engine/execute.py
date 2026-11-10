@@ -6033,6 +6033,10 @@ def _derive_event_params(state, faction, card_id, shaded):
     if card_id == "A23":
         from fs_bot.cards.parley import derive_params
         return derive_params(state, faction, shaded)
+    from fs_bot.cards.event_piece_plans import supported as exact_piece_plan
+    if exact_piece_plan(card_id, shaded):
+        from fs_bot.cards.event_piece_plans import derive_params
+        return derive_params(state, faction, card_id)
     from fs_bot.cards.expansion_validation import supported
     if supported(card_id, shaded):
         from fs_bot.cards.expansion_validation import derive_params
@@ -6141,44 +6145,13 @@ def _derive_card_23(state, faction, shaded):
 
 
 def _derive_card_68(state, faction, shaded):
-    """Card 68 (Remi Influence), unshaded: if Remi are a Roman Ally or Subdued,
-    Romans replace up to 2 non-Roman Allies within 1 Region of Remi (Atrebates)
-    with Roman Allies (§8.2.3 — convert enemies' to own).
-
-    Shaded (Mediation): a Gallic Faction with Remi as its Ally may remove
-    anything at Alesia or Cenabum and place a Citadel + 4 Warbands there
-    (Card Reference 68). Acting Faction must be the Gallic Faction allied with
-    Remi; choose the City whose removal hurts an enemy most (else Alesia)."""
-    from fs_bot.rules_consts import (TRIBE_REMI, TRIBE_TO_REGION, ATREBATES,
-                                     ROMANS)
-    from fs_bot.map.map_data import get_adjacent, get_tribes_in_region
+    """Remi Influence defaults use the current legal Tribe or City choices."""
     if shaded:
         from fs_bot.cards.remi_event_effect import derive_params
-        return derive_params(state, faction)
-    if faction != ROMANS:
-        return None
-    _R = ROMANS
-    ti = state.get("tribes", {}).get(TRIBE_REMI)
-    if not ti:
-        return None
-    # "Dispersed Remi would not qualify for unshaded" (Card 68 Tips). Disperse
-    # is stored in tribe["status"] (= Dispersed / Dispersed-Gathering).
-    is_roman = ti.get("allied_faction") == _R
-    is_subdued = (ti.get("allied_faction") is None
-                  and ti.get("status") is None)
-    if not (is_roman or is_subdued):
-        return None
-    scenario = state["scenario"]
-    valid = [ATREBATES] + list(get_adjacent(ATREBATES, scenario))
-    repl = []
-    for region in valid:
-        for tribe in get_tribes_in_region(region, scenario):
-            t = state.get("tribes", {}).get(tribe)
-            if (t and t.get("allied_faction")
-                    and t.get("allied_faction") != _R
-                    and len(repl) < 2):
-                repl.append({"tribe": tribe})
-    return {"replacements": repl} if repl else None
+    else:
+        from fs_bot.cards.event_piece_plans import derive_params
+        return derive_params(state, faction, 68)
+    return derive_params(state, faction)
 
 
 def _derive_card_22(state, faction, shaded):

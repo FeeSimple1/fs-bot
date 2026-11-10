@@ -6,8 +6,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 21,
-  "closed": 17,
-  "open": 4,
+  "closed": 21,
+  "open": 0,
   "severity_counts": {
     "high": 15,
     "medium": 6
@@ -23,124 +23,427 @@
     "new_balance_matrix": false
   },
   "latest_repair": {
-    "batch": 3,
+    "batch": 4,
     "date": "2026-11-10",
     "findings": [
-      "BE2-01",
-      "BE2-02",
-      "BE2-04",
-      "BE2-05",
-      "BE2-06",
-      "BE2-07",
-      "EX2-03",
-      "EX2-05",
-      "EX2-06"
+      "BE2-03",
+      "EX2-01",
+      "EX2-02",
+      "EX2-04"
     ],
-    "report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+    "report": "../current-status.md#10-november-mandatory-event-effects-and-physical-targets",
     "tested_source": {
-      "commit": "ce3a852a122a7f95d586a3d149be5a1dd09fd475",
-      "python_sha256": "b5a3c7316c4db15a4f913111a6525525aee3ab37bc2985d887c7824376139f01",
-      "python_files": 575,
+      "commit": "6972cc9df235389bd545ba9c6f42d9fcb1726b8d",
+      "python_sha256": "7f75a00ebd5200960a71fa822bdfddb47f2e092f5edbf58c145f6f70a5db226e",
+      "python_files": 578,
       "working_tree_changes": true,
       "note": "Validation ran against the repair tree over the listed parent."
     },
     "validation": {
-      "pytest_passed": 9391,
-      "new_regressions": 24,
-      "focused_passed": 739,
+      "pytest_passed": 9411,
+      "new_regressions": 20,
+      "focused_passed": 397,
+      "assistant_rejected_plan_retry_and_replay": true,
       "all_bot_records": 20,
-      "all_bot_records_matched_parent": 16,
+      "all_bot_records_matched_parent": 15,
       "all_bot_audit_failures": 0,
       "mixed_seat_records": 20,
-      "mixed_seat_records_matched_parent": 7,
+      "mixed_seat_records_matched_parent": 1,
       "mixed_hash_seeds": [
         0,
         987
       ],
       "mixed_hard_findings": 0,
-      "mixed_partial_plans": 5,
+      "mixed_partial_plans": 3,
       "mixed_partial_plans_parent": 5,
-      "mixed_digest": "a8ab246f726dd4931e3406f969599006d7e70a5705d774e5e771a5e8e823dff4",
+      "mixed_digest": "a854fd5569ec4f387f6e797bb34ceaee361704b0c252b6e4150dc496fc8d3bff",
       "balance_games": 100,
-      "balance_outcomes_matched_parent": 96,
-      "balance_winners_changed_from_parent": 4,
-      "balance_lengths_changed_from_parent": 1,
-      "original_full_balance_guardrail_passed": true,
-      "original_three_seed_canary_passed": false,
-      "refreshed_full_balance_guardrail_passed": true,
-      "refreshed_three_seed_canary_passed": true,
-      "reviewed_baseline": {
-        "changes": {
-          "The Great Revolt|2": {
-            "stored": {
-              "cards": 43,
-              "winner": "Arverni"
-            },
-            "parent": {
-              "winner": "Arverni",
-              "cards": 43
-            },
-            "current": {
-              "winner": "Aedui",
-              "cards": 43
-            },
-            "first_changed_event": 56,
-            "pre_event_digest": "cf55154a02a42fa287ed"
+      "balance_outcomes_matched_parent": 87,
+      "balance_winners_changed_from_parent": 12,
+      "balance_lengths_changed_from_parent": 9,
+      "full_balance_guardrail_passed": true,
+      "three_seed_canary_passed": true,
+      "balance_baseline_sha256": "207a62e367e31caec165617b8f62fb5f5b0af82a114c4aaf3aee39f140d37d46",
+      "paired_replay_first_changes": {
+        "A56": 5,
+        "68": 6,
+        "A30": 5
+      },
+      "paired_replays": [
+        {
+          "scenario": "Ariovistus",
+          "seed": 1,
+          "parent": {
+            "winner": "Romans",
+            "cards": 46
           },
-          "The Great Revolt|18": {
-            "stored": {
-              "cards": 43,
-              "winner": "Arverni"
-            },
-            "parent": {
-              "winner": "Arverni",
-              "cards": 43
-            },
-            "current": {
-              "winner": "Aedui",
-              "cards": 43
-            },
-            "first_changed_event": 56,
-            "pre_event_digest": "d03fce1bf991204d360f"
+          "repair": {
+            "winner": "Romans",
+            "cards": 46
           },
-          "Ariovistus|3": {
-            "stored": {
-              "cards": 45,
-              "winner": "Belgae"
-            },
-            "parent": {
-              "winner": "Belgae",
-              "cards": 45
-            },
-            "current": {
-              "winner": "Aedui",
-              "cards": 45
-            },
-            "first_changed_event": "A43",
-            "pre_event_digest": "9bc2b771fd21e8e9a30f"
-          },
-          "The Gallic War|3": {
-            "stored": {
-              "cards": 83,
-              "winner": "Romans"
-            },
-            "parent": {
-              "winner": "Aedui",
-              "cards": 100
-            },
-            "current": {
-              "winner": "Romans",
-              "cards": 72
-            },
-            "first_changed_event": "A43",
-            "pre_event_digest": "9bc2b771fd21e8e9a30f"
-          }
+          "first_changed_card": "A56",
+          "kind": "event",
+          "actor": "Belgae",
+          "pre_effect_digest": "ba98b8dacbee068e41c4",
+          "shaded": true,
+          "parent_effects": [
+            "resources"
+          ],
+          "repair_effects": [
+            "allies",
+            "resources",
+            "warbands"
+          ]
         },
-        "old_sha256": "49ddf4b3acc4a6085c119850a1065696fe92cd4c007dcfcfec7ce49b85332588",
-        "new_sha256": "207a62e367e31caec165617b8f62fb5f5b0af82a114c4aaf3aee39f140d37d46"
-      }
+        {
+          "scenario": "Ariovistus",
+          "seed": 2,
+          "parent": {
+            "winner": "Romans",
+            "cards": 43
+          },
+          "repair": {
+            "winner": "Romans",
+            "cards": 43
+          },
+          "first_changed_card": 68,
+          "kind": "decision",
+          "actor": "Romans",
+          "pre_effect_digest": "ee7f0dcfd2ca8438d37e",
+          "parent_command": "Event",
+          "repair_command": "Seize"
+        },
+        {
+          "scenario": "Ariovistus",
+          "seed": 14,
+          "parent": {
+            "winner": "Romans",
+            "cards": 46
+          },
+          "repair": {
+            "winner": "Belgae",
+            "cards": 46
+          },
+          "first_changed_card": "A30",
+          "kind": "event",
+          "actor": "Germans",
+          "pre_effect_digest": "7bb497656f3a09894f19",
+          "shaded": true,
+          "parent_effects": [
+            "allies"
+          ],
+          "repair_effects": [
+            "allies",
+            "citadels",
+            "warbands"
+          ]
+        },
+        {
+          "scenario": "Ariovistus",
+          "seed": 15,
+          "parent": {
+            "winner": "Belgae",
+            "cards": 47
+          },
+          "repair": {
+            "winner": "Romans",
+            "cards": 31
+          },
+          "first_changed_card": "A30",
+          "kind": "event",
+          "actor": "Germans",
+          "pre_effect_digest": "0306d69d499c551f20af",
+          "shaded": true,
+          "parent_effects": [
+            "allies",
+            "citadels"
+          ],
+          "repair_effects": [
+            "warbands"
+          ]
+        },
+        {
+          "scenario": "Pax Gallica?",
+          "seed": 17,
+          "parent": {
+            "winner": "Aedui",
+            "cards": 26
+          },
+          "repair": {
+            "winner": "Romans",
+            "cards": 26
+          },
+          "first_changed_card": 68,
+          "kind": "event",
+          "actor": "Romans",
+          "pre_effect_digest": "cfab55bc410d80e2d3e9",
+          "shaded": false,
+          "parent_effects": [
+            "allies"
+          ],
+          "repair_effects": [
+            "allies"
+          ]
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "seed": 4,
+          "parent": {
+            "winner": "Arverni",
+            "cards": 61
+          },
+          "repair": {
+            "winner": "Aedui",
+            "cards": 32
+          },
+          "first_changed_card": 68,
+          "kind": "decision",
+          "actor": "Romans",
+          "pre_effect_digest": "d733c988b473b4c7104f",
+          "parent_command": "Event",
+          "repair_command": "Recruit"
+        },
+        {
+          "scenario": "The Gallic War",
+          "seed": 1,
+          "parent": {
+            "winner": "Belgae",
+            "cards": 102
+          },
+          "repair": {
+            "winner": "Belgae",
+            "cards": 71
+          },
+          "first_changed_card": "A56",
+          "kind": "event",
+          "actor": "Belgae",
+          "pre_effect_digest": "c7bf50e64cf3008d166a",
+          "shaded": true,
+          "parent_effects": [
+            "resources"
+          ],
+          "repair_effects": [
+            "allies",
+            "resources",
+            "warbands"
+          ]
+        },
+        {
+          "scenario": "The Gallic War",
+          "seed": 2,
+          "parent": {
+            "winner": "Romans",
+            "cards": 43
+          },
+          "repair": {
+            "winner": "Romans",
+            "cards": 43
+          },
+          "first_changed_card": 68,
+          "kind": "decision",
+          "actor": "Romans",
+          "pre_effect_digest": "ee7f0dcfd2ca8438d37e",
+          "parent_command": "Event",
+          "repair_command": "Seize"
+        },
+        {
+          "scenario": "The Gallic War",
+          "seed": 5,
+          "parent": {
+            "winner": "Belgae",
+            "cards": 71
+          },
+          "repair": {
+            "winner": "Romans",
+            "cards": 101
+          },
+          "first_changed_card": "A30",
+          "kind": "event",
+          "actor": "Germans",
+          "pre_effect_digest": "72e3fc0b952ceb4713f0",
+          "shaded": true,
+          "parent_effects": [
+            "allies",
+            "citadels"
+          ],
+          "repair_effects": [
+            "allies",
+            "citadels",
+            "warbands"
+          ]
+        },
+        {
+          "scenario": "The Gallic War",
+          "seed": 14,
+          "parent": {
+            "winner": "Romans",
+            "cards": 105
+          },
+          "repair": {
+            "winner": "Belgae",
+            "cards": 71
+          },
+          "first_changed_card": "A30",
+          "kind": "event",
+          "actor": "Germans",
+          "pre_effect_digest": "7bb497656f3a09894f19",
+          "shaded": true,
+          "parent_effects": [
+            "allies"
+          ],
+          "repair_effects": [
+            "allies",
+            "citadels",
+            "warbands"
+          ]
+        },
+        {
+          "scenario": "The Gallic War",
+          "seed": 15,
+          "parent": {
+            "winner": "Belgae",
+            "cards": 47
+          },
+          "repair": {
+            "winner": "Romans",
+            "cards": 31
+          },
+          "first_changed_card": "A30",
+          "kind": "event",
+          "actor": "Germans",
+          "pre_effect_digest": "0306d69d499c551f20af",
+          "shaded": true,
+          "parent_effects": [
+            "allies",
+            "citadels"
+          ],
+          "repair_effects": [
+            "warbands"
+          ]
+        },
+        {
+          "scenario": "The Gallic War",
+          "seed": 17,
+          "parent": {
+            "winner": "Arverni",
+            "cards": 104
+          },
+          "repair": {
+            "winner": "Romans",
+            "cards": 72
+          },
+          "first_changed_card": "A56",
+          "kind": "event",
+          "actor": "Belgae",
+          "pre_effect_digest": "8f2f77538099e3751c65",
+          "shaded": true,
+          "parent_effects": [
+            "resources"
+          ],
+          "repair_effects": [
+            "allies",
+            "resources",
+            "warbands"
+          ]
+        },
+        {
+          "scenario": "The Gallic War",
+          "seed": 18,
+          "parent": {
+            "winner": "Aedui",
+            "cards": 102
+          },
+          "repair": {
+            "winner": "Arverni",
+            "cards": 102
+          },
+          "first_changed_card": "A56",
+          "kind": "event",
+          "actor": "Belgae",
+          "pre_effect_digest": "95061fae1bad59ab5145",
+          "shaded": true,
+          "parent_effects": [
+            "resources"
+          ],
+          "repair_effects": [
+            "allies",
+            "resources"
+          ]
+        },
+        {
+          "scenario": "The Gallic War",
+          "seed": 20,
+          "parent": {
+            "winner": "Romans",
+            "cards": 43
+          },
+          "repair": {
+            "winner": "Aedui",
+            "cards": 68
+          },
+          "first_changed_card": "A56",
+          "kind": "event",
+          "actor": "Belgae",
+          "pre_effect_digest": "1bd62071fb37e99af01f",
+          "shaded": true,
+          "parent_effects": [
+            "resources"
+          ],
+          "repair_effects": [
+            "allies",
+            "resources",
+            "warbands"
+          ]
+        },
+        {
+          "scenario": "The Great Revolt",
+          "seed": 7,
+          "parent": {
+            "winner": "Arverni",
+            "cards": 47
+          },
+          "repair": {
+            "winner": "Belgae",
+            "cards": 47
+          },
+          "first_changed_card": 68,
+          "kind": "event",
+          "actor": "Romans",
+          "pre_effect_digest": "54b8e3f02e46087552f4",
+          "shaded": false,
+          "parent_effects": [
+            "allies"
+          ],
+          "repair_effects": [
+            "allies"
+          ]
+        },
+        {
+          "scenario": "The Great Revolt",
+          "seed": 11,
+          "parent": {
+            "winner": "Arverni",
+            "cards": 47
+          },
+          "repair": {
+            "winner": "Belgae",
+            "cards": 29
+          },
+          "first_changed_card": 68,
+          "kind": "event",
+          "actor": "Romans",
+          "pre_effect_digest": "13e8b9ea304b782c77a2",
+          "shaded": false,
+          "parent_effects": [
+            "allies"
+          ],
+          "repair_effects": [
+            "allies"
+          ]
+        }
+      ]
     },
-    "comparison_source": "ce3a852a122a7f95d586a3d149be5a1dd09fd475"
+    "comparison_source": "6972cc9df235389bd545ba9c6f42d9fcb1726b8d"
   },
   "prior_unverified_rows": [
     {
@@ -801,7 +1104,7 @@
       "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
       "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
       "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "events",
       "source_rule": "Reference Documents/Card Reference card 68 lines699-708; Chapter 5 §5.1.3",
@@ -809,7 +1112,9 @@
         "fs_bot/cards/card_effects.py:2555"
       ],
       "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "prior_status": "New mandatory-minimum defect. Previous BE-03/BE-08 Remi repairs addressed shaded beneficiary/City choices. Existing Boii and shaded Roman Wine minimum guards provide in-repo repair examples."
+      "prior_status": "New mandatory-minimum defect. Previous BE-03/BE-08 Remi repairs addressed shaded beneficiary/City choices. Existing Boii and shaded Roman Wine minimum guards provide in-repo repair examples.",
+      "repair_report": "../current-status.md#10-november-mandatory-event-effects-and-physical-targets",
+      "disposition": "Unshaded Remi Influence requires one or two distinct eligible Allied Tribes when the Remi condition applies and a source exists. A missing counterpart still removes the selected source."
     },
     {
       "id": "BE2-04",
@@ -947,7 +1252,7 @@
       "disposition": "Alaudae checks Roman Control. Original and revised Numidians check the Roman Leader's one-Region range before placement and Battle."
     },
     {
-      "status": "open",
+      "status": "closed",
       "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
       "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
       "files": [
@@ -985,10 +1290,12 @@
         "fs_bot/engine/execute.py:6283"
       ],
       "comparison_pattern": "LoD S76 observation-point testing checks the real final effect, including alternate representations and paths.",
-      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "repair_report": "../current-status.md#10-november-mandatory-event-effects-and-physical-targets",
+      "disposition": "Abatis qualifies the executor's Warbands across Hidden, Revealed, and Scouted states."
     },
     {
-      "status": "open",
+      "status": "closed",
       "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
       "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
       "files": [
@@ -1025,7 +1332,9 @@
         "fs_bot/board/pieces.py:912"
       ],
       "comparison_pattern": "LoD event_choices.py decision ownership and typed choices motivate checking whether the selected value reaches its consumer.",
-      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "repair_report": "../current-status.md#10-november-mandatory-event-effects-and-physical-targets",
+      "disposition": "Shaded Siege of Bibrax removes the exact named Ally disc and clears its allegiance. A legacy unnamed entry is accepted for a unique match. Zero removals remains a legal choice."
     },
     {
       "status": "closed",
@@ -1074,7 +1383,7 @@
       "disposition": "Seduni Uprising removes Allied Tribe discs. Shaded Dumnorix removes only the named Tribes' backing pieces and preserves the unrelated Sequani Citadel."
     },
     {
-      "status": "open",
+      "status": "closed",
       "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
       "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
       "files": [
@@ -1117,7 +1426,9 @@
         "fs_bot/cards/card_effects.py:3882"
       ],
       "comparison_pattern": "LoD event_choices.py Step.exact and mix totals distinguish exact quotas from optional counts; its card14 audit requires every implementable clause.",
-      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "repair_report": "../current-status.md#10-november-mandatory-event-effects-and-physical-targets",
+      "disposition": "Shaded Orgetorix, Galba, and Kinship enforce each attainable printed quantity. Incomplete choices roll back earlier effects. Terminal and NPC plans use the same physical choices as execution."
     },
     {
       "status": "closed",
@@ -1365,6 +1676,126 @@
         "balance_guardrail_passed": true
       },
       "comparison_source": "86cfa0c78d049be8d41da1f352c4c44216f43045"
+    },
+    {
+      "batch": 3,
+      "date": "2026-11-10",
+      "findings": [
+        "BE2-01",
+        "BE2-02",
+        "BE2-04",
+        "BE2-05",
+        "BE2-06",
+        "BE2-07",
+        "EX2-03",
+        "EX2-05",
+        "EX2-06"
+      ],
+      "report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "tested_source": {
+        "commit": "ce3a852a122a7f95d586a3d149be5a1dd09fd475",
+        "python_sha256": "b5a3c7316c4db15a4f913111a6525525aee3ab37bc2985d887c7824376139f01",
+        "python_files": 575,
+        "working_tree_changes": true,
+        "note": "Validation ran against the repair tree over the listed parent."
+      },
+      "validation": {
+        "pytest_passed": 9391,
+        "new_regressions": 24,
+        "focused_passed": 739,
+        "all_bot_records": 20,
+        "all_bot_records_matched_parent": 16,
+        "all_bot_audit_failures": 0,
+        "mixed_seat_records": 20,
+        "mixed_seat_records_matched_parent": 7,
+        "mixed_hash_seeds": [
+          0,
+          987
+        ],
+        "mixed_hard_findings": 0,
+        "mixed_partial_plans": 5,
+        "mixed_partial_plans_parent": 5,
+        "mixed_digest": "a8ab246f726dd4931e3406f969599006d7e70a5705d774e5e771a5e8e823dff4",
+        "balance_games": 100,
+        "balance_outcomes_matched_parent": 96,
+        "balance_winners_changed_from_parent": 4,
+        "balance_lengths_changed_from_parent": 1,
+        "original_full_balance_guardrail_passed": true,
+        "original_three_seed_canary_passed": false,
+        "refreshed_full_balance_guardrail_passed": true,
+        "refreshed_three_seed_canary_passed": true,
+        "reviewed_baseline": {
+          "changes": {
+            "The Great Revolt|2": {
+              "stored": {
+                "cards": 43,
+                "winner": "Arverni"
+              },
+              "parent": {
+                "winner": "Arverni",
+                "cards": 43
+              },
+              "current": {
+                "winner": "Aedui",
+                "cards": 43
+              },
+              "first_changed_event": 56,
+              "pre_event_digest": "cf55154a02a42fa287ed"
+            },
+            "The Great Revolt|18": {
+              "stored": {
+                "cards": 43,
+                "winner": "Arverni"
+              },
+              "parent": {
+                "winner": "Arverni",
+                "cards": 43
+              },
+              "current": {
+                "winner": "Aedui",
+                "cards": 43
+              },
+              "first_changed_event": 56,
+              "pre_event_digest": "d03fce1bf991204d360f"
+            },
+            "Ariovistus|3": {
+              "stored": {
+                "cards": 45,
+                "winner": "Belgae"
+              },
+              "parent": {
+                "winner": "Belgae",
+                "cards": 45
+              },
+              "current": {
+                "winner": "Aedui",
+                "cards": 45
+              },
+              "first_changed_event": "A43",
+              "pre_event_digest": "9bc2b771fd21e8e9a30f"
+            },
+            "The Gallic War|3": {
+              "stored": {
+                "cards": 83,
+                "winner": "Romans"
+              },
+              "parent": {
+                "winner": "Aedui",
+                "cards": 100
+              },
+              "current": {
+                "winner": "Romans",
+                "cards": 72
+              },
+              "first_changed_event": "A43",
+              "pre_event_digest": "9bc2b771fd21e8e9a30f"
+            }
+          },
+          "old_sha256": "49ddf4b3acc4a6085c119850a1065696fe92cd4c007dcfcfec7ce49b85332588",
+          "new_sha256": "207a62e367e31caec165617b8f62fb5f5b0af82a114c4aaf3aee39f140d37d46"
+        }
+      },
+      "comparison_source": "ce3a852a122a7f95d586a3d149be5a1dd09fd475"
     }
   ]
 }

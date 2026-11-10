@@ -55,6 +55,8 @@ def test_empty_pool_can_be_reclaimed_then_reused_between_placements(card, scenar
         {'region': regions[1], 'piece_type': rc.WARBAND, 'count': 1,
          'timing_actions': timing(remove(regions[0]))},
     ]}
+    if card == 'A56':
+        params['ally_placements'] = [{'tribe': rc.TRIBE_REMI}, {'tribe': rc.TRIBE_NERVII}]
     rng = state['rng'].getstate()
     run(state, card, params, shaded)
     assert pieces.count_pieces(state, regions[0], faction, rc.WARBAND) == 0

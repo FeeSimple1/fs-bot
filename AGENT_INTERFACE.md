@@ -289,11 +289,19 @@ counts are rejected. Existing entry `timing_actions` and
 | 51 unshaded | Required `region` within one of Treveri; `replacements: [{from_faction, piece_state?, count?, region?}]`, totaling four original Warbands as possible in that Region. An explicitly chosen empty Region remains legal and still grants the Aedui Command. |
 | 57 shaded | `removal: {type, tribe}` selects a Britannia Ally (`"ally"`) or either face of a Dispersed marker (`"dispersed"`). Use `ally_tribe` and `ally_faction` for the Gallic Ally placement, then `warband_faction` and `warband_count` for up to four Available Gallic Warbands. The terminal computes each menu after the preceding effects and records timing actions under `57.removal`, `57.ally` and `57.warbands`. |
 | 65 shaded | Ordered `replacements: [{region, piece_type, piece_state or tribe, replace}]`; exactly five German Warbands and one German Ally as possible in executor-Controlled Regions. `replace` is a required Boolean; false selects removal only. Warbands require exact visibility; Allies exact Tribe. |
+| 68 unshaded | `replacements: [{tribe}]` selects one or two distinct eligible non-Roman Allies within one of Remi. Supply an empty list only when the effect has no eligible target. |
 | A29 unshaded | `faction` selects Romans, Arverni, Aedui or Belgae. That owner supplies `placements: [{region, piece_type, faction?, count?, tribe?}]` among Settlement Regions: up to 2 Allies and five own Warbands or three Auxilia as possible. Other executors select only the beneficiary. |
 | A30 unshaded | `region`: one Region within one of Sequani; removes all Arverni there. |
+| A30 shaded | `placements: [{region, piece_type, count?, tribe?}]` places nine Arverni Warbands, Allies, or Citadels as possible after clearing Allied pieces from Aedui and Sequani. Name the Tribe for an Ally. The Region identifies the City for a Citadel. |
 | A36 shaded | German-owned `placements: [{region, piece_type, count?}]` and `ally_removals: [{tribe}]`; two Settlements, four Warbands and two Ally removals as possible within one of Sugambri. A foreign executor supplies `{}` and awaits the German request. |
 | A43 unshaded | `replacements: [{region, from_type, to_faction, tribe or piece_state}]`; two Arverni Allies and two original Arverni Warbands as possible within one of Bibracte. Counterparts belong to Romans or Aedui. |
 | A45 unshaded | `placements: [{tribe, faction}]`; up to three non-German Allies in legal Subdued Celtica Tribes within one of an Intimidated marker. |
+| A51 shaded | `removals: [{faction, piece_type, piece_state? or tribe?}]` selects up to five eligible Roman or Aedui pieces in Atrebates. Name the Tribe for each Ally. A legacy entry without a Tribe requires one unique match. An empty list is legal. |
+| A56 shaded | `warband_placements: [{region, count?}]` and `ally_placements: [{tribe}]` place four Warbands and two Belgic Allies as possible in Belgica before the Resource gain. An Ally can replace another faction's Ally disc. |
+| A65 shaded | `from_faction` selects Belgae or Germans. `warband_replacements: [{region, piece_state?}]` and `ally_replacements: [{tribe}]` replace four Warbands and two Allies as possible. A missing counterpart still leaves the source removed. |
+
+Abatis (A64) accepts a Region with a Warband of any visibility owned by
+the executor, including Scouted.
 
 Unshaded Alaudae uses `target_region` under Roman Control. Unshaded
 Numidians uses `target_region` in the original edition and `region` in

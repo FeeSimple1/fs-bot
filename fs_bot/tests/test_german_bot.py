@@ -448,6 +448,8 @@ class TestNodeG3b:
     def test_play_kinship_when_belgae_player(self):
         state = _make_state(non_players={GERMANS, AEDUI})
         state["current_card_id"] = "A65"
+        assert node_g3b(state) == "Yes"  # No eligible source piece.
+        place_piece(state, MORINI, BELGAE, WARBAND)
         assert node_g3b(state) == "No"
 
     def test_decline_winter_uprising_in_final_winter(self):

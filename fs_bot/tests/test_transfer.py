@@ -190,7 +190,8 @@ def test_card_a51_shaded_clears_allegiance_with_removed_ally():
     st["tribes"]["Atrebates"]["allied_faction"] = rc.ROMANS
     place_piece(st, "Atrebates", rc.ROMANS, rc.ALLY)
     st["event_params"] = {"removals": [{"faction": rc.ROMANS,
-                                        "piece_type": rc.ALLY}]}
+                                        "piece_type": rc.ALLY,
+                                        "tribe": rc.TRIBE_ATREBATES}]}
     from fs_bot.map.map_data import get_tribes_in_region
     def roman_allied_tribes():
         return sum(1 for t in get_tribes_in_region("Atrebates",

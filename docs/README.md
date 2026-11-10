@@ -14,6 +14,7 @@ references and canonical constants remain read-only.
 | [Agent interface](../AGENT_INTERFACE.md) | Turn plans, typed decision requests, validation, and session contracts |
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
+| [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
 | [Provisional rulings](provisional-rulings.md) | Thirteen owner-adopted interpretations, each subject to later authoritative correction |
 | [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
 | [Developer instructions](../CLAUDE.md) | Source hierarchy, implementation constraints, tests, and commit discipline |
@@ -23,6 +24,10 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [10 November comparison audit](reviews/comparison-audit-2026-11-10.md)
+  records 21 newly confirmed groups, the review of 34 earlier unverified
+  rows, and reproducible witnesses against the repaired 50-finding baseline.
 
 - [5 November Lucterius and Hostages choices](reviews/base-piece-choices-2026-11-05.md)
   covers optional quantities, exact physical removals, replacement type and durable replay.

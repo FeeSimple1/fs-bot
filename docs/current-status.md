@@ -21,6 +21,26 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November second Liberty or Death comparison
+
+The comparative audit confirms **21 additional open finding groups, with
+15 high and 6 medium priority**. It covers human action contracts, Limited
+Command scope, repeated effects, Ambush defense, and base/expansion Event
+prerequisites, quantities, and physical targets. Two defects reproduce in
+ordinary assistant sessions through initialization and submission.
+
+All 9,334 existing tests pass. Independent review reproduced nine probe
+scripts. The earlier 34 unverified rows now have 12 confirmed-gap, seven
+limited-positive, and 15 still-unverified dispositions. The original
+50-finding repair ledger retains its historical scope. The new repair
+queue begins at **0/21 closed, 21 remaining**. Previously recorded
+Circumvallation persistence work is tracked in its own report.
+
+The report includes the comparison methods, exact sources, observed
+behavior, repair order, and portable evidence.
+[Comparison audit](reviews/comparison-audit-2026-11-10.md) ·
+[New finding ledger](reviews/comparison-audit-2026-11-10.json)
+
 ### 10 November Spare Factions and shared-player ownership
 
 Setup can assign both members of a printed Spare Factions pair to one

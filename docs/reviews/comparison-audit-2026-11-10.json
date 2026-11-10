@@ -1,0 +1,1099 @@
+{
+  "audit": "Falling Sky / Liberty or Death comparative follow-up",
+  "date": "2026-11-10",
+  "audited_commit": "b23c8cd73c9747e6e39157a042a1af13cc703a48",
+  "python_sha256": "9f48dc76fa0b171c71efa604ca7d486cd87daaf8817a7eda5aa34df67822dfa5",
+  "comparator_repository": "FeeSimple1/lod-bot",
+  "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+  "total": 21,
+  "closed": 0,
+  "open": 21,
+  "severity_counts": {
+    "high": 15,
+    "medium": 6
+  },
+  "engine_changes": false,
+  "reference_changes": false,
+  "validation": {
+    "pytest_passed": 9334,
+    "pytest_failures": 0,
+    "pytest_errors": 0,
+    "pytest_skipped": 0,
+    "independent_probe_scripts": 9,
+    "new_balance_matrix": false
+  },
+  "prior_unverified_rows": [
+    {
+      "id": "base-34-original-shaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-60-original-shaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-61-original-shaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-69-original-unshaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-69-original-shaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-34-second-edition-shaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-60-second-edition-shaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-61-second-edition-shaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-69-second-edition-unshaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "base-69-second-edition-shaded",
+      "status": "not-verified",
+      "reason": "The source and current handler were re-read. Fixed placements/replacements visit targets in text order. No explicit priority/allocation clause in the supplied references resolved whether an alternative scarce-pool order must be offered. This audit makes no new confirmed-defect claim for this row."
+    },
+    {
+      "id": "A18/unshaded",
+      "previous_status": "not-verified",
+      "status": "supported-limited-witness",
+      "findings": [],
+      "evidence": "coverage_probe A18 removal and 7 existing Rhenus/named-Ariovistus regressions passed."
+    },
+    {
+      "id": "A19/unshaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-06"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A24/unshaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-03"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A24/shaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-03"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A26/shaded",
+      "previous_status": "not-verified",
+      "status": "supported-limited-witness",
+      "findings": [],
+      "evidence": "coverage_probe confirms optional zero and 12 Warbands."
+    },
+    {
+      "id": "A27/unshaded",
+      "previous_status": "not-verified",
+      "status": "not-verified",
+      "findings": [],
+      "evidence": "A27/A32 fixed placements and queued automatic phase flag match in coverage_probe before phase resolution. Scarce-pool allocation order and all complete-phase branches remain unverified."
+    },
+    {
+      "id": "A27/shaded",
+      "previous_status": "not-verified",
+      "status": "not-verified",
+      "findings": [],
+      "evidence": "A27/A32 fixed placements and queued automatic phase flag match in coverage_probe before phase resolution. Scarce-pool allocation order and all complete-phase branches remain unverified."
+    },
+    {
+      "id": "A30/shaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-04",
+        "EX2-07"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A32/unshaded",
+      "previous_status": "not-verified",
+      "status": "not-verified",
+      "findings": [],
+      "evidence": "A27/A32 fixed placements and queued automatic phase flag match in coverage_probe before phase resolution. Scarce-pool allocation order and all complete-phase branches remain unverified."
+    },
+    {
+      "id": "A32/shaded",
+      "previous_status": "not-verified",
+      "status": "not-verified",
+      "findings": [],
+      "evidence": "A27/A32 fixed placements and queued automatic phase flag match in coverage_probe before phase resolution. Scarce-pool allocation order and all complete-phase branches remain unverified."
+    },
+    {
+      "id": "A35/unshaded",
+      "previous_status": "not-verified",
+      "status": "supported-limited-witness",
+      "findings": [],
+      "evidence": "coverage_probe confirms mandatory Roman Ally and optional zero/four Auxilia."
+    },
+    {
+      "id": "A35/shaded",
+      "previous_status": "not-verified",
+      "status": "supported-limited-witness",
+      "findings": [],
+      "evidence": "coverage_probe confirms zero and full eight Warbands/one Settlement split between Regions."
+    },
+    {
+      "id": "A40/unshaded",
+      "previous_status": "not-verified",
+      "status": "supported-limited-witness",
+      "findings": [],
+      "evidence": "coverage_probe confirms zero and three Regions with separate Warband/Auxilia/Ally categories."
+    },
+    {
+      "id": "A43/shaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-03"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A51/shaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-02"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A56/shaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-04"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A60/shaded",
+      "previous_status": "not-verified",
+      "status": "supported-limited-witness",
+      "findings": [],
+      "evidence": "coverage_probe confirms zero and five exact Scouted Auxilia replacements."
+    },
+    {
+      "id": "A64/unshaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-01"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A64/shaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-01"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "A65/shaded",
+      "previous_status": "not-verified",
+      "status": "confirmed-gap",
+      "findings": [
+        "EX2-04",
+        "EX2-05"
+      ],
+      "evidence": "probe.py and observed.json"
+    },
+    {
+      "id": "BM-AMBUSH-FORT-SOURCE",
+      "status": "confirmed-gap",
+      "findings": [
+        "BM2-01"
+      ]
+    },
+    {
+      "id": "BM-RETREAT-LATE-CONTROL",
+      "status": "supported-limited-witness",
+      "evidence": "Current Step6 destination/host recalculation and 23 passing Retreat regressions."
+    },
+    {
+      "id": "BM-HARASS-PROMISE",
+      "status": "not-verified",
+      "evidence": "Per-group refusal does not prove a binding advance promise. No confirmed durable witness."
+    },
+    {
+      "id": "FE-NOPRUNING",
+      "status": "confirmed-gap",
+      "findings": [
+        "FE2-01"
+      ],
+      "residual": "The previously noted action-label mismatch is confirmed. Exhaustive specialized-menu completeness remains unverified."
+    }
+  ],
+  "repair_batches": [
+    {
+      "title": "Bind human actions to their allowed scope",
+      "findings": [
+        "FE2-01",
+        "FE2-02",
+        "XC2-01",
+        "CM2-01",
+        "CM2-02",
+        "CM2-03"
+      ]
+    },
+    {
+      "title": "Correct combat and Citadel state",
+      "findings": [
+        "BM2-01",
+        "EX2-07"
+      ]
+    },
+    {
+      "title": "Enforce Event prerequisites, targets, and scores",
+      "findings": [
+        "BE2-01",
+        "BE2-02",
+        "BE2-04",
+        "BE2-05",
+        "BE2-06",
+        "BE2-07",
+        "EX2-03",
+        "EX2-05",
+        "EX2-06"
+      ]
+    },
+    {
+      "title": "Complete mandatory and physical Event choices",
+      "findings": [
+        "BE2-03",
+        "EX2-01",
+        "EX2-02",
+        "EX2-04"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "status": "open",
+      "severity": "high",
+      "audited_commit": "b23c8cd73c9747e6e39157a042a1af13cc703a48",
+      "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+      "id": "FE2-01",
+      "title": "Assistant accepts an Event under a Limited Command and ungranted Special Abilities attached to Events",
+      "known_status": "Newly confirmed prior unverified lead in FE-NOPRUNING. Never part of the original 50 confirmed findings.",
+      "rule": "Chapter 2 §§2.3.4–2.3.5; Chapter 4 §4.1; Card 16 unshaded",
+      "source": "The second Eligible faction after a Command-only action may take only a Limited Command. Limited Commands have no Special Ability. Ordinary Events can grant only the actions their text specifies.",
+      "locations": [
+        "fs_bot/tools/seat_session.py:91–113",
+        "fs_bot/engine/action_validation.py:233–246",
+        "fs_bot/engine/execute.py:495–512",
+        "fs_bot/engine/game_engine.py:671–689"
+      ],
+      "root_cause": "The validator checks that the outer action label is offered but never binds the inner executable plan to that action. The Event early return also bypasses the prohibition on an accompanying ungranted SA.",
+      "normal_reproduction": "Run probe_durable_action_kind.py. Ordinary llm_seat init/play/submit, Great Revolt seed46 as Belgae. Answer opening non-turn requests with explicit default. The normal Roman bot has taken Command-only, so d000002 offers limited_command/pass. Submit limited_command with player_action.command=Event and event_params.target_region=Provincia.",
+      "expected": "Reject the plan and keep d000002 pending with the board, Resources, RNG and eligibility unchanged.",
+      "observed": "The submission is committed as limited_command but executes Ambacti, adding six Roman Auxilia in Provincia (6→12). The same validator accepts Event16 with a standalone Scout, which moves an additional Auxilia from Provincia to Sequani even though the card grants no Scout.",
+      "probe": [
+        "probe_durable_action_kind.py",
+        "probe_action_envelope.py"
+      ],
+      "evidence": [
+        "durable-action-kind.jsonl",
+        "action-envelope.jsonl"
+      ],
+      "comparator": "lod_ai/llm/harness.py:109–111 delegates to the terminal _human_decider. lod_ai/interactive_cli.py:1295–1320 builds actions from the current allowed contract and branches the executable plan from that selected action. This motivated checking the FS typed label/plan binding.",
+      "repair_scope": "Validate action label, executable Command kind, and SA presence together at the durable and normal SoP boundary. Keep Event-granted actions governed by their separate grant requests. Cover Event-as-Limited-Command, Command-only-with-SA, and Event-plus-ungranted-SA in one repair.",
+      "classification": "confirmed",
+      "domain": "frontends",
+      "source_rule": "Chapter 2 §§2.3.4–2.3.5; Chapter 4 §4.1; Card 16 unshaded",
+      "code_locations": [
+        "fs_bot/tools/seat_session.py:91–113",
+        "fs_bot/engine/action_validation.py:233–246",
+        "fs_bot/engine/execute.py:495–512",
+        "fs_bot/engine/game_engine.py:671–689"
+      ],
+      "comparison_pattern": "lod_ai/llm/harness.py:109–111 delegates to the terminal _human_decider. lod_ai/interactive_cli.py:1295–1320 builds actions from the current allowed contract and branches the executable plan from that selected action. This motivated checking the FS typed label/plan binding.",
+      "prior_status": "Newly confirmed prior unverified lead in FE-NOPRUNING. Never part of the original 50 confirmed findings."
+    },
+    {
+      "status": "open",
+      "severity": "high",
+      "audited_commit": "b23c8cd73c9747e6e39157a042a1af13cc703a48",
+      "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+      "id": "FE2-02",
+      "title": "Assistant Event submissions can execute any supplied card ID instead of the current Event",
+      "known_status": "New confirmed finding outside the original 50.",
+      "rule": "Chapter 2 §2.3.4, Event shown on the card; Chapter 5 §5.1",
+      "source": "An eligible faction choosing Event executes the Event shown on the current card.",
+      "locations": [
+        "fs_bot/engine/execute.py:3413–3415",
+        "fs_bot/engine/execute.py:3444–3467",
+        "fs_bot/tools/seat_session.py:91–113"
+      ],
+      "root_cause": "Human Event execution trusts details.card_id over state.current_card. The durable validator never checks that they identify the current card under the saved edition.",
+      "normal_reproduction": "Run probe_durable_card_identity.py. Ordinary llm_seat init/play/submit, Great Revolt seed46 as Romans, opening current card16. Submit event with player_action.command=Event and details.card_id=13. No board/save editing is needed.",
+      "expected": "Reject card13 while card16 is current and retain the same pending decision, or resolve only the current card when redundant identity is absent.",
+      "observed": "The submission commits a turn recorded against card16, but applies card13 Balearic Slingers and installs capability13 Unshaded. It then advances normally.",
+      "probe": [
+        "probe_durable_card_identity.py",
+        "probe_action_envelope.py"
+      ],
+      "evidence": [
+        "durable-card-identity.jsonl",
+        "action-envelope.jsonl"
+      ],
+      "comparator": "lod_ai/interactive_cli.py:1341–1350 closes the Event runner over the current card argument and invokes engine.handle_event with that card. The LLM bridge answers the existing menu and cannot replace the card object.",
+      "repair_scope": "Bind human SoP Event identity to the current card while preserving intentional internal card dispatch and effective original/revised aliases. Add stale/off-card, cross-scenario and edition-aware acceptance tests.",
+      "classification": "confirmed",
+      "domain": "frontends",
+      "source_rule": "Chapter 2 §2.3.4, Event shown on the card; Chapter 5 §5.1",
+      "code_locations": [
+        "fs_bot/engine/execute.py:3413–3415",
+        "fs_bot/engine/execute.py:3444–3467",
+        "fs_bot/tools/seat_session.py:91–113"
+      ],
+      "comparison_pattern": "lod_ai/interactive_cli.py:1341–1350 closes the Event runner over the current card argument and invokes engine.handle_event with that card. The LLM bridge answers the existing menu and cannot replace the card object.",
+      "prior_status": "New confirmed finding outside the original 50."
+    },
+    {
+      "id": "XC2-01",
+      "title": "A shadow command_parts list lets a Limited Command execute in multiple Regions",
+      "severity": "high",
+      "status": "open",
+      "rule_source": "Reference Documents/Chapter 2, lines 65-67, section 2.3.5",
+      "expected": "A Limited Command selects just one Region. Extra inactive representations of a Command must be rejected or excluded from its legality calculation.",
+      "observed": "The durable assistant accepts a Limited Recruit whose real recruit_plan names Provincia and Sequani when command_parts contains a single Provincia-only Recruit. It commits one new Auxilia to each Region and records the supplied plan in the decision log. Without the shadow command_parts field, the same two-Region plan is rejected.",
+      "cause": "command_parts(action) returns the supplied list regardless of whether the executor will use it. The limited-region validator examines that list. The one-entry list avoids the len(parts)>1 structural checks. Ordinary non-during execution instead executes the outer plan.",
+      "code_locations": [
+        "fs_bot/engine/action_validation.py:50-51",
+        "fs_bot/engine/action_validation.py:258-281",
+        "fs_bot/engine/execute.py:503-505",
+        "fs_bot/tools/seat_session.py:109-113"
+      ],
+      "normal_entry_witness": "probe_shadow_parts.py creates a scenario-derived legal board and resolves the first Arverni Command through play_card, obtaining a real second-Eligible Roman Limited Command window. It then uses cmd_play/cmd_submit, closes the offered timing decisions, and loads the committed save with validate=True.",
+      "reproduction": "From fs-bot: PYTHONPATH=. python ../comparison-audit-2026-11-10/patterns/probe_shadow_parts.py",
+      "evidence": "shadow-parts-result.json",
+      "observation": {
+        "Provincia_auxilia_added": 1,
+        "Sequani_auxilia_added": 1,
+        "state_integrity_errors": [],
+        "durable_plan_in_log": true
+      },
+      "comparison_pattern": "Liberty or Death checks actual affected spaces after sandbox execution and before committing a Limited Command. Its historical Muster bug demonstrated why checking one authored subplan does not establish the final Command's scope.",
+      "comparator_locations": [
+        "lod_ai/engine.py:915-927",
+        "lod_ai/engine.py:950-966",
+        "lod_ai/commands/muster.py:248-253",
+        "coin-implementation-lessons.md:121"
+      ],
+      "prior_status": "New confirmed ordinary Sequence-of-Play gap. Related shadow-plan guards already exist for special Event grants and Seize, including test_roman_event_grants.py:339 and test_seize_tribes.py:95-105. The general Limited Command validator still accepts the shape. This is distinct from repeated Battle Region execution and outer action-label mismatches.",
+      "repair_scope": "Make the structural parser and executor share the same active Command representation. Reject command_parts outside a valid two-part during-Command structure, and validate each actual executable part. Preserve the Limited Command action type through all durable and raw execution entry points.",
+      "regression_gate": "The witness should become a rejected-input regression. The pending request, board, RNG, accepted journal and log must remain unchanged after rejection. Cover ordinary Limited Recruit, Rally and March or Battle plus valid two-part interruption behavior.",
+      "classification": "confirmed",
+      "domain": "patterns",
+      "source_rule": "Reference Documents/Chapter 2, lines 65-67, section 2.3.5"
+    },
+    {
+      "id": "CM2-01",
+      "title": "Ordinary Battle accepts repeated Regions and the attacker as its own defender",
+      "severity": "high",
+      "known_status": "New confirmed extension beyond the closed Seize/Entreat repetition finding. Duplicate and opposing-Faction checks currently exist only for the sa_after_step Battle form.",
+      "source": [
+        "Reference Documents/Chapter 3:3-11 (§3.1)",
+        "Reference Documents/Chapter 3:125-136 (§3.2.4)"
+      ],
+      "code": [
+        "fs_bot/engine/action_validation.py:29-47",
+        "fs_bot/engine/action_validation.py:163-184",
+        "fs_bot/engine/action_validation.py:267-274",
+        "fs_bot/engine/execute.py:3873-3900"
+      ],
+      "expected": "A Command selects a Region only once and Battles exactly one opposing Faction there. Durable human input must reject repeated Battle Regions and self-targets before accepting a turn.",
+      "observed": "A Limited Command with two Carnutes Battle entries, one against Arverni and one against Aedui, passes durable validation and executes two Battles, removing both defending Warbands. The legal one-entry control removes only the first defender. A separate Battle targeting the attacking Romans passes validation and reduces four Roman Auxilia to one by fighting themselves.",
+      "reproduction": [
+        "probes.py::duplicate_battle",
+        "probes.py::self_battle"
+      ],
+      "interfaces": [
+        "Durable turn validator",
+        "Normal human execute_decision entry point"
+      ],
+      "comparison": "Liberty or Death coin-implementation-lessons.md §E describes repeated per-Command effects and stresses a shared execution-wide guard. Its British MUSTER case also tests the actual aggregate action beyond the planner's first selection. Falling Sky validates duplicate Battle Regions only on an interrupted variant.",
+      "repair_scope": "Share Battle Region/defender validation across ordinary and interrupted human Battle plans. Preserve separately scoped trusted Event queues where repeated visits can represent distinct granted Commands. Add acceptance/rollback tests for ordinary and Limited input.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "movement",
+      "source_rule": [
+        "Reference Documents/Chapter 3:3-11 (§3.1)",
+        "Reference Documents/Chapter 3:125-136 (§3.2.4)"
+      ],
+      "code_locations": [
+        "fs_bot/engine/action_validation.py:29-47",
+        "fs_bot/engine/action_validation.py:163-184",
+        "fs_bot/engine/action_validation.py:267-274",
+        "fs_bot/engine/execute.py:3873-3900"
+      ],
+      "comparison_pattern": "Liberty or Death coin-implementation-lessons.md §E describes repeated per-Command effects and stresses a shared execution-wide guard. Its British MUSTER case also tests the actual aggregate action beyond the planner's first selection. Falling Sky validates duplicate Battle Regions only on an interrupted variant.",
+      "prior_status": "New confirmed extension beyond the closed Seize/Entreat repetition finding. Duplicate and opposing-Faction checks currently exist only for the sa_after_step Battle form."
+    },
+    {
+      "id": "CM2-02",
+      "title": "Alternate March forms bypass Limited Command and Britannia restrictions",
+      "severity": "high",
+      "known_status": "New confirmed normalization gap. Both origins/routes and alternate accepted plan representations reach the public human executor.",
+      "source": [
+        "Reference Documents/Chapter 2:65-67 (§2.3.5)",
+        "Reference Documents/Chapter 4:38-39 (§4.1.3)"
+      ],
+      "code": [
+        "fs_bot/engine/action_validation.py:34-36",
+        "fs_bot/engine/action_validation.py:267-274",
+        "fs_bot/engine/action_validation.py:290-305",
+        "fs_bot/engine/execute.py:4274-4279",
+        "fs_bot/engine/execute.py:4334-4337"
+      ],
+      "expected": "The one-origin Limited March and Britannia Special Ability prohibition must apply to every accepted March representation. Extra groups must use selected origins.",
+      "observed": "A Limited March moves Aedui Warbands from Carnutes to Veneti and Mandubii to Treveri and pays for both origins when encoded as explicit_moves or with an undeclared extra_groups origin. Equivalent canonical two-origin input is rejected. An explicit_moves March from Britannia to Morini then executes Trade for six Resources, while the equivalent origins/routes plan is rejected under §4.1.3.",
+      "reproduction": [
+        "probes.py::extra_march_origins",
+        "probes.py::britannia_sa"
+      ],
+      "interfaces": [
+        "Durable turn validator",
+        "Normal human execute_decision entry point"
+      ],
+      "comparison": "Liberty or Death coin-implementation-lessons.md §B covers data-shape mismatches and §E records a Limited MUSTER cap bypass when a later phase adds another space. The same aggregate-footprint check is missing for Falling Sky's alternate March shapes.",
+      "repair_scope": "Normalize accepted March plans before applying structural rules, or reject unsupported human aliases. Include extra-group origins and every explicit path in the same Limited/Britannia validation. Preserve internal Event grants and legacy bot inputs through their explicit trusted entry points.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "movement",
+      "source_rule": [
+        "Reference Documents/Chapter 2:65-67 (§2.3.5)",
+        "Reference Documents/Chapter 4:38-39 (§4.1.3)"
+      ],
+      "code_locations": [
+        "fs_bot/engine/action_validation.py:34-36",
+        "fs_bot/engine/action_validation.py:267-274",
+        "fs_bot/engine/action_validation.py:290-305",
+        "fs_bot/engine/execute.py:4274-4279",
+        "fs_bot/engine/execute.py:4334-4337"
+      ],
+      "comparison_pattern": "Liberty or Death coin-implementation-lessons.md §B covers data-shape mismatches and §E records a Limited MUSTER cap bypass when a later phase adds another space. The same aggregate-footprint check is missing for Falling Sky's alternate March shapes.",
+      "prior_status": "New confirmed normalization gap. Both origins/routes and alternate accepted plan representations reach the public human executor."
+    },
+    {
+      "id": "CM2-03",
+      "title": "Repeated Devastate Regions apply extra rounds of casualties in one Special Ability",
+      "severity": "high",
+      "known_status": "New confirmed extension of the repetition family. The original closed finding explicitly covered Seize and Entreat, and the Devastate repair covered casualty ownership and physical selection.",
+      "source": [
+        "Reference Documents/Chapter 4:8-11 (§4.1)",
+        "Reference Documents/Chapter 4:121-131 (§4.3.2)"
+      ],
+      "code": [
+        "fs_bot/engine/action_validation.py:54-88",
+        "fs_bot/engine/execute.py:5093-5111",
+        "fs_bot/commands/sa_devastate.py:34-62"
+      ],
+      "expected": "A Devastate Special Ability may select Carnutes only once and applies one casualty fraction there.",
+      "observed": "Raid Veneti with sa_regions [Carnutes, Carnutes] for Devastate is accepted as a durable human turn. Carnutes begins with Vercingetorix, 12 Arverni Warbands and 9 Roman Auxilia. It ends with 7 Warbands and 4 Auxilia after two reductions. The legal one-Region control leaves 9 Warbands and 6 Auxilia. Execution reports success and no errors.",
+      "reproduction": [
+        "probes.py::duplicate_devastate"
+      ],
+      "interfaces": [
+        "Durable turn validator",
+        "Normal human execute_decision entry point"
+      ],
+      "comparison": "Liberty or Death coin-implementation-lessons.md §E records repeated Patriot Persuasion and Indian double-SA defects. Its per-Command once-only guard suggests checking every affected Region rather than relying on per-Region piece legality. Devastate may legally select an already Devastated Region on a later Command, so marker presence cannot enforce uniqueness within one execution.",
+      "repair_scope": "Validate unique selected Devastate Regions before mutation, using the same rule across before/after/during forms. Retain legal later-Command Devastation of an already marked Region.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "movement",
+      "source_rule": [
+        "Reference Documents/Chapter 4:8-11 (§4.1)",
+        "Reference Documents/Chapter 4:121-131 (§4.3.2)"
+      ],
+      "code_locations": [
+        "fs_bot/engine/action_validation.py:54-88",
+        "fs_bot/engine/execute.py:5093-5111",
+        "fs_bot/commands/sa_devastate.py:34-62"
+      ],
+      "comparison_pattern": "Liberty or Death coin-implementation-lessons.md §E records repeated Patriot Persuasion and Indian double-SA defects. Its per-Command once-only guard suggests checking every affected Region rather than relying on per-Region piece legality. Devastate may legally select an already Devastated Region on a later Command, so marker presence cannot enforce uniqueness within one execution.",
+      "prior_status": "New confirmed extension of the repetition family. The original closed finding explicitly covered Seize and Entreat, and the Devastate repair covered casualty ownership and physical selection."
+    },
+    {
+      "id": "BM2-01",
+      "severity": "high",
+      "title": "Fort defense incorrectly restores Ambush saving rolls and suppresses Caesar’s test",
+      "source": "Reference Documents/Chapter 4 §§4.3.3, 4.4.3, 4.5.3; Chapter 3 §3.4.4",
+      "locations": [
+        "fs_bot/battle/resolve.py:195",
+        "fs_bot/battle/resolve.py:252",
+        "fs_bot/battle/resolve.py:269",
+        "fs_bot/tests/test_battle.py:842"
+      ],
+      "repro": "PYTHONPATH=. python battle/probe_ambush.py (with the fs-bot checkout on PYTHONPATH)",
+      "expected": "A Fort halves the Attack Losses. Ambush still removes a piece for each resulting Loss without a saving roll. Caesar makes the printed exception test, and a successful test permits saving rolls and Counterattack.",
+      "observed": "An accepted Aedui Battle+Ambush with eight Warbands against three Roman Legions and a Fort inflicts two halved Losses but removes no Legions with seed0. With Caesar added, no Caesar test or Counterattack occurs. Both outcomes pass the board validator.",
+      "cases": [
+        "without_caesar",
+        "with_caesar"
+      ],
+      "known_status": "The original inventory left BM-AMBUSH-FORT-SOURCE unverified. This audit promotes it to a confirmed mechanics defect. Existing tests encode the incorrect Fort interpretation.",
+      "comparator": "Liberty or Death docs/audit_set_but_never_applied_s76.md checks modifiers at their final observation point and traces parallel calculators. Here the Ambush rule is followed through the actual loss resolver and ordinary accepted Command. The supplied Falling Sky flowchart expressly makes the rules text authoritative.",
+      "scope": "Normal human Command+SA and shared Battle resolver. Fort cases executed; the same source branch also covers Citadels, but no separate Citadel witness is claimed.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "battle",
+      "source_rule": "Reference Documents/Chapter 4 §§4.3.3, 4.4.3, 4.5.3; Chapter 3 §3.4.4",
+      "code_locations": [
+        "fs_bot/battle/resolve.py:195",
+        "fs_bot/battle/resolve.py:252",
+        "fs_bot/battle/resolve.py:269",
+        "fs_bot/tests/test_battle.py:842"
+      ],
+      "comparison_pattern": "Liberty or Death docs/audit_set_but_never_applied_s76.md checks modifiers at their final observation point and traces parallel calculators. Here the Ambush rule is followed through the actual loss resolver and ordinary accepted Command. The supplied Falling Sky flowchart expressly makes the rules text authoritative.",
+      "prior_status": "The original inventory left BM-AMBUSH-FORT-SOURCE unverified. This audit promotes it to a confirmed mechanics defect. Existing tests encode the incorrect Fort interpretation."
+    },
+    {
+      "id": "BE2-01",
+      "title": "Shaded Sacking removes a Legion without the executor’s Citadel",
+      "severity": "high",
+      "source": "Reference Documents/Card Reference card 23 lines225-236; Chapter 5 §5.1",
+      "locations": [
+        "fs_bot/cards/card_effects.py:1104",
+        "fs_bot/cards/card_effects.py:1115"
+      ],
+      "cases": [
+        "sacking_no_citadel"
+      ],
+      "expected": "Only a Region with both a Legion and the executing Faction’s Citadel can trigger removal and Roman Ineligibility.",
+      "observed": "Great Revolt Belgae submits Treveri, which has two Roman Legions and no Belgic Citadel. One Legion moves to Fallen and Romans become forced Ineligible.",
+      "known_status": "New confirmed target-validation defect. The previous BE-11 repair expressly covered cards 40/41/42/51, not card 23. Existing positive Sacking test uses a Citadel and misses the illegal target.",
+      "scope": "original and second-edition profiles",
+      "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
+      "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
+      "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "events",
+      "source_rule": "Reference Documents/Card Reference card 23 lines225-236; Chapter 5 §5.1",
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:1104",
+        "fs_bot/cards/card_effects.py:1115"
+      ],
+      "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "prior_status": "New confirmed target-validation defect. The previous BE-11 repair expressly covered cards 40/41/42/51, not card 23. Existing positive Sacking test uses a Citadel and misses the illegal target."
+    },
+    {
+      "id": "BE2-02",
+      "title": "Assembly of Gaul drains the same Faction repeatedly in one Event",
+      "severity": "high",
+      "source": "Reference Documents/Card Reference card 52 lines518-526; Chapter 5 §§5.1,5.1.3",
+      "locations": [
+        "fs_bot/cards/card_effects.py:1960"
+      ],
+      "cases": [
+        "assembly_repeated_target"
+      ],
+      "expected": "Each selected Gallic Faction loses eight Resources once.",
+      "observed": "With Carnutes Subdued, target_factions=[Arverni,Arverni] drops Arverni from 20 to 4 instead of 12. The durable turn accepts the duplicate list.",
+      "known_status": "New confirmed Event-specific duplicate-target defect, beyond original CMD-SEIZE-TRIBES/Entreat duplicate fixes and BE-11’s four frozen Event families. The CLI generic list avoids duplicates, but durable/API plans accept them.",
+      "scope": "original and second-edition profiles",
+      "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
+      "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
+      "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "events",
+      "source_rule": "Reference Documents/Card Reference card 52 lines518-526; Chapter 5 §§5.1,5.1.3",
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:1960"
+      ],
+      "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "prior_status": "New confirmed Event-specific duplicate-target defect, beyond original CMD-SEIZE-TRIBES/Entreat duplicate fixes and BE-11’s four frozen Event families. The CLI generic list avoids duplicates, but durable/API plans accept them."
+    },
+    {
+      "id": "BE2-03",
+      "title": "Remi Influence permits skipping its mandatory Allied Tribe replacement",
+      "severity": "medium",
+      "source": "Reference Documents/Card Reference card 68 lines699-708; Chapter 5 §5.1.3",
+      "locations": [
+        "fs_bot/cards/card_effects.py:2555"
+      ],
+      "cases": [
+        "remi_mandatory_replacement_omitted"
+      ],
+      "expected": "If Remi is Roman/Subdued and eligible Allies exist, select one or two eligible Allies and perform the replacement as possible.",
+      "observed": "The standard Great Revolt setup has Roman Remi, eligible Belgic Bellovaci in Atrebates, and Available Roman Ally discs. replacements=[] is accepted as an executed Event with all Tribes unchanged.",
+      "known_status": "New mandatory-minimum defect. Previous BE-03/BE-08 Remi repairs addressed shaded beneficiary/City choices. Existing Boii and shaded Roman Wine minimum guards provide in-repo repair examples.",
+      "scope": "original and second-edition profiles",
+      "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
+      "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
+      "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "events",
+      "source_rule": "Reference Documents/Card Reference card 68 lines699-708; Chapter 5 §5.1.3",
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:2555"
+      ],
+      "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "prior_status": "New mandatory-minimum defect. Previous BE-03/BE-08 Remi repairs addressed shaded beneficiary/City choices. Existing Boii and shaded Roman Wine minimum guards provide in-repo repair examples."
+    },
+    {
+      "id": "BE2-04",
+      "title": "Lucterius mishandles the Arverni Successor condition and same-Region restoration",
+      "severity": "medium",
+      "source": "Reference Documents/Card Reference card 19 lines181-190; Chapter 5 §5.1",
+      "locations": [
+        "fs_bot/cards/card_effects.py:927",
+        "fs_bot/tests/test_card_effects.py:1470"
+      ],
+      "cases": [
+        "lucterius_same_region_successor",
+        "lucterius_living_vercingetorix_relocation"
+      ],
+      "expected": "The shaded effect requires an Arverni Successor and places that Leader symbol-up as Vercingetorix, including when selecting its current Region.",
+      "observed": "Selecting the on-map Successor’s current Region leaves it a Successor. Conversely a live Vercingetorix can be moved from his existing Region to Britannia because the handler never checks the Successor precondition.",
+      "known_status": "New shaded defect. Prior BE-06/07/08 Lucterius work was expressly unshaded. Existing test_card19_shaded_relocates_successor_on_map actually creates Vercingetorix and asserts the illegal relocation.",
+      "scope": "original and second-edition profiles",
+      "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
+      "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
+      "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "events",
+      "source_rule": "Reference Documents/Card Reference card 19 lines181-190; Chapter 5 §5.1",
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:927",
+        "fs_bot/tests/test_card_effects.py:1470"
+      ],
+      "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "prior_status": "New shaded defect. Prior BE-06/07/08 Lucterius work was expressly unshaded. Existing test_card19_shaded_relocates_successor_on_map actually creates Vercingetorix and asserts the illegal relocation."
+    },
+    {
+      "id": "BE2-05",
+      "title": "Flight of Ambiorix rejects a live Successor and accepts forbidden return Regions",
+      "severity": "medium",
+      "source": "Reference Documents/Card Reference card 56 lines567-575; Chapter 5 §5.1",
+      "locations": [
+        "fs_bot/cards/card_effects.py:2086",
+        "fs_bot/cards/card_effects.py:2095"
+      ],
+      "cases": [
+        "ambiorix_on_map_successor_ignored",
+        "ambiorix_illegal_destination"
+      ],
+      "expected": "When Ambiorix is absent, the Belgic Leader may be on its Successor side and must be placed symbol-up in Germania or Morini/Nervii/Treveri/Sequani.",
+      "observed": "An on-map Successor causes an immediate no-op even with legal Treveri selected. With the Leader Available, target_region=Britannia places Ambiorix there despite the printed geographic restriction.",
+      "known_status": "New confirmed shaded return defects. Existing test_card_56_shaded_place_ambiorix uses an Available Leader and a legal Germania destination only.",
+      "scope": "original and second-edition profiles",
+      "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
+      "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
+      "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "events",
+      "source_rule": "Reference Documents/Card Reference card 56 lines567-575; Chapter 5 §5.1",
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:2086",
+        "fs_bot/cards/card_effects.py:2095"
+      ],
+      "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "prior_status": "New confirmed shaded return defects. Existing test_card_56_shaded_place_ambiorix uses an Available Leader and a legal Germania destination only."
+    },
+    {
+      "id": "BE2-06",
+      "title": "Flight of Ambiorix uses an inflated Belgic victory total",
+      "severity": "medium",
+      "source": "Reference Documents/Card Reference card 56 lines567-575; Chapter 7 §§7.2–7.3; Chapter 1 §1.9",
+      "locations": [
+        "fs_bot/cards/card_effects.py:2072",
+        "fs_bot/cards/card_effects.py:2077",
+        "fs_bot/cards/card_effects.py:2080"
+      ],
+      "cases": [
+        "flight_double_counts_citadel"
+      ],
+      "expected": "The card uses the ordinary Belgic Control-Allies victory total. A score below ten removes Ambiorix even outside Roman Control.",
+      "observed": "A census-valid board with real score 9 (calculated by engine.victory) retains Ambiorix because the Event counts a Citadel once through Tribe allegiance and again through Citadel pieces, producing 10.",
+      "known_status": "New confirmed scoring divergence. Handler also omits normal Colony/Dispersed adjustments by static trace, but those additional boundaries were not dynamically claimed.",
+      "scope": "original and second-edition profiles",
+      "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
+      "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
+      "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "events",
+      "source_rule": "Reference Documents/Card Reference card 56 lines567-575; Chapter 7 §§7.2–7.3; Chapter 1 §1.9",
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:2072",
+        "fs_bot/cards/card_effects.py:2077",
+        "fs_bot/cards/card_effects.py:2080"
+      ],
+      "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "prior_status": "New confirmed scoring divergence. Handler also omits normal Colony/Dispersed adjustments by static trace, but those additional boundaries were not dynamically claimed."
+    },
+    {
+      "id": "BE2-07",
+      "title": "Roman reinforcement Events accept placements outside their printed areas",
+      "severity": "high",
+      "source": "Reference Documents/Card Reference cards 7 and11; revised 11 in Reference Documents/Ariovistus/A Card Reference; Chapter 5 §5.1",
+      "locations": [
+        "fs_bot/cards/card_effects.py:616",
+        "fs_bot/cards/card_effects.py:710",
+        "fs_bot/cards/card_effects.py:4098"
+      ],
+      "cases": [
+        "alaudae_without_roman_control",
+        "numidians_beyond_leader_range"
+      ],
+      "expected": "Alaudae places only in a Roman Controlled Region. Numidians places only within one Region of the Roman Leader.",
+      "observed": "From standard Great Revolt setup, Alaudae puts one Legion and one Auxilia in empty Britannia. Original/revised Numidians puts three Auxilia in Britannia although Caesar is in Mandubii and Britannia is outside his range. Durable validation accepts both and normal execution commits.",
+      "known_status": "New confirmed geographic validation errors. Prior BE-11 covered cards 40/41/42/51. Recent Alaudae and Numidians repairs addressed shaded losses, and BE-02 addressed the Numidians Battle after placement.",
+      "scope": "original and second-edition profiles",
+      "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
+      "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
+      "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "status": "open",
+      "classification": "confirmed",
+      "domain": "events",
+      "source_rule": "Reference Documents/Card Reference cards 7 and11; revised 11 in Reference Documents/Ariovistus/A Card Reference; Chapter 5 §5.1",
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:616",
+        "fs_bot/cards/card_effects.py:710",
+        "fs_bot/cards/card_effects.py:4098"
+      ],
+      "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
+      "prior_status": "New confirmed geographic validation errors. Prior BE-11 covered cards 40/41/42/51. Recent Alaudae and Numidians repairs addressed shaded losses, and BE-02 addressed the Numidians Battle after placement."
+    },
+    {
+      "status": "open",
+      "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
+      "files": [
+        "probe.py",
+        "observed.json"
+      ],
+      "id": "EX2-01",
+      "title": "Abatis silently fails when the qualifying Warband is Scouted",
+      "severity": "medium",
+      "prior_rows": [
+        "A64/unshaded",
+        "A64/shaded"
+      ],
+      "sources": [
+        "A Card Reference A64",
+        "Chapter 1 §1.4.3",
+        "Chapter 4 §4.2.2"
+      ],
+      "locations": [
+        "fs_bot/cards/card_effects.py:3854",
+        "fs_bot/engine/execute.py:6283"
+      ],
+      "expected": "A Scouted Warband satisfies the card's unqualified Warband requirement and permits the marker.",
+      "observed": "A64_Scouted validates and executes successfully but places no marker. Hidden and Revealed controls place it.",
+      "comparator": "LoD S76 observation-point testing checks the real final effect, including alternate representations and paths.",
+      "classification": "confirmed",
+      "domain": "expansion",
+      "source_rule": [
+        "A Card Reference A64",
+        "Chapter 1 §1.4.3",
+        "Chapter 4 §4.2.2"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:3854",
+        "fs_bot/engine/execute.py:6283"
+      ],
+      "comparison_pattern": "LoD S76 observation-point testing checks the real final effect, including alternate representations and paths.",
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+    },
+    {
+      "status": "open",
+      "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
+      "files": [
+        "probe.py",
+        "observed.json"
+      ],
+      "id": "EX2-02",
+      "title": "Siege of Bibrax shaded removes a different Allied Tribe than selected",
+      "severity": "medium",
+      "prior_rows": [
+        "A51/shaded"
+      ],
+      "sources": [
+        "A Card Reference A51 shaded",
+        "Chapter 5 §5.1"
+      ],
+      "locations": [
+        "fs_bot/cards/card_effects.py:3618",
+        "fs_bot/cards/card_effects.py:3625",
+        "fs_bot/board/pieces.py:912"
+      ],
+      "expected": "The executor selects which eligible physical Allied Tribe to remove.",
+      "observed": "With Roman Allies at both Atrebates and Remi, the accepted plan names Remi but removes Atrebates. Remi stays Roman. The handler never reads the tribe field and clear_allied_tribe falls back to sorted order.",
+      "comparator": "LoD event_choices.py decision ownership and typed choices motivate checking whether the selected value reaches its consumer.",
+      "classification": "confirmed",
+      "domain": "expansion",
+      "source_rule": [
+        "A Card Reference A51 shaded",
+        "Chapter 5 §5.1"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:3618",
+        "fs_bot/cards/card_effects.py:3625",
+        "fs_bot/board/pieces.py:912"
+      ],
+      "comparison_pattern": "LoD event_choices.py decision ownership and typed choices motivate checking whether the selected value reaches its consumer.",
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+    },
+    {
+      "status": "open",
+      "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
+      "files": [
+        "probe.py",
+        "observed.json"
+      ],
+      "id": "EX2-03",
+      "title": "Seduni Uprising and shaded Dumnorix remove protected or unrelated Citadels",
+      "severity": "high",
+      "prior_rows": [
+        "A24/unshaded",
+        "A24/shaded",
+        "A43/shaded"
+      ],
+      "sources": [
+        "A Card Reference A24",
+        "A Card Reference A43 shaded",
+        "Chapter 1 §1.4",
+        "Chapter 5 §§5.1–5.1.1"
+      ],
+      "locations": [
+        "fs_bot/cards/card_effects.py:2955",
+        "fs_bot/cards/card_effects.py:3520"
+      ],
+      "expected": "A24 removes Ally discs at the named Tribes. A43 removes structures only at its named Tribes, which include Helvetii but exclude Sequani.",
+      "observed": "A24 removes the Aedui Citadel at Sequani despite 20 defending Aedui Warbands surviving. A43 also removes this Citadel while processing Helvetii, a different Tribe in the same Region. Both accepted Events finish without structural violations.",
+      "comparator": "LoD card14 follow-up legality audit checks exact target classes and location restrictions after the broad Region test.",
+      "classification": "confirmed",
+      "domain": "expansion",
+      "source_rule": [
+        "A Card Reference A24",
+        "A Card Reference A43 shaded",
+        "Chapter 1 §1.4",
+        "Chapter 5 §§5.1–5.1.1"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:2955",
+        "fs_bot/cards/card_effects.py:3520"
+      ],
+      "comparison_pattern": "LoD card14 follow-up legality audit checks exact target classes and location restrictions after the broad Region test.",
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+    },
+    {
+      "status": "open",
+      "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
+      "files": [
+        "probe.py",
+        "observed.json"
+      ],
+      "id": "EX2-04",
+      "title": "Mandatory expansion Event quotas can be skipped while other effects commit",
+      "severity": "high",
+      "prior_rows": [
+        "A30/shaded",
+        "A56/shaded",
+        "A65/shaded"
+      ],
+      "sources": [
+        "A Card Reference A30 shaded",
+        "A Card Reference A56 shaded",
+        "A Card Reference A65 shaded",
+        "Chapter 5 §5.1.3"
+      ],
+      "locations": [
+        "fs_bot/cards/card_effects.py:3180",
+        "fs_bot/cards/card_effects.py:3692",
+        "fs_bot/cards/card_effects.py:3882"
+      ],
+      "expected": "With ample Available pieces and eligible locations, require nine Arverni placements for A30, four Belgic Warbands plus two Allies for A56, and four Warband plus two Ally replacements for A65.",
+      "observed": "Empty lists pass validation and execute. A30 removes an Aedui Ally but places zero Arverni. A56 grants four Resources while placing zero pieces. A65 leaves all six eligible source pieces untouched despite full replacement supply.",
+      "comparator": "LoD event_choices.py Step.exact and mix totals distinguish exact quotas from optional counts; its card14 audit requires every implementable clause.",
+      "classification": "confirmed",
+      "domain": "expansion",
+      "source_rule": [
+        "A Card Reference A30 shaded",
+        "A Card Reference A56 shaded",
+        "A Card Reference A65 shaded",
+        "Chapter 5 §5.1.3"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:3180",
+        "fs_bot/cards/card_effects.py:3692",
+        "fs_bot/cards/card_effects.py:3882"
+      ],
+      "comparison_pattern": "LoD event_choices.py Step.exact and mix totals distinguish exact quotas from optional counts; its card14 audit requires every implementable clause.",
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+    },
+    {
+      "status": "open",
+      "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
+      "files": [
+        "probe.py",
+        "observed.json"
+      ],
+      "id": "EX2-05",
+      "title": "Kinship shaded can convert Aedui pieces despite its Belgae/Germans restriction",
+      "severity": "high",
+      "prior_rows": [
+        "A65/shaded"
+      ],
+      "sources": [
+        "A Card Reference A65 shaded",
+        "Chapter 5 §5.1"
+      ],
+      "locations": [
+        "fs_bot/cards/card_effects.py:3879",
+        "fs_bot/cards/card_effects.py:3880"
+      ],
+      "expected": "The source is exactly Belgae or Germans and the destination is the other of those two.",
+      "observed": "from_faction=Aedui is accepted. Four Aedui Warbands and two Aedui Allies in Morini become six Belgic pieces.",
+      "comparator": "LoD event_choices.py provides enumerated faction-valued picks and validates targets at the handler, motivating out-of-domain faction probes.",
+      "classification": "confirmed",
+      "domain": "expansion",
+      "source_rule": [
+        "A Card Reference A65 shaded",
+        "Chapter 5 §5.1"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:3879",
+        "fs_bot/cards/card_effects.py:3880"
+      ],
+      "comparison_pattern": "LoD event_choices.py provides enumerated faction-valued picks and validates targets at the handler, motivating out-of-domain faction probes.",
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+    },
+    {
+      "status": "open",
+      "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
+      "files": [
+        "probe.py",
+        "observed.json"
+      ],
+      "id": "EX2-06",
+      "title": "Procillus unshaded incorrectly treats the Roman Successor as Caesar",
+      "severity": "high",
+      "prior_rows": [
+        "A19/unshaded"
+      ],
+      "sources": [
+        "A Card Reference A19 unshaded",
+        "Chapter 1 §1.4.3",
+        "Chapter 5 §5.1"
+      ],
+      "locations": [
+        "fs_bot/cards/card_effects.py:2816"
+      ],
+      "expected": "Only Caesar supplies the within-one-Region selection range named on the card.",
+      "observed": "With the Roman Leader showing Successor in Sequani, the accepted Event replaces the German Ally there with a Roman Ally. The Caesar control produces the same effect.",
+      "comparator": "LoD card14 follow-up audit checks exact named prerequisites, rather than broader presence tests.",
+      "classification": "confirmed",
+      "domain": "expansion",
+      "source_rule": [
+        "A Card Reference A19 unshaded",
+        "Chapter 1 §1.4.3",
+        "Chapter 5 §5.1"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:2816"
+      ],
+      "comparison_pattern": "LoD card14 follow-up audit checks exact named prerequisites, rather than broader presence tests.",
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+    },
+    {
+      "status": "open",
+      "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
+      "files": [
+        "probe.py",
+        "observed.json"
+      ],
+      "id": "EX2-07",
+      "title": "Orgetorix shaded Citadel placement leaves its City Tribe unallied",
+      "severity": "high",
+      "prior_rows": [
+        "A30/shaded"
+      ],
+      "sources": [
+        "A Card Reference A30 shaded",
+        "Chapter 1 §1.4.2"
+      ],
+      "locations": [
+        "fs_bot/cards/card_effects.py:3195",
+        "fs_bot/state/state_schema.py:428"
+      ],
+      "expected": "A Citadel occupies and allies its City Tribe, with consistent structure and allegiance records.",
+      "observed": "A complete nine-piece plan places one Arverni Citadel and eight Warbands at Sequani. The Event succeeds, but Sequani remains unallied. check_structural_integrity reports both missing City allegiance and mismatched backing pieces.",
+      "comparator": "LoD observation-point and post-effect invariants motivate checking the resulting structure and bookkeeping rather than execution success alone.",
+      "classification": "confirmed",
+      "domain": "expansion",
+      "source_rule": [
+        "A Card Reference A30 shaded",
+        "Chapter 1 §1.4.2"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:3195",
+        "fs_bot/state/state_schema.py:428"
+      ],
+      "comparison_pattern": "LoD observation-point and post-effect invariants motivate checking the resulting structure and bookkeeping rather than execution success alone.",
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+    }
+  ],
+  "limitations": [
+    "Comparative source review and targeted witnesses, not an exhaustive state-space or 490-row recertification.",
+    "LoD provides engineering patterns. Supplied Falling Sky references and adopted rulings govern game behavior.",
+    "Two frontend witnesses use ordinary init/play/submit without editing state. Other witnesses use initialized or scenario-derived controlled positions and the stated public validators/executors.",
+    "Many malformed authored plans are rejected by terminal pickers but accepted by the durable/API route. No claim that terminal menus generate every bad input.",
+    "EX2-07 creates a structurally inconsistent final state. Starting expansion fixtures pass both pool/schema and structural checks.",
+    "Fifteen historical rows remain unverified; FE-NOPRUNING also retains a broad specialized-menu completeness uncertainty.",
+    "Previously recorded CV-PERSISTENCE and source questions are outside the new21 count.",
+    "No claim that all defects were introduced by recent repairs. Original50 dispositions retain their historical scope."
+  ]
+}

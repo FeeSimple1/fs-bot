@@ -64,8 +64,7 @@ from fs_bot.rules_consts import (
     ROMAN_HOME_REGIONS,
     ARVERNI_HOME_REGIONS_ARIOVISTUS,
     # Tribes (used for Cadurci/Volcae and Nori)
-    TRIBE_AEDUI, TRIBE_CADURCI, TRIBE_VOLCAE, TRIBE_NORI,
-    TRIBE_TO_REGION,
+    TRIBE_AEDUI, TRIBE_ARVERNI, TRIBE_NORI,
     # Markers
     MARKER_CIRCUMVALLATION, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     MARKER_BRITANNIA_NOT_IN_PLAY, MARKER_ARVERNI_RALLY,
@@ -91,7 +90,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, count_pieces,
-    clear_allied_tribe,
+    clear_allied_tribe, tribe_has_ally_disc,
     count_pieces_by_state, get_available, get_leader_in_region,
     find_leader, PieceError,
 )
@@ -246,44 +245,51 @@ def _np_region_order(state, faction, *, home_last, rng,
     return pool_home + pool_non_home
 
 
+def _apply_ally_and_warband_removals(state, faction, removals):
+    from fs_bot.cards.card_effects import _unally_tribe
+
+    allies_removed = warbands_removed = 0
+    for row in removals:
+        if row["piece_type"] == ALLY:
+            _unally_tribe(state, row["tribe"])
+            allies_removed += row["count"]
+        else:
+            remove_piece(state, row["region"], faction, WARBAND, row["count"],
+                         piece_state=row["piece_state"])
+            warbands_removed += row["count"]
+    return dict(allies_to_available=allies_removed, warbands_to_available=warbands_removed)
+
+
 def _adjust_ally_and_warband_counts(state, stage):
     """Return each required fraction to Available, preserving seeded defaults."""
-    from fs_bot.cards.card_effects import _unally_tribe
     from fs_bot.engine.interlude_reductions import STAGE_RULES, choose_reduction
 
     rules = STAGE_RULES[stage]
     faction = rules["faction"]
     removals = choose_reduction(state, stage)
-    allies_removed = warbands_removed = 0
     if removals is not None:
-        for row in removals:
-            if row["piece_type"] == ALLY:
-                _unally_tribe(state, row["tribe"])
-                allies_removed += row["count"]
-            else:
-                remove_piece(state, row["region"], faction, WARBAND, row["count"],
-                             piece_state=row["piece_state"])
-                warbands_removed += row["count"]
-    else:
-        fraction = 1 / rules["divisor"]
-        total_allies = sum(count_pieces(state, region, faction, ALLY) for region in state["spaces"])
-        total_warbands = sum(count_pieces(state, region, faction, WARBAND) for region in state["spaces"])
-        need_allies = _fraction_to_remove(total_allies, fraction)
-        need_warbands = _fraction_to_remove(total_warbands, fraction)
-        rng = state["rng"]
-        region_order = _np_region_order(state, faction, home_last=True, rng=rng,
-                                        home_regions=rules["home_regions"])
-        for region in region_order:
-            if allies_removed >= need_allies:
-                break
-            take = min(count_pieces(state, region, faction, ALLY), need_allies - allies_removed)
-            for _ in range(take):
-                remove_piece(state, region, faction, ALLY)
-                clear_allied_tribe(state, region, faction, ALLY)
-            allies_removed += take
-        warbands_removed = _remove_warbands_anywhere(
-            state, faction, need_warbands, rng, to_removed=False, region_order=region_order,
-        )
+        return _apply_ally_and_warband_removals(state, faction, removals)
+
+    fraction = 1 / rules["divisor"]
+    total_allies = sum(count_pieces(state, region, faction, ALLY) for region in state["spaces"])
+    total_warbands = sum(count_pieces(state, region, faction, WARBAND) for region in state["spaces"])
+    need_allies = _fraction_to_remove(total_allies, fraction)
+    need_warbands = _fraction_to_remove(total_warbands, fraction)
+    rng = state["rng"]
+    region_order = _np_region_order(state, faction, home_last=True, rng=rng,
+                                    home_regions=rules["home_regions"])
+    allies_removed = 0
+    for region in region_order:
+        if allies_removed >= need_allies:
+            break
+        take = min(count_pieces(state, region, faction, ALLY), need_allies - allies_removed)
+        for _ in range(take):
+            remove_piece(state, region, faction, ALLY)
+            clear_allied_tribe(state, region, faction, ALLY)
+        allies_removed += take
+    warbands_removed = _remove_warbands_anywhere(
+        state, faction, need_warbands, rng, to_removed=False, region_order=region_order,
+    )
     return dict(allies_to_available=allies_removed, warbands_to_available=warbands_removed)
 
 
@@ -685,6 +691,44 @@ def _adjust_aedui_forces(state):
 # ============================================================================
 
 
+def _np_arverni_reductions(state):
+    from fs_bot.cards.card_effects import _unally_tribe
+    from fs_bot.engine.interlude_reductions import ARVERNI_EARLY_ALLIES
+
+    rng = state["rng"]
+    need_allies = _fraction_to_remove(
+        sum(count_pieces(state, region, ARVERNI, ALLY) for region in state["spaces"]), 0.5)
+    need_warbands = _fraction_to_remove(
+        sum(count_pieces(state, region, ARVERNI, WARBAND) for region in state["spaces"]), 0.5)
+    # Preserve the bot's existing random order outside the Arverni Region.
+    other = [region for region in state["spaces"]
+             if region not in ARVERNI_HOME_REGIONS_ARIOVISTUS
+             and count_pieces(state, region, ARVERNI)]
+    home = [region for region in ARVERNI_HOME_REGIONS_ARIOVISTUS
+            if region != ARVERNI_REGION and count_pieces(state, region, ARVERNI)]
+    rng.shuffle(other)
+    rng.shuffle(home)
+    order = other + home + [ARVERNI_REGION]
+
+    early = [tribe for tribe in ARVERNI_EARLY_ALLIES
+             if tribe_has_ally_disc(state, ARVERNI_REGION, tribe, ARVERNI)]
+    allies_removed = 0
+    for tribe in early[:need_allies]:
+        _unally_tribe(state, tribe)
+        allies_removed += 1
+    for region in order:
+        if allies_removed >= need_allies:
+            break
+        take = min(count_pieces(state, region, ARVERNI, ALLY), need_allies - allies_removed)
+        for _ in range(take):
+            remove_piece(state, region, ARVERNI, ALLY)
+            clear_allied_tribe(state, region, ARVERNI, ALLY)
+        allies_removed += take
+    warbands_removed = _remove_warbands_anywhere(
+        state, ARVERNI, need_warbands, rng, to_removed=False, region_order=order)
+    return dict(allies_to_available=allies_removed, warbands_to_available=warbands_removed)
+
+
 def _adjust_arverni_forces(state):
     """Arverni adjustments per Interlude (German player carries these out).
 
@@ -699,7 +743,10 @@ def _adjust_arverni_forces(state):
     - Place Arverni Warbands in the Arverni Region until at least 3
       are there.
     """
-    rng = state["rng"]
+    from fs_bot.cards.card_effects import _tribe_piece_type
+    from fs_bot.engine.interlude_choices import choose_arverni_citadels
+    from fs_bot.engine.interlude_reductions import ARVERNI_HALF, choose_reduction
+
     result = {
         "vercingetorix_in_spring_box": False,
         "citadels_replaced": [],
@@ -709,7 +756,6 @@ def _adjust_arverni_forces(state):
         "gergovia_replaced": False,
         "warbands_placed_in_arverni": 0,
     }
-    from fs_bot.map.map_data import get_tribes_in_region
 
     # 1. Place Vercingetorix in the Winter track Spring box.
     # In Ariovistus VERCINGETORIX is not used; he becomes a piece for
@@ -722,23 +768,7 @@ def _adjust_arverni_forces(state):
         result["vercingetorix_in_spring_box"] = True
 
     # 2. Replace 2 Arverni Citadels (Gergovia last).
-    citadel_regions = [
-        r for r in state["spaces"]
-        if count_pieces(state, r, ARVERNI, CITADEL) > 0
-    ]
-    non_gergovia = [r for r in citadel_regions if r != ARVERNI_REGION]
-    gergovia = [r for r in citadel_regions if r == ARVERNI_REGION]
-    rng.shuffle(non_gergovia)
-    rng.shuffle(gergovia)
-    pick_order = non_gergovia + gergovia
-    to_replace = 0
-    for region in pick_order:
-        if to_replace >= 2:
-            break
-        # Replace 1 Citadel (might exist multiple per region in theory).
-        n = count_pieces(state, region, ARVERNI, CITADEL)
-        if n <= 0:
-            continue
+    for region in choose_arverni_citadels(state):
         remove_piece(state, region, ARVERNI, CITADEL, 1)
         if get_available(state, ARVERNI, ALLY) > 0:
             # "Replace ... with an Ally": the CITY TRIBE stays allied —
@@ -748,104 +778,20 @@ def _adjust_arverni_forces(state):
         else:
             clear_allied_tribe(state, region, ARVERNI, CITADEL)
             result["citadels_removed"].append(region)
-        to_replace += 1
 
     # 3. Remove >= 1/2 of on-map Arverni Allies and 1/2 of Warbands.
     # Cadurci/Volcae Allies may be removed first; otherwise Arverni
     # Region last.
-    total_allies = 0
-    for region in state["spaces"]:
-        total_allies += count_pieces(state, region, ARVERNI, ALLY)
-    need_allies = _fraction_to_remove(total_allies, 0.5)
-
-    total_wb = 0
-    for region in state["spaces"]:
-        total_wb += count_pieces(state, region, ARVERNI, WARBAND)
-    need_wb = _fraction_to_remove(total_wb, 0.5)
-
-    # Build allies-removal order: Cadurci/Volcae regions first, then
-    # random non-home regions, then Arverni Home Regions last (Arverni
-    # Region absolutely last).
-    cadurci_region = TRIBE_TO_REGION.get(TRIBE_CADURCI)
-    volcae_region = TRIBE_TO_REGION.get(TRIBE_VOLCAE)
-    arverni_home = set(ARVERNI_HOME_REGIONS_ARIOVISTUS)
-
-    priority_alts = []
-    if cadurci_region and \
-            state["tribes"].get(TRIBE_CADURCI, {}).get(
-                "allied_faction") == ARVERNI:
-        priority_alts.append(cadurci_region)
-    if volcae_region and \
-            state["tribes"].get(TRIBE_VOLCAE, {}).get(
-                "allied_faction") == ARVERNI:
-        priority_alts.append(volcae_region)
-
-    other_non_home = [
-        r for r in state["spaces"]
-        if r not in arverni_home and r not in priority_alts
-        and count_pieces(state, r, ARVERNI) > 0
-    ]
-    rng.shuffle(other_non_home)
-
-    home_non_arv = [
-        r for r in ARVERNI_HOME_REGIONS_ARIOVISTUS
-        if r != ARVERNI_REGION
-        and count_pieces(state, r, ARVERNI) > 0
-    ]
-    rng.shuffle(home_non_arv)
-
-    arv_region_last = (
-        [ARVERNI_REGION]
-        if count_pieces(state, ARVERNI_REGION, ARVERNI) > 0
-        else []
-    )
-
-    allies_order = (
-        priority_alts + other_non_home + home_non_arv + arv_region_last
-    )
-
-    allies_removed = 0
-    for region in allies_order:
-        if allies_removed >= need_allies:
-            break
-        n = count_pieces(state, region, ARVERNI, ALLY)
-        take = min(n, need_allies - allies_removed)
-        for _ in range(take):
-            remove_piece(state, region, ARVERNI, ALLY)
-            clear_allied_tribe(state, region, ARVERNI, ALLY)
-        allies_removed += take
-    result["allies_to_available"] = allies_removed
-
-    # Warbands order: same priorities — Cadurci/Volcae Regions first,
-    # else random non-home, else Arverni Home (Arverni Region last).
-    wb_priority = [
-        r for r in priority_alts
-        if count_pieces(state, r, ARVERNI, WARBAND) > 0
-    ]
-    wb_other = [
-        r for r in other_non_home
-        if count_pieces(state, r, ARVERNI, WARBAND) > 0
-    ]
-    wb_home_non_arv = [
-        r for r in home_non_arv
-        if count_pieces(state, r, ARVERNI, WARBAND) > 0
-    ]
-    wb_arv_last = [
-        r for r in arv_region_last
-        if count_pieces(state, r, ARVERNI, WARBAND) > 0
-    ]
-    wb_order = wb_priority + wb_other + wb_home_non_arv + wb_arv_last
-
-    wb_removed = _remove_warbands_anywhere(
-        state, ARVERNI, need_wb, rng,
-        to_removed=False, region_order=wb_order,
-    )
-    result["warbands_to_available"] = wb_removed
+    removals = choose_reduction(state, ARVERNI_HALF)
+    if removals is None:
+        result.update(_np_arverni_reductions(state))
+    else:
+        result.update(_apply_ally_and_warband_removals(state, ARVERNI, removals))
 
     # 4. Gergovia rule.
-    g_allies = count_pieces(state, ARVERNI_REGION, ARVERNI, ALLY)
-    g_citadels = count_pieces(state, ARVERNI_REGION, ARVERNI, CITADEL)
-    if g_allies == 0 and g_citadels == 0:
+    gergovia = state["tribes"][TRIBE_ARVERNI]
+    if (gergovia.get("allied_faction") != ARVERNI
+            or _tribe_piece_type(state, TRIBE_ARVERNI) not in (ALLY, CITADEL)):
         space = state["spaces"].get(ARVERNI_REGION, {})
         for faction in list(space.get("pieces", {}).keys()):
             for pt in (WARBAND, AUXILIA):
@@ -883,12 +829,8 @@ def _adjust_arverni_forces(state):
             ) is not None:
                 remove_piece(state, ARVERNI_REGION, faction, LEADER)
         if get_available(state, ARVERNI, ALLY) > 0:
-            from fs_bot.rules_consts import TRIBE_ARVERNI
             place_piece(state, ARVERNI_REGION, ARVERNI, ALLY, 1)
-            ti = state["tribes"].setdefault(
-                TRIBE_ARVERNI, {"status": None, "allied_faction": None})
-            ti["status"] = None
-            ti["allied_faction"] = ARVERNI
+            gergovia.update(status=None, allied_faction=ARVERNI)
             result["gergovia_replaced"] = True
 
     # 5. Place Arverni Warbands in Arverni Region until >= 3.

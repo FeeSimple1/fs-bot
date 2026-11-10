@@ -139,7 +139,8 @@ def validate_response(state, request, response):
     if kind == 'interlude_reduction':
         from fs_bot.engine.interlude_reductions import validate_response as validate_reduction
         return validate_reduction(state, request, response)
-    if kind in ('interlude_expedition', 'interlude_marker', 'interlude_settlements', 'interlude_aedui_citadel'):
+    if kind in ('interlude_expedition', 'interlude_marker', 'interlude_settlements',
+                'interlude_aedui_citadel', 'interlude_arverni_citadels'):
         from fs_bot.engine.interlude_choices import validate_response as validate_interlude
         return validate_interlude(state, request, response)
     if kind == 'harvest_legions':

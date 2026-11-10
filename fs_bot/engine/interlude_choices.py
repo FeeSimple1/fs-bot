@@ -8,6 +8,7 @@ EXPEDITION = 'interlude_expedition'
 MARKER = 'interlude_marker'
 SETTLEMENTS = 'interlude_settlements'
 AEDUI_CITADEL = 'interlude_aedui_citadel'
+ARVERNI_CITADELS = 'interlude_arverni_citadels'
 
 
 def settlement_request(state):
@@ -66,6 +67,34 @@ def choose_aedui_citadel(state):
     return regions[0] if regions else None
 
 
+def arverni_citadel_request(state):
+    regions = [region for region in state['spaces']
+               if count_pieces(state, region, rc.ARVERNI, rc.CITADEL)]
+    outside = [region for region in regions if region != rc.ARVERNI_REGION]
+    required = min(2, len(regions))
+    return dict(kind=ARVERNI_CITADELS, regions=outside if len(outside) >= required else regions,
+                count=required, available_allies=get_available(state, rc.ARVERNI, rc.ALLY))
+
+
+def choose_arverni_citadels(state):
+    request = arverni_citadel_request(state)
+    regions = request['regions']
+    required = request['count']
+    outside = [region for region in regions if region != rc.ARVERNI_REGION]
+    # When the targets are forced, their order matters only if they compete
+    # for a scarce Ally disc and Gergovia does not already go last.
+    has_choice = (len(regions) > required
+                  or (0 < request['available_allies'] < required and len(outside) > 1))
+    if has_choice and rc.GERMANS not in state.get('non_player_factions', ()):
+        response = consult_agent(state, rc.GERMANS, request)
+        if response is not None:
+            validate_response(state, request, response)
+            if 'regions' in response:
+                return response['regions']
+    state['rng'].shuffle(outside)
+    return (outside + [r for r in regions if r == rc.ARVERNI_REGION])[:required]
+
+
 def expedition_request(state):
     """Offer the physical Roman force after Adjust Forces and relocation."""
     legions, auxilia = {}, []
@@ -101,6 +130,19 @@ def marker_request(state):
 def validate_response(state, request, response):
     """Validate the complete choice before mutating the Interlude board."""
     if isinstance(response, dict) and set(response) == {'use_default'} and response['use_default'] is True:
+        return response
+    if request['kind'] == ARVERNI_CITADELS:
+        current = arverni_citadel_request(state)
+        if (request.get('faction', rc.GERMANS) != rc.GERMANS
+                or current != {key: value for key, value in request.items() if key != 'faction'}):
+            raise ValueError('The offered Arverni Citadels have changed.')
+        regions = response.get('regions') if isinstance(response, dict) else None
+        if (not isinstance(regions, list) or set(response) != {'regions'}
+                or len(regions) != current['count']
+                or any(region not in current['regions'] for region in regions)
+                or len(set(regions)) != len(regions)
+                or rc.ARVERNI_REGION in regions[:-1]):
+            raise ValueError('Choose the required distinct Arverni Citadels, taking Gergovia last.')
         return response
     if request['kind'] == AEDUI_CITADEL:
         current = aedui_citadel_request(state)

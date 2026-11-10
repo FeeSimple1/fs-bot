@@ -3,7 +3,7 @@ from fs_bot import rules_consts as rc
 from fs_bot.cli.action_windows import inspect_board
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
 from fs_bot.engine.interlude_choices import (
-    AEDUI_CITADEL, MARKER, SETTLEMENTS, validate_response,
+    AEDUI_CITADEL, ARVERNI_CITADELS, MARKER, SETTLEMENTS, validate_response,
 )
 from fs_bot.engine import interlude_reductions as reductions
 
@@ -21,6 +21,8 @@ def _collect_reduction(state, request, stdin, stdout):
         home = ", ".join(rules["home_regions"])
         stdout.write(f"Return {rules['faction']} pieces to Available. "
                      f"Take {home} last for each type.\n")
+        if stage == reductions.ARVERNI_HALF:
+            stdout.write("The Cadurci and Volcae Allies can be chosen early.\n")
     if not prompt_yes_no(stdin, stdout, 'Choose the pieces yourself?', default=True):
         return {'use_default': True}
 
@@ -74,12 +76,31 @@ def _collect_settlements(state, request, stdin, stdout):
     return validate_response(state, request, {'allies': allies})
 
 
+def _collect_arverni_citadels(state, request, stdin, stdout):
+    remaining = list(request['regions'])
+    selected = []
+    available = request['available_allies']
+    required = request['count']
+    if not prompt_yes_no(stdin, stdout, 'Choose the Arverni Citadels yourself?', default=True):
+        return {'use_default': True}
+    for _ in range(required):
+        legal = [r for r in remaining if r != rc.ARVERNI_REGION] or remaining
+        prompt = ('Replace which Arverni Citadel with an Ally?' if available > len(selected)
+                  else 'Remove which Arverni Citadel?')
+        region = prompt_choice(stdin, stdout, prompt, [(r, r) for r in legal])
+        selected.append(region)
+        remaining.remove(region)
+    return validate_response(state, request, {'regions': selected})
+
+
 def collect_interlude(state, faction, request, stdin, stdout):
     with inspect_board(state, stdout):
         if request['kind'] == reductions.KIND:
             return _collect_reduction(state, request, stdin, stdout)
         if request['kind'] == SETTLEMENTS:
             return _collect_settlements(state, request, stdin, stdout)
+        if request['kind'] == ARVERNI_CITADELS:
+            return _collect_arverni_citadels(state, request, stdin, stdout)
         if request['kind'] == AEDUI_CITADEL:
             prompt = ('Replace which Aedui Citadel with an Ally?' if request['ally_available']
                       else 'Remove which Aedui Citadel?')

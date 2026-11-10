@@ -517,6 +517,7 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `interlude_reduction` | Faction-owned stage with `stage, minimums, cohorts` | `{"removals":[cohort objects]}` in selection order, or explicit default |
 | `interlude_settlements` | German-owned choice after permanent Warband removals, with `options` by Region and `required_allies` | `{"allies":{region:tribe,...}}` or explicit default |
 | `interlude_aedui_citadel` | Aedui-owned choice with eligible `regions` and `ally_available` | `{"region":offered_region}` or explicit default |
+| `interlude_arverni_citadels` | German-owned choice with Arverni `regions,count,available_allies` | `{"regions":[region,...]}` in replacement order, or explicit default |
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
@@ -1935,6 +1936,26 @@ Aedui then receive `aedui_half` in `interlude_reduction`. Use the ordered
 Aedui Region last for each type. The cohorts and counts reflect the
 Citadel step. Either request accepts `{"use_default":true}`. A save at the
 reduction prompt retains the accepted Citadel selection.
+
+### Arverni Interlude force adjustments
+
+The German seat controls this adjustment before the faction handover.
+`interlude_arverni_citadels` requests an ordered list of exactly `count`
+distinct offered Regions, normally two. Gergovia goes last. Available
+Ally discs replace the selected Citadels in response order. Any selected
+Citadels without replacement discs are removed. Forced selections resolve
+automatically unless order determines which Citadel gets a scarce disc.
+
+The German seat then receives `arverni_half` in `interlude_reduction`.
+Its `faction` identifies the German controller, while its cohorts contain
+Arverni pieces. Use the usual ordered `{"removals":[...]}` contract to
+meet each minimum. Take the Arverni Region last within each type, with
+an exception allowing the Cadurci and Volcae Ally discs to be selected
+early. That exception applies only to those named discs.
+
+Either request accepts `{"use_default":true}`. Saving while awaiting
+the reduction retains the earlier German removals and Arverni Citadel
+choices. Older German-seat transcripts can pause for the added prompts.
 
 ### Roman Interlude allocations
 

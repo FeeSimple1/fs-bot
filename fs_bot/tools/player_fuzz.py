@@ -285,10 +285,9 @@ def make_random_reactive(seats, rng):
         if kind == 'interlude_reduction':
             cohorts = list(request['cohorts'])
             rng.shuffle(cohorts)
-            from fs_bot.engine.interlude_reductions import STAGE_RULES
+            from fs_bot.engine.interlude_reductions import is_home_last
 
-            home = STAGE_RULES[request['stage']]['home_regions']
-            cohorts.sort(key=lambda row: row['region'] in home)
+            cohorts.sort(key=lambda row: is_home_last(request['stage'], row))
             needed, removals = dict(request['minimums']), []
             for row in cohorts:
                 piece_type = row['piece_type']
@@ -297,6 +296,11 @@ def make_random_reactive(seats, rng):
                     removals.append(dict(row, count=count))
                     needed[piece_type] -= count
             return {'removals': removals}
+        if kind == 'interlude_arverni_citadels':
+            regions = list(request['regions'])
+            rng.shuffle(regions)
+            regions.sort(key=lambda region: region == rc.ARVERNI_REGION)
+            return {'regions': regions[:request['count']]}
         if kind == 'interlude_aedui_citadel':
             return {'region': rng.choice(request['regions'])}
         if kind == 'interlude_settlements':

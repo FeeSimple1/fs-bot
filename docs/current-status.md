@@ -21,6 +21,30 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Arverni Interlude force adjustments
+
+Under A2.1, the German controller selects two eligible Arverni Citadels,
+taking Gergovia last. The response order determines which Citadel receives
+a scarce Ally disc. The later half reductions use the resulting board,
+with exact Ally Tribes and Warband visibility. Both choices belong to
+the German seat until the scenario switches to its second half.
+
+The Cadurci and Volcae exception now selects those named Ally discs.
+The previous bot treated their entire Region as an early target,
+including Gergovia and Warbands. Gergovia's restoration now checks its
+own Tribe. Saving while awaiting the Arverni reduction retains the prior
+German and Citadel answers and replays them once on resume.
+
+All 9,197 tests passed on the recovered source. Twenty paired bot games
+match the Aedui repair's final states and winners. Twenty mixed-seat games
+and twenty directed Arverni Interludes match across hash seeds, with no
+integrity findings in the mixed-seat runs. The 100-game balance check
+passes. Every winner and card count matches the parent revision.
+
+**WS-F01 and WS-C28 advance. Roman force adjustments and Cisalpina
+relocation remain open. The original audit stands at 44/50 closed
+(88%), with 6 open.**
+
 ### 6 November Aedui Interlude force adjustments
 
 Under A2.1, the Aedui player chooses one eligible Citadel after Diviciacus

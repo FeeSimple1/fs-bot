@@ -11,12 +11,16 @@ PERMANENT = 'german_permanent'
 QUARTER = 'german_quarter'
 BELGIC_HALF = 'belgic_half'
 AEDUI_HALF = 'aedui_half'
+ARVERNI_HALF = 'arverni_half'
+ARVERNI_EARLY_ALLIES = (rc.TRIBE_CADURCI, rc.TRIBE_VOLCAE)
 
 STAGE_RULES = {
     PERMANENT: dict(faction=rc.GERMANS, home_regions=()),
     QUARTER: dict(faction=rc.GERMANS, divisor=4, home_regions=rc.GERMAN_HOME_REGIONS_BASE),
     BELGIC_HALF: dict(faction=rc.BELGAE, divisor=2, home_regions=rc.BELGAE_HOME_REGIONS),
     AEDUI_HALF: dict(faction=rc.AEDUI, divisor=2, home_regions=rc.AEDUI_HOME_REGIONS),
+    ARVERNI_HALF: dict(faction=rc.ARVERNI, controller=rc.GERMANS, divisor=2,
+                       home_regions=rc.ARVERNI_HOME_REGIONS_BASE),
 }
 
 
@@ -56,13 +60,20 @@ def reduction_request(state, stage):
     return dict(kind=KIND, stage=stage, minimums=minimums, cohorts=cohorts)
 
 
+def is_home_last(stage, row):
+    """Apply the Cadurci and Volcae exception to their Ally discs only."""
+    return (row['region'] in STAGE_RULES[stage]['home_regions']
+            and not (stage == ARVERNI_HALF and row['piece_type'] == rc.ALLY
+                     and row['tribe'] in ARVERNI_EARLY_ALLIES))
+
+
 def eligible_cohorts(stage, remaining):
     """List the cohorts still selectable at this point in the allocation."""
     home = STAGE_RULES[stage]['home_regions']
     outside = {row['piece_type'] for row in remaining
                if row['count'] and row['region'] not in home}
     return [row for row in remaining if row['count']
-            and (row['region'] not in home or row['piece_type'] not in outside)]
+            and (not is_home_last(stage, row) or row['piece_type'] not in outside)]
 
 
 def validate_response(state, request, response):
@@ -73,9 +84,10 @@ def validate_response(state, request, response):
             or not isinstance(response['removals'], list)):
         raise ValueError('Allocate the required Interlude pieces or delegate to the bot.')
     stage = request['stage']
-    faction = STAGE_RULES[stage]['faction']
+    rules = STAGE_RULES[stage]
+    controller = rules.get('controller', rules['faction'])
     current = reduction_request(state, stage)
-    if (request.get('faction', faction) != faction
+    if (request.get('faction', controller) != controller
             or current != {key: value for key, value in request.items() if key != 'faction'}):
         raise ValueError('The offered Interlude force has changed.')
 
@@ -101,13 +113,14 @@ def validate_response(state, request, response):
 
 
 def choose_reduction(state, stage):
-    faction = STAGE_RULES[stage]['faction']
-    if (faction in state.get('non_player_factions', ())
+    rules = STAGE_RULES[stage]
+    controller = rules.get('controller', rules['faction'])
+    if (controller in state.get('non_player_factions', ())
             or state.get('decision_agent') is None):
         return None
     request = reduction_request(state, stage)
     if any(request['minimums'].values()):
-        response = consult_agent(state, faction, request)
+        response = consult_agent(state, controller, request)
         if response is not None:
             return validate_response(state, request, response).get('removals')
     return None

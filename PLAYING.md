@@ -766,6 +766,20 @@ reduction. Choose Allies by Tribe and Warbands by Region and visibility.
 Use `b` or `board` during either choice. Saving at the reduction prompt
 retains the accepted Citadel selection when Winter resumes.
 
+### Arverni Interlude force adjustments
+
+The German player makes the Arverni choices before taking over that seat.
+Choose two eligible Arverni Citadels, taking Gergovia last. When only one
+Ally disc is Available for two Citadels, the first selected Citadel gets
+the disc and the second is removed. A forced selection resolves automatically
+when its order has no effect.
+
+Then choose at least half of the Arverni Allies and half of the Arverni
+Warbands to return to Available, rounding up. The Arverni Region goes
+last for each type. You may choose the Cadurci and Volcae Ally discs early.
+Use `b` or `board` to inspect the board, or delegate either choice to the
+bot. Saving at the later prompt retains the accepted Citadel choices.
+
 ### Roman Interlude decisions
 
 In The Gallic War, human Romans choose whether to conduct the Britannia

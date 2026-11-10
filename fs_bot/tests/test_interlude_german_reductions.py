@@ -148,7 +148,9 @@ def _session(state, meta=None, log=None):
     session = SeatSession(state, {'seat': GERMANS} if meta is None else meta,
                           [] if log is None else log, HumanTurnDisplay(StringIO()))
     state['decision_agent'] = lambda board, faction, request: (
-        session.reactive(board, faction, request) if request['kind'] in (KIND, SETTLEMENTS) else None)
+        session.reactive(board, faction, request)
+        if request['kind'] == SETTLEMENTS or request.get('stage') in (PERMANENT, QUARTER)
+        else None)
     return session
 
 

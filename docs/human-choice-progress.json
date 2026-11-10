@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "cee8bae27f933b5cce43eab70b005546272e462e",
-    "python_sha256": "e1771e2cd540c74cbb45d95d12821865a41f4d011eb50992c26fa353fc443a35",
-    "python_files": 561,
+    "commit": "3cfa07de4d1d28568e76373c850a44a1415b2ccf",
+    "python_sha256": "5a0a36885135e7c416fa5ec84c0c7645a0d14d99b1c7445e3b9ea0587746cd7e",
+    "python_files": 563,
     "working_tree_changes": true,
-    "note": "Ordinary March drop-offs close MARCH-DROPOFF. The tested Python source is the publishing tree over the listed parent. See current-status.md#10-november-ordinary-march-drop-offs."
+    "note": "The March origin follow-up is tested on the publishing tree over the listed parent. See current-status.md#10-november-march-groups-at-later-origins."
   },
   "total": 50,
   "closed": 47,
@@ -75,7 +75,8 @@
     "Interlude controllers choose exact Cisalpina moves or removals. This completes WS-C30 and WS-F01. See current-status.md#10-november-interlude-cisalpina-relocation.",
     "Quarters and Harvest offer exact donor-owned Resource gifts. See current-status.md#10-november-winter-resource-transfers.",
     "Live Command and Event gifts complete WS-F06. The shared-player cap remains part of WS-F09. See current-status.md#10-november-command-and-event-resource-transfers.",
-    "Live transit drop-offs complete MARCH-DROPOFF. Earlier arrivals in later origin groups are a separate follow-up. See current-status.md#10-november-ordinary-march-drop-offs."
+    "Live transit drop-offs complete MARCH-DROPOFF. Earlier arrivals in later origin groups are a separate follow-up. See current-status.md#10-november-ordinary-march-drop-offs.",
+    "The March origin follow-up keeps earlier arrivals and drop-offs out of later groups in the same Command. The original audit counts remain 47 closed and 3 open."
   ],
   "findings": [
     {

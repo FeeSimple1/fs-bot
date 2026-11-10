@@ -24,7 +24,7 @@ def replay_position(state):
 
 
 def set_cohorts(state, key, faction, cohorts):
-    """Register an Event's exact participating pieces across later windows.
+    """Register an operation's exact participating pieces across later windows.
 
     The ledger contains data only, so detached previews and durable replay
     reconstruct the same physical membership without live callbacks.
@@ -61,7 +61,10 @@ def _advance(cohorts, effects):
 
 def _advance_registered(state, effects):
     for ledger in state.get(COHORTS, {}).values():
-        ledger['pieces'] = _advance(ledger['pieces'], effects)
+        # The same cohort label can identify pieces of different owners.
+        owned = [e for e in effects if e['faction'] == ledger['faction']]
+        if owned:
+            ledger['pieces'] = _advance(ledger['pieces'], owned)
 
 
 def enabled(state):

@@ -79,15 +79,23 @@ def choose_visibility(state, faction, region, piece, count, available, *,
     return {ps: n for ps, n in response["counts"].items() if n}
 
 
-def select_origin_visibility(state, faction, origin, group):
-    """Record human-selected visibility after all origin pieces have flipped."""
+def exclude_arrivals(available, excluded, owner, piece):
+    """Keep already marched counters out of one physical owner's pool."""
+    if not excluded:
+        return available
+    return {ps: n - excluded.get((owner, piece, ps), 0)
+            for ps, n in available.items()}
+
+
+def select_origin_visibility(state, faction, origin, group, *, excluded=None):
+    """Record selected visibility after all origin pieces have flipped."""
     from fs_bot.engine.diviciacus import select_march_group
-    if select_march_group(state, faction, origin, group):
+    if select_march_group(state, faction, origin, group, excluded=excluded):
         return
     from fs_bot.engine.game_engine import get_sop_factions
     chooser = _chooser(state, faction)
-    if (chooser not in get_sop_factions(state)
-            or chooser in state.get("non_player_factions", set())):
+    if not excluded and (chooser not in get_sop_factions(state)
+                         or chooser in state.get("non_player_factions", ())):
         return
     ledger = group.setdefault("_march_visibility", {})
     for piece in (rc.AUXILIA, rc.WARBAND):
@@ -110,13 +118,17 @@ def select_origin_visibility(state, faction, origin, group):
                              owner, {}).get(ps, {}).get(piece, 0))
                     for ps in VISIBILITIES}
                 selected = choose_visibility(state, faction, origin, piece, n,
-                    available, phase="formation", physical_owner=owner)
+                    exclude_arrivals(available, excluded, owner, piece),
+                    phase="formation", physical_owner=owner)
                 owners[owner] = selected
                 for ps, amount in selected.items():
                     ledger[piece][ps] = ledger[piece].get(ps, 0) + amount
         else:
             available = {ps: count_pieces_by_state(state, origin, faction, piece, ps)
                          for ps in VISIBILITIES}
+            available = exclude_arrivals(available, excluded, faction, piece)
+            if faction == rc.BELGAE and piece == rc.WARBAND:
+                available = exclude_arrivals(available, excluded, rc.GERMANS, piece)
             ledger[piece] = choose_visibility(state, faction, origin, piece,
                 count, available, phase="formation")
 
@@ -188,7 +200,7 @@ def validate_dropoffs(request, response):
 
 
 def offer_dropoffs(state, faction, region, group, *, origin, step, destination,
-                   group_index):
+                   group_index, arrivals=None):
     """Let the current group leave counters here before the next departure."""
     agent = state.get('decision_agent')
     if state.get('_diviciacus_preview') or not (
@@ -204,21 +216,15 @@ def offer_dropoffs(state, faction, region, group, *, origin, step, destination,
         return []
 
     from fs_bot.commands.march import _max_steps_for_group
-    from fs_bot.engine.march_timing import COHORT, apply_removals, cohorts
+    from fs_bot.engine.march_timing import COHORT, apply_removals, physical_members
     # A live decision can shorten the route. The remaining pieces still
     # need to be able to take the immediate next hop.
     keep_leader = step >= _max_steps_for_group(state, region, faction, {})
-    owners = {faction, *group.get('_diviciacus_owners', {}),
-              *group.get('_march_owner_visibility', {})}
-    pieces = []
-    for owner in rc.FACTIONS:
-        if owner not in owners:
-            continue
-        for entry in cohorts(state, faction, region, group, owner):
-            if keep_leader and entry['piece_type'] == rc.LEADER:
-                continue
-            pieces.append(dict(faction=owner, piece_type=entry['piece_type'],
-                               piece_state=entry.get('piece_state'), count=entry['count']))
+    members = {(owner, row['piece_type'], row.get('piece_state')): row
+               for owner, row in physical_members(state, faction, region, group)
+               if not (keep_leader and row['piece_type'] == rc.LEADER)}
+    pieces = [dict(faction=owner, piece_type=piece, piece_state=ps, count=row['count'])
+              for (owner, piece, ps), row in members.items()]
     if not pieces:
         return []
     window = dict(phase='sequence_of_play', stage=MARCH_DROPOFF,
@@ -235,4 +241,9 @@ def offer_dropoffs(state, faction, region, group, *, origin, step, destination,
         return []
     selected = validate_dropoffs(request, response)['dropoffs']
     apply_removals(state, faction, group, [dict(entry, cohort=COHORT) for entry in selected])
+    if arrivals is not None and arrivals.needs(region):
+        for entry in selected:
+            owner = entry['faction']
+            row = members[owner, entry['piece_type'], entry['piece_state']]
+            arrivals.record(owner, [dict(row, count=entry['count'])])
     return selected

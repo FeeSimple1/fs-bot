@@ -639,7 +639,7 @@ def _resolve_one_harassment_loss(state, region, marching_faction,
 # ============================================================================
 
 def march_group(state, faction, origin, destinations, group, *,
-                free=False, _timing_managed=False):
+                free=False, _timing_managed=False, _preserve_owners=False):
     """Execute a March for a single group from origin through destinations.
 
     This moves the specified pieces step by step. It checks crossing stops
@@ -743,6 +743,9 @@ def march_group(state, faction, origin, destinations, group, *,
         prev_region = current_region
         current_region = dest
         result["path"].append(current_region)
+        if _preserve_owners:
+            from fs_bot.engine.march_timing import keep_native_members
+            keep_native_members(state, faction, current_region, group)
         if not _timing_managed:
             group_window(state, faction, current_region, group, 'march_arrival',
                          origin=origin, step=step_index + 1)
@@ -780,17 +783,21 @@ def _iter_group_pieces(group):
     yield WARBAND, group.get(WARBAND, 0)
 
 
-def _validate_group_in_region(state, region, faction, group):
+def _validate_group_in_region(state, region, faction, group, *, excluded=None):
     """Validate that all pieces in a group exist in the region."""
+    from fs_bot.engine.march_arrivals import acting_counts, enlisted_arrivals
+    arrivals = acting_counts(state, excluded) if excluded else {}
     if group.get(LEADER) is not None:
         leader_name = get_leader_in_region(state, region, faction)
         if leader_name is None:
             raise MarchError(f"No {faction} Leader in {region}")
+        if arrivals.get(LEADER):
+            raise MarchError(f"The {faction} Leader in {region} already Marched")
 
     for piece_type, count in _iter_group_pieces(group):
         if count <= 0:
             continue
-        actual = count_pieces(state, region, faction, piece_type)
+        actual = count_pieces(state, region, faction, piece_type) - arrivals.get(piece_type, 0)
         if actual < count:
             raise MarchError(
                 f"Only {actual} {faction} {piece_type} in {region}, "
@@ -801,9 +808,11 @@ def _validate_group_in_region(state, region, faction, group):
         n = group["german_warbands"]
         own = state["spaces"][region].get("pieces", {}).get(BELGAE, {})
         own_count = sum(own.get(ps, {}).get(WARBAND, 0) for ps in (HIDDEN, REVEALED, SCOUTED))
+        arrived_german = enlisted_arrivals(excluded)
+        own_count -= arrivals.get(WARBAND, 0) - arrived_german
         if (faction != BELGAE or BORROW_KEY not in state
                 or type(n) is not int or not 0 <= n <= group.get(WARBAND, 0)
-                or n > borrowed_count(state, region)
+                or n > borrowed_count(state, region) - arrived_german
                 or group.get(WARBAND, 0) - n > own_count):
             raise MarchError("Invalid German/Belgic composition for this March group")
 
@@ -943,7 +952,7 @@ def drop_off_pieces(state, region, faction, pieces_to_drop):
 # ============================================================================
 
 def march_from_origin(state, faction, origin, groups_and_destinations, *,
-                      free=False):
+                      free=False, _arrivals=None):
     """Execute March from a single origin region with one or more groups.
 
     This is the per-origin procedure:
@@ -971,13 +980,29 @@ def march_from_origin(state, faction, origin, groups_and_destinations, *,
     """
     # Step 1: Flip Revealed pieces at origin — §3.2.2, §3.3.2, §3.4.2
     flip_result = _flip_origin_pieces(state, origin, faction)
+    if _arrivals is not None and _arrivals.in_region(origin):
+        _arrivals.flip_origin(origin)
 
     # Step 2: Move each group
     group_results = []
     for group, destinations in groups_and_destinations:
+        exact_members = False
+        if _arrivals is not None:
+            _arrivals.begin_group(origin)
+            excluded = _arrivals.in_region(origin)
+            exact_members = bool(excluded or any(_arrivals.needs(r) for r in destinations))
+            if exact_members:
+                from fs_bot.engine.march_timing import freeze_members
+                _validate_group_in_region(state, origin, faction, group, excluded=excluded)
+                freeze_members(state, faction, origin, group, excluded=excluded)
         grp_result = march_group(state, faction, origin, destinations, group,
-                                 free=free)
+                                 free=free, _preserve_owners=exact_members)
         group_results.append(grp_result)
+        if _arrivals is not None:
+            final = grp_result['final_region']
+            if len(grp_result['path']) > 1 and _arrivals.needs(final):
+                _arrivals.record_group(final, group)
+            _arrivals.finish_origin(origin)
 
     return {
         "origin": origin,
@@ -1028,28 +1053,34 @@ def execute_march(state, faction, origins_data, *, free=False, limited=False):
         "limited": limited,
     }
 
-    for origin_entry in origins_data:
-        origin = origin_entry["origin"]
-        groups = origin_entry["groups"]
+    from fs_bot.engine.march_arrivals import MarchArrivals
+    arrivals = MarchArrivals(state, faction, (entry['origin'] for entry in origins_data
+                                             for _ in entry['groups']))
+    try:
+        for origin_entry in origins_data:
+            origin = origin_entry["origin"]
+            groups = origin_entry["groups"]
 
-        # Calculate and pay cost
-        cost = 0 if free else march_cost(state, origin, faction)
+            # Calculate and pay cost
+            cost = 0 if free else march_cost(state, origin, faction)
 
-        if not free and cost > 0:
-            current_resources = state["resources"].get(faction, 0)
-            if current_resources < cost:
-                raise MarchError(
-                    f"{faction} has {current_resources} Resources, "
-                    f"need {cost} to March from {origin}")
-            state["resources"][faction] -= cost
+            if not free and cost > 0:
+                current_resources = state["resources"].get(faction, 0)
+                if current_resources < cost:
+                    raise MarchError(
+                        f"{faction} has {current_resources} Resources, "
+                        f"need {cost} to March from {origin}")
+                state["resources"][faction] -= cost
 
-        result["total_cost"] += cost
+            result["total_cost"] += cost
 
-        # Execute march from this origin
-        origin_result = march_from_origin(
-            state, faction, origin, groups, free=free)
-        origin_result["cost"] = cost
-        result["origins"].append(origin_result)
+            # Execute march from this origin
+            origin_result = march_from_origin(
+                state, faction, origin, groups, free=free, _arrivals=arrivals)
+            origin_result["cost"] = cost
+            result["origins"].append(origin_result)
+    finally:
+        arrivals.clear()
 
     # Refresh control after all movement
     refresh_all_control(state)

@@ -498,7 +498,7 @@ def defensive_battle(func):
     return wrapped
 
 
-def select_march_group(state, faction, origin, group):
+def select_march_group(state, faction, origin, group, *, excluded=None):
     ctx = state.get(KEY)
     if not ctx or ctx['faction'] != faction or origin not in ctx['pieces']:
         return False
@@ -506,11 +506,14 @@ def select_march_group(state, faction, origin, group):
     count = group.get(piece, 0)
     if not count:
         return False
-    from fs_bot.engine.march_choices import choose_visibility
+    from fs_bot.engine.march_choices import choose_visibility, exclude_arrivals
     lender = ctx['lender']
     raw = state['spaces'][origin].get('pieces', {}).get(faction, {})
-    available = {faction: {ps: raw.get(ps, {}).get(piece, 0) for ps in STATES},
-                 lender: dict(ctx['pieces'][origin])}
+    available = {
+        faction: exclude_arrivals({ps: raw.get(ps, {}).get(piece, 0) for ps in STATES},
+                                  excluded, faction, piece),
+        lender: exclude_arrivals(ctx['pieces'][origin], excluded, lender, ctx['physical_type']),
+    }
     owners = choose_owners(state, faction, origin, count,
                            {f: sum(v.values()) for f, v in available.items()}, 'formation')
     ledger = group['_diviciacus_owners'] = {}

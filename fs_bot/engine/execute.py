@@ -4357,6 +4357,7 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
     Free Event Commands and base-game German movement remain free.
     """
     from fs_bot.engine.action_windows import window
+    from fs_bot.engine.march_arrivals import MarchArrivals
     window(state, 'march_before_payment', marching_faction=faction)
     selected, costs, deferred, errors = _select_affordable_march_moves(
         state, faction, moves, free=free)
@@ -4366,25 +4367,31 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
     sa_result = before_move() if selected and before_move is not None else None
     marched, stayed = [], []
     flipped_origins = set()
-    for group_index, move in enumerate(selected):
-        origin = move["origin"]
-        dropoffs = [] if choose_dropoffs else None
-        try:
-            final = _march_with_harassment(state, faction, origin, move["path"],
-                                           group_cap=move.get("group"),
-                                           flipped_origins=flipped_origins,
-                                           moving_only=moving_only,
-                                           chosen_dropoffs=dropoffs, group_index=group_index)
-            if move.get("stay") is True and not move["path"]:
-                stayed.append(origin)
-            if final != origin:
-                entry = {k: v for k, v in move.items() if k not in ("path", "group")}
-                entry["final_region"] = final
-                if dropoffs:
-                    entry["dropoffs"] = dropoffs
-                marched.append(entry)
-        except _EXEC_ERRORS as exc:
-            errors.append({"origin": origin, "error": str(exc)})
+    arrivals = MarchArrivals(state, faction, (move['origin'] for move in selected))
+    try:
+        for group_index, move in enumerate(selected):
+            origin = move["origin"]
+            arrivals.begin_group(origin)
+            dropoffs = [] if choose_dropoffs else None
+            try:
+                final = _march_with_harassment(state, faction, origin, move["path"],
+                                               group_cap=move.get("group"),
+                                               flipped_origins=flipped_origins,
+                                               moving_only=moving_only, arrivals=arrivals,
+                                               chosen_dropoffs=dropoffs, group_index=group_index)
+                if move.get("stay") is True and not move["path"]:
+                    stayed.append(origin)
+                if final != origin:
+                    entry = {k: v for k, v in move.items() if k not in ("path", "group")}
+                    entry["final_region"] = final
+                    if dropoffs:
+                        entry["dropoffs"] = dropoffs
+                    marched.append(entry)
+            except _EXEC_ERRORS as exc:
+                errors.append({"origin": origin, "error": str(exc)})
+            arrivals.finish_origin(origin)
+    finally:
+        arrivals.clear()
     result = {"executed": bool(marched or stayed), "command": _CMD_MARCH,
               "marches": marched, "deferred_origins": list(dict.fromkeys(deferred)),
               "errors": errors, "total_cost": total_cost, "origin_costs": costs}
@@ -4481,7 +4488,8 @@ def _flip_selected_march_group(state, faction, origin, group):
 def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
                            harassers_by_region=None, dropoffs_by_region=None,
                            flipped_origins=None, moving_only=False,
-                           initial_group=None, chosen_dropoffs=None, group_index=0):
+                           initial_group=None, chosen_dropoffs=None, group_index=0,
+                           arrivals=None):
     """March a faction's mobile group origin -> ... -> path[-1], one step
     at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
     enters and then leaves. Returns the final Region reached.
@@ -4498,8 +4506,11 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
     # to move resident Revealed Warbands as Hidden, e.g. "Only 1 Hidden Warband
     # in <R>, need 15"), and applied Harassment to residents too. Pieces do not
     # join a March mid-route; Harassment only hits the marching group.
+    from fs_bot import rules_consts as rc
     from fs_bot.engine.action_windows import window
-    from fs_bot.engine.march_timing import keep_native_members, window as group_window
+    from fs_bot.engine.march_arrivals import acting_counts, enlisted_arrivals
+    from fs_bot.engine.march_choices import select_origin_visibility
+    from fs_bot.engine.march_timing import freeze_members, window as group_window
     if initial_group is None:
         window(state, 'march_origin', region=origin, marching_faction=faction)
     # Trusted Event-owned initial cohorts (A67) cannot absorb later arrivals.
@@ -4507,17 +4518,28 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
     from copy import deepcopy
     group = (deepcopy(initial_group) if initial_group is not None
              else _mobile_march_group(state, faction, origin))
+    excluded = arrivals.in_region(origin) if arrivals is not None else None
+    if excluded:
+        for piece, count in acting_counts(state, excluded).items():
+            group[piece] = None if piece == rc.LEADER else group[piece] - count
     if group_cap is not None:
-        from fs_bot.rules_consts import LEADER as _LDR
         capped = {}
         for pt, v in group.items():
-            if pt == _LDR:
-                capped[pt] = v if group_cap.get(_LDR) else None
+            if pt == rc.LEADER:
+                capped[pt] = v if group_cap.get(rc.LEADER) else None
             else:
                 capped[pt] = min(int(group_cap.get(pt, 0) or 0), v or 0)
-        group = capped
         if "german_warbands" in group_cap:
-            group["german_warbands"] = group_cap["german_warbands"]
+            german = group_cap["german_warbands"]
+            if arrivals is not None:
+                from fs_bot.commands.sa_enlist import borrowed_count
+                eligible_german = borrowed_count(state, origin) - enlisted_arrivals(excluded)
+                requested = int(group_cap.get(rc.WARBAND, 0) or 0)
+                native = min(requested - german, group[rc.WARBAND] - eligible_german)
+                german = min(german, eligible_german)
+                capped[rc.WARBAND] = german + native
+            capped["german_warbands"] = german
+        group = capped
     from fs_bot.commands.march import _max_steps_for_group, _validate_group_in_region
     if initial_group is not None:
         group_window(state, faction, origin, group, 'march_origin', origin=origin)
@@ -4526,6 +4548,10 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
         if not _group_has_pieces(group):
             return origin
         path = path[:_max_steps_for_group(state, origin, faction, group)]
+    elif arrivals is not None:
+        # The original route passed validation before payment. A later group
+        # can lose its Leader to removal or to an earlier group from this origin.
+        path = path[:_max_steps_for_group(state, origin, faction, group)]
     elif len(path) > _max_steps_for_group(state, origin, faction, group):
         raise CommandError("March route exceeds this group's movement allowance")
     _validate_group_in_region(state, origin, faction, group)
@@ -4533,60 +4559,73 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
     # §3.2.2/3.3.2 flip once per selected origin, even when it forms multiple
     # groups. Re-flipping would Hide the remaining de-Scouted Warbands.
     if moving_only:
+        if excluded:
+            select_origin_visibility(state, faction, origin, group, excluded=excluded)
         _flip_selected_march_group(state, faction, origin, group)
     else:
         if flipped_origins is None or origin not in flipped_origins:
             _flip_origin_pieces(state, origin, faction)
+            if excluded:
+                arrivals.flip_origin(origin)
+                excluded = arrivals.in_region(origin)
             if flipped_origins is not None:
                 flipped_origins.add(origin)
         if path and initial_group is None:
-            from fs_bot.engine.march_choices import select_origin_visibility
-            select_origin_visibility(state, faction, origin, group)
-    current = origin
-    for i, nxt in enumerate(path):
-        group_window(state, faction, current, group, 'march_before_step',
-                     origin=origin, destination=nxt, step=i + 1)
-        if not _group_has_pieces(group):
-            break
-        # The extra hop belongs only to pieces still moving with Caesar or
-        # Vercingetorix (§3.2.2/§3.3.2). A Harassment casualty can remove that
-        # Leader after the route was initially validated.
-        if i >= _max_steps_for_group(state, current, faction, group):
-            break
-        res = march_group(state, faction, current, [nxt], group, _timing_managed=True)
-        current = res.get("final_region", nxt)
-        if chosen_dropoffs is not None:
-            keep_native_members(state, faction, current, group)
-        group_window(state, faction, current, group, 'march_arrival',
-                     origin=origin, step=i + 1)
-        if current != nxt or res.get("stopped_reason"):
-            break  # stop in the crossing destination; do not continue/harass
-        # Intermediate Region (entered then about to be left) -> Harassment
-        # against the carried group only; survivors continue.
-        if (i < len(path) - 1
-                and i + 1 < _max_steps_for_group(state, current, faction, group)):
-            # Leave pieces before checking Harassment against the remainder.
-            if chosen_dropoffs is not None:
-                from fs_bot.engine.march_choices import offer_dropoffs
-                left = offer_dropoffs(state, faction, current, group, origin=origin,
-                                      step=i + 1, destination=path[i + 1],
-                                      group_index=group_index)
-                if left:
-                    chosen_dropoffs.append(dict(region=current, step=i + 1, pieces=left))
-            for piece, count in (dropoffs_by_region or {}).get(current, {}).items():
-                from fs_bot.engine.march_choices import drop_visibility
-                drop_visibility(state, faction, current, group, piece, count)
-            harassers = (harassers_by_region[current]
-                         if harassers_by_region is not None and current in harassers_by_region
-                         else _iter_harassers(state, current, faction, group,
-                                              stop_when_empty=True))
-            if harassers:
-                from fs_bot.commands.march import resolve_harassment
-                # This mechanic mutates the carried group as it removes
-                # casualties. Reapplying its report would subtract twice
-                # and would drop a Leader even after a successful save.
-                resolve_harassment(state, current, faction, group,
-                                   harassing_factions=harassers)
+            select_origin_visibility(state, faction, origin, group, excluded=excluded)
+    track_arrivals = arrivals is not None and any(arrivals.needs(region) for region in path)
+    exact_members = bool(track_arrivals or excluded
+                         or (chosen_dropoffs is not None and len(path) > 1))
+    if path and exact_members:
+        freeze_members(state, faction, origin, group, excluded=excluded)
+    current, moved = origin, False
+    try:
+        for i, nxt in enumerate(path):
+            group_window(state, faction, current, group, 'march_before_step',
+                         origin=origin, destination=nxt, step=i + 1)
+            if not _group_has_pieces(group):
+                break
+            # The extra hop belongs only to pieces still moving with Caesar or
+            # Vercingetorix (§3.2.2/§3.3.2). A Harassment casualty can remove that
+            # Leader after the route was initially validated.
+            if i >= _max_steps_for_group(state, current, faction, group):
+                break
+            res = march_group(state, faction, current, [nxt], group, _timing_managed=True,
+                              _preserve_owners=exact_members or chosen_dropoffs is not None)
+            current = res.get("final_region", nxt)
+            moved = True
+            group_window(state, faction, current, group, 'march_arrival',
+                         origin=origin, step=i + 1)
+            if current != nxt or res.get("stopped_reason"):
+                break  # stop in the crossing destination; do not continue/harass
+            # Intermediate Region (entered then about to be left) -> Harassment
+            # against the carried group only; survivors continue.
+            if (i < len(path) - 1
+                    and i + 1 < _max_steps_for_group(state, current, faction, group)):
+                # Leave pieces before checking Harassment against the remainder.
+                if chosen_dropoffs is not None:
+                    from fs_bot.engine.march_choices import offer_dropoffs
+                    left = offer_dropoffs(state, faction, current, group, origin=origin,
+                                          step=i + 1, destination=path[i + 1],
+                                          group_index=group_index, arrivals=arrivals)
+                    if left:
+                        chosen_dropoffs.append(dict(region=current, step=i + 1, pieces=left))
+                for piece, count in (dropoffs_by_region or {}).get(current, {}).items():
+                    from fs_bot.engine.march_choices import drop_visibility
+                    drop_visibility(state, faction, current, group, piece, count)
+                harassers = (harassers_by_region[current]
+                             if harassers_by_region is not None and current in harassers_by_region
+                             else _iter_harassers(state, current, faction, group,
+                                                  stop_when_empty=True))
+                if harassers:
+                    from fs_bot.commands.march import resolve_harassment
+                    # This mechanic mutates the carried group as it removes
+                    # casualties. Reapplying its report would subtract twice
+                    # and would drop a Leader even after a successful save.
+                    resolve_harassment(state, current, faction, group,
+                                       harassing_factions=harassers)
+    finally:
+        if moved and track_arrivals and arrivals.needs(current):
+            arrivals.record_group(current, group)
     return current
 
 

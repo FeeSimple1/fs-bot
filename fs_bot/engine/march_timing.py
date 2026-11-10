@@ -29,7 +29,7 @@ def keep_native_members(state, faction, region, group):
         group['_diviciacus_owners'] = {faction: dict(visibility)}
 
 
-def freeze_members(state, faction, region, group):
+def freeze_members(state, faction, region, group, *, excluded=None):
     """Retain the existing mechanical selection, including bot/default order.
 
     Human origin choices have already populated these ledgers. A default
@@ -40,16 +40,19 @@ def freeze_members(state, faction, region, group):
     from fs_bot.board.pieces import count_pieces_by_state
     from fs_bot.commands.sa_enlist import BORROW_KEY
     from fs_bot.engine.diviciacus import KEY, select_march_group
+    from fs_bot.engine.march_choices import exclude_arrivals
     div = state.get(KEY, {})
     if div.get("faction") == faction and "_diviciacus_owners" not in group:
-        select_march_group(state, faction, region, group)
+        select_march_group(state, faction, region, group, excluded=excluded)
     visibility = group.setdefault("_march_visibility", {})
     if faction == rc.BELGAE and BORROW_KEY in state:
         ledger = group.get("_march_owner_visibility")
         if ledger is None:
             raw = state["spaces"][region].get("pieces", {}).get(faction, {})
-            own = {ps: raw.get(ps, {}).get(rc.WARBAND, 0) for ps in _STATES}
-            loan = state[BORROW_KEY].get("pieces", {}).get(region, {})
+            own = exclude_arrivals({ps: raw.get(ps, {}).get(rc.WARBAND, 0) for ps in _STATES},
+                                   excluded, faction, rc.WARBAND)
+            loan = exclude_arrivals(state[BORROW_KEY].get("pieces", {}).get(region, {}),
+                                    excluded, rc.GERMANS, rc.WARBAND)
             count = group.get(rc.WARBAND, 0)
             if "german_warbands" in group:
                 germans = _take(loan, group["german_warbands"])
@@ -70,8 +73,10 @@ def freeze_members(state, faction, region, group):
                 ps: germans.get(ps, 0) + belgae.get(ps, 0) for ps in _STATES}
     for piece in (rc.AUXILIA, rc.WARBAND):
         if piece not in visibility and group.get(piece, 0):
-            visibility[piece] = _take({ps: count_pieces_by_state(
-                state, region, faction, piece, ps) for ps in _STATES}, group[piece])
+            available = {ps: count_pieces_by_state(state, region, faction, piece, ps)
+                         for ps in _STATES}
+            visibility[piece] = _take(exclude_arrivals(available, excluded, faction, piece),
+                                      group[piece])
 
 
 def cohorts(state, faction, region, group, owner):
@@ -113,6 +118,17 @@ def cohorts(state, faction, region, group, owner):
         for visibility, count in selected.items():
             add(physical, count, visibility, loan)
     return result
+
+
+def physical_members(state, faction, region, group):
+    """Yield exact cohort rows for all physical owners of a moving group."""
+    freeze_members(state, faction, region, group)
+    owners = {faction, *group.get('_diviciacus_owners', {}),
+              *group.get('_march_owner_visibility', {})}
+    for owner in rc.FACTIONS:
+        if owner in owners:
+            for row in cohorts(state, faction, region, group, owner):
+                yield owner, row
 
 
 def apply_removals(state, faction, group, effects):

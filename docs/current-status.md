@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November March groups at later origins
+
+Ordinary March now leaves earlier arrivals and transit drop-offs out of
+every later group in the same Command (§§3.2.2, 3.3.2, A3.4.2). Later
+origins still pay once and apply their normal hiding procedure. Physical
+ownership and visibility determine which pieces can form each group,
+including Diviciacus and Enlist loans. Voluntary removal can distinguish
+already marched pieces from residents and the currently moving group.
+The explicit-group March API also checks the remaining eligible pieces.
+
+All 9,247 tests pass. Thirteen regression cases cover chained origins, a
+forced stop, drop-offs, Harassment, same-origin groups, loan ownership and
+durable reload and replay. The terminal replayed both a new March with an already marched
+removal and an unaffected March recorded on the parent revision. Twenty
+paired all-bot records and 100 balance outcomes match the parent. Twenty
+mixed-seat games completed with zero hard findings and matched across hash
+seeds.
+
+The original audit remains at 47/50 closed (94%), with three findings open.
+Earlier transcripts can diverge if their requests or results depended on
+the previous grouping.
+
 ### 10 November Ordinary March drop-offs
 
 The terminal and assistant now ask at a live intermediate stop which
@@ -46,7 +68,8 @@ An older multi-origin formation defect surfaced during this work. When
 a later origin uses an implicit whole group, it can select earlier
 arrivals. The parent revision reproduces this with two Roman Auxilia
 entering Nervii and the later Nervii group moving all three Auxilia.
-This is a separate follow-up outside the original audit count.
+The [later-origin repair](#10-november-march-groups-at-later-origins) closes
+that separate follow-up.
 
 **MARCH-DROPOFF closes. The original audit stands at 47/50 closed (94%),
 with three findings open.**

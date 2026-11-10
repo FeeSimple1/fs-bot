@@ -642,6 +642,11 @@ the first stop, the rest can still make the second hop. A Leader required
 for the next hop stays with the group. Choose **Keep the remaining pieces
 moving** to finish the menu.
 
+Pieces that arrived or dropped off at a later origin stay there when that
+origin forms its own groups. They still undergo its normal hiding procedure.
+If voluntary removal distinguishes them from pieces that can still move,
+the menu labels them **Already marched**.
+
 Suborn offers each legal physical owner, piece type, visibility and Allied
 Tribe. Choices update the remaining Resources and pieces as you build the
 plan; you can undo a choice or cancel. Convictolitavis can permit a second

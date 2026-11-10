@@ -1147,6 +1147,14 @@ enable the request by default. A custom reactive agent can opt in with
 `supports_march_dropoffs = True`. Older recorded Marches use the no-drop
 default at absent windows.
 
+A later origin can form groups only from eligible pieces that have yet to
+March in this Command. Earlier arrivals and drop-offs still undergo that
+origin's normal visibility changes. During voluntary removal, the request
+can distinguish those pieces with `cohort: "marched_pieces"` and the label
+`Already marched`. Use the exact offered cohort to remove them. Older
+transcripts whose requests or results depend on the previous grouping can
+diverge under the corrected rules.
+
 `force_cohort` similarly separates Event-selected counters from other pieces,
 or the physical colours in an Enlist drop-off. Use the request's labels and
 offered counts; the `selected` label is not always an Event force.

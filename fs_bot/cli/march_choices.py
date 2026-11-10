@@ -1,7 +1,9 @@
 """Choose actual Hidden/Revealed pieces at March boundaries."""
 
-from fs_bot.cli.menus import prompt_choice
-from fs_bot.engine.march_choices import VISIBILITIES, validate_response
+from fs_bot import rules_consts as rc
+from fs_bot.cli.action_windows import inspect_board
+from fs_bot.cli.menus import prompt_amount, prompt_choice
+from fs_bot.engine.march_choices import VISIBILITIES, validate_dropoffs, validate_response
 
 
 def collect_march_cohort(state, faction, request, stdin, stdout):
@@ -24,3 +26,34 @@ def collect_march_cohort(state, faction, request, stdin, stdout):
         remaining -= n
     response = {"counts": counts}
     return validate_response(request, response)
+
+
+def collect_dropoffs(state, faction, request, stdin, stdout):
+    """Choose exact physical pieces to leave at the current transit Region."""
+    choices = {}
+    for index, piece in enumerate(request['pieces']):
+        label = piece['piece_type']
+        if label == rc.LEADER:
+            label = request.get('leader', label)
+        if piece['piece_state'] is not None:
+            label = f"{piece['piece_state']} {label}"
+        choices[index] = (f"{piece['faction']} {label}", piece)
+    selected = []
+    left = request['max_dropoffs']
+    with inspect_board(state, stdout):
+        while left and choices:
+            menu = [('Keep the remaining pieces moving', None)]
+            menu.extend((f"Leave {label} (up to {min(left, piece['count'])})", index)
+                        for index, (label, piece) in choices.items())
+            index = prompt_choice(stdin, stdout,
+                                   f"{faction}, drop off pieces in {request['region']} "
+                                   f"before Marching to {request['destination']}?", menu)
+            if index is None:
+                break
+            label, piece = choices.pop(index)
+            maximum = min(left, piece['count'])
+            count = (prompt_amount(stdin, stdout, f"How many {label} to leave?", maximum)
+                     if maximum > 1 else 1)
+            selected.append(dict(piece, count=count))
+            left -= count
+    return validate_dropoffs(request, {'dropoffs': selected})

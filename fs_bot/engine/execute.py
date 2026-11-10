@@ -388,6 +388,8 @@ def _execute_decision(state, faction, decision, *, sequence=False):
 
     if is_human and command == _CMD_RECRUIT:
         handler = lambda board, actor, plan: _execute_recruit(board, actor, plan, _exact=True)
+    if is_human and sequence and command == _CMD_MARCH:
+        handler = lambda board, actor, plan: _execute_march(board, actor, plan, choose_dropoffs=True)
     if handler is not None:
         sa = bot_action.get("sa")
         from fs_bot.commands.sa_enlist import is_borrow_plan
@@ -4334,19 +4336,20 @@ def march_plan_has_effect(state, faction, plan):
 
 @_diviciacus_command_scope
 def _execute_march(state, faction, bot_action, *, free=False, before_move=None,
-                   moving_only=False):
+                   moving_only=False, choose_dropoffs=False):
     """Pay once per selected origin; movement-only helpers remain free."""
     from fs_bot.engine.action_windows import window
     window(state, 'march_before_plan', marching_faction=faction)
     moves, deferred = _collect_march_moves(state, faction, bot_action)
     result = _execute_march_moves(state, faction, moves, free=free,
-                                  before_move=before_move, moving_only=moving_only)
+                                  before_move=before_move, moving_only=moving_only,
+                                  choose_dropoffs=choose_dropoffs)
     result["deferred_origins"] = deferred + result["deferred_origins"]
     return result
 
 
 def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
-                         moving_only=False):
+                         moving_only=False, choose_dropoffs=False):
     """Bill origins once, before moving; a threat-March SA runs after payment.
 
     Only affordable origins with a mobile group and an adjacent route or explicit stay
@@ -4363,18 +4366,22 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
     sa_result = before_move() if selected and before_move is not None else None
     marched, stayed = [], []
     flipped_origins = set()
-    for move in selected:
+    for group_index, move in enumerate(selected):
         origin = move["origin"]
+        dropoffs = [] if choose_dropoffs else None
         try:
             final = _march_with_harassment(state, faction, origin, move["path"],
                                            group_cap=move.get("group"),
                                            flipped_origins=flipped_origins,
-                                           moving_only=moving_only)
+                                           moving_only=moving_only,
+                                           chosen_dropoffs=dropoffs, group_index=group_index)
             if move.get("stay") is True and not move["path"]:
                 stayed.append(origin)
             if final != origin:
                 entry = {k: v for k, v in move.items() if k not in ("path", "group")}
                 entry["final_region"] = final
+                if dropoffs:
+                    entry["dropoffs"] = dropoffs
                 marched.append(entry)
         except _EXEC_ERRORS as exc:
             errors.append({"origin": origin, "error": str(exc)})
@@ -4474,7 +4481,7 @@ def _flip_selected_march_group(state, faction, origin, group):
 def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
                            harassers_by_region=None, dropoffs_by_region=None,
                            flipped_origins=None, moving_only=False,
-                           initial_group=None):
+                           initial_group=None, chosen_dropoffs=None, group_index=0):
     """March a faction's mobile group origin -> ... -> path[-1], one step
     at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
     enters and then leaves. Returns the final Region reached.
@@ -4492,7 +4499,7 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
     # in <R>, need 15"), and applied Harassment to residents too. Pieces do not
     # join a March mid-route; Harassment only hits the marching group.
     from fs_bot.engine.action_windows import window
-    from fs_bot.engine.march_timing import window as group_window
+    from fs_bot.engine.march_timing import keep_native_members, window as group_window
     if initial_group is None:
         window(state, 'march_origin', region=origin, marching_faction=faction)
     # Trusted Event-owned initial cohorts (A67) cannot absorb later arrivals.
@@ -4548,6 +4555,8 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
             break
         res = march_group(state, faction, current, [nxt], group, _timing_managed=True)
         current = res.get("final_region", nxt)
+        if chosen_dropoffs is not None:
+            keep_native_members(state, faction, current, group)
         group_window(state, faction, current, group, 'march_arrival',
                      origin=origin, step=i + 1)
         if current != nxt or res.get("stopped_reason"):
@@ -4556,8 +4565,14 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
         # against the carried group only; survivors continue.
         if (i < len(path) - 1
                 and i + 1 < _max_steps_for_group(state, current, faction, group)):
-            # Event-owned plans may leave part of this group in a transit
-            # Region (3.2.2). Only the continuing pieces suffer Harassment.
+            # Leave pieces before checking Harassment against the remainder.
+            if chosen_dropoffs is not None:
+                from fs_bot.engine.march_choices import offer_dropoffs
+                left = offer_dropoffs(state, faction, current, group, origin=origin,
+                                      step=i + 1, destination=path[i + 1],
+                                      group_index=group_index)
+                if left:
+                    chosen_dropoffs.append(dict(region=current, step=i + 1, pieces=left))
             for piece, count in (dropoffs_by_region or {}).get(current, {}).items():
                 from fs_bot.engine.march_choices import drop_visibility
                 drop_visibility(state, faction, current, group, piece, count)

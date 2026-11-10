@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "4c9cffbf96d41ba0f9a9f3558e434463b5da0de4",
-    "python_sha256": "42b9aec0be686df3d65cb32bdb12e42b0a1ff91ba72817dd11cd54314f835923",
-    "python_files": 560,
+    "commit": "cee8bae27f933b5cce43eab70b005546272e462e",
+    "python_sha256": "e1771e2cd540c74cbb45d95d12821865a41f4d011eb50992c26fa353fc443a35",
+    "python_files": 561,
     "working_tree_changes": true,
-    "note": "Command and Event Resource transfers close WS-F06. The tested Python source is the publishing tree over the listed parent. See current-status.md#10-november-command-and-event-resource-transfers."
+    "note": "Ordinary March drop-offs close MARCH-DROPOFF. The tested Python source is the publishing tree over the listed parent. See current-status.md#10-november-ordinary-march-drop-offs."
   },
   "total": 50,
-  "closed": 46,
-  "open": 4,
+  "closed": 47,
+  "open": 3,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -74,7 +74,8 @@
     "Romans choose exact Interlude Fort, Ally and Auxilia reductions. This completes WS-C28. See current-status.md#10-november-roman-interlude-force-reductions.",
     "Interlude controllers choose exact Cisalpina moves or removals. This completes WS-C30 and WS-F01. See current-status.md#10-november-interlude-cisalpina-relocation.",
     "Quarters and Harvest offer exact donor-owned Resource gifts. See current-status.md#10-november-winter-resource-transfers.",
-    "Live Command and Event gifts complete WS-F06. The shared-player cap remains part of WS-F09. See current-status.md#10-november-command-and-event-resource-transfers."
+    "Live Command and Event gifts complete WS-F06. The shared-player cap remains part of WS-F09. See current-status.md#10-november-command-and-event-resource-transfers.",
+    "Live transit drop-offs complete MARCH-DROPOFF. Earlier arrivals in later origin groups are a separate follow-up. See current-status.md#10-november-ordinary-march-drop-offs."
   ],
   "findings": [
     {
@@ -182,7 +183,9 @@
       "id": "MARCH-DROPOFF",
       "title": "Ordinary March cannot author transit dropoffs",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "current-status.md#10-november-ordinary-march-drop-offs",
+      "disposition": "Ordinary March offers exact live drop-offs from the surviving carried group before Harassment. The terminal and assistant track physical owners, visibility, Leader-dependent continuation and replay. Multi-origin formation is a separate follow-up."
     },
     {
       "id": "MARCH-HIDE-IN-PLACE",

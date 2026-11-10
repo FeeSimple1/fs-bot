@@ -101,13 +101,13 @@ def _write_inbox(path, payload):
             os.unlink(temporary)
 
 
-def cmd_play(args, *, resource_replay_before=None):
+def cmd_play(args, *, window_replay_before=None):
     save_path = os.path.join(args.dir, "save.json")
     queue_path = os.path.join(args.dir, "queue.json")
     state, meta, log = load_game(save_path, validate=True)
     display = HumanTurnDisplay(
         sys.stdout, snapshots=decode(meta.get("human_snapshots") or {}))
-    session = SeatSession(state, meta, log, display, resource_replay_before=resource_replay_before)
+    session = SeatSession(state, meta, log, display, window_replay_before=window_replay_before)
     state["decision_agent"] = session.reactive
 
     def sync_seat():
@@ -280,8 +280,8 @@ def cmd_replay(args):
         for e in entries]
     save_game(origin, target, meta=replay_meta, log=replay_log)
     from argparse import Namespace
-    from fs_bot.engine.resource_transfers import replay_position
-    status = cmd_play(Namespace(dir=args.output_dir), resource_replay_before=replay_position(state))
+    from fs_bot.engine.action_windows import replay_position
+    status = cmd_play(Namespace(dir=args.output_dir), window_replay_before=replay_position(state))
     replayed, _meta, _log = load_game(target, validate=True)
     if fingerprint(board_copy(replayed)) != fingerprint(board_copy(state)):
         print("Replay stopped at a different checkpoint; inspect its pending decision.")

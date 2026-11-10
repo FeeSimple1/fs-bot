@@ -1,9 +1,4 @@
-"""Human choices within a Marching group (§3.2.2/3.3.2).
-
-The action plan chooses counts. These reactive choices identify the actual
-Hidden/Revealed pieces after origin flipping, or the carried pieces to drop.
-They do not move pieces, roll dice, or change the action's selected counts.
-"""
+"""Human choices about the physical members of a Marching group (§3.2.2/3.3.2)."""
 
 from contextlib import contextmanager
 
@@ -12,6 +7,7 @@ from fs_bot.board.pieces import count_pieces_by_state
 from fs_bot.engine.agent import consult_agent
 
 MARCH_COHORT = "march_cohort"
+MARCH_DROPOFF = "march_dropoff"
 VISIBILITIES = (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
 
 
@@ -162,3 +158,81 @@ def drop_visibility(state, faction, region, group, piece, count):
                 group['german_warbands'] -= borrowed
             visibility[ps] -= n
     group[piece] -= count
+
+
+def _dropoff_key(entry):
+    return entry['faction'], entry['piece_type'], entry['piece_state']
+
+
+def validate_dropoffs(request, response):
+    """Check an entire physical allocation before changing the moving group."""
+    if (not isinstance(response, dict) or set(response) != {'dropoffs'}
+            or not isinstance(response['dropoffs'], list)):
+        raise ValueError('Choose a dropoffs list of offered pieces, or use the default.')
+    available = {_dropoff_key(entry): entry['count'] for entry in request['pieces']}
+    left = request['max_dropoffs']
+    for entry in response['dropoffs']:
+        if (not isinstance(entry, dict)
+                or set(entry) != {'faction', 'piece_type', 'piece_state', 'count'}
+                or not isinstance(entry['faction'], str)
+                or not isinstance(entry['piece_type'], str)
+                or not (entry['piece_state'] is None or isinstance(entry['piece_state'], str))):
+            raise ValueError('Name each offered piece by faction, type and visibility.')
+        count = entry['count']
+        if type(count) is not int or not 0 < count <= available.pop(_dropoff_key(entry), 0):
+            raise ValueError('Choose each offered cohort once, within its available count.')
+        left -= count
+    if left < 0:
+        raise ValueError('Leave at least one piece in the moving group.')
+    return response
+
+
+def offer_dropoffs(state, faction, region, group, *, origin, step, destination,
+                   group_index):
+    """Let the current group leave counters here before the next departure."""
+    agent = state.get('decision_agent')
+    if state.get('_diviciacus_preview') or not (
+            getattr(agent, 'supports_march_dropoffs', False)
+            or getattr(getattr(agent, '__self__', None), 'supports_march_dropoffs', False)):
+        return []
+    chooser = _chooser(state, faction)
+    if chooser in state.get('non_player_factions', ()):
+        return []
+    total = int(group.get(rc.LEADER) is not None) + sum(
+        group.get(piece, 0) for piece in (rc.LEGION, rc.AUXILIA, rc.WARBAND))
+    if total < 2:
+        return []
+
+    from fs_bot.commands.march import _max_steps_for_group
+    from fs_bot.engine.march_timing import COHORT, apply_removals, cohorts
+    # A live decision can shorten the route. The remaining pieces still
+    # need to be able to take the immediate next hop.
+    keep_leader = step >= _max_steps_for_group(state, region, faction, {})
+    owners = {faction, *group.get('_diviciacus_owners', {}),
+              *group.get('_march_owner_visibility', {})}
+    pieces = []
+    for owner in rc.FACTIONS:
+        if owner not in owners:
+            continue
+        for entry in cohorts(state, faction, region, group, owner):
+            if keep_leader and entry['piece_type'] == rc.LEADER:
+                continue
+            pieces.append(dict(faction=owner, piece_type=entry['piece_type'],
+                               piece_state=entry.get('piece_state'), count=entry['count']))
+    if not pieces:
+        return []
+    window = dict(phase='sequence_of_play', stage=MARCH_DROPOFF,
+                  card=state.get('current_card'), origin=origin, region=region,
+                  group_index=group_index, step=step, destination=destination)
+    request = dict(kind=MARCH_DROPOFF, faction=chooser, acting_faction=faction,
+                   region=region, destination=destination, pieces=pieces, window=window,
+                   max_dropoffs=min(total - 1, sum(entry['count'] for entry in pieces)))
+    if group.get(rc.LEADER) is not None:
+        request['leader'] = group[rc.LEADER]
+    response = consult_agent(state, chooser, request)
+    if response is None or (isinstance(response, dict) and set(response) == {'use_default'}
+                            and response['use_default'] is True):
+        return []
+    selected = validate_dropoffs(request, response)['dropoffs']
+    apply_removals(state, faction, group, [dict(entry, cohort=COHORT) for entry in selected])
+    return selected

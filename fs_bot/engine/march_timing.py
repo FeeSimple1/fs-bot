@@ -18,6 +18,17 @@ def _take(available, count):
     return result
 
 
+def keep_native_members(state, faction, region, group):
+    """An arriving native group cannot take new loans from the residents."""
+    from fs_bot.engine.diviciacus import KEY
+    div = state.get(KEY, {})
+    if div.get('faction') != faction or region not in div.get('pieces', ()):
+        return
+    visibility = group.get('_march_visibility', {}).get(div['piece_type'])
+    if visibility and '_diviciacus_owners' not in group:
+        group['_diviciacus_owners'] = {faction: dict(visibility)}
+
+
 def freeze_members(state, faction, region, group):
     """Retain the existing mechanical selection, including bot/default order.
 

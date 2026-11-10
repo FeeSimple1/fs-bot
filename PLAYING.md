@@ -634,9 +634,13 @@ Retreats, loss order, Supply-Line and Trade agreements, and Harassment.
 When Harassment causes a loss, you can choose an offered soft casualty or a
 saving roll, then choose a hard casualty if the roll requires one. The menus
 also distinguish piece visibility and specific Allied Tribes when relevant.
-March subset and drop-off prompts let you choose the actual Hidden/Revealed
-pieces from the selected group; pieces already in the destination remain
-separate.
+On an ordinary March with another hop available, choose exactly which
+traveling pieces to leave in the intermediate Region before Harassment.
+The menu shows physical owner and visibility and leaves at least one piece
+moving. Only the continuing group faces Harassment. If Caesar stays at
+the first stop, the rest can still make the second hop. A Leader required
+for the next hop stays with the group. Choose **Keep the remaining pieces
+moving** to finish the menu.
 
 Suborn offers each legal physical owner, piece type, visibility and Allied
 Tribe. Choices update the remaining Resources and pieces as you build the

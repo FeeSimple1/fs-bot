@@ -21,6 +21,36 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Ordinary March drop-offs
+
+The terminal and assistant now ask at a live intermediate stop which
+carried pieces to leave before the group departs and faces Harassment.
+They show exact visibility and physical owner, including for Diviciacus
+loans. The next stop's offer uses the surviving group. A Leader can be
+left if the next hop is legal for the remainder. Leaving Caesar at the
+first stop can shorten a planned three-hop route to two.
+
+Accepted choices are recorded by group and step. The action transaction
+preserves pending choices across a save or reload. The private Event
+Marches retain their card-specific movement and drop-off rules.
+
+All 9,234 tests pass. Twenty directed Marches across the five scenarios
+made 35 drop-offs and matched across hash seeds. The terminal replayed
+both a March with two live drop-offs and a transcript from the parent
+revision. The assistant preserved pending decisions through invalid
+submissions and reproduced the saved board, history and RNG. Twenty
+paired bot records and 100 balance outcomes match the parent. Twenty
+mixed-seat games completed with zero hard findings.
+
+An older multi-origin formation defect surfaced during this work. When
+a later origin uses an implicit whole group, it can select earlier
+arrivals. The parent revision reproduces this with two Roman Auxilia
+entering Nervii and the later Nervii group moving all three Auxilia.
+This is a separate follow-up outside the original audit count.
+
+**MARCH-DROPOFF closes. The original audit stands at 47/50 closed (94%),
+with three findings open.**
+
 ### 10 November Command and Event Resource transfers
 
 The terminal and assistant offer exact donor-owned gifts at the opening,

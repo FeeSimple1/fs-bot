@@ -144,6 +144,10 @@ Request kinds
   Roman/Aedui owners for placement, March formation, drop-off or a casualty. Respond
   with {"counts": {owner: count, ...}}, totaling the requested count and
   respecting the offered ``available`` counts.
+  ``march_dropoff`` offers physical counters from an ordinary March group
+  before it departs an intermediate Region. Respond with {"dropoffs": [...]}
+  using the offered faction, piece_type and piece_state and a positive count
+  per selection. An empty list keeps the group together.
   ``resource_transfer`` offers the human donor exact gifts during either
   participant's Command or Event and during Quarters or Harvest (§1.5.2).
   The acting Faction may also author its own opening ``details.transfers``.

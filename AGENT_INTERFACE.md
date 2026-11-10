@@ -730,6 +730,7 @@ field the default troops follow the Ally faction. Earlier histories may
 pause for the choice or diverge under corrected defaults.
 
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
+| `march_dropoff` | `faction, acting_faction, region, destination, pieces, max_dropoffs, window`; may include `leader` | `{"dropoffs":[{"faction":owner,"piece_type":type,"piece_state":visibility_or_null,"count":n}]}` or explicit default |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
 | `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |
 | `voluntary_removal` | `faction, options, window`; may include engine-owned `cohorts` | `{"operations":[...]}`, `{"done":true}`, or explicit default (no removals) |
@@ -1118,7 +1119,7 @@ the newly required request or diverge under expanded forecasts. PR-13 remains
 provisional, subject to official correction.
 
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
-or when leaving part of the carried group behind (`dropoff`). For a request
+or for the exact quantities in an Event's authored `dropoff`. For a request
 with `count: 2` and sufficient offered counts, a response can be
 `{"counts":{"Hidden":1,"Revealed":1}}`. Counts cannot exceed `available`
 or change the group's planned total. The request may identify a different
@@ -1128,6 +1129,23 @@ is supplied by the engine and cannot be changed by the response.
 The validators are `commands.march.validate_harassment_response` and
 `engine.march_choices.validate_response`; both validate without moving
 pieces or consuming RNG.
+
+Ordinary March uses the live `march_dropoff` request after arrival and before
+Harassment. The acting player may leave any offered physical cohort and keep
+at least one piece moving. Use the offered faction, type and visibility
+with a positive integer `count` per cohort, within `max_dropoffs` in total.
+Legions and Leaders use a null `piece_state`. The list can be empty, and
+explicit delegation keeps the group together. The next hop must be legal
+for the continuing pieces. The plan's route can end earlier if its remaining
+members lose an extra hop by leaving a Leader.
+
+The request contains only the pieces still traveling after earlier
+Harassment and voluntary removal. Borrowed pieces retain their physical
+owners. `window` identifies the origin, group index, current Region,
+completed step and next destination. The terminal and durable assistant
+enable the request by default. A custom reactive agent can opt in with
+`supports_march_dropoffs = True`. Older recorded Marches use the no-drop
+default at absent windows.
 
 `force_cohort` similarly separates Event-selected counters from other pieces,
 or the physical colours in an Enlist drop-off. Use the request's labels and

@@ -159,6 +159,10 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
         return f"{faction} cannot execute {command}"
     if command == "March" and is_frost(state) and not allow_frost:
         return "No March Command during Frost (§2.3.8)"
+    if command == "March":
+        march = details.get("march_plan") or details
+        if "dropoffs" in details or (isinstance(march, dict) and "dropoffs" in march):
+            return "Choose ordinary March drop-offs at the live march_dropoff decision."
     has_sa = sa and sa != "No SA"
     if limited and has_sa:
         return "A Limited Command cannot add a Special Ability (§4.1)"

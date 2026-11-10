@@ -12,7 +12,8 @@ import json
 import sys
 
 from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
-from fs_bot.engine import resource_transfers
+from fs_bot.engine import action_windows, resource_transfers
+from fs_bot.engine.march_choices import MARCH_DROPOFF, validate_dropoffs
 from fs_bot.engine.game_engine import ActionRejected, ACTION_PASS
 from fs_bot.state.serialize import encode, decode
 
@@ -172,6 +173,8 @@ def validate_response(state, request, response):
     if kind == "march_cohort":
         from fs_bot.engine.march_choices import validate_response as validate_cohort
         return validate_cohort(request, response)
+    if kind == MARCH_DROPOFF:
+        return validate_dropoffs(request, response)
     if kind == "diviciacus_pieces":
         from fs_bot.engine.diviciacus import validate_response as validate_pieces
         return validate_pieces(request, response)
@@ -265,8 +268,9 @@ class SeatSession:
 
     supports_action_windows = True
     supports_resource_transfers = True
+    supports_march_dropoffs = True
 
-    def __init__(self, state, meta, log, display, *, resource_replay_before=None):
+    def __init__(self, state, meta, log, display, *, window_replay_before=None):
         self.state, self.meta, self.log, self.display = state, meta, log, display
         self.data = meta.setdefault("assistant_session", {
             "version": 1, "queue": [], "receipts": [], "journal": [],
@@ -291,7 +295,7 @@ class SeatSession:
         self.error = None
         self.replayed_rejection = False
         self._legacy_replay_tail = False
-        self._resource_replay_before = resource_replay_before
+        self._window_replay_before = window_replay_before
 
     def __deepcopy__(self, memo):
         # This is a live frontend, not game state. Bot previews copy the
@@ -581,14 +585,14 @@ class SeatSession:
     def _skip_added_choice(self, state, request):
         """Keep the old default when a saved decision already follows it."""
         kind = request['kind']
-        if kind == resource_transfers.KIND:
+        if kind in (resource_transfers.KIND, MARCH_DROPOFF):
             saved, _ = self._next_saved_request()
             if saved.get('kind'):
                 return (saved['kind'] != kind or saved.get('faction') != request['faction']
                         or saved.get('window') != request['window'])
-            return (self._resource_replay_before is not None
+            return (self._window_replay_before is not None
                     and request['window']['phase'] == resource_transfers.SEQUENCE
-                    and resource_transfers.replay_position(state) < self._resource_replay_before)
+                    and action_windows.replay_position(state) < self._window_replay_before)
         later = ('spring_leader', 'interlude_expedition', 'interlude_marker')
         if kind == 'interlude_reduction':
             from fs_bot.engine.interlude_reductions import ROMAN_HALF

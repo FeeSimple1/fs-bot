@@ -113,6 +113,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             if kind == "march_cohort":
                 from fs_bot.cli.march_choices import collect_march_cohort
                 return collect_march_cohort(state, faction, request, stdin, stdout)
+            if kind == "march_dropoff":
+                from fs_bot.cli.march_choices import collect_dropoffs
+                return collect_dropoffs(state, faction, request, stdin, stdout)
             if kind in ("winter_uprising_timing", "winter_uprising_placement"):
                 from fs_bot.cli.winter_uprising import collect_timing, collect_placement
                 collector = collect_timing if kind == "winter_uprising_timing" else collect_placement
@@ -316,4 +319,5 @@ def make_cli_reactive(human_factions, stdin, stdout):
 
     agent.supports_action_windows = True
     agent.supports_resource_transfers = True
+    agent.supports_march_dropoffs = True
     return agent

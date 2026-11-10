@@ -38,7 +38,8 @@ from fs_bot.engine.game_engine import (
     get_sop_factions, start_game, play_card, ActionRejected,
 )
 from fs_bot.state import serialize
-from fs_bot.engine import resource_transfers
+from fs_bot.engine import action_windows, resource_transfers
+from fs_bot.engine.march_choices import MARCH_DROPOFF
 from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.cli.dispatcher import make_decision_func, maybe_pause
 from fs_bot.cli.display import (
@@ -347,7 +348,7 @@ def main(argv=None, stdin=None, stdout=None):
                 return 2
             faction_modes = dict(meta.get("initial_faction_modes")
                                  or faction_modes)
-            replay_before = resource_transfers.replay_position(state)
+            replay_before = action_windows.replay_position(state)
             state = setup_scenario(scenario, seed=seed,
                                    card_edition=card_edition,
                                    diviciacus_option=diviciacus_option,
@@ -483,18 +484,19 @@ def main(argv=None, stdin=None, stdout=None):
             # the live game, or alter its decision display/history.
             if state_ is not state:
                 return None
-            if request.get('kind') == resource_transfers.KIND:
+            kind = request.get('kind')
+            if kind in (resource_transfers.KIND, MARCH_DROPOFF):
                 window = request['window']
                 saved_sequence = (replay_before is not None
                                   and window['phase'] == resource_transfers.SEQUENCE
                                   and (replay_attempt['entry'] is not None
-                                       or resource_transfers.replay_position(state_) < replay_before))
+                                       or action_windows.replay_position(state_) < replay_before))
                 if saved_sequence or replay_reactive or replay_decisions:
                     recorded = replay_reactive[0] if replay_reactive else {}
-                    if not (recorded.get('reactive') == resource_transfers.KIND
+                    if not (recorded.get('reactive') == kind
                             and recorded.get('faction') == faction
                             and recorded.get('window') == window):
-                        return None  # Older transcripts made no gift at this window.
+                        return None  # Older transcripts used the default here.
             if request.get('kind') in ('voluntary_removal', 'spring_leader', 'battle_elite') and 'window' in request:
                 next_record = replay_reactive[0] if replay_reactive else None
                 old_next = (next_record is not None
@@ -530,6 +532,7 @@ def main(argv=None, stdin=None, stdout=None):
 
         agent.supports_action_windows = True
         agent.supports_resource_transfers = getattr(cli_agent, 'supports_resource_transfers', False)
+        agent.supports_march_dropoffs = getattr(cli_agent, 'supports_march_dropoffs', False)
         state["decision_agent"] = agent
 
     def transaction_checkpoint():

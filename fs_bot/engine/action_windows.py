@@ -16,6 +16,13 @@ FIELD = 'timing_actions'
 COHORTS = '_action_window_cohorts'
 
 
+def replay_position(state):
+    """Order actions even when the Interlude resets the played-card pile."""
+    completed = len(rc.FACTIONS) if state.get('_resolved_card') else 0
+    return (bool(state.get('interlude_completed')), len(state.get('played_cards', ())),
+            state.get('_card_turn', {}).get('idx', completed))
+
+
 def set_cohorts(state, key, faction, cohorts):
     """Register an Event's exact participating pieces across later windows.
 

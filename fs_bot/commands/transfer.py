@@ -17,9 +17,9 @@ Constraints enforced here:
   - the giver must hold the full amount; the receiver caps at
     MAX_RESOURCES (§1.8) — the giver pays only what is received
 
-NOT enforced (documented in QUESTIONS.md): the four-Resource cap per
-execution between two Factions run by the SAME player (§1.5.1/§1.5.2) —
-this implementation has no concept of one player running two Factions.
+The Sequence of Play supplies the remaining shared-player allowance for
+voluntary gifts (§§1.5.1–1.5.2). Winter gifts and card effects use their own
+rules.
 """
 
 from fs_bot.rules_consts import (
@@ -77,16 +77,28 @@ def transfer_plan_error(state, giver, action):
         return None
     if not isinstance(transfers, list):
         return "Resource transfers must be a list"
+    from fs_bot.engine.resource_transfers import SEQUENCE, shared_allowance, shared_limit_error
+    shared_given = 0
     for transfer in transfers:
         if not isinstance(transfer, dict):
             return "Each Resource transfer must be an object"
-        error = transfer_eligibility_error(state, giver, transfer.get("to"))
+        receiver = transfer.get('to')
+        error = transfer_eligibility_error(state, giver, receiver)
         if error:
             return error
+        allowance = shared_allowance(state, giver, receiver, SEQUENCE)
+        if allowance is not None:
+            amount = transfer.get('amount')
+            if type(amount) is not int or amount <= 0:
+                return 'A shared-player transfer requires a positive integer amount.'
+            room = max(0, MAX_RESOURCES - state['resources'].get(receiver, 0) - shared_given)
+            shared_given += min(amount, room)
+            if shared_given > allowance:
+                return shared_limit_error(allowance)
     return None
 
 
-def transfer_resources(state, giver, receiver, amount):
+def transfer_resources(state, giver, receiver, amount, *, maximum=None):
     """Move Resources from ``giver`` to ``receiver``. Returns
     {"given": actual} (actual may be below ``amount`` only when the
     receiver hits MAX_RESOURCES).
@@ -106,6 +118,9 @@ def transfer_resources(state, giver, receiver, amount):
             f"{giver} has {stock} Resources, cannot give {amount}")
     room = MAX_RESOURCES - state["resources"].get(receiver, 0)
     actual = max(0, min(amount, room))
+    if maximum is not None and actual > maximum:
+        from fs_bot.engine.resource_transfers import shared_limit_error
+        raise CommandError(shared_limit_error(maximum))
     state["resources"][giver] = stock - actual
     state["resources"][receiver] = (
         state["resources"].get(receiver, 0) + actual)

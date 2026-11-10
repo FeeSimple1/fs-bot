@@ -5,10 +5,12 @@ from fs_bot import rules_consts as rc
 from fs_bot.commands.transfer import transfer_eligibility_error, transfer_resources
 from fs_bot.engine import action_windows
 from fs_bot.engine.agent import consult_agent
+from fs_bot.state import player_ownership
 
 KIND = 'resource_transfer'
 SEQUENCE = 'sequence_of_play'
 FRAME = '_resource_transfer_action'
+SHARED_LIMIT = 4
 
 
 def enabled(state):
@@ -17,6 +19,31 @@ def enabled(state):
     return not action_windows.is_preview(state) and bool(
         getattr(agent, 'supports_resource_transfers', False)
         or getattr(getattr(agent, '__self__', None), 'supports_resource_transfers', False))
+
+
+def live_sequence(state):
+    return FRAME in state and not state[FRAME].get('silent') and enabled(state)
+
+
+def shared_allowance(state, giver, receiver, phase):
+    if phase != SEQUENCE or not player_ownership.shares_player(state, giver, receiver):
+        return None
+    frame = state.get(FRAME, {})
+    return SHARED_LIMIT - frame.get('shared_given', 0)
+
+
+def shared_limit_error(remaining):
+    return (f'Shared-player Factions may transfer four Resources in total per '
+            f'Command or Event (§1.5.2). {remaining} remain for this execution.')
+
+
+def give(state, giver, receiver, amount, phase):
+    """Record actual voluntary gifts in the outer execution, in either direction."""
+    allowance = shared_allowance(state, giver, receiver, phase)
+    result = transfer_resources(state, giver, receiver, amount, maximum=allowance)
+    if allowance is not None and FRAME in state:
+        state[FRAME]['shared_given'] = SHARED_LIMIT - allowance + result['given']
+    return result
 
 
 def request_for(state, giver, phase, stage, **context):
@@ -30,6 +57,9 @@ def request_for(state, giver, phase, stage, **context):
         if actor is not None and actor not in (giver, receiver):
             continue
         room = rc.MAX_RESOURCES - resources.get(receiver, 0)
+        allowance = shared_allowance(state, giver, receiver, phase)
+        if allowance is not None:
+            room = min(room, allowance)
         if room > 0 and transfer_eligibility_error(state, giver, receiver) is None:
             recipients[receiver] = min(available, room)
     if not recipients:
@@ -90,7 +120,7 @@ def offer(state, phase, stage, *, finished=None, **context):
             response = {'use_default': True}
         validate_response(state, request, response)
         for gift in response.get('transfers', ()):
-            receipt = transfer_resources(state, giver, gift['to'], gift['amount'])
+            receipt = give(state, giver, gift['to'], gift['amount'], phase)
             receipts.append(dict(receipt, stage=stage))
         if finished is not None and not response.get('defer'):
             finished.add(giver)
@@ -98,12 +128,15 @@ def offer(state, phase, stage, *, finished=None, **context):
 
 
 @contextmanager
-def sequence(state, actor):
+def sequence(state, actor, *, live=True):
     """Keep one outer executor and one gift ledger through all sub-actions."""
-    if FRAME in state or not enabled(state):
+    shared = len(player_ownership.group_of(state, actor)) == 2
+    if FRAME in state or (not shared and not (live and enabled(state))):
         yield
         return
     state[FRAME] = dict(actor=actor, action=None, occurrence=0, finished=set(), transfers=[])
+    if not live:
+        state[FRAME]['silent'] = True
     try:
         yield
     finally:
@@ -117,7 +150,7 @@ def started(state):
 def open_action(state, actor, action):
     """Open a selected Command or Event, possibly before collecting its plan."""
     frame = state.get(FRAME)
-    if not frame or frame['actor'] != actor or frame['action'] or not enabled(state):
+    if not live_sequence(state) or frame['actor'] != actor or frame['action']:
         return
     frame['action'] = action
     _boundary(state, frame, 'action_start')
@@ -134,7 +167,7 @@ def prepare_for_plan(state, actor, action_type):
 
 def record_authored(state, actor, transfers):
     frame = state.get(FRAME)
-    if frame and frame['actor'] == actor and enabled(state):
+    if live_sequence(state) and frame['actor'] == actor:
         frame['transfers'].extend(transfers)
 
 
@@ -142,7 +175,7 @@ def checkpoint(state, context):
     """Use complete operation boundaries under the outer action's authority."""
     stage = context['stage']
     if (stage in ('action_start', 'action_end') or not started(state)
-            or context['phase'] != SEQUENCE or not enabled(state)):
+            or context['phase'] != SEQUENCE or not live_sequence(state)):
         return
     if state.get('_frumentum_budget', {}).get('paying'):
         # A53 is temporarily showing the grant allowance on Rome's track.
@@ -154,7 +187,7 @@ def checkpoint(state, context):
 
 def finish_action(state, actor, result):
     frame = state.get(FRAME)
-    if frame and frame['action'] and frame['actor'] == actor and enabled(state):
+    if live_sequence(state) and frame['action'] and frame['actor'] == actor:
         if result.get('executed'):
             _boundary(state, frame, 'action_end')
         if frame['transfers']:

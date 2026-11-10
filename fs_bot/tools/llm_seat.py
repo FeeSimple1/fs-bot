@@ -53,8 +53,12 @@ def render_board(state, scenario=None, options=None, position=None):
 
 
 def cmd_init(args):
-    os.makedirs(args.dir, exist_ok=True)
-    setup_args = {"seed": args.seed, "human_factions": (args.seat,)}
+    from fs_bot.state import player_ownership
+
+    seats = player_ownership.parse_seat(args.scenario, args.seat)
+    seat = seats[0]
+    owners = player_ownership.assignments(args.scenario, seats, [seats] if len(seats) == 2 else [])
+    setup_args = {'seed': args.seed, 'human_factions': seats, 'faction_owners': owners}
     if getattr(args, "card_edition", "legacy") != "legacy":
         setup_args["card_edition"] = args.card_edition
     if getattr(args, "diviciacus_option", False):
@@ -63,26 +67,24 @@ def cmd_init(args):
                        for key in SETUP_OPTION_HELP if getattr(args, key, False)})
     st = setup_scenario(args.scenario, **setup_args)
     factions = set(get_sop_factions(st))
-    if args.seat not in factions:
-        raise SystemExit(f"seat {args.seat!r} not in {sorted(factions)}")
-    st["non_player_factions"] = factions - {args.seat}
     start_game(st)
     display = HumanTurnDisplay(sys.stdout)
-    display.remember(st, [args.seat])
-    meta = {"scenario": args.scenario, "seed": args.seed, "seat": args.seat,
-            "initial_seat": args.seat,
-            "setup_human_factions": [args.seat],
+    display.remember(st, seats)
+    meta = {"scenario": args.scenario, "seed": args.seed, "seat": seat,
+            "initial_seat": seat, 'player_id': owners[seat],
+            "setup_human_factions": list(seats), player_ownership.SETUP_FIELD: owners,
             "card_edition": st.get("card_edition", "legacy"),
             "diviciacus_option": st.get("diviciacus_option", False),
             **setup_option_values(st),
-            "initial_faction_modes": {f: "human" if f == args.seat else "bot"
+            "initial_faction_modes": {f: "human" if f in seats else "bot"
                                       for f in factions},
             "human_snapshots": encode(display.snapshots)}
     SeatSession(st, meta, [], display)
+    os.makedirs(args.dir, exist_ok=True)
     save_game(st, os.path.join(args.dir, "save.json"), meta=meta, log=[])
     _write_inbox(os.path.join(args.dir, "queue.json"), [])
     print(f"initialised {args.scenario!r} seed={args.seed} "
-          f"seat={args.seat}; first card: {st['current_card']}")
+          f"seat={','.join(seats)}; first card: {st['current_card']}")
     print("run 'play' to advance to your first decision")
 
 
@@ -113,12 +115,13 @@ def cmd_play(args, *, window_replay_before=None):
     def sync_seat():
         if state.get("interlude_completed") and session.seat == rc.GERMANS:
             meta["seat"] = rc.ARVERNI
-            state["non_player_factions"] = set(get_sop_factions(state)) - {rc.ARVERNI}
+            if 'player_id' not in meta:
+                state["non_player_factions"] = set(get_sop_factions(state)) - {rc.ARVERNI}
             if rc.GERMANS in display.snapshots:
                 display.snapshots[rc.ARVERNI] = display.snapshots.pop(rc.GERMANS)
-        meta["faction_modes"] = {f: "human" if f == session.seat else "bot"
+        meta["faction_modes"] = {f: "human" if f in session.factions else "bot"
                                  for f in get_sop_factions(state)}
-        display.remember(state, [session.seat])
+        display.remember(state, session.factions)
 
     def persist():
         # If interruption happened between engine transactions, the last
@@ -141,7 +144,7 @@ def cmd_play(args, *, window_replay_before=None):
             persist()
 
     def dfunc(st, faction, options, position):
-        if faction == session.seat:
+        if faction in session.factions:
             return session.ask(st, faction, {"kind": "turn", "options": options,
                                              "position": position})
         st["current_card_id"] = st.get("current_card")
@@ -188,7 +191,8 @@ def cmd_play(args, *, window_replay_before=None):
         if cr.get("type") == "winter":
             print(f"  ~~~ WINTER {state['winter_count']} ~~~")
         if cr.get("game_over"):
-            print("*** GAME OVER")
+            winner_factions = cr.get('winner_factions')
+            print('*** GAME OVER' + (f' — winner {" + ".join(winner_factions)}' if winner_factions else ''))
             return 0
     persist()
     print("*** deck exhausted")
@@ -239,6 +243,8 @@ def cmd_submit(args):
 
 
 def cmd_replay(args):
+    from fs_bot.state import player_ownership
+
     state, meta, log = load_game(os.path.join(args.dir, "save.json"), validate=True)
     saved = meta.get("assistant_session")
     if not saved:
@@ -261,11 +267,15 @@ def cmd_replay(args):
                    **setup_option_values(origin)}
     if "setup_human_factions" in meta:
         replay_meta["setup_human_factions"] = list(meta["setup_human_factions"])
+    if player_ownership.SETUP_FIELD in meta:
+        replay_meta[player_ownership.SETUP_FIELD] = dict(meta[player_ownership.SETUP_FIELD])
+    if 'origin_player_id' in saved:
+        replay_meta['player_id'] = saved['origin_player_id']
     view = HumanTurnDisplay(sys.stdout)
-    view.remember(origin, [replay_meta["seat"]])
-    replay_meta["human_snapshots"] = encode(view.snapshots)
     replay_log = log[:saved.get("origin_log_count", 0)]
     replay_session = SeatSession(origin, replay_meta, replay_log, view)
+    view.remember(origin, replay_session.factions)
+    replay_meta["human_snapshots"] = encode(view.snapshots)
     # Older saves can first acquire an origin midway through a game. Their
     # existing CLI log predates that origin and must not be re-executed.
     origin_log_count = saved.get("origin_log_count", 0)
@@ -301,7 +311,7 @@ def main(argv=None):
                              rc.SCENARIO_RECONQUEST,
                              rc.SCENARIO_ARIOVISTUS,
                              rc.SCENARIO_GALLIC_WAR])
-    pi.add_argument("--seat", required=True)
+    pi.add_argument('--seat', required=True, help='One Faction or a printed pair separated by a comma')
     pi.add_argument("--seed", type=int, default=1)
     pi.add_argument("--dir", default="llm_play")
     pi.add_argument("--card-edition", choices=("legacy", "original", "second-edition"),

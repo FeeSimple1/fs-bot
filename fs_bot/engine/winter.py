@@ -177,10 +177,7 @@ def victory_phase(state, is_final=False):
     # Check victory — §6.1
     winner = check_any_victory(state)
     if winner is not None:
-        result["game_over"] = True
-        result["winner"] = winner
-        result["rankings"] = determine_final_ranking(state)
-        return result
+        return _finish_victory(state, result, winner=winner)
 
     # Card 20 Optimates: on the game's 2nd and each later Victory Phase,
     # if Roman victory exceeds 12 (red Subdued+Dispersed+Allies marker at
@@ -191,23 +188,33 @@ def victory_phase(state, is_final=False):
         from fs_bot.engine.victory import calculate_victory_score
         if calculate_victory_score(state, ROMANS) > 12:
             _optimates_remove_all_legions(state)
-            result["game_over"] = True
             result["optimates_end"] = True
-            rankings = determine_final_ranking(state)
-            result["rankings"] = rankings
-            if rankings:
-                result["winner"] = rankings[0][0]
-            return result
+            return _finish_victory(state, result)
 
     # Final Winter with no victor — §7.3
     if is_final:
-        result["game_over"] = True
-        rankings = determine_final_ranking(state)
-        result["rankings"] = rankings
-        if rankings:
-            result["winner"] = rankings[0][0]
-        return result
+        return _finish_victory(state, result)
 
+    return result
+
+
+def _finish_victory(state, result, *, winner=None):
+    from fs_bot.engine.victory import player_standings
+    from fs_bot.state import player_ownership
+
+    if player_ownership.has_pairs(state):
+        rows = player_standings(state)
+        rankings = [(row['faction'], row['margin']) for row in rows]
+        if winner is None:
+            winner = rankings[0][0]
+        result.update(winner_player=player_ownership.player_of(state, winner),
+                      winner_factions=list(player_ownership.group_of(state, winner)),
+                      player_rankings=rows)
+    else:
+        rankings = determine_final_ranking(state)
+        if winner is None and rankings:
+            winner = rankings[0][0]
+    result.update(game_over=True, winner=winner, rankings=rankings)
     return result
 
 

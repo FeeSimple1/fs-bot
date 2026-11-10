@@ -859,6 +859,10 @@ def play_card(state, decision_func, *, execute=False):
             if victory.get("game_over", False):
                 result.update(game_over=True, winner=victory.get("winner"),
                               final_ranking=victory.get("rankings"))
+                if 'winner_factions' in victory:
+                    result.update(winner_player=victory['winner_player'],
+                                  winner_factions=victory['winner_factions'],
+                                  player_rankings=victory['player_rankings'])
             # The Interlude rebuilds the deck and clears current_card.
             # Keep this completed Winter addressable until the first card
             # of the new half has actually been drawn (also after reload).

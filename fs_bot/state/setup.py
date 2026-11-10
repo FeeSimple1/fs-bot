@@ -957,6 +957,7 @@ _SETUP_FUNCTIONS = {
 
 def setup_scenario(scenario, seed=None, *, card_edition="legacy",
                    diviciacus_option=False, human_factions=(),
+                   faction_owners=None,
                    sudden_frost=False, even_initiative=False,
                    short_great_revolt=False):
     """Set up a scenario and return the initial game state.
@@ -969,9 +970,9 @@ def setup_scenario(scenario, seed=None, *, card_edition="legacy",
         sudden_frost: Use §2.3.8's option agreed by all players at setup.
         even_initiative: Use A Setup's balanced first-symbol card selection.
         short_great_revolt: Use 30 Events and two Winters in The Great Revolt.
-        human_factions: Factions assigned to humans for this new game. A
-            sole human Belgae seat receives Ambiorix in The Great Revolt.
-            Multiple human factions do not establish player ownership.
+        human_factions: Legacy human Faction list for setup compatibility.
+        faction_owners: Optional map of human Factions to player identities.
+            Repeated identities must be one of the scenario's printed pairs.
 
     Returns:
         Complete game state dictionary, validated.
@@ -995,12 +996,19 @@ def setup_scenario(scenario, seed=None, *, card_edition="legacy",
     # Omit disabled fields to preserve standard-game board hashes and old
     # replay signatures. Their saved meaning is False, including legacy saves.
     state.update({key: value for key, value in options.items() if value})
+    from fs_bot.state import player_ownership
+    if faction_owners is not None:
+        player_ownership.install(state, faction_owners)
+        if human_factions and set(human_factions) != set(faction_owners):
+            raise ValueError('Human Factions must match their player assignments.')
     _SETUP_FUNCTIONS[scenario](state)
 
-    # The Great Revolt, "Players and Victory": a player running only the
-    # Belgae starts with Ambiorix. With multiple human factions the seat
-    # model cannot identify shared players, including Romans+Aedui.
-    if scenario == SCENARIO_GREAT_REVOLT and set(human_factions) == {BELGAE}:
+    # The Great Revolt, "Players and Victory". Old setup records retain
+    # their original sole-human-Belgae convention when replayed.
+    belgae_single = (BELGAE in faction_owners and player_ownership.group_of(state, BELGAE) == (BELGAE,)
+                     if faction_owners is not None else set(human_factions) == {BELGAE})
+    if scenario == SCENARIO_GREAT_REVOLT and (belgae_single or
+            player_ownership.shares_player(state, ROMANS, AEDUI)):
         remove_piece(state, SUGAMBRI, BELGAE, LEADER)
         place_piece(state, SUGAMBRI, BELGAE, LEADER, leader_name=AMBIORIX)
 

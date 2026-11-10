@@ -56,7 +56,7 @@ def pause_cli_at_first_card(monkeypatch):
 @pytest.mark.parametrize("bots,leader", [
     ((rc.ROMANS, rc.ARVERNI, rc.AEDUI), rc.AMBIORIX),
     ((rc.ROMANS, rc.ARVERNI, rc.AEDUI, rc.BELGAE), rc.SUCCESSOR),
-    ((rc.ROMANS, rc.ARVERNI), rc.SUCCESSOR),
+    ((rc.ROMANS, rc.ARVERNI), rc.AMBIORIX),
     ((rc.ARVERNI, rc.BELGAE), rc.SUCCESSOR),
 ])
 def test_cli_new_setup_and_replay_preserve_leader(

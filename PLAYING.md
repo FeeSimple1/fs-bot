@@ -63,9 +63,14 @@ transfers** to finish for this action, or **Offer Resource transfers again
 later in this action** to give at a later step. Use `b` or `board` to inspect
 the position.
 
+If one player runs both Factions in a gift, at most four Resources can move
+between them during the whole Command or Event (§1.5.2/A1.5.2). Gifts in both
+directions and at every pause draw from the same four.
+
 Winter gifts use the same exact amounts. Eligible donors may give before
 Quarters relocations and after Roman payments, and before and after Harvest
-earnings. Opening Quarters gifts can fund Roman payments.
+earnings. Opening Quarters gifts can fund Roman payments. The four-Resource
+limit applies only during the Sequence of Play.
 
 When Devastate takes casualties, each human owner chooses its own losses by
 piece type and visibility. You may lose a Legion instead of Auxilia, or select
@@ -309,15 +314,34 @@ You can also install this checkout with `python -m pip install .` and use
 
     python -m fs_bot.cli.app --save autosave.json
 
-A setup wizard asks for the scenario and, for each faction, Human or
-Bot. Recommended first game: **The Great Revolt**, you as the
-**Arverni** (Vercingetorix's grand revolt — the scenario the game is
-named for).
+A setup wizard asks for the scenario and who runs each Faction. For a first
+game, try **The Great Revolt** as the **Arverni**.
 
-In a new Great Revolt game with Belgae as the sole human faction, its Leader
-starts as Ambiorix, as required by that scenario. Existing saves retain their
-original Leader. Multiple human faction settings do not yet identify which
-factions share one player; that separate setup/victory feature remains open.
+### Spare Factions
+
+Choose **Human** for a separate player or **Human with Aedui** or
+**Human with Belgae** to assign a printed pair to one player
+(§1.5.1/A1.5.1). The paired player makes each Faction's decisions when
+they come up.
+
+| Scenario | First pair | Second pair |
+|---|---|---|
+| Original scenarios | Romans and Aedui | Arverni and Belgae |
+| Ariovistus and the first half of The Gallic War | Romans and Aedui | Germans and Belgae |
+
+At the Gallic War Interlude, the German player takes over Arverni and keeps
+Belgae if they were paired. A pair uses its lower victory margin and both
+Factions must pass their threshold for early victory. In The Great Revolt,
+the Arverni and Belgae pair uses its higher margin and either Faction can
+qualify. That scenario starts Belgae with Ambiorix if a player runs Belgae
+alone or a player runs the Romans and Aedui pair.
+
+For a scripted setup, repeat `--pair` for both pairs. For example, two
+players can run The Great Revolt with this command.
+
+    python -m fs_bot.cli.app --scenario "The Great Revolt" --bots "" --pair Romans,Aedui --pair Arverni,Belgae --save autosave.json
+
+### Saving and other setup options
 
 `--save autosave.json` writes a snapshot after every card. Resume any
 time with:

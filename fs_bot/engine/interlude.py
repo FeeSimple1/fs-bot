@@ -1544,8 +1544,11 @@ def _run_interlude(state, *, britannia_decision=None,
     # the role of the Arverni for the second." The Arverni inherit the
     # German seat's player/NP status; the Germans revert to game-run
     # (§3.4/§6.2) and leave the seat set entirely.
+    from fs_bot.state import player_ownership
     nps = state.get("non_player_factions")
-    if nps is not None:
+    if player_ownership.FIELD in state:
+        player_ownership.interlude_swap(state)
+    elif nps is not None:
         if GERMANS in nps:
             nps.discard(GERMANS)
             nps.add(ARVERNI)

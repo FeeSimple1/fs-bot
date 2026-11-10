@@ -14,16 +14,15 @@ Apply them when playing; they are not official errata. Passing tests is not
 a claim of complete rules compliance.
 
 The [human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md) records
-open missing prompts, incorrect Event recipients, incomplete physical choices
-and validation gaps. A successful plan or absence of a pending request does
-not establish that every printed human decision was offered. Consult its
-finding register for current scope; the audit changed no engine behavior.
+the original missing prompts, incorrect Event recipients, incomplete physical
+choices and validation gaps. The [progress ledger](docs/human-choice-progress.json)
+records the repairs to all 50 original findings.
 The [first small repair batch](docs/reviews/cheap-fixes-2026-10-29.md)
-subsequently closes five findings. New sole-human-Belgae Great Revolt sessions
-start with Ambiorix; saved origins preserve that setup for replay. Historical
-saves are not retroactively changed. Battle requests now expose only the
-legal casualty tier, so older transcripts with a different request may stop
-at the existing replay verification boundary.
+closed five findings. New Great Revolt games start Belgae with Ambiorix if a
+player runs Belgae alone or the Romans and Aedui together. Saved origins
+preserve the setup used for replay. Battle requests expose only the legal
+casualty tier, so older transcripts with a different request may stop at
+the replay verification boundary.
 
 The [expansion Event-grant repair](docs/reviews/human-event-grants-2026-11-02.md)
 adds the A19/A21/A29/A57/A67/A69 human selections and the Roman-owned optional
@@ -109,7 +108,8 @@ from the request. Future candidates may not become actual Battles. See the
 
 ## Quick start (for the assistant)
 
-You are about to PLAY one faction against the built-in bots.
+You can play one Faction or a printed Spare Factions pair against the
+built-in bots.
 
 1. Unzip the archive and `cd` into it.
 2. Initialise a game (pick a scenario, a seat, and a seed):
@@ -123,6 +123,13 @@ You are about to PLAY one faction against the built-in bots.
    Seats: Romans, Arverni, Aedui, Belgae (base) / Romans, Germans,
    Aedui, Belgae (Ariovistus).
 
+   Use `--seat Romans,Aedui` to run both Factions in one session. The
+   other printed pair is `Arverni,Belgae` in original scenarios or
+   `Germans,Belgae` in Ariovistus and at the start of The Gallic War.
+   For a paired session, use the request's `faction` to tell whose
+   turn or reaction you are answering. In The Gallic War the same
+   player keeps Belgae and takes over Arverni at the Interlude.
+
    `init --card-edition original|second-edition|legacy` selects the five
    optional card versions. In an original scenario, `--diviciacus-option`
    separately selects O38 and the optional Diviciacus Leader rule. Both
@@ -132,8 +139,8 @@ You are about to PLAY one faction against the built-in bots.
 
        python -m fs_bot.tools.llm_seat play
 
-   Bots take their turns; whenever your seat has a decision, including a
-   reaction during another faction's action, the board and request print.
+   Bots take their turns. When a Faction you run has a decision, including
+   a reaction during another Faction's action, the board and request print.
 
 4. Read the pending request and its stable decision id. Submit a response:
 
@@ -301,7 +308,10 @@ agreement or casualty choices.
 
 These summarize threshold checks in Chapter 7/A7. Final-Winter ranking,
 Non-player victory priority, and scenario-specific exceptions also apply.
-Use the displayed scores and the supplied references for those cases.
+A Spare Factions pair uses its lower margin and needs both Factions to pass
+their thresholds for early victory. Great Revolt's Arverni and Belgae pair
+uses its higher margin and qualifies when either Faction passes. Use the
+displayed player standings for paired games.
 
 ## Play observations from earlier revisions
 

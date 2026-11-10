@@ -17,6 +17,7 @@ from fs_bot.engine.march_choices import MARCH_DROPOFF, validate_dropoffs
 from fs_bot.engine.march_interruption import PAUSE as MARCH_SA_PAUSE
 from fs_bot.engine.game_engine import ActionRejected, ACTION_PASS
 from fs_bot.state.serialize import encode, decode
+from fs_bot.state import player_ownership
 
 
 class DecisionPending(BaseException):
@@ -286,9 +287,16 @@ class SeatSession:
             "version": 1, "queue": [], "receipts": [], "journal": [],
             "pending": None, "origin": encode(board_copy(state)),
             "origin_seat": meta["seat"], "origin_log_count": len(log),
+            **({'origin_player_id': meta['player_id']} if 'player_id' in meta else {}),
         })
         if not isinstance(self.data, dict) or self.data.get("version") != 1:
             raise ValueError("Unsupported assistant session version.")
+        if 'player_id' in meta:
+            from fs_bot import rules_consts as rc
+            anchor = (rc.ARVERNI if state.get('interlude_completed') and self.seat == rc.GERMANS
+                      else self.seat)
+            if anchor not in self.factions or self.data.get('origin_player_id') != meta['player_id']:
+                raise ValueError('Saved assistant identity and Faction ownership disagree.')
         if any(not isinstance(self.data.get(key), list)
                for key in ("queue", "receipts", "journal")):
             raise ValueError("Assistant save has invalid inbox/journal containers.")
@@ -315,6 +323,12 @@ class SeatSession:
     @property
     def seat(self):
         return self.meta["seat"]
+
+    @property
+    def factions(self):
+        if 'player_id' in self.meta:
+            return player_ownership.factions_of(self.state, self.meta['player_id'])
+        return (self.seat,)
 
     def import_inbox(self, payload):
         """Import once. Re-reading an unchanged inbox cannot repeat a move."""
@@ -623,6 +637,6 @@ class SeatSession:
         return saved.get('faction') == request['faction'] and saved.get('kind') in later
 
     def reactive(self, state, faction, request):
-        if faction != self.seat or state is not self.state:
+        if state is not self.state or faction not in self.factions:
             return None
         return self.ask(state, faction, request)

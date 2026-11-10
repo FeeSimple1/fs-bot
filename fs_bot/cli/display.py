@@ -680,13 +680,16 @@ def format_victory_state(state):
     # Import locally to avoid circular import worries
     from fs_bot.engine.victory import (
         calculate_victory_score, calculate_victory_margin, VictoryError,
-        check_victory,
+        check_victory, player_standings,
     )
+    from fs_bot.state import player_ownership
     state = _physical_piece_view(state)
     scenario = state["scenario"]
+    paired = player_ownership.has_pairs(state)
     lines = []
     lines.append(SEP_HEAVY)
-    lines.append("VICTORY (checked each Winter; margin >= +1 wins)")
+    lines.append('VICTORY (checked each Winter)' if paired else
+                 'VICTORY (checked each Winter; margin >= +1 wins)')
     lines.append(SEP)
     for faction in FACTIONS:
         try:
@@ -711,10 +714,16 @@ def format_victory_state(state):
             score_str = str(score)
 
         margin_str = "n/a" if margin is None else f"{margin:+d}"
-        flag = "  *VICTORY*" if won else ""
+        flag = ('  *THRESHOLD*' if paired else '  *VICTORY*') if won else ''
         lines.append(
             f"  {faction:<10} score={score_str:<40} margin={margin_str}{flag}"
         )
+    if paired:
+        for row in player_standings(state):
+            if len(row['factions']) > 1:
+                names = ' + '.join(row['factions'])
+                flag = '  *VICTORY*' if row['passed'] else ''
+                lines.append(f"  {row['player']} ({names}) margin={row['margin']:+d}{flag}")
     lines.append(SEP_HEAVY)
     return "\n".join(lines)
 

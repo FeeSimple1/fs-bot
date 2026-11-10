@@ -128,8 +128,9 @@ def sop_action(function):
         plan = decision.get('player_action') or decision.get('bot_action') or {}
         actor = (faction if decision.get('player_action') is not None
                  and not decision.get('bot_action') else None)
-        with scope(state, actor=actor, plan=plan, phase=resource_transfers.SEQUENCE,
-                   force=resource_transfers.FRAME in state and resource_transfers.enabled(state)):
+        with (resource_transfers.sequence(state, faction, live=False),
+              scope(state, actor=actor, plan=plan, phase=resource_transfers.SEQUENCE,
+                    force=resource_transfers.live_sequence(state))):
             return function(state, faction, decision, *args, **kwargs)
     return wrapped
 

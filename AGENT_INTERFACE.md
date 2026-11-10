@@ -50,6 +50,25 @@ Interlude deck replacement. Enabled selections are saved in state and origin
 snapshots. Metadata records all three booleans. Missing legacy fields mean
 `False`. Default setup preserves the previous RNG consumption and board hash.
 
+### Player ownership
+
+Pass `faction_owners` to `setup_scenario` as a mapping from playable
+Faction names to stable player ID strings. Assign the same ID to both members
+of a printed Spare Factions pair. The remaining playable Factions are
+Non-players. Existing `human_factions` setups without an ownership mapping
+retain their legacy behavior. The board stores current assignments in
+`faction_owners`. Frontend metadata saves `setup_faction_owners` for replay.
+At the Gallic War Interlude the German player ID follows the Arverni role.
+
+In a paired game, a Winter victory result adds `winner_player`,
+`winner_factions`, and `player_rankings`. The player ID is `None` for a
+Non-player winner. Each ranking row has `player` (the player ID), `factions`,
+`faction` (the Faction supplying the margin), `margin`, `passed`, and
+`non_player`.
+The existing `winner` field contains the winning side's representative
+Faction. The result uses the pair's lower margin unless it is the Arverni
+and Belgae pair in The Great Revolt, which uses the higher margin.
+
 ## 1. Top-level turns — `decision_func`
 
 `run_game(state, decision_func, execute=True)` calls
@@ -235,11 +254,11 @@ author the executor's own opening gifts. Other donors choose their own gifts
 through [live Resource transfer requests](#sequence-of-play-resource-transfers).
 The source plan builders remain the detailed reference for each Command and
 Special Activity.
-Durable turns reject ineligible transfer parties before accepting the plan:
-game-run Germans in original scenarios and game-run Arverni in Ariovistus
-cannot give or receive Resources. Current scenario rules apply after Interlude.
-The raw executor retains its documented behavior of reporting a refused gift
-while continuing the accompanying Command; it cannot apply a forbidden gift.
+Durable turns reject ineligible transfer parties and plans that exceed the
+shared-player allowance. Game-run Germans in original scenarios and
+game-run Arverni in Ariovistus cannot give or receive Resources. Current
+scenario rules apply after Interlude. The raw executor reports a refused
+gift and continues the accompanying Command.
 
 The following repaired Event sides use complete, side-specific
 `details.event_params` plans. Fields describe shapes, not permission to
@@ -1632,10 +1651,13 @@ transfer scope. A53 keeps ordinary Roman gifts in the public treasury and
 resolves them between the grant's funded actions.
 
 Each gift must fit the current stock and recipient room, including earlier
-gifts in the list. Gifts apply in list order. An invalid durable list leaves
-the same decision pending. Accepted gifts participate in the action's
-transaction and replay. A dry-run uses authored opening gifts and can report
-what the current board can fund without future donor decisions.
+gifts in the list. The two Factions of one player can exchange a combined
+four Resources per outer Command or Event. Earlier authored and live gifts
+count against that allowance in both directions. Gifts apply in list order.
+An invalid durable list leaves the same decision pending. Accepted gifts
+participate in the action's transaction and replay. A dry-run uses authored
+opening gifts and can report what the current board can fund without future
+donor decisions.
 
 ### Winter Resource transfers
 
@@ -1644,7 +1666,8 @@ Quarters relocations and after Roman payments, and before and after
 Harvest earnings. The `window` names its `phase`, `stage`, and `winter`
 number. The donor can give to multiple recipients or repeat a recipient
 within the offered limits. The entire list must fit the donor's `available`
-stock and each recipient's cumulative cap. Use `{"transfers":[]}` or
+stock and each recipient's cumulative cap. The shared-player allowance
+applies only during the Sequence of Play. Use `{"transfers":[]}` or
 `{"use_default":true}` to give nothing. Later donors see the updated balances.
 
 The engine applies opening Quarters gifts before the Roman plan is
@@ -1962,6 +1985,11 @@ boundary. Each human decision is preceded by current/upcoming card information
 and changes since that seat's previous decision. `board` (or `b`) can inspect
 the pending board without advancing play. Do not edit the save to answer a
 request.
+
+For `init --seat Romans,Aedui` and the other printed pairs, the saved
+`player_id` owns both Factions in one session. The pending request's
+`faction` names the Faction making that decision. The same ID is used on
+resume and replay, including when Germans become Arverni at the Interlude.
 
 `save.json` is authoritative for inbox consumption, pending requests, accepted
 choices within an interrupted action, and the committed decision log. The

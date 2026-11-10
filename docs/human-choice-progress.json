@@ -3,19 +3,19 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "b7b8de7ddfe3f72996ce432e8cc2adfd1a9f60af",
-    "python_sha256": "55397b8ee0ab0b18af07893223fcba35c983a46bc3dfc46807f9a6fcceb9b861",
-    "python_files": 570,
+    "commit": "35f3e9ebda580af199ce6f6f528b38aba00edad9",
+    "python_sha256": "9f48dc76fa0b171c71efa604ca7d486cd87daaf8817a7eda5aa34df67822dfa5",
+    "python_files": 572,
     "working_tree_changes": true,
-    "note": "The March timing repair is tested on the publishing tree over the listed parent. See current-status.md#10-november-march-special-ability-timing."
+    "note": "The Spare Factions repair is tested on the publishing tree over the listed parent. See current-status.md#10-november-spare-factions-and-shared-player-ownership."
   },
   "total": 50,
-  "closed": 49,
-  "open": 1,
+  "closed": 50,
+  "open": 0,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
-    "WS-F04 closes the sole-human-Belgae setup trigger; paired-player ownership remains WS-F09.",
+    "WS-F04 closed the sole-human-Belgae setup trigger. WS-F09 covers both printed Ambiorix triggers using explicit player assignments.",
     "The Colony/default and rejected-bot validation follow-up closes no additional original finding; see reviews/colony-event-defaults-2026-11-02.md.",
     "BE-03 closed by the Gallic Event batch. The five ordinary Arverni Phase follow-ups and two related defects are repaired separately; no additional original finding closes. See reviews/arverni-phase-2026-11-03.md. Other BE-01 March grants remain open.",
     "BE-02 closes fixed Event Battle choices. Revised Numidians participation, Litaviccus counting and Event-aware Retreat forecasts are related repairs; the non-player Litaviccus target predictor is separately open. See reviews/event-battle-choices-2026-11-03.md.",
@@ -74,13 +74,14 @@
     "Romans choose exact Interlude Fort, Ally and Auxilia reductions. This completes WS-C28. See current-status.md#10-november-roman-interlude-force-reductions.",
     "Interlude controllers choose exact Cisalpina moves or removals. This completes WS-C30 and WS-F01. See current-status.md#10-november-interlude-cisalpina-relocation.",
     "Quarters and Harvest offer exact donor-owned Resource gifts. See current-status.md#10-november-winter-resource-transfers.",
-    "Live Command and Event gifts complete WS-F06. The shared-player cap remains part of WS-F09. See current-status.md#10-november-command-and-event-resource-transfers.",
+    "Live Command and Event gifts complete WS-F06. See current-status.md#10-november-command-and-event-resource-transfers.",
     "Live transit drop-offs complete MARCH-DROPOFF. Earlier arrivals in later origin groups are a separate follow-up. See current-status.md#10-november-ordinary-march-drop-offs.",
     "The March origin follow-up keeps earlier arrivals and drop-offs out of later groups in the same Command. The original audit counts remain 47 closed and 3 open.",
     "BATTLE-RETREAT-CHOICES closes with separate live declaration and survivor disposition. The original audit stands at 48 closed and 2 open. NPC Retreat Leader placement is a separate follow-up.",
     "Non-player Retreat Leader placement closes as a separate follow-up. The original audit remains at 48 closed and 2 open.",
     "Standalone Special Abilities can interrupt Battle between Regions and Raid between flips. This completed the Battle and Raid portions of TIMING-SA-DURING.",
-    "A standalone Special Ability can interrupt one March while retaining its route, costs, and exact cohorts. This closes TIMING-SA-DURING."
+    "A standalone Special Ability can interrupt one March while retaining its route, costs, and exact cohorts. This closes TIMING-SA-DURING.",
+    "WS-F09 closes with printed Spare Factions assignments, paired victory, the shared four-Resource allowance, and durable replay. All 50 original findings are closed. See current-status.md#10-november-spare-factions-and-shared-player-ownership."
   ],
   "findings": [
     {
@@ -526,7 +527,7 @@
       "severity": "medium",
       "status": "closed",
       "report": "current-status.md#10-november-command-and-event-resource-transfers",
-      "disposition": "Both frontends offer exact donor-owned gifts during either participant's Command or Event and during Quarters and Harvest. The terminal opens before plan collection and accepts split gifts across the full legal amount. Accepted gifts support durable replay. WS-F09 tracks shared-player limits."
+      "disposition": "Both frontends offer exact donor-owned gifts during either participant's Command or Event and during Quarters and Harvest. The terminal opens before plan collection and accepts split gifts across the full legal amount. Accepted gifts support durable replay. WS-F09 adds shared-player limits."
     },
     {
       "id": "WS-F07",
@@ -550,7 +551,9 @@
       "id": "WS-F09",
       "title": "Shared player ownership is absent, so Spare Factions choices and consequences cannot be represented",
       "severity": "medium",
-      "status": "open"
+      "status": "closed",
+      "report": "current-status.md#10-november-spare-factions-and-shared-player-ownership",
+      "disposition": "Engine, terminal, and durable assistant support the printed pairs with stable ownership through the Interlude and replay. Pair thresholds, margins, the Great Revolt exception and Ambiorix setup, and the shared four-Resource Command or Event limit use those assignments."
     },
     {
       "id": "FE-01",

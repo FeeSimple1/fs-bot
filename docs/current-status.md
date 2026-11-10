@@ -21,6 +21,38 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Spare Factions and shared-player ownership
+
+Setup can assign both members of a printed Spare Factions pair to one
+player (§1.5.1/A1.5.1). The terminal offers both pairs, and the assistant
+can run a pair's turns and reactions in one session. A German player takes
+over Arverni at the Gallic War Interlude and keeps Belgae if paired.
+Assignments persist through save, resume, and replay.
+
+A pair qualifies for early victory when both Factions pass and ranks by
+its lower margin (§7.1/A7.1). Great Revolt's Arverni and Belgae pair
+qualifies when either passes and ranks by its higher margin. A qualifying
+Non-player still takes priority. Great Revolt starts Belgae with Ambiorix
+if a player runs Belgae alone or a player runs the Romans and Aedui pair.
+Legacy setups without ownership data retain their original setup rules.
+
+Each outer Command or Event allows four Resources in combined gifts between
+the pair (§1.5.2). Authored and live gifts use the same allowance in both
+directions. Winter gifts and transfers specified by card text follow their
+own rules. The assistant preserves the remaining allowance when it reloads
+and replays an interrupted action.
+
+All 9,334 tests pass, including 49 focused ownership, setup, and rules-trace
+tests. All 20 all-bot gameplay records and all 100 seeded balance winners
+and game lengths match the parent. The balance guardrail passed. Twenty
+mixed-seat games match the parent and each other across hash seeds 0 and 987
+with zero hard findings and the same four partial plans.
+
+**WS-F09 closes. All 50 original human-choice audit findings are closed.**
+See the [audit progress ledger](human-choice-progress.json) for the tested
+source and individual dispositions. It tracks the 34 unverified inventory
+rows separately.
+
 ### 10 November March Special Ability timing
 
 One standalone Special Ability can resolve during an ordinary March (§4.1).
@@ -41,8 +73,8 @@ mixed-seat games match across hash seeds with zero hard findings. All 20
 all-bot gameplay records and all 100 paired balance winners and game
 lengths match the parent. The balance guardrail passed.
 
-TIMING-SA-DURING closes. **49 of 50 original audit findings are closed
-(98%).** Shared-player ownership (WS-F09) remains open.
+TIMING-SA-DURING closed the 49th of the 50 original audit findings at
+this checkpoint.
 
 ### 10 November Battle and Raid Special Ability timing
 
@@ -209,8 +241,9 @@ dry-run and live execution. Twenty paired bot runs match the parent revision's
 final boards and diagnostics. All 100 balance winners and card counts match
 the parent.
 
-**WS-F06 closes. The original audit stands at 46/50 closed (92%).
-WS-F09 tracks the shared-player cap separately.**
+**WS-F06 closed the 46th of the 50 original audit findings.** The
+[Spare Factions repair](#10-november-spare-factions-and-shared-player-ownership)
+added the shared-player cap.
 
 ### 10 November Winter Resource transfers
 

@@ -253,6 +253,11 @@ def validate_state(state):
         # behind an unrelated arithmetic exception.
         return errors
     scenario = state["scenario"]
+    from fs_bot.state.player_ownership import validate_state_owners
+    try:
+        validate_state_owners(state)
+    except ValueError as exc:
+        errors.append(str(exc))
     from fs_bot.state.setup_options import SETUP_OPTION_HELP
     for key in SETUP_OPTION_HELP:
         if key in state and type(state[key]) is not bool:

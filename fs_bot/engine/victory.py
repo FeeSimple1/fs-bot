@@ -490,6 +490,13 @@ def check_any_victory(state):
     Returns:
         Winning faction constant, or None.
     """
+    from fs_bot.state import player_ownership
+    if player_ownership.has_pairs(state):
+        passed = [row for row in player_standings(state) if row['passed']]
+        non_players = [row for row in passed if row['non_player']]
+        winners = non_players or passed
+        return winners[0]['faction'] if winners else None
+
     victory_factions = _get_victory_factions(state)
 
     winners = []
@@ -563,6 +570,32 @@ def _break_tie(state, tied_factions):
     return tied_factions[0]
 
 
+def player_standings(state):
+    """Rank each player once, with the faction supplying their effective margin."""
+    from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT
+    from fs_bot.state import player_ownership
+
+    rows, ranked = [], set()
+    non_players = state.get('non_player_factions', ())
+    order = (TIEBREAK_ORDER_ARIOVISTUS if state['scenario'] in ARIOVISTUS_SCENARIOS
+             else TIEBREAK_ORDER_BASE)
+    for faction in _get_victory_factions(state):
+        if faction in ranked:
+            continue
+        group = player_ownership.group_of(state, faction)
+        ranked.update(group)
+        margins = {member: calculate_victory_margin(state, member) for member in group}
+        revolt_pair = state['scenario'] == SCENARIO_GREAT_REVOLT and set(group) == {ARVERNI, BELGAE}
+        margin = (max if revolt_pair else min)(margins.values())
+        representative = next(member for member in order if margins.get(member) == margin)
+        passed = (any if revolt_pair else all)(check_victory(state, member) for member in group)
+        rows.append(dict(faction=representative, factions=list(group), margin=margin,
+                         player=player_ownership.player_of(state, faction), passed=passed,
+                         non_player=faction in non_players))
+    return sorted(rows, key=lambda row: (-row['margin'], not row['non_player'],
+                                        order.index(row['faction'])))
+
+
 # ============================================================================
 # DETERMINE FINAL RANKING
 # ============================================================================
@@ -579,6 +612,10 @@ def determine_final_ranking(state):
     Returns:
         List of (faction, margin) tuples, ordered from 1st to last.
     """
+    from fs_bot.state import player_ownership
+    if player_ownership.has_pairs(state):
+        return [(row['faction'], row['margin']) for row in player_standings(state)]
+
     scenario = state["scenario"]
     victory_factions = _get_victory_factions(state)
 

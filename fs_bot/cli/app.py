@@ -47,6 +47,7 @@ from fs_bot.cli.display import (
     format_victory_state, format_action, format_card,
 )
 from fs_bot.cli.menus import prompt_choice
+from fs_bot.state import player_ownership
 
 
 # ============================================================================
@@ -75,7 +76,7 @@ def get_assignable_factions(scenario):
 # ============================================================================
 
 def setup_wizard(stdin, stdout, *, preset_scenario=None,
-                 preset_faction_modes=None):
+                 preset_faction_modes=None, pair_specs=(), chosen_pairs=None):
     """Interactive scenario and faction-mode picker.
 
     If preset_scenario is provided, skip the scenario question. If
@@ -100,22 +101,40 @@ def setup_wizard(stdin, stdout, *, preset_scenario=None,
 
     # Faction modes
     assignable = get_assignable_factions(scenario)
+    pairs = [player_ownership.parse_seat(scenario, spec) for spec in pair_specs]
+    if any(len(pair) != 2 for pair in pairs) or len(pairs) != len(set(pairs)):
+        raise ValueError('Each --pair must name a distinct printed Spare Factions pair.')
+    locked = {faction for pair in pairs for faction in pair}
     if preset_faction_modes is not None:
         faction_modes = {}
         for f in assignable:
             mode = preset_faction_modes.get(f, "bot")
             if mode not in ("human", "bot"):
                 raise ValueError(f"Bad mode for {f}: {mode!r}")
+            if f in locked and mode != 'human':
+                raise ValueError(f'{f} cannot be both paired and a bot.')
             faction_modes[f] = mode
     else:
         faction_modes = {}
         mode_choices = [("Human", "human"), ("Bot", "bot")]
+        partners = dict(player_ownership.spare_pairs(scenario))
         for f in assignable:
-            mode = prompt_choice(
-                stdin, stdout, f"Mode for {f}:", mode_choices
-            )
+            if f in locked:
+                faction_modes[f] = 'human'
+                continue
+            choices = list(mode_choices)
+            if chosen_pairs is not None and f in partners:
+                choices.append((f'Human with {partners[f]}', 'pair'))
+            mode = prompt_choice(stdin, stdout, f'Mode for {f}:', choices)
+            if mode == 'pair':
+                pair = (f, partners[f])
+                pairs.append(pair)
+                locked.add(pair[1])
+                mode = 'human'
             faction_modes[f] = mode
 
+    if chosen_pairs is not None:
+        chosen_pairs.extend(pairs)
     return scenario, faction_modes
 
 
@@ -141,8 +160,9 @@ def display_card_result(card_result, stdout, scenario=None, card_edition=None):
         phases = wr.get("winter_result", {}).get("phases", {})
         victory = phases.get("victory", {}) if isinstance(phases, dict) else {}
         if victory.get("game_over"):
+            winner = ' + '.join(victory.get('winner_factions') or [victory.get('winner') or '?'])
             stdout.write(f"  Victory phase: GAME OVER -- "
-                         f"winner {victory.get('winner')}\n")
+                         f"winner {winner}\n")
     else:
         turn = card_result.get("turn_result", {})
         if turn.get("frost"):
@@ -223,6 +243,8 @@ def _parse_args(argv):
             "If omitted, the wizard asks per faction."
         ),
     )
+    p.add_argument('--pair', action='append', default=[], metavar='FACTION,FACTION',
+                   help='One human runs this printed Spare Factions pair. Repeat for both pairs.')
     p.add_argument(
         "--diviciacus-option", action=argparse.BooleanOptionalAction,
         default=None,
@@ -303,6 +325,9 @@ def main(argv=None, stdin=None, stdout=None):
     if args.load and args.replay:
         stdout.write("--load and --replay are mutually exclusive.\n")
         return 2
+    if args.pair and (args.load or args.replay or args.non_interactive):
+        stdout.write('--pair requires a new game with human players.\n')
+        return 2
 
     log = []
     meta = {}
@@ -353,6 +378,7 @@ def main(argv=None, stdin=None, stdout=None):
                                    card_edition=card_edition,
                                    diviciacus_option=diviciacus_option,
                                    human_factions=meta.get("setup_human_factions", ()),
+                                   faction_owners=meta.get(player_ownership.SETUP_FIELD),
                                    **setup_options)
         elif state.get("interlude_completed") and GERMANS in faction_modes:
             # Older snapshots saved the original seats after the Interlude.
@@ -370,16 +396,18 @@ def main(argv=None, stdin=None, stdout=None):
                 assignable = get_assignable_factions(args.scenario)
                 preset_modes = {f: "bot" for f in assignable}
 
-        # Either run the wizard or use preset
-        if args.scenario is not None and preset_modes is not None:
-            scenario = args.scenario
-            faction_modes = preset_modes
-        else:
+        # Presets skip the questions, but still validate the printed pairs.
+        pairs = []
+        try:
             scenario, faction_modes = setup_wizard(
                 stdin, stdout,
                 preset_scenario=args.scenario,
                 preset_faction_modes=preset_modes,
+                pair_specs=args.pair, chosen_pairs=pairs,
             )
+        except ValueError as exc:
+            stdout.write(f'Cannot set up game: {exc}\n')
+            return 2
 
         # Explicit seed always, so every game is saveable/replayable.
         seed = (args.seed if args.seed is not None
@@ -394,15 +422,22 @@ def main(argv=None, stdin=None, stdout=None):
             f for f, mode in faction_modes.items() if mode == "human"
         ]
         try:
+            owners = player_ownership.assignments(scenario, meta['setup_human_factions'], pairs)
+            if owners:
+                meta[player_ownership.SETUP_FIELD] = owners
             state = setup_scenario(
                 scenario, seed=seed, card_edition=args.card_edition or "legacy",
                 diviciacus_option=bool(args.diviciacus_option),
                 human_factions=meta["setup_human_factions"],
+                faction_owners=owners or None,
                 **{key: bool(getattr(args, key)) for key in SETUP_OPTION_HELP})
         except ValueError as exc:
             stdout.write(f"Cannot set up game: {exc}\n")
             return 2
 
+    if player_ownership.FIELD in state:
+        faction_modes = {f: 'human' if f in state[player_ownership.FIELD] else 'bot'
+                         for f in get_assignable_factions(state['scenario'])}
     initial_modes = dict(meta.get("initial_faction_modes") or faction_modes)
     if state.get("interlude_completed") and GERMANS not in initial_modes:
         initial_modes[GERMANS] = initial_modes.pop(ARVERNI, "bot")

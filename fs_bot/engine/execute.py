@@ -370,11 +370,10 @@ def _execute_decision(state, faction, decision, *, sequence=False):
     if sequence and handler is not None:
         # Authored opening gifts belong to the outer action. A reconsidered
         # plan or an Event grant cannot repeat them as a new execution.
-        from fs_bot.commands.transfer import transfer_resources
         for t in (bot_action.get("details") or {}).get("transfers") or []:
             try:
-                transfer_results.append(
-                    transfer_resources(state, faction, t.get("to"), t.get("amount")))
+                transfer_results.append(resource_transfers.give(
+                    state, faction, t.get('to'), t.get('amount'), resource_transfers.SEQUENCE))
             except Exception as exc:
                 transfer_results.append({"error": str(exc), "to": t.get("to"),
                                          "amount": t.get("amount")})

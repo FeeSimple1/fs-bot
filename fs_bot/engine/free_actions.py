@@ -379,9 +379,13 @@ def _validate_plan(state, faction, request, action):
             # Expansion plans may implicitly select the Leader's origin.
             # Scope the moves the executor will actually make, not only the
             # caller's declared origin list; derive on a copy for RNG safety.
-            from fs_bot.engine.execute import _collect_march_moves
-            planning = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
-            moves, _ = _collect_march_moves(planning, faction, part)
+            if 'sa_after_step' in details:
+                from fs_bot.engine.march_interruption import ordered_moves
+                moves = ordered_moves(part)
+            else:
+                from fs_bot.engine.execute import _collect_march_moves
+                planning = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
+                moves, _ = _collect_march_moves(planning, faction, part)
             selected.extend(move['origin'] for move in moves)
     if len(parts) > 1 and len(selected) != len(set(selected)):
         return 'Select each Command Region only once.'

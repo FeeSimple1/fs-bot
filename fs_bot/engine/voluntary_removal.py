@@ -226,7 +226,8 @@ def _apply_operation(state, faction, selected):
     # Deliberately use the physical helper: the effective Command view may
     # route a normal remove_piece call to a different faction's counters.
     pieces._remove_piece_inner(state, region, faction, piece_type, count,
-        piece_state=selected.get("piece_state"), to_track=piece_type == rc.LEGION)
+        piece_state=selected.get("piece_state"), to_track=piece_type == rc.LEGION,
+        _voluntary=True, _sa_loan='diviciacus' in (selected.get('loan_kind') or '').split('+'))
     loan_kind = selected.get("loan_kind")
     if loan_kind:
         from fs_bot.commands.sa_enlist import BORROW_KEY, FREE_FORCE_KEY

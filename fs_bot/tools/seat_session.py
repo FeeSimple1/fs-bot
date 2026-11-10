@@ -14,6 +14,7 @@ import sys
 from fs_bot.engine.agent import RETREAT, RETREAT_DISPOSITION, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
 from fs_bot.engine import action_windows, resource_transfers
 from fs_bot.engine.march_choices import MARCH_DROPOFF, validate_dropoffs
+from fs_bot.engine.march_interruption import PAUSE as MARCH_SA_PAUSE
 from fs_bot.engine.game_engine import ActionRejected, ACTION_PASS
 from fs_bot.state.serialize import encode, decode
 
@@ -26,7 +27,7 @@ def board_copy(state):
     return copy.deepcopy({k: v for k, v in state.items()
                           if k not in ("decision_agent", '_action_window_scope',
                                        '_action_window_busy', '_action_window_cohorts',
-                                       resource_transfers.FRAME,
+                                       resource_transfers.FRAME, MARCH_SA_PAUSE,
                                        '_battle_elite_warbands')})
 
 

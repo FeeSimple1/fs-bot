@@ -21,6 +21,29 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November March Special Ability timing
+
+One standalone Special Ability can resolve during an ordinary March (§4.1).
+Pause after origin preparation, at a transit hop, or between groups. Caesar
+can now Build in Sequani while Marching from Provincia to Mandubii (§§3.2.2,
+4.2.1). A subsequent origin can use Trade proceeds and pays once when selected.
+
+The same March resumes with the surviving moving counters. Scout can split
+Auxilia off or change their visibility before Harassment. Devastate losses
+can distinguish members of the group from identical residents. An arriving
+counter stays out of later groups, even after an origin-wide visibility
+change. Separate Diviciacus agreements retain the Command's exact loaned
+counters. The terminal offers choices on a detached board, and the durable
+assistant can reload a live choice and replay through the pause.
+
+All 9,307 tests pass, including 20 directed March timing cases. The 20
+mixed-seat games match across hash seeds with zero hard findings. All 20
+all-bot gameplay records and all 100 paired balance winners and game
+lengths match the parent. The balance guardrail passed.
+
+TIMING-SA-DURING closes. **49 of 50 original audit findings are closed
+(98%).** Shared-player ownership (WS-F09) remains open.
+
 ### 10 November Battle and Raid Special Ability timing
 
 Human players can use a standalone Special Ability between Battle Regions
@@ -44,8 +67,8 @@ records match the parent revision on gameplay results. Winners and game
 lengths match the parent in all 100 paired balance games. The balance
 guardrail passed.
 
-The original audit remains at 48/50 closed (96%). The March portion of
-TIMING-SA-DURING and shared-player ownership (WS-F09) remain open.
+At this checkpoint the original audit stood at 48/50 closed (96%). The
+March follow-up completes the timing finding.
 
 ### 10 November Non-player Retreat Leader placement
 
@@ -1802,11 +1825,9 @@ and Great Revolt Belgae setup; these are addressed above. Later batches cover Ev
 correct human ownership, exact choices/timing, Interlude/Winter, and optional
 player modes. The report assigns every finding once and records reproductions.
 
-Earlier verified rows below describe their tested paths, not complete coverage
-of every related rule. During-March Special Ability timing,
-several Event grants, some physical casualty choices, and Interlude selections
-remain incomplete. Board inspection can show the pre-SA board during later
-March planning. The two existing non-player source questions remain separate.
+Earlier verified rows below describe their tested paths. The dated repairs
+above and the [progress inventory](human-choice-progress.json) track later
+coverage. The two existing non-player source questions remain separate.
 
 ### 29 October action timing and exact participating pieces
 

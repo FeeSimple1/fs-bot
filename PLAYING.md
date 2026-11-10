@@ -14,16 +14,23 @@ tracks repairs and remaining limits. At Command prompts, `b`/`board` shows
 the planning position after preceding operations, including a Fort built
 before March. Planning uses a detached board and random stream.
 
-To use a Special Activity between Battles or between Warband flips in one
-Raid, choose **Command, Special Activity, then continue Command**. Pick
-**Battle (between Regions)** or **Raid (between individual Warband flips)**.
+To use a Special Activity during a Command, choose
+**Command, Special Activity, then continue Command**.
 For Battle, select the Regions and defenders, then pick the Battle after
 which the Special Activity resolves. Its choices use a preview of the
 completed Battle. For Raid, the menu offers the Special Activity after a
 flip and updates the next flip's choices. A single Raid Region keeps its
 normal flip limit and its one intrinsic Germanic Intimidate opportunity.
-Ambush and Besiege modify Battle directly. March still uses before/after
-timing.
+Ambush and Besiege modify Battle directly.
+
+For **March (between hops or groups)**, choose the routes and groups, then
+select the pause. The Special Activity choices use a preview of the board
+at that step. Live decisions before the pause can change the pieces that
+are available. At resolution, Scout can split Auxilia off from the group.
+When a choice could use either marching counters or identical residents,
+the game asks which counters to use. The remaining group continues with
+its original movement allowance. Britannia crossings exclude a Special
+Activity for the whole March.
 
 Drought now asks each human owner which single piece to lose in every
 Devastated Region. Choose exact visibility, a named Allied Tribe/Citadel, or a

@@ -388,7 +388,24 @@ Raid Region's end, intrinsic Germanic Intimidate resolves as part of that
 Region. An interruption between flips in one Region keeps both flips in the
 same Raid procedure. Choose Enlist borrowing with the Command's force
 selection. Use the free Germanic Command option to interrupt with Enlist.
-March still uses before/after timing.
+
+For March, supply explicit `origins` and a `routes` entry for each origin
+in `details` or `details.march_plan`. Set `sa_timing` to `"during"` and
+`details.sa_after_step` to `{"group":1,"hop":1}` to use the Special Ability
+after the first hop of the first group. Groups are numbered in `origins`
+order, followed by `extra_groups`. `hop: 0` uses the step after the origin
+visibility procedure and before the group's first departure. For a
+hide-only origin it uses the completed stay. An interruption after the last
+hop of a group requires another declared group. Use `"after"` at the end of
+the Command. The ability resolves before transit drop-offs and Harassment.
+
+Each origin is paid once when selected. A later origin can use Resources
+gained in the interruption. Counters that already Marched or arrived during
+the Special Ability stay out of later groups from that origin. The engine
+uses `force_cohort` when the ability can affect either moving or resident
+pieces of the same physical owner and visibility. The rest of the group
+retains its route and any remaining movement allowance. Routes that cross
+into or out of Britannia exclude an accompanying Special Ability.
 
 ### Choices between operations
 
@@ -762,7 +779,7 @@ pause for the choice or diverge under corrected defaults.
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `march_dropoff` | `faction, acting_faction, region, destination, pieces, max_dropoffs, window`; may include `leader` | `{"dropoffs":[{"faction":owner,"piece_type":type,"piece_state":visibility_or_null,"count":n}]}` or explicit default |
 | `diviciacus_pieces` | `phase` (`placement`, `formation`, `dropoff`, `loss`), `region, piece_type, count, available` by physical owner | `{"counts": {owner: count}}`, totaling `count` without exceeding `available` |
-| `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts; optional descriptive labels | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |
+| `force_cohort` | `region, piece_type, piece_state, operation, count, available` with `selected`/`other` counts. May include `physical_owner` and descriptive labels. | `{"counts":{"selected":n,"other":m}}`, totaling `count`, or explicit default |
 | `voluntary_removal` | `faction, options, window`; may include engine-owned `cohorts` | `{"operations":[...]}`, `{"done":true}`, or explicit default (no removals) |
 | `battle_elite` | `faction, region, count, available` by visibility, `window` | `{"counts":{"Hidden":n,"Revealed":m,"Scouted":k}}` totaling the exact offered count, or explicit default |
 | `AGREEMENT` | `request_type, requesting_faction, context` | `bool` (agree?) — `request_type` in {`retreat_into_control`, `supply_line`, ...} |

@@ -23,7 +23,7 @@ from fs_bot.rules_consts import (
     ARVERNI_SPECIAL_ABILITIES_BASE, ARVERNI_SPECIAL_ABILITIES_ARIOVISTUS,
     GERMAN_SPECIAL_ABILITIES_BASE, GERMAN_SPECIAL_ABILITIES_ARIOVISTUS,
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, LEGION, AUXILIA, WARBAND,
+    FACTIONS, LEGION, AUXILIA, WARBAND, BRITANNIA,
     EVENT_SHADED, EVENT_UNSHADED, ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.engine.game_engine import (
@@ -104,6 +104,8 @@ def _march_routes(state, origin, faction, group=None):
             return
         for region in sorted(get_adjacent_for_state(board, current, faction)):
             if region == origin or region in route:
+                continue
+            if state.get('_cli_march_with_sa') and BRITANNIA in (current, region):
                 continue
             sim = _planning_copy(board)
             try:
@@ -885,7 +887,8 @@ def _collect_build(state, faction, stdin, stdout, *, pending=None):
     # destinations become Build-eligible once the group arrives, so
     # offer them too (the executor validates against the post-March
     # board; the plan preview rejects anything still illegal).
-    if pending is not None and pending.get("command") == "March":
+    if (pending is not None and pending.get("command") == "March"
+            and pending.get('sa_timing') != 'during'):
         det = pending.get("details") or {}
         dests = list(det.get("destinations") or [])
         for eg in det.get("extra_groups") or []:
@@ -1157,6 +1160,8 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
         during.append(("Battle (between Regions)", "Battle"))
     if "Raid" in commands and any(compatible_sa("Raid", s) for s in standalone):
         during.append(("Raid (between individual Warband flips)", "raid_steps"))
+    if "March" in commands and any(compatible_sa("March", s) for s in standalone):
+        during.append(("March (between hops or groups)", "March"))
     choices = [(c, c) for c in commands]
     if engine_action == ACTION_COMMAND_SA and available_sas:
         choices.append(("Special Activity first, then Command", "sa_first"))
@@ -1208,9 +1213,9 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
     if cmd == "sa_during":
         cmd = prompt_choice(stdin, stdout, "Which Command to interrupt?",
                             during)
-        if cmd in ("Battle", "raid_steps"):
-            from fs_bot.cli.command_interruptions import collect_battle, collect_raid
-            collect = collect_battle if cmd == "Battle" else collect_raid
+        if cmd in ("Battle", "March", "raid_steps"):
+            from fs_bot.cli.command_interruptions import collect_battle, collect_march, collect_raid
+            collect = {"Battle": collect_battle, "March": collect_march, "raid_steps": collect_raid}[cmd]
             return collect(state, faction, stdin, stdout, allowed_sas=standalone)
         from fs_bot.rules_consts import BASE_SCENARIOS
         if cmd == 'Rally' and faction == ARVERNI and state['scenario'] in BASE_SCENARIOS:

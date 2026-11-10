@@ -375,12 +375,15 @@ def operate(state, region, faction, piece_type, count, operation, *, owner=None,
         destination = params.pop('destination', None)
         selected = _free_force_overlap(state, region, faction, physical_owner,
                                        physical_type, visibility, n, operation)
+        sa_loan = physical_owner == lender and ctx['phase'] == 'special_ability'
         if operation == 'remove':
             params['piece_state'] = visibility
-            board._remove_piece_inner(state, region, physical_owner, physical_type, n, **params)
+            board._remove_piece_inner(state, region, physical_owner, physical_type, n,
+                                      _sa_loan=sa_loan, **params)
             new_state = None
         elif operation == 'move':
-            board._move_piece_inner(state, region, destination, physical_owner, physical_type, n, piece_state=visibility)
+            board._move_piece_inner(state, region, destination, physical_owner, physical_type, n,
+                                    piece_state=visibility, _sa_loan=sa_loan)
             # §3.2.2: native members of the selected group may continue
             # even when no borrowed piece was selected or the last one
             # dropped off/suffered Harassment. Keep their physical-owner
@@ -392,7 +395,7 @@ def operate(state, region, faction, piece_type, count, operation, *, owner=None,
             if visibility == rc.SCOUTED and new_state == rc.HIDDEN:
                 new_state = rc.REVEALED
             board._flip_piece_inner(state, region, physical_owner, physical_type, n,
-                                    from_state=visibility, to_state=new_state)
+                                    from_state=visibility, to_state=new_state, _sa_loan=sa_loan)
         else:
             raise board.PieceError('Unknown Diviciacus piece operation')
         if physical_owner == lender:

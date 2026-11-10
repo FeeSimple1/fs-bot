@@ -35,6 +35,7 @@ from fs_bot.rules_consts import (
     # Tribe stacking
     TRIBE_FACTION_RESTRICTION,
 )
+from fs_bot.engine.march_interruption import PAUSE as _MARCH_PAUSE, record_arrival, track_change
 
 
 class PieceError(Exception):
@@ -371,6 +372,8 @@ def place_piece(state, region, faction, piece_type, count=1, *,
         f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         state["available"][faction][LEADER] = avail - 1
         f_pieces[LEADER] = leader_name
+        if _MARCH_PAUSE in state:
+            record_arrival(state, region, faction, LEADER, None, count)
         return
 
     if piece_type == LEGION:
@@ -407,6 +410,8 @@ def place_piece(state, region, faction, piece_type, count=1, *,
             )
         f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         f_pieces[LEGION] = f_pieces.get(LEGION, 0) + count
+        if _MARCH_PAUSE in state:
+            record_arrival(state, region, faction, LEGION, None, count)
         return
 
     if piece_type == FORT:
@@ -493,6 +498,8 @@ def place_piece(state, region, faction, piece_type, count=1, *,
         f_pieces = _ensure_faction_pieces_structure(state, region, faction)
         _set_available(state, faction, piece_type, avail - count)
         f_pieces[ps][piece_type] = f_pieces[ps].get(piece_type, 0) + count
+        if _MARCH_PAUSE in state:
+            record_arrival(state, region, faction, piece_type, ps, count)
         return
 
     raise PieceError(f"Unknown piece type: {piece_type}")
@@ -500,7 +507,8 @@ def place_piece(state, region, faction, piece_type, count=1, *,
 
 def remove_piece(state, region, faction, piece_type, count=1, *,
                  to_available=True, to_fallen=False, to_track=False,
-                 to_removed=False, to_winter_track=False, piece_state=None):
+                 to_removed=False, to_winter_track=False, piece_state=None,
+                 _voluntary=False, _sa_loan=False):
     """Remove piece(s) from the map.
 
     Args:
@@ -538,6 +546,9 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
         if f_pieces.get(LEADER) is None:
             raise PieceError(f"No {faction} Leader in {region}")
         leader_name = f_pieces[LEADER]
+        if _MARCH_PAUSE in state:
+            track_change(state, region, faction, LEADER, None, count, 1, 'remove',
+                         voluntary=_voluntary)
         # Diviciacus: removed from play, not to Available — A1.4. Track
         # him in the removed pool so conservation stays exact and card
         # O38 can return him ("It may return by Event").
@@ -568,6 +579,9 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
                            for row in LEGIONS_ROWS)
             if capacity < count:
                 raise PieceError(f"Not enough room on Legions track (need {count})")
+        if _MARCH_PAUSE in state:
+            track_change(state, region, faction, LEGION, None, count, current, 'remove',
+                         voluntary=_voluntary)
         f_pieces[LEGION] = current - count
         if to_winter_track:
             state["winter_track_legions"] = state.get("winter_track_legions", 0) + count
@@ -643,6 +657,9 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
             current = f_pieces.get(ps, {}).get(piece_type, 0)
             take = min(current, count - removed)
             if take > 0:
+                if _MARCH_PAUSE in state:
+                    track_change(state, region, faction, piece_type, ps, take, current, 'remove',
+                                 voluntary=_voluntary, sa_loan=_sa_loan)
                 f_pieces[ps][piece_type] = current - take
                 removed += take
             if removed >= count:
@@ -657,7 +674,7 @@ def remove_piece(state, region, faction, piece_type, count=1, *,
 
 
 def move_piece(state, from_region, to_region, faction, piece_type, count=1,
-               *, piece_state=None):
+               *, piece_state=None, _sa_loan=False):
     """Move piece(s) between regions. Does not change Available.
 
     Args:
@@ -692,6 +709,9 @@ def move_piece(state, from_region, to_region, faction, piece_type, count=1,
         dest = state["spaces"][to_region].get("pieces", {}).get(faction, {})
         if dest.get(LEADER) is not None:
             raise PieceError(f"{faction} already has a Leader in {to_region}")
+        if _MARCH_PAUSE in state:
+            track_change(state, from_region, faction, LEADER, None, count, 1, 'move',
+                         destination=to_region)
         dest = _ensure_faction_pieces_structure(state, to_region, faction)
         f_pieces[LEADER] = None
         dest[LEADER] = leader_name
@@ -706,6 +726,9 @@ def move_piece(state, from_region, to_region, faction, piece_type, count=1,
             raise PieceError(
                 f"Only {current} Legions in {from_region}, need {count}"
             )
+        if _MARCH_PAUSE in state and from_region != to_region:
+            track_change(state, from_region, faction, LEGION, None, count, current, 'move',
+                         destination=to_region)
         src[LEGION] = current - count
         _ensure_faction_pieces_structure(state, to_region, faction)
         dest = state["spaces"][to_region]["pieces"][faction]
@@ -754,6 +777,9 @@ def move_piece(state, from_region, to_region, faction, piece_type, count=1,
                 f"Only {current} {faction} {ps} {piece_type} in "
                 f"{from_region}, need {count}"
             )
+        if _MARCH_PAUSE in state and from_region != to_region:
+            track_change(state, from_region, faction, piece_type, ps, count, current, 'move',
+                         destination=to_region, sa_loan=_sa_loan)
         src[ps][piece_type] = current - count
         _ensure_faction_pieces_structure(state, to_region, faction)
         dest = state["spaces"][to_region]["pieces"][faction]
@@ -764,7 +790,7 @@ def move_piece(state, from_region, to_region, faction, piece_type, count=1,
 
 
 def flip_piece(state, region, faction, piece_type, count=1, *,
-               from_state=None, to_state=None):
+               from_state=None, to_state=None, _sa_loan=False):
     """Flip flippable pieces between Hidden/Revealed/Scouted.
 
     For flipping to Hidden when Scouted: remove Scouted marker instead
@@ -811,6 +837,9 @@ def flip_piece(state, region, faction, piece_type, count=1, *,
     if from_state == SCOUTED and to_state == HIDDEN:
         actual_to = REVEALED
 
+    if _MARCH_PAUSE in state:
+        track_change(state, region, faction, piece_type, from_state, count, current, 'flip',
+                     new_state=actual_to, sa_loan=_sa_loan)
     f_pieces[from_state][piece_type] = current - count
     f_pieces.setdefault(actual_to, {})
     f_pieces[actual_to][piece_type] = (

@@ -9,9 +9,27 @@ from fs_bot.cli.menus import prompt_choice, prompt_yes_no
 from fs_bot.engine import action_windows
 
 
-def collect_battle(state, faction, stdin, stdout, *, allowed_sas):
+def _preview_boundary(state, faction, action):
     from fs_bot.engine.execute import _execute_interrupted_command
 
+    class AtBoundary(Exception):
+        pass
+
+    def stop(board):
+        # Keep the actual board before the executor unwinds its timing scopes.
+        raise AtBoundary(human_plan._planning_copy(board))
+
+    preview = human_plan._planning_copy(state)
+    try:
+        with action_windows.scope(preview, actor=faction, plan=action,
+                                  phase='sequence_of_play'):
+            _execute_interrupted_command(preview, faction, action, _on_boundary=stop)
+    except AtBoundary as pause:
+        return pause.args[0]
+    return None
+
+
+def collect_battle(state, faction, stdin, stdout, *, allowed_sas):
     command = human_plan._collect_command_plan(state, faction, rc.CMD_BATTLE, stdin, stdout)
     if command is None:
         return None
@@ -28,24 +46,46 @@ def collect_battle(state, faction, stdin, stdout, *, allowed_sas):
         action['details']['sa_after_step'] = step
         action['sa_timing'] = 'during'
 
-        class AtBoundary(Exception):
-            pass
-
-        def stop(board):
-            # The executor's ordinary cleanup still runs. Save the board
-            # before it unwinds the live Command and its timing scope.
-            raise AtBoundary(human_plan._planning_copy(board))
-
-        preview = human_plan._planning_copy(state)
-        try:
-            with action_windows.scope(preview, actor=faction, plan=action,
-                                      phase='sequence_of_play'):
-                _execute_interrupted_command(preview, faction, action, _on_boundary=stop)
-        except AtBoundary as pause:
-            sim, = pause.args
-        else:
+        sim = _preview_boundary(state, faction, action)
+        if sim is None:
             stdout.write('The selected Battle cannot resolve before the Special Activity.\n')
             return None
+    action = human_plan._collect_sa_plan(sim, faction, action, stdin, stdout,
+                                         standalone=True, allowed_sas=allowed_sas,
+                                         borrow_allowed=False)
+    return command if action['sa'] in (None, 'No SA') else action
+
+
+def collect_march(state, faction, stdin, stdout, *, allowed_sas):
+    from fs_bot.engine.march_interruption import ordered_moves
+
+    planning = dict(state, _cli_march_with_sa=True)
+    command = human_plan._collect_command_plan(planning, faction, rc.CMD_MARCH, stdin, stdout)
+    if command is None:
+        return None
+    action = deepcopy(command)
+    moves = ordered_moves(action)
+    options = []
+    for index, move in enumerate(moves, start=1):
+        path = move['path']
+        for hop, region in enumerate([move['origin'], *path]):
+            if index == len(moves) and hop == len(path):
+                continue
+            label = (f'Group {index} after hop {hop} into {region}' if hop else
+                     f'Group {index} in {region} after origin preparation')
+            options.append((label, {'group': index, 'hop': hop}))
+    if options:
+        action['details']['sa_after_step'] = prompt_choice(
+            stdin, stdout, 'Special Activity at which March step?', options)
+        action['sa_timing'] = 'during'
+        sim = _preview_boundary(state, faction, action)
+        if sim is None:
+            stdout.write('The March cannot reach that step before the Special Activity.\n')
+            return None
+    else:
+        stdout.write('The March has one hide-only origin. Choose the Special Activity after it.\n')
+        sim = human_plan._preview_command(state, faction, command)
+        action['sa_timing'] = 'after'
     action = human_plan._collect_sa_plan(sim, faction, action, stdin, stdout,
                                          standalone=True, allowed_sas=allowed_sas,
                                          borrow_allowed=False)

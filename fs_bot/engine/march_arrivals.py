@@ -28,9 +28,12 @@ class MarchArrivals:
         return excluded
 
     def record(self, owner, rows):
-        key = self.keys.setdefault(owner, f'march.arrivals.{self.faction}.{owner}')
+        key = self.key(owner)
         parked = [dict(row, id='marched_pieces', label='Already marched') for row in rows]
         self._set(owner, [*get_cohorts(self.state, key), *parked])
+
+    def key(self, owner):
+        return self.keys.setdefault(owner, f'march.arrivals.{self.faction}.{owner}')
 
     def record_group(self, region, group):
         from fs_bot.engine.march_timing import physical_members

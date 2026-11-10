@@ -131,6 +131,41 @@ def physical_members(state, faction, region, group):
                 yield owner, row
 
 
+def restore_members(state, faction, group, by_owner):
+    """Resume with the surviving physical counters after an intervening action."""
+    from fs_bot.engine.diviciacus import KEY
+
+    div = state.get(KEY, {})
+    lent_type = div.get('piece_type') if div.get('faction') == faction else None
+    loan_owners = {} if '_diviciacus_owners' in group else None
+    visibility = {}
+    leader = None
+    for piece in (rc.LEGION, rc.AUXILIA, rc.WARBAND):
+        group[piece] = 0
+    for owner, rows in by_owner.items():
+        for row in rows:
+            count, piece = row['count'], row['piece_type']
+            if not count:
+                continue
+            if piece == rc.LEADER:
+                leader = group.get(rc.LEADER)
+                continue
+            if row.get('loan_kind') == 'diviciacus':
+                piece = lent_type
+            group[piece] += count
+            if piece in (rc.AUXILIA, rc.WARBAND):
+                ps = row['piece_state']
+                counts = visibility.setdefault(piece, {})
+                counts[ps] = counts.get(ps, 0) + count
+                if piece == lent_type and loan_owners is not None:
+                    counts = loan_owners.setdefault(owner, {})
+                    counts[ps] = counts.get(ps, 0) + count
+    group[rc.LEADER] = leader
+    group['_march_visibility'] = visibility
+    if loan_owners is not None:
+        group['_diviciacus_owners'] = loan_owners
+
+
 def apply_removals(state, faction, group, effects):
     """Subtract the exact selected members; residents do not change a group."""
     from fs_bot.engine.diviciacus import KEY

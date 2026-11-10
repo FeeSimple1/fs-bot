@@ -5,8 +5,8 @@ these constraints concern the whole Command and cannot change mid-action.
 """
 
 from fs_bot.rules_consts import (
-    BRITANNIA, AEDUI, FACTIONS, CMD_BATTLE, CMD_RAID, CMD_SEIZE, SA_AMBUSH,
-    SA_BESIEGE, SA_ENTREAT, SA_ENLIST, SA_RAMPAGE, SA_SCOUT, SA_SUBORN, SA_INTIMIDATE,
+    BRITANNIA, AEDUI, FACTIONS, CMD_BATTLE, CMD_MARCH, CMD_RAID, CMD_SEIZE, SA_AMBUSH,
+    SA_BESIEGE, SA_BUILD, SA_ENTREAT, SA_ENLIST, SA_RAMPAGE, SA_SCOUT, SA_SUBORN, SA_INTIMIDATE,
 )
 from fs_bot.commands.common import CommandError
 
@@ -124,7 +124,7 @@ def validate_rally_interruption(state, faction, action):
 
 
 def validate_command_interruption(state, faction, action):
-    """Check a boundary in a single ordered Battle or Raid plan (§4.1)."""
+    """Check a boundary in a single ordered Command plan (§4.1)."""
     details = action.get('details') or {}
     if 'sa_after_step' not in details:
         return None
@@ -137,8 +137,30 @@ def validate_command_interruption(state, faction, action):
         return 'Choose one standalone Special Ability for the Command interruption.'
     if 'command_parts' in details or 'sa_after_rally_step' in details:
         return 'Use one ordered Command plan with one interruption.'
-    if command not in (CMD_BATTLE, CMD_RAID):
-        return 'This interruption requires an ordered Battle or Raid plan.'
+    if command == CMD_MARCH:
+        from fs_bot.engine.march_interruption import validate_boundary
+        try:
+            validate_boundary(state, faction, action)
+        except CommandError as exc:
+            return str(exc)
+    elif command in (CMD_BATTLE, CMD_RAID):
+        error = _validate_battle_or_raid_boundary(state, faction, details, command)
+        if error:
+            return error
+    else:
+        return 'This interruption requires an ordered March, Battle, or Raid plan.'
+    from fs_bot.engine.execute import _sa_detail
+    explicit = {SA_BUILD: 'build_plan', SA_SCOUT: 'scout_plan', SA_SUBORN: 'suborn_plan',
+                SA_ENLIST: 'enlist', SA_INTIMIDATE: 'intimidate_plan'}.get(sa)
+    if explicit and _sa_detail(action, explicit) is None:
+        return f'Supply an explicit {explicit} for the interruption.'
+    if sa in (SA_ENTREAT, SA_RAMPAGE) and not any(
+            isinstance(entry, dict) for entry in action.get('sa_regions') or []):
+        return 'Supply explicit Special Ability targets for the interruption.'
+    return None
+
+
+def _validate_battle_or_raid_boundary(state, faction, details, command):
     key = 'battle_plan' if command == CMD_BATTLE else 'raid_plan'
     entries = details.get(key)
     if (not isinstance(entries, list) or any(not isinstance(entry, dict)
@@ -170,14 +192,6 @@ def validate_command_interruption(state, faction, action):
         maximum = max_raiders_per_region(state, faction)
         if any(count > maximum for count in Counter(regions).values()):
             return f'Use at most {maximum} Raid flips in each selected Region.'
-    from fs_bot.engine.execute import _sa_detail
-    explicit = {SA_SCOUT: 'scout_plan', SA_SUBORN: 'suborn_plan',
-                SA_ENLIST: 'enlist', SA_INTIMIDATE: 'intimidate_plan'}.get(sa)
-    if explicit and _sa_detail(action, explicit) is None:
-        return f'Supply an explicit {explicit} for the interruption.'
-    if sa in (SA_ENTREAT, SA_RAMPAGE) and not any(
-            isinstance(entry, dict) for entry in action.get('sa_regions') or []):
-        return 'Supply explicit Special Ability targets for the interruption.'
     return None
 
 
@@ -261,10 +275,8 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
     if command in ('Rally', 'Recruit') and not selected_regions:
         return "The Command needs at least one placement or Rally option"
     if len(parts) > 1:
-        if command == CMD_BATTLE:
-            return "Use one Battle plan with sa_after_step for during timing"
-        if command == "March":
-            return "Use before/after timing for March; its Command-wide resolution cannot be split"
+        if command in (CMD_BATTLE, CMD_MARCH):
+            return f"Use one {command} plan with sa_after_step for during timing"
         if action.get("sa_timing") != "during" or len(parts) != 2:
             return "An interrupted Command needs exactly two portions and one SA"
         selected = set()
@@ -275,7 +287,7 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
             if regions & selected:
                 return "Select a Region only once for the Command (§3.1)"
             selected.update(regions)
-    if has_sa and command == "March":
+    if has_sa and command == CMD_MARCH and 'sa_after_step' not in details:
         for part in parts:
             details = part.get("details") or {}
             plan = details.get("march_plan") or details

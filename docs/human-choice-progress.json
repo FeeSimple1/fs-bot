@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "3299c55625b1fba1c77d5c5e6a5350cf1b31d08a",
-    "python_sha256": "a7df9bb8f21cd97b30af6cd87208b9b2090fc1bb92d789026364a18dfbadf4f1",
-    "python_files": 568,
+    "commit": "b7b8de7ddfe3f72996ce432e8cc2adfd1a9f60af",
+    "python_sha256": "55397b8ee0ab0b18af07893223fcba35c983a46bc3dfc46807f9a6fcceb9b861",
+    "python_files": 570,
     "working_tree_changes": true,
-    "note": "The Battle and Raid timing repair is tested on the publishing tree over the listed parent. See current-status.md#10-november-battle-and-raid-special-ability-timing."
+    "note": "The March timing repair is tested on the publishing tree over the listed parent. See current-status.md#10-november-march-special-ability-timing."
   },
   "total": 50,
-  "closed": 48,
-  "open": 2,
+  "closed": 49,
+  "open": 1,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -79,16 +79,17 @@
     "The March origin follow-up keeps earlier arrivals and drop-offs out of later groups in the same Command. The original audit counts remain 47 closed and 3 open.",
     "BATTLE-RETREAT-CHOICES closes with separate live declaration and survivor disposition. The original audit stands at 48 closed and 2 open. NPC Retreat Leader placement is a separate follow-up.",
     "Non-player Retreat Leader placement closes as a separate follow-up. The original audit remains at 48 closed and 2 open.",
-    "Standalone Special Abilities can interrupt Battle between Regions and Raid between flips. TIMING-SA-DURING remains open for March."
+    "Standalone Special Abilities can interrupt Battle between Regions and Raid between flips. This completed the Battle and Raid portions of TIMING-SA-DURING.",
+    "A standalone Special Ability can interrupt one March while retaining its route, costs, and exact cohorts. This closes TIMING-SA-DURING."
   ],
   "findings": [
     {
       "id": "TIMING-SA-DURING",
       "title": "General during-Command Special Ability timing remains restricted",
       "severity": "medium",
-      "status": "open",
-      "summary": "Battle and Raid now support a standalone Special Ability during a single ordered Command. March timing remains open.",
-      "report": "current-status.md#10-november-battle-and-raid-special-ability-timing"
+      "status": "closed",
+      "summary": "A standalone Special Ability can interrupt one March, Battle, or Raid at a chosen procedure boundary. Engine plans, terminal play, and durable assistant replay preserve Command-wide choices and exact participating counters.",
+      "report": "current-status.md#10-november-march-special-ability-timing"
     },
     {
       "id": "CMD-REPEATED-REGION",

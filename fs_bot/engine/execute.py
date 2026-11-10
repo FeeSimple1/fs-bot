@@ -610,16 +610,31 @@ def _execute_interrupted_command(state, faction, action, *, _human_grant=None,
     boundary = action['details']['sa_after_step']
     result_sa = None
 
-    def after_step(step):
+    def resolve_ability():
         nonlocal result_sa
+        if _on_boundary is not None:
+            _on_boundary(state)
+        result_sa = _execute_sa(state, faction, action, _human_grant=_human_grant)
+
+    def after_step(step):
         if step == boundary:
             with suspend_command_loan(state, faction):
-                if _on_boundary is not None:
-                    _on_boundary(state)
-                result_sa = _execute_sa(state, faction, action, _human_grant=_human_grant)
+                resolve_ability()
 
-    handler = {_CMD_BATTLE: _execute_battle, _CMD_RAID: _execute_raid}[action['command']]
-    result = handler(state, faction, action, _after_step=after_step)
+    if action['command'] == _CMD_MARCH:
+        from fs_bot.commands.common import is_free_action
+        from fs_bot.engine.march_interruption import pause
+
+        def after_march_hop(group_number, hop, region, group, arrivals):
+            if boundary == {'group': group_number, 'hop': hop}:
+                with pause(state, faction, region, group, arrivals, action['sa']):
+                    resolve_ability()
+
+        result = _execute_march(state, faction, action, free=is_free_action(state, faction),
+                                choose_dropoffs=True, _after_hop=after_march_hop)
+    else:
+        handler = {_CMD_BATTLE: _execute_battle, _CMD_RAID: _execute_raid}[action['command']]
+        result = handler(state, faction, action, _after_step=after_step)
     result['sa_timing'] = 'during'
     if result_sa is None:
         result_sa = {'executed': False, 'sa': action['sa'],
@@ -4393,34 +4408,44 @@ def march_plan_has_effect(state, faction, plan):
 
 @_diviciacus_command_scope
 def _execute_march(state, faction, bot_action, *, free=False, before_move=None,
-                   moving_only=False, choose_dropoffs=False):
+                   moving_only=False, choose_dropoffs=False, _after_hop=None):
     """Pay once per selected origin; movement-only helpers remain free."""
     from fs_bot.engine.action_windows import window
     window(state, 'march_before_plan', marching_faction=faction)
-    moves, deferred = _collect_march_moves(state, faction, bot_action)
+    if _after_hop is None:
+        moves, deferred = _collect_march_moves(state, faction, bot_action)
+    else:
+        from fs_bot.engine.march_interruption import ordered_moves
+        moves, deferred = ordered_moves(bot_action), []
     result = _execute_march_moves(state, faction, moves, free=free,
                                   before_move=before_move, moving_only=moving_only,
-                                  choose_dropoffs=choose_dropoffs)
+                                  choose_dropoffs=choose_dropoffs, _after_hop=_after_hop)
     result["deferred_origins"] = deferred + result["deferred_origins"]
     return result
 
 
 def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
-                         moving_only=False, choose_dropoffs=False):
-    """Bill origins once, before moving; a threat-March SA runs after payment.
+                         moving_only=False, choose_dropoffs=False, _after_hop=None):
+    """Bill each origin once; an interrupted March can select later origins as it goes.
 
     Only affordable origins with a mobile group and an adjacent route or explicit stay
     are selected. Multiple groups/steps never incur additional origin fees.
     Free Event Commands and base-game German movement remain free.
     """
     from fs_bot.engine.action_windows import window
-    from fs_bot.engine.march_arrivals import MarchArrivals
+    from fs_bot.engine.march_arrivals import MarchArrivals, acting_counts
     window(state, 'march_before_payment', marching_faction=faction)
+    select_as_you_go = _after_hop is not None
     selected, costs, deferred, errors = _select_affordable_march_moves(
-        state, faction, moves, free=free)
-    total_cost = sum(costs.values())
-    if total_cost:
-        state["resources"][faction] -= total_cost
+        state, faction, moves, free=free or select_as_you_go)
+    upfront_cost = sum(costs.values())
+    if select_as_you_go:
+        from fs_bot.commands.march import march_cost
+        from fs_bot.rules_consts import LEADER
+        numbers = {id(move): index for index, move in enumerate(moves, start=1)}
+        costs = {}
+    elif upfront_cost:
+        state["resources"][faction] -= upfront_cost
     sa_result = before_move() if selected and before_move is not None else None
     marched, stayed = [], []
     flipped_origins = set()
@@ -4429,16 +4454,34 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
         for group_index, move in enumerate(selected):
             origin = move["origin"]
             arrivals.begin_group(origin)
+            if select_as_you_go and origin not in costs:
+                available = _mobile_march_group(state, faction, origin)
+                for piece, count in acting_counts(state, arrivals.in_region(origin)).items():
+                    available[piece] = None if piece == LEADER else available[piece] - count
+                cost = 0 if free else march_cost(state, origin, faction)
+                if not _group_has_pieces(available) or cost > state['resources'].get(faction, 0):
+                    deferred.append(origin)
+                    arrivals.finish_origin(origin)
+                    continue
+                if cost:
+                    state['resources'][faction] -= cost
+                costs[origin] = cost
             dropoffs = [] if choose_dropoffs else None
+            hopped = False
+            def after_hop(hop, region, group):
+                nonlocal hopped
+                hopped = hopped or hop > 0
+                _after_hop(numbers[id(move)], hop, region, group if move['path'] else {}, arrivals)
             try:
                 final = _march_with_harassment(state, faction, origin, move["path"],
                                                group_cap=move.get("group"),
                                                flipped_origins=flipped_origins,
                                                moving_only=moving_only, arrivals=arrivals,
-                                               chosen_dropoffs=dropoffs, group_index=group_index)
+                                               chosen_dropoffs=dropoffs, group_index=group_index,
+                                               after_hop=after_hop if select_as_you_go else None)
                 if move.get("stay") is True and not move["path"]:
                     stayed.append(origin)
-                if final != origin:
+                if final != origin or hopped:
                     entry = {k: v for k, v in move.items() if k not in ("path", "group")}
                     entry["final_region"] = final
                     if dropoffs:
@@ -4449,9 +4492,11 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
             arrivals.finish_origin(origin)
     finally:
         arrivals.clear()
+    if select_as_you_go:
+        deferred = [origin for origin in deferred if origin not in costs]
     result = {"executed": bool(marched or stayed), "command": _CMD_MARCH,
               "marches": marched, "deferred_origins": list(dict.fromkeys(deferred)),
-              "errors": errors, "total_cost": total_cost, "origin_costs": costs}
+              "errors": errors, "total_cost": sum(costs.values()), "origin_costs": costs}
     if stayed:
         result["stayed_origins"] = list(dict.fromkeys(stayed))
     if not marched and not stayed:
@@ -4546,7 +4591,7 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
                            harassers_by_region=None, dropoffs_by_region=None,
                            flipped_origins=None, moving_only=False,
                            initial_group=None, chosen_dropoffs=None, group_index=0,
-                           arrivals=None):
+                           arrivals=None, after_hop=None):
     """March a faction's mobile group origin -> ... -> path[-1], one step
     at a time, resolving Harassment (§3.2.2 / §8.4.2) in each Region the group
     enters and then leaves. Returns the final Region reached.
@@ -4631,11 +4676,13 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
             select_origin_visibility(state, faction, origin, group, excluded=excluded)
     track_arrivals = arrivals is not None and any(arrivals.needs(region) for region in path)
     exact_members = bool(track_arrivals or excluded
-                         or (chosen_dropoffs is not None and len(path) > 1))
+                         or after_hop is not None or (chosen_dropoffs is not None and len(path) > 1))
     if path and exact_members:
         freeze_members(state, faction, origin, group, excluded=excluded)
     current, moved = origin, False
     try:
+        if after_hop is not None and _group_has_pieces(group):
+            after_hop(0, current, group)
         for i, nxt in enumerate(path):
             group_window(state, faction, current, group, 'march_before_step',
                          origin=origin, destination=nxt, step=i + 1)
@@ -4652,6 +4699,8 @@ def _march_with_harassment(state, faction, origin, path, group_cap=None, *,
             moved = True
             group_window(state, faction, current, group, 'march_arrival',
                          origin=origin, step=i + 1)
+            if after_hop is not None and current == nxt:
+                after_hop(i + 1, current, group)
             if current != nxt or res.get("stopped_reason"):
                 break  # stop in the crossing destination; do not continue/harass
             # Intermediate Region (entered then about to be left) -> Harassment

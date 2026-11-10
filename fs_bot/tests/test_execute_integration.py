@@ -3366,7 +3366,7 @@ def test_capability_hooks_battle_intimidate():
 
 
 def test_capability_hooks_senate_and_a33_outnumbered():
-    """Slice 63: lost_eagle blocks Senate down-shift; A33 removes outnumbered
+    """Lost Eagle leaves Event shifts unrestricted; A33 removes outnumbered
     German Warbands after their Counterattack (no Ariovistus)."""
     from fs_bot.state.setup import setup_scenario
     from fs_bot.board.pieces import place_piece, count_pieces
@@ -3374,14 +3374,15 @@ def test_capability_hooks_senate_and_a33_outnumbered():
     from fs_bot.battle.resolve import resolve_battle
     from fs_bot.cards.card_effects import _apply_senate_shift
     from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, GERMANS, ARVERNI,
-        WARBAND, SENATE_DOWN)
-    # lost_eagle: no down-shift.
+        WARBAND, SENATE_DOWN, INTRIGUE, ADULATION)
+    # Card 33 restricts the upcoming Senate Phase, not intervening Events.
     st = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)
-    st["senate"]["position"] = "Intrigue"
+    st["senate"]["position"] = INTRIGUE
     st["senate"]["firm"] = False
     st["event_modifiers"] = {"lost_eagle_no_shift_down": True}
     _apply_senate_shift(st, SENATE_DOWN)
-    assert st["senate"]["position"] == "Intrigue"
+    assert st["senate"]["position"] == ADULATION
+    assert st["event_modifiers"]["lost_eagle_no_shift_down"] is True
     # A33: outnumbered Germans removed.
     R = "Sugambri"
     st2 = setup_scenario(SCENARIO_GREAT_REVOLT, seed=2)

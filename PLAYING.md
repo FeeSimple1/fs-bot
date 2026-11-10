@@ -23,6 +23,15 @@ flip and updates the next flip's choices. A single Raid Region keeps its
 normal flip limit and its one intrinsic Germanic Intimidate opportunity.
 Ambush and Besiege modify Battle directly.
 
+Battle requires your Forces in the selected Region when it resolves. Scout
+before Battle may bring Auxilia into that Region. Scout movement uses the
+scenario's playable Regions and Gallia Togata marker; base Cisalpina needs
+that Event, and movement into or out of Britannia remains prohibited.
+
+Harvest counts each Allied Tribe disc and Citadel once. Lost Eagle restricts
+only the next Senate Phase, including when a scenario replaces the usual
+shift. Intervening Cicero and Pompey Events use their printed Senate effects.
+
 For **March (between hops or groups)**, choose the routes and groups, then
 select the pause. The Special Activity choices use a preview of the board
 at that step. Live decisions before the pause can change the pieces that

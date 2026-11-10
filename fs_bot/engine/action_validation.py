@@ -400,6 +400,18 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
     error = validate_region_selections(faction, action)
     if error:
         return error
+    if sa == SA_SCOUT:
+        from fs_bot.commands.sa_scout import validate_scout_movement_regions
+        from fs_bot.engine.execute import _sa_detail
+        plan = _sa_detail(action, 'scout_plan') or {}
+        if not isinstance(plan, dict) or not isinstance(plan.get('auxilia_moves') or [], (list, tuple)):
+            return 'Supply a Scout plan with a list of Auxilia movements.'
+        for move in plan.get('auxilia_moves') or []:
+            if isinstance(move, dict) and move.get('from_region') and move.get('to_region'):
+                try:
+                    validate_scout_movement_regions(state, move['from_region'], move['to_region'])
+                except CommandError as exc:
+                    return str(exc)
     if sa == SA_ENTREAT:
         from fs_bot.commands.sa_entreat import validate_entreat_ally_target
         for entry in action.get('sa_regions') or []:

@@ -76,6 +76,7 @@ from fs_bot.rules_consts import (
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, flip_piece,
     count_pieces, count_pieces_by_state, get_available,
+    count_allied_discs, count_on_map,
     get_leader_in_region, find_leader, PieceError,
     _count_on_legions_track,
 )
@@ -648,14 +649,10 @@ def _harvest_earnings(state):
             # A6.4.2: Arverni do not earn Resources in Ariovistus
             result[faction] = 0
             continue
-        allies = 0
-        for tribe_info in state["tribes"].values():
-            if tribe_info.get("allied_faction") == faction:
-                allies += 1
-        citadels = 0
-        for region_data in state["spaces"].values():
-            f_pieces = region_data.get("pieces", {}).get(faction, {})
-            citadels += f_pieces.get(CITADEL, 0)
+        # A Citadel keeps its City's allegiance record (§1.4.2), but
+        # replaces the physical Ally disc. Count that City only once.
+        allies = count_allied_discs(state, faction)
+        citadels = count_on_map(state, faction, CITADEL)
         earn = 2 * (allies + citadels)
         _add_resources(state, faction, earn)
         result[faction] = earn
@@ -722,6 +719,11 @@ def senate_phase(state, first_senate_after_interlude=False,
     # of shifting the Senate, put its marker at Intrigue (not Firm)".
     action_windows.window(state, 'winter_senate_marker')
     if force_position is not None:
+        # Card 33 expires after this Senate Phase even when the scenario
+        # replaces its ordinary shift with a forced placement at Intrigue.
+        mods = state.get("event_modifiers")
+        if isinstance(mods, dict):
+            mods.pop("lost_eagle_no_shift_down", None)
         state.setdefault("senate", {})["position"] = force_position
         state["senate"]["firm"] = False
         result["marker_shift"] = {"shifted": False,
@@ -759,6 +761,13 @@ def _senate_marker_shift(state, first_senate_after_interlude=False):
         "shifted": False,
         "reason": None,
     }
+
+    # Card 33's restriction lasts for this upcoming Senate Phase only.
+    # Consume it before scenario exceptions or no-shift early returns.
+    mods = state.get("event_modifiers")
+    no_shift_down = False
+    if isinstance(mods, dict):
+        no_shift_down = bool(mods.pop("lost_eagle_no_shift_down", False))
 
     # A6.5.1: skip the shift during the first Senate Phase after the
     # Gallic War Interlude. Keyed on the flag alone — only the Interlude
@@ -804,13 +813,6 @@ def _senate_marker_shift(state, first_senate_after_interlude=False):
     else:
         # Above 12: shift toward Adulation
         direction = "down"
-
-    # Card 33 (Lost Eagle), shaded: "This upcoming Senate Phase, no shift down."
-    # The flag persists from event play to here; consume it this phase.
-    mods = state.get("event_modifiers")
-    no_shift_down = False
-    if isinstance(mods, dict):
-        no_shift_down = bool(mods.pop("lost_eagle_no_shift_down", False))
 
     # EXCEPTION: Do not shift down (toward Adulation, including to Intrigue
     # from Uproar) if any Legions are in the Fallen box — §6.5.1 — or if a

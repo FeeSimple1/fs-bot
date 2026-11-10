@@ -51,6 +51,18 @@ def scout_moved_count(state, region, visibility, owner=None):
                if c['region'] == region and c.get('piece_state') == visibility)
 
 
+def validate_scout_movement_regions(state, origin, target):
+    """Scout uses adjacent playable Regions, including Card 5/A5 exceptions."""
+    from fs_bot.map.map_data import is_region_playable
+    if not all(isinstance(region, str) and is_region_playable(state, region, ROMANS)
+               for region in (origin, target)):
+        raise CommandError('Scout movement requires playable Regions (§1.4.2)')
+    if origin == BRITANNIA or target == BRITANNIA:
+        raise CommandError('Scout movement cannot move into or out of Britannia (§4.1.3)')
+    if not is_adjacent(origin, target):
+        raise CommandError(f'{origin} and {target} are not adjacent')
+
+
 def scout_movement_step(state, move, *, index=0):
     """One Scout move, reserving the exact pieces that have already moved."""
     from fs_bot import rules_consts as rc
@@ -58,15 +70,12 @@ def scout_movement_step(state, move, *, index=0):
     from fs_bot.engine.diviciacus import KEY, choose_owners, validate_response
     origin, target = move['from_region'], move['to_region']
     count, visibility = move['count'], move['piece_state']
+    validate_scout_movement_regions(state, origin, target)
     window(state, 'scout_move', author=ROMANS, index=index,
            from_region=origin, to_region=target,
            timing_actions=move.get('timing_actions'))
     if type(count) is not int or count < 1 or visibility not in (HIDDEN, REVEALED):
         raise CommandError('Scout needs a positive count of Hidden or Revealed Auxilia')
-    if origin == BRITANNIA or target == BRITANNIA:
-        raise CommandError('Scout movement cannot move into or out of Britannia (§4.1.3)')
-    if not is_adjacent(origin, target):
-        raise CommandError(f'{origin} and {target} are not adjacent')
     context = state.get(KEY, {})
     borrowed = (context.get('faction') == ROMANS
                 and origin in context.get('pieces', {}))

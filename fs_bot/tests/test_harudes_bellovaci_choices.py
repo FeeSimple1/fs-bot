@@ -151,7 +151,7 @@ def test_bellovaci_counterattack_casualties_stay_with_physical_belgic_owner():
     assert count_pieces(state, rc.ATREBATES, rc.BELGAE, rc.WARBAND) == 3
 
 
-@pytest.mark.parametrize('removed,residents', [(0, 0), (3, 0), (5, 0), (6, 4)])
+@pytest.mark.parametrize('removed,residents', [(0, 0), (3, 0), (5, 0), (6, 0), (6, 4)])
 def test_bellovaci_late_removal_cannot_downgrade_grant_to_ordinary_battle(removed, residents):
     from fs_bot.engine.action_windows import scope
     from fs_bot.engine.voluntary_removal import operation

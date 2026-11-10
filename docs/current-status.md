@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November third comparison repair Batch 2
+
+The [second repair batch](reviews/third-comparison-batch2-2026-11-10.md)
+closes CM3-01, CM3-03, WS3-01, and WS3-02. Scout validates playable endpoints;
+Battle requires attacking Forces after preceding movement and timing choices.
+Harvest counts each physical Ally disc and Citadel once. Lost Eagle affects
+only the upcoming Senate Phase and expires through scenario exceptions.
+
+All **9,522 tests pass**, including 49 added cases and a corrected legacy
+Senate expectation. The 50 changed cases produce 28 failures and 22 positive
+controls on the parent. Twenty audited bot games are clean. Twenty mixed-player
+cases match across hash seeds with replay, zero hard findings and four soft
+partial plans. Restoring only the old seasonal behavior reproduces all 100
+parent winners and game lengths. The corrected 100-game balance matrix passes
+against a reviewed baseline with the same seeds and 15-point band.
+
+The [third-audit ledger](reviews/comparison-audit-round3-2026-11-10.json)
+now records **7 of 15 groups repaired (47%), with 8 remaining**.
+
 ### 10 November third comparison repair Batch 1
 
 The [first repair batch](reviews/third-comparison-batch1-2026-11-10.md)
@@ -42,7 +61,7 @@ with zero hard findings and four soft partial plans. All 100 balance
 outcomes match the parent, and the existing guardrail passed.
 
 The [third-audit ledger](reviews/comparison-audit-round3-2026-11-10.json)
-records **3 of 15 groups repaired (20%), with 12 remaining**.
+recorded **3 of 15 groups repaired (20%), with 12 remaining** at the Batch 1 checkpoint.
 
 ### 10 November third comparison audit
 

@@ -3886,9 +3886,6 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
         defender = battle_target(entry)
         if defender is None:
             continue
-        if _after_step is not None and not count_pieces(state, region, faction):
-            errors.append({'region': region, 'error': 'attacker not present'})
-            continue
         if _skip_absent_targets and not count_pieces(state, region, defender):
             # This is a prospective queue, not a preselected Battle Region.
             # Select it only if an earlier Retreat has brought Romans here.
@@ -3917,6 +3914,12 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                                'defender no longer present' if not count_pieces(state, region, defender)
                                else reason)})
                 continue
+        # §§3.2.4, 3.3.4: every selected Battle needs own Forces, including
+        # uninterrupted Commands. Check after preceding SA/timing movement
+        # and the Event's partial-execution handling for a vanished cohort.
+        if not count_pieces(state, region, faction):
+            errors.append({'region': region, 'error': 'attacker not present'})
+            continue
         from fs_bot.engine.diviciacus import defense_scope
         from fs_bot.battle import elite
         with defense_scope(state, region, faction, defender), elite.scope(state, region, faction, defender):

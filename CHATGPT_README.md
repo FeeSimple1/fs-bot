@@ -258,6 +258,11 @@ supplied by the engine. Extra top-level fields leave the same decision
 pending. Ordinary Battle plans receive their Event-specific modifiers
 through the Event's own choices and resolution.
 
+Scout checks both movement endpoints against current playable Regions and
+the active Gallia Togata marker. Battle checks attacking Forces on the actual
+board after preceding movement and timing choices. An invalid Battle returns
+to the pending turn without spending Resources or Revealing its target.
+
 Accepted turns are checked against their recorded action and plan on resume
 and replay. An older journal containing conflicting choices pauses with an
 explanation. Supported tuple-form March choices retain their meaning across

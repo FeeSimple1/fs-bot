@@ -115,6 +115,9 @@ a partial execution differs from a wholly refused action. A `player_action` is:
 
 Ordinary Battle plans choose their Regions, defenders, and accompanying
 Special Ability. Event resolution supplies printed combat modifiers.
+The attacker must have Forces in each Region when its Battle resolves,
+after any preceding Scout movement or timing choices. A Battle with no
+attacking Forces neither spends Resources nor Reveals its target.
 `details.no_retreat`, `force_retreat`, `allied_factions`, and
 `warband_full_loss` are reserved and rejected in ordinary Battle plans.
 Choices that an Event expressly grants, such as A28's permitted lenders,
@@ -246,6 +249,8 @@ An empty ordered plan is `{ "region_order": [] }`.
 
 Scout movement entries can name `physical_owners` when Diviciacus lends
 counters; their counts must total that move and use only still-unmoved pieces.
+Both endpoints must be adjacent playable Regions for Romans in the current
+scenario and active Gallia Togata context. Neither endpoint may be Britannia.
 Arrivals may participate in subsequent Scout Reveal. The grouped Reveal row
 allocates one `auxilia_count` to an exact `targets` list in the same Region:
 

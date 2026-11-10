@@ -6,8 +6,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 21,
-  "closed": 0,
-  "open": 21,
+  "closed": 6,
+  "open": 15,
   "severity_counts": {
     "high": 15,
     "medium": 6
@@ -21,6 +21,43 @@
     "pytest_skipped": 0,
     "independent_probe_scripts": 9,
     "new_balance_matrix": false
+  },
+  "latest_repair": {
+    "batch": 1,
+    "date": "2026-11-10",
+    "findings": [
+      "FE2-01",
+      "FE2-02",
+      "XC2-01",
+      "CM2-01",
+      "CM2-02",
+      "CM2-03"
+    ],
+    "report": "../current-status.md#10-november-human-turn-plan-scope",
+    "tested_source": {
+      "commit": "b346a41366ab0573510ac4061f6655dbab7aa224",
+      "python_sha256": "79e7a881aa960e1e66d50584943e74a26d0df5ad3cf25f93519d86e3dae0e3e3",
+      "python_files": 573,
+      "working_tree_changes": true,
+      "note": "Validation ran against the publishing tree over the listed parent."
+    },
+    "validation": {
+      "pytest_passed": 9357,
+      "new_regressions": 23,
+      "focused_passed": 124,
+      "all_bot_records_matched": 20,
+      "mixed_seat_records_matched": 20,
+      "mixed_hash_seeds": [
+        0,
+        987
+      ],
+      "mixed_hard_findings": 0,
+      "mixed_partial_plans": 4,
+      "mixed_digest": "e2cbac31f28c3ed31f748277131113e3fbded797e159fca1c91293f9eed76448",
+      "balance_outcomes_matched": 100,
+      "balance_guardrail_passed": true
+    },
+    "comparison_source": "b23c8cd73c9747e6e39157a042a1af13cc703a48"
   },
   "prior_unverified_rows": [
     {
@@ -306,7 +343,7 @@
   ],
   "findings": [
     {
-      "status": "open",
+      "status": "closed",
       "severity": "high",
       "audited_commit": "b23c8cd73c9747e6e39157a042a1af13cc703a48",
       "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
@@ -345,10 +382,12 @@
         "fs_bot/engine/game_engine.py:671–689"
       ],
       "comparison_pattern": "lod_ai/llm/harness.py:109–111 delegates to the terminal _human_decider. lod_ai/interactive_cli.py:1295–1320 builds actions from the current allowed contract and branches the executable plan from that selected action. This motivated checking the FS typed label/plan binding.",
-      "prior_status": "Newly confirmed prior unverified lead in FE-NOPRUNING. Never part of the original 50 confirmed findings."
+      "prior_status": "Newly confirmed prior unverified lead in FE-NOPRUNING. Never part of the original 50 confirmed findings.",
+      "repair_report": "../current-status.md#10-november-human-turn-plan-scope",
+      "disposition": "The offered action and executable plan agree in the assistant and ordinary turn executor. Event grants use their scoped requests. The normal assistant session preserves the pending decision and replays a corrected response."
     },
     {
-      "status": "open",
+      "status": "closed",
       "severity": "high",
       "audited_commit": "b23c8cd73c9747e6e39157a042a1af13cc703a48",
       "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
@@ -385,13 +424,15 @@
         "fs_bot/tools/seat_session.py:91–113"
       ],
       "comparison_pattern": "lod_ai/interactive_cli.py:1341–1350 closes the Event runner over the current card argument and invokes engine.handle_event with that card. The LLM bridge answers the existing menu and cannot replace the card object.",
-      "prior_status": "New confirmed finding outside the original 50."
+      "prior_status": "New confirmed finding outside the original 50.",
+      "repair_report": "../current-status.md#10-november-human-turn-plan-scope",
+      "disposition": "A human Event resolves the current card. A supplied ID must match its exact type and value. The original off-card submission is rejected in a normal assistant session, and the corrected Event replays."
     },
     {
       "id": "XC2-01",
       "title": "A shadow command_parts list lets a Limited Command execute in multiple Regions",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "rule_source": "Reference Documents/Chapter 2, lines 65-67, section 2.3.5",
       "expected": "A Limited Command selects just one Region. Extra inactive representations of a Command must be rejected or excluded from its legality calculation.",
       "observed": "The durable assistant accepts a Limited Recruit whose real recruit_plan names Provincia and Sequani when command_parts contains a single Provincia-only Recruit. It commits one new Auxilia to each Region and records the supplied plan in the decision log. Without the shadow command_parts field, the same two-Region plan is rejected.",
@@ -423,7 +464,9 @@
       "regression_gate": "The witness should become a rejected-input regression. The pending request, board, RNG, accepted journal and log must remain unchanged after rejection. Cover ordinary Limited Recruit, Rally and March or Battle plus valid two-part interruption behavior.",
       "classification": "confirmed",
       "domain": "patterns",
-      "source_rule": "Reference Documents/Chapter 2, lines 65-67, section 2.3.5"
+      "source_rule": "Reference Documents/Chapter 2, lines 65-67, section 2.3.5",
+      "repair_report": "../current-status.md#10-november-human-turn-plan-scope",
+      "disposition": "Only an active two-portion interruption can supply command_parts. Both portions use the same Command and cannot contain nested interruptions. A shadow Recruit list no longer conceals a second Region."
     },
     {
       "id": "CM2-01",
@@ -452,7 +495,7 @@
       ],
       "comparison": "Liberty or Death coin-implementation-lessons.md §E describes repeated per-Command effects and stresses a shared execution-wide guard. Its British MUSTER case also tests the actual aggregate action beyond the planner's first selection. Falling Sky validates duplicate Battle Regions only on an interrupted variant.",
       "repair_scope": "Share Battle Region/defender validation across ordinary and interrupted human Battle plans. Preserve separately scoped trusted Event queues where repeated visits can represent distinct granted Commands. Add acceptance/rollback tests for ordinary and Limited input.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "movement",
       "source_rule": [
@@ -466,7 +509,9 @@
         "fs_bot/engine/execute.py:3873-3900"
       ],
       "comparison_pattern": "Liberty or Death coin-implementation-lessons.md §E describes repeated per-Command effects and stresses a shared execution-wide guard. Its British MUSTER case also tests the actual aggregate action beyond the planner's first selection. Falling Sky validates duplicate Battle Regions only on an interrupted variant.",
-      "prior_status": "New confirmed extension beyond the closed Seize/Entreat repetition finding. Duplicate and opposing-Faction checks currently exist only for the sa_after_step Battle form."
+      "prior_status": "New confirmed extension beyond the closed Seize/Entreat repetition finding. Duplicate and opposing-Faction checks currently exist only for the sa_after_step Battle form.",
+      "repair_report": "../current-status.md#10-november-human-turn-plan-scope",
+      "disposition": "Ordinary and interrupted human Battle share Region and defender checks. One opposing Faction may defend in each selected Region, including when the plan uses ranked targets."
     },
     {
       "id": "CM2-02",
@@ -496,7 +541,7 @@
       ],
       "comparison": "Liberty or Death coin-implementation-lessons.md §B covers data-shape mismatches and §E records a Limited MUSTER cap bypass when a later phase adds another space. The same aggregate-footprint check is missing for Falling Sky's alternate March shapes.",
       "repair_scope": "Normalize accepted March plans before applying structural rules, or reject unsupported human aliases. Include extra-group origins and every explicit path in the same Limited/Britannia validation. Preserve internal Event grants and legacy bot inputs through their explicit trusted entry points.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "movement",
       "source_rule": [
@@ -511,7 +556,9 @@
         "fs_bot/engine/execute.py:4334-4337"
       ],
       "comparison_pattern": "Liberty or Death coin-implementation-lessons.md §B covers data-shape mismatches and §E records a Limited MUSTER cap bypass when a later phase adds another space. The same aggregate-footprint check is missing for Falling Sky's alternate March shapes.",
-      "prior_status": "New confirmed normalization gap. Both origins/routes and alternate accepted plan representations reach the public human executor."
+      "prior_status": "New confirmed normalization gap. Both origins/routes and alternate accepted plan representations reach the public human executor.",
+      "repair_report": "../current-status.md#10-november-human-turn-plan-scope",
+      "disposition": "Declared origins, explicit moves, extra groups, and routes produced by the planner obey the Limited Command and Britannia restrictions. Live validation precedes payment and movement after timing effects."
     },
     {
       "id": "CM2-03",
@@ -538,7 +585,7 @@
       ],
       "comparison": "Liberty or Death coin-implementation-lessons.md §E records repeated Patriot Persuasion and Indian double-SA defects. Its per-Command once-only guard suggests checking every affected Region rather than relying on per-Region piece legality. Devastate may legally select an already Devastated Region on a later Command, so marker presence cannot enforce uniqueness within one execution.",
       "repair_scope": "Validate unique selected Devastate Regions before mutation, using the same rule across before/after/during forms. Retain legal later-Command Devastation of an already marked Region.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "movement",
       "source_rule": [
@@ -551,7 +598,9 @@
         "fs_bot/commands/sa_devastate.py:34-62"
       ],
       "comparison_pattern": "Liberty or Death coin-implementation-lessons.md §E records repeated Patriot Persuasion and Indian double-SA defects. Its per-Command once-only guard suggests checking every affected Region rather than relying on per-Region piece legality. Devastate may legally select an already Devastated Region on a later Command, so marker presence cannot enforce uniqueness within one execution.",
-      "prior_status": "New confirmed extension of the repetition family. The original closed finding explicitly covered Seize and Entreat, and the Devastate repair covered casualty ownership and physical selection."
+      "prior_status": "New confirmed extension of the repetition family. The original closed finding explicitly covered Seize and Entreat, and the Devastate repair covered casualty ownership and physical selection.",
+      "repair_report": "../current-status.md#10-november-human-turn-plan-scope",
+      "disposition": "The human plan rejects repeated Devastate Regions before losses in before, during, and after timing. A legal single selection applies the casualty procedure once."
     },
     {
       "id": "BM2-01",

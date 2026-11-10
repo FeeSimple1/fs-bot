@@ -98,7 +98,6 @@ def validate_response(state, request, response):
         if response["action"] != ACTION_PASS:
             from fs_bot.commands.transfer import transfer_plan_error
             from fs_bot.engine.action_validation import validate_human_structure
-            from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
             # The raw executor may report a refused gift and continue its
             # Command. A durable human must correct forbidden participants
             # before the pending turn is accepted.
@@ -108,7 +107,7 @@ def validate_response(state, request, response):
                 raise ValueError(error)
             error = validate_human_structure(
                 state, request["faction"], response["player_action"],
-                limited=response["action"] == ACTION_LIMITED_COMMAND)
+                action_type=response["action"])
             if error:
                 raise ValueError(error)
         return response

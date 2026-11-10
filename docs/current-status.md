@@ -21,6 +21,34 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November human turn plan scope
+
+The first comparison repair batch binds a human submission to the offered
+action and the current card (§2.3.4). A Command-only response cannot execute
+an Event or add a Special Ability. An Event resolves its printed grants
+through their own requests. Rejected responses retain the same pending
+decision, board, random state, and committed log. Corrected responses can
+resume and replay.
+
+Only a valid during-Command interruption accepts two Command portions.
+Limited March counts origins in the executable plan, including explicit
+moves and implicit Leader routes. Extra groups use selected origins. All
+routes enforce the Britannia restriction, and the executor rechecks scope
+after timing effects and before paying or moving (§§2.3.5, 4.1.3).
+Battle selects each Region once with one opposing defender. Devastate
+applies one round of casualties per selected Region in each Special
+Ability (§§3.1, 3.2.4, 4.1, 4.3.2).
+
+All 9,357 tests pass, including 23 new regressions. The 20 all-bot gameplay
+records and the winners and game lengths of all 100 balance games match
+the parent. The balance guardrail passed. Twenty mixed-seat records match
+the parent across both hash seeds, with zero hard findings and the same
+four partial plans.
+
+**FE2-01, FE2-02, XC2-01, CM2-01, CM2-02, and CM2-03 close.** The
+[comparison ledger](reviews/comparison-audit-2026-11-10.json) stands at
+**6 of 21 closed, 15 remaining.**
+
 ### 10 November second Liberty or Death comparison
 
 The comparative audit confirms **21 additional open finding groups, with

@@ -129,6 +129,7 @@ def test_boii_requires_all_legal_available_placements():
 
 def test_rejected_boii_action_cannot_create_an_unloadable_save(tmp_path):
     state = fresh()
+    state['current_card'] = 37
     params = full_plan(state)
     params['placements'][-1]['count'] = -1
     old_spaces = deepcopy(state['spaces'])

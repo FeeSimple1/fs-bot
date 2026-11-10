@@ -1,5 +1,9 @@
 # Falling Sky comparison audit — 10 November 2026
 
+Batch 1 closed six findings after this audit. Current dispositions and
+validation are in the [finding ledger](comparison-audit-2026-11-10.json)
+and the [repair report](../current-status.md#10-november-human-turn-plan-scope).
+
 **21 confirmed open findings, comprising 15 high and 6 medium priority.** This follow-up compares Falling Sky with Liberty or Death’s approaches to human choices, validation, and effect verification. Each finding has an executable witness and a cited Falling Sky rule. No gameplay repairs are included in this audit.
 
 Falling Sky was audited at `b23c8cd73c9747e6e39157a042a1af13cc703a48` with Python-source SHA-256 `9f48dc76fa0b171c71efa604ca7d486cd87daaf8817a7eda5aa34df67822dfa5`. Liberty or Death was inspected at `2991ea279062773548ec390a1da75f3e85381702`. The supplied Falling Sky references and thirteen adopted provisional rulings govern the rules conclusions.

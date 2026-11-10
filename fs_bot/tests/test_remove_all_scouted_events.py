@@ -122,6 +122,7 @@ def run_session(session, card):
 @pytest.mark.parametrize('case', CASES, ids=lambda case: case[0])
 def test_durable_event_save_resume_and_exact_replay(case, tmp_path):
     state = position(case)
+    state['current_card'] = case[0]
     state['_card_turn'] = {'idx': 0}
     before = deepcopy(state)
     initial = encode(state)

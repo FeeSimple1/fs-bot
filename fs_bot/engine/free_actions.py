@@ -283,7 +283,10 @@ def validate_free_action_response(state, faction, request, response):
 
 def _validate_plan(state, faction, request, action):
     from fs_bot.cli.human_plan import _faction_special_abilities
-    from fs_bot.engine.action_validation import command_regions, command_parts, compatible_sa
+    from fs_bot.engine.action_validation import (
+        command_regions, command_parts, compatible_sa, validate_command_interruption,
+        validate_command_parts, validate_rally_interruption, validate_region_selections,
+    )
     from fs_bot.map.map_data import get_playable_regions_for_state
     faction = request.get('acting_faction', faction)
     from fs_bot.commands.sa_intimidate import human_plan_error
@@ -294,17 +297,16 @@ def _validate_plan(state, faction, request, action):
     error = validate_trade_plan(action)
     if error:
         return error
-    from fs_bot.engine.action_validation import (
-        validate_command_interruption, validate_rally_interruption,
-    )
+    error = validate_command_parts(action)
+    if error:
+        return error
     error = validate_rally_interruption(state, faction, action)
     if error:
         return error
     error = validate_command_interruption(state, faction, action)
     if error:
         return error
-    from fs_bot.engine.action_validation import validate_region_uniqueness
-    error = validate_region_uniqueness(action)
+    error = validate_region_selections(faction, action)
     if error:
         return error
     from fs_bot.commands.sa_build import build_plan_error
@@ -356,21 +358,13 @@ def _validate_plan(state, faction, request, action):
     if request.get('double_auxilia') and 'sa_after_step' in (action.get('details') or {}):
         return 'This Event grants its own Scout and Battle sequence.'
     parts = command_parts(action)
-    if len(parts) > 1:
-        if cmd in ('March', 'Battle') or action.get('sa_timing') != 'during' or len(parts) != 2:
-            return 'Invalid interrupted Command.'
-        if any(part.get('command') != cmd for part in parts):
-            return 'Both portions must use the same Command.'
     selected = []
     for part in parts:
         if cmd == 'Battle':
             entries = (part.get('details') or {}).get('battle_plan') or []
-            battle_regions = [entry.get('region') for entry in entries]
             from fs_bot.board.pieces import count_pieces
             if any(not count_pieces(state, entry.get('region'), faction) for entry in entries):
                 return "Battle requires the acting Faction's pieces in every selected Region."
-            if len(battle_regions) != len(set(battle_regions)):
-                return 'Select each Battle Region only once.'
         selected.extend(command_regions(part))
         if cmd == 'March':
             details = part.get('details') or {}

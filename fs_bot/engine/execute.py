@@ -206,9 +206,8 @@ def execute_decision(state, faction, decision):
             clear_confirmation(state, faction)
             clear_supply_confirmation(state)
     from fs_bot.engine.action_validation import validate_human_structure
-    from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
     error = validate_human_structure(state, faction, action,
-                                     limited=decision.get('action') == ACTION_LIMITED_COMMAND)
+                                     action_type=decision.get('action'))
     if error:
         return {"executed": False, "command": action.get("command") if isinstance(action, dict) else None,
                 "reason": error, "errors": [{"error": error}], "rejected": True}
@@ -365,6 +364,17 @@ def _execute_decision(state, faction, decision, *, sequence=False):
         _CMD_MARCH: _execute_march,
     }
 
+    if is_human and sequence:
+        from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
+        limited = decision.get('action') == ACTION_LIMITED_COMMAND
+
+        def ordinary_march(board, actor, plan):
+            sa = plan.get('sa')
+            return _execute_march(board, actor, plan,
+                                  choose_dropoffs=command == _CMD_MARCH,
+                                  _limited=limited, _with_sa=bool(sa and sa != SA_ACTION_NONE_LABEL))
+
+        _COMMAND_HANDLERS[_CMD_MARCH] = ordinary_march
     handler = _COMMAND_HANDLERS.get(command)
     transfer_results = []
     if sequence and handler is not None:
@@ -387,8 +397,6 @@ def _execute_decision(state, faction, decision, *, sequence=False):
 
     if is_human and command == _CMD_RECRUIT:
         handler = lambda board, actor, plan: _execute_recruit(board, actor, plan, _exact=True)
-    if is_human and sequence and command == _CMD_MARCH:
-        handler = lambda board, actor, plan: _execute_march(board, actor, plan, choose_dropoffs=True)
     if handler is not None:
         sa = bot_action.get("sa")
         if is_human and 'sa_after_step' in (bot_action.get('details') or {}):
@@ -3811,6 +3819,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     lets trusted NPC67 plans select each Region only when its defender is
     present, including arrivals from an earlier Retreat.
     """
+    from fs_bot.engine.action_validation import battle_target
     from fs_bot.engine.action_windows import window
     window(state, 'battle_command', author=faction)
     details = bot_action.get("details") or {}
@@ -3881,12 +3890,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             window(state, 'battle_region', author=faction,
                    timing_actions=entry.get('timing_actions'),
                    region=region, index=battle_index)
-        # Single target, or Roman ranked targets list -> take the top.
-        if "target" in entry and entry["target"] is not None:
-            defender = entry["target"]
-        else:
-            targets = entry.get("targets") or []
-            defender = targets[0] if targets else None
+        defender = battle_target(entry)
         if defender is None:
             continue
         if _after_step is not None and not count_pieces(state, region, faction):
@@ -4407,7 +4411,8 @@ def march_plan_has_effect(state, faction, plan):
 
 @_diviciacus_command_scope
 def _execute_march(state, faction, bot_action, *, free=False, before_move=None,
-                   moving_only=False, choose_dropoffs=False, _after_hop=None):
+                   moving_only=False, choose_dropoffs=False, _after_hop=None,
+                   _limited=False, _with_sa=False):
     """Pay once per selected origin; movement-only helpers remain free."""
     from fs_bot.engine.action_windows import window
     window(state, 'march_before_plan', marching_faction=faction)
@@ -4416,6 +4421,11 @@ def _execute_march(state, faction, bot_action, *, free=False, before_move=None,
     else:
         from fs_bot.engine.march_interruption import ordered_moves
         moves, deferred = ordered_moves(bot_action), []
+    if _limited or _with_sa:
+        from fs_bot.engine.action_validation import march_scope_error
+        error = march_scope_error(moves, limited=_limited, with_sa=_with_sa)
+        if error:
+            raise CommandError(error)
     result = _execute_march_moves(state, faction, moves, free=free,
                                   before_move=before_move, moving_only=moving_only,
                                   choose_dropoffs=choose_dropoffs, _after_hop=_after_hop)

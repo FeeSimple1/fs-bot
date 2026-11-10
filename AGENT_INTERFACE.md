@@ -89,6 +89,13 @@ def decision_func(state, faction, options, position):
     return {"action": "pass"}
 ```
 
+A Command-only or Limited Command response carries a Command with no Special
+Ability. Use `command_sa` when choosing one. If the Special Ability is declined
+or produces no effect, the engine records Command only. An `event` response
+carries the current Event. Omit `details.card_id` to use the current card or
+give its exact ID. The saved edition determines the text of revised numeric
+cards. Any actions the Event grants resolve through its own requests.
+
 `execute_decision` runs `player_action` through the same rules engine used by
 the bots. Inspect the execution result and any reported sub-action errors;
 a partial execution differs from a wholly refused action. A `player_action` is:
@@ -133,7 +140,8 @@ still selects only one Region even when Rally has two steps there, and an
 ordinary Limited Command cannot include a Special Activity. Event grants
 can independently permit an accompanying activity under their own text.
 The `command_parts` interface requires distinct Regions on each side of an
-intervening SA. Base-game Arverni can instead use one ordered `rally_plan`
+intervening SA. Supply exactly two portions of the same Command and use
+`sa_timing: "during"`. Base-game Arverni can instead use one ordered `rally_plan`
 with `sa_timing: "during"` and `details.sa_after_rally_step: N`. This places
 the accompanying Devastate or Entreat after the first `N` completed steps,
 including between Vercingetorix's two options in one Region. Do not combine
@@ -166,6 +174,11 @@ reference. March plans additionally accept exact per-origin `routes`
 ({origin: {piece_type: count, "Leader": bool}}), and §3.3.2
 `extra_groups` ([{origin, route, group}] — further groups from the
 post-departure remainder of an origin).
+
+Each extra group uses an origin already selected for the March. A legacy
+`explicit_moves` list supplies `origin` and `path` for each group. The one-origin
+Limited Command rule and the Britannia Special Ability restriction apply to
+both formats and to routes produced by the destination planner.
 
 For an origin that stays in place, supply an explicit empty route in
 `details.routes` (or `details.march_plan.routes`):
@@ -394,6 +407,11 @@ Battle. For Rally, Recruit, Raid, or Seize, `sa_timing: "during"` accepts
 `details.command_parts: [first_plan, second_plan]`: two plans for the same
 Command, selecting different Regions, with the accompanying Special
 Activity between them.
+
+Select each Battle Region once and name an opposing defender. A legacy ranked
+`targets` list uses its first Faction. Select each Devastate Region once per
+Special Ability. A later Devastate may select a Region that already has its
+marker.
 
 For an interruption within one ordered Battle or Raid plan, use
 `sa_timing: "during"` and `details.sa_after_step: N`. Supply a single

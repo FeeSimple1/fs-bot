@@ -157,6 +157,8 @@ def test_durable_forbidden_transfer_stays_pending_through_save_load(
         tmp_path, scenario, command, action_type):
     """A1.5.2's forbidden gift cannot consume a typed turn or mutate board/RNG."""
     state = setup_scenario(scenario, seed=4)
+    if action_type == ACTION_EVENT:
+        state['current_card'] = 1
     state['resources'][rc.AEDUI] = 10
     meta = {'seat': rc.AEDUI, 'scenario': scenario, 'seed': 4}
     session = SeatSession(state, meta, [], HumanTurnDisplay(io.StringIO()))

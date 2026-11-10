@@ -667,6 +667,10 @@ def resolve_card_turn(state, decision_func, *, execute=False,
             gifts = resource_transfers.sequence(state, faction) if execute else nullcontext()
             with _action_transaction(state, decision_func), gifts:
                 decision = decision_func(state, faction, options, position)
+                if execute and (not isinstance(decision, dict) or (
+                        not decision.get("bot_action") and decision.get("action") not in options)):
+                    raise ActionRejected({"executed": False, "rejected": True,
+                                          "reason": "Choose one of this turn's offered actions (§2.3.4)."})
                 action = decision["action"]
                 if action == ACTION_PASS:
                     pass_result = execute_pass(state, faction)

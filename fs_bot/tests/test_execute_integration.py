@@ -3890,6 +3890,7 @@ class TestHumanExecutionPath:
         # Human Aedui supplies the opposite direction; their choice is applied
         # (NP auto-derivation is skipped for a human Event).
         human_st = _fresh()
+        human_st['current_card'] = 1
         res = execute_decision(human_st, AEDUI, {"action": "event",
             "player_action": {
                 "command": "Event", "regions": [], "sa": "No SA",

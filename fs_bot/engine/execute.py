@@ -6121,19 +6121,13 @@ def _derive_card_23(state, faction, shaded):
                                      MARKER_RAZED, ROMANS)
     from fs_bot.board.control import is_controlled_by
     if shaded:
-        from fs_bot.rules_consts import LEGION, CITADEL
+        from fs_bot.cards.event_targets import sacking_regions
+        from fs_bot.rules_consts import LEGION
         from fs_bot.board.pieces import count_pieces
-        if faction == ROMANS:
-            return None
-        best = None
-        for region in get_playable_regions(state["scenario"],
-                                            state.get("capabilities")):
-            if count_pieces(state, region, faction, CITADEL) <= 0:
-                continue
-            legs = count_pieces(state, region, ROMANS, LEGION)
-            if legs > 0 and (best is None or legs > best[1]):
-                best = (region, legs)
-        return {"target_region": best[0]} if best else None
+        regions = sacking_regions(state, faction)
+        best = max(regions, key=lambda r: count_pieces(state, r, ROMANS, LEGION),
+                   default=None)
+        return {"target_region": best} if best else None
     if faction != ROMANS:
         return None
     for city, tribe in CITY_TO_TRIBE.items():
@@ -6338,19 +6332,17 @@ def _derive_card_11(state, faction, shaded):
     if shaded:
         return None
     from fs_bot.rules_consts import ROMANS, AUXILIA
-    from fs_bot.board.pieces import (find_leader, count_pieces, get_available)
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
+    from fs_bot.board.pieces import count_pieces, get_available
+    from fs_bot.cards.event_targets import roman_leader_regions
     from fs_bot.bots.roman_bot import _rank_battle_targets
     if get_available(state, ROMANS, AUXILIA) < 3:
         return None  # "Place the full number ... if not able, 'No Romans'."
-    leader = find_leader(state, ROMANS)
-    if leader is None:
+    within1 = sorted(roman_leader_regions(state))
+    if not within1:
         return None
     scen = state["scenario"]
-    playable = set(get_playable_regions(scen, state.get("capabilities")))
-    within1 = ({leader} | set(get_adjacent(leader, scen))) & playable
     best = None  # (region, enemy_mobile)
-    for r in sorted(within1):
+    for r in within1:
         targets = _rank_battle_targets(state, r, scen)
         if not targets:
             continue
@@ -6364,10 +6356,8 @@ def _derive_card_11(state, faction, shaded):
     if best is None:
         # The placement is not conditional on a follow-up Battle. All legal
         # Regions place the same three pieces; resolve that tie per §8.3.4.
-        if not within1:
-            return None
         from fs_bot.bots.bot_common import random_select
-        target = random_select(state, sorted(within1))
+        target = random_select(state, within1)
         return {"target_region": target, "region": target}
     return {"target_region": best[0], "region": best[0]}
 

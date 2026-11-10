@@ -295,6 +295,20 @@ counts are rejected. Existing entry `timing_actions` and
 | A43 unshaded | `replacements: [{region, from_type, to_faction, tribe or piece_state}]`; two Arverni Allies and two original Arverni Warbands as possible within one of Bibracte. Counterparts belong to Romans or Aedui. |
 | A45 unshaded | `placements: [{tribe, faction}]`; up to three non-German Allies in legal Subdued Celtica Tribes within one of an Intimidated marker. |
 
+Unshaded Alaudae uses `target_region` under Roman Control. Unshaded
+Numidians uses `target_region` in the original edition and `region` in
+the revised edition, with the Roman Leader's Region or a playable adjacent
+Region as the target. Shaded Sacking uses `target_region` with a Roman Legion
+and the executor's Citadel. These checks run before placement,
+removal, or eligibility changes.
+
+Shaded Lucterius and Flight of Ambiorix accept `target_region` when the
+respective Successor is on the map or the Leader is Available. Flight
+limits the destination to Germania, Morini, Nervii, Treveri, or Sequani.
+Assembly of Gaul unshaded counts each Gallic entry in `target_factions`
+once. Shaded A65 accepts Belgae or Germans in `from_faction` and uses the
+other faction as the replacement owner.
+
 Integer card 65 remains distinct from expansion A65. Its old
 `warband_replacements`/`ally_replacement_tribe` fields are not silently
 converted into default physical choices; affected transcripts need new

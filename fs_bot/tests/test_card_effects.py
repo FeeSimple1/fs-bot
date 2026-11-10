@@ -1468,20 +1468,15 @@ class TestAuditConditionFixes:
         assert items.get("aedui_ally") == 2
 
     def test_card19_shaded_relocates_successor_on_map(self):
-        from fs_bot.rules_consts import (SCENARIO_GREAT_REVOLT, ARVERNI, LEADER,
-                                         VERCINGETORIX, EVENT_SHADED)
-        from fs_bot.board.pieces import place_piece, find_leader, count_pieces
-        from fs_bot.state.state_schema import build_initial_state
+        from fs_bot.rules_consts import SCENARIO_GREAT_REVOLT
+        from fs_bot.board.pieces import find_leader
         st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
-        # Leader already on map in Arverni; relocate to Bituriges.
-        if find_leader(st, ARVERNI) is None:
-            place_piece(st, "Arverni", ARVERNI, LEADER, leader_name=VERCINGETORIX)
-        start = find_leader(st, ARVERNI)
-        dest = "Bituriges" if start != "Bituriges" else "Pictones"
-        st["event_params"] = {"target_region": dest}
+        place_piece(st, ARVERNI_REGION, ARVERNI, LEADER, leader_name=SUCCESSOR)
+        st["event_params"] = {"target_region": BITURIGES}
         execute_event(st, 19, shaded=True)
-        assert find_leader(st, ARVERNI) == dest
-        assert count_pieces(st, start, ARVERNI, LEADER) == 0
+        assert find_leader(st, ARVERNI) == BITURIGES
+        assert get_leader_in_region(st, BITURIGES, ARVERNI) == VERCINGETORIX
+        assert count_pieces(st, ARVERNI_REGION, ARVERNI, LEADER) == 0
 
     def test_cardA65_no_attacker_leader_excludes_leader(self):
         from fs_bot.battle.resolve import _calculate_attack_losses

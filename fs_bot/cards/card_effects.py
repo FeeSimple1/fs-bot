@@ -39,7 +39,7 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import (
     calculate_control, refresh_all_control,
-    is_controlled_by, get_controlled_regions,
+    is_controlled_by,
 )
 from fs_bot.cards.capabilities import (
     activate_capability, deactivate_capability,
@@ -617,14 +617,16 @@ def execute_card_7(state, shaded=False):
     if not shaded:
         # Unshaded: Place 1 Legion (from track, NOT Fallen) and 1 Auxilia
         # in a Roman Controlled Region
+        from fs_bot.cards.event_targets import alaudae_regions
         params = state.get("event_params", {})
+        controlled = alaudae_regions(state)
         target = params.get("target_region")
         if target is None:
-            # Auto-select: first Roman controlled region
-            controlled = get_controlled_regions(state, ROMANS)
             if not controlled:
-                return  # No Roman controlled region — event ineffective
+                return
             target = controlled[0]
+        if target not in controlled:
+            raise ValueError("Alaudae requires a Roman Controlled Region")
         # Legion from track (not Fallen per Tips)
         if _count_on_legions_track(state) >= 1:
             place_piece(state, target, ROMANS, LEGION,
@@ -698,6 +700,15 @@ def execute_card_10(state, shaded=False):
         if owner is not None:
             set_capability_owner(state, 10, owner)
 
+def _place_numidian_auxilia(state, target):
+    from fs_bot.cards.event_targets import roman_leader_regions
+    if target not in roman_leader_regions(state):
+        raise ValueError("Numidians requires a Region within one of the Roman Leader")
+    to_place = min(3, get_available(state, ROMANS, AUXILIA))
+    if to_place:
+        place_piece(state, target, ROMANS, AUXILIA, count=to_place)
+
+
 def execute_card_11(state, shaded=False):
     """Card 11: Numidians — Place Auxilia + Battle / Remove Auxilia.
 
@@ -715,10 +726,7 @@ def execute_card_11(state, shaded=False):
         target = params.get("target_region")
         if target is None:
             return
-        avail = get_available(state, ROMANS, AUXILIA)
-        to_place = min(3, avail)
-        if to_place > 0:
-            place_piece(state, target, ROMANS, AUXILIA, count=to_place)
+        _place_numidian_auxilia(state, target)
         # Battle modifier: Auxilia double Losses
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_11_double_auxilia_losses"] = True
@@ -874,6 +882,14 @@ def execute_card_18(state, shaded=False):
             # consumed by adjust_eligibility (else clobbered).
             state.setdefault("forced_ineligible", {})[ROMANS] = 1
 
+def _place_named_successor(state, faction, region, leader_name):
+    """Restore a checked Successor from the map or Available, symbol-up."""
+    origin = find_leader(state, faction)
+    if origin is not None:
+        remove_piece(state, origin, faction, LEADER)
+    place_piece(state, region, faction, LEADER, leader_name=leader_name)
+
+
 def execute_card_19(state, shaded=False):
     """Card 19: Lucterius — Remove Warbands or place Auxilia / Place Leader.
 
@@ -920,22 +936,15 @@ def execute_card_19(state, shaded=False):
                 place_piece(state, PROVINCIA, ROMANS, AUXILIA,
                             count=to_place)
     else:
-        # Shaded: place the Arverni Successor anywhere "on map or Available",
-        # symbol up, as if Vercingetorix.
-        from fs_bot.board.pieces import find_leader
+        from fs_bot.cards.event_targets import successor_regions
         params = state.get("event_params", {})
         target = params.get("target_region")
-        if not target:
+        regions = successor_regions(state, ARVERNI)
+        if target is None or not regions:
             return
-        current = find_leader(state, ARVERNI)
-        if current == target:
-            return  # already there
-        if current is not None:
-            # On map: relocate (remove returns the Leader to Available).
-            remove_piece(state, current, ARVERNI, LEADER)
-        if get_available(state, ARVERNI, LEADER) >= 1:
-            place_piece(state, target, ARVERNI, LEADER,
-                        leader_name=VERCINGETORIX)
+        if target not in regions:
+            raise ValueError("Lucterius requires a playable Arverni destination")
+        _place_named_successor(state, ARVERNI, target, VERCINGETORIX)
 
 def execute_card_20(state, shaded=False):
     """Card 20: Optimates — Early game end condition.
@@ -1102,27 +1111,21 @@ def execute_card_23(state, shaded=False):
     else:
         # Shaded: If a Legion where executing faction's Citadel,
         # remove the Legion to Fallen, Romans Ineligible
+        from fs_bot.cards.event_targets import sacking_regions
         executing = state.get("executing_faction")
         params = state.get("event_params", {})
+        regions = sacking_regions(state, executing)
         target = params.get("target_region")
         if target is None:
-            # Auto-find: region with both a Legion and executing
-            # faction's Citadel
-            if executing:
-                for region in state["spaces"]:
-                    if (count_pieces(state, region, ROMANS, LEGION) > 0
-                            and count_pieces(
-                                state, region, executing, CITADEL) > 0):
-                        target = region
-                        break
-        if target is not None:
-            if count_pieces(state, target, ROMANS, LEGION) > 0:
-                remove_piece(state, target, ROMANS, LEGION,
-                             to_fallen=True)
-                state["eligibility"][ROMANS] = INELIGIBLE
-                # "Ineligible through NEXT card" — persistent flag,
-                # consumed by adjust_eligibility (else clobbered).
-                state.setdefault("forced_ineligible", {})[ROMANS] = 1
+            if not regions:
+                return
+            target = regions[0]
+        if target not in regions:
+            raise ValueError("Sacking requires a Legion at the executor's Citadel")
+        remove_piece(state, target, ROMANS, LEGION, to_fallen=True)
+        state["eligibility"][ROMANS] = INELIGIBLE
+        # "Ineligible through NEXT card" — consumed by adjust_eligibility.
+        state.setdefault("forced_ineligible", {})[ROMANS] = 1
 
 def execute_card_24(state, shaded=False):
     """Card 24: Sappers — Resource loss / Remove Legions+Auxilia.
@@ -1961,8 +1964,10 @@ def execute_card_52(state, shaded=False):
             is_dispersed = (MARKER_DISPERSED in markers)
             if is_roman_ally or is_subdued or is_dispersed:
                 target_factions = params.get("target_factions", [])
-                for fac in target_factions:
-                    if fac in GALLIC_FACTIONS:
+                if not isinstance(target_factions, (list, tuple)):
+                    raise ValueError("Assembly of Gaul requires a list of target Factions")
+                for fac in GALLIC_FACTIONS:
+                    if fac in target_factions:
                         _cap_resources(state, fac, -8)
     else:
         # Faction Controlling Carnutes Region gets free Command + 2 SAs
@@ -2059,10 +2064,9 @@ def execute_card_56(state, shaded=False):
 
     Source: Card Reference, card 56
     """
-    from fs_bot.rules_consts import GERMANIA_REGIONS
     params = state.get("event_params", {})
-    scenario = state["scenario"]
     if not shaded:
+        from fs_bot.engine.victory import calculate_victory_score
         # Remove Ambiorix if in Roman Controlled Region or Belgic victory < 10
         leader_loc = find_leader(state, BELGAE)
         if leader_loc is None:
@@ -2071,33 +2075,19 @@ def execute_card_56(state, shaded=False):
         if get_leader_in_region(state, leader_loc, BELGAE) != AMBIORIX:
             return
         in_roman_control = is_controlled_by(state, leader_loc, ROMANS)
-        # Check Belgic victory value (Control + Allies + Citadels)
-        from fs_bot.rules_consts import REGION_CONTROL_VALUES
-        belgic_victory = 0
-        for region in state["spaces"]:
-            if is_controlled_by(state, region, BELGAE):
-                belgic_victory += REGION_CONTROL_VALUES.get(region, 0)
-        for tribe, t_info in state.get("tribes", {}).items():
-            if t_info.get("allied_faction") == BELGAE:
-                belgic_victory += 1
-        for region in state["spaces"]:
-            belgic_victory += count_pieces(state, region, BELGAE, CITADEL)
-        if in_roman_control or belgic_victory < 10:
+        if in_roman_control or calculate_victory_score(state, BELGAE) < 10:
             remove_piece(state, leader_loc, BELGAE, LEADER)
     else:
-        # Place Ambiorix within 1 Region of Germania
-        leader_loc = find_leader(state, BELGAE)
-        if leader_loc is not None:
-            return  # Already on map
+        from fs_bot.cards.event_targets import successor_regions
+        regions = successor_regions(state, BELGAE)
+        if not regions:
+            return
         target_region = params.get("target_region")
         if target_region is None:
-            # Default: first Germania region
-            for g_region in GERMANIA_REGIONS:
-                target_region = g_region
-                break
-        if target_region and get_available(state, BELGAE, LEADER) > 0:
-            place_piece(state, target_region, BELGAE, LEADER,
-                        leader_name=AMBIORIX)
+            target_region = regions[0]
+        if target_region not in regions:
+            raise ValueError("Flight of Ambiorix requires a Region within one of Germania")
+        _place_named_successor(state, BELGAE, target_region, AMBIORIX)
 
 def execute_card_57(state, shaded=False):
     """Card 57: Land of Mist and Mystery — March to Britannia.
@@ -2810,19 +2800,16 @@ def execute_card_A19(state, shaded=False):
     Source: A Card Reference, card A19
     """
     from fs_bot.rules_consts import TRIBE_TO_REGION
-    from fs_bot.map.map_data import get_adjacent
     params = state.get("event_params", {})
-    scenario = state["scenario"]
     if not shaded:
+        from fs_bot.cards.event_targets import roman_leader_regions
+        if not roman_leader_regions(state, caesar_only=True):
+            return
         replacements = params.get("replacements", [])
         for r in _event_entries(state, "A19.replacements", replacements[:3]):
-            caesar_loc = find_leader(state, ROMANS)
-            if caesar_loc is None:
-                continue
-            valid = [caesar_loc] + list(get_adjacent(caesar_loc, scenario))
             tribe = r["tribe"]
             region = TRIBE_TO_REGION.get(tribe)
-            if region not in valid:
+            if region not in roman_leader_regions(state, caesar_only=True):
                 continue
             t_info = state.get("tribes", {}).get(tribe)
             if (t_info and t_info.get("allied_faction")
@@ -2945,17 +2932,14 @@ def execute_card_A24(state, shaded=False):
     """
     from fs_bot.rules_consts import (
         SEQUANI, TRIBE_SEQUANI, TRIBE_HELVETII, TRIBE_NORI,
-        TRIBE_HELVII, TRIBE_TO_REGION,
+        TRIBE_HELVII,
     )
     tribes = [TRIBE_SEQUANI, TRIBE_HELVETII, TRIBE_NORI, TRIBE_HELVII]
     for tribe in _event_entries(state, "A24.tribes", tribes):
-        region = TRIBE_TO_REGION.get(tribe)
-        t_info = state.get("tribes", {}).get(tribe)
-        if not t_info:
-            continue
-        # Remove existing Ally, then place the Arverni Ally — pieces
-        # and tribes dict together
-        _unally_tribe(state, tribe)
+        # The card removes Allied Tribe discs. A City Citadel continues
+        # to occupy the Tribe, so no new Ally can be placed there (§1.4.2).
+        if _tribe_piece_type(state, tribe) == ALLY:
+            _unally_tribe(state, tribe)
         _ally_tribe(state, tribe, ARVERNI)
     # Place 2 Arverni Warbands in Sequani, Cisalpina, Provincia
     for region in _event_entries(state, "A24.warbands", (SEQUANI, CISALPINA, PROVINCIA)):
@@ -3509,8 +3493,6 @@ def execute_card_A43(state, shaded=False):
     from fs_bot.rules_consts import (
         TRIBE_BITURIGES, TRIBE_AEDUI, TRIBE_HELVETII, TRIBE_TO_REGION,
     )
-    params = state.get("event_params", {})
-    scenario = state["scenario"]
     if not shaded:
         from fs_bot.cards.expansion_validation import execute
         execute(state, 'A43')
@@ -3525,11 +3507,6 @@ def execute_card_A43(state, shaded=False):
             # Remove the tribe's Citadel/Ally — piece and tribes dict
             # together (Bibracte's piece may be a Citadel)
             _unally_tribe(state, tribe)
-            # Defensive: pair any stray Citadel removal with its tribe
-            for fac in FACTIONS:
-                while count_pieces(state, region, fac, CITADEL) > 0:
-                    remove_piece(state, region, fac, CITADEL)
-                    clear_allied_tribe(state, region, fac, CITADEL)
             # Place Arverni Ally + 2 Warbands
             _ally_tribe(state, tribe, ARVERNI)
             _event_step(state, f"A43.warbands.{tribe}")
@@ -3879,14 +3856,14 @@ def execute_card_A65(state, shaded=False):
 
     Source: A Card Reference, card A65
     """
-    from fs_bot.rules_consts import TRIBE_TO_REGION
     params = state.get("event_params", {})
     if not shaded:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A65_kinship_battle"] = True
     else:
+        from fs_bot.cards.kinship import opponent
         from_faction = params.get("from_faction", BELGAE)
-        to_faction = GERMANS if from_faction == BELGAE else BELGAE
+        to_faction = opponent(from_faction)
         # Replace 4 Warbands
         wb_replacements = params.get("warband_replacements", [])
         for r in _event_entries(state, "A65.warbands", wb_replacements[:4]):
@@ -4106,17 +4083,14 @@ def execute_card_11_ariovistus(state, shaded=False):
     if not shaded:
         # Place 3 Auxilia in region within 1 of Roman Leader
         region = params.get("region")
-        if region:
-            avail = get_available(state, ROMANS, AUXILIA)
-            to_place = min(3, avail)
-            if to_place > 0:
-                place_piece(state, region, ROMANS, AUXILIA, count=to_place)
+        if region is None:
+            return
+        _place_numidian_auxilia(state, region)
         # Free Battle with Auxilia double Losses — defer
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_11a_auxilia_battle"] = True
         state["event_modifiers"]["card_11a_double_auxilia_losses"] = True
-        if region:
-            state["event_modifiers"]["card_11a_battle_region"] = region
+        state["event_modifiers"]["card_11a_battle_region"] = region
     else:
         from fs_bot.cards.base_piece_choices import resolve_numidians_removals
         resolve_numidians_removals(state, params)

@@ -155,10 +155,21 @@ replacement is Roman Auxilia or your faction's Warband; an unavailable
 replacement leaves the original removed. Use `b`/`board` to inspect before
 choosing. These live choices survive pending replies, saving and replay.
 
+Shaded Lucterius restores the Arverni Successor as Vercingetorix. You can
+place him in his current Region or any legal destination. Shaded Flight of
+Ambiorix restores a Belgic Successor or the Available Leader in Germania,
+Morini, Nervii, Treveri, or Sequani. Its unshaded side uses the Belgic
+Control-Allies total shown on the board.
+
 Shaded Marcus Antonius (6) lets the executor choose up to four Roman Auxilia
 to move to Provincia. Select their origin and visibility. The pieces keep
 their visibility when they arrive. Moving zero pieces still applies the
 card's eligibility effects.
+
+Unshaded Alaudae places its Legion and Auxilia in one Roman Controlled
+Region. Unshaded Numidians places its Auxilia and grants Battle in the Roman
+Leader's Region or an adjacent one, in either edition. A Roman Successor
+supplies that range.
 
 Shaded Alaudae (7) applies when the Legions track starts with seven or
 fewer Legions. Choose one on-map Legion to return to the track, then
@@ -492,12 +503,17 @@ piece but the new one is unavailable or cannot legally stack, the original
 is still removed.
 
 Some repaired Events assign their choices to Romans or Arverni even when
-another faction plays the card. Legiones XIIII et XV, Rhenus Bridge and Sacking
+another faction plays the card. Legiones XIIII et XV, Rhenus Bridge and unshaded Sacking
 ask Romans whether to use the effect and which legal sources or targets to use.
 Gobannitio asks Arverni about Ally changes, then their free Rally. Its menu
 separates “Skip Ally changes; decide Rally” from declining both effects.
 Missing or invalid answers stay pending. The same board and card information
 remains available while answering another faction's Event.
+
+Shaded Sacking requires one of the executor's Citadels in the same Region
+as a Roman Legion. It sends one Legion to Fallen and makes Romans Ineligible
+through the next card. Unshaded Assembly of Gaul drains eight Resources once
+from each chosen Gallic faction when the Carnutes condition is met.
 
 Shaded German Allegiances (65) lets you choose the exact German Warbands and
 Ally in Regions you Control, including visibility and Tribe, and whether
@@ -549,6 +565,7 @@ defender, then decide whether to Battle again there against a currently
 available defender. The first Battle forbids Retreat; the second uses normal
 Retreat rules. Gaius Valerius Procillus (A19), shaded, lets the Event player choose which
 whole Roman force Marches and its adjacent destination with Germans.
+Unshaded Procillus uses the named Caesar for its Ally replacement range.
 Harudes (A29) lets the Event player choose how the newly placed German
 Warbands Raid. Bellovaci (A69) lets that player choose the Ambush defender;
 only surviving newly placed Warbands receive the printed extra Losses.

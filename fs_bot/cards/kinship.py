@@ -16,7 +16,7 @@ def _copy(state):
 
 def opponent(faction):
     if faction not in ATTACKERS:
-        raise ValueError('Kinship attackers must be Belgae or Germans')
+        raise ValueError('Kinship requires Belgae or Germans')
     return rc.GERMANS if faction == rc.BELGAE else rc.BELGAE
 
 

@@ -6,8 +6,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 21,
-  "closed": 8,
-  "open": 13,
+  "closed": 17,
+  "open": 4,
   "severity_counts": {
     "high": 15,
     "medium": 6
@@ -23,28 +23,36 @@
     "new_balance_matrix": false
   },
   "latest_repair": {
-    "batch": 2,
+    "batch": 3,
     "date": "2026-11-10",
     "findings": [
-      "EX2-07"
+      "BE2-01",
+      "BE2-02",
+      "BE2-04",
+      "BE2-05",
+      "BE2-06",
+      "BE2-07",
+      "EX2-03",
+      "EX2-05",
+      "EX2-06"
     ],
-    "report": "../current-status.md#10-november-orgetorix-citadel-placement",
+    "report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
     "tested_source": {
-      "commit": "86cfa0c78d049be8d41da1f352c4c44216f43045",
-      "python_sha256": "c2ef3feb2f3da36954b04b40c7f389aeb7305e46a66a1b17f31a68b82160d8e1",
-      "python_files": 573,
+      "commit": "ce3a852a122a7f95d586a3d149be5a1dd09fd475",
+      "python_sha256": "b5a3c7316c4db15a4f913111a6525525aee3ab37bc2985d887c7824376139f01",
+      "python_files": 575,
       "working_tree_changes": true,
       "note": "Validation ran against the repair tree over the listed parent."
     },
     "validation": {
-      "pytest_passed": 9367,
-      "new_regressions": 2,
-      "focused_passed": 93,
+      "pytest_passed": 9391,
+      "new_regressions": 24,
+      "focused_passed": 739,
       "all_bot_records": 20,
-      "all_bot_records_matched_parent": 20,
+      "all_bot_records_matched_parent": 16,
       "all_bot_audit_failures": 0,
       "mixed_seat_records": 20,
-      "mixed_seat_records_matched_parent": 20,
+      "mixed_seat_records_matched_parent": 7,
       "mixed_hash_seeds": [
         0,
         987
@@ -52,14 +60,87 @@
       "mixed_hard_findings": 0,
       "mixed_partial_plans": 5,
       "mixed_partial_plans_parent": 5,
-      "mixed_digest": "3359f4a3a534e4abe0aaf3b47d270fbafb0e4989371e626c9517a0a426629dfe",
+      "mixed_digest": "a8ab246f726dd4931e3406f969599006d7e70a5705d774e5e771a5e8e823dff4",
       "balance_games": 100,
-      "balance_outcomes_matched_parent": 100,
-      "balance_winners_changed_from_parent": 0,
-      "balance_lengths_changed_from_parent": 0,
-      "balance_guardrail_passed": true
+      "balance_outcomes_matched_parent": 96,
+      "balance_winners_changed_from_parent": 4,
+      "balance_lengths_changed_from_parent": 1,
+      "original_full_balance_guardrail_passed": true,
+      "original_three_seed_canary_passed": false,
+      "refreshed_full_balance_guardrail_passed": true,
+      "refreshed_three_seed_canary_passed": true,
+      "reviewed_baseline": {
+        "changes": {
+          "The Great Revolt|2": {
+            "stored": {
+              "cards": 43,
+              "winner": "Arverni"
+            },
+            "parent": {
+              "winner": "Arverni",
+              "cards": 43
+            },
+            "current": {
+              "winner": "Aedui",
+              "cards": 43
+            },
+            "first_changed_event": 56,
+            "pre_event_digest": "cf55154a02a42fa287ed"
+          },
+          "The Great Revolt|18": {
+            "stored": {
+              "cards": 43,
+              "winner": "Arverni"
+            },
+            "parent": {
+              "winner": "Arverni",
+              "cards": 43
+            },
+            "current": {
+              "winner": "Aedui",
+              "cards": 43
+            },
+            "first_changed_event": 56,
+            "pre_event_digest": "d03fce1bf991204d360f"
+          },
+          "Ariovistus|3": {
+            "stored": {
+              "cards": 45,
+              "winner": "Belgae"
+            },
+            "parent": {
+              "winner": "Belgae",
+              "cards": 45
+            },
+            "current": {
+              "winner": "Aedui",
+              "cards": 45
+            },
+            "first_changed_event": "A43",
+            "pre_event_digest": "9bc2b771fd21e8e9a30f"
+          },
+          "The Gallic War|3": {
+            "stored": {
+              "cards": 83,
+              "winner": "Romans"
+            },
+            "parent": {
+              "winner": "Aedui",
+              "cards": 100
+            },
+            "current": {
+              "winner": "Romans",
+              "cards": 72
+            },
+            "first_changed_event": "A43",
+            "pre_event_digest": "9bc2b771fd21e8e9a30f"
+          }
+        },
+        "old_sha256": "49ddf4b3acc4a6085c119850a1065696fe92cd4c007dcfcfec7ce49b85332588",
+        "new_sha256": "207a62e367e31caec165617b8f62fb5f5b0af82a114c4aaf3aee39f140d37d46"
+      }
     },
-    "comparison_source": "86cfa0c78d049be8d41da1f352c4c44216f43045"
+    "comparison_source": "ce3a852a122a7f95d586a3d149be5a1dd09fd475"
   },
   "prior_unverified_rows": [
     {
@@ -659,7 +740,7 @@
       "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
       "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
       "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "events",
       "source_rule": "Reference Documents/Card Reference card 23 lines225-236; Chapter 5 §5.1",
@@ -668,7 +749,9 @@
         "fs_bot/cards/card_effects.py:1115"
       ],
       "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "prior_status": "New confirmed target-validation defect. The previous BE-11 repair expressly covered cards 40/41/42/51, not card 23. Existing positive Sacking test uses a Citadel and misses the illegal target."
+      "prior_status": "New confirmed target-validation defect. The previous BE-11 repair expressly covered cards 40/41/42/51, not card 23. Existing positive Sacking test uses a Citadel and misses the illegal target.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Shaded Sacking validates a Roman Legion and the executor's Citadel in the selected Region before removing a Legion or forcing Roman Ineligibility."
     },
     {
       "id": "BE2-02",
@@ -688,7 +771,7 @@
       "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
       "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
       "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "events",
       "source_rule": "Reference Documents/Card Reference card 52 lines518-526; Chapter 5 §§5.1,5.1.3",
@@ -696,7 +779,9 @@
         "fs_bot/cards/card_effects.py:1960"
       ],
       "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "prior_status": "New confirmed Event-specific duplicate-target defect, beyond original CMD-SEIZE-TRIBES/Entreat duplicate fixes and BE-11’s four frozen Event families. The CLI generic list avoids duplicates, but durable/API plans accept them."
+      "prior_status": "New confirmed Event-specific duplicate-target defect, beyond original CMD-SEIZE-TRIBES/Entreat duplicate fixes and BE-11’s four frozen Event families. The CLI generic list avoids duplicates, but durable/API plans accept them.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Each selected Gallic Faction loses eight Resources once when the Carnutes condition applies."
     },
     {
       "id": "BE2-03",
@@ -746,7 +831,7 @@
       "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
       "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
       "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "events",
       "source_rule": "Reference Documents/Card Reference card 19 lines181-190; Chapter 5 §5.1",
@@ -755,7 +840,9 @@
         "fs_bot/tests/test_card_effects.py:1470"
       ],
       "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "prior_status": "New shaded defect. Prior BE-06/07/08 Lucterius work was expressly unshaded. Existing test_card19_shaded_relocates_successor_on_map actually creates Vercingetorix and asserts the illegal relocation."
+      "prior_status": "New shaded defect. Prior BE-06/07/08 Lucterius work was expressly unshaded. Existing test_card19_shaded_relocates_successor_on_map actually creates Vercingetorix and asserts the illegal relocation.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Shaded Lucterius restores the Arverni Successor from the map or Available. It can place him symbol-up in his current Region."
     },
     {
       "id": "BE2-05",
@@ -777,7 +864,7 @@
       "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
       "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
       "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "events",
       "source_rule": "Reference Documents/Card Reference card 56 lines567-575; Chapter 5 §5.1",
@@ -786,7 +873,9 @@
         "fs_bot/cards/card_effects.py:2095"
       ],
       "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "prior_status": "New confirmed shaded return defects. Existing test_card_56_shaded_place_ambiorix uses an Available Leader and a legal Germania destination only."
+      "prior_status": "New confirmed shaded return defects. Existing test_card_56_shaded_place_ambiorix uses an Available Leader and a legal Germania destination only.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Shaded Flight restores Ambiorix from the map or Available and validates the printed destinations before moving the Leader."
     },
     {
       "id": "BE2-06",
@@ -808,7 +897,7 @@
       "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
       "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
       "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "events",
       "source_rule": "Reference Documents/Card Reference card 56 lines567-575; Chapter 7 §§7.2–7.3; Chapter 1 §1.9",
@@ -818,7 +907,9 @@
         "fs_bot/cards/card_effects.py:2080"
       ],
       "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "prior_status": "New confirmed scoring divergence. Handler also omits normal Colony/Dispersed adjustments by static trace, but those additional boundaries were not dynamically claimed."
+      "prior_status": "New confirmed scoring divergence. Handler also omits normal Colony/Dispersed adjustments by static trace, but those additional boundaries were not dynamically claimed.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Unshaded Flight reads the engine's Belgic Control-Allies score, counting each Citadel once."
     },
     {
       "id": "BE2-07",
@@ -841,7 +932,7 @@
       "repro": "PYTHONPATH=. python ../comparison-audit-2026-11-10/events/probe_events.py (run from fs-bot)",
       "transport": "Each witness starts with a validate_state-clean board, passes SeatSession validate_response, runs the normal execute_decision path, and ends validate_state-clean.",
       "comparator": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "events",
       "source_rule": "Reference Documents/Card Reference cards 7 and11; revised 11 in Reference Documents/Ariovistus/A Card Reference; Chapter 5 §5.1",
@@ -851,7 +942,9 @@
         "fs_bot/cards/card_effects.py:4098"
       ],
       "comparison_pattern": "Liberty or Death 2991ea279062773548ec390a1da75f3e85381702 docs/card1_human_choice_audit.md and docs/human_mode_audit.md show why supplied card text must be compared with actual handler legality and available human choices, including cards whose exposed hooks appear complete.",
-      "prior_status": "New confirmed geographic validation errors. Prior BE-11 covered cards 40/41/42/51. Recent Alaudae and Numidians repairs addressed shaded losses, and BE-02 addressed the Numidians Battle after placement."
+      "prior_status": "New confirmed geographic validation errors. Prior BE-11 covered cards 40/41/42/51. Recent Alaudae and Numidians repairs addressed shaded losses, and BE-02 addressed the Numidians Battle after placement.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Alaudae checks Roman Control. Original and revised Numidians check the Roman Leader's one-Region range before placement and Battle."
     },
     {
       "status": "open",
@@ -935,7 +1028,7 @@
       "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
     },
     {
-      "status": "open",
+      "status": "closed",
       "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
       "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
       "files": [
@@ -976,7 +1069,9 @@
         "fs_bot/cards/card_effects.py:3520"
       ],
       "comparison_pattern": "LoD card14 follow-up legality audit checks exact target classes and location restrictions after the broad Region test.",
-      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Seduni Uprising removes Allied Tribe discs. Shaded Dumnorix removes only the named Tribes' backing pieces and preserves the unrelated Sequani Citadel."
     },
     {
       "status": "open",
@@ -1025,7 +1120,7 @@
       "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
     },
     {
-      "status": "open",
+      "status": "closed",
       "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
       "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
       "files": [
@@ -1060,10 +1155,12 @@
         "fs_bot/cards/card_effects.py:3880"
       ],
       "comparison_pattern": "LoD event_choices.py provides enumerated faction-valued picks and validates targets at the handler, motivating out-of-domain faction probes.",
-      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Shaded Kinship verifies its source Faction before any removal. The destination is the other of Belgae and Germans."
     },
     {
-      "status": "open",
+      "status": "closed",
       "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
       "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
       "files": [
@@ -1098,7 +1195,9 @@
         "fs_bot/cards/card_effects.py:2816"
       ],
       "comparison_pattern": "LoD card14 follow-up audit checks exact named prerequisites, rather than broader presence tests.",
-      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "repair_report": "../current-status.md#10-november-event-prerequisites-targets-and-scoring",
+      "disposition": "Procillus checks the named Caesar before replacing Allies in his one-Region range."
     },
     {
       "status": "closed",
@@ -1227,6 +1326,45 @@
         "balance_guardrail_passed": true
       },
       "comparison_source": "e1b1fb29ae407aed4feacc6089f4ad2604385404"
+    },
+    {
+      "batch": 2,
+      "date": "2026-11-10",
+      "findings": [
+        "EX2-07"
+      ],
+      "report": "../current-status.md#10-november-orgetorix-citadel-placement",
+      "tested_source": {
+        "commit": "86cfa0c78d049be8d41da1f352c4c44216f43045",
+        "python_sha256": "c2ef3feb2f3da36954b04b40c7f389aeb7305e46a66a1b17f31a68b82160d8e1",
+        "python_files": 573,
+        "working_tree_changes": true,
+        "note": "Validation ran against the repair tree over the listed parent."
+      },
+      "validation": {
+        "pytest_passed": 9367,
+        "new_regressions": 2,
+        "focused_passed": 93,
+        "all_bot_records": 20,
+        "all_bot_records_matched_parent": 20,
+        "all_bot_audit_failures": 0,
+        "mixed_seat_records": 20,
+        "mixed_seat_records_matched_parent": 20,
+        "mixed_hash_seeds": [
+          0,
+          987
+        ],
+        "mixed_hard_findings": 0,
+        "mixed_partial_plans": 5,
+        "mixed_partial_plans_parent": 5,
+        "mixed_digest": "3359f4a3a534e4abe0aaf3b47d270fbafb0e4989371e626c9517a0a426629dfe",
+        "balance_games": 100,
+        "balance_outcomes_matched_parent": 100,
+        "balance_winners_changed_from_parent": 0,
+        "balance_lengths_changed_from_parent": 0,
+        "balance_guardrail_passed": true
+      },
+      "comparison_source": "86cfa0c78d049be8d41da1f352c4c44216f43045"
     }
   ]
 }

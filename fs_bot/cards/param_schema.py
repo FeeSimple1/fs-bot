@@ -269,6 +269,7 @@ _OVERRIDES = {
     "A18": {"target_region": {"kind": "region"}},
     23: {"target_city": {"kind": "city", "values": tuple(CITY_TO_TRIBE)}},
     28: {"citadel_upgrades": {"kind": "list:city"}},
+    52: {"target_factions": {"kind": "factions", "values": tuple(GALLIC_FACTIONS)}},
     65: {"replacements": {"kind": "entries", "allow_empty": True,
         "event_step": "65.replacements", "entry_fields": {
             "region": "region", "piece_type": "piece_type", "piece_state": "piece_state",
@@ -285,6 +286,7 @@ _OVERRIDES = {
                               "entry_fields": {"region": "region", "from_type": "piece_type", "to_faction": "faction", "piece_state": "piece_state", "tribe": "tribe"}}},
     "A45": {"placements": {"kind": "entries", "event_step": "A45.placements", "max_entries": 3,
                             "entry_fields": {"tribe": "tribe", "faction": "faction"}}},
+    "A65": {"from_faction": {"kind": "faction", "values": (BELGAE, GERMANS)}},
     # Shaded choices are requested only after the actual die roll. The old
     # removal_choice/value and (Region,count) list never belonged in generic
     # pre-roll Region menus.

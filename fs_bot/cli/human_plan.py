@@ -1484,6 +1484,31 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
         stdout.write(f"Standard choices for this Event: {derived}\n")
         if prompt_yes_no(stdin, stdout, "Use them?", default=True):
             return dict(derived)
+    if ((card_id in (7, 11) and not shaded)
+            or (card_id in (19, 23, 56) and shaded)):
+        from fs_bot.cards.edition import uses_second_edition
+        from fs_bot.cards.event_targets import (
+            alaudae_regions, roman_leader_regions, sacking_regions, successor_regions,
+        )
+        key = "target_region"
+        if card_id == 7:
+            regions = alaudae_regions(state)
+        elif card_id == 11:
+            regions = roman_leader_regions(state)
+            if uses_second_edition(state):
+                key = "region"
+        elif card_id == 23:
+            regions = sacking_regions(state, faction)
+        else:
+            regions = successor_regions(state, ARVERNI if card_id == 19 else BELGAE)
+        if not regions:
+            return {}
+        return {key: prompt_choice(stdin, stdout, "Choose an Event Region:",
+                                   [(region, region) for region in regions])}
+    if card_id == "A19" and not shaded:
+        from fs_bot.cards.event_targets import roman_leader_regions
+        if not roman_leader_regions(state, caesar_only=True):
+            return {}
     if card_id == 28:
         from fs_bot.cli.base_event_limits import collect_params
         return collect_params(state, faction, card_id, shaded, stdin, stdout)

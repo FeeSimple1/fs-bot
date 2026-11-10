@@ -211,6 +211,11 @@ records the original two out-of-band rates, traces the four winner changes
 against its parent, and verifies the refreshed baseline on the same 100
 scenario and seed pairs with the same tolerance.
 
+The [10 November Event repair](docs/current-status.md#10-november-event-prerequisites-targets-and-scoring)
+records a three-seed canary failure and traces all four changed outcomes
+in the full matrix to Flight of Ambiorix or Dumnorix. The refresh uses
+those four reviewed records with the existing matrix and both tolerances.
+
 ## Experimental strategy policies
 
 The repaired `heuristic_selfplay` runner removes the policy-controlled seat from

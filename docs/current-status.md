@@ -21,6 +21,47 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Event prerequisites, targets, and scoring
+
+Shaded Sacking requires a Legion at the executor's Citadel. Assembly of
+Gaul unshaded drains each selected Gallic faction once. Alaudae requires
+Roman Control, and both Numidians editions require a Region within one of
+the Roman Leader. Execution and the terminal use the same Region checks.
+Invalid explicit selections roll back before any placement or removal.
+
+Shaded Lucterius and Flight of Ambiorix restore a Successor symbol-up,
+including in his current Region when legal. Flight enforces its printed
+return area and reads the ordinary Belgic Control-Allies score for the
+unshaded removal. Procillus unshaded requires the named Caesar.
+
+Seduni Uprising preserves Citadels while replacing the named Allied Tribe
+discs. Shaded Dumnorix removes only structures at Bituriges, Bibracte, and
+Helvetii, preserving the Sequani Citadel. Shaded Kinship restricts the
+replacement to Belgae and Germans.
+
+The original 100-game check passed its 15-point band. The three-seed
+canary exceeded its 40-point band in The Great Revolt. Across the full
+matrix, four outcomes changed versus the parent. Paired replays matched
+the boards before these first changed Events.
+
+| Scenario and seed | Parent outcome | Repaired outcome | First changed Event |
+|---|---|---|---|
+| The Great Revolt 2 | Arverni in 43 cards | Aedui in 43 cards | Flight restores Ambiorix from the Successor at Nervii |
+| The Great Revolt 18 | Arverni in 43 cards | Aedui in 43 cards | Flight restores Ambiorix from the Successor at Britannia |
+| Ariovistus 3 | Belgae in 45 cards | Aedui in 45 cards | Dumnorix preserves the Arverni Citadel at Sequani |
+| The Gallic War 3 | Aedui in 100 cards | Romans in 72 cards | Dumnorix preserves the Arverni Citadel at Sequani |
+
+The baseline refresh updates those four records within the same 100-game
+matrix. Both balance checks passed at their existing tolerances.
+
+All 9,391 tests passed, including 24 new regressions. Twenty all-bot
+games completed with clean audits. Twenty mixed-seat games agree across
+both hash seeds, with zero hard findings and five partial plans.
+
+**Batch 3 closes nine findings.** The
+[comparison ledger](reviews/comparison-audit-2026-11-10.json) stands at
+**17 of 21 closed, 4 remaining.**
+
 ### 10 November Orgetorix Citadel placement
 
 Shaded Orgetorix records an Arverni Citadel and its City Tribe's allegiance

@@ -280,7 +280,11 @@ def cmd_replay(args):
     # existing CLI log predates that origin and must not be re-executed.
     origin_log_count = saved.get("origin_log_count", 0)
     entries = log[origin_log_count:] + saved["journal"]
-    replay_session.data["queue"] = [SeatSession._inbox_entry(e) for e in entries]
+    try:
+        replay_session.data["queue"] = [SeatSession._inbox_entry(e) for e in entries]
+    except ValueError as exc:
+        print(f'Replay stopped: {exc}')
+        return 2
     replay_session.data["expected"] = [
         {"id": e["assistant_id"], "signature": e["assistant_signature"],
          "request": copy.deepcopy(e.get("assistant_request", {})),

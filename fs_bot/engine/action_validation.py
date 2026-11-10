@@ -23,6 +23,31 @@ SA_COMMANDS = {
 }
 
 
+EVENT_BATTLE_FIELDS = frozenset({
+    'no_retreat', 'force_retreat', 'allied_factions', 'warband_full_loss',
+})
+
+
+def human_turn_error(response, options, *, require_plan=True):
+    """Validate player-owned turn fields before execution or history recording."""
+    from fs_bot.engine.game_engine import ACTION_PASS
+    if not isinstance(response, dict):
+        return 'A turn response must be an action object.'
+    if any(key in response for key in ('assistant_rejected', 'supply_reconsideration')):
+        return 'Supply refusal receipts are engine history, not player choices.'
+    if 'bot_action' in response:
+        return 'Human responses must use player_action, not bot_action.'
+    if response.get('action') not in options:
+        return "Choose one of this turn's offered actions (§2.3.4)."
+    fields = {'action'} if response['action'] == ACTION_PASS else {'action', 'player_action'}
+    if set(response) - fields:
+        return 'Turn fields are limited to action and its player_action plan. Other fields are engine history.'
+    if (require_plan and response['action'] != ACTION_PASS
+            and not isinstance(response.get('player_action'), dict)):
+        return 'This action needs a player_action plan.'
+    return None
+
+
 def compatible_sa(command, sa):
     return command in SA_COMMANDS.get(sa, {command})
 
@@ -329,6 +354,8 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
     if not isinstance(details, dict):
         return "Command details must be an object"
     command, sa = action.get('command'), action.get('sa')
+    if command == CMD_BATTLE and EVENT_BATTLE_FIELDS.intersection(details):
+        return 'The Event supplies Battle modifiers through its own resolution (§5.1.1).'
     has_sa = bool(sa and sa != 'No SA')
     limited = limited or action_type == ACTION_LIMITED_COMMAND
     if action_type not in (None, ACTION_COMMAND, ACTION_COMMAND_SA, ACTION_EVENT,
@@ -373,6 +400,15 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
     error = validate_region_selections(faction, action)
     if error:
         return error
+    if sa == SA_ENTREAT:
+        from fs_bot.commands.sa_entreat import validate_entreat_ally_target
+        for entry in action.get('sa_regions') or []:
+            if isinstance(entry, dict) and entry.get('action') in ('replace_ally', 'remove_ally'):
+                try:
+                    validate_entreat_ally_target(state, entry['region'],
+                                                entry.get('target_faction'), entry.get('tribe'))
+                except CommandError as exc:
+                    return str(exc)
     from fs_bot.commands.sa_build import build_plan_error
     error = build_plan_error(action, state)
     if error:

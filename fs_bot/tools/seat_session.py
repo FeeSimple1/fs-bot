@@ -84,17 +84,10 @@ def validate_response(state, request, response):
             validate_supply(state, request, {'continue': True})
         return None
     if kind == "turn":
-        if not isinstance(response, dict):
-            raise ValueError("A turn response must be an action object.")
-        if any(key in response for key in ("assistant_rejected", "supply_reconsideration")):
-            raise ValueError("Supply refusal receipts are engine history, not player choices.")
-        if response.get("action") not in request["options"]:
-            raise ValueError("Choose one of the pending turn's legal actions.")
-        if "bot_action" in response:
-            raise ValueError("Human responses must use player_action, not bot_action.")
-        if response["action"] != ACTION_PASS and not isinstance(
-                response.get("player_action"), dict):
-            raise ValueError("This action needs a player_action plan.")
+        from fs_bot.engine.action_validation import human_turn_error
+        error = human_turn_error(response, request['options'])
+        if error:
+            raise ValueError(error)
         if response["action"] != ACTION_PASS:
             from fs_bot.commands.transfer import transfer_plan_error
             from fs_bot.engine.action_validation import validate_human_structure
@@ -456,11 +449,26 @@ class SeatSession:
         self._legacy_replay_tail = False
 
     @staticmethod
+    def _journal_response(entry):
+        """Keep accepted turn choices consistent with their displayed history."""
+        response = decode(entry['assistant_response'])
+        request = decode(entry.get('assistant_request', {}))
+        if request.get('kind') == 'turn':
+            recorded = {key: entry[key] for key in ('action', 'player_action') if key in entry}
+            # Historical displayed plans used plain JSON, which saves tuples
+            # as lists. Compare that representation while retaining the exact
+            # encoded response for execution and replay.
+            response_json = json.loads(json.dumps(response))
+            recorded_json = json.loads(json.dumps(recorded))
+            if response_json != recorded_json:
+                raise ValueError('Saved turn response conflicts with its accepted action history.')
+        return response
+
+    @staticmethod
     def _inbox_entry(entry):
+        response = SeatSession._journal_response(entry)
         return {"decision_id": entry["assistant_id"],
-                "response": (decode(entry["assistant_response"])
-                             if entry["assistant_response"] is not None
-                             else {"use_default": True})}
+                "response": response if response is not None else {"use_default": True}}
 
     def _saved_physical_request(self, state, request):
         """Finish recorded old physical choices only on their exact saved board."""
@@ -503,8 +511,13 @@ class SeatSession:
             if entry["assistant_signature"] not in compatible_signatures:
                 self.error = "Saved decision no longer matches its board/request; replay stopped."
                 raise DecisionPending()
+            try:
+                response = self._journal_response(entry)
+            except ValueError as exc:
+                self.error = str(exc)
+                raise DecisionPending() from exc
             self.cursor += 1
-            return decode(entry["assistant_response"])
+            return response
 
         decision_id = f"d{len(self.log) + self.cursor + 1:06d}"
         record_version = int('_action_window_scope' in state or 'window' in request)
@@ -550,7 +563,9 @@ class SeatSession:
                     if record_version else {}),
                  "assistant_response": encode(response)}
         if request["kind"] == "turn":
-            entry.update(response)
+            entry['action'] = response['action']
+            if 'player_action' in response:
+                entry['player_action'] = copy.deepcopy(response['player_action'])
             entry["position"] = request["position"]
         else:
             entry.update(reactive=request["kind"], response=encode(response))

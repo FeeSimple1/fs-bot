@@ -667,10 +667,11 @@ def resolve_card_turn(state, decision_func, *, execute=False,
             gifts = resource_transfers.sequence(state, faction) if execute else nullcontext()
             with _action_transaction(state, decision_func), gifts:
                 decision = decision_func(state, faction, options, position)
-                if execute and (not isinstance(decision, dict) or (
-                        not decision.get("bot_action") and decision.get("action") not in options)):
-                    raise ActionRejected({"executed": False, "rejected": True,
-                                          "reason": "Choose one of this turn's offered actions (§2.3.4)."})
+                if not isinstance(decision, dict) or not decision.get('bot_action'):
+                    from fs_bot.engine.action_validation import human_turn_error
+                    error = human_turn_error(decision, options, require_plan=False)
+                    if error:
+                        raise ActionRejected({'executed': False, 'rejected': True, 'reason': error})
                 action = decision["action"]
                 if action == ACTION_PASS:
                     pass_result = execute_pass(state, faction)
@@ -679,12 +680,18 @@ def resolve_card_turn(state, decision_func, *, execute=False,
                     }
                     turn["passes"].append(faction)
                 else:
-                    turn["actions_taken"][faction] = decision
+                    # Eligibility and execution history belong to the engine.
+                    # A callback contributes only its action and executable plan.
+                    record = {'action': action}
+                    plan_key = 'bot_action' if decision.get('bot_action') else 'player_action'
+                    if plan_key in decision:
+                        record[plan_key] = decision[plan_key]
+                    turn['actions_taken'][faction] = record
                     if execute:
                         _maybe_execute(state, faction, decision,
                                        turn["actions_taken"])
                     if first:
-                        turn["first_action"] = decision["action"]
+                        turn["first_action"] = record["action"]
                     else:
                         turn["factions_done"] = True
                 from fs_bot.engine.supply_retry import RECEIPT

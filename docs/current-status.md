@@ -21,6 +21,29 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November third comparison repair Batch 1
+
+The [first repair batch](reviews/third-comparison-batch1-2026-11-10.md)
+closes FE3-01, CM3-02, and CM3-04. Human turn fields and accepted journal
+records now retain their assigned roles through pause, save, resume, and
+replay. Entreat validates and removes the named physical Ally disc.
+Ordinary Battle receives Event-specific modifiers from trusted Event
+resolution.
+
+All 9,473 tests passed, including 62 new cases. The same cases produced
+58 failures and four passing controls on the audit engine. Valid older
+tuple-form March choices resume after JSON save and reload. A conflicting
+older journal pauses with an explanation and preserves board, RNG, and
+committed history.
+
+Twenty audited all-bot records match the parent. Twenty mixed-player
+cases match across hash seeds 0 and 987 and match the audit revision,
+with zero hard findings and four soft partial plans. All 100 balance
+outcomes match the parent, and the existing guardrail passed.
+
+The [third-audit ledger](reviews/comparison-audit-round3-2026-11-10.json)
+records **3 of 15 groups repaired (20%), with 12 remaining**.
+
 ### 10 November third comparison audit
 
 The [third Liberty or Death comparison](reviews/comparison-audit-round3-2026-11-10.md)

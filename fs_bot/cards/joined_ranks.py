@@ -119,8 +119,8 @@ def resolve_joined_ranks(state, faction, march_limit=8, second_always_retreat=Fa
     if first and defender is not None and _attacker_has_force(state, region, faction):
         result = _execute_battle(state, faction, {
             "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL, "sa_regions": [],
-            "details": {"battle_plan": [{"region": region, "target": defender}],
-                        "no_retreat": True}})
+            "details": {"battle_plan": [{"region": region, "target": defender}]}},
+            _no_retreat=True)
         first_executed = bool(result.get("executed"))
         results.append({"free_action": "battle", "flag": "card_54", "battler": faction,
                         "region": region, "defender": defender, "result": result})
@@ -143,8 +143,8 @@ def resolve_joined_ranks(state, faction, march_limit=8, second_always_retreat=Fa
             continue
         result = _execute_battle(state, ally, {
             "command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL, "sa_regions": [],
-            "details": {"battle_plan": [{"region": region, "target": defender}],
-                        "no_retreat": not (_revised(state) or first_executed)}})
+            "details": {"battle_plan": [{"region": region, "target": defender}]}},
+            _no_retreat=not (_revised(state) or first_executed))
         results.append({"free_action": "battle", "flag": "card_54", "battler": ally,
                         "region": region, "defender": defender, "result": result})
         break

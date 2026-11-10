@@ -1462,8 +1462,7 @@ def _choose_free_battle(state, faction, allowed_regions):
     return (best[0], best[1]) if best else (None, None)
 
 
-def _plan_free_battle_command(state, faction, allowed_regions, *,
-                              no_retreat=False, second=False):
+def _plan_free_battle_command(state, faction, allowed_regions, *, second=False):
     """Finalize one Event Battle with the pieces its owners actually lend."""
     from fs_bot.engine.diviciacus_planning import plan_with_diviciacus
     allowed_regions = set(allowed_regions)
@@ -1476,8 +1475,6 @@ def _plan_free_battle_command(state, faction, allowed_regions, *,
         if region is None or defender is None:
             return {"command": "Pass"}
         details = {"battle_plan": [{"region": region, "target": defender}]}
-        if no_retreat:
-            details["no_retreat"] = True
         return {"command": _CMD_BATTLE, "sa": SA_ACTION_NONE_LABEL,
                 "regions": [region], "sa_regions": [], "details": details}
     with _command_execution_scope(state, allowed_regions, False):
@@ -3796,7 +3793,7 @@ def _execute_rally_steps(state, faction, steps, *, ordered=False,
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _full_loss_warbands=0, _double_auxilia=False, _ambush_anywhere=False,
                     _battle_observer=None, _full_loss_cohort=None, _require_ambush=False,
-                    _skip_absent_targets=False, _after_step=None):
+                    _skip_absent_targets=False, _after_step=None, _no_retreat=False):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3824,16 +3821,13 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     window(state, 'battle_command', author=faction)
     details = bot_action.get("details") or {}
     battle_plan = details.get("battle_plan", []) or []
-    # Free-Battle events may forbid the defender's Retreat (§ card text).
-    no_retreat = bool(details.get("no_retreat"))
-    force_retreat = bool(details.get("force_retreat"))
-    allied_factions = tuple(details.get("allied_factions") or ())
-    warband_full_loss = bool(details.get("warband_full_loss"))
+    # Event callers supply their printed Retreat exception directly.
+    no_retreat = _no_retreat
 
     # A31 German Phalanx vs one-shot Event battle benefits (BGG thread
     # 2079436: one-shot effects like a Germans-executed Sabis no-retreat
     # count as "Event effects"). Unshaded cancels benefits TO German
-    # attackers (their event-granted no_retreat / warband_full_loss);
+    # attackers (their event-granted no_retreat);
     # shaded cancels effects HARMING German defenders (a no_retreat
     # pinned on them) — handled per battle below.
     from fs_bot.rules_consts import GERMANS as _GE_A31
@@ -3841,7 +3835,6 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             and state.get("event_modifiers", {}).get(
                 "card_A31_cancel_german_benefits")):
         no_retreat = False
-        warband_full_loss = False
     sa = bot_action.get("sa")
     # sa_regions are string Region names for Ambush/Besiege; other SAs
     # (e.g. Intimidate) carry dict plans we ignore here, so filter to strings.
@@ -4001,8 +3994,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 from fs_bot.engine.diviciacus import ambush_scope
                 with ambush_scope(state, faction, bot_action, region):
                     valid, reason = validate_ambush_region(
-                        state, region, faction, defender,
-                        allied_factions=allied_factions)
+                        state, region, faction, defender)
                 if not valid:
                     # A1.4 explicitly lets a defender's new agreement block
                     # an otherwise planned Ambush. This is a legal reaction.
@@ -4094,14 +4086,12 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     retreat_options = {'retreat_declaration': False}
                 else:
                     retreat_options = _battle_retreat_options(
-                        state, region, faction, defender, is_ambush, forced=force_retreat)
+                        state, region, faction, defender, is_ambush)
                 res = resolve_battle(
                     state, region, faction, defender,
                     is_ambush=is_ambush, besiege_target=besiege_target,
                     citadel_at_start=citadel_at_start,
                     fort_at_start=fort_at_start,
-                    allied_factions=allied_factions,
-                    warband_full_loss=warband_full_loss,
                     full_loss_warbands=_full_loss_warbands,
                     _full_loss_cohort=_full_loss_cohort,
                     double_auxilia=_double_auxilia,
@@ -5396,15 +5386,14 @@ def _execute_build_plan(state, faction, bot_action):
     return result
 
 
-def _battle_retreat_options(state, region, attacker, defender, is_ambush, *,
-                            forced=False, **forecast):
+def _battle_retreat_options(state, region, attacker, defender, is_ambush, **forecast):
     """Carry accepted Step 2 promises to the actual Battle's Step 6."""
     options = {}
     if state.get('decision_agent') is not None or defender in state.get('non_player_factions', ()):
         forecast['battle_options'] = options
     declared, destination = _decide_defender_retreat(
         state, region, attacker, defender, is_ambush, **forecast)
-    return dict(retreat_declaration=declared or forced, retreat_region=destination, **options)
+    return dict(retreat_declaration=declared, retreat_region=destination, **options)
 
 
 def _decide_defender_retreat(state, region, attacker, defender, is_ambush,

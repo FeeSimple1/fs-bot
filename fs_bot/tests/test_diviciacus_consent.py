@@ -205,12 +205,11 @@ def test_free_battle_refusal_reselects_from_actual_opposing_forces(agree):
             requests.append(request)
             return agree
     state['decision_agent'] = consent
-    action = _plan_free_battle_command(state, rc.ROMANS, {rc.CARNUTES}, no_retreat=True)
+    action = _plan_free_battle_command(state, rc.ROMANS, {rc.CARNUTES})
     target = action['details']['battle_plan'][0]['target']
     assert target == (rc.BELGAE if agree else rc.AEDUI)
-    assert action['details']['no_retreat'] is True
     assert action['details']['diviciacus_regions'] == ([rc.CARNUTES] if agree else [])
-    result = _execute_battle(state, rc.ROMANS, action)
+    result = _execute_battle(state, rc.ROMANS, action, _no_retreat=True)
     assert result['executed'], result
     commands = [r for r in requests if r['context']['phase'] == 'command']
     assert len(commands) == 1 and CONFIRMATIONS not in state

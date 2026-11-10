@@ -252,6 +252,17 @@ A halt preserves completed actions. An unfinished action is retried from its
 starting board and RNG, automatically replaying your already accepted choices;
 it does not ask those questions again. Invalid responses remain pending.
 
+Own-turn input contains `action` and the chosen `player_action` plan.
+Pass uses `action` alone. Eligibility exceptions and journal fields are
+supplied by the engine. Extra top-level fields leave the same decision
+pending. Ordinary Battle plans receive their Event-specific modifiers
+through the Event's own choices and resolution.
+
+Accepted turns are checked against their recorded action and plan on resume
+and replay. An older journal containing conflicting choices pauses with an
+explanation. Supported tuple-form March choices retain their meaning across
+JSON save and reload.
+
 The save atomically records the board, accepted input, pending request, and
 complete decision history. `queue.json` is an inbox: an unchanged submitted
 file is never consumed twice. You may write

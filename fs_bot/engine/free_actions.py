@@ -286,6 +286,7 @@ def _validate_plan(state, faction, request, action):
     from fs_bot.engine.action_validation import (
         command_regions, command_parts, compatible_sa, validate_command_interruption,
         validate_command_parts, validate_rally_interruption, validate_region_selections,
+        EVENT_BATTLE_FIELDS,
     )
     from fs_bot.map.map_data import get_playable_regions_for_state
     faction = request.get('acting_faction', faction)
@@ -408,10 +409,10 @@ def _validate_plan(state, faction, request, action):
         return 'Supply an explicit Special Ability plan with targets.'
     if required and required not in merged:
         return f'Supply an explicit {required}.'
-    if any(k in details for k in ('no_retreat', 'force_retreat', 'allied_factions',
-                                  'warband_full_loss', 'transfers', 'as_if_control',
+    if (EVENT_BATTLE_FIELDS.intersection(details) or any(k in details for k in (
+                                  'transfers', 'as_if_control',
                                   'no_harassment', 'no_rally', 'seize_no_rally',
-                                  'seize_no_harassment', 'seize_as_if_control')):
+                                  'seize_no_harassment', 'seize_as_if_control'))):
         return 'The plan includes effects not granted by this Event.'
     destinations = request.get('required_destinations')
     if cmd == 'March' and destinations is not None:

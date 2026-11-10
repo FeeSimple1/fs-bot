@@ -7,8 +7,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 15,
-  "closed": 0,
-  "open": 15,
+  "closed": 3,
+  "open": 12,
   "severity_counts": {
     "high": 14,
     "medium": 1
@@ -73,7 +73,9 @@
         "FE3-01",
         "CM3-02",
         "CM3-04"
-      ]
+      ],
+      "status": "closed",
+      "report": "third-comparison-batch1-2026-11-10.md"
     },
     {
       "batch": 2,
@@ -165,13 +167,15 @@
       "relationship_to_prior_findings": "New boundary within the same general authored-input class as FE2-01/FE2-02 and XC2-01. Those repairs bind inner plan type/current card and command scope; they do not reserve top-level execution/journal metadata. No earlier closed finding or Circumvallation follow-up is recounted. Both effects are conservatively grouped because they share arbitrary top-level metadata admission.",
       "repair_scope": "Define and enforce the supported turn-response envelope at durable and raw human turn boundaries; keep free-action/eligibility authority engine-owned; build protected journal metadata without allowing authored fields to overwrite it. Preserve legal existing turn fields and explicitly authorized compatibility records.",
       "regression_gate": "Both invalid submissions should remain pending without board/RNG/history mutation. Cover ordinary Command, Event and Pass envelopes, direct human callbacks as appropriate, corrected retry, normal reactive pause/resume, save/load and replay; ensure genuine Event eligibility exceptions remain legal.",
-      "status": "confirmed-open",
+      "status": "closed",
       "rules": [
         "Reference Documents/Chapter 2, §§2.3.1 and 2.3.6, lines 27-31 and 68-76",
         "Reference Documents/Chapter 3, §3.1.2, lines 15-19",
         "CHATGPT_README.md lines 251-262, documented accepted-choice and durable-history contract"
       ],
-      "prior_relation": "New boundary within the same general authored-input class as FE2-01/FE2-02 and XC2-01. Those repairs bind inner plan type/current card and command scope; they do not reserve top-level execution/journal metadata. No earlier closed finding or Circumvallation follow-up is recounted. Both effects are conservatively grouped because they share arbitrary top-level metadata admission."
+      "prior_relation": "New boundary within the same general authored-input class as FE2-01/FE2-02 and XC2-01. Those repairs bind inner plan type/current card and command scope; they do not reserve top-level execution/journal metadata. No earlier closed finding or Circumvallation follow-up is recounted. Both effects are conservatively grouped because they share arbitrary top-level metadata admission.",
+      "repair_batch": 1,
+      "repair_report": "third-comparison-batch1-2026-11-10.md"
     },
     {
       "id": "CM3-01",
@@ -250,7 +254,7 @@
       "relationship_prior_findings": "New Entreat target-identity defect. Original duplicate Entreat repair and second-audit EX2-02/EX2-03 physical Event target repairs concern other paths. Existing test_arverni_bot.py::test_entreat_skips_citadel_allied_tribe checks only planner with Citadel and no other Ally.",
       "reachability": "Controlled initialized Great Revolt board prepared through piece helpers and exact Tribe assignments; both full inventory census and structural checks clean before validation/execution. Prepared position not claimed as an unedited playthrough.",
       "repair_scope": "Use tribe_has_ally_disc or equivalent exact physical identity validation before payment/removal; preserve legitimate Ally replacements and Citadel allegiance.",
-      "status": "confirmed-open",
+      "status": "closed",
       "rules": [
         {
           "path": "Reference Documents/Chapter 4",
@@ -267,7 +271,9 @@
         "fs_bot/commands/sa_entreat.py:206-245",
         "fs_bot/engine/execute.py:5844-5854"
       ],
-      "prior_relation": "New Entreat target-identity defect. Original duplicate Entreat repair and second-audit EX2-02/EX2-03 physical Event target repairs concern other paths. Existing test_arverni_bot.py::test_entreat_skips_citadel_allied_tribe checks only planner with Citadel and no other Ally."
+      "prior_relation": "New Entreat target-identity defect. Original duplicate Entreat repair and second-audit EX2-02/EX2-03 physical Event target repairs concern other paths. Existing test_arverni_bot.py::test_entreat_skips_citadel_allied_tribe checks only planner with Citadel and no other Ally.",
+      "repair_batch": 1,
+      "repair_report": "third-comparison-batch1-2026-11-10.md"
     },
     {
       "id": "CM3-03",
@@ -350,7 +356,7 @@
       "relationship_prior_findings": "New inner-plan privilege defect. FE2-01/02 bound selected action and card ID, and XC2-01 rejected shadow Command portions; none governed these Battle modifiers. Frontend agent’s top-level receipt/eligibility finding is a distinct path.",
       "reachability": "Controlled initialized positions through piece helpers, all initial census/structure checks clean. Ordinary durable turn validation plus normal execution. Retreat controls use the documented raw decision callback to record the actual owner answer; callback never changes the board.",
       "repair_scope": "Move trusted Battle bonuses to executor-owned scoped context or private parameters; reject/ignore authored equivalents in ordinary/durable/free-action plans and test all four modifiers plus duplicate allied faction values.",
-      "status": "confirmed-open",
+      "status": "closed",
       "rules": [
         {
           "path": "Reference Documents/Chapter 3",
@@ -371,7 +377,9 @@
         "fs_bot/engine/action_validation.py:317-438",
         "fs_bot/tools/seat_session.py:86-114"
       ],
-      "prior_relation": "New inner-plan privilege defect. FE2-01/02 bound selected action and card ID, and XC2-01 rejected shadow Command portions; none governed these Battle modifiers. Frontend agent’s top-level receipt/eligibility finding is a distinct path."
+      "prior_relation": "New inner-plan privilege defect. FE2-01/02 bound selected action and card ID, and XC2-01 rejected shadow Command portions; none governed these Battle modifiers. Frontend agent’s top-level receipt/eligibility finding is a distinct path.",
+      "repair_batch": 1,
+      "repair_report": "third-comparison-batch1-2026-11-10.md"
     },
     {
       "status": "confirmed-open",
@@ -1004,5 +1012,78 @@
       "fixture_limits": "Standard Great Revolt setup, current Event set to 23 for the controlled test. Real execute_decision handles both Sacking and Seize. The production spring_phase runs twice to demonstrate loss of permanence, with the unmodified Razed position as control. No gameplay source changed.",
       "prior_relation": "New downstream unshaded Sacking/Seize interaction. BE2-01 repaired shaded Sacking prerequisites, not this marker lifecycle. Unrelated to known Circumvallation persistence."
     }
-  ]
+  ],
+  "open_severity_counts": {
+    "high": 11,
+    "medium": 1
+  },
+  "latest_repair": {
+    "batch": 1,
+    "date": "2026-11-10",
+    "findings": [
+      "FE3-01",
+      "CM3-02",
+      "CM3-04"
+    ],
+    "report": "third-comparison-batch1-2026-11-10.md",
+    "engine_changes": true,
+    "reference_changes": false,
+    "tested_source": {
+      "commit": "06487b417f0c32d3e0830ea453a00acb2a81978a",
+      "dirty": true,
+      "source_sha256": "42da33aca92ecd23c750e2ea17e29f3f71d50c66e2e50db03a0f325966c12069",
+      "python_files": 579,
+      "working_tree_changes": true,
+      "note": "Validated the repair tree over the listed parent commit."
+    },
+    "parent_source": {
+      "commit": "06487b417f0c32d3e0830ea453a00acb2a81978a",
+      "source_sha256": "7f75a00ebd5200960a71fa822bdfddb47f2e092f5edbf58c145f6f70a5db226e"
+    },
+    "validation": {
+      "pytest_passed": 9473,
+      "pytest_failures": 0,
+      "pytest_errors": 0,
+      "pytest_skipped": 0,
+      "new_regression_cases": 62,
+      "parent_regression_failures": 58,
+      "parent_regression_controls_passed": 4,
+      "normal_assistant_rejected_plan_retry_resume_and_replay": true,
+      "legacy_tuple_march_save_resume": true,
+      "conflicting_older_journal_resume_and_replay_stop": true,
+      "all_bot_records": 20,
+      "all_bot_records_matched_parent": 20,
+      "all_bot_audit_failures": 0,
+      "all_bot_seeds": [
+        21,
+        22,
+        23,
+        24
+      ],
+      "all_bot_card_edition": "legacy",
+      "mixed_cases": 20,
+      "mixed_cases_matched_parent": 20,
+      "mixed_hash_seeds": [
+        0,
+        987
+      ],
+      "mixed_json_identical": true,
+      "mixed_hard_findings": 0,
+      "mixed_partial_plans": 4,
+      "mixed_human_turns": 626,
+      "mixed_event_turns": 146,
+      "mixed_events_executed": 130,
+      "mixed_batch_digest": "1c814c9f99c8cc98ce7d60f67522163055f408edc64f1f85293f40c6c3cda6d1",
+      "balance_games": 100,
+      "balance_outcomes_matched_parent": 100,
+      "balance_winners_changed_from_parent": 0,
+      "balance_lengths_changed_from_parent": 0,
+      "balance_guardrail_passed": true,
+      "balance_band": 0.15,
+      "balance_winners_different_from_stored_baseline": 31,
+      "balance_baseline_sha256": "207a62e367e31caec165617b8f62fb5f5b0af82a114c4aaf3aee39f140d37d46"
+    },
+    "compatibility": "Valid older tuple-form March responses retain their save/replay meaning. An older journal with conflicting accepted turn records pauses for review. Authored ordinary plans carrying newly reserved fields require correction.",
+    "superseded_runs": "Candidate directories preserve earlier test-double failures and compatibility investigation. final3 is the accepted source. All general matrix claims below use its exact source digest."
+  }
 }

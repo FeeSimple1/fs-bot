@@ -85,9 +85,6 @@ def _entreat_options(state, region):
     from fs_bot.commands.sa_entreat import entreat_replace_ally, entreat_replace_piece
     options = []
     for tribe, owner in _enemy_ally_tribes(state, region, rc.ARVERNI):
-        if (tribe in rc.TRIBE_TO_CITY
-                and count_pieces(state, region, owner, rc.CITADEL)):
-            continue
         if _legal(state, entreat_replace_ally, region, owner, tribe):
             options.append((f'replace {owner} Ally at {tribe} with yours', {
                 'region': region, 'action': 'replace_ally', 'target_faction': owner, 'tribe': tribe}))

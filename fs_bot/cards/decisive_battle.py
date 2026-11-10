@@ -36,7 +36,7 @@ def _default_action(state, faction, request):
     from fs_bot.engine.execute import _plan_free_battle_command
     return _plan_free_battle_command(
         state, faction, request['allowed_regions'],
-        no_retreat=request['no_retreat'], second=request['phase'] == 'second')
+        second=request['phase'] == 'second')
 
 
 def _default_available(state, faction, request):
@@ -100,8 +100,6 @@ def _human_action(state, faction, card_id, allowed_regions, *, second=False,
         return None, True
     region, defender = response['region'], response['defender']
     details = {'battle_plan': [{'region': region, 'target': defender}]}
-    if not second:
-        details['no_retreat'] = True
     action = {'command': rc.CMD_BATTLE, 'sa': SA_ACTION_NONE_LABEL,
               'regions': [region], 'sa_regions': [], 'details': details}
     _request_event_diviciacus(state, faction, action, card_id)
@@ -119,7 +117,7 @@ def _resolve_one(state, faction, card_id, flag, allowed, *, second=False):
                 attempt=attempt, previous_error=previous_error)
         else:
             action = _plan_free_battle_command(
-                state, faction, allowed, no_retreat=not second, second=second)
+                state, faction, allowed, second=second)
             explicit = False
         if action is None:
             return None
@@ -128,7 +126,7 @@ def _resolve_one(state, faction, card_id, flag, allowed, *, second=False):
         label = 'battle_second' if second else 'battle'
         try:
             with free_action_scope(state, faction):
-                result = _execute_battle(state, faction, action)
+                result = _execute_battle(state, faction, action, _no_retreat=not second)
         except _EXEC_ERRORS as exc:
             return {'free_action': label, 'flag': flag, 'executed': False,
                     'reason': repr(exc), **({'region': region} if second else {})}

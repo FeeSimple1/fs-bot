@@ -144,13 +144,15 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The [third Liberty or Death comparison](docs/reviews/comparison-audit-round3-2026-11-10.md)
-confirms **15 additional open repair groups** after the original 50 and next 21
-findings were repaired. It includes executable witnesses and independent review.
-All 9,411 existing tests passed, and 20 mixed-seat cases matched across hash
-seeds with zero hard findings and four soft partial plans. No gameplay changes
-are included in the audit. See the [new ledger](docs/reviews/comparison-audit-round3-2026-11-10.json)
-for the current repair backlog; the dated checkpoints below retain their context.
+The [third comparison's first repair batch](docs/reviews/third-comparison-batch1-2026-11-10.md)
+repairs authored turn metadata, Entreat disc identity, and ordinary Battle's
+Event-only modifiers. All 9,473 tests passed. Twenty audited all-bot records
+and all 100 balance outcomes match the parent. Twenty mixed-player cases
+match across hash seeds with zero hard findings and four soft partial plans.
+The [third-audit ledger](docs/reviews/comparison-audit-round3-2026-11-10.json)
+records **3 of 15 groups repaired (20%), with 12 remaining** after the original
+50 and next 21 findings were repaired. The dated checkpoints below retain
+their context.
 
 The [first small audit repairs](docs/reviews/cheap-fixes-2026-10-29.md) close
 five findings: mandatory Battle casualty tiers, repeated Seize/Entreat,

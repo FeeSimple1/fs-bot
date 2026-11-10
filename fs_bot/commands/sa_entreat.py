@@ -39,7 +39,7 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state,
-    place_piece, remove_piece, get_available,
+    place_piece, remove_piece, get_available, tribe_has_ally_disc, clear_allied_tribe,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
 from fs_bot.map.map_data import get_tribes_in_region, get_tribe_data
@@ -166,6 +166,16 @@ def entreat_replace_piece(state, region, target_faction, target_piece_type,
     }
 
 
+def validate_entreat_ally_target(state, region, target_faction, tribe):
+    """Require the selected physical Ally disc before payment or removal (§4.3.1)."""
+    if target_faction not in (AEDUI, BELGAE, GERMANS):
+        raise CommandError('Entreat selects Aedui, Belgic, or Germanic Allied Tribe discs (§4.3.1).')
+    if tribe not in get_tribes_in_region(region, state['scenario']):
+        raise CommandError(f'Tribe {tribe} is not in {region}')
+    if not tribe_has_ally_disc(state, region, tribe, target_faction):
+        raise CommandError(f'Entreat requires a {target_faction} Allied Tribe disc at {tribe} (§4.3.1).')
+
+
 def entreat_replace_ally(state, region, target_faction, tribe):
     """Replace one enemy Allied Tribe with an Arverni Allied Tribe.
 
@@ -196,23 +206,7 @@ def entreat_replace_ally(state, region, target_faction, tribe):
             "Region must be Arverni Controlled to Entreat an Allied Tribe"
         )
 
-    # Target must be Aedui, Belgic, or Germanic — not Roman
-    if target_faction not in (AEDUI, BELGAE, GERMANS):
-        raise CommandError(
-            f"Can only Entreat Aedui, Belgic, or Germanic Allies, "
-            f"not {target_faction}"
-        )
-
-    # Check the tribe is in this region and allied to target
-    tribes = get_tribes_in_region(region, state["scenario"])
-    if tribe not in tribes:
-        raise CommandError(f"Tribe {tribe} is not in {region}")
-
-    tribe_info = state["tribes"].get(tribe, {})
-    if tribe_info.get("allied_faction") != target_faction:
-        raise CommandError(
-            f"Tribe {tribe} is not allied to {target_faction}"
-        )
+    validate_entreat_ally_target(state, region, target_faction, tribe)
 
     # Check Resources
     resources = state["resources"].get(ARVERNI, 0)
@@ -234,7 +228,7 @@ def entreat_replace_ally(state, region, target_faction, tribe):
 
     # Remove enemy Ally
     remove_piece(state, region, target_faction, ALLY, 1)
-    state["tribes"][tribe]["allied_faction"] = None
+    clear_allied_tribe(state, region, target_faction, ALLY, tribe=tribe)
 
     # Try to place Arverni Ally
     placed = False

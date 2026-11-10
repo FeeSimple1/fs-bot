@@ -461,12 +461,14 @@ def _citadel_upgrade_tribes(state, region, faction):
 
 
 def _enemy_ally_tribes(state, region, faction):
-    """(tribe, owner) pairs for enemy Allied Tribes in ``region``."""
+    """Physical enemy Ally discs eligible for Arverni Entreat (§4.3.1)."""
     from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.board.pieces import tribe_has_ally_disc
     out = []
     for t in get_tribes_in_region(region, state["scenario"]):
         owner = state.get("tribes", {}).get(t, {}).get("allied_faction")
-        if owner and owner != faction:
+        if (owner in (AEDUI, BELGAE, GERMANS) and owner != faction
+                and tribe_has_ally_disc(state, region, t, owner)):
             out.append((t, owner))
     return out
 

@@ -418,6 +418,11 @@ For base-game Arverni Rally, it also allows the Special Activity between
 Vercingetorix's two options in the same Region.
 Ambush and Besiege resolve within their accompanying Battle.
 
+Entreat menus select the exact Allied Tribe disc. When an enemy has a
+Citadel and another Tribe's Ally in the same Region, selecting that Ally
+changes its own allegiance and preserves the City Citadel's allegiance.
+The Arverni replacement follows Available-piece and stacking limits (§4.3.1).
+
 Seize and Entreat cannot select a Region twice. Battle casualty menus show
 only the legally eligible group of pieces for the current loss: static pieces
 first when retreating and after other pieces otherwise, with Diviciacus last.

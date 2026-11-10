@@ -1,6 +1,10 @@
 # Third Falling Sky comparison audit — 10 November 2026
 
-**15 additional confirmed repair groups are open — 14 high and 1 medium priority.** No gameplay repairs are included. The previous 50-finding and 21-finding ledgers remain fully closed; known Circumvallation persistence work and unresolved source questions are separate.
+Batch 1 repairs three findings. The [repair report](third-comparison-batch1-2026-11-10.md)
+and [ledger](comparison-audit-round3-2026-11-10.json) record **3 of 15 repaired,
+with 12 remaining**.
+
+**The audit confirmed 15 additional repair groups — 14 high and 1 medium priority.** The evidence below records the audit revision. The previous 50-finding and 21-finding ledgers remain fully closed. Known Circumvallation persistence work and unresolved source questions are tracked separately.
 
 Falling Sky was audited at `3c23a3414c3e870e274ef63c278db8cb3f1ee747` with Python-source SHA-256 `7f75a00ebd5200960a71fa822bdfddb47f2e092f5edbf58c145f6f70a5db226e` across 578 Python files. Liberty or Death was inspected at `2991ea279062773548ec390a1da75f3e85381702`. Its engineering patterns guided the search; Falling Sky’s supplied references and adopted provisional rulings govern the conclusions.
 

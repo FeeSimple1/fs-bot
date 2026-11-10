@@ -213,7 +213,7 @@ def resolve_admagetobriga(state, faction):
                    and count_pieces(state, entry['region'], entry['target'])]
         result = _execute_battle(state, faction, {
             'command': 'Battle', 'sa': 'No SA', 'sa_regions': [],
-            'details': {'battle_plan': battles, 'no_retreat': True}})
+            'details': {'battle_plan': battles}}, _no_retreat=True)
     report = {'free_action': 'battle', 'flag': 'card_A28_combined_battle',
               'result': result, 'agreements': agreements,
               'unresolved_agreements': unresolved}

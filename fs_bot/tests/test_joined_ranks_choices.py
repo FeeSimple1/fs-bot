@@ -19,8 +19,8 @@ def state():
 
 def record_battles(monkeypatch):
     calls = []
-    def battle(s, faction, action):
-        calls.append((faction, deepcopy(action)))
+    def battle(s, faction, action, *, _no_retreat=False):
+        calls.append((faction, deepcopy(action), _no_retreat))
         return {'executed': True}
     monkeypatch.setattr('fs_bot.engine.execute._execute_battle', battle)
     return calls
@@ -78,7 +78,7 @@ def test_second_nonplayer_never_battles(monkeypatch):
     s['event_params']['first_battle'] = True
     s['decision_agent'] = lambda *a: True
     resolve_joined_ranks(s, rc.ROMANS)
-    assert [f for f, _ in calls] == [rc.ROMANS]
+    assert [f for f, _, _ in calls] == [rc.ROMANS]
 
 
 @pytest.mark.parametrize('edition,first,expected', [
@@ -99,9 +99,9 @@ def test_second_player_decides_and_retreat_is_allowed_not_forced(monkeypatch, ed
     resolve_joined_ranks(s, rc.ROMANS)
     assert requests[0][0] == rc.BELGAE
     assert requests[0][1]['request_type'] == 'joined_ranks_battle'
-    f, action = calls[-1]
+    f, action, no_retreat = calls[-1]
     assert f == rc.BELGAE
-    assert action['details']['no_retreat'] is expected
+    assert no_retreat is expected
     assert not action['details'].get('force_retreat')
     assert action['details']['battle_plan'][0]['target'] == rc.ARVERNI
 
@@ -140,7 +140,7 @@ def test_second_battle_cannot_switch_to_a_different_defender(monkeypatch):
     s['non_player_factions'] = {rc.ARVERNI}
     s['decision_agent'] = lambda *a: True
     calls = []
-    def destroy(st, faction, action):
+    def destroy(st, faction, action, *, _no_retreat=False):
         from fs_bot.board.pieces import remove_piece
         calls.append(faction)
         remove_piece(st, rc.AEDUI_REGION, rc.ARVERNI, rc.WARBAND, count=3,
@@ -177,4 +177,4 @@ def test_player_can_decline_optional_march_and_still_offer_second_battle(monkeyp
     resolve_joined_ranks(s, rc.ROMANS)
     assert count_pieces(s, rc.SEQUANI, rc.ROMANS, rc.AUXILIA) == 2
     assert count_pieces(s, rc.AEDUI_REGION, rc.ROMANS, rc.AUXILIA) == 0
-    assert [f for f, _ in calls] == [rc.BELGAE]
+    assert [f for f, _, _ in calls] == [rc.BELGAE]

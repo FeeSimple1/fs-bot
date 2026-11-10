@@ -89,6 +89,13 @@ def decision_func(state, faction, options, position):
     return {"action": "pass"}
 ```
 
+Human turn responses accept `action` and, for a non-Pass action,
+`player_action`. Pass uses `action` alone. The engine supplies eligibility
+exceptions and accepted-decision metadata. Additional top-level fields,
+including `free_action` and `assistant_response`, leave the submitted turn
+pending for correction. The coordinator constructs its own execution record
+from the chosen action and plan.
+
 A Command-only or Limited Command response carries a Command with no Special
 Ability. Use `command_sa` when choosing one. If the Special Ability is declined
 or produces no effect, the engine records Command only. An `event` response
@@ -105,6 +112,20 @@ a partial execution differs from a wholly refused action. A `player_action` is:
  "regions": [...], "sa": "No SA"|<Special Ability>, "sa_regions": [...],
  "details": { ...command-specific plan... }}
 ```
+
+Ordinary Battle plans choose their Regions, defenders, and accompanying
+Special Ability. Event resolution supplies printed combat modifiers.
+`details.no_retreat`, `force_retreat`, `allied_factions`, and
+`warband_full_loss` are reserved and rejected in ordinary Battle plans.
+Choices that an Event expressly grants, such as A28's permitted lenders,
+use that Event's own request and parameters.
+
+Entreat names the physical Allied Tribe disc being replaced. Validation
+checks that identity before accepting an authored turn and again at removal.
+The selected disc and its Tribe allegiance change together. A City Citadel
+retains its allegiance when Entreat takes another Tribe's disc in the Region.
+Available replacement pieces and stacking determine whether Arverni place
+their counterpart after taking the selected disc (§4.3.1).
 
 Recruit entries accept an exact integer `count` for `place_auxilia`:
 

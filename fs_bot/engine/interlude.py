@@ -69,7 +69,7 @@ from fs_bot.rules_consts import (
     # Markers
     MARKER_CIRCUMVALLATION, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     MARKER_BRITANNIA_NOT_IN_PLAY, MARKER_ARVERNI_RALLY,
-    MARKER_INTIMIDATED, MARKER_GALLIA_TOGATA, MARKER_COLONY,
+    MARKER_INTIMIDATED, MARKER_COLONY,
     MARKER_ABATIS, MARKER_WINTER_UPRISING, MARKER_AT_WAR,
     MARKER_NORI, MARKER_CISALPINA_CONTROL_BOX,
     # Senate
@@ -982,75 +982,36 @@ def _cisalpina_relocation(state):
     Faction order: German -> Belgae -> Aedui -> Arverni -> Roman.
     (The Interlude text says "Factions in the above order".)
     """
-    result = {"skipped": False, "removed": {}}
-    # Gallia Togata gate
-    caps = state.get("capabilities", {})
-    if 5 in caps or "A5" in caps:
-        result["skipped"] = True
-        return result
-    markers = state.get("markers", {})
-    cis_markers = markers.get(CISALPINA, {})
-    has_togata = False
-    if isinstance(cis_markers, dict):
-        has_togata = MARKER_GALLIA_TOGATA in cis_markers
-    elif isinstance(cis_markers, set):
-        has_togata = MARKER_GALLIA_TOGATA in cis_markers
-    if has_togata:
+    from fs_bot.cards.gallia_evacuation import apply_plan
+    from fs_bot.engine.agent import consult_agent
+    from fs_bot.engine.interlude_choices import cisalpina_request, validate_response
+    from fs_bot.map.map_data import is_gallia_togata_active
+
+    result = {"skipped": False, "removed": {}, "moved": []}
+    caps = state.get("capabilities") or ()
+    if is_gallia_togata_active(state) or 5 in caps or "A5" in caps:
         result["skipped"] = True
         return result
 
-    # Faction order
-    order = (GERMANS, BELGAE, AEDUI, ARVERNI, ROMANS)
-    space = state["spaces"].get(CISALPINA, {})
-    if not space:
-        return result
-    pieces = space.get("pieces", {})
-    for faction in order:
-        f_pieces = pieces.get(faction)
-        if not f_pieces:
+    for faction in (GERMANS, BELGAE, AEDUI, ARVERNI, ROMANS):
+        if not count_pieces(state, CISALPINA, faction):
             continue
-        removed_here = 0
-        # Warbands and Auxilia
-        for pt in (WARBAND, AUXILIA):
-            for ps in (HIDDEN, REVEALED, SCOUTED):
-                n = count_pieces_by_state(
-                    state, CISALPINA, faction, pt, ps,
-                )
-                if n > 0:
-                    remove_piece(
-                        state, CISALPINA, faction, pt, n,
-                        piece_state=ps,
-                    )
-                    removed_here += n
-        # Allies / Citadels / Settlements all removed (we can't easily
-        # "relocate Ally to Subdued Tribe" without choosing a target;
-        # leave them removed to Available for simplicity per the
-        # second clause: "or remove them").
-        for pt in (ALLY, CITADEL, SETTLEMENT):
-            n = count_pieces(state, CISALPINA, faction, pt)
-            if n > 0:
-                remove_piece(state, CISALPINA, faction, pt, n)
-                # Clear ONE tribe per removed Ally/Citadel piece (the old
-                # loop cleared a single tribe regardless of n and ignored
-                # Citadels — stranded allegiances; player_fuzz catch).
-                if pt in (ALLY, CITADEL):
-                    for _ in range(n):
-                        clear_allied_tribe(state, CISALPINA, faction, pt)
-                removed_here += n
-        # Legions -> back to track
-        n_leg = count_pieces(state, CISALPINA, faction, LEGION)
-        if n_leg > 0:
-            remove_piece(
-                state, CISALPINA, faction, LEGION, n_leg,
-                to_track=True,
-            )
-            removed_here += n_leg
-        # Leader -> Available
-        if get_leader_in_region(state, CISALPINA, faction) is not None:
-            remove_piece(state, CISALPINA, faction, LEADER)
-            removed_here += 1
-        if removed_here > 0:
-            result["removed"][faction] = removed_here
+        request = cisalpina_request(state, faction)
+        controller, entries = request['faction'], request['pieces']
+        response = None
+        if (controller not in state.get('non_player_factions', ())
+                and any(piece['destinations'] for piece in entries)):
+            response = consult_agent(state, controller, request)
+            if response is not None:
+                validate_response(state, request, response)
+        if response is None or response == {'use_default': True}:
+            response = {'allocations': [dict(piece_id=piece['id'], count=piece['count'],
+                                             destination=None) for piece in entries]}
+        for row in apply_plan(state, faction, entries, response):
+            if row['destination'] is None:
+                result['removed'][faction] = result['removed'].get(faction, 0) + row['count']
+            else:
+                result['moved'].append(row)
 
     refresh_all_control(state)
     return result

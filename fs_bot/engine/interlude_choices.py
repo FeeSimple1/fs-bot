@@ -1,4 +1,4 @@
-"""Citadel, Settlement, expedition and marker choices in the Gallic War Interlude (A2.1)."""
+"""Physical allocations and scenario choices in the Gallic War Interlude."""
 from fs_bot import rules_consts as rc
 from fs_bot.board.control import is_controlled_by
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, find_leader, get_available
@@ -9,6 +9,7 @@ MARKER = 'interlude_marker'
 SETTLEMENTS = 'interlude_settlements'
 AEDUI_CITADEL = 'interlude_aedui_citadel'
 ARVERNI_CITADELS = 'interlude_arverni_citadels'
+CISALPINA_RELOCATION = 'interlude_cisalpina_relocation'
 
 
 def settlement_request(state):
@@ -95,6 +96,14 @@ def choose_arverni_citadels(state):
     return (outside + [r for r in regions if r == rc.ARVERNI_REGION])[:required]
 
 
+def cisalpina_request(state, faction):
+    from fs_bot.cards.gallia_evacuation import allocation_request
+
+    controller = rc.GERMANS if faction == rc.ARVERNI else faction
+    return dict(kind=CISALPINA_RELOCATION, faction=controller,
+                **allocation_request(state, faction))
+
+
 def expedition_request(state):
     """Offer the physical Roman force after Adjust Forces and relocation."""
     legions, auxilia = {}, []
@@ -130,6 +139,14 @@ def marker_request(state):
 def validate_response(state, request, response):
     """Validate the complete choice before mutating the Interlude board."""
     if isinstance(response, dict) and set(response) == {'use_default'} and response['use_default'] is True:
+        return response
+    if request['kind'] == CISALPINA_RELOCATION:
+        from fs_bot.cards.gallia_evacuation import validate_response as validate_allocation
+
+        faction = request['acting_faction']
+        if request != cisalpina_request(state, faction):
+            raise ValueError('The offered Cisalpina forces or destinations have changed.')
+        validate_allocation(state, faction, response)
         return response
     if request['kind'] == ARVERNI_CITADELS:
         current = arverni_citadel_request(state)

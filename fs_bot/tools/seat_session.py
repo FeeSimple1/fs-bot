@@ -140,7 +140,7 @@ def validate_response(state, request, response):
         from fs_bot.engine.interlude_reductions import validate_response as validate_reduction
         return validate_reduction(state, request, response)
     if kind in ('interlude_expedition', 'interlude_marker', 'interlude_settlements',
-                'interlude_aedui_citadel', 'interlude_arverni_citadels'):
+                'interlude_aedui_citadel', 'interlude_arverni_citadels', 'interlude_cisalpina_relocation'):
         from fs_bot.engine.interlude_choices import validate_response as validate_interlude
         return validate_interlude(state, request, response)
     if kind == 'harvest_legions':
@@ -457,7 +457,7 @@ class SeatSession:
 
     def ask(self, state, faction, request):
         request = dict(request, faction=faction)
-        if self._skip_legacy_window(state, request) or self._skip_legacy_roman_reduction(request):
+        if self._skip_legacy_window(state, request) or self._skip_legacy_interlude_choice(request):
             return None
         request = self._saved_physical_request(state, request)
         signature, compatible_signatures = _decision_signatures(state, request)
@@ -557,13 +557,17 @@ class SeatSession:
                     and 'window' not in old_request)
         return self._legacy_replay_tail
 
-    def _skip_legacy_roman_reduction(self, request):
+    def _skip_legacy_interlude_choice(self, request):
         """Keep the old default when a saved decision already follows it."""
-        if request.get('kind') != 'interlude_reduction':
-            return False
-        from fs_bot.engine.interlude_reductions import ROMAN_HALF
+        kind = request['kind']
+        later = ('spring_leader', 'interlude_expedition', 'interlude_marker')
+        if kind == 'interlude_reduction':
+            from fs_bot.engine.interlude_reductions import ROMAN_HALF
 
-        if request.get('stage') != ROMAN_HALF:
+            if request.get('stage') != ROMAN_HALF:
+                return False
+            later += ('interlude_cisalpina_relocation',)
+        elif kind != 'interlude_cisalpina_relocation':
             return False
         journal = self.data['journal']
         if self.cursor < len(journal):
@@ -577,13 +581,12 @@ class SeatSession:
                 # and signature still have to match when replay reaches it.
                 saved = decode(expected.get('request', {}))
                 return bool(saved.get('kind') and (
-                    saved['kind'] != 'interlude_reduction' or saved.get('stage') != ROMAN_HALF))
+                    saved['kind'] != kind or saved.get('stage') != request.get('stage')))
             pending = self.data.get('pending')
             if pending is None or pending['id'] != decision_id:
                 return False
             saved = decode(pending['request'])
-        return (saved.get('faction') == request['faction']
-                and saved.get('kind') in ('spring_leader', 'interlude_expedition', 'interlude_marker'))
+        return saved.get('faction') == request['faction'] and saved.get('kind') in later
 
     def reactive(self, state, faction, request):
         if faction != self.seat or state is not self.state:

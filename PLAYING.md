@@ -780,7 +780,7 @@ last for each type. You may choose the Cadurci and Volcae Ally discs early.
 Use `b` or `board` to inspect the board, or delegate either choice to the
 bot. Saving at the later prompt retains the accepted Citadel choices.
 
-### Roman Interlude decisions
+### Roman Interlude force reductions
 
 During Adjust Forces, choose at least half of the on-map Forts outside
 Provincia, half of the Roman Allies, and half of the Roman Auxilia to
@@ -789,6 +789,17 @@ Legions stay in place during this step. Choose Allies by Tribe and Auxilia
 by Region and visibility, taking Provincia last within each type. Use
 `b` or `board` to inspect the position, or delegate the reduction to the bot.
 The surviving pieces determine where an available Caesar can be placed.
+
+### Interlude Cisalpina relocation
+
+Unless Gallia Togata is active, each faction clears its forces from
+Cisalpina. Germans go first, then Belgae, Aedui, Arverni, and Romans. The
+German player makes the Arverni choices before the seat changes hands.
+Move any offered pieces to legal Home Regions, or remove them. Allies need
+an offered Subdued Tribe. You can split groups of the same visibility and
+inspect the board with `b` or `board`. The bot default removes the pieces.
+
+### Roman Interlude decisions
 
 In The Gallic War, human Romans choose whether to conduct the Britannia
 expedition after Adjust Forces. A conducted expedition reserves exactly three
@@ -800,8 +811,8 @@ Use `b` or `board` while allocating pieces to inspect the current position.
 
 Before Interlude Spring, Romans can preserve one offered Dispersed or
 Dispersed-Gathering marker as it is, or keep none. An interrupted answer pauses
-Winter. Saving and resuming retains earlier accepted reductions and expedition
-choices while awaiting a later decision.
+Winter. Saving and resuming retains accepted reductions, relocations, and
+expedition choices while awaiting a later decision.
 
 ### Exact Battle casualties
 

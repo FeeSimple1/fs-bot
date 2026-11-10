@@ -1,4 +1,4 @@
-"""A5's owner order and exact physical-piece evacuation menus."""
+"""A5 owner order and shared exact Cisalpina allocation menus."""
 from fs_bot.cards.gallia_evacuation import (
     apply_allocation, destinations, pieces, planning_copy,
 )
@@ -21,6 +21,10 @@ def collect_evacuation(state, faction, request, stdin, stdout):
                 order.append(owner)
                 remaining.remove(owner)
         return {'owner_order': order}
+    return collect_allocations(state, faction, stdin, stdout)
+
+
+def collect_allocations(state, faction, stdin, stdout):
     sim, allocations = planning_copy(state), []
     for piece in pieces(sim, faction):
         remaining = piece['count']

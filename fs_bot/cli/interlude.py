@@ -3,7 +3,7 @@ from fs_bot import rules_consts as rc
 from fs_bot.cli.action_windows import inspect_board
 from fs_bot.cli.menus import prompt_choice, prompt_yes_no
 from fs_bot.engine.interlude_choices import (
-    AEDUI_CITADEL, ARVERNI_CITADELS, MARKER, SETTLEMENTS, validate_response,
+    AEDUI_CITADEL, ARVERNI_CITADELS, CISALPINA_RELOCATION, MARKER, SETTLEMENTS, validate_response,
 )
 from fs_bot.engine import interlude_reductions as reductions
 
@@ -107,6 +107,13 @@ def collect_interlude(state, faction, request, stdin, stdout):
             return _collect_settlements(state, request, stdin, stdout)
         if request['kind'] == ARVERNI_CITADELS:
             return _collect_arverni_citadels(state, request, stdin, stdout)
+        if request['kind'] == CISALPINA_RELOCATION:
+            from fs_bot.cli.gallia_evacuation import collect_allocations
+
+            owner = request['acting_faction']
+            if not prompt_yes_no(stdin, stdout, f'Allocate the {owner} forces in Cisalpina?', default=True):
+                return {'use_default': True}
+            return validate_response(state, request, collect_allocations(state, owner, stdin, stdout))
         if request['kind'] == AEDUI_CITADEL:
             prompt = ('Replace which Aedui Citadel with an Ally?' if request['ally_available']
                       else 'Remove which Aedui Citadel?')

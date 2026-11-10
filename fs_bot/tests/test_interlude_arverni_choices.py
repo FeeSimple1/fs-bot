@@ -13,7 +13,7 @@ from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.engine.game_engine import _action_transaction, resolve_winter_card
 from fs_bot.engine.interlude import _adjust_arverni_forces
 from fs_bot.engine.interlude_choices import (
-    ARVERNI_CITADELS, arverni_citadel_request, choose_arverni_citadels,
+    ARVERNI_CITADELS, CISALPINA_RELOCATION, arverni_citadel_request, choose_arverni_citadels,
 )
 from fs_bot.engine.interlude_reductions import ARVERNI_HALF, PERMANENT, QUARTER, reduction_request
 from fs_bot.state.serialize import decode, encode, load_game, save_game
@@ -255,9 +255,16 @@ def test_german_winter_journal_retains_arverni_citadels_until_reduction_and_hand
     state, meta, log = load_game(path, validate=True)
     resumed = _session(state, meta, log)
     resumed.import_inbox({'decision_id': second['id'], 'response': plan})
+    with pytest.raises(DecisionPending):
+        _attempt(resumed)
+    pending = resumed.data['pending']
+    request = decode(pending['request'])
+    assert request['kind'] == CISALPINA_RELOCATION and request['acting_faction'] == GERMANS
+    assert len(resumed.data['journal']) == 4 and encode(board_copy(state)) == before
+    resumed.import_inbox({'decision_id': pending['id'], 'response': {'use_default': True}})
     result = _attempt(resumed)
     resumed.finish()
-    assert len(log) == 4 and state['interlude_completed'] and validate_state(state) == []
+    assert len(log) == 5 and state['interlude_completed'] and validate_state(state) == []
     assert state['non_player_factions'] == OTHER_SEATS and not check_structural_integrity(state)
     assert result['winter_result']['interlude']['step2_arverni']['citadels_replaced'] == [
         rc.MANDUBII, rc.BITURIGES]

@@ -21,6 +21,30 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Interlude Cisalpina relocation
+
+The Gallic War's Cisalpina step now offers each human controller a complete
+allocation in the printed order. The German seat chooses for both German
+and Arverni pieces. Moves go to legal first-half Home Regions and preserve
+visibility and Leader identity. Allied Tribe slots must be Subdued and free.
+The terminal and assistant share the allocation checks with the A5 Event.
+
+Gallia Togata bypasses the step. Bot delegation keeps the remove-all
+procedure, including the Legions Track destination for removed Legions.
+A Fort remaining in Cisalpina must come off because Provincia's permanent
+Fort occupies its only Home slot. The later Britannia expedition uses the
+surviving Roman forces. Accepted allocations persist through a later Winter
+pause, save, and replay.
+
+All 9,211 tests pass, including 264 focused Interlude and Gallia Togata
+tests. Twenty paired bot games match the parent revision's winners and
+final states. Twenty mixed-seat games and twenty directed Interludes replay
+identically across hash seeds without integrity findings. The 100-game
+balance check passes and matches all winners and card counts to the parent.
+
+**WS-C30 and WS-F01 are complete. The original audit stands at 45/50
+closed (90%), with 5 open.**
+
 ### 10 November Roman Interlude force reductions
 
 The Gallic War scenario's Adjust Forces step offers Romans the exact Forts,

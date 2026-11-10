@@ -82,7 +82,8 @@ def make_cli_reactive(human_factions, stdin, stdout):
                 from fs_bot.cli.devastate_losses import collect_devastate_losses
                 return collect_devastate_losses(state,faction,request,stdin,stdout)
             if kind in ('interlude_expedition', 'interlude_marker', 'interlude_reduction',
-                        'interlude_settlements', 'interlude_aedui_citadel', 'interlude_arverni_citadels'):
+                        'interlude_settlements', 'interlude_aedui_citadel', 'interlude_arverni_citadels',
+                        'interlude_cisalpina_relocation'):
                 from fs_bot.cli.interlude import collect_interlude
                 return collect_interlude(state, faction, request, stdin, stdout)
             if kind == 'harvest_legions':

@@ -307,6 +307,21 @@ def make_random_reactive(seats, rng):
             options = request['options']
             regions = rng.sample(list(options), request['required_allies'])
             return {'allies': {region: rng.choice(options[region]) for region in regions}}
+        if kind == 'interlude_cisalpina_relocation':
+            from fs_bot.cards.gallia_evacuation import apply_allocation, destinations, planning_copy
+
+            sim, allocations = planning_copy(state), []
+            owner = request['acting_faction']
+            for piece in request['pieces']:
+                remaining = piece['count']
+                while remaining:
+                    slot = rng.choice(destinations(sim, owner, piece) + [{'destination': None}])
+                    count = rng.randint(1, remaining)
+                    row = dict(piece_id=piece['id'], count=count, **slot)
+                    apply_allocation(sim, owner, piece, row)
+                    allocations.append(row)
+                    remaining -= count
+            return {'allocations': allocations}
         if kind == 'interlude_marker':
             return {'tribe': rng.choice([None] + [row['tribe'] for row in request['markers']])}
         if kind == 'interlude_expedition':

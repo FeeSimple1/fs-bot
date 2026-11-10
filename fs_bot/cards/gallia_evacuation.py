@@ -1,4 +1,4 @@
-"""A5: each non-Roman owner evacuates its physical Cisalpina pieces.
+"""Exact Cisalpina allocations for A5 and the Gallic War Interlude.
 
 A Card Reference A5; §§1.4.2, 5.1, 5.1.1; A1.3.1/A1.4.2. This is a
 relocation, not a March: visibility and Leader identity are retained.
@@ -33,6 +33,7 @@ def home_regions(state, faction):
         rc.AEDUI: rc.AEDUI_HOME_REGIONS,
         rc.BELGAE: rc.BELGAE_HOME_REGIONS,
         rc.GERMANS: rc.GERMAN_HOME_REGIONS_BASE,
+        rc.ROMANS: rc.ROMAN_HOME_REGIONS,
     }
     result = set(homes[faction])
     if ario and faction == rc.GERMANS:
@@ -77,7 +78,7 @@ def pieces(state, faction):
 
 
 def destinations(state, faction, piece):
-    """Only legal Home slots; A5 creates no exception to ordinary stacking."""
+    """Find legal Home slots under ordinary stacking limits."""
     options = []
     piece_type = piece['piece_type']
     for region in home_regions(state, faction):
@@ -98,13 +99,17 @@ def destinations(state, faction, piece):
     return options
 
 
-def request_for(state, faction):
+def allocation_request(state, faction):
     entries = pieces(state, faction)
     for entry in entries:
         entry['destinations'] = destinations(state, faction, entry)
+    return {'acting_faction': faction, 'origin': rc.CISALPINA,
+            'home_regions': home_regions(state, faction), 'pieces': entries}
+
+
+def request_for(state, faction):
     return {'kind': 'free_action', 'request_type': 'gallia_evacuation',
-            'card_id': 'A5', 'acting_faction': faction, 'origin': rc.CISALPINA,
-            'home_regions': home_regions(state, faction), 'pieces': entries,
+            'card_id': 'A5', **allocation_request(state, faction),
             'allow_decline': False, 'free': True, 'with_sa': False}
 
 
@@ -113,7 +118,9 @@ def apply_allocation(state, faction, piece, allocation):
     destination = allocation['destination']
     kwargs = {'count': allocation['count'], 'piece_state': piece.get('piece_state')}
     if destination is None:
-        remove_piece(state, rc.CISALPINA, faction, piece['piece_type'], **kwargs)
+        # Only the Interlude evacuates Romans. Keep its Legion Track withdrawal.
+        remove_piece(state, rc.CISALPINA, faction, piece['piece_type'],
+                     to_track=piece['piece_type'] == rc.LEGION, **kwargs)
     else:
         move_piece(state, rc.CISALPINA, destination, faction, piece['piece_type'], **kwargs)
     if piece['piece_type'] in (rc.ALLY, rc.CITADEL):
@@ -156,7 +163,7 @@ def validate_response(state, faction, response):
         apply_allocation(sim, faction, piece, allocation)
         remaining[key] -= number
     if any(remaining.values()):
-        raise ValueError('Every non-Roman piece must leave Cisalpina.')
+        raise ValueError('Every offered piece must leave Cisalpina.')
 
 
 def _random_slot(state, options):
@@ -215,7 +222,12 @@ def resolve_owner(state, faction):
     if response is None:
         response = default_response(state, faction)
     validate_response(state, faction, response)
-    source = {entry['id']: entry for entry in request['pieces']}
+    return apply_plan(state, faction, request['pieces'], response)
+
+
+def apply_plan(state, faction, entries, response):
+    """Execute a complete, prevalidated allocation and report each transfer."""
+    source = {entry['id']: entry for entry in entries}
     result = []
     for allocation in response['allocations']:
         piece = source[allocation['piece_id']]

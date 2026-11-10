@@ -518,6 +518,7 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `interlude_settlements` | German-owned choice after permanent Warband removals, with `options` by Region and `required_allies` | `{"allies":{region:tribe,...}}` or explicit default |
 | `interlude_aedui_citadel` | Aedui-owned choice with eligible `regions` and `ally_available` | `{"region":offered_region}` or explicit default |
 | `interlude_arverni_citadels` | German-owned choice with Arverni `regions,count,available_allies` | `{"regions":[region,...]}` in replacement order, or explicit default |
+| `interlude_cisalpina_relocation` | Interlude controller and physical `acting_faction`, `origin`, `home_regions`, `pieces` with legal `destinations` | `{"allocations":[{"piece_id":id,"count":n,"destination":region_or_null,"tribe":name_if_required},...]}` or explicit default |
 | `interlude_expedition` | Roman Interlude choice after Adjust Forces, with `legions`, exact `auxilia` cohorts, `leader_region`, `harvest_count` and printed minima | `{"conduct":false}`, complete allocation described below, or explicit default |
 | `interlude_marker` | Romans before Interlude Spring, with `markers` entries carrying `tribe,status` | `{"tribe": offered_tribe}`, `{"tribe":null}` to keep none, or explicit default |
 | `besiege_target` | `region, defender, targets, may_decline`; each target is `{piece_type, tribe}` | `{"target": <one offered target>}`, `{"decline":true}`, or explicit default; a Settlement has `tribe:null` |
@@ -1957,7 +1958,7 @@ Either request accepts `{"use_default":true}`. Saving while awaiting
 the reduction retains the earlier German removals and Arverni Citadel
 choices. Older German-seat transcripts can pause for the added prompts.
 
-### Roman Interlude allocations
+### Roman Interlude force reductions
 
 Romans receive `roman_half` in `interlude_reduction` during Adjust Forces.
 Submit `{"removals":[...]}` in selection order. Meet the separate rounded-up
@@ -1966,6 +1967,25 @@ by Tribe, and Auxilia by Region and visibility. Provincia's permanent Fort
 and all Legions are excluded. Take Provincia last for Allies and Auxilia
 independently. `{"use_default":true}` delegates the selection to the bot.
 Any available Caesar is placed using the resulting board.
+
+### Interlude Cisalpina relocation
+
+Unless Gallia Togata is active, Cisalpina is cleared in order by Germans,
+Belgae, Aedui, Arverni, and Romans. The German seat makes both its own and
+the Arverni allocations. `faction` identifies the controller, while
+`acting_faction` identifies the physical owner. Each request reflects the
+board after earlier owners have finished.
+
+Allocate every offered piece using `piece_id`, `count`, and `destination`.
+Split cohorts as desired. Use an offered Home Region to move a cohort, or
+`null` to remove it. Moved Allies and Citadels require an offered `tribe`.
+Those slots must still be free when reached in the allocation. Visibility
+and Leader identity carry over to the destination. `{"use_default":true}`
+uses the existing remove-all procedure. A faction whose pieces have no
+legal destination resolves automatically. The next expedition request
+lists the resulting Roman forces.
+
+### Roman Interlude allocations
 
 `interlude_expedition` belongs to Romans. The request lists Legion counts by
 Region and Auxilia cohorts with `region`, `piece_state` and `count`, using the
@@ -1985,8 +2005,9 @@ If the force is insufficient, the printed decline consequence applies.
 
 `interlude_marker` is offered when an eligible marker exists. Select one of
 its named Tribes, or `{"tribe":null}` to preserve none. The chosen face survives
-Spring. A later prompt can pause while the accepted reduction and expedition
-remain in the session journal. Replaying the transaction applies each once.
+Spring. A later prompt can pause while accepted reduction, relocation and
+expedition choices remain in the journal. Replaying the transaction applies
+each once.
 
 For either request, `{"use_default":true}` explicitly delegates to existing
 NPC behavior. Raw `None` callbacks retain their fallback behavior. The raw
@@ -1996,8 +2017,8 @@ the complete allocation or explicit default. Unsupported allocation fields
 that older raw calls silently ignored are now rejected. Raw
 `roman_dispersed_keep` validates that the named Tribe has an eligible marker.
 Older saves that already reached a later Roman Interlude prompt retain the
-seeded reduction used to reach it. Verified replays preserve recorded choices
-and check their original boards. Fresh Interludes offer the reduction prompt.
+automatic reduction and relocation used to reach it. Verified replays check
+the original board and request before reusing recorded choices.
 
 ### Physical Battle casualty entries
 

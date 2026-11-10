@@ -12,7 +12,9 @@ from fs_bot.cli.display import HumanTurnDisplay, format_board
 from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.engine.game_engine import _action_transaction, resolve_winter_card
 from fs_bot.engine.interlude import _adjust_roman_forces, _step3_britannia, _step5_spring, run_interlude
-from fs_bot.engine.interlude_choices import expedition_request, marker_request, validate_response
+from fs_bot.engine.interlude_choices import (
+    CISALPINA_RELOCATION, default_expedition, expedition_request, marker_request, validate_response,
+)
 from fs_bot.engine.interlude_reductions import KIND as REDUCTION, ROMAN_HALF, reduction_request
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.setup import setup_scenario
@@ -347,13 +349,15 @@ def full_position():
     return state
 
 
-def session_for(state, meta=None, log=None, *, legacy=False):
+def session_for(state, meta=None, log=None, *, legacy=False, legacy_relocation=False):
     session = SeatSession(state, meta if meta is not None else {'seat': rc.ROMANS},
                           log if log is not None else [], HumanTurnDisplay(StringIO()))
     state['decision_agent'] = session.reactive
-    if legacy:
+    if legacy or legacy_relocation:
+        omitted = {REDUCTION, CISALPINA_RELOCATION} if legacy else {CISALPINA_RELOCATION}
+
         def legacy_reactive(board, faction, request):
-            if request['kind'] != REDUCTION:
+            if request['kind'] not in omitted:
                 return session.reactive(board, faction, request)
             return None
 
@@ -380,6 +384,21 @@ def pending_reduction(session):
     return pending, request
 
 
+def replay_winter(state, log):
+    replay = session_for(state)
+    replay.data['queue'] = [SeatSession._inbox_entry(entry) for entry in log]
+    replay.data['expected'] = [
+        {'id': entry['assistant_id'], 'signature': entry['assistant_signature'],
+         'request': entry['assistant_request'],
+         'action_windows_version': entry.get('assistant_action_windows_version', 0)}
+        for entry in log
+    ]
+    result = attempt(replay)
+    replay.finish()
+    assert replay.log == log
+    return result
+
+
 @pytest.mark.parametrize('bad', [None, {}, {'conduct': True}, {'conduct': 1}])
 def test_missing_or_invalid_expedition_stays_pending_and_rolls_back_full_winter(bad):
     session = session_for(full_position())
@@ -400,7 +419,6 @@ def test_missing_or_invalid_expedition_stays_pending_and_rolls_back_full_winter(
 @pytest.mark.parametrize('conduct', [False, True])
 @pytest.mark.parametrize('legacy', [False, True])
 def test_later_marker_pause_saves_accepted_choices_and_replays_exactly_once(tmp_path, conduct, legacy):
-    from fs_bot.engine.interlude_choices import default_expedition
     session = session_for(full_position(), legacy=legacy)
     before = encode(board_copy(session.state))
     journal_count = 1
@@ -444,17 +462,9 @@ def test_later_marker_pause_saves_accepted_choices_and_replays_exactly_once(tmp_
     assert state.get('winter_track_legions', 0) == (3 if conduct else 0)
     assert state['tribes'][rc.TRIBE_VENETI]['status'] == rc.MARKER_DISPERSED
     assert validate_state(state) == []
-    replay = session_for(full_position())
-    replay.data['queue'] = [SeatSession._inbox_entry(entry) for entry in log]
-    replay.data['expected'] = [
-        {'id': entry['assistant_id'], 'signature': entry['assistant_signature'],
-         'request': entry['assistant_request'],
-         'action_windows_version': entry.get('assistant_action_windows_version', 0)}
-        for entry in log
-    ]
-    assert attempt(replay) == result
-    replay.finish()
-    assert replay.log == log and encode(board_copy(replay.state)) == encode(board_copy(state))
+    replay = full_position()
+    assert replay_winter(replay, log) == result
+    assert encode(board_copy(replay)) == encode(board_copy(state))
 
 
 def test_legacy_save_at_expedition_keeps_the_pending_request_on_resume(tmp_path):
@@ -474,6 +484,93 @@ def test_legacy_save_at_expedition_keeps_the_pending_request_on_resume(tmp_path)
     with pytest.raises(DecisionPending):
         attempt(resumed)
     assert decode(resumed.data['pending']['request'])['kind'] == MARKER
+
+
+def cisalpina_position():
+    state = full_position()
+    for region in (rc.PROVINCIA, rc.ATREBATES):
+        remove_piece(state, region, rc.ROMANS, rc.AUXILIA, count_pieces(state, region, rc.ROMANS, rc.AUXILIA))
+    place_piece(state, rc.CISALPINA, rc.ROMANS, rc.AUXILIA, 4, piece_state=rc.REVEALED)
+    place_piece(state, rc.CISALPINA, rc.ROMANS, rc.AUXILIA, 2, piece_state=rc.SCOUTED)
+    return state
+
+
+def accept_cisalpina_position_reduction(session, revealed):
+    pending, request = pending_reduction(session)
+    plan = {'removals': [cohort(request, piece_type=rc.ALLY),
+                         cohort(request, revealed, region=rc.CISALPINA, piece_state=rc.REVEALED)]}
+    session.import_inbox({'decision_id': pending['id'], 'response': plan})
+
+
+def test_cisalpina_choices_survive_save_and_enable_the_britannia_expedition(tmp_path):
+    session = session_for(cisalpina_position())
+    before = encode(board_copy(session.state))
+    accept_cisalpina_position_reduction(session, 3)
+    with pytest.raises(DecisionPending):
+        attempt(session)
+    pending = deepcopy(session.data['pending'])
+    request = decode(pending['request'])
+    assert request['kind'] == CISALPINA_RELOCATION and request['acting_faction'] == rc.ROMANS
+    assert len(session.data['journal']) == 1 and encode(board_copy(session.state)) == before
+
+    session.import_inbox({'decision_id': pending['id'], 'response': {'allocations': []}})
+    with pytest.raises(DecisionPending):
+        attempt(session)
+    assert session.error and session.data['pending'] == pending
+    assert len(session.data['journal']) == 1 and encode(board_copy(session.state)) == before
+
+    plan = {'allocations': [
+        {'piece_id': f'{rc.AUXILIA}:{rc.SCOUTED}', 'count': 2, 'destination': rc.PROVINCIA},
+        {'piece_id': f'{rc.AUXILIA}:{rc.REVEALED}', 'count': 1, 'destination': None},
+    ]}
+    session.import_inbox({'decision_id': pending['id'], 'response': plan})
+    with pytest.raises(DecisionPending):
+        attempt(session)
+    expedition = deepcopy(session.data['pending'])
+    request = decode(expedition['request'])
+    assert request['kind'] == EXPEDITION and request['can_conduct']
+    assert request['auxilia'] == [{'region': rc.PROVINCIA, 'piece_state': rc.SCOUTED, 'count': 2}]
+    assert len(session.data['journal']) == 2 and encode(board_copy(session.state)) == before
+
+    path = tmp_path / 'cisalpina-winter.json'
+    save_game(session.state, path, meta=session.meta, log=session.log)
+    state, meta, log = load_game(path, validate=True)
+    resumed = session_for(state, meta, log)
+    resumed.import_inbox({'decision_id': expedition['id'], 'response': default_expedition(request)})
+    with pytest.raises(DecisionPending):
+        attempt(resumed)
+    marker = resumed.data['pending']
+    assert decode(marker['request'])['kind'] == MARKER and len(resumed.data['journal']) == 3
+    resumed.import_inbox({'decision_id': marker['id'], 'response': {'tribe': None}})
+    result = attempt(resumed)
+    resumed.finish()
+    assert len(log) == 4 and state['interlude_completed'] and validate_state(state) == []
+    assert count_pieces(state, rc.BRITANNIA, rc.ROMANS, rc.AUXILIA) == 1
+    assert count_pieces(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA) == 1
+    assert not count_pieces(state, rc.CISALPINA)
+    replay = cisalpina_position()
+    assert replay_winter(replay, log) == result
+    assert encode(board_copy(replay)) == encode(board_copy(state))
+
+
+def test_save_already_at_expedition_keeps_the_legacy_cisalpina_default(tmp_path):
+    state = cisalpina_position()
+    place_piece(state, rc.PROVINCIA, rc.ROMANS, rc.AUXILIA)
+    session = session_for(state, legacy_relocation=True)
+    accept_cisalpina_position_reduction(session, 4)
+    with pytest.raises(DecisionPending):
+        attempt(session)
+    pending = deepcopy(session.data['pending'])
+    request = decode(pending['request'])
+    assert request['kind'] == EXPEDITION
+    assert request['auxilia'] == [{'region': rc.PROVINCIA, 'piece_state': rc.HIDDEN, 'count': 1}]
+    path = tmp_path / 'old-cisalpina-winter.json'
+    save_game(state, path, meta=session.meta, log=session.log)
+    state, meta, log = load_game(path, validate=True)
+    resumed = session_for(state, meta, log)
+    with pytest.raises(DecisionPending):
+        attempt(resumed)
+    assert resumed.data['pending'] == pending and len(resumed.data['journal']) == 1
 
 
 def test_invalid_raw_preserved_tribe_restores_all_interlude_changes_and_rng():

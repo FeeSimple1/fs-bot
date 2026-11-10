@@ -21,6 +21,28 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Roman Interlude force reductions
+
+The Gallic War scenario's Adjust Forces step offers Romans the exact Forts,
+Allies, and Auxilia to return to Available. The separate half minimums round
+up. The permanent Provincia Fort and all Legions are protected. Provincia
+comes last separately for Allies and Auxilia. The resulting board determines
+Caesar's placement and the later expedition's available Auxilia.
+
+The terminal and assistant support the same allocation and seeded bot
+delegation. Saving at a later choice retains the accepted reduction. A save
+that already reached a later Roman Interlude prompt under the previous
+version retains its original seeded reduction and can resume at that prompt.
+
+All 9,204 tests pass, including 203 Interlude tests. Twenty paired bot
+games match the parent revision's winners and final states. Twenty mixed-seat
+games and twenty directed Roman Interludes replay identically across hash
+seeds without integrity findings. All 100 balance games match the parent's
+winners and card counts and pass the reviewed balance guardrail.
+
+**WS-C28 is complete. WS-F01 remains open for Cisalpina relocation.
+The original audit stands at 44/50 closed (88%), with 6 open.**
+
 ### 10 November Arverni Interlude force adjustments
 
 Under A2.1, the German controller selects two eligible Arverni Citadels,

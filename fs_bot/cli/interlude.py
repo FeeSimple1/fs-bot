@@ -16,6 +16,9 @@ def _collect_reduction(state, request, stdin, stdout):
     removals = []
     if permanent:
         stdout.write(f"Remove {needed[rc.WARBAND]} German Warbands from play.\n")
+    elif stage == reductions.ROMAN_HALF:
+        stdout.write("Return Roman Forts, Allies and Auxilia to Available. "
+                     "Take Provincia last for Allies and Auxilia. Provincia's Fort stays.\n")
     else:
         rules = reductions.STAGE_RULES[stage]
         home = ", ".join(rules["home_regions"])
@@ -36,7 +39,10 @@ def _collect_reduction(state, request, stdin, stdout):
             elif row['region'] is None:
                 label = f"Available Warbands ({row['count']})"
             else:
-                label = f"{row['region']} {row['piece_state']} Warbands ({row['count']})"
+                piece_type = row['piece_type']
+                name = piece_type if piece_type == rc.AUXILIA else f'{piece_type}s'
+                visibility = f"{row['piece_state']} " if row['piece_state'] is not None else ''
+                label = f"{row['region']} {visibility}{name} ({row['count']})"
             choices.append((label, row))
         outstanding = ', '.join(f'{n} {kind}' for kind, n in needed.items() if n)
         prompt = f'Select a cohort ({outstanding} still required)' if outstanding else 'Select a cohort'

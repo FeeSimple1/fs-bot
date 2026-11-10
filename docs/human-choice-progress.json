@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "95b2d8916cdfce6a5d7a5a7f2c9c4625d7ca93f7",
-    "python_sha256": "52c721fa033c822eb7107adc79c8d7c355a038ee8ddb4149492325bb6ea4ff65",
+    "commit": "c59527396f2ce4485cdab0d67addfba5a0791086",
+    "python_sha256": "245dd2fd433ad12118ec000625f4af695e4768118c23290a901dd4f72f2048fa",
     "python_files": 555,
     "working_tree_changes": true,
-    "note": "German-owned Arverni Interlude choices advance WS-F01 and WS-C28. The tested Python source matches the recovered validation runs over the listed parent. See current-status.md#10-november-arverni-interlude-force-adjustments."
+    "note": "Roman Interlude reductions complete WS-C28. The tested Python source is the publishing tree over the listed parent. See current-status.md#10-november-roman-interlude-force-reductions."
   },
   "total": 50,
   "closed": 44,
@@ -70,7 +70,8 @@
     "German Interlude Settlement choices complete WS-C27. WS-F01 still covers other factions' adjustments and Cisalpina relocation. See current-status.md#6-november-german-interlude-settlement-conversion.",
     "Belgic Interlude reductions now offer exact owner allocations with Belgica last. WS-C28 advances. See current-status.md#6-november-belgic-interlude-force-reduction.",
     "Aedui Interlude adjustments now offer exact Citadel and post-replacement reduction choices. WS-C28 advances. See current-status.md#6-november-aedui-interlude-force-adjustments.",
-    "The German controller now chooses Arverni Interlude Citadels and exact half reductions. WS-C28 advances. See current-status.md#10-november-arverni-interlude-force-adjustments."
+    "The German controller now chooses Arverni Interlude Citadels and exact half reductions. WS-C28 advances. See current-status.md#10-november-arverni-interlude-force-adjustments.",
+    "Romans choose exact Interlude Fort, Ally and Auxilia reductions. This completes WS-C28. See current-status.md#10-november-roman-interlude-force-reductions."
   ],
   "findings": [
     {
@@ -466,7 +467,7 @@
       "title": "Interlude force reductions and Cisalpina relocations bypass human owners",
       "severity": "high",
       "status": "open",
-      "disposition": "German force adjustments (WS-C27) and the Belgic, Aedui and German-controlled Arverni portions of WS-C28 support exact owner choices with terminal and durable save/replay support. Roman force adjustments and Cisalpina relocation are open."
+      "disposition": "German force adjustments (WS-C27) and the Belgic, Aedui, German-controlled Arverni and Roman adjustments (WS-C28) support exact owner choices with terminal and durable save/replay support. Cisalpina relocation is open."
     },
     {
       "id": "WS-F02",

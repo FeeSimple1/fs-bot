@@ -37,6 +37,7 @@ Reference:
 """
 
 import math
+from collections import Counter
 
 from fs_bot.rules_consts import (
     # Factions
@@ -245,19 +246,19 @@ def _np_region_order(state, faction, *, home_last, rng,
     return pool_home + pool_non_home
 
 
-def _apply_ally_and_warband_removals(state, faction, removals):
+def _apply_force_reduction(state, faction, removals):
     from fs_bot.cards.card_effects import _unally_tribe
 
-    allies_removed = warbands_removed = 0
+    removed = Counter()
     for row in removals:
-        if row["piece_type"] == ALLY:
+        piece_type = row["piece_type"]
+        if piece_type == ALLY:
             _unally_tribe(state, row["tribe"])
-            allies_removed += row["count"]
         else:
-            remove_piece(state, row["region"], faction, WARBAND, row["count"],
+            remove_piece(state, row["region"], faction, piece_type, row["count"],
                          piece_state=row["piece_state"])
-            warbands_removed += row["count"]
-    return dict(allies_to_available=allies_removed, warbands_to_available=warbands_removed)
+        removed[piece_type] += row["count"]
+    return removed
 
 
 def _adjust_ally_and_warband_counts(state, stage):
@@ -268,7 +269,8 @@ def _adjust_ally_and_warband_counts(state, stage):
     faction = rules["faction"]
     removals = choose_reduction(state, stage)
     if removals is not None:
-        return _apply_ally_and_warband_removals(state, faction, removals)
+        removed = _apply_force_reduction(state, faction, removals)
+        return dict(allies_to_available=removed[ALLY], warbands_to_available=removed[WARBAND])
 
     fraction = 1 / rules["divisor"]
     total_allies = sum(count_pieces(state, region, faction, ALLY) for region in state["spaces"])
@@ -786,7 +788,8 @@ def _adjust_arverni_forces(state):
     if removals is None:
         result.update(_np_arverni_reductions(state))
     else:
-        result.update(_apply_ally_and_warband_removals(state, ARVERNI, removals))
+        removed = _apply_force_reduction(state, ARVERNI, removals)
+        result.update(allies_to_available=removed[ALLY], warbands_to_available=removed[WARBAND])
 
     # 4. Gergovia rule.
     gergovia = state["tribes"][TRIBE_ARVERNI]
@@ -851,23 +854,9 @@ def _adjust_arverni_forces(state):
 # ============================================================================
 
 
-def _adjust_roman_forces(state):
-    """Roman adjustments.
-
-    - Remove >= 1/2 of on-map Forts excluding Provincia's, 1/2 of
-      Roman Allies, and 1/2 of Auxilia (no Legions; Provincia last).
-    - If Roman Leader in Available, place Caesar in Provincia if
-      Roman Control, otherwise in Region with most Roman pieces.
-    """
-    from fs_bot.rules_consts import ROMAN_CONTROL
+def _np_roman_reductions(state):
+    """Return the printed minima using the established seeded Region order."""
     rng = state["rng"]
-    result = {
-        "forts_to_available": 0,
-        "allies_to_available": 0,
-        "auxilia_to_available": 0,
-        "caesar_placed": None,
-    }
-    from fs_bot.map.map_data import get_tribes_in_region
 
     # Count Forts (excluding Provincia's permanent Fort).
     total_forts = 0
@@ -905,7 +894,6 @@ def _adjust_roman_forces(state):
         for _ in range(take):
             remove_piece(state, region, ROMANS, FORT)
         forts_removed += take
-    result["forts_to_available"] = forts_removed
 
     # Allies
     allies_removed = 0
@@ -918,7 +906,6 @@ def _adjust_roman_forces(state):
             remove_piece(state, region, ROMANS, ALLY)
             clear_allied_tribe(state, region, ROMANS, ALLY)
         allies_removed += take
-    result["allies_to_available"] = allies_removed
 
     # Auxilia
     aux_removed = 0
@@ -942,7 +929,23 @@ def _adjust_roman_forces(state):
                 )
                 to_take -= t
         aux_removed += (take - to_take)
-    result["auxilia_to_available"] = aux_removed
+    return dict(forts_to_available=forts_removed, allies_to_available=allies_removed,
+                auxilia_to_available=aux_removed)
+
+
+def _adjust_roman_forces(state):
+    """Reduce Roman forces, then place Caesar if the Leader is Available."""
+    from fs_bot.engine.interlude_reductions import ROMAN_HALF, choose_reduction
+    from fs_bot.rules_consts import ROMAN_CONTROL
+
+    removals = choose_reduction(state, ROMAN_HALF)
+    if removals is None:
+        result = _np_roman_reductions(state)
+    else:
+        removed = _apply_force_reduction(state, ROMANS, removals)
+        result = dict(forts_to_available=removed[FORT], allies_to_available=removed[ALLY],
+                      auxilia_to_available=removed[AUXILIA])
+    result["caesar_placed"] = None
 
     # Caesar placement.
     caesar_region = find_leader(state, ROMANS)

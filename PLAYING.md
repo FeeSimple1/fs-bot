@@ -782,6 +782,14 @@ bot. Saving at the later prompt retains the accepted Citadel choices.
 
 ### Roman Interlude decisions
 
+During Adjust Forces, choose at least half of the on-map Forts outside
+Provincia, half of the Roman Allies, and half of the Roman Auxilia to
+return to Available. Round up each minimum. Provincia's Fort and all
+Legions stay in place during this step. Choose Allies by Tribe and Auxilia
+by Region and visibility, taking Provincia last within each type. Use
+`b` or `board` to inspect the position, or delegate the reduction to the bot.
+The surviving pieces determine where an available Caesar can be placed.
+
 In The Gallic War, human Romans choose whether to conduct the Britannia
 expedition after Adjust Forces. A conducted expedition reserves exactly three
 Legions for the Harvest box and sends the Roman Leader, at least three other
@@ -792,8 +800,8 @@ Use `b` or `board` while allocating pieces to inspect the current position.
 
 Before Interlude Spring, Romans can preserve one offered Dispersed or
 Dispersed-Gathering marker as it is, or keep none. An interrupted answer pauses
-Winter. Saving and resuming retains an accepted expedition while awaiting the
-later marker choice.
+Winter. Saving and resuming retains earlier accepted reductions and expedition
+choices while awaiting a later decision.
 
 ### Exact Battle casualties
 

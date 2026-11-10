@@ -457,7 +457,7 @@ class SeatSession:
 
     def ask(self, state, faction, request):
         request = dict(request, faction=faction)
-        if self._skip_legacy_window(state, request):
+        if self._skip_legacy_window(state, request) or self._skip_legacy_roman_reduction(request):
             return None
         request = self._saved_physical_request(state, request)
         signature, compatible_signatures = _decision_signatures(state, request)
@@ -556,6 +556,34 @@ class SeatSession:
             return (not pending.get('action_windows_version')
                     and 'window' not in old_request)
         return self._legacy_replay_tail
+
+    def _skip_legacy_roman_reduction(self, request):
+        """Keep the old default when a saved decision already follows it."""
+        if request.get('kind') != 'interlude_reduction':
+            return False
+        from fs_bot.engine.interlude_reductions import ROMAN_HALF
+
+        if request.get('stage') != ROMAN_HALF:
+            return False
+        journal = self.data['journal']
+        if self.cursor < len(journal):
+            saved = decode(journal[self.cursor].get('assistant_request', {}))
+        else:
+            decision_id = f'd{len(self.log) + self.cursor + 1:06d}'
+            expected = next((entry for entry in self.data.get('expected', [])
+                             if entry['id'] == decision_id), None)
+            if expected is not None:
+                # The next recorded request may be after Winter. Its board
+                # and signature still have to match when replay reaches it.
+                saved = decode(expected.get('request', {}))
+                return bool(saved.get('kind') and (
+                    saved['kind'] != 'interlude_reduction' or saved.get('stage') != ROMAN_HALF))
+            pending = self.data.get('pending')
+            if pending is None or pending['id'] != decision_id:
+                return False
+            saved = decode(pending['request'])
+        return (saved.get('faction') == request['faction']
+                and saved.get('kind') in ('spring_leader', 'interlude_expedition', 'interlude_marker'))
 
     def reactive(self, state, faction, request):
         if faction != self.seat or state is not self.state:

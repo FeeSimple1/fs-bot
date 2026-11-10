@@ -1959,6 +1959,14 @@ choices. Older German-seat transcripts can pause for the added prompts.
 
 ### Roman Interlude allocations
 
+Romans receive `roman_half` in `interlude_reduction` during Adjust Forces.
+Submit `{"removals":[...]}` in selection order. Meet the separate rounded-up
+minimums for Forts, Allies, and Auxilia. Forts are listed by Region, Allies
+by Tribe, and Auxilia by Region and visibility. Provincia's permanent Fort
+and all Legions are excluded. Take Provincia last for Allies and Auxilia
+independently. `{"use_default":true}` delegates the selection to the bot.
+Any available Caesar is placed using the resulting board.
+
 `interlude_expedition` belongs to Romans. The request lists Legion counts by
 Region and Auxilia cohorts with `region`, `piece_state` and `count`, using the
 board after Adjust Forces and Cisalpina relocation. When the expedition is
@@ -1977,8 +1985,8 @@ If the force is insufficient, the printed decline consequence applies.
 
 `interlude_marker` is offered when an eligible marker exists. Select one of
 its named Tribes, or `{"tribe":null}` to preserve none. The chosen face survives
-Spring. This later choice can pause while the accepted expedition remains in
-the session journal. Replaying the transaction applies the expedition once.
+Spring. A later prompt can pause while the accepted reduction and expedition
+remain in the session journal. Replaying the transaction applies each once.
 
 For either request, `{"use_default":true}` explicitly delegates to existing
 NPC behavior. Raw `None` callbacks retain their fallback behavior. The raw
@@ -1987,8 +1995,9 @@ retain their minimum-force defaults. Durable human expedition responses need
 the complete allocation or explicit default. Unsupported allocation fields
 that older raw calls silently ignored are now rejected. Raw
 `roman_dispersed_keep` validates that the named Tribe has an eligible marker.
-Older transcripts that passed Interlude automatically may require these new
-Roman responses when resumed or replayed.
+Older saves that already reached a later Roman Interlude prompt retain the
+seeded reduction used to reach it. Verified replays preserve recorded choices
+and check their original boards. Fresh Interludes offer the reduction prompt.
 
 ### Physical Battle casualty entries
 

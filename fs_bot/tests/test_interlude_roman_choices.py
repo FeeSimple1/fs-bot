@@ -1,20 +1,24 @@
-"""A2.1 gives Romans the expedition force and one preserved Spring marker."""
+"""Roman force, expedition, and marker choices in the Gallic War Interlude."""
 from copy import deepcopy
 from io import StringIO
+from random import Random
 
 import pytest
 
 from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, place_piece, remove_piece, PieceError
-from fs_bot.cli.display import HumanTurnDisplay
+from fs_bot.cards.card_effects import _ally_tribe
+from fs_bot.cli.display import HumanTurnDisplay, format_board
 from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.engine.game_engine import _action_transaction, resolve_winter_card
-from fs_bot.engine.interlude import _step3_britannia, _step5_spring, run_interlude
+from fs_bot.engine.interlude import _adjust_roman_forces, _step3_britannia, _step5_spring, run_interlude
 from fs_bot.engine.interlude_choices import expedition_request, marker_request, validate_response
+from fs_bot.engine.interlude_reductions import KIND as REDUCTION, ROMAN_HALF, reduction_request
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.setup import setup_scenario
 from fs_bot.state.state_schema import build_initial_state, validate_state
-from fs_bot.tools.seat_session import DecisionPending, SeatSession, board_copy
+from fs_bot.tools.player_fuzz import make_random_reactive
+from fs_bot.tools.seat_session import DecisionPending, SeatSession, board_copy, validate_response as validate_durable
 
 EXPEDITION = 'interlude_expedition'
 MARKER = 'interlude_marker'
@@ -101,7 +105,6 @@ for field, value in [
 
 @pytest.mark.parametrize('response', BAD_PLANS)
 def test_invalid_durable_expedition_contract(response):
-    from fs_bot.tools.seat_session import validate_response as validate_durable
     state = position()
     request = dict(expedition_request(state), faction=rc.ROMANS)
     before = encode(state)
@@ -232,6 +235,109 @@ def test_cli_marker_choice_and_other_seat_isolation():
     assert agent(state, rc.AEDUI, request) is None
 
 
+def reduction_position():
+    state = position()
+    state['tribes'][rc.TRIBE_MORINI]['status'] = None
+    for region in (rc.CARNUTES, rc.MANDUBII):
+        place_piece(state, region, rc.ROMANS, rc.FORT)
+    for tribe in (rc.TRIBE_MORINI, rc.TRIBE_MENAPII, rc.TRIBE_HELVETII, rc.TRIBE_HELVII):
+        assert _ally_tribe(state, tribe, rc.ROMANS)
+    place_piece(state, rc.MORINI, rc.ROMANS, rc.AUXILIA)
+    place_piece(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, 2, piece_state=rc.SCOUTED)
+    return state
+
+
+def cohort(request, count=1, **identity):
+    row = next(row for row in request['cohorts'] if all(row[key] == value for key, value in identity.items()))
+    return dict(row, count=count)
+
+
+def test_roman_reduction_applies_exact_removals_and_allows_more_than_the_minimum():
+    state = reduction_position()
+    request = reduction_request(state, ROMAN_HALF)
+    assert request['minimums'] == {rc.FORT: 1, rc.ALLY: 2, rc.AUXILIA: 4}
+    assert {row['region'] for row in request['cohorts'] if row['piece_type'] == rc.FORT} == {
+        rc.CARNUTES, rc.MANDUBII,
+    }
+    assert not any(row['piece_type'] == rc.LEGION for row in request['cohorts'])
+    plan = {'removals': [
+        cohort(request, region=rc.CARNUTES, piece_type=rc.FORT),
+        cohort(request, region=rc.MANDUBII, piece_type=rc.FORT),
+        cohort(request, tribe=rc.TRIBE_MENAPII),
+        cohort(request, tribe=rc.TRIBE_HELVETII),
+        cohort(request, 2, region=rc.MORINI, piece_state=rc.REVEALED),
+        cohort(request, 2, region=rc.SEQUANI, piece_state=rc.SCOUTED),
+        cohort(request, region=rc.MORINI, piece_state=rc.HIDDEN),
+    ]}
+    seen = []
+
+    def agent(board, faction, offered):
+        seen.append((faction, offered))
+        return plan
+
+    state['decision_agent'] = agent
+    before_rng = state['rng'].getstate()
+    result = _adjust_roman_forces(state)
+    assert seen == [(rc.ROMANS, request)]
+    assert result == dict(forts_to_available=2, allies_to_available=2,
+                          auxilia_to_available=5, caesar_placed=None)
+    assert count_pieces(state, rc.PROVINCIA, rc.ROMANS, rc.FORT) == 1
+    assert count_pieces(state, rc.MORINI, rc.ROMANS, rc.LEGION) == 4
+    assert state['tribes'][rc.TRIBE_MENAPII]['allied_faction'] is None
+    assert state['tribes'][rc.TRIBE_MORINI]['allied_faction'] == rc.ROMANS
+    assert count_pieces_by_state(state, rc.MORINI, rc.ROMANS, rc.AUXILIA, rc.REVEALED) == 1
+    assert count_pieces_by_state(state, rc.MORINI, rc.ROMANS, rc.AUXILIA, rc.HIDDEN) == 0
+    assert count_pieces_by_state(state, rc.SEQUANI, rc.ROMANS, rc.AUXILIA, rc.SCOUTED) == 0
+    assert state['rng'].getstate() == before_rng and validate_state(state) == []
+
+
+def test_roman_reduction_rejects_protected_pieces_and_requires_provincia_last_by_type():
+    state = reduction_position()
+    request = dict(reduction_request(state, ROMAN_HALF), faction=rc.ROMANS)
+    before = encode(state)
+    for removal in (
+        dict(cohort(request, region=rc.CARNUTES, piece_type=rc.FORT), region=rc.PROVINCIA),
+        dict(cohort(request, region=rc.CARNUTES, piece_type=rc.FORT), piece_type=rc.LEGION),
+        cohort(request, tribe=rc.TRIBE_HELVII),
+        cohort(request, region=rc.PROVINCIA, piece_type=rc.AUXILIA),
+    ):
+        with pytest.raises(ValueError, match='Choose offered pieces'):
+            validate_durable(state, request, {'removals': [removal]})
+    outside_auxilia = [row for row in request['cohorts']
+                       if row['piece_type'] == rc.AUXILIA and row['region'] != rc.PROVINCIA]
+    plan = {'removals': [
+        cohort(request, region=rc.CARNUTES, piece_type=rc.FORT),
+        *outside_auxilia,
+        cohort(request, region=rc.PROVINCIA, piece_type=rc.AUXILIA),
+        cohort(request, tribe=rc.TRIBE_MORINI),
+        cohort(request, tribe=rc.TRIBE_MENAPII),
+    ]}
+    assert validate_durable(state, request, plan) == plan
+    assert encode(state) == before
+
+
+def test_roman_reduction_terminal_shows_forts_and_auxilia_with_board_inspection():
+    state = reduction_position()
+    request = reduction_request(state, ROMAN_HALF)
+    before = encode(state)
+    output = StringIO()
+    answers = StringIO('board\ny\nCarnutes Forts (1)\nMenapii Ally (Morini)\n'
+                       'Helvetii Ally (Sequani)\nMorini Revealed Auxilia (3)\n2\n'
+                       'Sequani Scouted Auxilia (2)\n2\nFinish selection\n')
+    agent = make_cli_reactive({rc.ROMANS}, answers, output)
+    assert agent(state, rc.BELGAE, request) is None
+    response = agent(state, rc.ROMANS, request)
+    assert response['removals'] == [
+        cohort(request, region=rc.CARNUTES, piece_type=rc.FORT),
+        cohort(request, tribe=rc.TRIBE_MENAPII),
+        cohort(request, tribe=rc.TRIBE_HELVETII),
+        cohort(request, 2, region=rc.MORINI, piece_state=rc.REVEALED),
+        cohort(request, 2, region=rc.SEQUANI, piece_state=rc.SCOUTED),
+    ]
+    assert format_board(state) in output.getvalue() and encode(state) == before
+    assert 'Provincia Forts (' not in output.getvalue()
+
+
 def full_position():
     state = setup_scenario(rc.SCENARIO_GALLIC_WAR, seed=41)
     state['non_player_factions'] = {rc.AEDUI, rc.BELGAE, rc.GERMANS}
@@ -241,11 +347,18 @@ def full_position():
     return state
 
 
-def session_for(state, meta=None, log=None):
+def session_for(state, meta=None, log=None, *, legacy=False):
     session = SeatSession(state, meta if meta is not None else {'seat': rc.ROMANS},
                           log if log is not None else [], HumanTurnDisplay(StringIO()))
-    state['decision_agent'] = lambda board, faction, request: (
-        session.reactive(board, faction, request) if request['kind'] in (EXPEDITION, MARKER) else None)
+    state['decision_agent'] = session.reactive
+    if legacy:
+        def legacy_reactive(board, faction, request):
+            if request['kind'] != REDUCTION:
+                return session.reactive(board, faction, request)
+            return None
+
+        legacy_reactive.supports_action_windows = session.supports_action_windows
+        state['decision_agent'] = legacy_reactive
     return session
 
 
@@ -258,10 +371,21 @@ def attempt(session):
         return resolve_winter_card(session.state)
 
 
+def pending_reduction(session):
+    with pytest.raises(DecisionPending):
+        attempt(session)
+    pending = deepcopy(session.data['pending'])
+    request = decode(pending['request'])
+    assert (request['kind'], request['stage'], request['faction']) == (REDUCTION, ROMAN_HALF, rc.ROMANS)
+    return pending, request
+
+
 @pytest.mark.parametrize('bad', [None, {}, {'conduct': True}, {'conduct': 1}])
 def test_missing_or_invalid_expedition_stays_pending_and_rolls_back_full_winter(bad):
     session = session_for(full_position())
     before = encode(board_copy(session.state))
+    reduction, _ = pending_reduction(session)
+    session.import_inbox({'decision_id': reduction['id'], 'response': {'use_default': True}})
     with pytest.raises(DecisionPending):
         attempt(session)
     pending = deepcopy(session.data['pending'])
@@ -270,14 +394,26 @@ def test_missing_or_invalid_expedition_stays_pending_and_rolls_back_full_winter(
     with pytest.raises(DecisionPending):
         attempt(session)
     assert session.data['pending'] == pending and session.error
-    assert encode(board_copy(session.state)) == before and not session.data['journal']
+    assert encode(board_copy(session.state)) == before and len(session.data['journal']) == 1
 
 
 @pytest.mark.parametrize('conduct', [False, True])
-def test_later_marker_pause_saves_accepted_expedition_and_replays_exactly_once(tmp_path, conduct):
+@pytest.mark.parametrize('legacy', [False, True])
+def test_later_marker_pause_saves_accepted_choices_and_replays_exactly_once(tmp_path, conduct, legacy):
     from fs_bot.engine.interlude_choices import default_expedition
-    session = session_for(full_position())
+    session = session_for(full_position(), legacy=legacy)
     before = encode(board_copy(session.state))
+    journal_count = 1
+    if not legacy:
+        reduction, request = pending_reduction(session)
+        session.import_inbox({'decision_id': reduction['id'], 'response': {'removals': []}})
+        with pytest.raises(DecisionPending):
+            attempt(session)
+        assert session.error and session.data['pending'] == reduction and not session.data['journal']
+        policy = make_random_reactive({rc.ROMANS}, Random(41))
+        reduction_plan = policy(decode(reduction['board']), rc.ROMANS, request)
+        session.import_inbox({'decision_id': reduction['id'], 'response': reduction_plan})
+        journal_count += 1
     with pytest.raises(DecisionPending):
         attempt(session)
     first = deepcopy(session.data['pending'])
@@ -288,7 +424,7 @@ def test_later_marker_pause_saves_accepted_expedition_and_replays_exactly_once(t
         attempt(session)
     second = deepcopy(session.data['pending'])
     assert decode(second['request'])['kind'] == MARKER and second['id'] != first['id']
-    assert len(session.data['journal']) == 1 and encode(board_copy(session.state)) == before
+    assert len(session.data['journal']) == journal_count and encode(board_copy(session.state)) == before
     session.import_inbox({'decision_id': second['id'], 'response': {'tribe': rc.TRIBE_NORI}})
     with pytest.raises(DecisionPending):
         attempt(session)
@@ -299,20 +435,45 @@ def test_later_marker_pause_saves_accepted_expedition_and_replays_exactly_once(t
     resumed = session_for(state, meta, log)
     with pytest.raises(DecisionPending):
         attempt(resumed)
-    assert resumed.data['pending'] == second and len(resumed.data['journal']) == 1
+    assert resumed.data['pending'] == second and len(resumed.data['journal']) == journal_count
     response = {'tribe': rc.TRIBE_VENETI}
     resumed.import_inbox({'decision_id': second['id'], 'response': response})
     result = attempt(resumed)
     resumed.finish()
-    assert len(log) == 2 and state['interlude_completed']
+    assert len(log) == journal_count + 1 and state['interlude_completed']
     assert state.get('winter_track_legions', 0) == (3 if conduct else 0)
     assert state['tribes'][rc.TRIBE_VENETI]['status'] == rc.MARKER_DISPERSED
     assert validate_state(state) == []
-    replay = full_position()
-    replay['decision_agent'] = lambda board, faction, request: (
-        plan if request['kind'] == EXPEDITION else response if request['kind'] == MARKER else None)
-    assert resolve_winter_card(replay) == result
-    assert encode(board_copy(replay)) == encode(board_copy(state))
+    replay = session_for(full_position())
+    replay.data['queue'] = [SeatSession._inbox_entry(entry) for entry in log]
+    replay.data['expected'] = [
+        {'id': entry['assistant_id'], 'signature': entry['assistant_signature'],
+         'request': entry['assistant_request'],
+         'action_windows_version': entry.get('assistant_action_windows_version', 0)}
+        for entry in log
+    ]
+    assert attempt(replay) == result
+    replay.finish()
+    assert replay.log == log and encode(board_copy(replay.state)) == encode(board_copy(state))
+
+
+def test_legacy_save_at_expedition_keeps_the_pending_request_on_resume(tmp_path):
+    session = session_for(full_position(), legacy=True)
+    with pytest.raises(DecisionPending):
+        attempt(session)
+    pending = deepcopy(session.data['pending'])
+    assert decode(pending['request'])['kind'] == EXPEDITION and not session.data['journal']
+    path = tmp_path / 'old-roman-interlude.json'
+    save_game(session.state, path, meta=session.meta, log=session.log)
+    state, meta, log = load_game(path, validate=True)
+    resumed = session_for(state, meta, log)
+    with pytest.raises(DecisionPending):
+        attempt(resumed)
+    assert resumed.data['pending'] == pending
+    resumed.import_inbox({'decision_id': pending['id'], 'response': {'conduct': False}})
+    with pytest.raises(DecisionPending):
+        attempt(resumed)
+    assert decode(resumed.data['pending']['request'])['kind'] == MARKER
 
 
 def test_invalid_raw_preserved_tribe_restores_all_interlude_changes_and_rng():
@@ -338,7 +499,7 @@ def test_winter_transfer_primitive_counts_once_and_rejects_conflicting_destinati
     assert validate_state(state) == []
 
 
-@pytest.mark.parametrize('pause_at', [EXPEDITION, MARKER])
+@pytest.mark.parametrize('pause_at', [REDUCTION, EXPEDITION, MARKER])
 def test_direct_winter_api_retries_without_incrementing_counter_twice(pause_at):
     state = full_position()
     before = encode(state)

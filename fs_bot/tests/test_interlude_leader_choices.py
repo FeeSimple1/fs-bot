@@ -18,6 +18,7 @@ from fs_bot.engine.game_engine import _action_transaction
 from fs_bot.engine.interlude import (
     _adjust_belgae_forces, _adjust_roman_forces, _choose_interlude_leader_region,
 )
+from fs_bot.engine.interlude_reductions import ROMAN_HALF
 from fs_bot.map.map_data import get_playable_regions_for_state
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.state_schema import build_initial_state
@@ -123,19 +124,25 @@ def _tied_roman_state(human=None, seed=1):
 
 def test_human_available_caesar_chooses_tied_maximum_when_no_provincia_control():
     state = _tied_roman_state(human=rc.ROMANS)
+    place_piece(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA)
     requests = []
 
     def agent(board, faction, request):
         requests.append((faction, request))
+        if request.get('stage') == ROMAN_HALF:
+            return {'removals': request['cohorts']}
         return {'region': rc.MANDUBII}
 
     state['decision_agent'] = agent
     result = _adjust_roman_forces(state)
     assert result['caesar_placed'] == rc.MANDUBII
     assert get_leader_in_region(state, rc.MANDUBII, rc.ROMANS) == rc.CAESAR
-    assert len(requests) == 1 and requests[0][0] == rc.ROMANS
-    assert requests[0][1]['leader'] == rc.CAESAR
-    assert set(requests[0][1]['legal_regions']) == {rc.MANDUBII, rc.CARNUTES}
+    assert [(faction, request['kind']) for faction, request in requests] == [
+        (rc.ROMANS, 'interlude_reduction'), (rc.ROMANS, 'spring_leader'),
+    ]
+    assert result['auxilia_to_available'] == 1
+    assert requests[1][1]['leader'] == rc.CAESAR
+    assert set(requests[1][1]['legal_regions']) == {rc.MANDUBII, rc.CARNUTES}
 
 
 def test_np_caesar_ties_are_seeded_and_never_choose_lower_count_provincia():

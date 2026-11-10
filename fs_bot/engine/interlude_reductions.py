@@ -12,6 +12,7 @@ QUARTER = 'german_quarter'
 BELGIC_HALF = 'belgic_half'
 AEDUI_HALF = 'aedui_half'
 ARVERNI_HALF = 'arverni_half'
+ROMAN_HALF = 'roman_half'
 ARVERNI_EARLY_ALLIES = (rc.TRIBE_CADURCI, rc.TRIBE_VOLCAE)
 
 STAGE_RULES = {
@@ -21,12 +22,15 @@ STAGE_RULES = {
     AEDUI_HALF: dict(faction=rc.AEDUI, divisor=2, home_regions=rc.AEDUI_HOME_REGIONS),
     ARVERNI_HALF: dict(faction=rc.ARVERNI, controller=rc.GERMANS, divisor=2,
                        home_regions=rc.ARVERNI_HOME_REGIONS_BASE),
+    ROMAN_HALF: dict(faction=rc.ROMANS, divisor=2, home_regions=rc.ROMAN_HOME_REGIONS),
 }
 
 
 def reduction_request(state, stage):
     rules = STAGE_RULES[stage]
     faction = rules['faction']
+    roman = stage == ROMAN_HALF
+    troop_type = rc.AUXILIA if roman else rc.WARBAND
     cohorts = []
     if stage == PERMANENT:
         available = pieces.get_available(state, faction, rc.WARBAND)
@@ -42,10 +46,15 @@ def reduction_request(state, stage):
                                     piece_state=None, tribe=tribe, count=1))
 
     for region in sorted(state['spaces']):
-        for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED):
-            count = pieces.count_pieces_by_state(state, region, faction, rc.WARBAND, visibility)
+        if roman and region != rc.PROVINCIA:
+            count = pieces.count_pieces(state, region, faction, rc.FORT)
             if count:
-                cohorts.append(dict(region=region, piece_type=rc.WARBAND,
+                cohorts.append(dict(region=region, piece_type=rc.FORT,
+                                    piece_state=None, tribe=None, count=count))
+        for visibility in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED):
+            count = pieces.count_pieces_by_state(state, region, faction, troop_type, visibility)
+            if count:
+                cohorts.append(dict(region=region, piece_type=troop_type,
                                     piece_state=visibility, tribe=None, count=count))
 
     totals = Counter()
@@ -55,8 +64,8 @@ def reduction_request(state, stage):
         minimums = {rc.WARBAND: min(rc.INTERLUDE_GERMAN_WARBANDS_REMOVED, totals[rc.WARBAND])}
     else:
         divisor = rules['divisor']
-        minimums = {kind: (totals[kind] + divisor - 1) // divisor
-                    for kind in (rc.ALLY, rc.WARBAND)}
+        kinds = (rc.FORT, rc.ALLY, troop_type) if roman else (rc.ALLY, troop_type)
+        minimums = {kind: (totals[kind] + divisor - 1) // divisor for kind in kinds}
     return dict(kind=KIND, stage=stage, minimums=minimums, cohorts=cohorts)
 
 

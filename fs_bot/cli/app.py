@@ -479,6 +479,12 @@ def main(argv=None, stdin=None, stdout=None):
             # the live game, or alter its decision display/history.
             if state_ is not state:
                 return None
+            if request.get('kind') == 'resource_transfer' and (replay_reactive or replay_decisions):
+                recorded = replay_reactive[0] if replay_reactive else {}
+                if not (recorded.get('reactive') == 'resource_transfer'
+                        and recorded.get('faction') == faction
+                        and recorded.get('window') == request['window']):
+                    return None  # Older transcripts made no gift at this window.
             if request.get('kind') in ('voluntary_removal', 'spring_leader', 'battle_elite') and 'window' in request:
                 next_record = replay_reactive[0] if replay_reactive else None
                 old_next = (next_record is not None
@@ -513,6 +519,7 @@ def main(argv=None, stdin=None, stdout=None):
             return resp
 
         agent.supports_action_windows = True
+        agent.supports_resource_transfers = getattr(cli_agent, 'supports_resource_transfers', False)
         state["decision_agent"] = agent
 
     def transaction_checkpoint():

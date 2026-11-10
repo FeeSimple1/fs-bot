@@ -53,6 +53,9 @@ def make_cli_reactive(human_factions, stdin, stdout):
             if kind == 'quarters_payment':
                 from fs_bot.cli.quarters import collect_payment
                 return collect_payment(state, faction, request, stdin, stdout)
+            if kind == 'resource_transfer':
+                from fs_bot.cli.resource_transfers import collect_transfers
+                return collect_transfers(state, faction, request, stdin, stdout)
             if kind == "supply_refusal":
                 from fs_bot.cli.supply import collect_supply_refusal
                 return collect_supply_refusal(state, faction, request, stdin, stdout)
@@ -312,4 +315,5 @@ def make_cli_reactive(human_factions, stdin, stdout):
         return None
 
     agent.supports_action_windows = True
+    agent.supports_resource_transfers = True
     return agent

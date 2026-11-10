@@ -139,6 +139,9 @@ def validate_response(state, request, response):
     if kind == 'interlude_reduction':
         from fs_bot.engine.interlude_reductions import validate_response as validate_reduction
         return validate_reduction(state, request, response)
+    if kind == 'resource_transfer':
+        from fs_bot.engine.resource_transfers import validate_response as validate_transfer
+        return validate_transfer(state, request, response)
     if kind in ('interlude_expedition', 'interlude_marker', 'interlude_settlements',
                 'interlude_aedui_citadel', 'interlude_arverni_citadels', 'interlude_cisalpina_relocation'):
         from fs_bot.engine.interlude_choices import validate_response as validate_interlude
@@ -259,6 +262,7 @@ class SeatSession:
     """One authoritative saved inbox, pending decision and action journal."""
 
     supports_action_windows = True
+    supports_resource_transfers = True
 
     def __init__(self, state, meta, log, display):
         self.state, self.meta, self.log, self.display = state, meta, log, display
@@ -457,7 +461,7 @@ class SeatSession:
 
     def ask(self, state, faction, request):
         request = dict(request, faction=faction)
-        if self._skip_legacy_window(state, request) or self._skip_legacy_interlude_choice(request):
+        if self._skip_legacy_window(state, request) or self._skip_added_choice(request):
             return None
         request = self._saved_physical_request(state, request)
         signature, compatible_signatures = _decision_signatures(state, request)
@@ -557,9 +561,26 @@ class SeatSession:
                     and 'window' not in old_request)
         return self._legacy_replay_tail
 
-    def _skip_legacy_interlude_choice(self, request):
+    def _next_saved_request(self):
+        journal = self.data['journal']
+        if self.cursor < len(journal):
+            return decode(journal[self.cursor].get('assistant_request', {})), False
+        decision_id = f'd{len(self.log) + self.cursor + 1:06d}'
+        expected = next((entry for entry in self.data.get('expected', [])
+                         if entry['id'] == decision_id), None)
+        if expected is not None:
+            return decode(expected.get('request', {})), True
+        pending = self.data.get('pending')
+        if pending is not None and pending['id'] == decision_id:
+            return decode(pending['request']), False
+        return {}, False
+
+    def _skip_added_choice(self, request):
         """Keep the old default when a saved decision already follows it."""
         kind = request['kind']
+        if kind == 'resource_transfer':
+            saved, _ = self._next_saved_request()
+            return bool(saved.get('kind')) and saved['kind'] != kind
         later = ('spring_leader', 'interlude_expedition', 'interlude_marker')
         if kind == 'interlude_reduction':
             from fs_bot.engine.interlude_reductions import ROMAN_HALF
@@ -569,23 +590,12 @@ class SeatSession:
             later += ('interlude_cisalpina_relocation',)
         elif kind != 'interlude_cisalpina_relocation':
             return False
-        journal = self.data['journal']
-        if self.cursor < len(journal):
-            saved = decode(journal[self.cursor].get('assistant_request', {}))
-        else:
-            decision_id = f'd{len(self.log) + self.cursor + 1:06d}'
-            expected = next((entry for entry in self.data.get('expected', [])
-                             if entry['id'] == decision_id), None)
-            if expected is not None:
-                # The next recorded request may be after Winter. Its board
-                # and signature still have to match when replay reaches it.
-                saved = decode(expected.get('request', {}))
-                return bool(saved.get('kind') and (
-                    saved['kind'] != kind or saved.get('stage') != request.get('stage')))
-            pending = self.data.get('pending')
-            if pending is None or pending['id'] != decision_id:
-                return False
-            saved = decode(pending['request'])
+        saved, replay = self._next_saved_request()
+        if replay:
+            # The next recorded request may be after Winter. Its signature
+            # still has to match when replay reaches it.
+            return bool(saved.get('kind') and (
+                saved['kind'] != kind or saved.get('stage') != request.get('stage')))
         return saved.get('faction') == request['faction'] and saved.get('kind') in later
 
     def reactive(self, state, faction, request):

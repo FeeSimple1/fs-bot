@@ -514,6 +514,7 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `event_up_to` | `card_id, shaded, faction, max_count`; A40 `legal_regions`; A51 `region, available` visibility/count cohorts; A60 `region, available_count` | A40 `{"regions":[...]}`; A51 `{"removals":[{"piece_state":...,"count":n},...]}`; A60 `{"count":n}`; or explicit default |
 | `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
+| `resource_transfer` | Donor `faction`, `available`, `recipients` by maximum amount, and `window` | `{"transfers":[{"to":faction,"amount":positive_integer},...]}` or explicit default |
 | `interlude_reduction` | Faction-owned stage with `stage, minimums, cohorts` | `{"removals":[cohort objects]}` in selection order, or explicit default |
 | `interlude_settlements` | German-owned choice after permanent Warband removals, with `options` by Region and `required_allies` | `{"allies":{region:tribe,...}}` or explicit default |
 | `interlude_aedui_citadel` | Aedui-owned choice with eligible `regions` and `ally_available` | `{"region":offered_region}` or explicit default |
@@ -1536,6 +1537,26 @@ eligible Battle Regions together. Its Battle excludes the attacking Leader
 from fighting and losses without moving that physical piece. The validator
 is `cards.kinship.validate_response(state, response)`.
 
+### Winter Resource transfers
+
+Each eligible human donor gets a `resource_transfer` request before
+Quarters relocations and after Roman payments, and before and after
+Harvest earnings. The `window` names its `phase`, `stage`, and `winter`
+number. The donor can give to multiple recipients or repeat a recipient
+within the offered limits. The entire list must fit the donor's `available`
+stock and each recipient's cumulative cap. Use `{"transfers":[]}` or
+`{"use_default":true}` to give nothing. Later donors see the updated balances.
+
+The engine applies opening Quarters gifts before the Roman plan is
+collected, so Romans can spend them on payments. Opening Harvest gifts
+can make room for earnings, and closing gifts can use those earnings.
+An invalid list leaves the request pending. Accepted gifts replay once
+when the phase resumes. Existing transcripts can replay their recorded
+choices using the no-gift default for absent transfer requests.
+
+The terminal and file-based assistant enable these requests by default.
+A custom reactive agent can opt in with `supports_resource_transfers = True`.
+
 ### Quarters
 
 A `quarters_plan` response maps the acting faction to relocations:
@@ -1818,8 +1839,8 @@ full game with one agent-controlled Faction playing alongside the bots.
 - Reactive hooks cover Retreat, Loss absorption, Supply Line, Quarters hosting,
   Trade, Harassment and its losses, physical March pieces, Winter Campaign,
   Raid Intimidate, Kinship, and scoped Event-granted actions.
-  Resource gifts are explicit `details.transfers` entries in the acting
-  faction's plan.
+  During Sequence-of-Play actions, Resource gifts use `details.transfers`
+  on the acting faction's plan. Winter gifts have their own donor requests.
 - There is no full legal-move *generator* (COIN's branching is enormous);
   `moves` gives the building blocks plus a validator, which is the practical
   shape for an LLM that proposes a move and checks it.

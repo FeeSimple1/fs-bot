@@ -39,6 +39,13 @@ take the later Provincia step if eligible. If Supply changes and the remaining
 Provincia choices reopen, the menu again offers exact visibility cohorts.
 `b`/`board` remains available at these prompts.
 
+Eligible factions may give Resources before Quarters relocations and after
+Roman payments, and before and after Harvest earnings. Choose one or more
+recipients and type each exact amount up to the displayed limit. The donor
+chooses the gifts, and the opening Quarters gifts can fund Roman payments.
+Select **Finish Resource transfers** to proceed. Use `b` or `board` to
+inspect the position.
+
 When Devastate takes casualties, each human owner chooses its own losses by
 piece type and visibility. You may lose a Legion instead of Auxilia, or select
 Hidden, Revealed or Scouted Warbands as offered. Remove the entire required

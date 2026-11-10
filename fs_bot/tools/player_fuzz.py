@@ -123,6 +123,12 @@ def make_random_reactive(seats, rng):
         if faction not in seats:
             return None
         kind = request.get("kind")
+        if kind == 'resource_transfer':
+            if rng.random() >= 0.25:
+                return {'transfers': []}
+            recipient = rng.choice(list(request['recipients']))
+            amount = rng.randint(1, request['recipients'][recipient])
+            return {'transfers': [dict(to=recipient, amount=amount)]}
         if (kind == "free_action" and request.get("request_type") == "roman_event_accept"
                 and request.get("card_id") == 70):
             return {"accept": True} if rng.random() >= 0.25 else {"decline": True}
@@ -426,6 +432,7 @@ def make_random_reactive(seats, rng):
             return rng.random() < 0.5
         return None
 
+    reactive.supports_resource_transfers = True
     return reactive
 
 

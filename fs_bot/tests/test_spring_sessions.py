@@ -163,10 +163,12 @@ def test_file_frontend_spring_pending_invalid_save_resume_and_replay(
     meta = {'seat': rc.ROMANS, 'scenario': state['scenario'], 'seed': 13,
             'human_snapshots': encode(display.snapshots)}
     session = SeatSession(state, meta, [], display)
-    # Explicitly delegate Quarters and the mandatory first-Harvest allocation
-    # before testing the later Spring choice in this actual Winter.
-    session.data['queue'] = [{'response': {'use_default': True}},
-                             {'response': {'use_default': True}}]
+    # Delegate the two affordable gift windows, Quarters, and the mandatory
+    # first-Harvest allocation before testing the later Spring choice.
+    session.data['queue'] = [
+        {'reactive': kind, 'response': {'use_default': True}}
+        for kind in ('resource_transfer', 'quarters_plan', 'harvest_legions', 'resource_transfer')
+    ]
     save_game(state, directory / 'save.json', meta=meta, log=[])
     args = SimpleNamespace(dir=str(directory))
     assert llm_seat.cmd_play(args) == 0

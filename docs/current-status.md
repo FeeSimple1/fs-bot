@@ -21,6 +21,30 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Winter Resource transfers
+
+Eligible human donors can give Resources before Quarters relocations and
+after Roman payments, and before and after Harvest earnings. Opening gifts
+can fund Roman quartering or make room for Harvest income. Later donors
+see the live balances. Both frontends accept split or repeated gifts in
+exact amounts within the donor's stock and the recipient's Resource cap.
+The same scenario and Capability restrictions apply as for ordinary gifts.
+
+The assistant validates a donor's entire list before applying it. A save
+at a later decision retains accepted gifts, and earlier transcripts can
+replay without a new gift at unrecorded windows.
+
+All 9,218 tests pass, including 324 focused tests. Twenty directed
+scenario-and-seat positions exercised every window and matched across hash
+seeds. Twenty mixed-seat games completed and replayed without hard findings.
+One unaffordable Arverni Rally sub-action was refused in both preview and
+live play. Twenty paired bot games and all 100 balance outcomes match the
+parent. A terminal transcript recorded without the gift windows replayed
+to the same board and random state.
+
+**WS-F06 advances. Command and Event transfer timing and the early CLI
+gift menu remain open. The original audit stands at 45/50 closed (90%).**
+
 ### 10 November Interlude Cisalpina relocation
 
 The Gallic War's Cisalpina step now offers each human controller a complete

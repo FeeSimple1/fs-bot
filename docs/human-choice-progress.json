@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "86f8a33d5a115a91a581f7cac83cb7fd233e84b1",
-    "python_sha256": "85d7be194153853d187ea7af082af59029ccc276f9c453fd4b2a316358455457",
-    "python_files": 556,
+    "commit": "8d7ea15e41a505a3e7b860a0bfbe034f50858271",
+    "python_sha256": "96ee2f524d3740e4c7e9f7651dd460f96695f777c9fdd44577ac33dd0f501b0a",
+    "python_files": 559,
     "working_tree_changes": true,
-    "note": "Cisalpina allocations complete WS-C30 and WS-F01. The tested Python source is the publishing tree over the listed parent. See current-status.md#10-november-interlude-cisalpina-relocation."
+    "note": "Winter Resource transfers advance WS-F06. The tested Python source is the publishing tree over the listed parent. See current-status.md#10-november-winter-resource-transfers."
   },
   "total": 50,
   "closed": 45,
@@ -72,7 +72,8 @@
     "Aedui Interlude adjustments now offer exact Citadel and post-replacement reduction choices. WS-C28 advances. See current-status.md#6-november-aedui-interlude-force-adjustments.",
     "The German controller now chooses Arverni Interlude Citadels and exact half reductions. WS-C28 advances. See current-status.md#10-november-arverni-interlude-force-adjustments.",
     "Romans choose exact Interlude Fort, Ally and Auxilia reductions. This completes WS-C28. See current-status.md#10-november-roman-interlude-force-reductions.",
-    "Interlude controllers choose exact Cisalpina moves or removals. This completes WS-C30 and WS-F01. See current-status.md#10-november-interlude-cisalpina-relocation."
+    "Interlude controllers choose exact Cisalpina moves or removals. This completes WS-C30 and WS-F01. See current-status.md#10-november-interlude-cisalpina-relocation.",
+    "Quarters and Harvest offer exact donor-owned Resource gifts. WS-F06 remains open for Sequence-of-Play actions. See current-status.md#10-november-winter-resource-transfers."
   ],
   "findings": [
     {
@@ -510,7 +511,8 @@
       "id": "WS-F06",
       "title": "Resource-transfer choices are limited to one early outgoing CLI gift and omit legal Winter/incoming windows",
       "severity": "medium",
-      "status": "open"
+      "status": "open",
+      "disposition": "Quarters and Harvest now offer donor-owned exact gifts through the terminal and assistant. Sequence-of-Play transfer timing, gifts during the other faction's action, and the early CLI gift menu remain open."
     },
     {
       "id": "WS-F07",

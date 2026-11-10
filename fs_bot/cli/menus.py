@@ -115,6 +115,23 @@ def prompt_choice(stdin, stdout, prompt, choices):
         stdout.write(f"Please enter 1-{n} (got {line!r})\n")
 
 
+def prompt_amount(stdin, stdout, prompt, maximum):
+    """Read an exact positive amount without printing every integer as an option."""
+    while True:
+        line = _read_line(stdin, f"{prompt} (1-{maximum}, 'b'=board): ", stdout)
+        if line is None:
+            raise EOFError('stdin closed during prompt_amount')
+        if _maybe_board(line, stdout):
+            continue
+        try:
+            amount = int(line)
+        except ValueError:
+            amount = 0
+        if 1 <= amount <= maximum:
+            return amount
+        stdout.write(f'Enter a whole number from 1 to {maximum}.\n')
+
+
 def prompt_yes_no(stdin, stdout, prompt, default=None):
     """Yes/no prompt. Re-prompts on bad input.
 

@@ -13,9 +13,10 @@ Reference:
   A6.0-A6.6  Ariovistus Winter Round
 """
 
+from contextlib import nullcontext
 from functools import wraps
 
-from fs_bot.engine import action_windows
+from fs_bot.engine import action_windows, resource_transfers
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -319,8 +320,15 @@ def _germans_phase_raid_all(state):
 def quarters_phase(state, relocations=None):
     """Execute §6.3/A6.3 with stable agreements across plan/execute."""
     from fs_bot.engine.quarters import agreement_cache
-    with agreement_cache(state):
-        return _quarters_phase(state, relocations)
+    from fs_bot.engine.spring import atomic
+    with atomic(state) if resource_transfers.enabled(state) else nullcontext():
+        transfers = resource_transfers.offer(state, 'quarters', 'before_relocations')
+        with agreement_cache(state):
+            result = _quarters_phase(state, relocations)
+        transfers.extend(resource_transfers.offer(state, 'quarters', 'after_payments'))
+        if transfers:
+            result['transfers'] = transfers
+        return result
 
 
 def _quarters_phase(state, relocations=None):
@@ -593,6 +601,18 @@ def _quarters_roman_pay_or_roll(state, quartering_decisions=None):
 
 @_winter_scope
 def harvest_phase(state):
+    """Resolve gifts around the §6.4/A6.4 earnings."""
+    from fs_bot.engine.spring import atomic
+    with atomic(state) if resource_transfers.enabled(state) else nullcontext():
+        transfers = resource_transfers.offer(state, 'harvest', 'before_earnings')
+        result = _harvest_earnings(state)
+        transfers.extend(resource_transfers.offer(state, 'harvest', 'after_earnings'))
+        if transfers:
+            result['transfers'] = transfers
+        return result
+
+
+def _harvest_earnings(state):
     """Execute the Harvest Phase — §6.4 / A6.4.
 
     A6.4.1: Ariovistus Roman earnings equal the Roman victory score,

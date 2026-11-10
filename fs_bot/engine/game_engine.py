@@ -22,7 +22,7 @@ Reference:
 """
 
 import copy
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 
 from fs_bot.rules_consts import (
     # Factions
@@ -633,6 +633,7 @@ def resolve_card_turn(state, decision_func, *, execute=False,
     Each action and the final mandatory phase are transactional, including
     human reactive decisions inside their resolution.
     """
+    from fs_bot.engine import resource_transfers
     turn = state.get("_card_turn")
     if turn is None or turn["card"] != state["current_card"]:
         turn = {
@@ -663,7 +664,8 @@ def resolve_card_turn(state, decision_func, *, execute=False,
                    get_second_eligible_options(turn["first_action"]))
         position = "1st_eligible" if first else "2nd_eligible"
         try:
-            with _action_transaction(state, decision_func):
+            gifts = resource_transfers.sequence(state, faction) if execute else nullcontext()
+            with _action_transaction(state, decision_func), gifts:
                 decision = decision_func(state, faction, options, position)
                 action = decision["action"]
                 if action == ACTION_PASS:

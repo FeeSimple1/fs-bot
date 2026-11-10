@@ -231,8 +231,10 @@ Command and reports `declined_no_effect`; it does not silently choose a
 higher-yield Region. Missing or invalid durable responses remain pending.
 
 Optional `details.transfers` (`[{"to": faction, "amount": integer}]`, §1.5.2)
-ride an action. The helpers below provide validation; the source plan builders
-remain the detailed reference for each Command and Special Activity.
+author the executor's own opening gifts. Other donors choose their own gifts
+through [live Resource transfer requests](#sequence-of-play-resource-transfers).
+The source plan builders remain the detailed reference for each Command and
+Special Activity.
 Durable turns reject ineligible transfer parties before accepting the plan:
 game-run Germans in original scenarios and game-run Arverni in Ariovistus
 cannot give or receive Resources. Current scenario rules apply after Interlude.
@@ -514,7 +516,7 @@ Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
 | `event_up_to` | `card_id, shaded, faction, max_count`; A40 `legal_regions`; A51 `region, available` visibility/count cohorts; A60 `region, available_count` | A40 `{"regions":[...]}`; A51 `{"removals":[{"piece_state":...,"count":n},...]}`; A60 `{"count":n}`; or explicit default |
 | `devastate_losses` | `faction, region, count, available` cohort objects `{piece_type,piece_state,count}` | `{"removals":[cohort objects]}` totaling exactly `count`, or explicit default; no decline |
 | `harvest_legions` | `count, legal_regions, source:"winter_track"` | `{"placements":{region:positive_integer,...}}` totaling exactly `count`, or explicit default; no decline |
-| `resource_transfer` | Donor `faction`, `available`, `recipients` by maximum amount, and `window` | `{"transfers":[{"to":faction,"amount":positive_integer},...]}` or explicit default |
+| `resource_transfer` | Donor `faction`, `available`, `recipients` by maximum amount, and `window` | `{"transfers":[{"to":faction,"amount":positive_integer},...]}`, optional `"defer":true` during the action, or explicit default |
 | `interlude_reduction` | Faction-owned stage with `stage, minimums, cohorts` | `{"removals":[cohort objects]}` in selection order, or explicit default |
 | `interlude_settlements` | German-owned choice after permanent Warband removals, with `options` by Region and `required_allies` | `{"allies":{region:tribe,...}}` or explicit default |
 | `interlude_aedui_citadel` | Aedui-owned choice with eligible `regions` and `ally_available` | `{"region":offered_region}` or explicit default |
@@ -1537,6 +1539,31 @@ eligible Battle Regions together. Its Battle excludes the attacking Leader
 from fighting and losses without moving that physical piece. The validator
 is `cards.kinship.validate_response(state, response)`.
 
+### Sequence-of-Play Resource transfers
+
+During an outer Command or Event, an eligible human donor may give Resources
+when the executing faction is either participant. A donor other than the
+executor sees only the executor as a possible recipient. Each request carries the donor's `faction`,
+`available` stock and maximums in `recipients`. The `window` identifies the
+`actor`, `action`, `card`, `stage` and its `occurrence` in the action. A
+Region, step, or index may identify a live operation more precisely.
+
+The terminal opens negotiations after the action type is selected, before
+collecting its plan. The assistant asks after accepting the authored turn plan,
+before executing its first Command or Event effect. Both can offer additional
+gifts at complete operation boundaries and before the action closes. Include
+`"defer":true` alongside the `transfers` list to ask for another offer later
+in the action. An empty list without `defer` or an explicit default ends this
+donor's offers for the action. A nested grant retains the outer executor's
+transfer scope. A53 keeps ordinary Roman gifts in the public treasury and
+resolves them between the grant's funded actions.
+
+Each gift must fit the current stock and recipient room, including earlier
+gifts in the list. Gifts apply in list order. An invalid durable list leaves
+the same decision pending. Accepted gifts participate in the action's
+transaction and replay. A dry-run uses authored opening gifts and can report
+what the current board can fund without future donor decisions.
+
 ### Winter Resource transfers
 
 Each eligible human donor gets a `resource_transfer` request before
@@ -1555,7 +1582,8 @@ when the phase resumes. Existing transcripts can replay their recorded
 choices using the no-gift default for absent transfer requests.
 
 The terminal and file-based assistant enable these requests by default.
-A custom reactive agent can opt in with `supports_resource_transfers = True`.
+A custom reactive agent can opt in with `supports_resource_transfers = True`
+for live Sequence-of-Play and Winter resolution.
 
 ### Quarters
 
@@ -1838,9 +1866,8 @@ full game with one agent-controlled Faction playing alongside the bots.
   open; this list is not exhaustive.
 - Reactive hooks cover Retreat, Loss absorption, Supply Line, Quarters hosting,
   Trade, Harassment and its losses, physical March pieces, Winter Campaign,
-  Raid Intimidate, Kinship, and scoped Event-granted actions.
-  During Sequence-of-Play actions, Resource gifts use `details.transfers`
-  on the acting faction's plan. Winter gifts have their own donor requests.
+  Raid Intimidate, Kinship, scoped Event-granted actions, and donor-owned
+  Resource gifts during Commands, Events, Quarters, and Harvest.
 - There is no full legal-move *generator* (COIN's branching is enormous);
   `moves` gives the building blocks plus a validator, which is the practical
   shape for an LLM that proposes a move and checks it.

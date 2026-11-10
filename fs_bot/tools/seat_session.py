@@ -12,6 +12,7 @@ import json
 import sys
 
 from fs_bot.engine.agent import RETREAT, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
+from fs_bot.engine import resource_transfers
 from fs_bot.engine.game_engine import ActionRejected, ACTION_PASS
 from fs_bot.state.serialize import encode, decode
 
@@ -24,6 +25,7 @@ def board_copy(state):
     return copy.deepcopy({k: v for k, v in state.items()
                           if k not in ("decision_agent", '_action_window_scope',
                                        '_action_window_busy', '_action_window_cohorts',
+                                       resource_transfers.FRAME,
                                        '_battle_elite_warbands')})
 
 
@@ -264,7 +266,7 @@ class SeatSession:
     supports_action_windows = True
     supports_resource_transfers = True
 
-    def __init__(self, state, meta, log, display):
+    def __init__(self, state, meta, log, display, *, resource_replay_before=None):
         self.state, self.meta, self.log, self.display = state, meta, log, display
         self.data = meta.setdefault("assistant_session", {
             "version": 1, "queue": [], "receipts": [], "journal": [],
@@ -289,6 +291,7 @@ class SeatSession:
         self.error = None
         self.replayed_rejection = False
         self._legacy_replay_tail = False
+        self._resource_replay_before = resource_replay_before
 
     def __deepcopy__(self, memo):
         # This is a live frontend, not game state. Bot previews copy the
@@ -461,7 +464,7 @@ class SeatSession:
 
     def ask(self, state, faction, request):
         request = dict(request, faction=faction)
-        if self._skip_legacy_window(state, request) or self._skip_added_choice(request):
+        if self._skip_legacy_window(state, request) or self._skip_added_choice(state, request):
             return None
         request = self._saved_physical_request(state, request)
         signature, compatible_signatures = _decision_signatures(state, request)
@@ -575,12 +578,17 @@ class SeatSession:
             return decode(pending['request']), False
         return {}, False
 
-    def _skip_added_choice(self, request):
+    def _skip_added_choice(self, state, request):
         """Keep the old default when a saved decision already follows it."""
         kind = request['kind']
-        if kind == 'resource_transfer':
+        if kind == resource_transfers.KIND:
             saved, _ = self._next_saved_request()
-            return bool(saved.get('kind')) and saved['kind'] != kind
+            if saved.get('kind'):
+                return (saved['kind'] != kind or saved.get('faction') != request['faction']
+                        or saved.get('window') != request['window'])
+            return (self._resource_replay_before is not None
+                    and request['window']['phase'] == resource_transfers.SEQUENCE
+                    and resource_transfers.replay_position(state) < self._resource_replay_before)
         later = ('spring_leader', 'interlude_expedition', 'interlude_marker')
         if kind == 'interlude_reduction':
             from fs_bot.engine.interlude_reductions import ROMAN_HALF

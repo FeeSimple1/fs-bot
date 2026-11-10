@@ -144,9 +144,10 @@ Request kinds
   Roman/Aedui owners for placement, March formation, drop-off or a casualty. Respond
   with {"counts": {owner: count, ...}}, totaling the requested count and
   respecting the offered ``available`` counts.
-  Voluntary Resource transfers (§1.5.2) are explicit ``details.transfers``
-  entries on the acting Faction's plan, not a separate reactive request.
-  See AGENT_INTERFACE.md for their response format and scope.
+  ``resource_transfer`` offers the human donor exact gifts during either
+  participant's Command or Event and during Quarters or Harvest (§1.5.2).
+  The acting Faction may also author its own opening ``details.transfers``.
+  See AGENT_INTERFACE.md for the response formats and scope.
 
 The ``RETREAT`` kind also carries ``context={"rampage": True, "num_pieces"}``
 for a Rampage target (§4.5.2). Fresh requests include exact ``pieces`` pairs.

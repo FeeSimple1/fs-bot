@@ -38,6 +38,7 @@ def spending_scope(state, allowance):
         state["resources"][ROMANS] = treasury
         if budget is not None:
             budget["paying"] = prior_paying
+            state["_frumentum_budget"] = budget
         for key, value in saved.items():
             if value is missing:
                 state.pop(key, None)
@@ -235,13 +236,15 @@ def resolve_frumentum(state):
         break
     state["resources"][AEDUI] -= amount
     remaining, allowance, results, errors = list(ACTIONS), amount, [], []
-    treasury = state["resources"].get(ROMANS, 0)
-    context = {"allocated": amount, "remaining": allowance, "reserved_treasury": treasury}
+    context = {"allocated": amount, "remaining": allowance,
+               "reserved_treasury": state["resources"].get(ROMANS, 0)}
     state["_frumentum_budget"] = context
     try:
         while remaining:
             from fs_bot.cards.card_effects import _event_step
             _event_step(state, "A53.action")
+            treasury = state["resources"].get(ROMANS, 0)
+            context["reserved_treasury"] = treasury
             request = {"kind": "frumentum_action", "card_id": "A53",
                        "remaining_actions": list(remaining),
                        "remaining_resources": allowance, "allocated_resources": amount,
@@ -276,7 +279,7 @@ def resolve_frumentum(state):
         # Provisional PR-03: the allocation is transferred, with no automatic
         # refund. Keep the historical unused_policy result label for saved
         # logs/controllers; authoritative clarification may change the ruling.
-        state["resources"][ROMANS] = min(MAX_RESOURCES, treasury + allowance)
+        state["resources"][ROMANS] = min(MAX_RESOURCES, state["resources"].get(ROMANS, 0) + allowance)
         state.pop("_frumentum_budget", None)
     return [{"flag": "card_A53", "event_action": "frumentum", "allocated": amount,
              "spent": amount - allowance, "unused": allowance,

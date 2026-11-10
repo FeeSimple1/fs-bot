@@ -96,22 +96,19 @@ def test_raw_executor_reports_forbidden_arverni_gift_without_receiving_it(scenar
     (rc.SCENARIO_ARIOVISTUS, {rc.ROMANS, rc.GERMANS, rc.BELGAE}),
     (rc.SCENARIO_GALLIC_WAR, {rc.ROMANS, rc.GERMANS, rc.BELGAE}),
 ])
-def test_cli_recipient_menu_matches_scenario_resource_holders(monkeypatch, scenario, recipients):
+def test_cli_recipient_menu_matches_scenario_resource_holders(scenario, recipients):
     state = setup_scenario(scenario, seed=4)
-    state['resources'][rc.AEDUI] = 10
+    state['resources'][rc.AEDUI] = 30
+    state['resources'][rc.ROMANS] = 15
     before = encode(board_copy(state))
-    menus = []
-
-    def choose(stdin, stdout, title, options):
-        menus.append(options)
-        return options[0][1]
-
-    monkeypatch.setattr(human_plan, 'prompt_yes_no', lambda *args, **kwargs: True)
-    monkeypatch.setattr(human_plan, 'prompt_choice', choose)
+    output = io.StringIO()
     action = human_plan._maybe_collect_transfer(
-        state, rc.AEDUI, {}, io.StringIO(), io.StringIO())
-    assert {value for _, value in menus[0]} == recipients
-    assert action['details']['transfers'][0]['to'] in recipients
+        state, rc.AEDUI, {}, io.StringIO('y\n2\n16\n3\n3\n1\n'), output)
+    assert {line.split('Give to ')[1].split(' (up to')[0]
+            for line in output.getvalue().splitlines() if 'Give to ' in line} == recipients
+    first, second = action['details']['transfers']
+    assert first['to'] == rc.ROMANS and first['amount'] == 16
+    assert second['to'] in recipients - {rc.ROMANS} and second['amount'] == 3
     assert encode(board_copy(state)) == before
 
 
@@ -133,21 +130,15 @@ def test_cli_does_not_offer_gifts_from_faction_without_resource_track(monkeypatc
     assert action == {}
 
 
-def test_cli_card_38_shaded_omits_prohibited_roman_recipient(monkeypatch):
+def test_cli_card_38_shaded_omits_prohibited_roman_recipient():
     """Card 38 shaded: Romans and Aedui may not transfer to one another."""
     state = setup_scenario(rc.SCENARIO_GREAT_REVOLT, seed=4)
     state['resources'][rc.AEDUI] = 10
     activate_capability(state, 38, rc.EVENT_SHADED)
-    menus = []
-
-    def choose(stdin, stdout, title, options):
-        menus.append(options)
-        return options[0][1]
-
-    monkeypatch.setattr(human_plan, 'prompt_yes_no', lambda *args, **kwargs: True)
-    monkeypatch.setattr(human_plan, 'prompt_choice', choose)
-    human_plan._maybe_collect_transfer(state, rc.AEDUI, {}, io.StringIO(), io.StringIO())
-    assert {value for _, value in menus[0]} == {rc.ARVERNI, rc.BELGAE}
+    output = io.StringIO()
+    human_plan._maybe_collect_transfer(state, rc.AEDUI, {}, io.StringIO('y\n1\n'), output)
+    assert {line.split('Give to ')[1].split(' (up to')[0]
+            for line in output.getvalue().splitlines() if 'Give to ' in line} == {rc.ARVERNI, rc.BELGAE}
 
 
 def _driver(session):

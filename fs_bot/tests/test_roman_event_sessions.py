@@ -12,6 +12,7 @@ from fs_bot.engine.game_engine import ACTION_EVENT
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.tools import llm_seat
 from fs_bot.tools.seat_session import SeatSession
+from fs_bot.tests.test_action_window_frontends import leave_timing_unchanged
 from fs_bot.tests.test_roman_event_grants import state, battle, seize
 
 
@@ -45,8 +46,7 @@ def test_file_session_staged_invalid_default_stale_save_resume_and_replay(tmp_pa
         args.decision_id = decision_id if decision_id is not None else pending()['id']
         assert llm_seat.cmd_submit(args) == 0
     def decline_windows():
-        while pending() and decode(pending()['request'])['kind'] == 'voluntary_removal':
-            submit({'done': True})
+        leave_timing_unchanged(args)
 
     assert llm_seat.cmd_play(args) == 0
     before = encode(saved()[0])

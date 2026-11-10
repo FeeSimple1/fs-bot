@@ -2074,8 +2074,9 @@ hard-findings=0, hashseed-identical.
 
 ## RESOLVED — voluntary Resource transfers (§1.5.2/A1.5.2) + the §8.6.6 NP Aedui subsidy (July 2026)
 
-The 10 November [Winter transfer repair](docs/current-status.md#10-november-winter-resource-transfers)
-supersedes the Winter interface limitation recorded in this historical entry.
+The 10 November [Winter repair](docs/current-status.md#10-november-winter-resource-transfers)
+and [Command and Event repair](docs/current-status.md#10-november-command-and-event-resource-transfers)
+supersede the interface limitations recorded in this historical entry.
 
 **Rule basis.** §1.5.2: a Faction may transfer Resources to another during
 either's SoP execution of a Command or Event; any amounts to non-German

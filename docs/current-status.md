@@ -21,6 +21,33 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Command and Event Resource transfers
+
+The terminal and assistant offer exact donor-owned gifts at the opening,
+at live Command and Event operation boundaries, and before the action closes.
+Every gift involves the outer executor, including during Events that grant
+other factions actions. The terminal opens before collecting the plan, so
+incoming Resources can fund it. The assistant can fund a later planned step
+with a live gift. Donors can choose to finish for the action or reserve
+another offer. The legacy terminal plan collector now accepts multiple gifts
+and the full legal amount.
+
+Scenario rules, the Diviciacus prohibition and the separate non-player Aedui
+subsidy still govern transfers. A53 grants use their own spending budget.
+Ordinary gifts between its granted actions change the public Roman treasury.
+Accepted gifts are replayed exactly once when a pending action resumes.
+
+All 9,225 tests pass, including 83 focused transfer and Frumentum tests.
+The terminal and assistant replayed live gifts and older transcripts to the
+same board and random state. Twenty mixed-seat games matched across hash
+seeds with zero hard findings. Three partial effects matched between
+dry-run and live execution. Twenty paired bot runs match the parent revision's
+final boards and diagnostics. All 100 balance winners and card counts match
+the parent.
+
+**WS-F06 closes. The original audit stands at 46/50 closed (92%).
+WS-F09 tracks the shared-player cap separately.**
+
 ### 10 November Winter Resource transfers
 
 Eligible human donors can give Resources before Quarters relocations and
@@ -42,8 +69,8 @@ live play. Twenty paired bot games and all 100 balance outcomes match the
 parent. A terminal transcript recorded without the gift windows replayed
 to the same board and random state.
 
-**WS-F06 advances. Command and Event transfer timing and the early CLI
-gift menu remain open. The original audit stands at 45/50 closed (90%).**
+**WS-F06 advanced at this checkpoint, with 45/50 audit findings closed (90%).
+The subsequent Command and Event repair completes the finding.**
 
 ### 10 November Interlude Cisalpina relocation
 

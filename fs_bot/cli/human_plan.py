@@ -1487,27 +1487,22 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
 
 
 def _maybe_collect_transfer(state, faction, action, stdin, stdout):
-    """Offer a Sec.1.5.2 Resource gift riding this Command/Event execution.
-    Menu-driven (first option "No") so scripted input declines naturally;
-    one grouped gift per action (documented simplification)."""
-    from fs_bot.commands.transfer import transfer_eligibility_error
-    stock = state["resources"].get(faction, 0)
-    if stock <= 0:
+    """Author opening gifts for callers without the live terminal window."""
+    from fs_bot.cli.resource_transfers import collect_transfers
+    from fs_bot.engine.resource_transfers import SEQUENCE, request_for, started
+    if started(state):
         return action
-    others = [f for f in FACTIONS
-              if transfer_eligibility_error(state, faction, f) is None]
-    if not others:
+    request = request_for(state, faction, SEQUENCE, 'before_execution')
+    if request is None:
         return action
     # Blank means no gift; closed input means the turn is still pending.
     if not prompt_yes_no(stdin, stdout,
                          "Give Resources to another Faction with this "
                          "action (Sec.1.5.2)?", default=False):
         return action
-    to = prompt_choice(stdin, stdout, "Give Resources to whom?",
-                       [(f, f) for f in others])
-    amt = prompt_choice(stdin, stdout, f"Give how many to {to}?",
-                        [(str(n), n) for n in range(1, min(stock, 12) + 1)])
-    action.setdefault("details", {})["transfers"] = [{"to": to, "amount": amt}]
+    transfers = collect_transfers(state, faction, request, stdin, stdout)['transfers']
+    if transfers:
+        action.setdefault("details", {})["transfers"] = transfers
     return action
 
 

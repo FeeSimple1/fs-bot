@@ -218,6 +218,8 @@ def prompt_action(state, faction, options, position, stdin, stdout):
         # EOF must propagate so the engine can roll back an unfinished turn
         # and the CLI can save a decision that is still pending.
         from fs_bot.cli.human_plan import collect_player_action
+        from fs_bot.engine.resource_transfers import prepare_for_plan
+        prepare_for_plan(state, faction, chosen)
         player_action = collect_player_action(
             state, faction, chosen, stdin, stdout)
         # Validation feedback loop: dry-run the plan on a copy before

@@ -3,15 +3,15 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "8d7ea15e41a505a3e7b860a0bfbe034f50858271",
-    "python_sha256": "96ee2f524d3740e4c7e9f7651dd460f96695f777c9fdd44577ac33dd0f501b0a",
-    "python_files": 559,
+    "commit": "4c9cffbf96d41ba0f9a9f3558e434463b5da0de4",
+    "python_sha256": "42b9aec0be686df3d65cb32bdb12e42b0a1ff91ba72817dd11cd54314f835923",
+    "python_files": 560,
     "working_tree_changes": true,
-    "note": "Winter Resource transfers advance WS-F06. The tested Python source is the publishing tree over the listed parent. See current-status.md#10-november-winter-resource-transfers."
+    "note": "Command and Event Resource transfers close WS-F06. The tested Python source is the publishing tree over the listed parent. See current-status.md#10-november-command-and-event-resource-transfers."
   },
   "total": 50,
-  "closed": 45,
-  "open": 5,
+  "closed": 46,
+  "open": 4,
   "unverified_inventory_rows_separate": 34,
   "notes": [
     "Historical audit inventory is unchanged; these are later dispositions.",
@@ -73,7 +73,8 @@
     "The German controller now chooses Arverni Interlude Citadels and exact half reductions. WS-C28 advances. See current-status.md#10-november-arverni-interlude-force-adjustments.",
     "Romans choose exact Interlude Fort, Ally and Auxilia reductions. This completes WS-C28. See current-status.md#10-november-roman-interlude-force-reductions.",
     "Interlude controllers choose exact Cisalpina moves or removals. This completes WS-C30 and WS-F01. See current-status.md#10-november-interlude-cisalpina-relocation.",
-    "Quarters and Harvest offer exact donor-owned Resource gifts. WS-F06 remains open for Sequence-of-Play actions. See current-status.md#10-november-winter-resource-transfers."
+    "Quarters and Harvest offer exact donor-owned Resource gifts. See current-status.md#10-november-winter-resource-transfers.",
+    "Live Command and Event gifts complete WS-F06. The shared-player cap remains part of WS-F09. See current-status.md#10-november-command-and-event-resource-transfers."
   ],
   "findings": [
     {
@@ -511,8 +512,9 @@
       "id": "WS-F06",
       "title": "Resource-transfer choices are limited to one early outgoing CLI gift and omit legal Winter/incoming windows",
       "severity": "medium",
-      "status": "open",
-      "disposition": "Quarters and Harvest now offer donor-owned exact gifts through the terminal and assistant. Sequence-of-Play transfer timing, gifts during the other faction's action, and the early CLI gift menu remain open."
+      "status": "closed",
+      "report": "current-status.md#10-november-command-and-event-resource-transfers",
+      "disposition": "Both frontends offer exact donor-owned gifts during either participant's Command or Event and during Quarters and Harvest. The terminal opens before plan collection and accepts split gifts across the full legal amount. Accepted gifts support durable replay. WS-F09 tracks shared-player limits."
     },
     {
       "id": "WS-F07",

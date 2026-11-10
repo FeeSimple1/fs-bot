@@ -4,7 +4,6 @@ import copy
 import io
 import json
 from types import SimpleNamespace
-from pathlib import Path
 
 import pytest
 
@@ -19,6 +18,9 @@ from fs_bot.engine.game_engine import ACTION_COMMAND
 from fs_bot.engine.moves import preview_player_action
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.state_schema import build_initial_state
+from fs_bot.tests.test_action_window_frontends import (
+    TIMING_DEFAULTS, leave_timing_unchanged as _decline_timing_windows,
+)
 from fs_bot.tools import llm_seat
 from fs_bot.tools.seat_session import SeatSession, board_copy
 
@@ -61,21 +63,6 @@ def _action(faction, *, explicit=True):
     plan = {'recruit_plan': entries} if roman else {'rally_plan': {'steps': entries}}
     return {'command': 'Recruit' if roman else 'Rally', 'sa': 'No SA',
             'details': dict(plan, diviciacus_regions=[rc.SEQUANI])}
-
-
-def _decline_timing_windows(args):
-    """Answer optional removal explicitly without bypassing durable requests."""
-    for _ in range(100):
-        _, meta, _ = load_game(Path(args.dir) / 'save.json')
-        pending = meta['assistant_session']['pending']
-        if not pending or decode(pending['request'])['kind'] != 'voluntary_removal':
-            return
-        args.response = json.dumps({'done': True})
-        assert llm_seat.cmd_submit(args) == 0
-        _, updated, _ = load_game(Path(args.dir) / 'save.json')
-        assert updated['assistant_session']['pending'] != pending, (
-            'A fresh explicit response was suppressed at a reused timing decision ID')
-    pytest.fail('Optional timing choices did not reach the next decision')
 
 
 @pytest.mark.parametrize('faction,piece', [(rc.ROMANS, rc.AUXILIA), (rc.AEDUI, rc.WARBAND)])
@@ -190,7 +177,7 @@ def test_owner_choice_saved_session_rollback_resume_and_replay(tmp_path, capsys,
         assert request['kind'] == 'diviciacus_pieces' and request['phase'] == 'placement'
         assert encode(paused) == encode(before)
         assert meta['assistant_session']['journal'][0]['player_action'] == action
-        assert all(entry.get('reactive') == 'voluntary_removal'
+        assert all(entry.get('reactive') in TIMING_DEFAULTS
                    for entry in meta['assistant_session']['journal'][1:])
         assert log == []
         args.response = json.dumps({'counts': {rc.ROMANS: 1.0, rc.AEDUI: 0}})
@@ -207,7 +194,7 @@ def test_owner_choice_saved_session_rollback_resume_and_replay(tmp_path, capsys,
     assert log[0]['player_action'] == action
     owner_choices = [entry for entry in log if entry.get('reactive') == 'diviciacus_pieces']
     assert len(owner_choices) == (0 if explicit else 1)
-    assert all(entry.get('reactive') in (None, 'voluntary_removal', 'diviciacus_pieces')
+    assert all(entry.get('reactive') in (None, *TIMING_DEFAULTS, 'diviciacus_pieces')
                for entry in log)
     assert not meta['assistant_session']['pending'] and not meta['assistant_session']['journal']
     assert KEY not in final and PLACEMENT_SELECTION not in final

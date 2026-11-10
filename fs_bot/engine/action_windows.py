@@ -114,10 +114,12 @@ def scope(state, *, actor=None, plan=None, phase='action', force=False,
 def sop_action(function):
     @wraps(function)
     def wrapped(state, faction, decision, *args, **kwargs):
+        from fs_bot.engine import resource_transfers
         plan = decision.get('player_action') or decision.get('bot_action') or {}
         actor = (faction if decision.get('player_action') is not None
                  and not decision.get('bot_action') else None)
-        with scope(state, actor=actor, plan=plan, phase='sequence_of_play'):
+        with scope(state, actor=actor, plan=plan, phase=resource_transfers.SEQUENCE,
+                   force=resource_transfers.FRAME in state and resource_transfers.enabled(state)):
             return function(state, faction, decision, *args, **kwargs)
     return wrapped
 
@@ -213,6 +215,9 @@ def window(state, stage, *, author=None, timing_actions=None, cohorts=None,
             if effects and on_removal:
                 on_removal(effects)
             cohorts = _advance(cohorts, effects)
+        if prompt:
+            from fs_bot.engine.resource_transfers import checkpoint as transfer_checkpoint
+            transfer_checkpoint(state, context)
         if not prompt or is_preview(state) or not enabled(state):
             return effects
         from fs_bot.engine.agent import consult_agent

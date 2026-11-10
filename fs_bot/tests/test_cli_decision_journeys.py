@@ -174,7 +174,7 @@ class TradePlayer(TacticalPlayer):
         delta, self.position = text[self.position:], len(text)
         self.reads += 1
         assert self.reads < 150, text[-3000:]
-        if 'Voluntary removal?' in delta:
+        if 'Voluntary removal?' in delta or 'Finish Resource transfers' in delta:
             return '1\n'  # Explicitly leave this optional timing window unchanged.
         if self.answers:
             return self.answers.pop(0) + '\n'
@@ -191,7 +191,7 @@ class TradePlayer(TacticalPlayer):
             # Follow the real Rally/Trade menus used by §4.1's timing example.
             self.answers = (['5', '1', '1', '3', '3', '1', '1']
                             if self.timing == 'before' else
-                            ['1', '3', '3', '1', '1', 'y', '1', 'n'])
+                            ['1', '3', '3', '1', '1', 'y', '1'])
             return self.answers.pop(0) + '\n'
         assert not options, delta
         # The other human seat explicitly approves the actual Trade, after

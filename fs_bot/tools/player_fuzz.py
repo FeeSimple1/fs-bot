@@ -124,11 +124,15 @@ def make_random_reactive(seats, rng):
             return None
         kind = request.get("kind")
         if kind == 'resource_transfer':
-            if rng.random() >= 0.25:
-                return {'transfers': []}
-            recipient = rng.choice(list(request['recipients']))
-            amount = rng.randint(1, request['recipients'][recipient])
-            return {'transfers': [dict(to=recipient, amount=amount)]}
+            from fs_bot.engine.resource_transfers import can_defer
+            response = {'transfers': []}
+            if rng.random() < 0.25:
+                recipient = rng.choice(list(request['recipients']))
+                amount = rng.randint(1, request['recipients'][recipient])
+                response['transfers'].append(dict(to=recipient, amount=amount))
+            if can_defer(request) and rng.random() < 0.25:
+                response['defer'] = True
+            return response
         if (kind == "free_action" and request.get("request_type") == "roman_event_accept"
                 and request.get("card_id") == 70):
             return {"accept": True} if rng.random() >= 0.25 else {"decline": True}

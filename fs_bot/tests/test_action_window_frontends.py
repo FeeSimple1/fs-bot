@@ -1,6 +1,9 @@
 """Action timing survives planning, pending decisions and old transcripts."""
 import copy
 import io
+import json
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,12 +14,38 @@ from fs_bot.cli.display import HumanTurnDisplay
 from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.engine import action_windows, voluntary_removal, spring
 from fs_bot.engine.game_engine import ACTION_COMMAND, ACTION_PASS
-from fs_bot.state.serialize import encode
+from fs_bot.state.serialize import decode, encode, load_game
 from fs_bot.state.setup import setup_scenario
 from fs_bot.tools.seat_session import (
     SeatSession, DecisionPending, board_copy, fingerprint, validate_response,
     _decision_signatures,
 )
+
+
+TIMING_DEFAULTS = {
+    'voluntary_removal': {'done': True},
+    'resource_transfer': {'transfers': []},
+}
+
+
+def leave_timing_unchanged(args):
+    """Submit actual optional decisions before the window a test targets."""
+    from fs_bot.tools import llm_seat
+    previous = None
+    for _ in range(100):
+        _, meta, _ = load_game(Path(args.dir) / 'save.json')
+        pending = meta['assistant_session']['pending']
+        if not pending:
+            return
+        kind = decode(pending['request'])['kind']
+        if kind not in TIMING_DEFAULTS:
+            return
+        assert pending != previous, 'The declined timing decision did not advance'
+        previous = pending
+        assert llm_seat.cmd_submit(SimpleNamespace(
+            dir=args.dir, decision_id=pending['id'],
+            response=json.dumps(TIMING_DEFAULTS[kind]))) == 0
+    pytest.fail('Optional timing choices did not reach the next decision')
 
 
 def _state(scenario=rc.SCENARIO_GREAT_REVOLT, faction=rc.ARVERNI):

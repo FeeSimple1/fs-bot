@@ -60,6 +60,7 @@ from fs_bot.commands.seize import execute_harassment_loss as _seize_harass_loss
 from fs_bot.rules_consts import HARASSMENT_WARBANDS_PER_LOSS as _HWB_PER_LOSS
 from fs_bot.cards.card_effects import execute_event
 from fs_bot.engine.action_windows import sop_action, window as _timing_window
+from fs_bot.engine import resource_transfers
 from fs_bot.engine.horse_choice import command_scope as _horse_command_scope
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -186,6 +187,7 @@ def execute_decision(state, faction, decision):
     In particular an SA-before-Command may finance/enable the Command, but
     cannot survive on its own if that Command turns out to be impossible
     (§4.1). Preserve the live agent separately from the board snapshot.
+    Only the outer Sequence of Play opens live Resource transfer windows.
     """
     action = decision.get("player_action") if not decision.get("bot_action") else None
     if action is None:
@@ -195,7 +197,9 @@ def execute_decision(state, faction, decision):
         try:
             with install_confirmed_supply(state, decision.get('bot_action') or {}):
                 _timing_window(state, 'action_start', author=faction)
-                return _execute_decision(state, faction, decision)
+                result = _execute_decision(state, faction, decision, sequence=True)
+                resource_transfers.finish_action(state, faction, result)
+                return result
         finally:
             # A skipped or interrupted NP Command must not leave an old
             # agreement available for a later, independently chosen action.
@@ -215,7 +219,15 @@ def execute_decision(state, faction, decision):
     try:
         _timing_window(state, 'action_start', author=faction,
                        timing_actions=(action.get('details') or {}).get('timing_actions'))
-        result = _execute_decision(state, faction, decision)
+        result = _execute_decision(state, faction, decision, sequence=True)
+        # An interrupted Command can report one successful portion alongside
+        # a refused exact portion. That OR result cannot commit a partial
+        # placement plan or the SA between its portions. SA-only errors
+        # retain their separate result.
+        if _exact_human_placement(result.get('supply_replacement', action)) and result.get('errors'):
+            result['executed'] = False
+        if result.get('executed'):
+            resource_transfers.finish_action(state, faction, result)
     except BaseException as exc:
         state.clear()
         state.update(snapshot)
@@ -228,12 +240,6 @@ def execute_decision(state, faction, decision):
                     'reason': str(exc), 'errors': [{'error': str(exc)}],
                     'rolled_back': True, 'rejected': True}
         raise
-    # An interrupted Command can report one successful portion alongside a
-    # refused exact portion. That OR result cannot commit a partial human
-    # placement plan or the SA between its portions. SA-only errors retain
-    # their established separate result; these are Command-placement errors.
-    if _exact_human_placement(result.get('supply_replacement', action)) and result.get('errors'):
-        result['executed'] = False
     if not result.get("executed"):
         from fs_bot.engine.supply_retry import reconsideration_for_failure, RECONSIDERATION
         receipt = reconsideration_for_failure(state, snapshot, faction, action)
@@ -312,7 +318,7 @@ def _reconsider_untouched_split(state, faction, action, *, limited=False, grant=
     return revised
 
 
-def _execute_decision(state, faction, decision):
+def _execute_decision(state, faction, decision, *, sequence=False):
     """Apply a recorded SoP decision to the board, if supported.
 
     Args:
@@ -349,21 +355,6 @@ def _execute_decision(state, faction, decision):
 
     command = bot_action.get("command")
 
-    # §1.5.2: voluntary Resource transfers ride the acting Faction's
-    # Command/Event execution (details["transfers"] = [{"to", "amount"}]).
-    # Transfer errors are reported, never block the Command itself.
-    transfer_results = []
-    for t in (bot_action.get("details") or {}).get("transfers") or []:
-        from fs_bot.commands.transfer import transfer_resources
-        try:
-            transfer_results.append(
-                transfer_resources(state, faction, t.get("to"),
-                                   t.get("amount")))
-        except Exception as exc:
-            transfer_results.append({"error": str(exc),
-                                     "to": t.get("to"),
-                                     "amount": t.get("amount")})
-
     _COMMAND_HANDLERS = {
         _CMD_EVENT: _execute_event,
         _CMD_SEIZE: _execute_seize,
@@ -373,12 +364,28 @@ def _execute_decision(state, faction, decision):
         _CMD_RECRUIT: _execute_recruit,
         _CMD_MARCH: _execute_march,
     }
+
+    handler = _COMMAND_HANDLERS.get(command)
+    transfer_results = []
+    if sequence and handler is not None:
+        # Authored opening gifts belong to the outer action. A reconsidered
+        # plan or an Event grant cannot repeat them as a new execution.
+        from fs_bot.commands.transfer import transfer_resources
+        for t in (bot_action.get("details") or {}).get("transfers") or []:
+            try:
+                transfer_results.append(
+                    transfer_resources(state, faction, t.get("to"), t.get("amount")))
+            except Exception as exc:
+                transfer_results.append({"error": str(exc), "to": t.get("to"),
+                                         "amount": t.get("amount")})
+        resource_transfers.record_authored(state, faction, transfer_results)
+        resource_transfers.open_action(state, faction, 'Event' if command == _CMD_EVENT else 'Command')
+
     def _attach_transfers(res):
         if transfer_results and isinstance(res, dict):
             res["transfers"] = transfer_results
         return res
 
-    handler = _COMMAND_HANDLERS.get(command)
     if is_human and command == _CMD_RECRUIT:
         handler = lambda board, actor, plan: _execute_recruit(board, actor, plan, _exact=True)
     if handler is not None:

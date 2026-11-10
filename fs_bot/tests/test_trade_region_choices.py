@@ -386,38 +386,12 @@ def test_event_granted_command_and_trade_keep_reactive_choice_and_free_cost():
     assert state['resources'][rc.AEDUI] == 2  # The granted Rally costs nothing.
 
 
-def _decline_file_timing(args):
-    """Submit actual no-removal replies without bypassing durable decisions."""
-    import json
-    from pathlib import Path
-    from fs_bot.tools import llm_seat
-    old_id = getattr(args, 'decision_id', None)
-    had_id = hasattr(args, 'decision_id')
-    try:
-        seen = set()
-        while True:
-            _, meta, _ = load_game(Path(args.dir) / 'save.json')
-            pending = meta['assistant_session']['pending']
-            if not pending or decode(pending['request'])['kind'] != 'voluntary_removal':
-                return
-            identity = (pending['id'], repr(pending['request']))
-            assert identity not in seen, 'A declined timing window did not advance.'
-            seen.add(identity)
-            args.decision_id = pending['id']
-            args.response = json.dumps({'done': True})
-            assert llm_seat.cmd_submit(args) == 0
-    finally:
-        if had_id:
-            args.decision_id = old_id
-        elif hasattr(args, 'decision_id'):
-            del args.decision_id
-
-
 @pytest.mark.parametrize('scenario', [rc.SCENARIO_GREAT_REVOLT, rc.SCENARIO_ARIOVISTUS])
 def test_file_session_shows_card_and_delta_before_region_choice_then_resumes_and_replays(tmp_path, capsys, scenario):
     import json
     from types import SimpleNamespace
     from fs_bot.tools import llm_seat
+    from fs_bot.tests.test_action_window_frontends import TIMING_DEFAULTS, leave_timing_unchanged
 
     state = position(scenario)
     state['resources'][rc.AEDUI] = 10
@@ -439,7 +413,7 @@ def test_file_session_shows_card_and_delta_before_region_choice_then_resumes_and
     capsys.readouterr()
     args.response = json.dumps({'action': ACTION_COMMAND_SA, 'player_action': plan()})
     assert llm_seat.cmd_submit(args) == 0
-    _decline_file_timing(args)
+    leave_timing_unchanged(args)
     paused, paused_meta, log = load_game(path / 'save.json')
     pending = paused_meta['assistant_session']['pending']
     request = decode(pending['request'])
@@ -450,7 +424,7 @@ def test_file_session_shows_card_and_delta_before_region_choice_then_resumes_and
     assert encode(paused) == encode(initial)  # Pending action retains transactional start.
     accepted = copy.deepcopy(paused_meta['assistant_session']['journal'])
     assert len(accepted) > 1 and log == []
-    assert all(entry.get('reactive') == 'voluntary_removal' for entry in accepted[1:])
+    assert all(entry.get('reactive') in TIMING_DEFAULTS for entry in accepted[1:])
     output = capsys.readouterr().out
     assert 'Current card:' in output and 'Ambacti' in output
     assert 'River Commerce' in output and 'changes since' in output
@@ -463,7 +437,7 @@ def test_file_session_shows_card_and_delta_before_region_choice_then_resumes_and
     assert rejected_meta['assistant_session']['journal'] == accepted
     args.response = json.dumps({'region': rc.TREVERI})
     assert llm_seat.cmd_submit(args) == 0
-    _decline_file_timing(args)
+    leave_timing_unchanged(args)
     final, final_meta, final_log = load_game(path / 'save.json')
     assert count_pieces(final, rc.AEDUI_REGION, rc.AEDUI, rc.WARBAND) == 1
     assert final['resources'][rc.AEDUI] == 10  # NP Romans refuse: +1 on Treveri.
@@ -518,6 +492,7 @@ def test_lower_yield_choice_that_cannot_finance_command_returns_file_turn_to_pen
     import json
     from types import SimpleNamespace
     from fs_bot.tools import llm_seat
+    from fs_bot.tests.test_action_window_frontends import leave_timing_unchanged
 
     state, action = income_without_blue_allies()
     state['current_card'] = state['current_card_id'] = 16
@@ -536,12 +511,12 @@ def test_lower_yield_choice_that_cannot_finance_command_returns_file_turn_to_pen
     turn = initial_meta['assistant_session']['pending']
     args.response = json.dumps({'action': ACTION_COMMAND_SA, 'player_action': action})
     assert llm_seat.cmd_submit(args) == 0
-    _decline_file_timing(args)
+    leave_timing_unchanged(args)
     _, trade_meta, _ = load_game(tmp_path / 'save.json')
     assert decode(trade_meta['assistant_session']['pending']['request'])['kind'] == 'trade_region'
     args.response = json.dumps({'region': rc.TREVERI})
     assert llm_seat.cmd_submit(args) == 0
-    _decline_file_timing(args)
+    leave_timing_unchanged(args)
     rejected, rejected_meta, rejected_log = load_game(tmp_path / 'save.json')
     assert encode(rejected) == encode(initial)
     assert rejected_meta['assistant_session']['pending'] == turn
@@ -550,7 +525,7 @@ def test_lower_yield_choice_that_cannot_finance_command_returns_file_turn_to_pen
     action['details']['trade_region'] = rc.MANDUBII
     args.response = json.dumps({'action': ACTION_COMMAND_SA, 'player_action': action})
     assert llm_seat.cmd_submit(args) == 0
-    _decline_file_timing(args)
+    leave_timing_unchanged(args)
     final, final_meta, _ = load_game(tmp_path / 'save.json')
     assert count_pieces(final, rc.AEDUI_REGION, rc.AEDUI, rc.WARBAND) == 1
     assert final['resources'][rc.AEDUI] == 0 and not final_meta['assistant_session']['pending']

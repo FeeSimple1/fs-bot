@@ -4,7 +4,6 @@ import copy
 import io
 import json
 from types import SimpleNamespace
-from pathlib import Path
 
 import pytest
 
@@ -22,6 +21,9 @@ from fs_bot.engine.game_engine import (
 from fs_bot.engine.moves import preview_player_action
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.state_schema import build_initial_state
+from fs_bot.tests.test_action_window_frontends import (
+    TIMING_DEFAULTS, leave_timing_unchanged as _decline_timing_windows,
+)
 from fs_bot.tools import llm_seat
 from fs_bot.tools.seat_session import SeatSession, board_copy
 
@@ -209,21 +211,6 @@ def _save_session(path, state, faction):
     return SimpleNamespace(dir=str(path))
 
 
-def _decline_timing_windows(args):
-    """Leave the new optional windows unchanged, retaining their real history."""
-    for _ in range(100):
-        _, meta, _ = load_game(Path(args.dir) / 'save.json')
-        pending = meta['assistant_session']['pending']
-        if not pending or decode(pending['request'])['kind'] != 'voluntary_removal':
-            return
-        args.response = json.dumps({'done': True})
-        assert llm_seat.cmd_submit(args) == 0
-        _, updated, _ = load_game(Path(args.dir) / 'save.json')
-        assert updated['assistant_session']['pending'] != pending, (
-            'A fresh explicit response was suppressed at a reused timing decision ID')
-    pytest.fail('Optional timing choices did not reach the next decision')
-
-
 @pytest.mark.parametrize('warbands_first', [False, True])
 def test_ordered_rally_file_session_rejects_bad_count_then_saves_and_replays(tmp_path, capsys, warbands_first):
     state = _state()
@@ -307,7 +294,7 @@ def test_event_recruit_count_pending_save_resume_and_exact_replay(tmp_path, caps
     assert request['max_regions'] == 3
     assert encode(paused) == encode(initial)
     assert paused_meta['assistant_session']['journal'][0]['player_action'] == event
-    assert all(entry.get('reactive') == 'voluntary_removal'
+    assert all(entry.get('reactive') in TIMING_DEFAULTS
                for entry in paused_meta['assistant_session']['journal'][1:])
     assert log == []
     args.response = json.dumps(_recruit(1.0))
@@ -326,7 +313,7 @@ def test_event_recruit_count_pending_save_resume_and_exact_replay(tmp_path, caps
     grants = [entry for entry in final_log if entry.get('reactive') == 'free_action']
     assert len(grants) == 1
     assert decode(grants[0]['assistant_response']) == _recruit(1)
-    assert all(entry.get('reactive') in (None, 'voluntary_removal', 'free_action')
+    assert all(entry.get('reactive') in (None, *TIMING_DEFAULTS, 'free_action')
                for entry in final_log)
     assert not final_meta['assistant_session']['pending'] and not final_meta['assistant_session']['journal']
     args.output_dir = str(tmp_path / 'replay')
@@ -378,7 +365,7 @@ def test_interrupted_exact_rally_failure_keeps_whole_turn_pending_then_replays(t
     assert count_pieces(final, rc.MANDUBII, rc.AEDUI, rc.WARBAND) == 2
     assert final['resources'][rc.AEDUI] == 7
     assert final_log[0]['player_action'] == action
-    assert all(entry.get('reactive') == 'voluntary_removal' for entry in final_log[1:])
+    assert all(entry.get('reactive') in TIMING_DEFAULTS for entry in final_log[1:])
     assert not final_meta['assistant_session']['pending'] and not final_meta['assistant_session']['journal']
     args.output_dir = str(tmp_path / 'replay')
     assert llm_seat.cmd_replay(args) == 0

@@ -1,0 +1,1008 @@
+{
+  "audit": "Third Falling Sky / Liberty or Death comparison audit",
+  "date": "2026-11-10",
+  "audited_commit": "3c23a3414c3e870e274ef63c278db8cb3f1ee747",
+  "python_sha256": "7f75a00ebd5200960a71fa822bdfddb47f2e092f5edbf58c145f6f70a5db226e",
+  "python_files": 578,
+  "comparator_repository": "FeeSimple1/lod-bot",
+  "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+  "total": 15,
+  "closed": 0,
+  "open": 15,
+  "severity_counts": {
+    "high": 14,
+    "medium": 1
+  },
+  "engine_changes": false,
+  "reference_changes": false,
+  "previous_ledgers": {
+    "original": {
+      "total": 50,
+      "closed": 50,
+      "open": 0
+    },
+    "second": {
+      "total": 21,
+      "closed": 21,
+      "open": 0
+    }
+  },
+  "grouping": {
+    "merged_aliases": {
+      "BE3-02": "XC3-01",
+      "EX3-02": "XC3-01"
+    },
+    "note": "Counts repair groups, not every symptom, parameter, profile or witness. FE3-01 has two internal metadata sinks; BE3-01 includes two Consuetudine clauses; XC3-01 spans existing Colony consumers."
+  },
+  "validation": {
+    "pytest_passed": 9411,
+    "pytest_failures": 0,
+    "pytest_errors": 0,
+    "pytest_skipped": 0,
+    "independent_final_probe_scripts": 8,
+    "portable_final_probe_scripts": 8,
+    "mixed_cases": 20,
+    "mixed_case_seeds": [
+      21,
+      22,
+      23,
+      24
+    ],
+    "mixed_scenarios": 5,
+    "mixed_hash_seeds": [
+      0,
+      987
+    ],
+    "mixed_replay_enabled": true,
+    "mixed_total_game_executions": 80,
+    "mixed_hard_findings": 0,
+    "mixed_partial_plans": 4,
+    "mixed_human_turns": 626,
+    "mixed_event_turns": 146,
+    "mixed_events_executed": 130,
+    "mixed_json_identical": true,
+    "mixed_batch_digest": "1c814c9f99c8cc98ce7d60f67522163055f408edc64f1f85293f40c6c3cda6d1",
+    "new_balance_matrix": false,
+    "new_all_bot_matrix": false
+  },
+  "suggested_batches": [
+    {
+      "batch": 1,
+      "theme": "Protect authored input and board integrity",
+      "findings": [
+        "FE3-01",
+        "CM3-02",
+        "CM3-04"
+      ]
+    },
+    {
+      "batch": 2,
+      "theme": "Correct action boundaries and seasonal calculations",
+      "findings": [
+        "CM3-01",
+        "CM3-03",
+        "WS3-01",
+        "WS3-02"
+      ]
+    },
+    {
+      "batch": 3,
+      "theme": "Complete printed Event effects",
+      "findings": [
+        "BE3-01",
+        "BE3-03",
+        "BE3-04",
+        "EX3-01",
+        "EX3-03"
+      ]
+    },
+    {
+      "batch": 4,
+      "theme": "Unify dynamic Tribe and persistent effect handling",
+      "findings": [
+        "XC3-01",
+        "XC3-02",
+        "EX3-04"
+      ]
+    }
+  ],
+  "limits": [
+    "Focused adversarial audit, not an exhaustive proof of rules correctness. Existing tests and mixed-seat validation do not generate all these boundary cases.",
+    "Controlled initialized boards are distinguished from full file-session journeys in partition evidence. Pool and structure checks do not establish every rule effect.",
+    "Entreat witness intentionally ends with a structural error; all other final witness boards preserve the asserted inventory and structural invariants.",
+    "Dispersed Colony scoring uses an explicitly assigned legal marker because the existing Seize bug blocks that path. Some Colony operations use validated production primitives rather than a full saved frontend journey.",
+    "Journal corruption substitutes Pass for the accepted Recruit; replay consistently reproduces the substituted action, not a replay exception.",
+    "Lost Eagle post-Interlude retention is static corroboration only. Confirmed expiry witness uses first Pax forced Senate.",
+    "Known Circumvallation persistence work, two unresolved source questions and earlier closed findings are excluded. Provisional rulings are retained.",
+    "Liberty or Death provides engineering comparisons only. All game-rule conclusions use supplied Falling Sky references and adopted project decisions."
+  ],
+  "findings": [
+    {
+      "id": "FE3-01",
+      "severity": "high",
+      "title": "Authored turn metadata can override Eligibility and accepted decisions during resume",
+      "expected": "Only player-owned action fields may influence a submitted turn. An ordinary Recruit makes its executor Ineligible. A pause and resume must preserve the exact accepted Command and its engine-owned journal identity.",
+      "observed": "validate_response returns an arbitrary top-level turn object unchanged. resolve_card_turn stores that object as action history, where free_action is trusted for Eligibility. SeatSession.ask also merges the object over its freshly constructed journal entry, allowing assistant_response to replace the accepted response that will be replayed on resume.",
+      "subcases": [
+        {
+          "name": "unauthorized_free_action",
+          "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/frontends/probe_eligibility_flag.py",
+          "script": "probe_eligibility_flag.py",
+          "output": "eligibility-flag.json",
+          "setup": "Ordinary llm_seat init/play/submit, The Great Revolt, Romans, seed 46. Submit a one-Auxilia Recruit in Provincia as the first action on card 16.",
+          "control": "Without extra metadata, one Auxilia is placed and Romans become Ineligible when card 16 completes.",
+          "defect": "With top-level free_action=true, the same ordinary Recruit places the same Auxilia but Romans become Eligible at completion of card 16.",
+          "observation_note": "The script wraps adjust_eligibility with an observation-only recorder that calls the original unchanged implementation before recording. The next human turn happens to be card 17 in both runs because other factions take both action slots on intervening card 45. The finding is the directly observed erroneous Eligibility state, not a claimed extra action in this seed."
+        },
+        {
+          "name": "journal_response_collision",
+          "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/frontends/probe_journal_collision.py",
+          "script": "probe_journal_collision.py",
+          "output": "journal-collision.json",
+          "setup": "Same ordinary initialized session and valid Recruit, but add top-level assistant_response={action:pass}. Submit explicit use_default responses for the normal reactive requests.",
+          "control": "The accepted Recruit adds one Auxilia, 6 to 7 in Provincia. The next human turn is card 17. The original action is recorded and exact replay verifies.",
+          "defect": "The initial Recruit is accepted, but its normal pause and resume reads the caller-overwritten journal assistant_response and executes Pass instead. Provincia remains at 6 Auxilia. End-card16 action is Pass, next human turn is card45, and the durable log still presents action=command with the Recruit player_action while assistant_response={action:pass}. Replay verifies the substituted behavior because it trusts that altered journal."
+        }
+      ],
+      "rule_sources": [
+        "Reference Documents/Chapter 2, §§2.3.1 and 2.3.6, lines 27-31 and 68-76",
+        "Reference Documents/Chapter 3, §3.1.2, lines 15-19",
+        "CHATGPT_README.md lines 251-262, documented accepted-choice and durable-history contract"
+      ],
+      "code_locations": [
+        "fs_bot/tools/seat_session.py:87-113 (accepts and returns arbitrary turn keys)",
+        "fs_bot/engine/game_engine.py:682 (stores caller decision unchanged)",
+        "fs_bot/engine/game_engine.py:488-491 (trusts authored free_action)",
+        "fs_bot/tools/seat_session.py:546-554 (caller keys overwrite protected journal fields)",
+        "fs_bot/tools/seat_session.py:501-507 (resumes from overwritten assistant_response)"
+      ],
+      "comparison_pattern": "Separate user choices from engine-owned state and history, and verify the action actually executed. Liberty or Death's engine constructs its turn-log fields explicitly and maintains eligibility exceptions through state helpers.",
+      "comparison_locations": [
+        "lod_ai/engine.py:1628-1640 (_mark_executed)",
+        "lod_ai/engine.py:1865-1879 (explicit turn-log construction)",
+        "lod_ai/util/eligibility.py:17-26 (engine-owned exception helpers)"
+      ],
+      "relationship_to_prior_findings": "New boundary within the same general authored-input class as FE2-01/FE2-02 and XC2-01. Those repairs bind inner plan type/current card and command scope; they do not reserve top-level execution/journal metadata. No earlier closed finding or Circumvallation follow-up is recounted. Both effects are conservatively grouped because they share arbitrary top-level metadata admission.",
+      "repair_scope": "Define and enforce the supported turn-response envelope at durable and raw human turn boundaries; keep free-action/eligibility authority engine-owned; build protected journal metadata without allowing authored fields to overwrite it. Preserve legal existing turn fields and explicitly authorized compatibility records.",
+      "regression_gate": "Both invalid submissions should remain pending without board/RNG/history mutation. Cover ordinary Command, Event and Pass envelopes, direct human callbacks as appropriate, corrected retry, normal reactive pause/resume, save/load and replay; ensure genuine Event eligibility exceptions remain legal.",
+      "status": "confirmed-open",
+      "rules": [
+        "Reference Documents/Chapter 2, §§2.3.1 and 2.3.6, lines 27-31 and 68-76",
+        "Reference Documents/Chapter 3, §3.1.2, lines 15-19",
+        "CHATGPT_README.md lines 251-262, documented accepted-choice and durable-history contract"
+      ],
+      "prior_relation": "New boundary within the same general authored-input class as FE2-01/FE2-02 and XC2-01. Those repairs bind inner plan type/current card and command scope; they do not reserve top-level execution/journal metadata. No earlier closed finding or Circumvallation follow-up is recounted. Both effects are conservatively grouped because they share arbitrary top-level metadata admission."
+    },
+    {
+      "id": "CM3-01",
+      "severity": "high",
+      "title": "Scout moves Roman Auxilia into nonplayable base-game Cisalpina",
+      "expected": "Without a qualifying Event, base-game Cisalpina is not a Region and holds no pieces. Reject ordinary Scout movement there.",
+      "observed": "Untouched Great Revolt setup accepts a Seize+Scout plan moving one Hidden Auxilia Provincia to Cisalpina. Both durable turn validation and normal execution accept it; the illegal Auxilia remains in Cisalpina. Census and structural validators return no errors.",
+      "source_rule": [
+        {
+          "path": "Reference Documents/Chapter 1",
+          "lines": "132-133",
+          "section": "1.4.2",
+          "quote": "Cisalpina and Aquitania are non-playable areas. They are not Regions and may hold no pieces (except by Event, 5.1.1)."
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": "69-80",
+          "section": "4.2.2"
+        }
+      ],
+      "code_paths": [
+        "fs_bot/commands/sa_scout.py:54-97",
+        "fs_bot/engine/execute.py:5912-5923",
+        "fs_bot/board/pieces.py:57-59"
+      ],
+      "comparison_pattern": "Validate scenario/route boundaries at the mutation path, not only the menu. LoD coin-implementation-lessons.md discusses module boundaries and per-space checks; lod_ai/engine.py:913-936 validates actual effects before committing.",
+      "reproduction": "probe_commands.py::scout_nonregion",
+      "relationship_prior_findings": "New scenario-isolation path. Original CMD-SCOUT-ALLOCATION fixed per-Auxilia target allocation and visibility, not Scout movement geography. Not a replay of prior Circumvallation work.",
+      "reachability": "Ordinary authored player_action through durable validate_response then execute_decision. No board preparation beyond selecting human seats; not claimed as a terminal-menu-generated plan.",
+      "repair_scope": "Check both Scout endpoints using current state-aware geography, retaining explicitly active Gallia Togata/Ariovistus/Interlude exceptions.",
+      "status": "confirmed-open",
+      "rules": [
+        {
+          "path": "Reference Documents/Chapter 1",
+          "lines": "132-133",
+          "section": "1.4.2",
+          "quote": "Cisalpina and Aquitania are non-playable areas. They are not Regions and may hold no pieces (except by Event, 5.1.1)."
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": "69-80",
+          "section": "4.2.2"
+        }
+      ],
+      "code_locations": [
+        "fs_bot/commands/sa_scout.py:54-97",
+        "fs_bot/engine/execute.py:5912-5923",
+        "fs_bot/board/pieces.py:57-59"
+      ],
+      "prior_relation": "New scenario-isolation path. Original CMD-SCOUT-ALLOCATION fixed per-Auxilia target allocation and visibility, not Scout movement geography. Not a replay of prior Circumvallation work."
+    },
+    {
+      "id": "CM3-02",
+      "severity": "high",
+      "title": "Entreat can target a Citadel City and remove a different Tribe’s Ally disc",
+      "expected": "Entreat may replace an Allied Tribe disc, not a Citadel. Check that the named Tribe is backed by an actual eligible Ally disc before removing anything.",
+      "observed": "A prepared census/structurally valid Great Revolt position has a Belgic Citadel at Sequani and a Belgic Ally at Helvetii. Arverni Entreat naming Sequani is accepted. It removes Helvetii’s physical Ally disc, changes Sequani allegiance to Arverni, leaves Helvetii Belgic, and retains the Belgic Citadel. The structural validator reports the Citadel has no matching allied City Tribe. Legal Helvetii control succeeds and remains clean.",
+      "source_rule": [
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": "107-120",
+          "section": "4.3.1",
+          "quote": "one Aedui, Belgic, or Germanic Allied Tribe there (not a Citadel, Roman Ally, or Subdued Tribe)"
+        },
+        {
+          "path": "Reference Documents/Chapter 1",
+          "section": "1.4.2"
+        }
+      ],
+      "code_paths": [
+        "fs_bot/commands/sa_entreat.py:206-245",
+        "fs_bot/engine/execute.py:5844-5854"
+      ],
+      "comparison_pattern": "LoD human_mode_audit.md:3-12 corrects hook-only completeness claims. Recheck the rule’s physical target against actual mutations. coin-implementation-lessons.md data-shape boundary pattern applies to Tribe allegiance versus physical disc/Citadel.",
+      "reproduction": "probe_commands.py::entreat_city_citadel",
+      "relationship_prior_findings": "New Entreat target-identity defect. Original duplicate Entreat repair and second-audit EX2-02/EX2-03 physical Event target repairs concern other paths. Existing test_arverni_bot.py::test_entreat_skips_citadel_allied_tribe checks only planner with Citadel and no other Ally.",
+      "reachability": "Controlled initialized Great Revolt board prepared through piece helpers and exact Tribe assignments; both full inventory census and structural checks clean before validation/execution. Prepared position not claimed as an unedited playthrough.",
+      "repair_scope": "Use tribe_has_ally_disc or equivalent exact physical identity validation before payment/removal; preserve legitimate Ally replacements and Citadel allegiance.",
+      "status": "confirmed-open",
+      "rules": [
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": "107-120",
+          "section": "4.3.1",
+          "quote": "one Aedui, Belgic, or Germanic Allied Tribe there (not a Citadel, Roman Ally, or Subdued Tribe)"
+        },
+        {
+          "path": "Reference Documents/Chapter 1",
+          "section": "1.4.2"
+        }
+      ],
+      "code_locations": [
+        "fs_bot/commands/sa_entreat.py:206-245",
+        "fs_bot/engine/execute.py:5844-5854"
+      ],
+      "prior_relation": "New Entreat target-identity defect. Original duplicate Entreat repair and second-audit EX2-02/EX2-03 physical Event target repairs concern other paths. Existing test_arverni_bot.py::test_entreat_skips_citadel_allied_tribe checks only planner with Citadel and no other Ally."
+    },
+    {
+      "id": "CM3-03",
+      "severity": "high",
+      "title": "Ordinary Battle accepts a Region with no attacking pieces and Reveals enemies there",
+      "expected": "Select Battle Regions with both own and enemy Forces. Missing attacker must reject before costs or Battle effects.",
+      "observed": "In untouched Great Revolt setup, Romans have no pieces in Morini. An ordinary Roman Battle naming Belgic defender passes durable validation and executes. Rome pays two Resources and all four Belgic Hidden Warbands become Revealed. Census and structural validators remain clean.",
+      "source_rule": [
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "125-136",
+          "section": "3.2.4",
+          "quote": "Select any Regions with both Roman and non-Roman Forces."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "277-303",
+          "section": "3.3.4"
+        }
+      ],
+      "code_paths": [
+        "fs_bot/engine/execute.py:3893-3898",
+        "fs_bot/engine/execute.py:3929-3955",
+        "fs_bot/engine/action_validation.py:123-140"
+      ],
+      "comparison_pattern": "LoD engine.py:915-936 checks actual Command effects. Following the same boundary audit, FS validates defender existence but only checks attacker presence when an interruption callback exists.",
+      "reproduction": "probe_commands.py::battle_absent_attacker",
+      "relationship_prior_findings": "Additional precondition error, not recount of CM2-01 duplicate-Region and self-target fixes. Those validations now work but leave missing attacker unchecked.",
+      "reachability": "Untouched scenario board, accepted ordinary authored Command; four enemies Revealed without any attacker.",
+      "repair_scope": "Validate attacker presence at the live selection point for ordinary and granted Battles, preserving intentionally scoped participating forces and later prefire casualties.",
+      "status": "confirmed-open",
+      "rules": [
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "125-136",
+          "section": "3.2.4",
+          "quote": "Select any Regions with both Roman and non-Roman Forces."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "277-303",
+          "section": "3.3.4"
+        }
+      ],
+      "code_locations": [
+        "fs_bot/engine/execute.py:3893-3898",
+        "fs_bot/engine/execute.py:3929-3955",
+        "fs_bot/engine/action_validation.py:123-140"
+      ],
+      "prior_relation": "Additional precondition error, not recount of CM2-01 duplicate-Region and self-target fixes. Those validations now work but leave missing attacker unchecked."
+    },
+    {
+      "id": "CM3-04",
+      "severity": "high",
+      "title": "Authored ordinary Battle plans can grant themselves Event-only combat powers",
+      "expected": "Only trusted Event resolution may grant modified Battle strength, combined forces, prohibited Retreat or forced Retreat. Ordinary player plan fields cannot confer those powers.",
+      "observed": "Without active Event modifiers, durable validation accepts details.warband_full_loss, allied_factions, no_retreat and force_retreat. Four Aedui Warbands kill two of eight Germans normally, four with full-loss flag, and six with allied_factions=[Aedui,Aedui]. A declared refusal to Retreat is overridden by force_retreat, removing all five opposing Arverni Warbands; no_retreat suppresses the defender’s Retreat question entirely. All resulting positions pass census and structure.",
+      "source_rule": [
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "286-323",
+          "section": "3.3.4",
+          "quote": "½ for each enemy Warband or Auxilia, plus one per enemy Leader, plus one per enemy Legion in the Battle."
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": "25-28",
+          "section": "5.1.1"
+        }
+      ],
+      "code_paths": [
+        "fs_bot/engine/execute.py:3825-3831",
+        "fs_bot/engine/execute.py:4091-4104",
+        "fs_bot/engine/execute.py:5406-5408",
+        "fs_bot/engine/action_validation.py:317-438",
+        "fs_bot/tools/seat_session.py:86-114"
+      ],
+      "comparison_pattern": "LoD engine.py:95-113 separates normal Battle from its event-only battle_plus2 wrapper. Applied as an authorization-boundary audit, FS directly reads event benefits from ordinary user-authored details.",
+      "reproduction": "probe_commands.py::forged_battle_powers",
+      "relationship_prior_findings": "New inner-plan privilege defect. FE2-01/02 bound selected action and card ID, and XC2-01 rejected shadow Command portions; none governed these Battle modifiers. Frontend agent’s top-level receipt/eligibility finding is a distinct path.",
+      "reachability": "Controlled initialized positions through piece helpers, all initial census/structure checks clean. Ordinary durable turn validation plus normal execution. Retreat controls use the documented raw decision callback to record the actual owner answer; callback never changes the board.",
+      "repair_scope": "Move trusted Battle bonuses to executor-owned scoped context or private parameters; reject/ignore authored equivalents in ordinary/durable/free-action plans and test all four modifiers plus duplicate allied faction values.",
+      "status": "confirmed-open",
+      "rules": [
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "286-323",
+          "section": "3.3.4",
+          "quote": "½ for each enemy Warband or Auxilia, plus one per enemy Leader, plus one per enemy Legion in the Battle."
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": "25-28",
+          "section": "5.1.1"
+        }
+      ],
+      "code_locations": [
+        "fs_bot/engine/execute.py:3825-3831",
+        "fs_bot/engine/execute.py:4091-4104",
+        "fs_bot/engine/execute.py:5406-5408",
+        "fs_bot/engine/action_validation.py:317-438",
+        "fs_bot/tools/seat_session.py:86-114"
+      ],
+      "prior_relation": "New inner-plan privilege defect. FE2-01/02 bound selected action and card ID, and XC2-01 rejected shadow Command portions; none governed these Battle modifiers. Frontend agent’s top-level receipt/eligibility finding is a distinct path."
+    },
+    {
+      "status": "confirmed-open",
+      "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/probe_seasonal.py",
+      "evidence": "seasonal-observations.json",
+      "comparator": [
+        "lod-bot-comparison/docs/audit_set_but_never_applied_s76.md sections 2 and 5"
+      ],
+      "validation": "Executable witnesses use setup_scenario and normal phase/Event executors. Pool conservation and structural integrity pass before and after. No gameplay code changed.",
+      "id": "WS3-01",
+      "severity": "high",
+      "title": "Harvest counts each Gallic Citadel twice",
+      "rule": "Reference Documents/Chapter 6 §§6.4.2–6.4.3; Chapter 1 §1.4.2",
+      "rule_excerpt": "Resources equal to twice the number of that Faction’s Allied Tribes and Citadels.",
+      "expected": "Count physical Ally discs plus Citadels once, then add Aedui River Tolls. Untouched Reconquest Aedui earns 10; Great Revolt Arverni earns 20 and Aedui earns 10.",
+      "observed": "Reconquest Aedui earns 12; Great Revolt Arverni earns 22 and Aedui earns 12. Each Citadel yields two extra Resources until the 45 cap.",
+      "code": [
+        "fs_bot/engine/winter.py:644-661",
+        "fs_bot/board/pieces.py:898-909"
+      ],
+      "cause": "The Harvest calculator adds every allied Tribe record to every Citadel, although a Citadel already retains its City Tribe allegiance. The victory helper correctly separates physical discs.",
+      "prior_relation": "New seasonal consumer. BE2-06 fixed the same representation class in Flight of Ambiorix scoring, not Harvest. Original WS findings concerned player choices and phase routing.",
+      "cases": [
+        "Reconquest of Gaul",
+        "The Great Revolt"
+      ],
+      "coverage": "All five untouched scenario setups; no-Citadel starting factions provide negative controls.",
+      "rules": [
+        "Reference Documents/Chapter 6 §§6.4.2–6.4.3; Chapter 1 §1.4.2"
+      ],
+      "code_locations": [
+        "fs_bot/engine/winter.py:644-661",
+        "fs_bot/board/pieces.py:898-909"
+      ]
+    },
+    {
+      "status": "confirmed-open",
+      "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/probe_seasonal.py",
+      "evidence": "seasonal-observations.json",
+      "comparator": [
+        "lod-bot-comparison/docs/audit_set_but_never_applied_s76.md sections 2 and 5"
+      ],
+      "validation": "Executable witnesses use setup_scenario and normal phase/Event executors. Pool conservation and structural integrity pass before and after. No gameplay code changed.",
+      "id": "WS3-02",
+      "severity": "high",
+      "title": "Lost Eagle restricts Senate changes outside its printed window",
+      "rule": "Reference Documents/Card Reference 33 and Tip; cards 1 and 3; Chapter 6 §6.5.1; Scenario - Pax Gallica first Winter",
+      "rule_excerpt": "This upcoming Senate Phase, no shift down (mark). ... After this Senate Phase, remove the marker.",
+      "expected": "The restriction applies only to the upcoming Senate Phase, leaves intervening Cicero/Pompey Events unaffected, and expires even if the first Pax Senate sets Intrigue instead of shifting.",
+      "observed": "33S followed by either 1U or 3U reports execution but blocks their legal downward shift. After the first Pax Senate, the flag remains and wrongly blocks the next Senate Phase too.",
+      "code": [
+        "fs_bot/cards/card_effects.py:188-192",
+        "fs_bot/engine/winter.py:724-734",
+        "fs_bot/engine/winter.py:769-786",
+        "fs_bot/engine/winter.py:808-813"
+      ],
+      "cause": "An unrestricted Event shift helper reads a phase-scoped flag, and the flag is consumed only after early-return/forced-position branches.",
+      "prior_relation": "New group. Existing tests verify ordinary upcoming-Senate consumption only. Two scope/lifetime witnesses are one repair group.",
+      "cases": [
+        "33S_then_1U",
+        "33S_then_3U",
+        "first_Pax_Senate_does_not_expire_marker"
+      ],
+      "coverage": "Normal Event execution on Reconquest setup, and two senate_phase calls at the first Pax forced-Intrigue boundary; post-Interlude early-return path reviewed statically but not added as a dynamic claim.",
+      "rules": [
+        "Reference Documents/Card Reference 33 and Tip; cards 1 and 3; Chapter 6 §6.5.1; Scenario - Pax Gallica first Winter"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:188-192",
+        "fs_bot/engine/winter.py:724-734",
+        "fs_bot/engine/winter.py:769-786",
+        "fs_bot/engine/winter.py:808-813"
+      ]
+    },
+    {
+      "id": "BE3-01",
+      "severity": "high",
+      "title": "Consuetudine omits its forced Ambush exception and Scouted hide step",
+      "rule": "Reference Documents/Card Reference 53, lines 528–534; Chapter 5 §5.1.1; Chapter 4 §4.2.2",
+      "rule_excerpt": "Battling with Ambush regardless of the numbers of Hidden enemies",
+      "expected": "Four German Warbands in Pictones must Ambush five Hidden Aedui Warbands, inflicting two Losses and removing two Warbands. No German Rally placement is available in Pictones and no Raid occurs because Resources are zero. Separately, The Scouted German Warband in Pictones loses its marker and remains Revealed.",
+      "observed": "Accepted Event leaves all five Aedui Warbands and all four Hidden Germans untouched. Separately, The accepted Event leaves the German Warband Scouted. No subsequent Rally placement, Raid or Battle occurs at Pictones.",
+      "code": [
+        "fs_bot/cards/card_effects.py:1990–1995",
+        "fs_bot/cards/card_effects.py:2002–2026",
+        "fs_bot/engine/germans_battle.py:206–222",
+        "fs_bot/engine/germans_battle.py:75–105"
+      ],
+      "cause": "The Event uses the ordinary Germans Phase Hidden-superiority filter both when reserving Warbands from Raid and when selecting/resolving Battle; its printed exception never reaches those consumers. The initial hide loop queries only REVEALED, even though SCOUTED is stored separately and must receive its own hide attempt.",
+      "comparator": [
+        "lod-bot-comparison/docs/audit_set_but_never_applied_s76.md, sections 3–5",
+        "lod-bot-comparison/docs/human_mode_audit.md, October correction"
+      ],
+      "prior_relation": "Original inventory base-53-original-unshaded and revised aliases were marked supported by static trace, with no finding. Not an Ambush Fort duplicate; no Fort or Citadel in witness.",
+      "case": [
+        "consuetudine_missing_forced_ambush",
+        "consuetudine_scouted_not_cleared"
+      ],
+      "status": "confirmed-open",
+      "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
+      "evidence": "base-events/observed.json",
+      "profiles": [
+        "original",
+        "second-edition"
+      ],
+      "validation": "All witnesses pass durable turn validate_response, execute through execute_decision, and preserve validate_state plus check_structural_integrity before and after. Assertions freeze observed defects, not desired behavior.",
+      "witnesses": [
+        {
+          "severity": "high",
+          "title": "Consuetudine fails to Ambush enemies with at least as many Hidden pieces",
+          "rule": "Reference Documents/Card Reference 53, lines 528–534; Chapter 5 §5.1.1",
+          "rule_excerpt": "Battling with Ambush regardless of the numbers of Hidden enemies",
+          "expected": "Four German Warbands in Pictones must Ambush five Hidden Aedui Warbands, inflicting two Losses and removing two Warbands. No German Rally placement is available in Pictones and no Raid occurs because Resources are zero.",
+          "observed": "Accepted Event leaves all five Aedui Warbands and all four Hidden Germans untouched.",
+          "code": [
+            "fs_bot/cards/card_effects.py:2002–2026",
+            "fs_bot/engine/germans_battle.py:75–105",
+            "fs_bot/engine/germans_battle.py:206–222"
+          ],
+          "cause": "The Event uses the ordinary Germans Phase Hidden-superiority filter both when reserving Warbands from Raid and when selecting/resolving Battle; its printed exception never reaches those consumers.",
+          "comparator": [
+            "lod-bot-comparison/docs/audit_set_but_never_applied_s76.md, sections 3–5",
+            "lod-bot-comparison/docs/human_mode_audit.md, October correction"
+          ],
+          "prior_relation": "Original inventory base-53-original-unshaded and revised aliases were marked supported by static trace, with no finding. Not an Ambush Fort duplicate; no Fort or Citadel in witness.",
+          "case": "consuetudine_missing_forced_ambush",
+          "status": "confirmed-open",
+          "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
+          "evidence": "base-events/observed.json",
+          "profiles": [
+            "original",
+            "second-edition"
+          ],
+          "validation": "All witnesses pass durable turn validate_response, execute through execute_decision, and preserve validate_state plus check_structural_integrity before and after. Assertions freeze observed defects, not desired behavior.",
+          "witness_id": "BE3-01-ambush"
+        },
+        {
+          "severity": "medium",
+          "title": "Consuetudine omits Scouted Germans from its hide instruction",
+          "rule": "Reference Documents/Card Reference 53, lines 528–531; Chapter 4 §4.2.2 lines 83–88",
+          "rule_excerpt": "whenever ... an Event ... would flip a Scouted Warband to Hidden, instead remove the Scouted marker",
+          "expected": "The Scouted German Warband in Pictones loses its marker and remains Revealed.",
+          "observed": "The accepted Event leaves the German Warband Scouted. No subsequent Rally placement, Raid or Battle occurs at Pictones.",
+          "code": [
+            "fs_bot/cards/card_effects.py:1990–1995"
+          ],
+          "cause": "The initial hide loop queries only REVEALED, even though SCOUTED is stored separately and must receive its own hide attempt.",
+          "comparator": [
+            "lod-bot-comparison/docs/piece3_audit_s75.md, Part A empirical active/underground piece deltas",
+            "lod-bot-comparison/docs/audit_set_but_never_applied_s76.md"
+          ],
+          "prior_relation": "Distinct from EX2-01 Abatis Scouted prerequisite and previous A25/A26/A30/A56 removals. This is a fixed original Event hide operation previously unprobed.",
+          "case": "consuetudine_scouted_not_cleared",
+          "status": "confirmed-open",
+          "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
+          "evidence": "base-events/observed.json",
+          "profiles": [
+            "original",
+            "second-edition"
+          ],
+          "validation": "All witnesses pass durable turn validate_response, execute through execute_decision, and preserve validate_state plus check_structural_integrity before and after. Assertions freeze observed defects, not desired behavior.",
+          "witness_id": "BE3-01-scouted"
+        }
+      ],
+      "rules": [
+        "Reference Documents/Card Reference 53, lines 528–534; Chapter 5 §5.1.1; Chapter 4 §4.2.2"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:1990–1995",
+        "fs_bot/cards/card_effects.py:2002–2026",
+        "fs_bot/engine/germans_battle.py:206–222",
+        "fs_bot/engine/germans_battle.py:75–105"
+      ]
+    },
+    {
+      "id": "BE3-03",
+      "severity": "high",
+      "title": "Colony fails to create its Tribe when the executing Ally pool is empty",
+      "rule": "Reference Documents/Card Reference 71, lines 729–733; Chapter 5 §5.1.3; Chapter 1 §1.7; Chapter 7 §7.2",
+      "rule_excerpt": "The Colony is a Tribe.",
+      "expected": "With zero Roman Ally discs Available, card 71 still creates the Colony marker and a Subdued Colony Tribe. Rome gains one Subdued Tribe in its victory count.",
+      "observed": "A valid Great Revolt setup with all Roman Allies deployed accepts Colony at unoccupied Britannia and adds its marker, but creates no Tribe. Tribe count remains30 and Roman victory score remains12 instead of13.",
+      "code": [
+        "fs_bot/cards/card_effects.py:2626–2652",
+        "fs_bot/engine/victory.py:112–131"
+      ],
+      "cause": "Creation of the Colony Tribe is nested inside the Available Ally branch, making the existence of the Tribe depend on the possible Ally placement.",
+      "comparator": [
+        "lod-bot-comparison/lod_ai/event_choices.py:135–139,185–193",
+        "lod-bot-comparison/docs/audit_set_but_never_applied_s76.md, observation-point verification"
+      ],
+      "prior_relation": "Not the previously repaired Colony name collision or bot target-default issue. This is the initial Event scarce-pool partial-execution path; downstream scoring merely demonstrates the missing Tribe.",
+      "case": "colony_no_available_ally_loses_tribe",
+      "status": "confirmed-open",
+      "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
+      "evidence": "base-events/observed.json",
+      "profiles": [
+        "original",
+        "second-edition"
+      ],
+      "validation": "All witnesses pass durable turn validate_response, execute through execute_decision, and preserve validate_state plus check_structural_integrity before and after. Assertions freeze observed defects, not desired behavior.",
+      "rules": [
+        "Reference Documents/Card Reference 71, lines 729–733; Chapter 5 §5.1.3; Chapter 1 §1.7; Chapter 7 §7.2"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:2626–2652",
+        "fs_bot/engine/victory.py:112–131"
+      ]
+    },
+    {
+      "id": "BE3-04",
+      "severity": "high",
+      "title": "Shaded Migration allows relocation while omitting its mandatory possible Ally",
+      "rule": "Reference Documents/Card Reference 66, lines 676–684; Chapter 5 §5.1.3",
+      "rule_excerpt": "moves its Warbands and Leader as desired to a Region where No Control and places an Ally there",
+      "expected": "After selecting unoccupied Britannia and moving an Arverni Warband there, a complete legal plan must place an Available Arverni Ally at the Subdued Catuvellauni Tribe.",
+      "observed": "In ordinary Great Revolt setup, a plan with no ally_tribe passes durable validation, commits the relocation and leaves Catuvellauni Subdued despite one Ally being Available.",
+      "code": [
+        "fs_bot/cards/card_effects.py:2450–2455",
+        "fs_bot/cards/card_effects.py:2493–2500"
+      ],
+      "cause": "The handler treats a missing ally_tribe as an optional omission without checking whether the printed placement can be performed.",
+      "comparator": [
+        "lod-bot-comparison/lod_ai/event_choices.py:135–139,185–193",
+        "lod-bot-comparison/docs/human_mode_audit.md, full printed-text audit correction"
+      ],
+      "prior_relation": "BE-12 fixed relocation ownership/geography/cohort validation. This surviving mandatory post-relocation placement was not a previous recorded finding, and is separate from EX2-04 mandatory A-card quotas.",
+      "case": "migration_omits_mandatory_ally",
+      "status": "confirmed-open",
+      "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
+      "evidence": "base-events/observed.json",
+      "profiles": [
+        "original",
+        "second-edition"
+      ],
+      "validation": "All witnesses pass durable turn validate_response, execute through execute_decision, and preserve validate_state plus check_structural_integrity before and after. Assertions freeze observed defects, not desired behavior.",
+      "rules": [
+        "Reference Documents/Card Reference 66, lines 676–684; Chapter 5 §5.1.3"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:2450–2455",
+        "fs_bot/cards/card_effects.py:2493–2500"
+      ]
+    },
+    {
+      "id": "EX3-01",
+      "severity": "high",
+      "title": "Harudes shaded accepts omitted mandatory reinforcements",
+      "expected": "With pieces and legal space available, require four German Warbands and one Settlement before resolving their Raid; incomplete human plans must not commit.",
+      "observed": "placements=[] passes durable-response validation and ordinary validation, executes A29 shaded, places no pieces, and reports the Raid as declined_no_effect. Four Warbands and one Settlement can be placed in the control case.",
+      "rule": [
+        "Reference Documents/Ariovistus/A Card Reference:108-109, A29 shaded",
+        "Reference Documents/Chapter 5:5.1.3"
+      ],
+      "rule_excerpt": "Place 4 German Warbands & 1 Settlement among Regions adjacent to Germania. They free Raid.",
+      "code": [
+        "fs_bot/cards/card_effects.py:3077-3105",
+        "fs_bot/engine/execute.py:6483-6486",
+        "fs_bot/cards/expansion_validation.py:15-17"
+      ],
+      "comparison": [
+        "lod-bot-comparison/docs/human_mode_audit.md:2026-10-20 correction (printed requirements beyond existing hooks)",
+        "lod-bot-comparison/lod_ai/event_choices.py (typed choice validation)"
+      ],
+      "prior_relation": "A29 unshaded placement validation was EXP-09; EXP-02 restored its shaded Raid choices. EX2-04 covered A30/A56/A65 mandatory quotas, not shaded A29. This is a new card-specific occurrence, not a reopened old ID.",
+      "witnesses": [
+        "A29_empty",
+        "A29_complete"
+      ],
+      "repair_scope": "Validate attainable shaded reinforcement quantities, maintain exact ordered placement choices/timing, route terminal/bot plans through the same constraints, then resolve the surviving placed cohort.",
+      "audited_commit": "3c23a3414c3e870e274ef63c278db8cb3f1ee747",
+      "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+      "reproduction": "PYTHONPATH=/path/to/fs-bot python expansion/probe.py",
+      "fixture": "Controlled Ariovistus positions built with correct Available pools and normal piece operations. Pool and structural checks pass before and after; not full game transcripts.",
+      "status": "confirmed-open",
+      "rules": [
+        "Reference Documents/Ariovistus/A Card Reference:108-109, A29 shaded",
+        "Reference Documents/Chapter 5:5.1.3"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:3077-3105",
+        "fs_bot/engine/execute.py:6483-6486",
+        "fs_bot/cards/expansion_validation.py:15-17"
+      ]
+    },
+    {
+      "id": "EX3-03",
+      "severity": "medium",
+      "title": "Nasua and Cimberius fails to replace a Dispersed marker at Treveri",
+      "expected": "The printed replacement of anything at Treveri removes its Dispersed or Gathering marker and places the selected Gallic/Roman Ally if available.",
+      "observed": "A35 unshaded executes successfully with an available Belgic Ally but leaves Treveri Dispersed and unallied. It also leaves Dispersed-Gathering untouched after an actual Spring. The Subdued control places the Ally.",
+      "rule": [
+        "Reference Documents/Ariovistus/A Card Reference:152-154, A35 unshaded",
+        "Reference Documents/Chapter 5:5.1 and5.1.3",
+        "Reference Documents/Chapter 1:1.4.2"
+      ],
+      "rule_excerpt": "Place 1 Gallic or Roman Ally at Treveri (replacing anything there)",
+      "source_reasoning": "The marker is removed before the Ally is placed; this does not stack an Ally on a Dispersed Tribe or introduce a new exception to A5.1.1 stacking. Existing numeric60/61 removal paths already distinguish replacement of such markers from placing on top of them.",
+      "code": [
+        "fs_bot/cards/card_effects.py:3265-3271",
+        "fs_bot/cards/card_effects.py:309-333 (_unally_tribe only removes a piece)"
+      ],
+      "comparison": [
+        "lod-bot-comparison/coin-implementation-lessons.md (state representation mismatches)",
+        "lod-bot-comparison/docs/audit_set_but_never_applied_s76.md (observe final board effect)"
+      ],
+      "prior_relation": "A35 unshaded was a not-verified inventory row, including in second audit earlier-unverified dispositions. No previous confirmed finding covered replacement of its Dispersed marker.",
+      "witnesses": [
+        "A35_None",
+        "A35_Dispersed",
+        "A35_Dispersed-Gathering"
+      ],
+      "repair_scope": "Remove the actual marker/status as part of Treveri replacement, including when the selected Ally is unavailable, and preserve partial-execution rules.",
+      "audited_commit": "3c23a3414c3e870e274ef63c278db8cb3f1ee747",
+      "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+      "reproduction": "PYTHONPATH=/path/to/fs-bot python expansion/probe.py",
+      "fixture": "Controlled Ariovistus positions built with correct Available pools and normal piece operations. Pool and structural checks pass before and after; not full game transcripts.",
+      "status": "confirmed-open",
+      "rules": [
+        "Reference Documents/Ariovistus/A Card Reference:152-154, A35 unshaded",
+        "Reference Documents/Chapter 5:5.1 and5.1.3",
+        "Reference Documents/Chapter 1:1.4.2"
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:3265-3271",
+        "fs_bot/cards/card_effects.py:309-333 (_unally_tribe only removes a piece)"
+      ]
+    },
+    {
+      "id": "EX3-04",
+      "severity": "high",
+      "title": "Stalwart does not cancel Germanic Horse doubling against Germans",
+      "expected": "After A31 shaded is played, its cancellation of harmful Event effects suppresses an earlier enemy Germanic Horse capability. Six Belgic Warbands inflict three ordinary Losses against Germans.",
+      "observed": "In an accepted ordinary Battle, six Belgic Warbands inflict six Losses against eight German Warbands with shaded59 active, whether or not shadedA31 is then activated. Four controls yield German losses [3,3,6,6] for neither/A31 only/Horse only/Horse followed by A31.",
+      "rule": [
+        "Reference Documents/Ariovistus/A Card Reference:126-131, A31 shaded",
+        "Reference Documents/Card Reference:602-618, card59 shaded",
+        "Reference Documents/Chapter 5:5.1.2 and5.3",
+        "QUESTIONS.md:2795-2845 preserves prior interpretation that Event effects includes Capabilities"
+      ],
+      "rule_excerpt": "Event effects harming Germans in Battle are cancelled",
+      "source_reasoning": "A31 is played after59 and both are standing Capabilities during an ordinary Battle, so this witness has no current one-shot versus standing Capability precedence uncertainty.",
+      "code": [
+        "fs_bot/battle/resolve.py:495-502",
+        "fs_bot/battle/losses.py:276-283"
+      ],
+      "comparison": [
+        "lod-bot-comparison/docs/audit_set_but_never_applied_s76.md:5 (modifier must reach every calculator and final observation point)"
+      ],
+      "prior_relation": "Historical A31 repairs handled named enemy Leaders, Abatis, Wailing Women and no-retreat. The earlier 50/21 finding ledgers did not count this surviving Horse interaction.",
+      "witnesses": [
+        "A31_horse_cases"
+      ],
+      "repair_scope": "Apply A31 harmful-effect cancellation consistently to persistent Battle capabilities in preview and resolution; confirmed witness is shaded59. Other harmful capability interactions require targeted review rather than assumed coverage.",
+      "audited_commit": "3c23a3414c3e870e274ef63c278db8cb3f1ee747",
+      "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+      "reproduction": "PYTHONPATH=/path/to/fs-bot python expansion/probe.py",
+      "fixture": "Controlled Ariovistus positions built with correct Available pools and normal piece operations. Pool and structural checks pass before and after; not full game transcripts.",
+      "status": "confirmed-open",
+      "rules": [
+        "Reference Documents/Ariovistus/A Card Reference:126-131, A31 shaded",
+        "Reference Documents/Card Reference:602-618, card59 shaded",
+        "Reference Documents/Chapter 5:5.1.2 and5.3",
+        "QUESTIONS.md:2795-2845 preserves prior interpretation that Event effects includes Capabilities"
+      ],
+      "code_locations": [
+        "fs_bot/battle/resolve.py:495-502",
+        "fs_bot/battle/losses.py:276-283"
+      ]
+    },
+    {
+      "id": "XC3-01",
+      "title": "Existing Colony Tribes are ignored by Commands, Events, and Belgic scoring",
+      "severity": "high",
+      "status": "confirmed-open",
+      "expected": "Card 71's Colony is a real Tribe in its recorded Region. A Roman-Allied/Subdued Colony contributes +2 Seize Forage; a Subdued Colony is dispersible, Build can subdue/place its disc, Entreat can replace an eligible enemy disc, Trade includes a Subdued/Roman-Allied Colony under Aedui Control, and its Dispersed marker reduces Belgic Control Value. Acco and Procillus also include otherwise eligible Colony Allies.",
+      "observed": "After real Colony Event creation, a full accepted Roman Seize in Mandubii earns 2 instead of 4; its Subdued Colony is absent from the dispersal menu and rejected by authored-plan validation. Valid Build/Entreat Regions reject the named physical Colony as not in its actual Region. Aedui Trade earns 6 instead of 8 with a Subdued Colony in Aedui. A valid controlled Dispersed Colony fixture leaves Belgic victory score 6 instead of 5. Shaded Acco leaves a Colony Ally unchanged; Procillus accepts a selected Colony Ally near Caesar and silently ignores it.",
+      "rules": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": "729-733",
+          "section": "71 Colony",
+          "quote": "The Colony is a Tribe."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "89-123",
+          "section": "3.2.3 Seize"
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": "43-66",
+          "section": "4.2.1 Build"
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": "107-120",
+          "section": "4.3.1 Entreat"
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": "158-174",
+          "section": "4.4.1 Trade"
+        },
+        {
+          "path": "Reference Documents/Chapter 7",
+          "section": "7.2 Belgic Control Value, including non-Suebi Dispersed adjustments"
+        },
+        "Reference Documents/Card Reference 34, lines 338–344 and 71, lines 729–733; Chapter 5 §5.1.3",
+        "Reference Documents/Ariovistus/A Card Reference:45-47, A19 unshaded",
+        "Reference Documents/Card Reference:729-733, card71",
+        "Reference Documents/Chapter 5:5.1"
+      ],
+      "code_locations": [
+        "fs_bot/commands/seize.py:156",
+        "fs_bot/commands/seize.py:218",
+        "fs_bot/commands/seize.py:247",
+        "fs_bot/commands/seize.py:571",
+        "fs_bot/commands/sa_build.py:174",
+        "fs_bot/commands/sa_build.py:248",
+        "fs_bot/commands/sa_entreat.py:207",
+        "fs_bot/commands/sa_trade.py:321",
+        "fs_bot/engine/victory.py:256",
+        "fs_bot/cards/card_effects.py:1502–1504",
+        "fs_bot/cards/card_effects.py:2777-2781",
+        "fs_bot/cards/card_effects.py:254-258 (_tribe_region dynamic alternative)"
+      ],
+      "comparison": {
+        "pattern": "Follow data from writer to every consumer, and verify state-modifying markers at every arithmetic observation point.",
+        "paths": [
+          "coin-implementation-lessons.md, section B Data-shape mismatch",
+          "docs/audit_set_but_never_applied_s76.md, section 5 dual-calculator drift",
+          "lod_ai/util/naval.py:73 effective_population"
+        ]
+      },
+      "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/patterns/probe_dynamic_colony.py",
+      "output": "dynamic_colony_results.json",
+      "fixture_limits": "Seize Forage and rejection use normal execute_decision on a fully initialized Great Revolt game. Build and Entreat use production primitives after validating their Region prerequisites; additional pieces and a relocated Caesar are controlled legal board fixtures. Trade is the production SA. All stages pass state and structural validation. The final Dispersed Colony is assigned the rules-legal marker directly because the tested Seize bug prevents constructing that state through Seize.",
+      "prior_relation": "Additional static-map consumers beyond repaired Colony Event defaults, Rally/Recruit and Suborn support. Separate from BE2-06 Flight score repair. Grouped with the new Acco and Procillus consumers of the same static Tribe model; Colony creation when supply is exhausted remains separate.",
+      "absorbed_partition_ids": [
+        "BE3-02",
+        "EX3-02"
+      ],
+      "manifestations": [
+        {
+          "id": "XC3-01",
+          "title": "Existing Colony Tribes are ignored by Commands, Events, and Belgic scoring",
+          "severity": "high",
+          "status": "confirmed-open",
+          "expected": "Card 71's Colony is a real Tribe in its recorded Region. A Roman-Allied/Subdued Colony contributes +2 Seize Forage; a Subdued Colony is dispersible, Build can subdue/place its disc, Entreat can replace an eligible enemy disc, Trade includes a Subdued/Roman-Allied Colony under Aedui Control, and its Dispersed marker reduces Belgic Control Value.",
+          "observed": "After real Colony Event creation, a full accepted Roman Seize in Mandubii earns 2 instead of 4; its Subdued Colony is absent from the dispersal menu and rejected by authored-plan validation. Valid Build/Entreat Regions reject the named physical Colony as not in its actual Region. Aedui Trade earns 6 instead of 8 with a Subdued Colony in Aedui. A valid controlled Dispersed Colony fixture leaves Belgic victory score 6 instead of 5.",
+          "rules": [
+            {
+              "path": "Reference Documents/Card Reference",
+              "lines": "729-733",
+              "section": "71 Colony",
+              "quote": "The Colony is a Tribe."
+            },
+            {
+              "path": "Reference Documents/Chapter 3",
+              "lines": "89-123",
+              "section": "3.2.3 Seize"
+            },
+            {
+              "path": "Reference Documents/Chapter 4",
+              "lines": "43-66",
+              "section": "4.2.1 Build"
+            },
+            {
+              "path": "Reference Documents/Chapter 4",
+              "lines": "107-120",
+              "section": "4.3.1 Entreat"
+            },
+            {
+              "path": "Reference Documents/Chapter 4",
+              "lines": "158-174",
+              "section": "4.4.1 Trade"
+            },
+            {
+              "path": "Reference Documents/Chapter 7",
+              "section": "7.2 Belgic Control Value, including non-Suebi Dispersed adjustments"
+            }
+          ],
+          "code_locations": [
+            "fs_bot/commands/seize.py:156",
+            "fs_bot/commands/seize.py:218",
+            "fs_bot/commands/seize.py:247",
+            "fs_bot/commands/seize.py:571",
+            "fs_bot/commands/sa_build.py:174",
+            "fs_bot/commands/sa_build.py:248",
+            "fs_bot/commands/sa_entreat.py:207",
+            "fs_bot/commands/sa_trade.py:321",
+            "fs_bot/engine/victory.py:256"
+          ],
+          "comparison": {
+            "pattern": "Follow data from writer to every consumer, and verify state-modifying markers at every arithmetic observation point.",
+            "paths": [
+              "coin-implementation-lessons.md, section B Data-shape mismatch",
+              "docs/audit_set_but_never_applied_s76.md, section 5 dual-calculator drift",
+              "lod_ai/util/naval.py:73 effective_population"
+            ]
+          },
+          "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/patterns/probe_dynamic_colony.py",
+          "output": "dynamic_colony_results.json",
+          "fixture_limits": "Seize Forage and rejection use normal execute_decision on a fully initialized Great Revolt game. Build and Entreat use production primitives after validating their Region prerequisites; additional pieces and a relocated Caesar are controlled legal board fixtures. Trade is the production SA. All stages pass state and structural validation. The final Dispersed Colony is assigned the rules-legal marker directly because the tested Seize bug prevents constructing that state through Seize.",
+          "prior_relation": "Additional static-map consumers beyond repaired Colony Event defaults, Rally/Recruit and Suborn support. Separate from BE2-06 Flight score repair. Grouped with the new Acco and Procillus consumers of the same static Tribe model; Colony creation when supply is exhausted remains separate.",
+          "absorbed_partition_ids": [
+            "BE3-02",
+            "EX3-02"
+          ]
+        },
+        {
+          "id": "BE3-02",
+          "severity": "high",
+          "title": "Shaded Acco leaves a Colony Allied Tribe unchanged",
+          "rule": "Reference Documents/Card Reference 34, lines 338–344 and 71, lines 729–733; Chapter 5 §5.1.3",
+          "rule_excerpt": "In Carnutes and Mandubii Regions, replace all Allies with Arverni Allies",
+          "expected": "An Aedui Colony Allied Tribe created legally by card 71 in Carnutes is replaced with an Available Arverni Allied Tribe by shaded Acco.",
+          "observed": "The accepted shaded Acco leaves Colony_Carnutes allied to Aedui.",
+          "code": [
+            "fs_bot/cards/card_effects.py:1502–1504"
+          ],
+          "cause": "The handler enumerates static map get_tribes_in_region, which omits the dynamic Colony despite its explicit Region and status as a Tribe.",
+          "comparator": [
+            "lod-bot-comparison/docs/human_mode_audit.md, correction about full printed-text coverage",
+            "lod-bot-comparison/docs/piece3_audit_s75.md, printed effects versus observed board deltas"
+          ],
+          "prior_relation": "The earlier Colony/default repair concerned bot Event target derivation. This is a different Event executor consumer. Broader downstream Colony Command/scoring findings belong to the patterns partition.",
+          "case": "acco_skips_colony",
+          "status": "confirmed-open",
+          "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
+          "evidence": "base-events/observed.json",
+          "profiles": [
+            "original",
+            "second-edition"
+          ],
+          "validation": "All witnesses pass durable turn validate_response, execute through execute_decision, and preserve validate_state plus check_structural_integrity before and after. Assertions freeze observed defects, not desired behavior.",
+          "rules": [
+            "Reference Documents/Card Reference 34, lines 338–344 and 71, lines 729–733; Chapter 5 §5.1.3"
+          ],
+          "code_locations": [
+            "fs_bot/cards/card_effects.py:1502–1504"
+          ]
+        },
+        {
+          "id": "EX3-02",
+          "severity": "medium",
+          "title": "Procillus unshaded silently ignores a selected Colony Allied Tribe",
+          "expected": "A Colony Ally within one Region of Caesar is eligible for replacement with a Roman Ally.",
+          "observed": "Event71 creates a German Colony Ally in Sequani; Caesar is placed there. A19 accepts replacements=[{tribe: Colony_Sequani}] and executes without effect. The comparable printed Sequani Tribe becomes Roman.",
+          "rule": [
+            "Reference Documents/Ariovistus/A Card Reference:45-47, A19 unshaded",
+            "Reference Documents/Card Reference:729-733, card71",
+            "Reference Documents/Chapter 5:5.1"
+          ],
+          "rule_excerpt": "Among Regions within 1 of Caesar, replace up to any 3 Allies total with Roman Allies. The Colony is a Tribe.",
+          "code": [
+            "fs_bot/cards/card_effects.py:2777-2781",
+            "fs_bot/cards/card_effects.py:254-258 (_tribe_region dynamic alternative)"
+          ],
+          "comparison": [
+            "lod-bot-comparison/coin-implementation-lessons.md (representation mismatch and duplicate state sources)",
+            "lod-bot-comparison/docs/human_mode_audit.md (printed-target audit)"
+          ],
+          "prior_relation": "EX2-06 fixed the named-Caesar prerequisite. This dynamic-Tribe lookup path survives that fix. The prior Colony default repair concerned Event defaults and does not cover this handler.",
+          "witnesses": [
+            "A19_colony",
+            "A19_printed_tribe"
+          ],
+          "repair_scope": "Use state-aware Tribe geography in Procillus resolution, candidate menus/defaults and validation; test Colony targets at legal and illegal distances.",
+          "audited_commit": "3c23a3414c3e870e274ef63c278db8cb3f1ee747",
+          "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+          "reproduction": "PYTHONPATH=/path/to/fs-bot python expansion/probe.py",
+          "fixture": "Controlled Ariovistus positions built with correct Available pools and normal piece operations. Pool and structural checks pass before and after; not full game transcripts.",
+          "status": "confirmed-open",
+          "rules": [
+            "Reference Documents/Ariovistus/A Card Reference:45-47, A19 unshaded",
+            "Reference Documents/Card Reference:729-733, card71",
+            "Reference Documents/Chapter 5:5.1"
+          ],
+          "code_locations": [
+            "fs_bot/cards/card_effects.py:2777-2781",
+            "fs_bot/cards/card_effects.py:254-258 (_tribe_region dynamic alternative)"
+          ]
+        }
+      ],
+      "grouping": "One shared static-versus-live Tribe consumer repair group. Creation under an empty Ally pool is BE3-03 and remains separate."
+    },
+    {
+      "id": "XC3-02",
+      "title": "Seize treats Razed Cities as Subdued and replaces their permanent marker",
+      "severity": "high",
+      "status": "confirmed-open",
+      "expected": "A City Razed by Sacking is Dispersed for Seize, yields no ordinary Forage, cannot be Dispersed again, and retains its Razed marker through Spring.",
+      "observed": "An accepted Sacking Event Razes Roman-controlled Alesia. Seize's menu offers Mandubii for dispersal and its Forage calculator returns 4 instead of 2. A full authored Seize is accepted, earns 8, and changes Razed to ordinary Dispersed. Two Spring phases then clear the status, whereas a matched control remains Razed. State and structural validation report no errors throughout.",
+      "rules": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": "225-236",
+          "section": "23 Sacking",
+          "quote": "Unshaded marker is the equivalent of a Dispersed marker for all purposes except it is not removed in Spring"
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "89-123",
+          "section": "3.2.3 Seize"
+        },
+        {
+          "path": "Reference Documents/Chapter 6",
+          "section": "6.6 Spring, preserve Razed"
+        }
+      ],
+      "code_locations": [
+        "fs_bot/commands/seize.py:168",
+        "fs_bot/commands/seize.py:258",
+        "fs_bot/commands/seize.py:582",
+        "fs_bot/commands/seize.py:590",
+        "fs_bot/engine/winter.py:1094"
+      ],
+      "comparison": {
+        "pattern": "Trace a persistent marker from its setter through later action and seasonal observation points, including alternate representations of the same rule concept.",
+        "paths": [
+          "docs/audit_set_but_never_applied_s76.md",
+          "coin-implementation-lessons.md, section B Data-shape mismatch",
+          "lod_ai/util/naval.py:73 effective_population"
+        ]
+      },
+      "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/patterns/probe_razed_seize.py",
+      "output": "razed_seize_results.json",
+      "fixture_limits": "Standard Great Revolt setup, current Event set to 23 for the controlled test. Real execute_decision handles both Sacking and Seize. The production spring_phase runs twice to demonstrate loss of permanence, with the unmodified Razed position as control. No gameplay source changed.",
+      "prior_relation": "New downstream unshaded Sacking/Seize interaction. BE2-01 repaired shaded Sacking prerequisites, not this marker lifecycle. Unrelated to known Circumvallation persistence."
+    }
+  ]
+}

@@ -144,6 +144,14 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
+The [third Liberty or Death comparison](docs/reviews/comparison-audit-round3-2026-11-10.md)
+confirms **15 additional open repair groups** after the original 50 and next 21
+findings were repaired. It includes executable witnesses and independent review.
+All 9,411 existing tests passed, and 20 mixed-seat cases matched across hash
+seeds with zero hard findings and four soft partial plans. No gameplay changes
+are included in the audit. See the [new ledger](docs/reviews/comparison-audit-round3-2026-11-10.json)
+for the current repair backlog; the dated checkpoints below retain their context.
+
 The [first small audit repairs](docs/reviews/cheap-fixes-2026-10-29.md) close
 five findings: mandatory Battle casualty tiers, repeated Seize/Entreat,
 malformed Supply replans, game-run Arverni transfers and sole-human-Belgae
@@ -201,7 +209,7 @@ The [Rampage quantity repair](docs/reviews/rampage-quantity-2026-11-04.md)
 closes CMD-RAMPAGE-COUNT and restores the source-required full NPC quantity.
 The [Seize Tribe repair](docs/reviews/seize-tribes-2026-11-04.md) closes
 CMD-SEIZE-TRIBES with exact ordinary dispersals and Forage-only choices.
-**41 of 50 findings are closed (82%); 9 remain open** in the
+**All 50 original findings are closed** in the
 [progress register](docs/human-choice-progress.json). This counts findings,
 not effort or overall rules compliance. The reports record fresh validation,
 source identity, outcome changes and compatibility limits.

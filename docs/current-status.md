@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November third comparison audit
+
+The [third Liberty or Death comparison](reviews/comparison-audit-round3-2026-11-10.md)
+confirms **15 additional open repair groups**, with executable witnesses and
+independent source review. These cover authored turn metadata, Scout geography,
+Entreat piece identity, ordinary Battle prerequisites and unauthorized modifiers,
+Harvest counting, Lost Eagle timing, missed Event effects, Colony consumers,
+and Razed-marker permanence. The report and machine-readable ledger retain
+the precise affected paths and proposed repair batches.
+
+All 9,411 existing tests passed. Twenty mixed-seat cases across five scenarios
+matched under hash seeds 0 and 987, with replay enabled, zero hard findings,
+and four soft partial plans. Eight targeted witness scripts independently
+reproduced the newly confirmed defects. No gameplay code or references changed
+in this audit, and no new balance matrix is claimed.
+
+The earlier 50-finding and 21-finding ledgers remain fully closed. The new
+ledger starts at **0 of 15 closed, 15 remaining**. Related symptoms are grouped
+together; existing Circumvallation persistence work and unresolved source
+questions remain separate.
+
 ### 10 November mandatory Event effects and physical targets
 
 Unshaded Remi Influence requires at least one eligible Ally replacement

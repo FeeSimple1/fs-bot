@@ -21,6 +21,30 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Forts, Citadels, and Ambush
+
+Forts and Citadels halve Attack Losses, rounded down, during an Ambush.
+Each resulting Loss removes a defending piece without a saving roll.
+Roman defenders with Caesar regain their usual saving rolls and may
+Counterattack on a 4–6 test, or on 5–6 against Belgae. The same procedure
+applies to base-game German Battle. Ariovistus German Battle uses it only
+when modified by Ambush (Chapters 3 and 4 §§3.3.4, 3.4.4, 4.3.3,
+4.4.3, 4.5.3 and Ariovistus §§A3.4.4, A4.6.3).
+
+All 9,365 tests pass, including 106 Battle tests. All 20 all-bot games
+completed with clean audits. The 20 mixed-seat results match across both
+hash seeds, with zero hard findings and five partial plans versus four
+on the parent. The 100-game balance check passed its 15-point band.
+Relative to the parent, 27 winners and 18 game lengths changed across
+33 games. In paired replays of Reconquest of Gaul seed 3 and The Great
+Revolt seed 6, the first differing Battle was a fortified Ambush in
+Treveri. Both revisions removed the same Legion, and the repair skipped
+its saving die, changing the subsequent random sequence.
+
+**BM2-01 closes.** The
+[comparison ledger](reviews/comparison-audit-2026-11-10.json) stands at
+**7 of 21 closed, 14 remaining.**
+
 ### 10 November human turn plan scope
 
 The first comparison repair batch binds a human submission to the offered

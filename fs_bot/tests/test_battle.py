@@ -26,12 +26,16 @@ from fs_bot.rules_consts import (
     # Regions
     MORINI, NERVII, ATREBATES, TREVERI, MANDUBII, PROVINCIA,
     SEQUANI, AEDUI_REGION, ARVERNI_REGION, CARNUTES, SUGAMBRI, UBII,
+    # Tribes
+    TRIBE_SEQUANI,
     # Battle constants
     LOSS_ROLL_THRESHOLD, DIVICIACUS_LOSS_ROLL_THRESHOLD,
     CAESAR_AMBUSH_ROLL_THRESHOLD, CAESAR_BELGIC_AMBUSH_ROLL_THRESHOLD,
     DIE_MIN, DIE_MAX,
 )
-from fs_bot.state.state_schema import build_initial_state
+from fs_bot.state.state_schema import (
+    build_initial_state, check_structural_integrity, validate_state,
+)
 from fs_bot.board.pieces import (
     place_piece, remove_piece, count_pieces, count_pieces_by_state,
     get_leader_in_region, get_available, flip_piece,
@@ -839,44 +843,122 @@ class TestResolveBattle:
         assert result["caesar_roll"][0] == 4
         assert result["caesar_roll"][1] is False
 
-    def test_ambush_with_fort_normal_rolls(self):
-        """Ambush + Fort: normal rolls apply — §4.3.3.
+    @pytest.mark.parametrize("attacker,is_ambush", [(AEDUI, True), (GERMANS, False)])
+    def test_ambush_with_fort_halves_losses_without_saves(self, attacker, is_ambush):
+        """A Fort halves Losses during Ambush, including base German Battle."""
+        state = make_state(seed=0)
+        setup_battle(state, MORINI, attacker, ROMANS,
+                     attacker_pieces={WARBAND: 8},
+                     defender_pieces={LEGION: 3, FORT: 1})
+        rng_before = state["rng"].getstate()
 
-        "but may use any Fort or Citadel normally"
-        """
-        state = make_state()
-        setup_battle(state, MORINI, ARVERNI, ROMANS,
-                     attacker_pieces={(WARBAND, HIDDEN): 8},
-                     defender_pieces={
-                         LEGION: 3,
-                         FORT: 1,
-                     })
-        result = resolve_battle(
-            state, MORINI, ARVERNI, ROMANS,
-            is_ambush=True,
-        )
-        # No Caesar roll (Fort provides normal roll ability)
-        assert result["caesar_roll"] is None
-        # Attack should have used die rolls for Legions/Fort
-        rolls = result["attack"]["rolls"]
-        if rolls:
-            assert any(r[1] is not None for r in rolls)
+        result = resolve_battle(state, MORINI, attacker, ROMANS, is_ambush=is_ambush)
 
-    def test_ambush_with_citadel_normal_rolls(self):
-        """Ambush + Citadel: normal rolls apply — §4.3.3."""
-        state = make_state()
-        setup_battle(state, MORINI, ARVERNI, BELGAE,
-                     attacker_pieces={(WARBAND, HIDDEN): 8},
-                     defender_pieces={
-                         WARBAND: 3,
-                         CITADEL: 1,
-                     })
-        result = resolve_battle(
-            state, MORINI, ARVERNI, BELGAE,
-            is_ambush=True,
-        )
-        # Citadel provides normal roll ability
+        assert result["attack"]["losses_requested"] == 2
+        assert result["attack"]["rolls"] == [(LEGION, None, True)] * 2
         assert result["caesar_roll"] is None
+        assert result["counterattack"] is None
+        assert count_pieces(state, MORINI, ROMANS, LEGION) == 1
+        assert count_pieces(state, MORINI, ROMANS, FORT) == 1
+        assert state["fallen_legions"] == 2
+        assert state["rng"].getstate() == rng_before
+        assert validate_state(state) == []
+
+    def test_ambush_with_citadel_halves_losses_without_saves(self):
+        """An Ambush casualty assigned to a Citadel removes it without a roll."""
+        state = make_state(seed=0)
+        setup_battle(state, SEQUANI, AEDUI, BELGAE,
+                     attacker_pieces={WARBAND: 8},
+                     defender_pieces={WARBAND: 1, CITADEL: 1})
+        state["tribes"][TRIBE_SEQUANI]["allied_faction"] = BELGAE
+        rng_before = state["rng"].getstate()
+
+        result = resolve_battle(state, SEQUANI, AEDUI, BELGAE, is_ambush=True)
+
+        assert result["attack"]["losses_requested"] == 2
+        assert result["attack"]["losses_taken"] == 2
+        assert result["attack"]["rolls"] == [(CITADEL, None, True)]
+        assert result["counterattack"] is None
+        assert count_pieces(state, SEQUANI, BELGAE, CITADEL) == 0
+        assert state["tribes"][TRIBE_SEQUANI]["allied_faction"] is None
+        assert state["rng"].getstate() == rng_before
+        assert validate_state(state) == []
+        assert check_structural_integrity(state) == []
+
+    @pytest.mark.parametrize("scenario,attacker,is_ambush,seed,caesar_roll", [
+        (SCENARIO_PAX_GALLICA, AEDUI, True, 0, (4, True)),
+        (SCENARIO_PAX_GALLICA, BELGAE, True, 0, (4, False)),
+        (SCENARIO_PAX_GALLICA, BELGAE, True, 19, (6, True)),
+        (SCENARIO_PAX_GALLICA, GERMANS, False, 0, (4, True)),
+        (SCENARIO_ARIOVISTUS, GERMANS, True, 0, (4, True)),
+    ])
+    def test_caesar_tests_against_ambush_behind_fort(
+            self, scenario, attacker, is_ambush, seed, caesar_roll):
+        state = make_state(scenario, seed=seed)
+        setup_battle(state, MORINI, attacker, ROMANS,
+                     attacker_pieces={WARBAND: 8},
+                     defender_pieces={LEADER: CAESAR, LEGION: 3, FORT: 1})
+
+        result = resolve_battle(state, MORINI, attacker, ROMANS, is_ambush=is_ambush)
+
+        assert result["attack"]["losses_requested"] == 2
+        assert result["caesar_roll"] == caesar_roll
+        if caesar_roll[1]:
+            assert result["attack"]["losses_absorbed"] == 1
+            assert all(roll is not None for _, roll, _ in result["attack"]["rolls"])
+            assert result["counterattack"]["losses_requested"] == 3
+            assert count_pieces(state, MORINI, attacker, WARBAND) == 5
+            assert state["fallen_legions"] == 1
+        else:
+            assert result["attack"]["rolls"] == [(LEGION, None, True)] * 2
+            assert result["counterattack"] is None
+            assert count_pieces(state, MORINI, attacker, WARBAND) == 8
+            assert state["fallen_legions"] == 2
+        assert count_pieces(state, MORINI, ROMANS, FORT) == 1
+        assert validate_state(state) == []
+
+    def test_ordinary_ariovistus_german_battle_does_not_test_caesar(self):
+        state = make_state(SCENARIO_ARIOVISTUS, seed=0)
+        setup_battle(state, MORINI, GERMANS, ROMANS,
+                     attacker_pieces={WARBAND: 8},
+                     defender_pieces={LEADER: CAESAR, LEGION: 3, FORT: 1})
+
+        result = resolve_battle(state, MORINI, GERMANS, ROMANS)
+
+        assert result["attack"]["losses_requested"] == 2
+        assert result["attack"]["rolls"] == [(LEGION, 4, False)] * 2
+        assert result["caesar_roll"] is None
+        assert result["counterattack"]["losses_requested"] == 4
+        assert state["fallen_legions"] == 0
+        assert validate_state(state) == []
+
+    def test_aedui_command_and_ambush_removes_fortified_legions(self):
+        from fs_bot.engine.execute import execute_decision
+        from fs_bot.rules_consts import CMD_BATTLE, SA_AMBUSH
+        from fs_bot.tools.seat_session import validate_response
+
+        state = make_state(seed=0)
+        state["resources"][AEDUI] = 10
+        setup_battle(state, MORINI, AEDUI, ROMANS,
+                     attacker_pieces={WARBAND: 8},
+                     defender_pieces={LEGION: 3, FORT: 1})
+        decision = {"action": "command_sa", "player_action": {
+            "command": CMD_BATTLE, "sa": SA_AMBUSH, "sa_regions": [MORINI],
+            "details": {"battle_plan": [{"region": MORINI, "target": ROMANS}]},
+        }}
+        validate_response(
+            state, {"kind": "turn", "faction": AEDUI, "options": ["command_sa"]},
+            decision,
+        )
+
+        result = execute_decision(state, AEDUI, decision)
+
+        assert result["executed"] and not result["errors"]
+        assert count_pieces(state, MORINI, ROMANS, LEGION) == 1
+        assert count_pieces(state, MORINI, ROMANS, FORT) == 1
+        assert count_pieces(state, MORINI, AEDUI, WARBAND) == 8
+        assert state["fallen_legions"] == 2
+        assert validate_state(state) == []
 
 
 class TestRetreatExecution:

@@ -6,8 +6,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 21,
-  "closed": 6,
-  "open": 15,
+  "closed": 7,
+  "open": 14,
   "severity_counts": {
     "high": 15,
     "medium": 6
@@ -23,41 +23,43 @@
     "new_balance_matrix": false
   },
   "latest_repair": {
-    "batch": 1,
+    "batch": 2,
     "date": "2026-11-10",
     "findings": [
-      "FE2-01",
-      "FE2-02",
-      "XC2-01",
-      "CM2-01",
-      "CM2-02",
-      "CM2-03"
+      "BM2-01"
     ],
-    "report": "../current-status.md#10-november-human-turn-plan-scope",
+    "report": "../current-status.md#10-november-forts-citadels-and-ambush",
     "tested_source": {
-      "commit": "b346a41366ab0573510ac4061f6655dbab7aa224",
-      "python_sha256": "79e7a881aa960e1e66d50584943e74a26d0df5ad3cf25f93519d86e3dae0e3e3",
+      "commit": "e1b1fb29ae407aed4feacc6089f4ad2604385404",
+      "python_sha256": "70d005c277235e9b47dd1870bc7eef245bd1303a07fe2cfb43abb145f53c2b6a",
       "python_files": 573,
       "working_tree_changes": true,
-      "note": "Validation ran against the publishing tree over the listed parent."
+      "note": "Validation ran against the repair tree over the listed parent."
     },
     "validation": {
-      "pytest_passed": 9357,
-      "new_regressions": 23,
-      "focused_passed": 124,
-      "all_bot_records_matched": 20,
-      "mixed_seat_records_matched": 20,
+      "pytest_passed": 9365,
+      "new_regressions_net": 8,
+      "focused_battle_passed": 106,
+      "all_bot_records": 20,
+      "all_bot_records_matched_parent": 9,
+      "all_bot_audit_failures": 0,
+      "mixed_seat_records": 20,
+      "mixed_seat_records_matched_parent": 14,
       "mixed_hash_seeds": [
         0,
         987
       ],
       "mixed_hard_findings": 0,
-      "mixed_partial_plans": 4,
-      "mixed_digest": "e2cbac31f28c3ed31f748277131113e3fbded797e159fca1c91293f9eed76448",
-      "balance_outcomes_matched": 100,
+      "mixed_partial_plans": 5,
+      "mixed_partial_plans_parent": 4,
+      "mixed_digest": "3359f4a3a534e4abe0aaf3b47d270fbafb0e4989371e626c9517a0a426629dfe",
+      "balance_games": 100,
+      "balance_outcomes_matched_parent": 67,
+      "balance_winners_changed_from_parent": 27,
+      "balance_lengths_changed_from_parent": 18,
       "balance_guardrail_passed": true
     },
-    "comparison_source": "b23c8cd73c9747e6e39157a042a1af13cc703a48"
+    "comparison_source": "e1b1fb29ae407aed4feacc6089f4ad2604385404"
   },
   "prior_unverified_rows": [
     {
@@ -623,7 +625,7 @@
       "known_status": "The original inventory left BM-AMBUSH-FORT-SOURCE unverified. This audit promotes it to a confirmed mechanics defect. Existing tests encode the incorrect Fort interpretation.",
       "comparator": "Liberty or Death docs/audit_set_but_never_applied_s76.md checks modifiers at their final observation point and traces parallel calculators. Here the Ambush rule is followed through the actual loss resolver and ordinary accepted Command. The supplied Falling Sky flowchart expressly makes the rules text authoritative.",
       "scope": "Normal human Command+SA and shared Battle resolver. Fort cases executed; the same source branch also covers Citadels, but no separate Citadel witness is claimed.",
-      "status": "open",
+      "status": "closed",
       "classification": "confirmed",
       "domain": "battle",
       "source_rule": "Reference Documents/Chapter 4 §§4.3.3, 4.4.3, 4.5.3; Chapter 3 §3.4.4",
@@ -634,7 +636,9 @@
         "fs_bot/tests/test_battle.py:842"
       ],
       "comparison_pattern": "Liberty or Death docs/audit_set_but_never_applied_s76.md checks modifiers at their final observation point and traces parallel calculators. Here the Ambush rule is followed through the actual loss resolver and ordinary accepted Command. The supplied Falling Sky flowchart expressly makes the rules text authoritative.",
-      "prior_status": "The original inventory left BM-AMBUSH-FORT-SOURCE unverified. This audit promotes it to a confirmed mechanics defect. Existing tests encode the incorrect Fort interpretation."
+      "prior_status": "The original inventory left BM-AMBUSH-FORT-SOURCE unverified. This audit promotes it to a confirmed mechanics defect. Existing tests encode the incorrect Fort interpretation.",
+      "repair_report": "../current-status.md#10-november-forts-citadels-and-ambush",
+      "disposition": "Fort and Citadel halving applies before automatic Ambush casualties. Defending Caesar tests even behind a Fort, with 5–6 required against Belgae. A successful test permits saving rolls and Counterattack. Base German Battle includes Ambush. Ordinary Ariovistus German Battle uses the usual defense."
     },
     {
       "id": "BE2-01",
@@ -1144,5 +1148,44 @@
     "Fifteen historical rows remain unverified; FE-NOPRUNING also retains a broad specialized-menu completeness uncertainty.",
     "Previously recorded CV-PERSISTENCE and source questions are outside the new21 count.",
     "No claim that all defects were introduced by recent repairs. Original50 dispositions retain their historical scope."
+  ],
+  "previous_repairs": [
+    {
+      "batch": 1,
+      "date": "2026-11-10",
+      "findings": [
+        "FE2-01",
+        "FE2-02",
+        "XC2-01",
+        "CM2-01",
+        "CM2-02",
+        "CM2-03"
+      ],
+      "report": "../current-status.md#10-november-human-turn-plan-scope",
+      "tested_source": {
+        "commit": "b346a41366ab0573510ac4061f6655dbab7aa224",
+        "python_sha256": "79e7a881aa960e1e66d50584943e74a26d0df5ad3cf25f93519d86e3dae0e3e3",
+        "python_files": 573,
+        "working_tree_changes": true,
+        "note": "Validation ran against the publishing tree over the listed parent."
+      },
+      "validation": {
+        "pytest_passed": 9357,
+        "new_regressions": 23,
+        "focused_passed": 124,
+        "all_bot_records_matched": 20,
+        "mixed_seat_records_matched": 20,
+        "mixed_hash_seeds": [
+          0,
+          987
+        ],
+        "mixed_hard_findings": 0,
+        "mixed_partial_plans": 4,
+        "mixed_digest": "e2cbac31f28c3ed31f748277131113e3fbded797e159fca1c91293f9eed76448",
+        "balance_outcomes_matched": 100,
+        "balance_guardrail_passed": true
+      },
+      "comparison_source": "b23c8cd73c9747e6e39157a042a1af13cc703a48"
+    }
   ]
 }

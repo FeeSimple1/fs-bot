@@ -170,107 +170,19 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     elite.window(state, 'battle_attack', region=region,
                  attacker=attacking_faction, defender=defending_faction)
     elite.ensure_selected(state, region)
-    # Determine if Ambush affects the roll mechanic
-    # and if Caesar Defending gets a special roll
-
-    # Caesar Defending check — §3.4.4, §4.3.3
-    # When Caesar is Defending, no Citadel/Fort, no Retreat, and Ambush
-    # or Germanic attack: Caesar rolls to retain roll ability.
-    caesar_defending = (
-        get_leader_in_region(state, region, defending_faction) == CAESAR
-    )
-
-    # Check current Fort/Citadel AFTER Besiege
-    d_pieces_now = get_effective_faction_pieces(state, region, defending_faction)
-    has_fort_now = d_pieces_now.get(FORT, 0) > 0 and not ignore_fort
-    has_citadel_now = d_pieces_now.get(CITADEL, 0) > 0 and not ignore_citadel
-
-    # Determine if the defender gets die rolls for hard targets
-    # Default: yes (use_rolls = True)
-    ambush_auto_remove = False
+    # Forts and Citadels halve Attack Losses below (§§3.3.4, 3.4.4).
+    # Ambush still removes pieces outright unless Caesar passes his test
+    # (§§3.4.4, 4.3.3, 4.4.3, 4.5.3, A4.6.3).
+    ambush_attack = is_ambush or (attacking_faction == GERMANS
+                                 and scenario in BASE_SCENARIOS)
     caesar_counterattack_allowed = False
-
-    if is_ambush or (attacking_faction == GERMANS
-                     and scenario in BASE_SCENARIOS):
-        # Ambush or Germanic (base game) attack: auto-remove hard targets
-        ambush_auto_remove = True
-        # But NOT if defender has Citadel or Fort (they still get half losses
-        # and the normal roll mechanic) — Wait, re-read the rules...
-        #
-        # §3.4.4: "the Defender must remove a piece for each Loss suffered,
-        # including Leader, Legion, Citadel, or Fort without first rolling
-        # a 1-3."
-        # §4.3.3: same text.
-        #
-        # So Ambush removes the roll ability regardless of Fort/Citadel.
-        # Fort/Citadel only halves the total losses, doesn't restore rolls.
-        #
-        # EXCEPTION: Caesar — §3.4.4, §4.3.3
-        if caesar_defending:
-            # "Romans Defending in the same Region as Caesar on a die roll
-            # of 4, 5, or 6 may absorb Losses by rolling a die and removing
-            # Legion, Caesar, or Fort only on 1-3."
-            #
-            # But only if no Citadel/Fort for the branching path?
-            # Re-reading the flowchart:
-            # Step_3_Attack_No_Retreat → "Defender has Citadel or Fort?" →
-            #   Yes: half losses, rolls still apply (Citadel/Fort path)
-            #   No: "Ambush or Germanic Attack?" →
-            #     Yes: auto-remove (no rolls)
-            #       BUT "Caesar Defending?" → roll 4-6 to retain rolls
-            #     No: normal losses with rolls
-            #
-            # Wait — looking at the flowchart more carefully:
-            # The Citadel/Fort check is SEPARATE from the Ambush check.
-            # If you have a Citadel or Fort → half losses, LAST priority,
-            # and normal roll mechanics.
-            # If NO Citadel/Fort → then check Ambush.
-            #
-            # So: Defender with Citadel/Fort ALWAYS gets rolls, even in Ambush.
-            # Defender WITHOUT Citadel/Fort in Ambush → no rolls (unless Caesar).
-            #
-            # Re-reading §3.3.4: "A Defender taking such Losses when Ambiorix
-            # is Attacking must take one for each Belgic Warband, not just ½."
-            # Then later: same roll mechanic text as Roman Battle.
-            # Then: "If the Faction taking Losses is a Defender who has opted
-            # to Retreat..."
-            #
-            # And §4.3.3 specifically says "The Defender must remove a piece
-            # for each Loss suffered, including Leader, Legion, Citadel, or
-            # Fort without first rolling a 1-3."
-            # EXCEPTION: Caesar on 4-6 retains rolls.
-            #
-            # But the flowchart has: No Retreat → Citadel/Fort? → Yes →
-            # "half Losses, Allies/Forts/Citadels last" (with normal rolls)
-            # That path doesn't go through the Ambush check at all.
-            #
-            # Hmm, but §4.3.3 says "(but may use any Fort or Citadel normally)"
-            # This means Ambush + Citadel/Fort → half losses AND normal rolls.
-            #
-            # So: Fort/Citadel DOES restore rolls during Ambush. The auto-remove
-            # only applies when NO Fort/Citadel. Let me fix this logic.
-            if not has_fort_now and not has_citadel_now:
-                # No Fort/Citadel → Caesar must roll to retain rolls
-                # Determine threshold based on attacking faction
-                if attacking_faction == BELGAE:
-                    threshold = CAESAR_BELGIC_AMBUSH_ROLL_THRESHOLD
-                else:
-                    threshold = CAESAR_AMBUSH_ROLL_THRESHOLD
-                roll = state["rng"].randint(DIE_MIN, DIE_MAX)
-                success = roll >= threshold
-                result["caesar_roll"] = (roll, success)
-                if success:
-                    ambush_auto_remove = False
-                    caesar_counterattack_allowed = True
-            else:
-                # Has Fort/Citadel → "(but may use any Fort or Citadel
-                # normally)" — §4.3.3. Normal rolls apply.
-                ambush_auto_remove = False
-        elif has_fort_now or has_citadel_now:
-            # Non-Caesar defender with Fort/Citadel during Ambush
-            # §4.3.3: "(but may use any Fort or Citadel normally)"
-            ambush_auto_remove = False
-        # else: no Caesar, no Fort/Citadel → auto-remove stays True
+    if (ambush_attack and defending_faction == ROMANS
+            and get_leader_in_region(state, region, ROMANS) == CAESAR):
+        threshold = (CAESAR_BELGIC_AMBUSH_ROLL_THRESHOLD
+                     if attacking_faction == BELGAE else CAESAR_AMBUSH_ROLL_THRESHOLD)
+        roll = state["rng"].randint(DIE_MIN, DIE_MAX)
+        caesar_counterattack_allowed = roll >= threshold
+        result["caesar_roll"] = (roll, caesar_counterattack_allowed)
 
     # Calculate Attack Losses
     # For halving: use the original Fort/Citadel state (before Besiege)
@@ -330,7 +242,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     attack_result = resolve_losses(
         state, region, defending_faction, attack_losses,
         is_retreat=defender_retreats,
-        is_ambush=ambush_auto_remove,
+        is_ambush=ambush_attack and not caesar_counterattack_allowed,
         caesar_counterattacks=caesar_counterattack_allowed,
         loss_order=attack_loss_order,
         abatis_defender=True,  # card A64: marker absorbs when defending
@@ -344,22 +256,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     result["attack"] = attack_result
 
     # ── Step 4: Counterattack ──
-    # Skip if Retreat — §3.2.4: "If the Defender declared a Retreat,
-    # skip this step."
-    # Skip if Ambush — §4.3.3: "There is no Counterattack"
-    # EXCEPT: Caesar rolled successfully — §4.3.3: "except if Caesar
-    # rolled a 4-6 above"
-    counterattack = False
-    if not defender_retreats and not no_counterattack:
-        if is_ambush or (attacking_faction == GERMANS
-                         and scenario in BASE_SCENARIOS):
-            # No counterattack during Ambush/Germanic base
-            if caesar_counterattack_allowed:
-                counterattack = True
-        else:
-            counterattack = True
-
-    if counterattack:
+    if (not defender_retreats and not no_counterattack
+            and (not ambush_attack or caesar_counterattack_allowed)):
         elite.window(state, 'battle_counterattack', region=region,
                      attacker=attacking_faction, defender=defending_faction)
         elite.ensure_selected(state, region)

@@ -101,6 +101,13 @@ Losses, even if those Losses are zero or the Defender declared Retreat.
 Use `b`/`board` to inspect before choosing. Removing the Citadel preserves its
 normal halving for that Battle unless Ballistae cancels that protection.
 
+A defending Fort or Citadel still halves Attack Losses during an Ambush,
+rounded down. Each remaining Loss removes a piece outright unless defending
+Caesar rolls 4–6, or 5–6 against Belgae. A successful test restores Roman
+saving rolls and allows a Counterattack. Base-game German Battle follows the
+same Ambush procedure. In Ariovistus, ordinary German Battle uses the normal
+saving rolls and Counterattack rules.
+
 If your Faction owns shaded Ballistae, each completed Ambush with a surviving
 defending Fort or Citadel now asks whether to remove it. You may decline.
 The choice comes after all Battle Losses and Reveal; it is independent in each

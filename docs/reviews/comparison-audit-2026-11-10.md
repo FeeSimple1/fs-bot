@@ -1,8 +1,9 @@
 # Falling Sky comparison audit — 10 November 2026
 
-Batch 1 closed six findings after this audit. Current dispositions and
-validation are in the [finding ledger](comparison-audit-2026-11-10.json)
-and the [repair report](../current-status.md#10-november-human-turn-plan-scope).
+Batch 1 closed six findings. The fortified Ambush repair closes BM2-01
+in Batch 2. Current dispositions and validation are in the
+[finding ledger](comparison-audit-2026-11-10.json) and
+[repair report](../current-status.md#10-november-forts-citadels-and-ambush).
 
 **21 confirmed open findings, comprising 15 high and 6 medium priority.** This follow-up compares Falling Sky with Liberty or Death’s approaches to human choices, validation, and effect verification. Each finding has an executable witness and a cited Falling Sky rule. No gameplay repairs are included in this audit.
 

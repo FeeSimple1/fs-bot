@@ -294,8 +294,13 @@ def _validate_plan(state, faction, request, action):
     error = validate_trade_plan(action)
     if error:
         return error
-    from fs_bot.engine.action_validation import validate_rally_interruption
+    from fs_bot.engine.action_validation import (
+        validate_command_interruption, validate_rally_interruption,
+    )
     error = validate_rally_interruption(state, faction, action)
+    if error:
+        return error
+    error = validate_command_interruption(state, faction, action)
     if error:
         return error
     from fs_bot.engine.action_validation import validate_region_uniqueness
@@ -315,8 +320,6 @@ def _validate_plan(state, faction, request, action):
     if standalone:
         if cmd is not None:
             return 'This grant permits only a Special Ability.'
-        if request.get('allowed_sas') is not None and sa not in request['allowed_sas']:
-            return 'That Special Ability is not granted by this Event.'
         if not sa or sa in ('No SA', 'Ambush', 'Besiege'):
             return 'Choose a standalone Special Ability (no Ambush or Besiege).'
     elif cmd not in request.get('allowed_commands', command_options(faction)):
@@ -326,6 +329,8 @@ def _validate_plan(state, faction, request, action):
     if sa and sa != 'No SA':
         if not standalone and not request.get('with_sa'):
             return 'This Event grants a Command without a Special Ability.'
+        if request.get('allowed_sas') is not None and sa not in request['allowed_sas']:
+            return 'That Special Ability is not granted by this Event.'
         if sa not in _faction_special_abilities(faction, state['scenario']):
             return f'{faction} cannot execute {sa}.'
         if not standalone and not compatible_sa(cmd, sa):
@@ -348,6 +353,8 @@ def _validate_plan(state, faction, request, action):
             return 'Aedui Ambush still selects at most one Region (§4.4.3).'
         if faction != AEDUI and set(ambush_regions) != battle_regions:
             return 'The Morasses grant adds Ambush to each selected Battle Region.'
+    if request.get('double_auxilia') and 'sa_after_step' in (action.get('details') or {}):
+        return 'This Event grants its own Scout and Battle sequence.'
     parts = command_parts(action)
     if len(parts) > 1:
         if cmd in ('March', 'Battle') or action.get('sa_timing') != 'during' or len(parts) != 2:

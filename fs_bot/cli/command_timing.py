@@ -6,7 +6,7 @@ from fs_bot.cli.display import HumanTurnDisplay
 from fs_bot.cli.menus import prompt_choice
 
 
-def collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
+def collect_raid(state, faction, stdin, stdout, single, *, excluded=(), interrupt=None):
     from fs_bot.board.pieces import count_pieces_by_state
     from fs_bot.cli.human_plan import _regions_with_pieces, _pick_regions
     from fs_bot.commands.common import _is_devastated
@@ -33,7 +33,7 @@ def collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
     picked = _pick_regions(stdin, stdout, 'Raid in which Region(s)?', regions,
                            single=single, max_regions=state.get('_cli_command_max_regions'))
     plan, carried, tails = [], [], {}
-    for region in picked:
+    for index, region in enumerate(picked):
         key = f'raid_credit:{region}'
         completed = 0
         while completed < max_raiders_per_region(sim, faction):
@@ -84,6 +84,10 @@ def collect_raid(state, faction, stdin, stdout, single, *, excluded=()):
                     ledger = [item]
                 ledger[0]['count'] += 1
                 set_cohorts(sim, key, faction, ledger)
+            if interrupt is not None and (completed < max_raiders_per_region(sim, faction)
+                                           or index + 1 < len(picked)):
+                if interrupt(sim, len(plan), region):
+                    interrupt = None
         if completed and carried:
             tails[region] = carried
             carried = []

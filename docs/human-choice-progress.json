@@ -3,11 +3,11 @@
   "audit_report": "reviews/human-choice-audit-2026-10-29.md",
   "updated": "2026-11-10",
   "tested_source": {
-    "commit": "858343bf2e6686aece8c2fc6b77df7014c4c72b2",
-    "python_sha256": "32d78c7f2b1880cdc570bc1fe56c1db856e156c5091ee066f3a1097e7431b9a1",
-    "python_files": 566,
+    "commit": "3299c55625b1fba1c77d5c5e6a5350cf1b31d08a",
+    "python_sha256": "a7df9bb8f21cd97b30af6cd87208b9b2090fc1bb92d789026364a18dfbadf4f1",
+    "python_files": 568,
     "working_tree_changes": true,
-    "note": "The non-player Retreat placement follow-up is tested on the publishing tree over the listed parent. See current-status.md#10-november-non-player-retreat-leader-placement."
+    "note": "The Battle and Raid timing repair is tested on the publishing tree over the listed parent. See current-status.md#10-november-battle-and-raid-special-ability-timing."
   },
   "total": 50,
   "closed": 48,
@@ -78,14 +78,17 @@
     "Live transit drop-offs complete MARCH-DROPOFF. Earlier arrivals in later origin groups are a separate follow-up. See current-status.md#10-november-ordinary-march-drop-offs.",
     "The March origin follow-up keeps earlier arrivals and drop-offs out of later groups in the same Command. The original audit counts remain 47 closed and 3 open.",
     "BATTLE-RETREAT-CHOICES closes with separate live declaration and survivor disposition. The original audit stands at 48 closed and 2 open. NPC Retreat Leader placement is a separate follow-up.",
-    "Non-player Retreat Leader placement closes as a separate follow-up. The original audit remains at 48 closed and 2 open."
+    "Non-player Retreat Leader placement closes as a separate follow-up. The original audit remains at 48 closed and 2 open.",
+    "Standalone Special Abilities can interrupt Battle between Regions and Raid between flips. TIMING-SA-DURING remains open for March."
   ],
   "findings": [
     {
       "id": "TIMING-SA-DURING",
       "title": "General during-Command Special Ability timing remains restricted",
       "severity": "medium",
-      "status": "open"
+      "status": "open",
+      "summary": "Battle and Raid now support a standalone Special Ability during a single ordered Command. March timing remains open.",
+      "report": "current-status.md#10-november-battle-and-raid-special-ability-timing"
     },
     {
       "id": "CMD-REPEATED-REGION",

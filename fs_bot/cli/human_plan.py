@@ -738,16 +738,17 @@ def _collect_intimidate(state, faction, stdin, stdout, *, pending=None):
 
 
 def _collect_enlist(state, faction, stdin, stdout, *, pending=None,
-                    before_state=None, borrow_only=False):
+                    before_state=None, borrow_only=False, borrow_allowed=True):
     """Choose Enlist's timing board before any removal or borrowing menu."""
     if borrow_only:
         sub = 'borrow'
     else:
-        sub = prompt_choice(stdin, stdout, "Enlist the Germans to:",
-            [("Battle", "german_battle"), ("March", "german_march"),
-             ("hide (flip Warbands Hidden)", "german_march_hide"),
-             ("Rally", "german_rally"), ("Raid", "german_raid"),
-             ("lend Warbands to the Belgic Command", "borrow")])
+        options = [("Battle", "german_battle"), ("March", "german_march"),
+                   ("hide (flip Warbands Hidden)", "german_march_hide"),
+                   ("Rally", "german_rally"), ("Raid", "german_raid")]
+        if borrow_allowed:
+            options.append(("lend Warbands to the Belgic Command", "borrow"))
+        sub = prompt_choice(stdin, stdout, "Enlist the Germans to:", options)
     if sub == 'borrow' and before_state is not None:
         state = before_state
     from fs_bot.cli.action_windows import prepare, inspect_board
@@ -970,13 +971,13 @@ _COMMAND_COLLECTORS = {
 
 
 def _collect_command_plan(state, faction, cmd, stdin, stdout, single=False,
-                          *, excluded=()):
+                          *, excluded=(), collector=None):
     maximum = state.get("_cli_max_regions")
     if maximum is not None:
         state = dict(state, _cli_command_max_regions=max(0, maximum - len(set(excluded))))
         if state["_cli_command_max_regions"] == 0:
             return None
-    collector = _COMMAND_COLLECTORS.get(cmd)
+    collector = collector or _COMMAND_COLLECTORS.get(cmd)
     from fs_bot.cli.diviciacus import choose_regions, planning_scope
     from fs_bot.cli.action_windows import inspect_board
     # Earlier operations may have changed this detached planning board.
@@ -1035,7 +1036,7 @@ def _preview_borrow(state, faction, action):
 
 def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
                      standalone=False, before_state=None, allowed_sas=None,
-                     allowed_regions=None):
+                     allowed_regions=None, borrow_allowed=True):
     from fs_bot.engine.action_validation import compatible_sa
     if allowed_regions is not None:
         state = dict(state, _cli_allowed_regions=allowed_regions)
@@ -1067,11 +1068,14 @@ def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
         if cooperation is not None:
             action["details"]["diviciacus_sa_regions"] = cooperation
         with planning_scope(state, faction, cooperation, "special_ability"):
+            enlist_options = ({'borrow_allowed': False}
+                              if sa == 'Enlist' and not borrow_allowed else {})
             return _collect_sa_details(state, faction, action, stdin, stdout, sa,
-                                       before_state)
+                                       before_state, **enlist_options)
 
 
-def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state):
+def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state,
+                        *, borrow_allowed=True):
     if sa == "Trade":
         # Supply declarations and the final board determine legal Regions.
         # Ask at execution, after the preceding Command/SA portion resolves.
@@ -1085,7 +1089,8 @@ def _collect_sa_details(state, faction, action, stdin, stdout, sa, before_state)
         from fs_bot.cli.sa_timing import collect_scalar
         collector = lambda board, actor, src, out, **kw: collect_scalar(board, actor, sa, src, out)
     if collector is not None:
-        kwargs = {"before_state": before_state} if sa == "Enlist" else {}
+        kwargs = ({"before_state": before_state, "borrow_allowed": borrow_allowed}
+                  if sa == "Enlist" else {})
         sa_regions, extra = collector(state, faction, stdin, stdout,
                                       pending=action, **kwargs)
         if sa_regions is None:
@@ -1145,10 +1150,17 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
     available_sas = [s for s in _faction_special_abilities(faction, state["scenario"])
                      if (allowed_sas is None or s in allowed_sas)
                      and any(compatible_sa(c, s) for c in commands)]
+    standalone = [s for s in available_sas if s not in ("Ambush", "Besiege")]
+    during = [(c, c) for c in commands if c not in ("March", "Battle")
+              and any(compatible_sa(c, s) for s in standalone)]
+    if "Battle" in commands and any(compatible_sa("Battle", s) for s in standalone):
+        during.append(("Battle (between Regions)", "Battle"))
+    if "Raid" in commands and any(compatible_sa("Raid", s) for s in standalone):
+        during.append(("Raid (between individual Warband flips)", "raid_steps"))
     choices = [(c, c) for c in commands]
     if engine_action == ACTION_COMMAND_SA and available_sas:
         choices.append(("Special Activity first, then Command", "sa_first"))
-        if any(c not in ("March", "Battle") for c in commands):
+        if during:
             choices.append(("Command, Special Activity, then continue Command", "sa_during"))
         if faction == BELGAE and "Enlist" in available_sas:
             choices.append(("Command first, with borrowed German Warbands", "enlist_command_first"))
@@ -1194,12 +1206,12 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
         action["details"].update(command["details"])
         return action
     if cmd == "sa_during":
-        # These Commands resolve independently one selected Region at a time.
-        # March groups and Battle-wide capabilities need a shared resolution
-        # context; offer their before/after paths rather than reset that context.
-        legal = [c for c in commands if c not in ("March", "Battle")]
         cmd = prompt_choice(stdin, stdout, "Which Command to interrupt?",
-                            [(c, c) for c in legal])
+                            during)
+        if cmd in ("Battle", "raid_steps"):
+            from fs_bot.cli.command_interruptions import collect_battle, collect_raid
+            collect = collect_battle if cmd == "Battle" else collect_raid
+            return collect(state, faction, stdin, stdout, allowed_sas=standalone)
         from fs_bot.rules_consts import BASE_SCENARIOS
         if cmd == 'Rally' and faction == ARVERNI and state['scenario'] in BASE_SCENARIOS:
             from fs_bot.cli.recruit_rally import collect_interrupted

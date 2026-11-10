@@ -9,12 +9,21 @@ for verified fixes, test coverage, and provisional source interpretations. The
 [documentation index](docs/README.md) also links assistant play and API guides.
 
 The [human-choice audit](docs/reviews/human-choice-audit-2026-10-29.md)
-records current limitations: some Event and seasonal choices still resolve
-automatically, some legal physical selections are unavailable, and general
-during-March/Battle Special Ability timing is unsupported. Before/after action
-ordering is available. At Command prompts, `b`/`board` shows the planning
-position after preceding operations, including a Fort built before March.
-Planning leaves the live game unchanged until the action is submitted.
+records the original findings. The [current status](docs/current-status.md)
+tracks repairs and remaining limits. At Command prompts, `b`/`board` shows
+the planning position after preceding operations, including a Fort built
+before March. Planning uses a detached board and random stream.
+
+To use a Special Activity between Battles or between Warband flips in one
+Raid, choose **Command, Special Activity, then continue Command**. Pick
+**Battle (between Regions)** or **Raid (between individual Warband flips)**.
+For Battle, select the Regions and defenders, then pick the Battle after
+which the Special Activity resolves. Its choices use a preview of the
+completed Battle. For Raid, the menu offers the Special Activity after a
+flip and updates the next flip's choices. A single Raid Region keeps its
+normal flip limit and its one intrinsic Germanic Intimidate opportunity.
+Ambush and Besiege modify Battle directly. March still uses before/after
+timing.
 
 Drought now asks each human owner which single piece to lose in every
 Devastated Region. Choose exact visibility, a named Allied Tribe/Citadel, or a

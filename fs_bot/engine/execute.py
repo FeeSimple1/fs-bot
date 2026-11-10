@@ -392,6 +392,10 @@ def _execute_decision(state, faction, decision, *, sequence=False):
         handler = lambda board, actor, plan: _execute_march(board, actor, plan, choose_dropoffs=True)
     if handler is not None:
         sa = bot_action.get("sa")
+        if is_human and 'sa_after_step' in (bot_action.get('details') or {}):
+            result = _execute_interrupted_command(state, faction, bot_action)
+            _apply_end_of_action_capabilities(state)
+            return _attach_transfers(result)
         from fs_bot.commands.sa_enlist import is_borrow_plan
         if is_borrow_plan(bot_action):
             result = _execute_borrowed_command(state, faction, bot_action, handler)
@@ -598,6 +602,33 @@ def _execute_borrowed_command(state, faction, action, handler):
     return result
 
 
+def _execute_interrupted_command(state, faction, action, *, _human_grant=None,
+                                 _on_boundary=None):
+    """Run one Command and resolve its standalone SA at a completed step."""
+    from fs_bot.engine.diviciacus import suspend_command_loan
+
+    boundary = action['details']['sa_after_step']
+    result_sa = None
+
+    def after_step(step):
+        nonlocal result_sa
+        if step == boundary:
+            with suspend_command_loan(state, faction):
+                if _on_boundary is not None:
+                    _on_boundary(state)
+                result_sa = _execute_sa(state, faction, action, _human_grant=_human_grant)
+
+    handler = {_CMD_BATTLE: _execute_battle, _CMD_RAID: _execute_raid}[action['command']]
+    result = handler(state, faction, action, _after_step=after_step)
+    result['sa_timing'] = 'during'
+    if result_sa is None:
+        result_sa = {'executed': False, 'sa': action['sa'],
+                     'errors': [{'error': 'The chosen Command step did not resolve.'}]}
+    result['sa_execution'] = result_sa
+    _after_command_window(state, faction, action, result)
+    return result
+
+
 def _execute_bot_command(state, faction, bot_action, *, with_sa=False, _human_grant=None):
     """Execute an Event-granted Command; add an SA only when text grants it."""
     from fs_bot.commands.common import free_action_scope
@@ -605,6 +636,10 @@ def _execute_bot_command(state, faction, bot_action, *, with_sa=False, _human_gr
     if not with_sa:
         action["sa"] = SA_ACTION_NONE_LABEL
         action["sa_regions"] = []
+        if 'sa_after_step' in (action.get('details') or {}):
+            action['details'] = dict(action['details'])
+            action['details'].pop('sa_after_step')
+            action.pop('sa_timing', None)
     with free_action_scope(state, faction):
         return _execute_free_bot_command(state, faction, action, _human_grant=_human_grant)
 
@@ -625,6 +660,14 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
         h = handlers[_CMD_MARCH] = execute_march
     if h is None:
         return None
+    if 'sa_after_step' in (bot_action.get('details') or {}):
+        from fs_bot.engine.spring import atomic
+        try:
+            with atomic(state):
+                return _execute_interrupted_command(state, faction, bot_action,
+                                                    _human_grant=_human_grant)
+        except _EXEC_ERRORS as exc:
+            return {'executed': False, 'command': cmd, 'errors': [{'error': str(exc)}]}
     from fs_bot.commands.sa_enlist import is_borrow_plan
     if is_borrow_plan(bot_action):
         return _execute_borrowed_command(state, faction, bot_action, h)
@@ -3541,7 +3584,7 @@ def _resolve_seize_rally(state, source_region, tribe, roll_result):
 
 
 @_diviciacus_command_scope
-def _execute_raid(state, faction, bot_action):
+def _execute_raid(state, faction, bot_action, *, _after_step=None):
     """Execute a Raid Command — §3.3.3.
 
     Bots emit ``details['raid_plan']`` as a flat list of per-flip entries
@@ -3581,21 +3624,35 @@ def _execute_raid(state, faction, bot_action):
     per_region = []
     gained_total = 0
     errors = []
+    steps = 0
     for index, region in enumerate(order):
         _timing_plan_step(state, faction, bot_action, 'raid_region',
                           index=index, region=region)
         actions = by_region[region][:max_raiders_per_region(state, faction)]
         if not actions:
             continue
+        within_region = details['sa_after_step'] - steps if _after_step else 0
+        interruption = {}
+        if 0 < within_region < len(actions):
+            interruption = {'interrupt_after': within_region,
+                            'interrupt': lambda: _after_step(steps + within_region)}
         try:
             res = raid_in_region(state, region, faction, actions,
-                after_flips=(details.get('raid_timing_actions') or {}).get(region))
+                after_flips=(details.get('raid_timing_actions') or {}).get(region),
+                **interruption)
         except _EXEC_ERRORS as exc:
+            if _after_step is not None:
+                # A failed flip must not silently undo the SA in the middle of
+                # the Region. Let the enclosing human action roll back.
+                raise
             errors.append({"region": region, "error": str(exc)})
             continue
+        steps += len(actions)
         gained_total += res.get("resources_gained", 0)
         if res.get('warbands_flipped', 0):
             per_region.append(res)
+        if _after_step is not None and res['warbands_flipped'] == len(actions):
+            _after_step(steps)
 
     return {
         "executed": len(per_region) > 0,
@@ -3717,7 +3774,7 @@ def _execute_rally_steps(state, faction, steps, *, ordered=False,
 def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                     _full_loss_warbands=0, _double_auxilia=False, _ambush_anywhere=False,
                     _battle_observer=None, _full_loss_cohort=None, _require_ambush=False,
-                    _skip_absent_targets=False):
+                    _skip_absent_targets=False, _after_step=None):
     """Execute a Battle Command — §3.2.4 / §3.3.4 / §3.4.4.
 
     The bot supplies ``details['battle_plan']`` as a list of per-region
@@ -3800,6 +3857,9 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     unavailable_ambushes = []
     _queue_capabilities_used = set()
     for battle_index, entry in enumerate(battle_plan):
+        if (_after_step is not None and battle_index and battles
+                and battles[-1]['region'] == battle_plan[battle_index - 1]['region']):
+            _after_step(battle_index)
         region = entry.get("region")
         if region is None:
             continue
@@ -3814,6 +3874,9 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             targets = entry.get("targets") or []
             defender = targets[0] if targets else None
         if defender is None:
+            continue
+        if _after_step is not None and not count_pieces(state, region, faction):
+            errors.append({'region': region, 'error': 'attacker not present'})
             continue
         if _skip_absent_targets and not count_pieces(state, region, defender):
             # This is a prospective queue, not a preselected Battle Region.

@@ -374,8 +374,21 @@ flowcharts. Ambush and Besiege are Battle modifiers and resolve within the
 Battle. For Rally, Recruit, Raid, or Seize, `sa_timing: "during"` accepts
 `details.command_parts: [first_plan, second_plan]`: two plans for the same
 Command, selecting different Regions, with the accompanying Special
-Activity between them. March and Battle currently support before/after
-timing; their Command-wide movement and Battle bookkeeping is not split.
+Activity between them.
+
+For an interruption within one ordered Battle or Raid plan, use
+`sa_timing: "during"` and `details.sa_after_step: N`. Supply a single
+`battle_plan` or `raid_plan` and the accompanying standalone Special
+Ability plan. The Special Ability resolves after entry `N` completes. Use
+its 1-based position, up to the penultimate entry. Battle entries are distinct
+Regions. The Command retains its original Region selections and capability
+choices. Raid entries are individual flips. Keep all entries for each Raid
+Region contiguous within the plan and within its normal flip limit. At a
+Raid Region's end, intrinsic Germanic Intimidate resolves as part of that
+Region. An interruption between flips in one Region keeps both flips in the
+same Raid procedure. Choose Enlist borrowing with the Command's force
+selection. Use the free Germanic Command option to interrupt with Enlist.
+March still uses before/after timing.
 
 ### Choices between operations
 

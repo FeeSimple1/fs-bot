@@ -230,6 +230,26 @@ def force_scope(state, faction, regions, phase='command'):
             state[KEY] = old
 
 
+@contextmanager
+def suspend_command_loan(state, faction):
+    """Battle/Raid and an intervening SA need separate A1.4 agreements."""
+    command = state.get(KEY)
+    if not command or command['faction'] != faction or command['phase'] != 'command':
+        yield
+        return
+    del state[KEY]
+    try:
+        yield
+    finally:
+        # Neither Command moves its attacking borrowers. A separately agreed
+        # Scout can move or flip the lender's counters before they resume.
+        for region in command['pieces']:
+            lender = state['spaces'][region].get('pieces', {}).get(command['lender'], {})
+            command['pieces'][region] = {
+                ps: lender.get(ps, {}).get(command['physical_type'], 0) for ps in STATES}
+        state[KEY] = command
+
+
 def effective_pieces(state, region, faction, raw):
     ctx = state.get(KEY)
     if not ctx or faction not in (ctx['faction'], ctx['lender']):

@@ -21,6 +21,32 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Battle and Raid Special Ability timing
+
+Human players can use a standalone Special Ability between Battle Regions
+or between Raid flips (§4.1). Battle keeps one ordered plan, per-Region
+payments, and Command-wide Capability selections. The Raid procedure can
+resume in the same Region. It counts all flips against one limit and resolves
+Ariovistus's intrinsic Intimidate once for that Region with the actual raiders.
+The Battle and Raid executors retain their Command agreements separately
+from any cooperation sought for the Special Ability (A1.4).
+
+The terminal plans on a detached board. Its Raid menu can offer a target
+that the intervening Special Ability just made legal. Typed plans identify
+the interruption with `details.sa_after_step`. A durable save at a live
+decision within the Special Ability resumes the same Command without
+repeating a paid Battle or a Capability choice. Ambush and Besiege use the
+existing Battle modifier procedure.
+
+All 9,287 tests pass, including 16 directed timing cases. Twenty mixed-seat
+games match across hash seeds with zero hard findings. The 20 all-bot
+records match the parent revision on gameplay results. Winners and game
+lengths match the parent in all 100 paired balance games. The balance
+guardrail passed.
+
+The original audit remains at 48/50 closed (96%). The March portion of
+TIMING-SA-DURING and shared-player ownership (WS-F09) remain open.
+
 ### 10 November Non-player Retreat Leader placement
 
 Non-players now choose where their Leader ends a Retreat after the Attack
@@ -1777,7 +1803,7 @@ correct human ownership, exact choices/timing, Interlude/Winter, and optional
 player modes. The report assigns every finding once and records reproductions.
 
 Earlier verified rows below describe their tested paths, not complete coverage
-of every related rule. General during-March/Battle Special Ability timing,
+of every related rule. During-March Special Ability timing,
 several Event grants, some physical casualty choices, and Interlude selections
 remain incomplete. Board inspection can show the pre-SA board during later
 March planning. The two existing non-player source questions remain separate.

@@ -204,25 +204,28 @@ def get_valid_steal_targets(state, region, faction):
 # ============================================================================
 
 def raid_in_region(state, region, faction, raid_actions, *, free=False,
-                   after_flips=None):
+                   after_flips=None, interrupt_after=None, interrupt=None):
     """Resolve complete flips, allowing timing choices between their effects."""
     from fs_bot.commands.common import is_free_action
     free = free or is_free_action(state, faction)
     from fs_bot.engine.action_windows import interactive, has_authored
-    if interactive(state) or has_authored(raid_actions) or after_flips is not None:
+    if (interrupt is not None or interactive(state) or has_authored(raid_actions)
+            or after_flips is not None):
         return _timed_raid(state, region, faction, raid_actions, free=free,
-                           after_flips=after_flips)
+                           after_flips=after_flips, interrupt_after=interrupt_after,
+                           interrupt=interrupt)
     return _raid_in_region(state, region, faction, raid_actions, free=free)
 
 
 def _timed_raid(state, region, faction, raid_actions, *, free=False,
-                after_flips=None):
+                after_flips=None, interrupt_after=None, interrupt=None):
     from copy import deepcopy
     from fs_bot.engine.action_windows import window, get_cohorts, set_cohorts, clear_cohorts
     from fs_bot.commands.sa_enlist import FREE_FORCE_KEY
     if not raid_actions or len(raid_actions) > max_raiders_per_region(state, faction):
         raise CommandError('Raid needs one to the permitted maximum Warbands per Region')
-    if count_pieces_by_state(state, region, faction, WARBAND, HIDDEN) < len(raid_actions):
+    first_flips = len(raid_actions) if interrupt_after is None else interrupt_after
+    if count_pieces_by_state(state, region, faction, WARBAND, HIDDEN) < first_flips:
         raise CommandError('Not enough Hidden Warbands for the declared Raid')
     if any(not isinstance(action, dict) or action.get('type') not in (RAID_GAIN, RAID_STEAL)
            or (action.get('type') == RAID_STEAL and action.get('target') not in FACTIONS)
@@ -262,6 +265,8 @@ def _timed_raid(state, region, faction, raid_actions, *, free=False,
                     ledger = [item]
                 ledger[0]['count'] += 1
                 set_cohorts(state, key, faction, ledger)
+            if interrupt is not None and index + 1 == interrupt_after:
+                interrupt()
         window(state, 'raid_intimidate' if track else 'raid_complete',
                author=faction, region=region, timing_actions=after_flips)
         if track:

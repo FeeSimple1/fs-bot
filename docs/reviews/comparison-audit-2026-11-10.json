@@ -6,8 +6,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 21,
-  "closed": 7,
-  "open": 14,
+  "closed": 8,
+  "open": 13,
   "severity_counts": {
     "high": 15,
     "medium": 6
@@ -26,40 +26,40 @@
     "batch": 2,
     "date": "2026-11-10",
     "findings": [
-      "BM2-01"
+      "EX2-07"
     ],
-    "report": "../current-status.md#10-november-forts-citadels-and-ambush",
+    "report": "../current-status.md#10-november-orgetorix-citadel-placement",
     "tested_source": {
-      "commit": "e1b1fb29ae407aed4feacc6089f4ad2604385404",
-      "python_sha256": "70d005c277235e9b47dd1870bc7eef245bd1303a07fe2cfb43abb145f53c2b6a",
+      "commit": "86cfa0c78d049be8d41da1f352c4c44216f43045",
+      "python_sha256": "c2ef3feb2f3da36954b04b40c7f389aeb7305e46a66a1b17f31a68b82160d8e1",
       "python_files": 573,
       "working_tree_changes": true,
       "note": "Validation ran against the repair tree over the listed parent."
     },
     "validation": {
-      "pytest_passed": 9365,
-      "new_regressions_net": 8,
-      "focused_battle_passed": 106,
+      "pytest_passed": 9367,
+      "new_regressions": 2,
+      "focused_passed": 93,
       "all_bot_records": 20,
-      "all_bot_records_matched_parent": 9,
+      "all_bot_records_matched_parent": 20,
       "all_bot_audit_failures": 0,
       "mixed_seat_records": 20,
-      "mixed_seat_records_matched_parent": 14,
+      "mixed_seat_records_matched_parent": 20,
       "mixed_hash_seeds": [
         0,
         987
       ],
       "mixed_hard_findings": 0,
       "mixed_partial_plans": 5,
-      "mixed_partial_plans_parent": 4,
+      "mixed_partial_plans_parent": 5,
       "mixed_digest": "3359f4a3a534e4abe0aaf3b47d270fbafb0e4989371e626c9517a0a426629dfe",
       "balance_games": 100,
-      "balance_outcomes_matched_parent": 67,
-      "balance_winners_changed_from_parent": 27,
-      "balance_lengths_changed_from_parent": 18,
+      "balance_outcomes_matched_parent": 100,
+      "balance_winners_changed_from_parent": 0,
+      "balance_lengths_changed_from_parent": 0,
       "balance_guardrail_passed": true
     },
-    "comparison_source": "e1b1fb29ae407aed4feacc6089f4ad2604385404"
+    "comparison_source": "86cfa0c78d049be8d41da1f352c4c44216f43045"
   },
   "prior_unverified_rows": [
     {
@@ -1101,7 +1101,7 @@
       "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
     },
     {
-      "status": "open",
+      "status": "closed",
       "known_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
       "reproduction": "From fs-bot root run PYTHONPATH=. python ../comparison-audit-2026-11-10/expansion/probe.py. Every position passes pool and structural checks before execution; each witness passes the durable response shape validator, public action validator, and execute_decision.",
       "files": [
@@ -1136,7 +1136,9 @@
         "fs_bot/state/state_schema.py:428"
       ],
       "comparison_pattern": "LoD observation-point and post-effect invariants motivate checking the resulting structure and bookkeeping rather than execution success alone.",
-      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again."
+      "prior_status": "Newly confirmed from a formerly not-verified row in the 29 October inventory. No original closed finding is being counted again.",
+      "repair_report": "../current-status.md#10-november-orgetorix-citadel-placement",
+      "disposition": "Orgetorix places each Citadel together with its City Tribe's Arverni allegiance. The shared placement helper records allegiance only when the piece is placed. Sequani placement and Bibracte replacement conserve piece pools and pass structural checks."
     }
   ],
   "limitations": [
@@ -1186,6 +1188,45 @@
         "balance_guardrail_passed": true
       },
       "comparison_source": "b23c8cd73c9747e6e39157a042a1af13cc703a48"
+    },
+    {
+      "batch": 2,
+      "date": "2026-11-10",
+      "findings": [
+        "BM2-01"
+      ],
+      "report": "../current-status.md#10-november-forts-citadels-and-ambush",
+      "tested_source": {
+        "commit": "e1b1fb29ae407aed4feacc6089f4ad2604385404",
+        "python_sha256": "70d005c277235e9b47dd1870bc7eef245bd1303a07fe2cfb43abb145f53c2b6a",
+        "python_files": 573,
+        "working_tree_changes": true,
+        "note": "Validation ran against the repair tree over the listed parent."
+      },
+      "validation": {
+        "pytest_passed": 9365,
+        "new_regressions_net": 8,
+        "focused_battle_passed": 106,
+        "all_bot_records": 20,
+        "all_bot_records_matched_parent": 9,
+        "all_bot_audit_failures": 0,
+        "mixed_seat_records": 20,
+        "mixed_seat_records_matched_parent": 14,
+        "mixed_hash_seeds": [
+          0,
+          987
+        ],
+        "mixed_hard_findings": 0,
+        "mixed_partial_plans": 5,
+        "mixed_partial_plans_parent": 4,
+        "mixed_digest": "3359f4a3a534e4abe0aaf3b47d270fbafb0e4989371e626c9517a0a426629dfe",
+        "balance_games": 100,
+        "balance_outcomes_matched_parent": 67,
+        "balance_winners_changed_from_parent": 27,
+        "balance_lengths_changed_from_parent": 18,
+        "balance_guardrail_passed": true
+      },
+      "comparison_source": "e1b1fb29ae407aed4feacc6089f4ad2604385404"
     }
   ]
 }

@@ -8,18 +8,19 @@ from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available, place_piece
 from fs_bot.cards.card_effects import execute_event, _ally_tribe
 from fs_bot.cards.expansion_validation import default_params, np_available, preview, region_options, validate_response
-from fs_bot.engine.execute import _execute_event
+from fs_bot.engine.execute import _execute_event, execute_decision
 from fs_bot.engine.moves import validate_player_action
 from fs_bot.engine.action_windows import scope
-from fs_bot.engine.game_engine import _action_transaction
+from fs_bot.engine.game_engine import ACTION_EVENT, _action_transaction
 from fs_bot.cli.display import HumanTurnDisplay
-from fs_bot.state.state_schema import build_initial_state, validate_state
+from fs_bot.state.state_schema import build_initial_state, check_structural_integrity, validate_state
 from fs_bot.state.serialize import encode, decode, save_game, load_game
 from fs_bot.tools.seat_session import SeatSession, DecisionPending, board_copy
+from fs_bot.tools.seat_session import validate_response as validate_turn_response
 
 
-def board(card='A29', executor=rc.AEDUI):
-    state = build_initial_state(rc.SCENARIO_ARIOVISTUS, seed=317)
+def board(card='A29', executor=rc.AEDUI, *, scenario=rc.SCENARIO_ARIOVISTUS):
+    state = build_initial_state(scenario, seed=317)
     state['non_player_factions'] = set()
     state['current_card'], state['next_card'] = card, 'A67'
     state['executing_faction'] = executor
@@ -27,9 +28,11 @@ def board(card='A29', executor=rc.AEDUI):
     return state
 
 
-def action(card, params):
+def action(card, params, *, shaded=None):
+    if shaded is None:
+        shaded = card == 'A36'
     return {'command': rc.FIRST_DID_EVENT, 'regions': [], 'sa': 'No SA', 'sa_regions': [],
-            'details': {'card_id': card, 'text_preference': rc.EVENT_SHADED if card == 'A36' else rc.EVENT_UNSHADED,
+            'details': {'card_id': card, 'text_preference': rc.EVENT_SHADED if shaded else rc.EVENT_UNSHADED,
                         'event_params': params}}
 
 
@@ -197,6 +200,42 @@ def test_a43_partial_sources_and_bibracte_unshaded_stacking_fallback():
     assert run(state, 'A43', params)['executed']
     assert state['tribes'][rc.TRIBE_AEDUI]['allied_faction'] is None
     assert count_pieces(state, rc.AEDUI_REGION, rc.ROMANS, rc.ALLY) == 0
+
+
+@pytest.mark.parametrize('scenario,city_region,city_tribe,old_citadel', [
+    (rc.SCENARIO_ARIOVISTUS, rc.SEQUANI, rc.TRIBE_SEQUANI, False),
+    (rc.SCENARIO_GALLIC_WAR, rc.AEDUI_REGION, rc.TRIBE_AEDUI, True),
+])
+def test_a30_shaded_citadel_allies_its_city(scenario, city_region, city_tribe, old_citadel):
+    state = board('A30', rc.BELGAE, scenario=scenario)
+    if old_citadel:
+        place_piece(state, city_region, rc.AEDUI, rc.CITADEL)
+        state['tribes'][city_tribe]['allied_faction'] = rc.AEDUI
+    assert validate_state(state) == []
+    assert check_structural_integrity(state) == []
+    arverni_citadels = get_available(state, rc.ARVERNI, rc.CITADEL)
+    aedui_citadels = get_available(state, rc.AEDUI, rc.CITADEL)
+    plan = action('A30', {'placements': [
+        {'region': city_region, 'piece_type': rc.CITADEL},
+        {'region': city_region, 'piece_type': rc.WARBAND, 'count': 8},
+    ]}, shaded=True)
+    decision = {'action': ACTION_EVENT, 'player_action': plan}
+    validate_turn_response(state, {'kind': 'turn', 'faction': rc.BELGAE,
+                                   'options': [ACTION_EVENT]}, decision)
+    assert validate_player_action(state, rc.BELGAE, plan)[0]
+
+    result = execute_decision(state, rc.BELGAE, decision)
+
+    assert result['executed'] and not result.get('errors'), result
+    assert state['tribes'][city_tribe]['allied_faction'] == rc.ARVERNI
+    assert count_pieces(state, city_region, rc.ARVERNI, rc.CITADEL) == 1
+    assert count_pieces(state, city_region, rc.ARVERNI, rc.ALLY) == 0
+    assert count_pieces(state, city_region, rc.AEDUI, rc.CITADEL) == 0
+    assert count_pieces_by_state(state, city_region, rc.ARVERNI, rc.WARBAND, rc.HIDDEN) == 8
+    assert get_available(state, rc.ARVERNI, rc.CITADEL) == arverni_citadels - 1
+    assert get_available(state, rc.AEDUI, rc.CITADEL) == aedui_citadels + int(old_citadel)
+    assert validate_state(state) == []
+    assert check_structural_integrity(state) == []
 
 
 def test_a43_repeated_exact_warband_rolls_back_instead_of_substituting_visibility():

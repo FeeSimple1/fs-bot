@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November Orgetorix Citadel placement
+
+Shaded Orgetorix records an Arverni Citadel and its City Tribe's allegiance
+together. The Citadel represents the Allied Tribe under §1.4.2. The Event's
+printed exception permits the Arverni placement at Bibracte (A Card
+Reference A30 shaded and §A5.1.1). The regression cases cover placement at
+an empty Sequani City in Ariovistus and replacement of an Aedui Citadel at
+Bibracte in The Gallic War. Both verify City allegiance, piece inventory,
+and structural integrity through the accepted human Event.
+
+All 9,367 tests pass. The 20 all-bot records, 20 mixed-seat records and
+100 balance-game outcomes match the parent. The mixed-seat results agree
+across both hash seeds with zero hard findings and five partial plans.
+The balance check passed its 15-point band.
+
+**EX2-07 closes and Batch 2 is complete.** The
+[comparison ledger](reviews/comparison-audit-2026-11-10.json) stands at
+**8 of 21 closed, 13 remaining.**
+
 ### 10 November Forts, Citadels, and Ambush
 
 Forts and Citadels halve Attack Losses, rounded down, during an Ambush.

@@ -281,14 +281,12 @@ def _tribe_piece_type(state, tribe):
     return None
 
 
-def _ally_tribe(state, tribe, faction):
-    """Ally a Subdued tribe to ``faction``: place the ALLY disc in the
-    tribe's Region AND set allied_faction, together.
+def _ally_tribe(state, tribe, faction, *, citadel=False):
+    """Ally a Subdued tribe and place its Ally disc or City Citadel together.
 
-    Returns True if both records were updated. No-ops (returns False) if
-    the tribe is unknown, not Subdued (already Allied, Dispersed, or
-    Razed), or the faction has no Ally piece Available — without a piece
-    the allegiance is not recorded either, mirroring how Rally behaves.
+    Returns True after placement. An unknown or non-Subdued tribe or an
+    unavailable backing piece leaves the board unchanged. Citadels require
+    a City.
     (A leftover status of ALLIED with no allied_faction — setup legacy —
     counts as Subdued.)
     """
@@ -298,9 +296,14 @@ def _ally_tribe(state, tribe, faction):
             or info.get("allied_faction") is not None
             or info.get("status") not in (None, ALLIED)):
         return False
-    if get_available(state, faction, ALLY) <= 0:
+    if citadel:
+        from fs_bot.map.map_data import is_city_tribe
+        if not is_city_tribe(tribe):
+            return False
+    piece_type = CITADEL if citadel else ALLY
+    if get_available(state, faction, piece_type) <= 0:
         return False
-    place_piece(state, region, faction, ALLY)
+    place_piece(state, region, faction, piece_type)
     info["allied_faction"] = faction
     info["status"] = None
     refresh_all_control(state)
@@ -3159,7 +3162,7 @@ def execute_card_A30(state, shaded=False):
     Source: A Card Reference, card A30
     """
     from fs_bot.rules_consts import SEQUANI, AEDUI_REGION
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.map.map_data import get_tribes_in_region, is_city_tribe
     params = state.get("event_params", {})
     scenario = state["scenario"]
     if not shaded:
@@ -3191,6 +3194,12 @@ def execute_card_A30(state, shaded=False):
                 tribe = p.get("tribe")
                 if (_tribe_region(state, tribe) == region
                         and _ally_tribe(state, tribe, ARVERNI)):
+                    total += 1
+            elif piece_type == CITADEL:
+                # The City's Citadel represents its Allied Tribe (§1.4.2).
+                tribe = next((t for t in get_tribes_in_region(region, scenario)
+                              if is_city_tribe(t)), None)
+                if cnt > 0 and _ally_tribe(state, tribe, ARVERNI, citadel=True):
                     total += 1
             else:
                 avail = get_available(state, ARVERNI, piece_type)

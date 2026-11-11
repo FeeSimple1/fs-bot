@@ -8,6 +8,16 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
+### Q-A33-OUTNUMBERED — Wailing Women counting scope (10 November 2026)
+
+Unconfirmed source question, excluded from the fourth audit's confirmed defect count.
+
+The audit tried to verify which surviving pieces determine whether German Warbands are outnumbered after Counterattack. A Card Reference A33, lines139–141, says “Germans never Retreat and, unless Ariovistus on map, remove their outnumbered Warbands after they Counterattack.”
+
+The current resolver (`fs_bot/battle/resolve.py`, lines287–313) compares the number of surviving German Warbands with only the attacking faction's surviving Warbands, Auxilia and Legions. It excludes Leaders, Allies, Forts, Citadels and Settlements, and it excludes third-party factions. The supplied Key Terms Index and A New Terms Index do not define “outnumbered.” A19's separate NPC instruction has a different context and does not establish this card's counting rule.
+
+Possible interpretations are to retain the current attacking-mobile-pieces count, to count all surviving attacking Forces, or to compare German Warbands with all non-German Forces in the Region. The supplied words do not expressly choose among them. An authoritative clarification is required before this counting formula can be called defective or repaired. No gameplay code changed and no witness outcome is claimed to resolve the rule.
+
 <a id="q-capability-queue-timing--reserving-mandatory-one-region-capabilities-5-november-2026"></a>
 
 ### [PROVISIONAL PR-13] Q-CAPABILITY-QUEUE-TIMING — reserving mandatory one-Region capabilities (5 November 2026)

@@ -1,0 +1,956 @@
+{
+  "audit": "Fourth Falling Sky / Liberty or Death comparison",
+  "date": "2026-11-10",
+  "audited_commit": "b951908af2b21cc87a7e27d9a5314b3f257d0147",
+  "source_sha256": "fb0bbf5af4a7513bbac1157f17054948d2ec5b3724ab612296b10a1d017ea51b",
+  "python_files": 585,
+  "python": "3.12.14",
+  "comparator_repository": "FeeSimple1/lod-bot",
+  "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+  "total": 16,
+  "closed": 0,
+  "open": 16,
+  "severity_counts": {
+    "medium": 5,
+    "high": 11
+  },
+  "engine_changes": false,
+  "reference_changes": false,
+  "previous_ledgers": [
+    {
+      "total": 50,
+      "closed": 50
+    },
+    {
+      "total": 21,
+      "closed": 21
+    },
+    {
+      "total": 15,
+      "closed": 15
+    }
+  ],
+  "validation": {
+    "pytest": {
+      "passed": 9686,
+      "failed": 0,
+      "warnings": 1,
+      "seconds": 326.12,
+      "exit_code": 0
+    },
+    "bots": {
+      "cases": 20,
+      "seeds": [
+        25,
+        26,
+        27,
+        28
+      ],
+      "scenarios": 5,
+      "edition": "second-edition",
+      "all_audit_checks_pass": true,
+      "new_balance_matrix": false
+    },
+    "fuzz": {
+      "games": 20,
+      "human_turns": 599,
+      "event_turns": 148,
+      "events_ok": 133,
+      "partial": 1,
+      "hard_findings": 0,
+      "batch_digest": "9e1ff0f0c59d18795eee863345a14497e3bded811ca92334633546e1ee6e2c2a",
+      "seeds": [
+        25,
+        26,
+        27,
+        28
+      ],
+      "scenarios": 5,
+      "edition": "second-edition",
+      "hash_seeds": [
+        0,
+        987
+      ],
+      "exact_json_and_log_match": true,
+      "executions_with_internal_replay": 80
+    }
+  },
+  "portable_witnesses": [
+    {
+      "script": "base-events/witness.py",
+      "exit_code": 0,
+      "script_sha256": "24f1326affdeeb67885ee3c7bf1440eaeecf3669ee166a10bbe5bea34b3bbbdf",
+      "log": "base-events--witness.log"
+    },
+    {
+      "script": "commands/probe_commands.py",
+      "exit_code": 0,
+      "script_sha256": "01bd68abc43c57d560088a167e821e27fc885b19a02417c1dbfa73766c8222e6",
+      "log": "commands--probe_commands.log"
+    },
+    {
+      "script": "expansion/probe_expansion.py",
+      "exit_code": 0,
+      "script_sha256": "2e303b7e3f3127133589ace63657b8e6e2688100157bf3c261688e5b49111351",
+      "log": "expansion--probe_expansion.log"
+    },
+    {
+      "script": "bots-review/probe_bots.py",
+      "exit_code": 0,
+      "script_sha256": "4df781fc8707eb1bf151a177c95f7b5e34918fb0ba4b690871b72793d0b64d37",
+      "log": "bots-review--probe_bots.log"
+    },
+    {
+      "script": "frontend/probe_frontend.py",
+      "exit_code": 0,
+      "script_sha256": "4538708c8ecc328d303520e64d0932147fd032e1a58420637c59fb584cd745b4",
+      "log": "frontend--probe_frontend.log"
+    },
+    {
+      "script": "frontend/probe_grant_scope.py",
+      "exit_code": 0,
+      "script_sha256": "ad8927b10db252cc74e96631a0f3c2b929dd14dd0db872d472d656a3d69df6d1",
+      "log": "frontend--probe_grant_scope.log"
+    },
+    {
+      "script": "frontend/probe_second_sa.py",
+      "exit_code": 0,
+      "script_sha256": "05899e5db8b1fc453ba4952d72fbbb258c4cdd0978af1fab2fc2bc760c946188",
+      "log": "frontend--probe_second_sa.log"
+    },
+    {
+      "script": "seasonal/probe_negative_harvest.py",
+      "exit_code": 0,
+      "script_sha256": "de881982a7477254764bfa3d9f1fcd2a4de42088d3a8505f324da2cf84b1666a",
+      "log": "seasonal--probe_negative_harvest.log"
+    },
+    {
+      "script": "seasonal/probe_interlude_deck.py",
+      "exit_code": 0,
+      "script_sha256": "368b95d2a187b796803803b62bf3873e33059604d87dbaafae88f1fa3ba5b085",
+      "log": "seasonal--probe_interlude_deck.log"
+    },
+    {
+      "script": "seasonal/probe_interlude_nori.py",
+      "exit_code": 0,
+      "script_sha256": "581f7a266639b0cfd9ed3f58a0aeaef3b64e72764a6afdffd5cf00f789f51a89",
+      "log": "seasonal--probe_interlude_nori.log"
+    }
+  ],
+  "suggested_batches": [
+    {
+      "batch": 1,
+      "title": "Event target validation and Resource bounds",
+      "ids": [
+        "BE4-01",
+        "BE4-02",
+        "BE4-04",
+        "EX4-01",
+        "EX4-02",
+        "WS4-01"
+      ]
+    },
+    {
+      "batch": 2,
+      "title": "Free Command scope, timing and complete choices",
+      "ids": [
+        "FE4-01",
+        "FE4-02",
+        "FE4-03",
+        "BE4-03"
+      ]
+    },
+    {
+      "batch": 3,
+      "title": "Battle survival forecasts and bot priorities",
+      "ids": [
+        "BM4-01",
+        "BM4-02",
+        "NP4-01",
+        "NP4-02"
+      ]
+    },
+    {
+      "batch": 4,
+      "title": "Interlude deck and Tribe conversion",
+      "ids": [
+        "WS4-02",
+        "WS4-03"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "FE4-01",
+      "severity": "medium",
+      "title": "Event-granted Battle rejects a legal Scout-before-Battle that supplies the attacker",
+      "expected": "Assembly52 permits the controlling human Romans to Scout two Auxilia Provincia to empty-of-Romans Sequani, then Battle Belgae there, all free. Battle prerequisites apply after the preceding Scout.",
+      "observed": "Real saved session accepts Event52, then rejects the legal free-action response at d000008 with Battle requires the acting Faction's pieces in every selected Region. Board, RNG, pending ID and accepted journal remain unchanged. Same ordinary Command+Scout executes (2 Auxilia move, 1 of 2 Belgic Warbands dies, 2 Resources paid). Free Event control with one initially present Auxilia executes free.",
+      "sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            518,
+            526
+          ],
+          "rule": "52 shaded grants free Command with up to two SAs"
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": [
+            13,
+            14
+          ],
+          "rule": "SA may precede Command"
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": [
+            69,
+            75
+          ],
+          "rule": "Scout moves Auxilia to adjacent Regions with any Command"
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": [
+            125,
+            133
+          ],
+          "rule": "Roman Battle requires own and enemy Forces when selected"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            78,
+            94
+          ],
+          "rule": "Free actions retain normal procedures"
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/engine/free_actions.py",
+          "lines": [
+            363,
+            368
+          ]
+        },
+        {
+          "path": "fs_bot/engine/free_actions.py",
+          "lines": [
+            426,
+            428
+          ]
+        }
+      ],
+      "novelty": "New free-Event timing restriction. CM3-03 closed no-attacker ordinary Battles, including an explicit positive Scout-before-Battle regression. This grant precheck is separate and rejects a legal action before simulation. Not a save-corruption finding.",
+      "witness": "probe_frontend.py",
+      "command": "python probe_frontend.py /path/to/fs-bot /path/to/new-output",
+      "evidence": "final-session/observations.json",
+      "fixture": "Census-valid controlled Great Revolt board from build_initial_state, manually sets current52 and deck and places Roman Carnutes/Provincia forces and two Belgic Sequani Warbands using piece helpers. No altered reference files. Includes the permanent Roman Fort in Provincia required by Chapter1.",
+      "partition": "frontend",
+      "status": "open"
+    },
+    {
+      "id": "FE4-02",
+      "severity": "high",
+      "title": "A null top-level SA plan hides the executed nested Scout from Event Region restrictions",
+      "expected": "Mons Cevenna follow-on Scout must originate in the March destination, Sequani. Reject a Scout from Carnutes before any Event effect commits.",
+      "observed": "Full public Event9 resolves March Provincia\u2192Sequani, then Seize Sequani and Scout Carnutes\u2192Veneti despite allowed_regions=[Sequani]. Response uses details.scout_plan=null and nested details.sa_details.scout_plan with real movement. Canonical top-level version correctly rejects atomically; legal Sequani\u2192Mandubii control succeeds. Board census and structure remain clean.",
+      "sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            84,
+            92
+          ],
+          "rule": "Card9 follow-on Command and SA in/from destination Region"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            93,
+            94
+          ],
+          "rule": "Free Scout in a Region allows movement out of that Region"
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/engine/free_actions.py",
+          "lines": [
+            49,
+            62
+          ]
+        },
+        {
+          "path": "fs_bot/engine/free_actions.py",
+          "lines": [
+            395,
+            411
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            4741,
+            4749
+          ]
+        }
+      ],
+      "novelty": "New Event SA-scope representation mismatch. Earlier XC2-01 concerned command_parts hiding multiple Limited-Command Regions; this uses null-versus-nested fallback for an actual Event-granted SA. No prior closed finding covers this lookup mismatch.",
+      "witness": "probe_grant_scope.py",
+      "command": "python probe_grant_scope.py /path/to/fs-bot /path/to/new-output",
+      "evidence": "final-scope/observations.json",
+      "fixture": "Census-valid controlled Great Revolt board, current9, three Roman Auxilia in Provincia and Carnutes. Public execute_decision drives actual requests. Canonical invalid, shadow invalid, and legal control run independently. Includes the permanent Roman Fort in Provincia required by Chapter1.",
+      "partition": "frontend",
+      "status": "open"
+    },
+    {
+      "id": "FE4-03",
+      "severity": "medium",
+      "title": "Assembly of Gaul gives human controllers only one of the two permitted Special Abilities",
+      "expected": "A human Roman controller may Recruit then execute both Scout and Build (a Roman Ally at Helvii), each normally legal and free. Event should expose the optional second SA and its legal timing.",
+      "observed": "Complete public Event52 requests a single generic free Command with_sa=True, executes that Command and its one SA, then returns. No second-SA request occurs. Controlled Rome has Caesar and four Auxilia in Provincia, controls Carnutes, and can both Build a Roman Ally at Subdued Helvii in Provincia and Scout one Auxilia to Sequani after Recruit. Scout-first event finishes with moved Auxilia and Helvii still Subdued; Build-first control finishes with a Roman Helvii Ally and no moved Auxilia. Both one-SA plans validate and census stays clean.",
+      "sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            518,
+            526
+          ],
+          "rule": "52 shaded explicitly grants up to two accompanying SAs"
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": [
+            13,
+            14
+          ],
+          "rule": "SA timing choice"
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": [
+            43,
+            64
+          ],
+          "rule": "Build with Recruit; Caesar and supply requirements"
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": [
+            69,
+            75
+          ],
+          "rule": "Scout with any Command"
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            2431,
+            2452
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            951,
+            974
+          ]
+        }
+      ],
+      "novelty": "Original inventory rows base-52-original-shaded and base-52-second-edition-shaded were marked supported and claimed controller second-SA prompt, but no corresponding finding/repair exists. QUESTIONS.md 3053 and3099 explicitly justify one SA only for Non-players; this finding concerns human controllers and does not reopen that NP conclusion.",
+      "witness": "probe_second_sa.py",
+      "command": "python probe_second_sa.py /path/to/fs-bot /path/to/new-output",
+      "evidence": "final-second-sa/observations.json",
+      "fixture": "Census-valid controlled Great Revolt board from build_initial_state, current52, Romans control Carnutes, Caesar/four Auxilia in Provincia. All factions human; callback supplies one choice and is ready for another if requested. Includes the permanent Roman Fort in Provincia required by Chapter1.",
+      "partition": "frontend",
+      "status": "open"
+    },
+    {
+      "id": "BM4-01",
+      "title": "Motivation inflicts a Counterattack Loss after every German defender has been removed",
+      "severity": "high",
+      "status": "open",
+      "source": [
+        "Reference Documents/Chapter 3:144-146 (\u00a73.2.4 Step 4, surviving Defending Forces cause Counterattack Losses)",
+        "Reference Documents/Ariovistus/A Card Reference:138-144 (A33 shaded Motivation +1 Counterattack Loss)"
+      ],
+      "code": [
+        "fs_bot/battle/resolve.py:259-286",
+        "fs_bot/battle/losses.py:301-309"
+      ],
+      "expected": "After eight Belgic Warbands inflict two halved Losses on the only two German Warbands, no German Forces survive to Counterattack; all eight Belgae survive. Motivation still adds one Loss when a German defender survives.",
+      "observed": "Accepted ordinary Battle kills both Germans but also one Belgic Warband. Counterattack resolver still runs on the empty defending force and Motivation adds one Loss to zero.",
+      "controls": [
+        "Without Motivation, the same empty defending force removes no Belgae (8 survive).",
+        "With Motivation and three Germans initially, one German survives Attack and correctly inflicts the extra Loss (7 Belgae survive)."
+      ],
+      "newness": "Neither prior 50/21/15 inventories cover nonexistent German Counterattack. Prior A33 lifecycle/Retreat restrictions and EX3-04 Stalwart/Horse are different consumers and clauses.",
+      "fixture": "build_initial_state(Ariovistus, seed=1), all factions human, 20 Belgic Resources, 8 Belgic and 2 German Warbands at Carnutes, A33 shaded activated. All piece placements use helpers. Permanent Roman Fort explicitly placed in Provincia per \u00a71.4.2; fixture corrected and all final witnesses rerun, outcomes unchanged.",
+      "witness": "probe_commands.py::motivation; durable validate_response + execute_decision; clean validate_state/check_structural_integrity before and after",
+      "repair_direction": "Gate the Counterattack bonus/resolution on the required surviving defending force, preserving applicable structure-only edge cases according to the source; add wiped-force and surviving-force regressions.",
+      "partition": "commands"
+    },
+    {
+      "id": "BM4-02",
+      "title": "Non-player Retreat decisions use pre-Attack strength and require an unnecessary escape destination",
+      "severity": "high",
+      "status": "open",
+      "source": [
+        "Reference Documents/Chapter 8:207-219 (\u00a78.4.3 save last Defending piece, guarantee half the Losses, Gauls leave all Hidden Warbands when Retreating from Romans)",
+        "Reference Documents/Chapter 3:144-146 (\u00a73.2.4 surviving Defending Forces Counterattack)",
+        "Reference Documents/Chapter 3:150-159 (\u00a73.2.4 Retreat survivor movement and Hidden Warband/Leader exception)"
+      ],
+      "code": [
+        "fs_bot/engine/execute.py:5457-5474",
+        "fs_bot/engine/execute.py:5526-5529"
+      ],
+      "expected": "8 Belgic Warbands attacking 6 NP Aedui with a safe Aedui-controlled Veneti destination require Aedui Retreat: a stand loses four Warbands and two survivors can inflict only one Loss, below half of four. Retreat leaves four Aedui surviving in Veneti (five including resident), all eight Belgae survive. Separately, 2 Hidden NP Aedui attacked by 4 Roman Auxilia must Retreat to save the last piece even without a legal destination, because the one surviving Hidden Warband stays in Carnutes.",
+      "observed": "First case stands, leaves 2 Aedui in Carnutes and inflicts only 1 Loss on Belgae. Second case stands and loses both Hidden Aedui; adding otherwise irrelevant safe Veneti control causes legal Retreat and leaves one Hidden survivor in Carnutes.",
+      "controls": [
+        "4 NP Aedui with safe destination correctly Retreat under save-last-piece rule.",
+        "8 NP Aedui with safe destination stand and guarantee exactly half, inflicting 2 after suffering 4.",
+        "The Hidden-survivor case with a safe destination correctly Retreats but does not actually move its surviving Hidden Warband."
+      ],
+      "newness": "Earlier BATTLE-RETREAT-CHOICES addressed human declarations/dispositions; prior Roman Legion forecast corrections concerned \u00a78.4.3 second bullet. This finding concerns NPC third-bullet pre-casualty forecast and first-bullet destination veto.",
+      "grouping": "Two errors in the same NPC Retreat decision function are one repair group rather than separate findings.",
+      "fixture": "Census/structurally valid controlled positions built with piece helpers. Great Revolt seed=1, only Aedui marked non-player. Carnutes/Veneti adjacent and safe destination controlled through one Aedui Warband. No saving-roll or choice uncertainty in the primary guarantee witness. Permanent Roman Fort explicitly placed in Provincia per \u00a71.4.2; fixture corrected and all final witnesses rerun, outcomes unchanged.",
+      "witness": "probe_commands.py::np_retreat and ::np_hidden_retreat; ordinary durable validation and live execution, with detached declaration diagnostic; all census/structure checks clean",
+      "repair_direction": "Evaluate surviving guaranteed Counterattack strength and actual Retreat removals/stay exceptions. Apply each \u00a78.4.3 condition independently, with deterministic detached forecasts and live survivor controls.",
+      "partition": "commands"
+    },
+    {
+      "id": "BE4-01",
+      "title": "Shaded Hostages accepts mismatched Tribe/Region and a non-Gallic Ally recipient",
+      "severity": "high",
+      "status": "open",
+      "expected": "Card 22 shaded places a Gallic Ally and any one Warband at each of one or two Subdued Tribes in Regions containing Roman pieces. Tribe and Region must identify the same place, and the Ally must be Arverni, Aedui, or Belgic.",
+      "observed": "Accepted target Catuvellauni plus supplied Region Provincia allies Catuvellauni in empty Britannia to Belgae while placing the Warband in Provincia. A separate accepted Helvii target with faction Romans places a Roman Ally despite the Gallic restriction. The legal Helvii/Provincia/Belgae control places both pieces together.",
+      "rule_sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": "219-224",
+          "rule": "Card 22 shaded"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": "5-13",
+          "rule": "5.1 literal Event execution"
+        }
+      ],
+      "code_sources": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": "1062-1088",
+          "issue": "reads supplied region and tribe independently; never restricts Ally faction"
+        }
+      ],
+      "newness": "Earlier BE-06/07/08 Hostages work and base-piece-choices report covered unshaded physical removal/replacement choices. Original inventory base-22-*-shaded was marked supported. BE-11 was specifically 40/41/42/51. No previous closed group reported 22 shaded target geography or Ally owner.",
+      "witness": "witness.py hostages()",
+      "observations": "observed.json editions.{original,second-edition}.BE4-01",
+      "fixture": "Great Revolt setup seed 4, remove Helvii Roman Ally via _unally_tribe to create legal Subdued target; Roman garrison stays in Provincia; Britannia has zero Romans.",
+      "validation": "All three authored turn paths pass durable validation and detached preview, preserve preview board/RNG, execute, and have clean pre/post census and structure.",
+      "partition": "base-events"
+    },
+    {
+      "id": "BE4-02",
+      "title": "Celtic Rites applies repeated Resource losses and permits omitting its mandatory target",
+      "severity": "high",
+      "status": "open",
+      "expected": "Card 46 unshaded selects one or more distinct Gallic Factions; each selected Faction loses three Resources once and is Ineligible through next card.",
+      "observed": "With Arverni at 20 Resources, target_factions=[Arverni,Arverni] is accepted and reduces Resources to 14. The single-entry control leaves17. An empty list executes successfully without affecting any faction, despite legal targets.",
+      "rule_sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": "459-466",
+          "rule": "Card 46 unshaded"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": "52-54",
+          "rule": "5.1.3 mandatory attainable effects"
+        }
+      ],
+      "code_sources": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": "1792-1800",
+          "issue": "iterates raw repeated target list without minimum or uniqueness"
+        }
+      ],
+      "newness": "Prior BE2-02 was specifically Assembly of Gaul52 and its duplicate drain, now repaired. BE-03 concerned Celtic Rites shaded beneficiary/eligibility. Original 46 unshaded inventory rows were supported; this is a separate still-open card-specific consumer of that repeated-selection family.",
+      "witness": "witness.py celtic_rites()",
+      "observations": "observed.json editions.{original,second-edition}.BE4-02",
+      "fixture": "Great Revolt setup seed4; Arverni Resources set to20, all-human seats.",
+      "validation": "Durable turn acceptance, successful isolated preview and execution; pre/post census and structure clean. Empty target recorded alongside duplicate rather than counted separately.",
+      "partition": "base-events"
+    },
+    {
+      "id": "BE4-03",
+      "title": "Druids ignores beneficiary restrictions, distinctness, initiative order and mandatory Commands",
+      "severity": "high",
+      "status": "open",
+      "expected": "Card48 selects one to three distinct Gallic Factions, which execute one free Limited Command each in printed Aedui-Arverni-Belgae order. Possible Commands cannot be waived as optional.",
+      "observed": "An accepted Roman target gets free Recruit and places an Auxilia. Repeating Aedui gives two free Rally Commands and two new Warbands instead of the control one. [Belgae,Aedui,Arverni] executes in submitted order. Empty targets in an all-human state commit no grant; a selected Aedui can explicitly decline even though the legal control Rally is available.",
+      "rule_sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": "478-485",
+          "rule": "Card48"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": "5-13,52-54",
+          "rule": "5.1 and5.1.3"
+        }
+      ],
+      "code_sources": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": "1848-1857",
+          "issue": "copies arbitrary target list into modifier"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": "2065-2075",
+          "issue": "raw target order/duplicates/non-Gallic factions and optional generic free Command"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": "927-974",
+          "issue": "allow_decline defaults true and is not disabled by Druids"
+        }
+      ],
+      "newness": "Original base-48 inventory rows marked supported with no finding. Earlier Command duplicate fixes govern Regions, not distinct Event beneficiaries. Council47 has explicit validators and initiative normalization but Druids48 does not. Previous BE-03 covers35/46/67/68, not48.",
+      "witness": "witness.py druids()",
+      "observations": "observed.json editions.{original,second-edition}.BE4-03",
+      "fixture": "Unchanged Great Revolt setup seed4 with all-human seats; callback supplies a legal one-piece Recruit/Rally in own normal Region.",
+      "validation": "Seven accepted cases per edition, including positive single-target and printed-order controls; all pre/post census and structure checks clean. No claim about whose eligibility the final sentence affects.",
+      "partition": "base-events"
+    },
+    {
+      "id": "BE4-04",
+      "title": "Shaded Germanic Horse can be gifted to a different Faction instead of the Gallic executor",
+      "severity": "high",
+      "status": "open",
+      "expected": "Card59 shaded says If Gallic, take this card. The Gallic executing Faction takes it; the Event does not authorize selecting another beneficiary.",
+      "observed": "Belgae executing59S with faction=Aedui makes Aedui the recorded owner. Roman executor can also award it to Aedui. A subsequent ordinary Aedui Battle with four Warbands removes four of eight German Warbands. The legal Belgic self-acquisition control removes only two in the same Aedui Battle.",
+      "rule_sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": "602-617",
+          "rule": "Card59 shaded and combat Tip"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": "5-13",
+          "rule": "5.1 literal Event recipient"
+        }
+      ],
+      "code_sources": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": "2162-2177",
+          "issue": "accepts arbitrary Gallic faction parameter as Capability owner"
+        }
+      ],
+      "newness": "BE-09 and Horse5November repairs cover owner-scoped Battle Region decisions, activation timing, and Fort/Abatis limits. EX3-04 covers Stalwart cancellation. Neither covers how59S is acquired. Original inventory correctly described If Gallic executor takes Capability, but tied its reported gap to BE-09 Region choice only.",
+      "witness": "witness.py germanic_horse()",
+      "observations": "observed.json editions.{original,second-edition}.BE4-04",
+      "fixture": "Great Revolt setup seed4; use Available pools to place4 Aedui and8 German Warbands at Pictones; all-human seats. Base Germans do not Retreat.",
+      "validation": "Accepted Event and succeeding ordinary Battle on both editions. Owner changes flow into actual casualty count. Before/after census and structural checks clean.",
+      "partition": "base-events"
+    },
+    {
+      "id": "EX4-01",
+      "priority": "medium",
+      "title": "Abatis accepts a missing or impossible target and silently skips mandatory marker placement",
+      "expected": "When own Warbands exist, a human A64 Event must select one qualifying Region and place the marker. Missing or ineligible authored selection must be rejected or remain pending.",
+      "observed": "Unmodified Ariovistus setup has two Aedui Warbands in Aedui. A64 unshaded by Aedui with {} or region Provincia passes durable response validation and action preview, executes successfully, and leaves no Abatis marker. The Aedui-region control places the marker.",
+      "rule_references": [
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            288,
+            292
+          ],
+          "rule": "A64 mandatory marker at a Region with an own Warband"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            5,
+            13,
+            51,
+            53
+          ],
+          "rule": "5.1 selections and 5.1.3 mandatory possible partial execution"
+        }
+      ],
+      "code_references": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            3663,
+            3678
+          ]
+        },
+        {
+          "path": "fs_bot/tools/seat_session.py",
+          "lines": [
+            88,
+            110
+          ]
+        }
+      ],
+      "newness": "EX2-01 corrected recognition of Scouted Warbands at a valid target. It did not validate the mandatory Region selection. Original EXP-09 covered A29U/A30U/A36S/A43U/A45U, not A64. This witness uses ordinary Hidden Warbands and no source ambiguity.",
+      "reproduction": "PYTHONPATH=$PWD python /workspace/scratch/2bc91f558cd6/audit4-evidence/expansion/probe_expansion.py",
+      "witness_cases": [
+        "EX4-01.missing_target",
+        "EX4-01.wrong_target",
+        "EX4-01.legal_target"
+      ],
+      "fixture": "setup_scenario(Ariovistus, seed=317), human seats; current card A64, next A67; board pieces unchanged",
+      "census_before_after": true,
+      "structural_before_after": true,
+      "scope_limit": "Observed unshaded path; handler is identical for either side of this single-text Event. No whole-game frequency claim.",
+      "partition": "expansion",
+      "status": "open",
+      "severity": "medium"
+    },
+    {
+      "id": "EX4-02",
+      "priority": "high",
+      "title": "Bellovaci accepts incompatible piece owner and type, omitting four mandatory troops while other effects commit",
+      "expected": "A69 must use a real mobile force pairing: Roman Auxilia or Aedui Warbands, carrying out the four-piece placement as far as possible. An impossible owner/type pair is not a legal player selection and must not commit partial Event effects.",
+      "observed": "Unmodified Ariovistus setup has 11 Roman Auxilia and 17 Aedui Warbands Available. A69U parameters piece_faction=Romans,piece_type=Warband or piece_faction=Aedui,piece_type=Auxilia pass durable validation and preview and execute. One Belgic Warband is removed and Bellovaci changes from Belgae to Romans, but no mobile pieces are placed. The matching Roman/Auxilia and Aedui/Warband controls each place four.",
+      "rule_references": [
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            316,
+            319
+          ],
+          "rule": "A69 unshaded mandatory placements"
+        },
+        {
+          "path": "Reference Documents/Chapter 1",
+          "lines": [
+            80,
+            98
+          ],
+          "rule": "1.4 identifies Roman Auxilia versus Gallic/Germanic Warbands and availability limits"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            5,
+            13,
+            51,
+            53
+          ],
+          "rule": "5.1 legal selections and 5.1.3 carry out possible text"
+        }
+      ],
+      "code_references": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            3778,
+            3794
+          ]
+        }
+      ],
+      "newness": "The earlier A35/A51/A69 type-allowlist repair rejected structural piece types and forbidden faction values individually (QUESTIONS.md 1909-1916). It never checked native owner/type compatibility. EXP-11 covered A69 exact Belgic removals. EX2-04 mandatory quota fixes covered A30/A56/A65, not this A69 path.",
+      "reproduction": "PYTHONPATH=$PWD python /workspace/scratch/2bc91f558cd6/audit4-evidence/expansion/probe_expansion.py",
+      "witness_cases": [
+        "EX4-02.impossible_pair (Romans/Warband)",
+        "EX4-02.impossible_pair (Aedui/Auxilia)",
+        "EX4-02.legal_pair (Romans/Auxilia)",
+        "EX4-02.legal_pair (Aedui/Warband)"
+      ],
+      "fixture": "setup_scenario(Ariovistus, seed=317), human seats; current card A69, next A67; board pieces unchanged",
+      "census_before_after": true,
+      "structural_before_after": true,
+      "scope_limit": "Typed durable/API Event plans demonstrated. CLI cross-field menus were not claimed to generate these invalid pairs.",
+      "partition": "expansion",
+      "status": "open",
+      "severity": "high"
+    },
+    {
+      "id": "WS4-01",
+      "title": "Ariovistus Harvest can drive Roman Resources below zero",
+      "severity": "high",
+      "status": "open",
+      "expected": "Roman Resources must remain within 0\u201345 even when the Ariovistus Roman victory formula is negative. This finding requires a nonnegative result and does not decide whether negative earnings may reduce a positive balance.",
+      "observed": "A valid board with 26 non-Roman Allies and 6 Settlements has Roman victory -2 and no faction passing victory. Public harvest_phase changes starting Roman Resources0 to-2 and1 to-1. Public run_winter_round with no relocations also ends at-2 and a structural error. Removing all Settlements produces score4, Resources4, clean structure.",
+      "mechanism": "_harvest_earnings passes the negative score to _add_resources, which clamps only the upper bound.",
+      "sources": [
+        {
+          "path": "Reference Documents/Chapter 1",
+          "lines": "212\u2013217",
+          "rule": "\u00a71.8 Resources between0 and45 at any moment"
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A6",
+          "lines": "143\u2013148",
+          "rule": "A6.4.1 Harvest equals Roman victory"
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A7",
+          "lines": "7\u201312",
+          "rule": "A7.2 subtract Settlements"
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/engine/winter.py",
+          "lines": "639\u2013643"
+        },
+        {
+          "path": "fs_bot/engine/winter.py",
+          "lines": "683\u2013686"
+        }
+      ],
+      "newness": "WS3-01 repaired counting physical Gallic Allies/Citadels. This is a distinct Ariovistus Roman negative-score boundary and missing Resource floor; absent from all earlier ledgers.",
+      "reproducer": "probe_negative_harvest.py",
+      "output": "negative-harvest.json",
+      "positive_controls": [
+        "Same Tribe board with Settlements removed earns4 and remains valid."
+      ],
+      "fixture": "Built from initialized Ariovistus state with legal piece helpers and matching Tribe records.26 non-Roman Allied Tribes,6 Settlements and enough Romans to prevent Belgic victory. All leaders/pools accounted. Census/structure clean; no winner before full Winter. Corrected after independent review to reserve Aedui and Arverni Tribes for their own factions, with an explicit TRIBE_FACTION_RESTRICTION assertion for every placement. Corrected fixture reproduces all outcomes. Initial illegal ownership fixture is retained under superseded filenames and is not accepted evidence.",
+      "partition": "seasonal"
+    },
+    {
+      "id": "WS4-02",
+      "title": "Interlude rebuild excludes inactive Events and reinserts an active A38 Capability",
+      "severity": "high",
+      "status": "open",
+      "expected": "Keep each in-effect Capability outside the new deck, including substituted A38. Gallia Togata and Colony are excluded for their in-effect status; otherwise remain in the shuffled Event pool.",
+      "observed": "Executing A38 unshaded and running the complete Interlude retains A38 as active and adds one A38 to the new deck. With no active Gallia Togata/Colony, both5 and71 are always excluded. InactiveA38 is included once and active numeric8 is excluded correctly. Ordinary Pax setup seed21 includes inactive5 and71.",
+      "mechanism": "The deck builder filters raw numeric IDs before substituting38 withA38, and unconditionally adds5/71 to excluded.",
+      "sources": [
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "lines": "110\u2013125",
+          "rule": "Lingering Events and Deck, explicitly useA38 and keep in-effect cards outside deck"
+        },
+        {
+          "path": "Reference Documents/Setup",
+          "lines": "21\u201329",
+          "rule": "Shuffle Event cards, deal specified piles, set remaining aside"
+        },
+        {
+          "path": "Reference Documents/Scenario - Pax Gallica",
+          "lines": "19\u201323",
+          "rule": "Deal70 Events"
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/engine/interlude.py",
+          "lines": "1364\u20131379"
+        }
+      ],
+      "newness": "Earlier repair covered which replacement identity is used, A38 versusO38, and Capability registry/side lifecycle. It did not exclude the already active substituted card or condition5/71 exclusion. Related deck membership symptoms grouped once.",
+      "reproducer": "probe_interlude_deck.py",
+      "output": "interlude-deck.json",
+      "positive_controls": [
+        "Inactive A38 appears once.",
+        "Active ordinary numeric8 is excluded.",
+        "Standard Pax setup allows inactive5/71 in its shuffled deck."
+      ],
+      "fixture": "Untouched Gallic War setup seed21; all four seats marked NPC for normal Interlude choices; execute Capability by production Event API, then run_interlude(britannia_decision=False). Census/structure clean before and after.",
+      "partition": "seasonal"
+    },
+    {
+      "id": "WS4-03",
+      "title": "Interlude leaves Nori as a phantom Tribe that inflates Roman score and Harvest",
+      "severity": "high",
+      "status": "open",
+      "expected": "Remove Nori when returning to original geography and add Catuvellauni. Without Colony there must be30 real Tribes. Roman score follows30 minus non-Roman Allies and Citadels.",
+      "observed": "Full Interlude from valid Gallic War setup21 retains SubduedNori and adds Catuvellauni, yielding31 Tribe entries without Colony. Roman score and next Harvest are24; the printed physical-piece oracle is30 minus7=23. Removing only the obsoleteNori record in a diagnostic clone yields score/Harvest23. Both bad and corrected states pass current census/structure validators.",
+      "mechanism": "Marker cleanup removes only MARKER_NORI from marker dictionaries. Final scenario transition backfills base Tribe records but never deletes expansion-onlyNori. Victory counts all Subdued records.",
+      "sources": [
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "lines": "86\u201389",
+          "rule": "Markers remove NoriTribe"
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "lines": "126\u2013129",
+          "rule": "Original Falling Sky rules in second half"
+        },
+        {
+          "path": "Reference Documents/Chapter 7",
+          "lines": "28\u201332",
+          "rule": "\u00a77.2 physical score shortcut,30 Tribes unlessColony"
+        },
+        {
+          "path": "Reference Documents/Chapter 6",
+          "lines": "100\u2013106",
+          "rule": "\u00a76.4.1 Harvest from Roman score"
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/engine/interlude.py",
+          "lines": "1140\u20131199"
+        },
+        {
+          "path": "fs_bot/engine/interlude.py",
+          "lines": "1532\u20131542"
+        },
+        {
+          "path": "fs_bot/engine/victory.py",
+          "lines": "112\u2013126"
+        }
+      ],
+      "newness": "Different mechanism from XC3-01 dynamic Colony consumers. This removes an obsolete expansion Tribe at scenario transition; no Colony exists in the witness. Earlier Interlude choices/marker reports did not count this.",
+      "reproducer": "probe_interlude_nori.py",
+      "output": "interlude-nori.json",
+      "positive_controls": [
+        "Diagnostic clone without only obsoleteNori matches the independently counted physical-piece score and Harvest."
+      ],
+      "fixture": "Untouched Gallic War setup21, all seats NPC; full production run_interlude with expedition declined. No Gallia Togata or Colony. Census/structure clean on both sides.",
+      "partition": "seasonal"
+    },
+    {
+      "id": "NP4-01",
+      "title": "Roman March target ranking omits Germanic Settlements from total Allied strength",
+      "severity": "medium",
+      "status": "open",
+      "expected": "In Ariovistus, all Settlements count as Allies for Roman Battle/March conditions and priorities. With a tier-four die roll, Germans with one Ally plus two Settlements outrank Aedui with two Allies.",
+      "observed": "A census/structure-valid seed-5 initialized position reaches Roman March through the complete public bot dispatcher. It chooses Carnutes/Aedui and moves all four Roman Legions there. German total_ac is one although it should be three. Replacing the two Settlements by two physical Allies makes the same dispatcher choose Germans. With only the one German Ally, the Aedui choice is correct.",
+      "root_cause": "Roman destination collection includes Settlements in local_ac but calls a generic Ally-disc-plus-Citadel helper for total_ac. Tier four sorts by that incomplete total before local priorities.",
+      "code_refs": [
+        {
+          "path": "fs_bot/bots/roman_bot.py",
+          "lines": [
+            346,
+            350,
+            385,
+            456,
+            457
+          ]
+        },
+        {
+          "path": "fs_bot/bots/bot_common.py",
+          "lines": [
+            1066,
+            1080,
+            1082
+          ]
+        }
+      ],
+      "rule_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "section": "A8.8.1",
+          "lines": [
+            251,
+            254
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "section": "8.8.1",
+          "lines": [
+            848,
+            850
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "section": "8.8.3",
+          "lines": [
+            939,
+            943
+          ]
+        }
+      ],
+      "newness": "Not in original 50 or second/third comparison ledgers. Unlike WS3-01 Harvest or XC3-01 Colony consumers, this is a scenario-specific Settlement-as-Ally rule in Roman bot strategic targeting. Local Settlement recognition already works.",
+      "repro": "python probe_bots.py /path/to/fs-bot",
+      "cases": [
+        "roman_settlement_ranking.settlements",
+        "roman_settlement_ranking.ally_control",
+        "roman_settlement_ranking.one_ally_control"
+      ],
+      "fixture": "Controlled initialized Ariovistus board using canonical piece helpers, valid physical inventory and Tribe structures before and after. No claim of naturally sampled reach. Final accepted fixtures include the permanent Roman Fort in Provincia per Chapter 1:122\u2013124.",
+      "scope_limits": "Dynamically confirmed for tier-four Roman March. The same generic helper is used by Roman Battle ranking, but that additional path is static corroboration only. Do not globally add Settlements for every consumer without each consumer source rule.",
+      "comparator_pattern": "lod-bot coin-implementation-lessons.md E (flowchart fidelity), B (producer/consumer data shape), I (plausible code omits precise rule adjustment).",
+      "partition": "bots-review"
+    },
+    {
+      "id": "NP4-02",
+      "title": "Diviciacus safety gate turns a guaranteed safe Aedui Battle into Pass",
+      "severity": "medium",
+      "status": "open",
+      "expected": "A lone Diviciacus in Carnutes with a Belgic Ally and ten Aedui Resources must Battle after declining/no access to Event. The Leader inflicts one Loss and the Ally has zero Counterattack. Diviciacus cannot take a Loss.",
+      "observed": "node_a4 recognizes the guaranteed high-value Loss, but dispatch_bot_turn returns Pass. Executing the ordinary source-required Battle through execute_decision removes the Belgic Ally and leaves Diviciacus alive, with clean census/structure. Adding one Aedui Warband makes the complete bot dispatcher select Battle.",
+      "root_cause": "Both Battle-selection loops reject losses_suffered >= expendable_aedui, so zero >= zero declares a threat to an unharmed Leader. The gate also uses a coarse pre-Attack estimate; only the zero-loss equality boundary is dynamically claimed here.",
+      "code_refs": [
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "lines": [
+            707,
+            719,
+            723,
+            759,
+            770,
+            774
+          ]
+        }
+      ],
+      "rule_refs": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "section": "8.6.2",
+          "lines": [
+            448,
+            453
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "section": "A8.6.2",
+          "lines": [
+            53,
+            57
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A3",
+          "section": "A3.2.4",
+          "lines": [
+            63,
+            66
+          ]
+        }
+      ],
+      "newness": "Not in prior 50/21/15 ledgers. Separate from current commands agent Retreat forecast group: this is active Aedui bot Battle selection with Diviciacus, no Retreat or uncertain rolls and no enemy troops.",
+      "repro": "python probe_bots.py /path/to/fs-bot",
+      "cases": [
+        "diviciacus_zero_counterattack.lone_diviciacus",
+        "diviciacus_zero_counterattack.with_one_warband_control"
+      ],
+      "fixture": "Controlled initialized Ariovistus board using canonical piece helpers and named Tribe allegiance, valid census and structure before/after the legal Battle. Final accepted fixtures include the permanent Roman Fort in Provincia per Chapter 1:122\u2013124.",
+      "scope_limits": "Dynamically confirmed for zero counterattack Losses/zero supporting troops. Other equality and unrelated-enemy safety cases remain uncounted.",
+      "comparator_pattern": "lod-bot coin-implementation-lessons.md E (flowchart violations and silent bot degradation), F (cross-faction effects), I (precise boundary misreading).",
+      "partition": "bots-review"
+    }
+  ],
+  "limits": [
+    "Controlled positions and authored inputs do not establish full-game frequency.",
+    "Existing Circumvallation persistence and earlier unresolved source questions are not counted again.",
+    "A33 Wailing Women outnumbered definition is a separate unconfirmed source question.",
+    "Negative-Harvest finding requires a nonnegative Resource total only; treatment of negative earnings against a positive balance is not resolved.",
+    "No production repair or new balance matrix was performed."
+  ]
+}

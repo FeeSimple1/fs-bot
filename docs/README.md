@@ -15,6 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
+| [Fourth Liberty or Death comparison](reviews/comparison-audit-round4-2026-11-10.md) | 16 new open groups with independent source review and executable evidence |
 | [Third Liberty or Death comparison](reviews/comparison-audit-round3-2026-11-10.md) | 15 additional groups, all repaired in Batches 1–4 |
 | [Provisional rulings](provisional-rulings.md) | Thirteen owner-adopted interpretations, each subject to later authoritative correction |
 | [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
@@ -25,6 +26,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [10 November fourth comparison audit](reviews/comparison-audit-round4-2026-11-10.md)
+  records 16 new groups, ten passing witness scripts, 9,686 tests, and clean second-edition game samples.
 
 - [10 November third comparison repair Batch 4](reviews/third-comparison-batch4-2026-11-10.md)
   closes the final three groups with 9,686 passing tests and the unchanged balance baseline.

@@ -21,6 +21,26 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November fourth comparison audit
+
+The [fourth Liberty or Death comparison](reviews/comparison-audit-round4-2026-11-10.md)
+confirms **16 new open repair groups, 11 high and 5 medium priority**. These
+cover Event target/beneficiary validation, free-action scope and choices,
+Battle and bot forecasts, negative Harvest Resources, and Interlude deck/Tribe
+conversion. Earlier 50-, 21-, and 15-group ledgers remain fully closed.
+
+All 9,686 existing tests pass. Ten final witness scripts independently
+reproduce the findings after fixture source review. Twenty audited bot games
+are clean. Twenty mixed-seat cases match across hash seeds with replay, zero
+hard findings, and one soft partial plan. Both matrices use second-edition
+cards and seeds 25–28 in all five scenarios. No gameplay code changed and no
+new balance matrix was run. The report provides a ledger, evidence and repair
+order; the new ledger starts at **0 of 16 repaired**.
+
+A33 Wailing Women's undefined outnumbering comparison is recorded separately
+in `QUESTIONS.md` and is not counted as a confirmed defect. Existing
+Circumvallation persistence work remains separate too.
+
 ### 10 November third comparison repair Batch 4
 
 The [final repair batch](reviews/third-comparison-batch4-2026-11-10.md)

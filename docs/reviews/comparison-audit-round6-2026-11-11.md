@@ -1,10 +1,11 @@
 # Sixth Falling Sky comparison audit — 11 November 2026
 
 **The audit found 14 new repair groups, 7 high and 7 medium priority.** Batch 1
-closed BE6-01, BE6-02 and BE6-03. Batch 2 closed WS6-01, WS6-02 and WS6-03,
-leaving eight open.
+closed BE6-01 through BE6-03. Batch 2 closed WS6-01 through WS6-03. Batch 3
+closed BM6-01 through BM6-03, leaving five open.
 [Batch 1 repairs and validation](sixth-comparison-batch1-2026-11-11.md) ·
-[Batch 2 repairs and validation](sixth-comparison-batch2-2026-11-11.md)
+[Batch 2 repairs and validation](sixth-comparison-batch2-2026-11-11.md) ·
+[Batch 3 repairs and validation](sixth-comparison-batch3-2026-11-11.md)
 
 Audited Falling Sky commit: `86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad`. Python-source SHA-256: `2423cb1f410650da300914e6569c1637675894cc43a9bd8284dfd92bd3b3ecb7` across 596 files. Liberty or Death was inspected at `2991ea279062773548ec390a1da75f3e85381702`. Its implementation patterns guided the search; Falling Sky's supplied references and thirteen adopted provisional rulings govern the findings.
 

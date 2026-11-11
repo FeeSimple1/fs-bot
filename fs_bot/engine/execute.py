@@ -60,7 +60,7 @@ from fs_bot.commands.seize import execute_harassment_loss as _seize_harass_loss
 from fs_bot.rules_consts import HARASSMENT_WARBANDS_PER_LOSS as _HWB_PER_LOSS
 from fs_bot.cards.card_effects import execute_event
 from fs_bot.engine.action_windows import sop_action, window as _timing_window
-from fs_bot.engine import resource_transfers
+from fs_bot.engine import resource_transfers, slingers_choice
 from fs_bot.engine.horse_choice import command_scope as _horse_command_scope
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -1883,6 +1883,7 @@ def _resolve_free_actions_scoped(state, faction):
         region = mods["card_A58_free_ambush"]
         ambushes = []
         if can_ambush(state, region, faction):
+            slingers_choice.fire_for_single_battle(state, region, faction, _ROMANS_F)
             ambushes.append({"region": region, "defender": _ROMANS_F,
                              "result": resolve_battle(state, region, faction, _ROMANS_F, is_ambush=True)})
         results.append({"free_action": "ambush", "flag": "card_A58",
@@ -2611,6 +2612,7 @@ def _resolve_card17_march_ambush_default(state, march_limit, *, roman_guided=Non
                  "executed": bool(marched), "declined_no_effect": not bool(marched),
                  "reason": "no legal German Ambush"}]
     try:
+        slingers_choice.fire_for_single_battle(state, best, GERMANS, best_tgt)
         res = resolve_battle(state, best, GERMANS, best_tgt, is_ambush=True)
     except _EXEC_ERRORS as exc:
         return [{"free_action": "german_march_ambush",
@@ -2808,11 +2810,18 @@ def _resolve_card65_german_march_ambush_default(state, march_limit):
 
     # ---- Ambush with all Germans able (every legal Region).
     ambushes = []
-    for region in sorted(playable):
+    ordered = sorted(playable)
+    slingers_used = False
+    for index, region in enumerate(ordered):
         tgt = _german_ambush_target(state, region)
         if tgt is None:
             continue
         try:
+            if not slingers_used and slingers_choice.is_active_for(state, GERMANS):
+                potential = [r for r in ordered[index + 1:] if _german_ambush_target(state, r)]
+                if slingers_choice.choose_for_queue(state, region, GERMANS, tgt, potential):
+                    slingers_choice.fire(state, region, GERMANS)
+                    slingers_used = True
             res = resolve_battle(state, region, GERMANS, tgt, is_ambush=True)
         except _EXEC_ERRORS as exc:
             ambushes.append({"region": region, "executed": False,
@@ -2883,6 +2892,7 @@ def _resolve_card58_german_ambush_default(state):
         marched += n
     refresh_all_control(state)
     try:
+        slingers_choice.fire_for_single_battle(state, R, GERMANS, ROMANS)
         res = resolve_battle(state, R, GERMANS, ROMANS,
                              is_ambush=True, ignore_fort=True)
     except _EXEC_ERRORS as exc:
@@ -3858,20 +3868,12 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     from fs_bot.rules_consts import (EVENT_UNSHADED as _EU_B,
                                      EVENT_SHADED as _ES_B,
                                      ROMANS as _RO_B, AUXILIA as _AUX_B)
-    _plan_regions = [e.get("region") for e in battle_plan
-                     if e.get("region") is not None]
-
     # Card 13 unshaded (Balearic Slingers): on an ENEMY Battle Command the
     # Romans choose 1 Region — Auxilia there first inflict 1/2 Loss each on
     # the attacker, then the Battle resolves. §8.3.3 uses the first applicable
     # selected Region for the NPC default; humans choose independently.
-    _c13_region = None
-    if (not _skip_absent_targets and faction != _RO_B
-            and _ica_b(state, 13, _EU_B) and _plan_regions):
-        _c13_region = next((r for r in _plan_regions
-                            if count_pieces(state, r, _RO_B, _AUX_B) > 0), None)
-        from fs_bot.engine.slingers_choice import choose_region
-        _c13_region = choose_region(state, faction, battle_plan, _c13_region)
+    _c13_region = (None if _skip_absent_targets
+                   else slingers_choice.choose_region(state, faction, battle_plan))
 
     # Card 59 Tips: one selected Region for attack or Counterattack. Human
     # owners choose independently; the NPC default follows §8.3.3.
@@ -3974,11 +3976,9 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 potential = [row['region'] for row in battle_plan[battle_index + 1:]
                              if row.get('region') is not None]
                 auxilia_here = count_pieces(state, region, _RO_B, _AUX_B) > 0
-                if (13 not in _queue_capabilities_used and faction != _RO_B
-                        and _ica_b(state, 13, _EU_B)):
-                    choice = mandatory_window(state, 13, _RO_B, region, faction,
-                                              defender, potential, applicable=auxilia_here)
-                    if choice == 'activate':
+                if (13 not in _queue_capabilities_used
+                        and slingers_choice.is_active_for(state, faction)):
+                    if slingers_choice.choose_for_queue(state, region, faction, defender, potential):
                         _c13_region = region
                         _queue_capabilities_used.add(13)
                 if ('59u' not in _queue_capabilities_used
@@ -4040,14 +4040,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             # Card 13 unshaded pre-fire: Roman Auxilia inflict 1/2 each on the
             # attacker BEFORE the Battle resolves in the chosen Region.
             if _c13_region == region:
-                from fs_bot.battle.losses import resolve_losses as _rl13
-                _aux = count_pieces(state, region, _RO_B, _AUX_B)
-                # Card 13/59 Tips: having both unshaded capabilities makes
-                # this initial fire one Loss per Auxilia, independently of
-                # the separate Region receiving Horse's ordinary Battle bonus.
-                _pre = _aux if _ica_b(state, 59, _EU_B) else _aux // 2
-                if _pre > 0:
-                    _rl13(state, region, faction, _pre)
+                slingers_choice.fire(state, region, faction)
                 _c13_region = None  # once per Command
 
             # Card 27 shaded (Massed Gallic Archers): at the start of Battles

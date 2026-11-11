@@ -22,15 +22,30 @@ measurements have not been relabeled as results of later changes.
 ## Current audit backlog
 
 The [sixth Liberty or Death comparison audit](reviews/comparison-audit-round6-2026-11-11.md)
-found 14 repair groups. Batches 1 and 2 closed six Event and automatic
-German Rally and March findings, leaving **eight open** across Battle
-Capabilities, free-action choices and bot forecasts. The audit report includes
-seven witness scripts and the repair order. The earlier 50-, 21-, 15-, 16- and
+found 14 repair groups. Batches 1–3 closed nine Event, German procedure
+and Battle findings, leaving **five open** across free-action choices and
+bot forecasts. The audit report includes seven witness scripts and the
+repair order. The earlier 50-, 21-, 15-, 16- and
 11-group ledgers remain closed.
 
 [Sixth-audit finding ledger](reviews/comparison-audit-round6-2026-11-11.json)
 
 ## Follow-up repairs
+
+### 11 November sixth comparison repair Batch 3
+
+Inflexible cancels the shaded Legio X limit against German defenders.
+Stalwart cancels Slingers fire against German attackers. The Germans Phase
+and free German Ambushes apply Slingers once per Battle Command, including
+third-party Roman Auxilia. Consuetudine selects one defending Faction per
+Region and retains the priority for human players.
+[Repair and validation](reviews/sixth-comparison-batch3-2026-11-11.md)
+
+All **9,956 tests pass**. The 120 audited bot games completed cleanly, and
+20 mixed-player cases matched across two hash seeds with zero hard findings
+and one partial plan. The largest win-rate change in the 100-game balance
+check was 10 percentage points. All eight changed final boards trace to
+Slingers initial fire or the one-defender rule.
 
 ### 11 November sixth comparison repair Batch 2
 

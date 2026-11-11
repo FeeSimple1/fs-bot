@@ -147,13 +147,18 @@ Region, including a free Event Ambush. The prompt shows the physical owner
 and the Citadel's Tribe, and `b`/`board` inspects the live post-combat board.
 Provincia's permanent Fort can never be removed and is excluded.
 
-Unshaded Balearic Slingers now asks Romans to select one of the enemy's
-ordinary/free Battle Regions before combat. You can use it while defending
-or when the attacker is fighting a third Faction. The menu shows Roman
-Auxilia counts; a selected Region with zero or one Auxilia can cause zero
+Unshaded Balearic Slingers lets Romans select one Region in an enemy Battle
+Command, including free German Ambushes and the Germans Phase. You can use
+it while defending or when the attacker is fighting a third Faction. The menu
+shows Roman Auxilia counts. A selected Region with zero or one Auxilia can cause zero
 initial Losses. There is no separate decline. If both Slingers and Germanic
 Horse are unshaded, the initial fire inflicts one Loss per Auxilia. Slingers
-is used only once in the Command. The prospective queue uses the live PR-13 choices below.
+is used only once in the Command. The Germans Phase and unshaded German
+Allegiances use the live PR-13 choices below.
+
+Stalwart German Phalanx cancels Slingers fire against attacking Germans.
+Inflexible cancels the shaded Legio X limit when Caesar attacks German
+defenders, so each of his Legions inflicts two Losses before halving.
 
 Germanic Horse now asks its owner to select a Region in ordinary/free Battle
 plans. Romans may decline the unshaded bonus. The shaded Gallic owner selects
@@ -340,6 +345,9 @@ first. Each group can enter one adjacent Region. March first favors gaining
 new Germanic Control, then favors Regions Controlled by a human player
 within either tier. Scouted Warbands lose their markers and stay Revealed
 during the March step, including Warbands that stay in place.
+Battle with Ambush selects one defender per Region, preferring human players
+to Non-players. Consuetudine (card 53) waives the Hidden-piece comparison
+and keeps the one-defender limit.
 
 For Circumvallation (card 4), Romans choose or decline the complete benefit,
 regardless of who plays the Event. Choose the enemy Citadel destination and

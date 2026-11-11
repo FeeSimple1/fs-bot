@@ -94,6 +94,16 @@ def legio_x_final_losses(state, region, losses, inflicting_faction, taking_facti
     return losses + 2 if inflicting_faction == ROMANS else max(0, losses - 1)
 
 
+def caesar_legion_attack_losses(state, defender, legions):
+    """Apply Caesar's Legion rate with shaded Legio X and Inflexible."""
+    from fs_bot.cards.capabilities import is_capability_active
+
+    if (legions and is_capability_active(state, 15, EVENT_SHADED)
+            and not (defender == GERMANS and is_capability_active(state, 'A31', EVENT_UNSHADED))):
+        return legions + 1
+    return legions * 2
+
+
 def calculate_losses(state, region, attacking_faction, defending_faction,
                      *, is_retreat=False, is_counterattack=False,
                      double_auxilia=False, allied_factions=(),
@@ -190,12 +200,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
 
     # Component A: Legions or Warbands
     if caesar_attacking:
-        # §3.2.4: "two per Legion instead of just one per Legion"
-        # Card 15 shaded: Caesar doubles the Loss of 1 Legion only.
-        if is_capability_active(state, 15, _ESH) and enemy_legions > 0:
-            component_a = enemy_legions + 1
-        else:
-            component_a = enemy_legions * 2
+        component_a = caesar_legion_attack_losses(state, defending_faction, enemy_legions)
         # A28 can put borrowed Warbands beside Caesar; his Legion bonus
         # does not replace their ordinary contribution (§3.2.4, A28).
         component_a += enemy_warbands * (1.0 if warband_full_loss else 0.5)

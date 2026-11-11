@@ -46,7 +46,8 @@ from fs_bot.cards.capabilities import is_capability_active
 from fs_bot.battle.losses import (calculate_losses, resolve_losses,
                                   _remove_battle_piece,
                                   card30_arverni_legion_warbands,
-                                  defender_abatis_active, legio_x_final_losses)
+                                  defender_abatis_active, legio_x_final_losses,
+                                  caesar_legion_attack_losses)
 
 
 from fs_bot.engine.diviciacus import defensive_battle
@@ -413,12 +414,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
 
     # Component A
     if caesar_attacking:
-        # Card 15 shaded: "Caesar attacking in Battle doubles Loss
-        # inflicted by 1 Legion only (not by all Legions)."
-        if is_capability_active(state, 15, _ESH) and enemy_legions > 0:
-            component_a = enemy_legions + 1
-        else:
-            component_a = enemy_legions * 2
+        component_a = caesar_legion_attack_losses(state, defending_faction, enemy_legions)
         # A28 adds Warbands to Caesar's force without changing their rate.
         component_a += enemy_warbands * (1.0 if warband_full_loss else 0.5)
     elif ambiorix_attacking:

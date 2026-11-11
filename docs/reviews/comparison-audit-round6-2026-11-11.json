@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 14,
-  "closed": 6,
-  "open": 8,
+  "closed": 9,
+  "open": 5,
   "severity_counts": {
     "high": 7,
     "medium": 7
@@ -220,7 +220,9 @@
         "BM6-01",
         "BM6-02",
         "BM6-03"
-      ]
+      ],
+      "status": "closed",
+      "repair_report": "sixth-comparison-batch3-2026-11-11.md"
     },
     {
       "batch": 4,
@@ -833,7 +835,9 @@
       "evidence_directory": "frontend"
     },
     {
-      "status": "open",
+      "status": "closed",
+      "repair_batch": 3,
+      "repair_report": "sixth-comparison-batch3-2026-11-11.md",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "partition": "battle",
       "reproduction": "battle/probe_battle.py",
@@ -893,7 +897,9 @@
       "evidence_directory": "battle"
     },
     {
-      "status": "open",
+      "status": "closed",
+      "repair_batch": 3,
+      "repair_report": "sixth-comparison-batch3-2026-11-11.md",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "partition": "battle",
       "reproduction": "battle/probe_battle.py",
@@ -953,7 +959,9 @@
       "evidence_directory": "battle"
     },
     {
-      "status": "open",
+      "status": "closed",
+      "repair_batch": 3,
+      "repair_report": "sixth-comparison-batch3-2026-11-11.md",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "partition": "battle",
       "reproduction": "battle/probe_battle.py",

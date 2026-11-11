@@ -1195,8 +1195,10 @@ and `b`/`board` inspection. Older cross-revision transcripts that passed this
 formerly automatic step may stop for the newly required choice. This repair
 does not close BE-09's separate Card 13/59 Region-selection gaps.
 
-`slingers_region` goes to Romans at the start of an enemy's ordinary or free
-Battle plan when Roman Auxilia are present in any selected Battle Region.
+`slingers_region` goes to Romans at the start of an enemy's ordinary or fixed
+free Battle plan, including single German Ambushes, when Roman Auxilia are
+present in any selected Battle Region. Stalwart cancels the choice and fire
+against attacking Germans.
 The request contains `attacker`, ordered `legal_regions`, `defenders` and
 per-Region `auxilia` counts. Return `{"region":"Mandubii"}` for one offered
 Region or explicit `{"use_default":true}`. Card 13 unshaded says to choose
@@ -1266,7 +1268,8 @@ forecast branches these optional human choices and conservatively ranks the
 lower predicted Legion Losses; it consumes no live decisions or RNG.
 
 `capability_window` implements [PR-13](docs/provisional-rulings.md#pr-13)
-for Card 13 unshaded and Card 59 shaded in prospective queues. It carries
+for Card 13 unshaded and Card 59 shaded in prospective queues. The Germans
+Phase and unshaded German Allegiances use this request for Slingers. It carries
 `card_id`, `side`, `owner`, `region`, `attacker`, `defender`, live Roman
 `auxilia`, current `blocked` status, `potential_regions` and `actions`.
 Respond `{"action":"activate"}` or, while later candidates remain,
@@ -2398,8 +2401,8 @@ circles still permits the possible relocation effect.
 
 Colony (71) creates its new Tribe even with no Ally Available. Nasua & Cimberius
 (A35) removes Treveri's Dispersed/Gathering reminder before its Ally replacement,
-including when that replacement is unavailable. Consuetudine's forced Ambush
-exception belongs to that Event's Germans Phase; ordinary Germans Phase
-eligibility uses its normal Hidden comparison.
+including when that replacement is unavailable. Consuetudine's Germans Phase
+waives the Hidden comparison and selects at most one defending Faction per
+Region.
 
 See the [repair and validation report](docs/reviews/third-comparison-batch3-2026-11-10.md).

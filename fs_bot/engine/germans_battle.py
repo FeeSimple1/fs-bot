@@ -16,8 +16,7 @@ Reference:
 
 from fs_bot.rules_consts import (
     # Factions
-    ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS,
+    ARVERNI, GERMANS, FACTIONS,
     # Piece types
     WARBAND, AUXILIA,
     # Piece states
@@ -30,7 +29,8 @@ from fs_bot.board.control import refresh_all_control
 from fs_bot.battle.losses import calculate_losses
 from fs_bot.battle.resolve import resolve_battle
 from fs_bot.commands.common import CommandError
-from fs_bot.engine import action_windows
+from fs_bot.engine import action_windows, slingers_choice
+from fs_bot.engine.diviciacus import defense_scope
 
 
 def _count_hidden_pieces(state, region, faction):
@@ -103,6 +103,26 @@ def _get_battle_candidates(state, region, *, force_ambush=False):
     return candidates
 
 
+def _choose_defender(state, region, *, force_ambush):
+    candidates = _get_battle_candidates(state, region, force_ambush=force_ambush)
+    scheduled = {faction for faction, _ in candidates}
+    for player in (True, False):
+        targets = [faction for faction, is_player in candidates if is_player == player]
+        state['rng'].shuffle(targets)
+        for index, defender in enumerate(targets):
+            action_windows.window(state, 'germans_battle_target', region=region, defender=defender)
+            live = {faction for faction, _ in
+                    _get_battle_candidates(state, region, force_ambush=force_ambush)}
+            if defender in live:
+                return defender
+            # If this selection became illegal, a newly entered Arverni
+            # Leader can provide a fallback target at the same window.
+            if ARVERNI in live and ARVERNI not in scheduled:
+                targets.insert(index + 1, ARVERNI)
+                scheduled.add(ARVERNI)
+    return None
+
+
 def germans_phase_battle(state, *, force_ambush=False):
     """Run the game procedure with optional human timing windows."""
     with action_windows.scope(state, phase='germans_battle'):
@@ -150,85 +170,39 @@ def _germans_phase_battle(state, *, force_ambush=False):
     # Choose order of Battles randomly — §6.2.4
     rng.shuffle(battle_regions)
     scheduled_regions = set(battle_regions)
+    slingers_used = False
 
-    def include_new_regions():
+    def new_regions():
         # A newly entering Leader can supply an enemy where none existed
         # when the original order was chosen. Completed Regions stay done.
-        added = [r for r in state['spaces'] if r not in scheduled_regions
-                 and _get_battle_candidates(state, r, force_ambush=force_ambush)]
+        return [r for r in state['spaces'] if r not in scheduled_regions
+                and _get_battle_candidates(state, r, force_ambush=force_ambush)]
+
+    def include_new_regions():
+        added = new_regions()
         if added:
             rng.shuffle(added)
             battle_regions.extend(added)
             scheduled_regions.update(added)
 
-    for region in battle_regions:
+    for index, region in enumerate(battle_regions):
         action_windows.window(state, 'germans_battle_region', region=region)
         include_new_regions()
-        # Re-evaluate candidates (state may have changed from prior battles)
-        candidates = _get_battle_candidates(state, region, force_ambush=force_ambush)
-        if not candidates:
+        defender = _choose_defender(state, region, force_ambush=force_ambush)
+        if defender is None:
+            include_new_regions()
             continue
 
-        # Battle player before Non-player — §6.2.4
-        player_candidates = [
-            (f, ip) for f, ip in candidates if ip
-        ]
-        np_candidates = [
-            (f, ip) for f, ip in candidates if not ip
-        ]
-        scheduled_targets = {f for f, _ in candidates}
-
-        # Process players first, then non-players
-        for candidate_group in [player_candidates, np_candidates]:
-            if not candidate_group:
-                continue
-            # Choose randomly among equal candidates — §6.2.4
-            factions_in_group = [f for f, _ in candidate_group]
-            rng.shuffle(factions_in_group)
-
-            for index, defending_faction in enumerate(factions_in_group):
-                action_windows.window(state, 'germans_battle_target', region=region,
-                                      defender=defending_faction)
-                def include_new_target():
-                    # Spring entry is the only addition at this window.
-                    # Keep the selected battle, then give the newly present
-                    # human target priority over subsequent NP targets.
-                    if (ARVERNI not in scheduled_targets
-                            and any(f == ARVERNI for f, _ in
-                                    _get_battle_candidates(state, region, force_ambush=force_ambush))):
-                        factions_in_group.insert(index + 1, ARVERNI)
-                        scheduled_targets.add(ARVERNI)
-                include_new_target()
-                # Re-verify this battle is still valid
-                german_hidden = _count_hidden_pieces(state, region, GERMANS)
-                if german_hidden == 0 and not force_ambush:
-                    break
-                enemy_hidden = _count_hidden_pieces(
-                    state, region, defending_faction
-                )
-                if german_hidden <= enemy_hidden and not force_ambush:
-                    continue
-                if count_pieces(state, region, defending_faction) == 0:
-                    continue
-                if not _would_cause_loss(state, region, defending_faction):
-                    continue
-
-                # Execute battle with Ambush
-                battle_result = resolve_battle(
-                    state, region,
-                    attacking_faction=GERMANS,
-                    defending_faction=defending_faction,
-                    is_ambush=True,
-                )
-                result["battles"].append({
-                    "region": region,
-                    "defender": defending_faction,
-                    "result": battle_result,
-                })
-                if region not in result["regions"]:
-                    result["regions"].append(region)
-                include_new_target()
-
+        # §3.4.4 selects a single defender in each applicable Region.
+        with defense_scope(state, region, GERMANS, defender):
+            if not slingers_used and slingers_choice.is_active_for(state, GERMANS):
+                potential = battle_regions[index + 1:] + new_regions()
+                if slingers_choice.choose_for_queue(state, region, GERMANS, defender, potential):
+                    slingers_choice.fire(state, region, GERMANS)
+                    slingers_used = True
+            battle_result = resolve_battle(state, region, GERMANS, defender, is_ambush=True)
+        result['battles'].append({'region': region, 'defender': defender, 'result': battle_result})
+        result['regions'].append(region)
         include_new_regions()
 
     refresh_all_control(state)

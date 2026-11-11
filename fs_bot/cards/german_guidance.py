@@ -4,6 +4,7 @@ from copy import deepcopy
 from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces
 from fs_bot.commands.common import free_action_scope
+from fs_bot.engine import slingers_choice
 from fs_bot.engine.free_actions import consult_free_action, _explicit_sentinel
 from fs_bot.engine.march_choices import chooser_scope
 from fs_bot.map.map_data import get_playable_regions_for_state
@@ -149,6 +150,7 @@ def _resolve(state, executor, limit, card_id):
     else:
         marched=[]
     remaining=set(get_playable_regions_for_state(state,rc.GERMANS)); ambushes=[]; blocked={}
+    slingers_used = False
     while True:
         # A later live timing choice can change a formerly blocked defense.
         blocked={key:position for key,position in blocked.items()
@@ -175,6 +177,13 @@ def _resolve(state, executor, limit, card_id):
                 # other able targets instead of attacking the combined force.
                 blocked[(region,enemy)]=defending_position
                 continue
+            if card_id == 17:
+                slingers_choice.fire_for_single_battle(state, region, rc.GERMANS, enemy)
+            elif not slingers_used and slingers_choice.is_active_for(state, rc.GERMANS):
+                potential = [r for r in choices if r != region]
+                if slingers_choice.choose_for_queue(state, region, rc.GERMANS, enemy, potential):
+                    slingers_choice.fire(state, region, rc.GERMANS)
+                    slingers_used = True
             battle=resolve_battle(state,region,rc.GERMANS,enemy,is_ambush=True)
         ambushes.append({'region':region,'defender':enemy,'result':battle})
         remaining.remove(region)

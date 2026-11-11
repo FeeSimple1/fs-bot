@@ -67,7 +67,7 @@ from fs_bot.board.control import (
 from fs_bot.map.map_data import (
     get_adjacent, get_tribes_in_region_for_state, get_tribe_data,
     get_region_data, get_region_group, is_city_tribe,
-    ALL_REGION_DATA, is_region_playable, get_gallia_togata_card,
+    get_playable_regions_for_state, is_region_playable, get_gallia_togata_card,
 )
 from fs_bot.commands.common import (CommandError, _is_devastated, _is_intimidated,
                                     is_free_action)
@@ -1511,6 +1511,7 @@ def germans_phase_rally(state):
         "warbands_placed": {},
     }
     rng = state["rng"]
+    regions = get_playable_regions_for_state(state, GERMANS)
 
     # Step 1: Place as many Germanic Allies as possible — §6.2.1
     # Priority: Suebi first, then other Germania, then elsewhere
@@ -1522,12 +1523,7 @@ def germans_phase_rally(state):
     germania_candidates = []
     elsewhere_candidates = []
 
-    for region in state["spaces"]:
-        region_data = ALL_REGION_DATA.get(region)
-        if region_data is None:
-            continue
-        if not region_data.is_playable(scenario, state.get("capabilities")):
-            continue
+    for region in regions:
         if _is_devastated(state, region):
             continue
         if not is_controlled_by(state, region, GERMANS):
@@ -1544,9 +1540,10 @@ def germans_phase_rally(state):
             else:
                 elsewhere_candidates.append(entry)
 
-    # Place in priority order, choosing randomly among equals
-    for candidate_list in [suebi_candidates, germania_candidates,
-                           elsewhere_candidates]:
+    # §3.3.1 allows one new Ally per Region across all three priority tiers.
+    placed_regions = set()
+    for tier in (suebi_candidates, germania_candidates, elsewhere_candidates):
+        candidate_list = [entry for entry in tier if entry[0] not in placed_regions]
         while candidate_list and get_available(state, GERMANS, ALLY) > 0:
             # Choose randomly among equal candidates — §6.2.1
             rng.shuffle(candidate_list)
@@ -1565,6 +1562,8 @@ def germans_phase_rally(state):
             state["tribes"][chosen_tribe]["allied_faction"] = GERMANS
             state["tribes"][chosen_tribe]["status"] = None
             result["allies_placed"].append((chosen_region, chosen_tribe))
+            placed_regions.add(chosen_region)
+            candidate_list = [entry for entry in candidate_list if entry[0] != chosen_region]
             refresh_all_control(state)
 
     # Step 2: Place as many Warbands as possible — §6.2.1
@@ -1573,12 +1572,7 @@ def germans_phase_rally(state):
 
     # Collect all regions where Warbands can be placed
     warband_regions = []
-    for region in state["spaces"]:
-        region_data = ALL_REGION_DATA.get(region)
-        if region_data is None:
-            continue
-        if not region_data.is_playable(scenario, state.get("capabilities")):
-            continue
+    for region in regions:
         if _is_devastated(state, region):
             continue
 

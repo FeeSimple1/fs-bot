@@ -144,11 +144,12 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The first sixth-comparison batch closes three Event findings, leaving
-**11 of 14 open**. The repaired source passes **9,918 tests** and 120 audited
-bot games. Twenty mixed-player cases match across two hash seeds with zero
-hard findings and one partial plan.
-[Repair and validation](docs/reviews/sixth-comparison-batch1-2026-11-11.md) ·
+The second sixth-comparison batch repairs automatic German Rally and March,
+bringing the audit to **6 of 14 findings repaired**. The source passes
+**9,931 tests** and 120 audited bot games. Twenty mixed-player cases match
+across two hash seeds with zero hard findings and one partial plan. The
+100-game balance check passes within the existing 15-point band.
+[Repair and validation](docs/reviews/sixth-comparison-batch2-2026-11-11.md) ·
 [Current status](docs/current-status.md)
 
 The [fourth comparison's final repair batch](docs/reviews/fourth-comparison-batch4-2026-11-11.md)

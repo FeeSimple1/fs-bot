@@ -22,15 +22,29 @@ measurements have not been relabeled as results of later changes.
 ## Current audit backlog
 
 The [sixth Liberty or Death comparison audit](reviews/comparison-audit-round6-2026-11-11.md)
-found 14 repair groups. Batch 1 closed the three Event findings, leaving
-**11 open** across automatic German Rally and March, Battle Capabilities,
-free-action choices and bot forecasts. The audit report includes seven
-witness scripts and the repair order. The earlier 50-, 21-, 15-, 16- and
+found 14 repair groups. Batches 1 and 2 closed six Event and automatic
+German Rally and March findings, leaving **eight open** across Battle
+Capabilities, free-action choices and bot forecasts. The audit report includes
+seven witness scripts and the repair order. The earlier 50-, 21-, 15-, 16- and
 11-group ledgers remain closed.
 
 [Sixth-audit finding ledger](reviews/comparison-audit-round6-2026-11-11.json)
 
 ## Follow-up repairs
+
+### 11 November sixth comparison repair Batch 2
+
+Automatic German Rally places one new Ally per Region at most, with Suebi
+first. March moves each original group at most one Region, gives priority
+to gaining Germanic Control and then to human-player Control, and leaves
+formerly Scouted Warbands Revealed. The bot's free March under shaded
+Camulogenus can cross into Britannia without attaching Entreat.
+[Repair and validation](reviews/sixth-comparison-batch2-2026-11-11.md)
+
+All **9,931 tests pass**. The 120 audited bot games completed cleanly, and
+20 mixed-player cases matched across two hash seeds with zero hard findings
+and one partial plan. The largest win-rate change in the 100-game balance
+check was 10 percentage points within the existing 15-point band.
 
 ### 11 November sixth comparison repair Batch 1
 

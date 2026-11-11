@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 14,
-  "closed": 3,
-  "open": 11,
+  "closed": 6,
+  "open": 8,
   "severity_counts": {
     "high": 7,
     "medium": 7
@@ -209,7 +209,9 @@
         "WS6-01",
         "WS6-02",
         "WS6-03"
-      ]
+      ],
+      "status": "closed",
+      "repair_report": "sixth-comparison-batch2-2026-11-11.md"
     },
     {
       "batch": 3,
@@ -1243,10 +1245,12 @@
       "output": "lifecycle/probe_lifecycle.json",
       "fixture": "Controlled build_initial_state position in The Great Revolt, seed1, canonical place_piece and named Ally helper only. Permanent Provincia Fort retained. Pre/post validate_state and check_structural_integrity pass, including named Tribe restrictions. No sampled-game frequency claim.",
       "limits": "The primary witness proves one Germanic Region with two Subdued Tribes. Similar multi-Tribe Regions follow the same loop but are not separately counted.",
-      "status": "open",
+      "status": "closed",
       "partition": "lifecycle",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
-      "evidence_directory": "lifecycle"
+      "evidence_directory": "lifecycle",
+      "repair_batch": 2,
+      "repair_report": "sixth-comparison-batch2-2026-11-11.md"
     },
     {
       "id": "WS6-02",
@@ -1294,10 +1298,12 @@
       "output": "lifecycle/probe_lifecycle.json",
       "fixture": "Controlled Great Revolt build_initial_state seed0: German Warbands Ubii5, Sugambri3, Treveri1, Sequani1, permanent Provincia Fort. No piece counts directly edited. Pre/post inventories and structure pass. Complete Germans Phase variant uses the actual Rally output to establish each origin's March-start inventory.",
       "limits": "The no-Rally witness independently isolates the March defect; the complete-phase witness also contains WS6-01's extra Allies, but its double-movement proof is relative to the actual post-Rally inventory and does not depend on the Rally expectation.",
-      "status": "open",
+      "status": "closed",
       "partition": "lifecycle",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
-      "evidence_directory": "lifecycle"
+      "evidence_directory": "lifecycle",
+      "repair_batch": 2,
+      "repair_report": "sixth-comparison-batch2-2026-11-11.md"
     },
     {
       "id": "WS6-03",
@@ -1335,10 +1341,12 @@
       "output": "lifecycle/probe_lifecycle.json",
       "fixture": "Controlled Great Revolt build_initial_state: Ubii5 German Warbands, Treveri1 Roman Auxilia (human), permanent Provincia Fort, other playable seats NP. Direct witness seed0, full phase seed1. All pieces placed through helpers; pre/post census/structure and named Tribe restrictions pass.",
       "limits": "No claims about occurrence frequency or aggregate winner drift. Complete phase uses actual post-Rally group size and still has a uniquely required player-controlled destination.",
-      "status": "open",
+      "status": "closed",
       "partition": "lifecycle",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
-      "evidence_directory": "lifecycle"
+      "evidence_directory": "lifecycle",
+      "repair_batch": 2,
+      "repair_report": "sixth-comparison-batch2-2026-11-11.md"
     }
   ],
   "root_verification": {

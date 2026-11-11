@@ -5,9 +5,11 @@ import random
 import pytest
 
 from fs_bot import rules_consts as rc
-from fs_bot.board.pieces import place_piece, count_pieces
+from fs_bot.board.pieces import place_piece, count_pieces, get_available
+from fs_bot.cards.card_effects import _ally_tribe
 from fs_bot.engine import execute as ex
-from fs_bot.state.state_schema import build_initial_state
+from fs_bot.engine.game_engine import ACTION_EVENT, get_sop_factions
+from fs_bot.state.state_schema import build_initial_state, check_structural_integrity, validate_state
 from fs_bot.state.serialize import encode
 
 
@@ -133,6 +135,43 @@ def test_march_scope_rejects_implicit_leader_outside_allowed_origins():
     state['_command_region_scope'] = {rc.SEQUANI}
     state['_planning_free_command'] = True
     assert not ex.march_plan_has_effect(state, rc.ARVERNI, action['details'])
+
+
+@pytest.mark.parametrize('destination,entreat', [(rc.BRITANNIA, False), (rc.NERVII, True)])
+def test_bot_camulogenus_marches_with_entreat_only_on_a_legal_route(destination, entreat):
+    state = build_initial_state(rc.SCENARIO_RECONQUEST, seed=1)
+    state['current_card'] = 70
+    state['non_player_factions'] = set(get_sop_factions(state))
+    state['resources'][rc.ARVERNI] = 6
+    place_piece(state, rc.PROVINCIA, rc.ROMANS, rc.FORT)
+    place_piece(state, destination, rc.ROMANS, rc.LEGION, from_legions_track=True)
+    place_piece(state, rc.ATREBATES, rc.ARVERNI, rc.LEADER, leader_name=rc.VERCINGETORIX)
+    warbands = get_available(state, rc.ARVERNI, rc.WARBAND)
+    place_piece(state, rc.ATREBATES, rc.ARVERNI, rc.WARBAND, warbands - 6)
+    # The Event uses the six Available Warbands. With six Allies already
+    # on the map, the scoped flowchart then Mass Marches toward the Legion.
+    for tribe in (rc.TRIBE_MORINI, rc.TRIBE_NERVII, rc.TRIBE_PICTONES,
+                  rc.TRIBE_VENETI, rc.TRIBE_SEQUANI, rc.TRIBE_CADURCI):
+        assert _ally_tribe(state, tribe, rc.ARVERNI)
+    assert _ally_tribe(state, rc.TRIBE_BELLOVACI, rc.BELGAE)
+    assert validate_state(state) == check_structural_integrity(state) == []
+
+    result = ex.execute_decision(state, rc.ARVERNI, {'action': ACTION_EVENT, 'bot_action': {
+        'command': rc.FIRST_DID_EVENT,
+        'details': {'card_id': 70, 'text_preference': rc.EVENT_SHADED},
+    }})
+
+    assert result['executed'], result
+    grant, = result['free_actions']
+    march = grant['result']
+    assert march['executed'] and march['command'] == rc.CMD_MARCH and not march['errors']
+    assert march['total_cost'] == 0
+    assert march['marches'] == [{'origin': rc.ATREBATES, 'final_region': destination,
+                                 'leader': True, 'warbands': warbands - 2}]
+    assert bool(march.get('sa_execution', {}).get('executed')) == entreat
+    owner = rc.ARVERNI if entreat else rc.BELGAE
+    assert state['tribes'][rc.TRIBE_BELLOVACI]['allied_faction'] == owner
+    assert validate_state(state) == check_structural_integrity(state) == []
 
 
 def test_limited_command_does_not_narrow_a_separately_permitted_sa():

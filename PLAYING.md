@@ -333,6 +333,14 @@ the Roman bot for the whole grant applies the Roman card instructions;
 shaded Germanic Chieftains still runs the separate Germans Phase procedure.
 `b`/`board` and saving at the following Ambush decision remain available.
 
+In the automatic Germans Phase, Rally adds at most one new Ally per Region,
+starting with Suebi, then other Tribes in Germania, then elsewhere. March
+forms all groups before moving any of them and moves the largest groups
+first. Each group can enter one adjacent Region. March first favors gaining
+new Germanic Control, then favors Regions Controlled by a human player
+within either tier. Scouted Warbands lose their markers and stay Revealed
+during the March step, including Warbands that stay in place.
+
 For Circumvallation (card 4), Romans choose or decline the complete benefit,
 regardless of who plays the Event. Choose the enemy Citadel destination and
 exact adjacent Roman groups; multiple groups may leave an original Region.

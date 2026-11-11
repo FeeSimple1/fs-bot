@@ -17,7 +17,7 @@ Reference: §3.2.2 (Roman March), §3.3.2 (Gallic March), §3.4.2 (Germanic Marc
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    GALLIC_FACTIONS,
+    FACTIONS, GALLIC_FACTIONS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     FLIPPABLE_PIECES,
@@ -49,10 +49,10 @@ from fs_bot.board.pieces import (
     flip_piece, remove_piece, get_leader_in_region,
     PieceError,
 )
-from fs_bot.board.control import refresh_all_control
+from fs_bot.board.control import calculate_control, refresh_all_control
 from fs_bot.map.map_data import (
-    get_adjacent_with_type, get_adjacency_type,
-    ALL_REGION_DATA, is_region_playable, is_gallia_togata_active,
+    get_adjacent_for_state, get_adjacency_type, get_playable_regions_for_state,
+    is_region_playable, is_gallia_togata_active,
 )
 from fs_bot.commands.common import CommandError, _is_devastated
 
@@ -1092,215 +1092,70 @@ def execute_march(state, faction, origins_data, *, free=False, limited=False):
 # GERMANS PHASE MARCH (§6.2.2) — Base Game Only
 # ============================================================================
 
+def _germanic_control_margin(state, region):
+    own = count_pieces(state, region, GERMANS)
+    return own - (count_pieces(state, region) - own)
+
+
 def germans_phase_march(state):
-    """Execute the Germans Phase March procedure — §6.2.2.
-
-    This is the base-game-only deterministic March for the Germanic
-    non-player faction during Winter. It uses state["rng"] for random
-    choices among equal candidates.
-
-    §6.2.2:
-    - Form a group of Germanic Warbands to March out of each Region that
-      has at least one Germanic Warband beyond pieces needed for Control.
-    - March out with as many as possible without losing Germanic Control.
-    - Move the largest groups first.
-    - Move into at most one Region with each group.
-    - Select destinations: first add Germanic Control (not yet controlled),
-      then player-controlled Factions, then others.
-    - Choose among equal candidates randomly.
-    - Flip all Germanic Warbands to Hidden (or remove Scouted markers).
-
-    Args:
-        state: Game state dict. Modified in place.
-
-    Returns:
-        Dict with results:
-            "groups_moved": [(from_region, to_region, warband_count)]
-            "flipped_regions": [region_names]
-    """
-    scenario = state["scenario"]
-    if scenario not in BASE_SCENARIOS:
+    """Move the Germans Phase's original groups and hide Warbands (§6.2.2)."""
+    if state["scenario"] not in BASE_SCENARIOS:
         raise MarchError("Germans Phase March is base game only (§6.2.2)")
 
-    rng = state["rng"]
-    result = {
-        "groups_moved": [],
-        "flipped_regions": [],
-    }
+    regions = get_playable_regions_for_state(state, GERMANS)
+    non_players = state.get("non_player_factions", set())
+    player_control = {FACTION_CONTROL[faction] for faction in FACTIONS
+                      if faction != GERMANS and faction not in non_players}
+    result = {"groups_moved": [], "flipped_regions": []}
 
-    # Collect regions with German Warbands that can send groups out
-    # §6.2.2: "each Region that has at least one Germanic Warband
-    # beyond the pieces needed for Germanic Control"
-    candidate_origins = []
-    for region in state["spaces"]:
-        region_data = ALL_REGION_DATA.get(region)
-        if region_data is None:
+    # Form every group before any move. Later arrivals can strengthen Control
+    # but cannot enlarge these groups or substitute for their original pieces.
+    groups = []
+    for origin in regions:
+        warbands = count_pieces(state, origin, GERMANS, WARBAND)
+        if not warbands:
             continue
-        if not region_data.is_playable(scenario, state.get("capabilities")):
+        size = min(warbands, _germanic_control_margin(state, origin) - 1)
+        if size <= 0:
             continue
+        remaining = size
+        moving = []
+        for visibility in (HIDDEN, REVEALED, SCOUTED):
+            available = count_pieces_by_state(state, origin, GERMANS, WARBAND, visibility)
+            count = min(available, remaining)
+            if count:
+                moving.append((visibility, count))
+                remaining -= count
+        groups.append((origin, size, moving))
 
-        german_warbands = count_pieces(state, region, GERMANS, WARBAND)
-        if german_warbands == 0:
-            continue
-
-        # Calculate how many Warbands are needed to maintain Control
-        # Control = faction's forces > all others combined — §1.6
-        german_total = count_pieces(state, region, GERMANS)
-        other_total = 0
-        from fs_bot.rules_consts import FACTIONS
-        for fac in FACTIONS:
-            if fac != GERMANS:
-                other_total += count_pieces(state, region, fac)
-
-        # Currently controlling: german_total > other_total
-        # To maintain control after removing warbands:
-        # (german_total - sent) > other_total
-        # => sent < german_total - other_total
-        # Also: must have at least 1 warband beyond control need
-        if german_total <= other_total:
-            # No Germanic Control — don't march — §6.2.2 NOTE
+    groups.sort(key=lambda group: group[1], reverse=True)
+    for origin, size, moving in groups:
+        priorities = {}
+        for destination in get_adjacent_for_state(state, origin, GERMANS):
+            margin = _germanic_control_margin(state, destination)
+            adds_control = margin <= 0 < margin + size
+            has_player_control = calculate_control(state, destination) in player_control
+            priorities[destination] = (adds_control, has_player_control)
+        if not priorities:
             continue
 
-        surplus = german_total - other_total - 1
-        # surplus = max Warbands we can send while keeping control
-        can_send = min(german_warbands, surplus)
-        if can_send <= 0:
-            continue
+        # Rank current destinations after earlier moves, using player Control
+        # as the second priority in either tier.
+        best = max(priorities.values())
+        tied = [region for region, priority in priorities.items() if priority == best]
+        state["rng"].shuffle(tied)
+        destination = tied[0]
+        for visibility, count in moving:
+            move_piece(state, origin, destination, GERMANS, WARBAND,
+                       count=count, piece_state=visibility)
+        result["groups_moved"].append((origin, destination, size))
 
-        candidate_origins.append((region, can_send))
-
-    # Sort by largest groups first — §6.2.2
-    candidate_origins.sort(key=lambda x: x[1], reverse=True)
-
-    # Move each group to a destination
-    for from_region, warband_count in candidate_origins:
-        # Find candidate destinations
-        adj = get_adjacent_with_type(
-            from_region, scenario, state.get("capabilities"))
-
-        # Priority: add Germanic Control > player-controlled > others
-        # §6.2.2: "not yet German-Controlled", "Controlled by player Factions
-        # (not Non-players)"
-        add_control = []
-        player_controlled = []
-        others = []
-
-        for dest, adj_type in adj.items():
-            # Germans cross Rhenus freely — §3.4.5
-            # But check other stops (Devastated, Britannia, etc.)
-            # For Germans Phase, the rules say "March into at most one
-            # Region with each group (3.3.2, 3.4.2)" — 1 step
-            dest_data = ALL_REGION_DATA.get(dest)
-            if dest_data is None or not dest_data.is_playable(
-                    scenario, state.get("capabilities")):
-                continue
-
-            from fs_bot.board.control import is_controlled_by
-            is_german_controlled = is_controlled_by(state, dest, GERMANS)
-
-            if not is_german_controlled:
-                # Could add Germanic Control?
-                # Check if the Warbands would give control
-                german_in_dest = count_pieces(state, dest, GERMANS)
-                others_in_dest = 0
-                for fac in FACTIONS:
-                    if fac != GERMANS:
-                        others_in_dest += count_pieces(state, dest, fac)
-                would_control = (german_in_dest + warband_count
-                                 > others_in_dest)
-                if would_control:
-                    add_control.append(dest)
-                else:
-                    # §6.2.2 priority: Controlled by player Factions (NOT
-                    # Non-players) ranks above other destinations.
-                    non_players = state.get("non_player_factions", set())
-                    is_player_controlled = False
-                    for fac in FACTIONS:
-                        if (fac != GERMANS and fac not in non_players
-                                and is_controlled_by(state, dest, fac)):
-                            is_player_controlled = True
-                            break
-                    if is_player_controlled:
-                        player_controlled.append(dest)
-                    else:
-                        others.append(dest)
-            else:
-                others.append(dest)
-
-        # Choose destination in priority order, randomly among equals
-        dest = None
-        for candidate_list in [add_control, player_controlled, others]:
-            if candidate_list:
-                rng.shuffle(candidate_list)
-                dest = candidate_list[0]
-                break
-
-        if dest is None:
-            continue
-
-        # Execute the march: move Warbands
-        # Re-validate warbands available (may have changed from prior moves)
-        current_warbands = count_pieces(state, from_region, GERMANS, WARBAND)
-        german_total = count_pieces(state, from_region, GERMANS)
-        other_total = 0
-        for fac in FACTIONS:
-            if fac != GERMANS:
-                other_total += count_pieces(state, from_region, fac)
-        surplus = german_total - other_total - 1
-        actual_send = min(current_warbands, surplus)
-        if actual_send <= 0:
-            continue
-
-        # Move all Warbands (Hidden — they'll be flipped after all movement)
-        # move_piece needs a piece_state for flippable pieces
-        # Move Hidden first, then Revealed, then Scouted
-        sent = 0
-        for ps in (HIDDEN, REVEALED, SCOUTED):
-            ps_count = count_pieces_by_state(
-                state, from_region, GERMANS, WARBAND, ps)
-            to_move = min(ps_count, actual_send - sent)
-            if to_move > 0:
-                move_piece(state, from_region, dest, GERMANS, WARBAND,
-                           count=to_move, piece_state=ps)
-                sent += to_move
-            if sent >= actual_send:
-                break
-
-        result["groups_moved"].append((from_region, dest, sent))
-
-    # §6.2.2: "Flip all Germanic Warbands to Hidden (or remove their Scouted
-    # markers). (Warbands that did not move in effect Marched within their
-    # Regions.)"
-    for region in state["spaces"]:
-        region_data = ALL_REGION_DATA.get(region)
-        if region_data is None:
-            continue
-        if not region_data.is_playable(scenario, state.get("capabilities")):
-            continue
-
-        flipped = False
-        # Scouted -> Revealed (remove marker per §1.4.3)
-        scouted = count_pieces_by_state(
-            state, region, GERMANS, WARBAND, SCOUTED)
-        if scouted > 0:
-            flip_piece(state, region, GERMANS, WARBAND,
-                       count=scouted,
-                       from_state=SCOUTED, to_state=HIDDEN)
-            flipped = True
-
-        # Revealed -> Hidden
-        revealed = count_pieces_by_state(
-            state, region, GERMANS, WARBAND, REVEALED)
-        if revealed > 0:
-            flip_piece(state, region, GERMANS, WARBAND,
-                       count=revealed,
-                       from_state=REVEALED, to_state=HIDDEN)
-            flipped = True
-
-        if flipped:
+    # All Warbands receive one hide attempt, including those that stayed.
+    # A Scouted Warband loses its marker and remains Revealed (§4.2.2).
+    for region in regions:
+        flips = _flip_origin_pieces(state, region, GERMANS)
+        if flips["flipped_to_hidden"] or flips["scouted_to_revealed"]:
             result["flipped_regions"].append(region)
 
-    # Refresh control
     refresh_all_control(state)
-
     return result

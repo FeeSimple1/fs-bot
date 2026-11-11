@@ -950,7 +950,9 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     Supply Lines, and March destinations. Event exclusions disable branches;
     Sequence-of-Play Pass and Event opportunities do not apply to this grant.
     """
+    from copy import copy
     from fs_bot.bots.bot_dispatch import dispatch_bot_turn
+    from fs_bot.engine.action_validation import march_scope_error
     from fs_bot.engine.free_actions import (command_options, consult_free_action,
                                              execute_free_action_plan)
     from fs_bot.cards.card_effects import _event_step
@@ -1049,6 +1051,15 @@ def _resolve_free_command(state, faction, allowed_regions=None,
                                 constrain_sa=False)
                 if bot_action is None:
                     raise ValueError("flowchart selected an empty Limited Command")
+                if (with_sa and cmd == _CMD_MARCH
+                        and bot_action.get("sa") not in (None, SA_ACTION_NONE_LABEL)):
+                    # §4.1.3 removes the accompanying ability from the final
+                    # scoped route. Keep the legal March and its live RNG.
+                    route_preview = dict(planning_state, rng=copy(planning_state["rng"]))
+                    moves, _ = _collect_march_moves(route_preview, faction, bot_action)
+                    if march_scope_error(moves, with_sa=True):
+                        bot_action = dict(bot_action, sa=SA_ACTION_NONE_LABEL, sa_regions=[])
+                        bot_action.pop("sa_timing", None)
         except Exception as exc:
             return {"executed": False, "command": None, "reason": repr(exc)}
         # Live agreement belongs to this concrete, already-scoped grant. A

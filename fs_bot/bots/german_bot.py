@@ -26,7 +26,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS, GALLIC_FACTIONS,
     # Piece types
-    LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
+    LEADER, LEGION, AUXILIA, WARBAND, ALLY, CITADEL, SETTLEMENT,
     MOBILE_PIECES,
     # Piece states
     HIDDEN, REVEALED, SCOUTED,
@@ -230,36 +230,12 @@ def _estimate_battle_losses(state, region, enemy):
     Returns:
         (losses_inflicted, losses_suffered) tuple of ints.
     """
-    german_wb = count_pieces(state, region, GERMANS, WARBAND)
-    has_aristos = _has_ariovistus(state, region)
-
-    # Germanic Attack: 1/2 per Warband + 1 per Leader — §3.3.4
-    attack_raw = german_wb * 0.5 + (1 if has_aristos else 0)
-    # Enemy Fort/Citadel halves Attack Losses inflicted — §3.3.4
-    enemy_fort = count_pieces(state, region, enemy, FORT)
-    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    if enemy_fort > 0 or enemy_citadel > 0:
-        attack_raw = attack_raw / 2
-    losses_inflicted = int(attack_raw)
-
-    # Counterattack Losses suffered by Germans — §3.3.4
-    enemy_warbands = count_pieces(state, region, enemy, WARBAND)
-    enemy_auxilia = count_pieces(state, region, enemy, AUXILIA)
-    enemy_legions = count_pieces(state, region, enemy, LEGION)
-    enemy_leader = get_leader_in_region(state, region, enemy)
-
-    counter_raw = (enemy_legions * 1
-                   + enemy_warbands * 0.5
-                   + enemy_auxilia * 0.5
-                   + (1 if enemy_leader else 0))
-
-    # Germans have no Fort/Citadel — no halving on the German side.
-    losses_suffered = int(counter_raw)
-    # Card 27 shaded: 6+ Arverni Warbands force 1 extra absorbed Loss.
-    from fs_bot.bots.bot_common import card27_shaded_absorption
-    losses_suffered += card27_shaded_absorption(state, region, GERMANS,
-                                                enemy)
-    return (losses_inflicted, losses_suffered)
+    from fs_bot.bots.bot_common import predict_battle, card27_shaded_absorption
+    forecast = predict_battle(state, region, GERMANS, enemy)
+    if forecast is None:
+        return (0, 0)
+    return (forecast['inflicted'], forecast['taken']
+            + card27_shaded_absorption(state, region, GERMANS, enemy))
 
 
 def _can_battle_in_region(state, region, enemy):

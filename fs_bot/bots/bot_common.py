@@ -1174,7 +1174,13 @@ class _AllRemovalsRng:
         return None
 
 
-def predict_battle(state, region, attacking_faction, defending_faction):
+class _AllSavesRng(_AllRemovalsRng):
+    def randint(self, a, b):
+        return b
+
+
+def predict_battle(state, region, attacking_faction, defending_faction, *,
+                   defender_saves=False, is_ambush=False):
     """Deterministically predict a Battle's Losses for NP decision-making.
 
     Per the flowcharts' "presuming all Defender Loss rolls result in removals
@@ -1190,14 +1196,19 @@ def predict_battle(state, region, attacking_faction, defending_faction):
         attacker's Leader: the Leader absorbs LAST among mobile pieces
         (Warbands/Auxilia/Legions, no-Retreat order, §3.2.4), so it is reached
         only when ``taken`` exceeds those non-Leader mobile pieces.
+    For the Aedui's possible Counterattack check, ``defender_saves`` lets
+    each Defender roll succeed, and allows a human to choose a hard target.
+    Caesar can pass his Ambush test. The forecast covers the Battle steps
+    with effects already scoped to this Region.
     Returns that dict, or None if the Battle cannot be evaluated.
     """
     import copy
     from fs_bot.battle.resolve import _calculate_attack_losses
-    from fs_bot.battle.losses import resolve_losses, calculate_losses
-    from fs_bot.rules_consts import CITADEL, FORT, WARBAND, AUXILIA, LEGION
-    sim = copy.deepcopy(state)
-    sim["rng"] = _AllRemovalsRng()
+    from fs_bot.battle.losses import resolve_losses, calculate_losses, defender_abatis_active
+    from fs_bot.rules_consts import CITADEL, FORT, WARBAND, AUXILIA, LEGION, LEADER, CAESAR
+    sim = copy.deepcopy({key: value for key, value in state.items()
+                         if key not in ('decision_agent', 'rng')})
+    sim["rng"] = _AllSavesRng() if defender_saves else _AllRemovalsRng()
     try:
         d_pieces = sim["spaces"][region].get("pieces", {}).get(
             defending_faction, {})
@@ -1208,13 +1219,22 @@ def predict_battle(state, region, attacking_faction, defending_faction):
             sim, region, attacking_faction, defending_faction,
             is_retreat=False, had_citadel_at_start=had_citadel,
             had_fort_at_start=had_fort)
-        # Defender absorbs them, all rolls forced to removals (fewest survivors).
-        if inflicted > 0:
-            resolve_losses(sim, region, defending_faction, inflicted)
+        caesar_can_counter = (is_ambush and defending_faction == ROMANS
+                              and get_leader_in_region(sim, region, ROMANS) == CAESAR)
+        ambush_blocks_counter = is_ambush and not caesar_can_counter
+        player_defends = (defending_faction not in sim.get('non_player_factions', ())
+                          and not (defending_faction == ARVERNI
+                                   and sim['scenario'] in ARIOVISTUS_SCENARIOS))
+        loss_order = [(LEGION, None), (LEADER, None)] if defender_saves and player_defends else None
+        attack = resolve_losses(
+            sim, region, defending_faction, inflicted, is_ambush=ambush_blocks_counter,
+            abatis_defender=defender_abatis_active(sim, region, attacking_faction, defending_faction),
+            loss_order=loss_order)
         # Counterattack Loss COUNT from the surviving Defender.
-        taken = calculate_losses(
+        taken = 0 if ambush_blocks_counter else calculate_losses(
             sim, region, attacking_faction=defending_faction,
-            defending_faction=attacking_faction, is_counterattack=True)
+            defending_faction=attacking_faction, is_counterattack=True,
+            arverni_legion_override=attack.get('legion_warbands_surviving'))
         # The attacker's Leader is reached only after its non-Leader mobile
         # pieces absorb.
         absorbers = (count_pieces(sim, region, attacking_faction, WARBAND)

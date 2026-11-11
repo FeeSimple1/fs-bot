@@ -250,12 +250,6 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
     Returns:
         True if Battle is sure to inflict a Loss on a high-value target.
     """
-    losses_inflicted, _ = _estimate_battle_losses(
-        state, region, attacker, defender, scenario)
-
-    if losses_inflicted <= 0:
-        return False
-
     # Check if enemy has high-value targets that would take a Loss
     def_leader = get_leader_in_region(state, region, defender)
     def_legions = count_pieces(state, region, defender, LEGION)
@@ -272,8 +266,11 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
         + def_legions + def_allies + def_citadels + def_settlements
     )
 
-    if state.get('_morasses_ambush') and high_value_count == 0:
+    if high_value_count == 0:
         return False
+
+    losses_inflicted, _ = _estimate_battle_losses(
+        state, region, attacker, defender, scenario)
 
     # Count total defender pieces to see if losses reach high-value targets
     # Losses remove pieces in defender's choice, but we check if losses
@@ -293,18 +290,7 @@ def _would_force_loss_on_high_value(state, region, attacker, defender,
         # Enemy could Retreat → use halved losses
         effective_losses = int(losses_inflicted / 2)
 
-    if effective_losses <= 0:
-        return False
-
-    # If losses exceed expendable pieces, high-value targets MUST take hits
-    if effective_losses > expendable:
-        return True
-
-    # If defender has ONLY high-value targets (no expendable), any loss hits them
-    if expendable == 0 and high_value_count > 0:
-        return True
-
-    return False
+    return effective_losses > expendable
 
 
 def _get_battle_enemies(state, scenario):
@@ -329,12 +315,21 @@ def _get_battle_enemies(state, scenario):
     return enemies
 
 
-def _counterattack_threatens_diviciacus(state, region, enemies, scenario):
-    # A3.2.4: The Leader cannot absorb a Loss while another piece can.
-    expendable = (count_pieces(state, region, AEDUI, WARBAND)
-                  + count_pieces(state, region, AEDUI, AUXILIA))
-    return any(_estimate_battle_losses(state, region, AEDUI, enemy, scenario)[1]
-               > expendable for enemy in enemies if count_pieces(state, region, enemy))
+def _counterattack_threatens_diviciacus(state, region, enemy, *, is_ambush):
+    if (state['scenario'] not in ARIOVISTUS_SCENARIOS
+            or get_leader_in_region(state, region, AEDUI) != DIVICIACUS):
+        return False
+    from fs_bot.bots.bot_common import predict_battle, card27_shaded_absorption
+
+    forecast = predict_battle(state, region, AEDUI, enemy,
+                              defender_saves=True, is_ambush=is_ambush)
+    if forecast is None:
+        return True
+    # A3.2.4: Diviciacus absorbs last, after every other eligible piece.
+    # Each other casualty may be removed on its first Loss.
+    other_pieces = count_pieces(state, region, AEDUI) - 1
+    prefire = card27_shaded_absorption(state, region, AEDUI, enemy)
+    return forecast['taken'] + prefire > other_pieces
 
 
 # ============================================================================
@@ -419,32 +414,7 @@ def node_a4(state):
     Returns:
         "Yes" (Battle) or "No" (proceed to A5).
     """
-    scenario = state["scenario"]
-    playable = command_region_candidates(
-        state, get_playable_regions(scenario, state.get("capabilities")))
-    enemies = _get_battle_enemies(state, scenario)
-
-    for region in playable:
-        if count_pieces(state, region, AEDUI) == 0:
-            continue
-        for enemy in enemies:
-            if count_pieces(state, region, enemy) == 0:
-                continue
-            # Check if Ambush is possible — more Hidden Aedui than Hidden enemy
-            hidden_aedui = count_pieces_by_state(
-                state, region, AEDUI, WARBAND, HIDDEN)
-            hidden_enemy = count_pieces_by_state(
-                state, region, enemy, WARBAND, HIDDEN)
-            if enemy == ROMANS:
-                hidden_enemy += count_pieces_by_state(
-                    state, region, enemy, AUXILIA, HIDDEN)
-            ambush = command_sa_allowed(state) and hidden_aedui > hidden_enemy
-            if _would_force_loss_on_high_value(
-                    state, region, AEDUI, enemy, scenario,
-                    ambush_possible=ambush):
-                return "Yes"
-
-    return "No"
+    return "Yes" if _aedui_battle_plan(state, first_only=True) else "No"
 
 
 def node_a5(state):
@@ -674,22 +644,11 @@ def node_a_event(state):
     )
 
 
-def node_a_battle(state):
-    """A_BATTLE: Battle process.
+def _aedui_battle_plan(state, *, first_only=False):
+    """Select affordable, safe targets in the two §8.6.2 Battle priorities."""
+    from fs_bot.cards.morasses import ambush_active
+    from fs_bot.commands.common import battle_cost
 
-    Per §8.6.2: Battle versus Gauls, Germans, and — if Aedui are at
-    victory — Romans.
-
-    Steps:
-    1. Ambush in first Battle where box at right applies.
-    2. Attack to inflict Losses on enemy Leaders, Allies, Citadels, OR Legions.
-    3. Attack where enemy will take Losses AND at least as many as Aedui.
-
-    For all Battle Regions, pay Resources as soon as selected.
-
-    Returns:
-        Action dict for Battle.
-    """
     scenario = state["scenario"]
     non_players = state.get("non_player_factions", set())
     playable = command_region_candidates(
@@ -700,75 +659,53 @@ def node_a_battle(state):
         enemies = [e for e in enemies if e in (ARVERNI, BELGAE) and e not in non_players]
 
     battle_plan = []
-
-    # A8.6.2 applies the Diviciacus protection to both Battle priorities.
-    if scenario in ARIOVISTUS_SCENARIOS:
-        diviciacus_region = _diviciacus_region(state)
-        if (diviciacus_region in playable and _counterattack_threatens_diviciacus(
-                state, diviciacus_region, enemies, scenario)):
-            playable.remove(diviciacus_region)
-
-    # Step 2: Battle where we force Loss on Leader, Ally, Citadel, Legion
-    for region in playable:
-        if count_pieces(state, region, AEDUI) == 0:
-            continue
-
-        for enemy in enemies:
-            if count_pieces(state, region, enemy) == 0:
+    selected_regions = set()
+    budget = state['resources'].get(AEDUI, 0)
+    ambush_available = command_sa_allowed(state) and not state.get('_morasses_ambush')
+    for priority in ('high_value', 'favorable'):
+        if priority == 'favorable' and not battle_plan:
+            break
+        for region in playable:
+            if region in selected_regions or not count_pieces(state, region, AEDUI):
                 continue
-            # Check if Ambush is possible — more Hidden Aedui than Hidden enemy
-            hidden_aedui = count_pieces_by_state(
-                state, region, AEDUI, WARBAND, HIDDEN)
-            hidden_enemy = count_pieces_by_state(
-                state, region, enemy, WARBAND, HIDDEN)
-            if enemy == ROMANS:
-                hidden_enemy += count_pieces_by_state(
-                    state, region, enemy, AUXILIA, HIDDEN)
-            from fs_bot.cards.morasses import ambush_active
-            ambush = ambush_active(state, region) or (command_sa_allowed(state) and hidden_aedui > hidden_enemy)
-            if _would_force_loss_on_high_value(
-                    state, region, AEDUI, enemy, scenario,
-                    ambush_possible=ambush):
-                battle_plan.append({
-                    "region": region,
-                    "target": enemy,
-                    "priority": "high_value",
-                })
-                break  # One battle per region
-
-    if state.get('_morasses_ambush') and not battle_plan:
-        return _make_action(ACTION_PASS)  # §8.6.2's high-value trigger.
-
-    # Step 3: Additional Battles where enemy takes Losses AND at least
-    # as many as Aedui — §8.6.2
-    for region in playable:
-        if any(bp["region"] == region for bp in battle_plan):
-            continue
-        if count_pieces(state, region, AEDUI) == 0:
-            continue
-
-        for enemy in enemies:
-            if count_pieces(state, region, enemy) == 0:
+            cost = battle_cost(state, region, AEDUI)
+            if cost > budget:
                 continue
-            losses_inflicted, losses_suffered = _estimate_battle_losses(
-                state, region, AEDUI, enemy, scenario)
-            if losses_inflicted > 0 and losses_inflicted >= losses_suffered:
-                battle_plan.append({
-                    "region": region,
-                    "target": enemy,
-                    "priority": "favorable",
-                })
+            for enemy in enemies:
+                if not count_pieces(state, region, enemy):
+                    continue
+                entry = {'region': region, 'target': enemy, 'priority': priority}
+                ambush = ambush_active(state, region) or (
+                    ambush_available and _check_ambush(state, [entry], scenario) == region)
+                if priority == 'high_value':
+                    qualifies = _would_force_loss_on_high_value(
+                        state, region, AEDUI, enemy, scenario, ambush_possible=ambush)
+                else:
+                    inflicted, taken = _estimate_battle_losses(state, region, AEDUI, enemy, scenario)
+                    qualifies = inflicted > 0 and inflicted >= taken
+                if not qualifies or _counterattack_threatens_diviciacus(
+                        state, region, enemy, is_ambush=ambush):
+                    continue
+                battle_plan.append(entry)
+                if first_only:
+                    return battle_plan
+                selected_regions.add(region)
+                budget -= cost
+                if ambush:
+                    ambush_available = False
                 break
+    return battle_plan
 
-    from fs_bot.bots.bot_common import affordable_battle_plan
-    battle_plan = affordable_battle_plan(state, AEDUI, battle_plan)
 
+def node_a_battle(state):
+    """A_BATTLE: Build the Battle Command and its accompanying ability (§8.6.2)."""
+    battle_plan = _aedui_battle_plan(state)
     if not battle_plan:
         return _make_action(ACTION_PASS)
 
     # Determine SA — Ambush first, then Trade
     sa, sa_regions, sa_details = _determine_battle_sa(
-        state, battle_plan, scenario)
+        state, battle_plan, state['scenario'])
 
     return _make_action(
         ACTION_BATTLE,
@@ -1812,9 +1749,10 @@ def execute_aedui_turn(state):
             return node_a_event(state)
 
     # A4: Battle would force Loss on high-value target?
-    a4_result = node_a4(state)
-    if a4_result == "Yes" and command_is_allowed(state, ACTION_BATTLE):
-        return node_a_battle(state)
+    if command_is_allowed(state, ACTION_BATTLE):
+        battle = node_a_battle(state)
+        if battle['command'] == ACTION_BATTLE:
+            return battle
 
     # A5: Rally?
     a5_result = node_a5(state)

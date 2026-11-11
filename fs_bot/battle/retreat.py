@@ -9,7 +9,7 @@ from fs_bot.board.pieces import (
     count_pieces, get_effective_faction_pieces, get_leader_in_region, move_piece, remove_piece,
 )
 from fs_bot.cards.capabilities import is_capability_active
-from fs_bot.bots.bot_common import _AllRemovalsRng
+from fs_bot.bots.bot_common import _AllRemovalsRng, _AllSavesRng
 from fs_bot.engine.agent import RETREAT_DISPOSITION, consult_agent
 from fs_bot.map.map_data import get_adjacent_for_state
 
@@ -49,11 +49,6 @@ def legal_regions(state, region, defender, agreements):
     return sorted(dest for dest in get_adjacent_for_state(state, region, defender)
                   if is_controlled_by(state, dest, defender)
                   or (dest in agreements and is_controlled_by(state, dest, agreements[dest])))
-
-
-class _AllSavesRng(_AllRemovalsRng):
-    def randint(self, a, b):
-        return b
 
 
 def non_player_should_retreat(state, region, attacker, defender, *, destination,

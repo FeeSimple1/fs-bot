@@ -470,6 +470,13 @@ can still absorb. Stalwart cancels both Legio X adjustments when Rome and
 the Germans Battle, during the Attack and any Counterattack.
 Some exact physical casualty selections remain on the audit backlog.
 
+The Aedui bot starts Battle when it can force a Loss on an enemy Leader,
+Ally, Citadel, Legion, or Settlement. When Diviciacus fights, it checks the
+selected defender's possible Counterattack after the Attack, with only the
+Battle assigned Ambush receiving its protection. The German bot forecasts
+Counterattack from surviving defenders and accounts for Ariovistus's
+doubling when he Attacks.
+
 Recruit and Rally now ask how many Auxilia or Warbands to place. The
 quantity menu includes zero where the rules allow it, and includes any
 compulsory additions in the displayed total. Choosing zero still selects

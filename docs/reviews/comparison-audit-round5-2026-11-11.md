@@ -10,6 +10,8 @@ Batch 3 repaired Event-granted March, closing FE5-01 and FE5-02. [Batch 3 repair
 
 Batch 4 repaired Stalwart's cancellation of Legio X and Abatis casualty selection, closing BM5-01 and BM5-02. [Batch 4 repairs and validation](fifth-comparison-batch4-2026-11-11.md)
 
+Batch 5 repaired Diviciacus's Battle safety, the Aedui target trigger, and the German Attack and Counterattack forecasts. All eleven findings are closed. [Batch 5 repairs and validation](fifth-comparison-batch5-2026-11-11.md)
+
 Falling Sky was audited at `bd30d522e8baa2d303b9e372d7d9c550351e91a5`, with Python-source SHA-256 `31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341` across 591 files. Liberty or Death was inspected at `2991ea279062773548ec390a1da75f3e85381702`. Its implementation patterns guided the search. Falling Sky's supplied references and thirteen adopted provisional rulings govern the conclusions.
 
 [Finding ledger](comparison-audit-round5-2026-11-11.json) · [Portable evidence](comparison-audit-round5-2026-11-11-evidence.zip) · [Current status](../current-status.md)

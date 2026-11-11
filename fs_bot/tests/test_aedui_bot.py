@@ -217,6 +217,7 @@ class TestNodeA4:
     def test_yes_when_can_force_ally_loss(self):
         """Battle when we can force a Loss on an enemy Ally."""
         state = _make_state()
+        state['resources'][AEDUI] = 1
         # Place Aedui force and enemy with only an Ally (no expendable pieces)
         _place_aedui_force(state, MANDUBII, warbands=6)
         state["tribes"][TRIBE_MANDUBII]["allied_faction"] = ARVERNI

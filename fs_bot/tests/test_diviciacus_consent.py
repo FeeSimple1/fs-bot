@@ -167,13 +167,17 @@ def test_free_grant_refusal_replans_scoped_command_and_is_still_free():
 def test_published_aedui_flowchart_can_choose_battle_only_with_agreed_auxilia():
     from fs_bot.bots.bot_dispatch import dispatch_bot_turn
     from fs_bot.board.pieces import remove_piece
+    from fs_bot.cards.card_effects import _ally_tribe
     state = board(actor=rc.AEDUI)
     state['can_play_event'] = False
+    state['_command_with_sa'] = False
     state['current_card_faction_order'] = []
     state['next_card_faction_order'] = []
     remove_piece(state, rc.CARNUTES, rc.AEDUI, rc.WARBAND)
-    place_piece(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA, 3)
-    place_piece(state, rc.CARNUTES, rc.ARVERNI, rc.ALLY)
+    # The Command loan gives the Aedui eight mobile pieces. Even if the
+    # defender Retreats, two Losses can reach its Ally without any Ambush.
+    place_piece(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA, 6)
+    assert _ally_tribe(state, rc.TRIBE_CARNUTES, rc.ARVERNI)
     place_piece(state, rc.CARNUTES, rc.ARVERNI, rc.WARBAND)
     state['decision_agent'] = lambda *_: True
     accepted = dispatch_bot_turn(state, rc.AEDUI)

@@ -28,6 +28,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [11 November fifth comparison repair Batch 5](reviews/fifth-comparison-batch5-2026-11-11.md)
+  closes the three remaining bot Battle findings.
+
 - [11 November fifth comparison repair Batch 4](reviews/fifth-comparison-batch4-2026-11-11.md)
   closes the Legio X cancellation and Abatis casualty findings.
 

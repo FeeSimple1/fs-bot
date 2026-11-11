@@ -534,27 +534,26 @@ class TestBattleEstimation:
     def test_can_battle_when_inflict_more(self):
         state = _make_state()
         _place_german_force(state, SUGAMBRI, leader=True, warbands=6)
-        # Single Roman auxilia: 0.5/2 vs Germans' 1+3=4 inflicted -> easy win
+        # Ariovistus doubles the Attack to eight, removing the only Auxilia.
         _place_roman_force(state, SUGAMBRI, auxilia=1)
         assert _can_battle_in_region(state, SUGAMBRI, ROMANS) is True
 
     def test_cannot_battle_when_legions_threaten_ariovistus(self):
         state = _make_state()
         _place_german_force(state, SUGAMBRI, leader=True, warbands=1)
-        # Many Legions: would inflict many losses
-        _place_roman_force(state, SUGAMBRI, legions=4)
-        # Counterattack >= german_wb + 1 -> Ariovistus would take a Loss
+        # Three Legions are removed. The two survivors' Counterattack can
+        # reach Ariovistus after his sole Warband is removed.
+        _place_roman_force(state, SUGAMBRI, legions=5)
         assert _can_battle_in_region(state, SUGAMBRI, ROMANS) is False
 
     def test_estimate_losses_no_fort(self):
         state = _make_state()
         _place_german_force(state, SUGAMBRI, leader=True, warbands=4)
         _place_enemy_force(state, SUGAMBRI, BELGAE, warbands=2)
-        # Inflict: 4*0.5 + 1 = 3 ; Counter: 2*0.5 = 1
+        # Ariovistus doubles three Losses. Neither Warband survives.
         inflicted, suffered = _estimate_battle_losses(
             state, SUGAMBRI, BELGAE)
-        assert inflicted == 3
-        assert suffered == 1
+        assert (inflicted, suffered) == (6, 0)
 
 
 # ===================================================================
@@ -581,7 +580,8 @@ class TestNodeGBattle:
         state = _make_state()
         # Ariovistus + 1 Warband vs lots of Legions -> can't avoid loss
         _place_german_force(state, SUGAMBRI, leader=True, warbands=1)
-        _place_roman_force(state, SUGAMBRI, legions=4)
+        _place_roman_force(state, SUGAMBRI, legions=5)
+        state['_command_with_sa'] = False
         refresh_all_control(state)
         result = node_g_battle(state)
         # Should March (threat redirect)

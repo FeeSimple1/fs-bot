@@ -21,6 +21,23 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 11 November fifth comparison repair Batch 5
+
+Both Aedui Battle priorities check Diviciacus against the selected defender's
+possible Counterattack. Opening a Battle requires a qualifying high-value
+target. The German forecast counts surviving defenders and applies the
+Ariovistus Attack multiplier.
+[Repair and validation](reviews/fifth-comparison-batch5-2026-11-11.md)
+
+All **9,900 tests pass**. The 120 audited bot games complete with no audit
+failures, and 20 mixed-player cases replay consistently across two hash
+seeds. All 32 changed winners first diverge at an Aedui Battle that the
+earlier bot triggered without a high-value target. The reviewed 100-game
+balance baseline uses the same seeds and 15-point band.
+
+The fifth audit has **11 of 11 repaired**.
+[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+
 ### 11 November fifth comparison repair Batch 4
 
 Stalwart cancels both Legio X Loss adjustments in Roman–German Battles.
@@ -34,8 +51,7 @@ All **9,879 tests pass**. The 120 audited bot games match the parent.
 Twenty mixed-player cases replay identically across two hash seeds with
 zero hard findings. The 100-game balance check passes.
 
-The fifth audit has **8 of 11 repaired, 3 open**.
-[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+This batch brought the total to eight repaired findings.
 
 ### 11 November fifth comparison repair Batch 3
 

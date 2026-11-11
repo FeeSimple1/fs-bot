@@ -184,6 +184,11 @@ def advance_to_next_card(state):
     Returns:
         The new current card_id, or None if deck is empty.
     """
+    if state.get("interlude_completed"):
+        # Resume a legacy in-flight action on its saved board, then remove
+        # the retired Tribe before revealing the next card.
+        from fs_bot.engine.interlude import retire_nori_tribe
+        retire_nori_tribe(state)
     deck = state["deck"]
     if not deck:
         return None

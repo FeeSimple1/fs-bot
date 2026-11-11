@@ -128,6 +128,13 @@ compare continued board/RNG state and, for the assistant case, session
 metadata and decision logs against results from that old engine. Ephemeral
 diagnostic ordering is outside this historical comparison.
 
+The [Interlude repair](docs/reviews/fourth-comparison-batch4-2026-11-11.md)
+records the updated continuations for the two Interlude fixtures and keeps
+the prior expectations in the manifest. After the Interlude, validated
+loads retire the obsolete Nori Tribe and retain the dealt deck. An
+in-progress assistant journal completes its card on the saved board.
+The cleanup then takes effect before the next draw.
+
 Preserve old fixtures and manifests when adding coverage for a new version.
 Record any intentional incompatibility explicitly; do not regenerate old
 expected outcomes with new code and call that backward compatibility.

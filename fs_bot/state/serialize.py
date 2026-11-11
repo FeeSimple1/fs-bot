@@ -169,6 +169,14 @@ def load_game(path, *, validate=False):
         if validate:
             from fs_bot.state.save_validation import validate_saved_game
             validate_saved_game(state, meta, log)
+            if state.get("interlude_completed"):
+                session = meta.get("assistant_session")
+                # An in-flight assistant action has signatures tied to the
+                # old board. The next card boundary handles those saves.
+                if not (isinstance(session, dict) and (session.get("journal")
+                                                       or session.get("expected"))):
+                    from fs_bot.engine.interlude import retire_nori_tribe
+                    retire_nori_tribe(state)
         return state, meta, log
     except (ValueError, TypeError, KeyError, IndexError, AttributeError,
             RecursionError, OverflowError) as exc:

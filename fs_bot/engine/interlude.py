@@ -44,7 +44,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     GALLIC_FACTIONS,
     # Scenarios
-    SCENARIO_GALLIC_WAR, ARIOVISTUS_SCENARIOS, BASE_SCENARIOS,
+    SCENARIO_GALLIC_WAR, SCENARIO_PAX_GALLICA, ARIOVISTUS_SCENARIOS, BASE_SCENARIOS,
     # Piece types
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     FLIPPABLE_PIECES,
@@ -65,7 +65,7 @@ from fs_bot.rules_consts import (
     ROMAN_HOME_REGIONS,
     ARVERNI_HOME_REGIONS_ARIOVISTUS,
     # Tribes (used for Cadurci/Volcae and Nori)
-    TRIBE_AEDUI, TRIBE_ARVERNI, TRIBE_NORI,
+    BASE_TRIBES, TRIBE_AEDUI, TRIBE_ARVERNI, TRIBE_CATUVELLAUNI, TRIBE_NORI,
     # Markers
     MARKER_CIRCUMVALLATION, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     MARKER_BRITANNIA_NOT_IN_PLAY, MARKER_ARVERNI_RALLY,
@@ -87,7 +87,6 @@ from fs_bot.rules_consts import (
     INTERLUDE_DIVICIACUS_CARD,
     # Cards
     CARD_NAMES_BASE, WINTER_CARD,
-    CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
 )
 from fs_bot.board.pieces import (
     place_piece, remove_piece, move_piece, count_pieces,
@@ -96,7 +95,7 @@ from fs_bot.board.pieces import (
     find_leader, PieceError,
 )
 from fs_bot.board.control import refresh_all_control
-from fs_bot.cards.capabilities import is_capability_active
+from fs_bot.cards.capabilities import get_active_capabilities, is_capability_active
 
 
 # ============================================================================
@@ -1085,6 +1084,18 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
 
     from fs_bot.engine.interlude_choices import choose_expedition
     plan, result['decision_source'] = choose_expedition(state, britannia_decision)
+    tribes = state["tribes"]
+    catuvellauni = tribes.get(TRIBE_CATUVELLAUNI)
+    if catuvellauni is not None and catuvellauni.get("region") is not None:
+        # Card 71 can use the unavailable Tribe's name in the first half.
+        # Keep the Colony's allegiance and Region as Britannia opens.
+        name = f"{TRIBE_CATUVELLAUNI} ({MARKER_COLONY})"
+        suffix = 2
+        while name in tribes:
+            name = f"{TRIBE_CATUVELLAUNI} ({MARKER_COLONY} {suffix})"
+            suffix += 1
+        tribes[name] = tribes.pop(TRIBE_CATUVELLAUNI)
+    tribes.setdefault(TRIBE_CATUVELLAUNI, {"status": None, "allied_faction": None})
     if plan['conduct']:
         result['conducted'] = True
         for region, count in plan['harvest'].items():
@@ -1107,15 +1118,9 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
     else:
         # Decline / unable: no change to Roman forces; place 1 Belgic
         # Ally + 2 Belgic Warbands (and Belgic Control) in Britannia.
-        from fs_bot.rules_consts import TRIBE_CATUVELLAUNI
-        # Britannia re-enters play here: its Tribe is absent from the
-        # Ariovistus tribes dict (and invisible to get_tribes_in_region
-        # before the scenario switch) — create and ally it explicitly.
         if get_available(state, BELGAE, ALLY) > 0:
             place_piece(state, BRITANNIA, BELGAE, ALLY, 1)
-            ti = state["tribes"].setdefault(
-                TRIBE_CATUVELLAUNI,
-                {"status": None, "allied_faction": None})
+            ti = tribes[TRIBE_CATUVELLAUNI]
             ti["status"] = None
             ti["allied_faction"] = BELGAE
         avail_wb = get_available(state, BELGAE, WARBAND)
@@ -1137,6 +1142,17 @@ def _step3_britannia(state, britannia_decision, roman_dispersed_keep=None):
 # ============================================================================
 
 
+def retire_nori_tribe(state):
+    """Remove the expansion's printed circle and any disc it still holds."""
+    tribes = state.get("tribes", {})
+    nori = tribes.get(TRIBE_NORI)
+    if nori is None or nori.get("region") is not None:
+        return  # A named Colony records its own Region.
+    from fs_bot.cards.card_effects import _unally_tribe
+    _unally_tribe(state, TRIBE_NORI)
+    del tribes[TRIBE_NORI]
+
+
 def _step4_markers_cleanup(state):
     """Remove the Arverni Home 'Rally', 'Britannia (Not in play)', Nori
     tribe, Cisalpina Control box, and all Intimidated markers.
@@ -1148,12 +1164,8 @@ def _step4_markers_cleanup(state):
         "cisalpina_control_box_removed": False,
         "intimidated_removed": [],
     }
+    retire_nori_tribe(state)
     markers = state.get("markers", {})
-    targets_to_remove = (
-        MARKER_ARVERNI_RALLY, MARKER_BRITANNIA_NOT_IN_PLAY,
-        MARKER_NORI, MARKER_CISALPINA_CONTROL_BOX,
-        MARKER_INTIMIDATED,
-    )
     for region in list(markers.keys()):
         rm = markers.get(region)
         if rm is None:
@@ -1349,39 +1361,30 @@ def _build_pax_gallica_deck_for_interlude(state):
     """Build a Pax Gallica?-style deck for the Interlude.
 
     Per A2.1 Deck step:
-      - 70 non-Events + 5 Winter cards, piles of 5, Winter cards in
+      - Up to 70 Events + 5 Winter cards, piles of 5, Winter cards in
         piles 2, 5, 8, 11, 14.
-      - Use O38 (Diviciacus 2nd Ed) instead of base 38 Diviciacus.
-      - Keep cards for any Capabilities in effect, Gallia Togata, and
-        Colony out of the deck (and "by their Factions as appropriate").
-      - Build piles in order until no Events remain. If 5+ Events were
-        left out (no 14th pile), the 5th Winter card becomes the last
-        card of the deck.
+      - Use A38 (Vergobret) instead of base 38 Diviciacus.
+      - Keep active Capabilities, Gallia Togata and Colony out of the deck.
+      - Deal the available Events in order. If the 14th pile is missing,
+        the 5th Winter card becomes the last card of the deck.
     """
+    from fs_bot.engine.victory import _has_colony_marker
+    from fs_bot.map.map_data import is_gallia_togata_active
+
     rng = state["rng"]
-    excluded = set()
+    excluded = set(get_active_capabilities(state))
+    if is_gallia_togata_active(state) or "A5" in excluded:
+        excluded.add(5)
+    if _has_colony_marker(state):
+        excluded.add(71)
 
-    # Capability cards in effect, plus Gallia Togata (5), Colony (71).
-    caps_active = state.get("capabilities", {})
-    for card_id in caps_active.keys():
-        excluded.add(card_id)
-    excluded.update({5, 71})
-
-    # Build the Pax Gallica deck pool: base cards 1..72.
-    pool = []
-    for card_id in CARD_NAMES_BASE.keys():
-        if card_id in excluded:
-            continue
-        # Substitute O38 for 38.
-        if card_id == 38:
-            pool.append(INTERLUDE_DIVICIACUS_CARD)
-        else:
-            pool.append(card_id)
+    candidates = [INTERLUDE_DIVICIACUS_CARD if card == 38 else card
+                  for card in CARD_NAMES_BASE]
+    pool = [card for card in candidates if card not in excluded]
     rng.shuffle(pool)
 
     # Take only up to 70 events.
     events_to_use = pool[:PAX_GALLICA_DECK_EVENTS]
-    left_out_extra = len(pool) - len(events_to_use)
 
     # Build piles per Pax Gallica? composition: 14 piles of 5.
     piles = []
@@ -1422,7 +1425,7 @@ def _build_pax_gallica_deck_for_interlude(state):
     return {
         "deck_size": len(deck),
         "events_used": len(events_to_use),
-        "events_excluded": len(excluded),
+        "events_excluded": len(candidates) - len(pool),
         "winters_in_piles": winters_placed,
     }
 
@@ -1524,20 +1527,9 @@ def _run_interlude(state, *, britannia_decision=None,
     # Pax Gallica?"). Switching the scenario id makes every rules gate
     # (SoP factions, game-run Germans §3.4/§6.2, base Retreat rules,
     # base card texts, Winter phases) apply the base game automatically.
-    # Diviciacus is the one carried-over exception: his A4.x gates are
-    # keyed on the piece itself, so card O38 can return him with his
-    # Ariovistus Leader rules intact. Without this switch the second
-    # half kept SEATING THE GERMANS and the Arverni never acted (found
-    # by play_quality telemetry: zero Arverni turns after the Interlude).
-    from fs_bot.rules_consts import SCENARIO_PAX_GALLICA
+    # Lingering Events keep their original identities across the switch.
     state["scenario"] = SCENARIO_PAX_GALLICA
-    # Britannia (re)enters play: the Ariovistus tribes dict was built
-    # without its Tribe(s) — backfill any base-map Tribe entry missing
-    # from the first half as Subdued.
-    from fs_bot.state.state_schema import build_initial_state
-    _base_tribes = build_initial_state(SCENARIO_PAX_GALLICA,
-                                       seed=0)["tribes"]
-    for _tribe in _base_tribes:
+    for _tribe in BASE_TRIBES:
         state["tribes"].setdefault(
             _tribe, {"status": None, "allied_faction": None})
     # Seat swap (A2.1): "The Germanic player of the first half takes on

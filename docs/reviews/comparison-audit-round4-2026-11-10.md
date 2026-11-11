@@ -2,8 +2,9 @@
 
 **The audit confirmed 16 additional repair groups, 11 high and 5 medium priority.**
 [Batch 1](fourth-comparison-batch1-2026-11-10.md),
-[Batch 2](fourth-comparison-batch2-2026-11-10.md), and
-[Batch 3](fourth-comparison-batch3-2026-11-11.md) repair fourteen of them. The
+[Batch 2](fourth-comparison-batch2-2026-11-10.md),
+[Batch 3](fourth-comparison-batch3-2026-11-11.md), and
+[Batch 4](fourth-comparison-batch4-2026-11-11.md) repair all sixteen. The
 earlier 50-, 21-, and 15-group ledgers are closed. The results below record
 the original audit revision.
 

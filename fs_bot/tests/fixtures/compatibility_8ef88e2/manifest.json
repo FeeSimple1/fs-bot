@@ -22,7 +22,7 @@
     "pre-interlude.json": {
       "kind": "pre-interlude",
       "file_sha256": "1a540f03f52cc631f2223b9a9d5d5f9d6eefb55c107ee8c3ce5539c858662d02",
-      "continued_sha256": "1bf7d4860e9f7b3164e8152011f4509744251b7990dea6df63c5dcde767d60a6",
+      "continued_sha256": "dbd5658180163df95f4f2ccce49bc0153d5d62790b128867d5d681467726f3b8",
       "scenario": "The Gallic War",
       "seed": 3,
       "continuation_history": [
@@ -33,22 +33,50 @@
           "verified_parent_commit": "a537511a1220ea4d2b0e94e63ab5cc581ef3a605",
           "verified_parent_source_sha256": "071485179ff2949ba9e2163ca48f6761c52f617084f90a0a60ee521f35926d8b",
           "status": "Superseded continuation expectation; original saved fixture and generator remain unchanged."
+        },
+        {
+          "continued_sha256": "1bf7d4860e9f7b3164e8152011f4509744251b7990dea6df63c5dcde767d60a6",
+          "verified_parent_commit": "b0d936c4c066565e6237818a8d1801389f5c8770",
+          "verified_parent_source_sha256": "82bb5f648cbfcd83fc35302435d0c4a7fcddb5ea9de947bd424dfcd510983bc5",
+          "status": "Superseded continuation expectation. The archived fixture and generator retain their original bytes.",
+          "continuation_revision": {
+            "base_commit": "a537511a1220ea4d2b0e94e63ab5cc581ef3a605",
+            "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74",
+            "reason": "The Gallic War Interlude explicitly places Ambiorix, including when the incumbent is a Successor; a uniquely ranked destination does not require a random tie-break. The old singleton draw changed later randomized removals and the rebuilt deck.",
+            "report": "docs/reviews/spring-leaders-2026-10-28.md",
+            "evidence": "compatibility-review/causal-review.json in the Spring validation evidence archive"
+          }
         }
       ],
       "continuation_revision": {
-        "base_commit": "a537511a1220ea4d2b0e94e63ab5cc581ef3a605",
-        "source_sha256": "32fc2e1f0c2eb2e005db4c7638884a6d2022246c5eda9d87b7ade87da4caeb74",
-        "reason": "The Gallic War Interlude explicitly places Ambiorix, including when the incumbent is a Successor; a uniquely ranked destination does not require a random tie-break. The old singleton draw changed later randomized removals and the rebuilt deck.",
-        "report": "docs/reviews/spring-leaders-2026-10-28.md",
-        "evidence": "compatibility-review/causal-review.json in the Spring validation evidence archive"
+        "base_commit": "b0d936c4c066565e6237818a8d1801389f5c8770",
+        "source_sha256": "31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341",
+        "reason": "The Interlude retires the Nori Tribe and deals from the corrected Event pool.",
+        "report": "docs/reviews/fourth-comparison-batch4-2026-11-11.md",
+        "evidence": "compatibility-review.json in the Batch 4 validation archive"
       }
     },
     "post-interlude.json": {
       "kind": "post-interlude",
       "file_sha256": "0e461fe9be9807967c96020939b5f483bb5648364c13437eeacdc1395d99f27a",
-      "continued_sha256": "78c281c4c8e4b8d8c38b2d2593391c852ceec49bd4c9a362ca3b6c6d55cd36d7",
+      "continued_sha256": "aaa389187652d2acfcbe2752ddf479d843f23d828f8bec683d30dc45ca643202",
       "scenario": "Pax Gallica?",
-      "seed": 3
+      "seed": 3,
+      "continuation_history": [
+        {
+          "continued_sha256": "78c281c4c8e4b8d8c38b2d2593391c852ceec49bd4c9a362ca3b6c6d55cd36d7",
+          "verified_parent_commit": "b0d936c4c066565e6237818a8d1801389f5c8770",
+          "verified_parent_source_sha256": "82bb5f648cbfcd83fc35302435d0c4a7fcddb5ea9de947bd424dfcd510983bc5",
+          "status": "Superseded continuation expectation. The archived fixture and generator retain their original bytes."
+        }
+      ],
+      "continuation_revision": {
+        "base_commit": "b0d936c4c066565e6237818a8d1801389f5c8770",
+        "source_sha256": "31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341",
+        "reason": "The loaded original-game board retires the obsolete Nori record before continuing its already-dealt deck.",
+        "report": "docs/reviews/fourth-comparison-batch4-2026-11-11.md",
+        "evidence": "compatibility-review.json in the Batch 4 validation archive"
+      }
     }
   }
 }

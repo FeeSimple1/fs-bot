@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Fourth Liberty or Death comparison](reviews/comparison-audit-round4-2026-11-10.md) | 16 findings with executable evidence, 14 repaired in Batches 1–3 |
+| [Fourth Liberty or Death comparison](reviews/comparison-audit-round4-2026-11-10.md) | 16 findings with executable evidence, all repaired in Batches 1–4 |
 | [Third Liberty or Death comparison](reviews/comparison-audit-round3-2026-11-10.md) | 15 additional groups, all repaired in Batches 1–4 |
 | [Provisional rulings](provisional-rulings.md) | Thirteen owner-adopted interpretations, each subject to later authoritative correction |
 | [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
@@ -27,6 +27,7 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [11 November fourth comparison repair Batch 4](reviews/fourth-comparison-batch4-2026-11-11.md)
 - [11 November fourth comparison repair Batch 3](reviews/fourth-comparison-batch3-2026-11-11.md)
 - [10 November fourth comparison repair Batch 2](reviews/fourth-comparison-batch2-2026-11-10.md)
 - [10 November fourth comparison repair Batch 1](reviews/fourth-comparison-batch1-2026-11-10.md)

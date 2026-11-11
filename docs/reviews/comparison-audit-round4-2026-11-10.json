@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 16,
-  "closed": 14,
-  "open": 2,
+  "closed": 16,
+  "open": 0,
   "severity_counts": {
     "medium": 5,
     "high": 11
@@ -754,7 +754,7 @@
       "id": "WS4-02",
       "title": "Interlude rebuild excludes inactive Events and reinserts an active A38 Capability",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "expected": "Keep each in-effect Capability outside the new deck, including substituted A38. Gallia Togata and Colony are excluded for their in-effect status; otherwise remain in the shuffled Event pool.",
       "observed": "Executing A38 unshaded and running the complete Interlude retains A38 as active and adds one A38 to the new deck. With no active Gallia Togata/Colony, both5 and71 are always excluded. InactiveA38 is included once and active numeric8 is excluded correctly. Ordinary Pax setup seed21 includes inactive5 and71.",
       "mechanism": "The deck builder filters raw numeric IDs before substituting38 withA38, and unconditionally adds5/71 to excluded.",
@@ -790,13 +790,15 @@
         "Standard Pax setup allows inactive5/71 in its shuffled deck."
       ],
       "fixture": "Untouched Gallic War setup seed21; all four seats marked NPC for normal Interlude choices; execute Capability by production Event API, then run_interlude(britannia_decision=False). Census/structure clean before and after.",
-      "partition": "seasonal"
+      "partition": "seasonal",
+      "repair_batch": 4,
+      "repair_report": "fourth-comparison-batch4-2026-11-11.md"
     },
     {
       "id": "WS4-03",
       "title": "Interlude leaves Nori as a phantom Tribe that inflates Roman score and Harvest",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "expected": "Remove Nori when returning to original geography and add Catuvellauni. Without Colony there must be30 real Tribes. Roman score follows30 minus non-Roman Allies and Citadels.",
       "observed": "Full Interlude from valid Gallic War setup21 retains SubduedNori and adds Catuvellauni, yielding31 Tribe entries without Colony. Roman score and next Harvest are24; the printed physical-piece oracle is30 minus7=23. Removing only the obsoleteNori record in a diagnostic clone yields score/Harvest23. Both bad and corrected states pass current census/structure validators.",
       "mechanism": "Marker cleanup removes only MARKER_NORI from marker dictionaries. Final scenario transition backfills base Tribe records but never deletes expansion-onlyNori. Victory counts all Subdued records.",
@@ -843,7 +845,9 @@
         "Diagnostic clone without only obsoleteNori matches the independently counted physical-piece score and Harvest."
       ],
       "fixture": "Untouched Gallic War setup21, all seats NPC; full production run_interlude with expedition declined. No Gallia Togata or Colony. Census/structure clean on both sides.",
-      "partition": "seasonal"
+      "partition": "seasonal",
+      "repair_batch": 4,
+      "repair_report": "fourth-comparison-batch4-2026-11-11.md"
     },
     {
       "id": "NP4-01",
@@ -981,31 +985,26 @@
     "Negative-Harvest finding requires a nonnegative Resource total only; treatment of negative earnings against a positive balance is not resolved.",
     "No production repair or new balance matrix was performed."
   ],
-  "open_severity_counts": {
-    "high": 2
-  },
+  "open_severity_counts": {},
   "latest_repair": {
-    "batch": 3,
+    "batch": 4,
     "date": "2026-11-11",
-    "report": "fourth-comparison-batch3-2026-11-11.md",
-    "evidence": "fourth-comparison-batch3-2026-11-11-evidence.zip",
+    "report": "fourth-comparison-batch4-2026-11-11.md",
+    "evidence": "fourth-comparison-batch4-2026-11-11-evidence.zip",
     "source": {
-      "commit": "37a087d5c37671c1f1109ccdbbcb0136c216cb5b",
+      "commit": "b0d936c4c066565e6237818a8d1801389f5c8770",
       "dirty": true,
-      "source_sha256": "82bb5f648cbfcd83fc35302435d0c4a7fcddb5ea9de947bd424dfcd510983bc5",
+      "source_sha256": "31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341",
       "python": "3.12.14",
-      "python_files": 590
+      "python_files": 591
     },
     "closed_ids": [
-      "BM4-01",
-      "BM4-02",
-      "NP4-01",
-      "NP4-02"
+      "WS4-02",
+      "WS4-03"
     ],
-    "passed_tests": 9794,
-    "new_regressions": 17,
-    "balance_guardrail_exit": 0,
-    "previous_balance_guardrail_exit": 1
+    "passed_tests": 9806,
+    "new_regressions": 12,
+    "balance_guardrail_exit": 0
   },
   "repair_history": [
     {
@@ -1025,6 +1024,12 @@
       "report": "fourth-comparison-batch3-2026-11-11.md",
       "closed": 14,
       "open": 2
+    },
+    {
+      "batch": 4,
+      "report": "fourth-comparison-batch4-2026-11-11.md",
+      "closed": 16,
+      "open": 0
     }
   ]
 }

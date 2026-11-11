@@ -21,7 +21,7 @@ from fs_bot.rules_consts import (
     TREVERI, MANDUBII, VENETI, CARNUTES, PICTONES, SEQUANI,
     MARKER_CIRCUMVALLATION, MARKER_BRITANNIA_NOT_IN_PLAY,
     MARKER_ARVERNI_RALLY, MARKER_NORI, MARKER_CISALPINA_CONTROL_BOX,
-    MARKER_INTIMIDATED, MARKER_GALLIA_TOGATA,
+    MARKER_INTIMIDATED, MARKER_GALLIA_TOGATA, MARKER_COLONY,
     MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
     ELIGIBLE, INELIGIBLE,
     INTERLUDE_VICTORY_TRIGGER_WINTER,
@@ -635,13 +635,12 @@ class TestDeckRebuild:
         # Gallia Togata in effect via marker
         state.setdefault("markers", {}).setdefault(CISALPINA, {})[
             MARKER_GALLIA_TOGATA] = True
-        # And as capability card 5 (Gallia Togata) — but Interlude
-        # excludes 5 unconditionally per spec.
         run_interlude(state, britannia_decision=False)
         assert 5 not in state["deck"]
 
-    def test_colony_excluded(self):
+    def test_colony_excluded_when_in_effect(self):
         state = fresh_gallic_war()
+        state["markers"].setdefault(VENETI, {})[MARKER_COLONY] = True
         run_interlude(state, britannia_decision=False)
         assert 71 not in state["deck"]
 

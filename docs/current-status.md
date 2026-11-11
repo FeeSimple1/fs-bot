@@ -21,6 +21,21 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 11 November fourth comparison repair Batch 4
+
+The [final repair batch](reviews/fourth-comparison-batch4-2026-11-11.md)
+closes WS4-02 and WS4-03. The Interlude filters the deck after substituting
+A38 Vergobret, holds out active effects, and retires Nori when Catuvellauni
+enters play. Roman victory and Harvest use the 30 printed Tribes and any
+lingering Colony.
+
+All **9,806 tests pass**. The 120 audited bot games and 20 mixed-player
+cases pass their checks. The 100-game balance check passes on the
+existing baseline. All nine changed winners first diverge at the Interlude.
+
+The [fourth-audit ledger](reviews/comparison-audit-round4-2026-11-10.json)
+records **16 of 16 repaired**.
+
 ### 11 November fourth comparison repair Batch 3
 
 The [third repair batch](reviews/fourth-comparison-batch3-2026-11-11.md)

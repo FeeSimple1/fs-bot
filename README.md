@@ -144,11 +144,10 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The [fourth comparison's third repair batch](docs/reviews/fourth-comparison-batch3-2026-11-11.md)
-fixes Counterattack survival, non-player Retreat, Roman target ranking,
-and the Diviciacus Battle safety check. The fourth audit has two open
-Interlude groups. The report records the tests, game replays, and
-reviewed 100-game balance baseline.
+The [fourth comparison's final repair batch](docs/reviews/fourth-comparison-batch4-2026-11-11.md)
+corrects the Gallic War Interlude's deck rebuild and retires Nori when
+Britannia opens. All 16 findings in the fourth audit are closed.
+The report records the fixed-seed outcomes and saved-game checks.
 
 The [third comparison's final repair batch](docs/reviews/third-comparison-batch4-2026-11-10.md)
 fixes Colony Tribe handling, Razed City protection, and Stalwart's cancellation

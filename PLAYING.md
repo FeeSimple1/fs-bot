@@ -975,6 +975,16 @@ Dispersed-Gathering marker as it is, or keep none. An interrupted answer pauses
 Winter. Saving and resuming retains accepted reductions, relocations, and
 expedition choices while awaiting a later decision.
 
+At the Interlude, Britannia's Catuvellauni Tribe enters play and Nori is
+retired. Return any remaining Nori Ally to Available. A Colony keeps its
+Region and allegiance. If it uses the Catuvellauni name, the engine
+distinguishes it from the returning printed Tribe.
+
+The second-half deck uses A38 Vergobret in the slot for card 38. Active
+Capabilities stay out of the deck. Gallia Togata and Colony are also held
+out while their effects are active. A resumed game continues the deck
+already dealt in its save.
+
 ### Exact Battle casualties
 
 When absorbing Battle Losses, choose the exact Hidden, Revealed or Scouted

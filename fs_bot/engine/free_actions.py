@@ -39,6 +39,10 @@ def command_options(faction):
 
 def _sa_regions(action):
     """Every selected SA Region, including implicit plan entries (Scout origins)."""
+    from fs_bot.commands.sa_enlist import enlist_details, is_borrow_plan
+    from fs_bot.commands.sa_trade import selection_from_action, UNSELECTED
+    from fs_bot.engine.execute import _sa_detail
+
     regions = []
     def add(entry):
         region = entry if isinstance(entry, str) else entry.get('region')
@@ -46,21 +50,20 @@ def _sa_regions(action):
             regions.append(region)
     for entry in action.get('sa_regions') or []:
         add(entry)
-    details = action.get('details') or {}
-    merged = dict(details.get('sa_details') or {})
-    merged.update(details)
-    if 'trade_region' in merged:
-        regions.append(merged['trade_region'])
-    for key in ('suborn_plan', 'entreat_plan', 'intimidate_plan', 'rampage_plan'):
-        for entry in merged.get(key) or []:
+    trade_region = selection_from_action(action)
+    if trade_region is not UNSELECTED:
+        regions.append(trade_region)
+    for key in ('suborn_plan', 'intimidate_plan'):
+        for entry in _sa_detail(action, key) or []:
             add(entry)
-    for entries in (merged.get('build_plan') or {}).values():
+    for entries in (_sa_detail(action, 'build_plan') or {}).values():
         for entry in entries or []:
             add(entry)
-    scout = merged.get('scout_plan') or {}
+    scout = _sa_detail(action, 'scout_plan') or {}
     regions.extend(e.get('from_region') for e in scout.get('auxilia_moves') or [])
     regions.extend(e.get('region') for e in scout.get('scout_targets') or [])
-    enlist = merged.get('enlist') or {}
+    enlist = (enlist_details(action) if is_borrow_plan(action)
+              else _sa_detail(action, 'enlist') or {})
     if enlist.get('region') is not None:
         regions.append(enlist['region'])
     # Borrowed forces may affect several Regions; a free German March
@@ -131,6 +134,9 @@ def execute_free_action_plan(state, faction, request, action):
             return ex._execute_battle(state, faction, action, _double_auxilia=True)
         with ex._command_execution_scope(state, request.get('allowed_regions'),
                                          request.get('with_sa', False)):
+            if 'special_abilities' in action:
+                from fs_bot.cards.assembly_of_gaul import execute
+                return execute(state, faction, request, action)
             return ex._execute_bot_command(state, faction, action,
                                            with_sa=request.get('with_sa', False),
                                            _human_grant=request)
@@ -144,7 +150,8 @@ def _explicit_sentinel(response, key):
 
 def validate_free_action_response(state, faction, request, response):
     """Return a useful validation error, or None for a legal explicit response."""
-    if (request.get('request_type') in ('gallic_event_beneficiary', 'gallic_command_order')
+    if (request.get('request_type') in ('gallic_event_beneficiary', 'gallic_command_order',
+                                       'druids_beneficiaries')
             or request.get('gallic_event_card') or request.get('request_type') == 'remi_event_effect'):
         if request.get('request_type') == 'remi_event_effect':
             from fs_bot.cards.remi_event_effect import validate_response
@@ -282,6 +289,25 @@ def validate_free_action_response(state, faction, request, response):
 
 
 def _validate_plan(state, faction, request, action):
+    if 'special_abilities' in action:
+        from fs_bot.cards.assembly_of_gaul import plan_error
+        error = plan_error(state, request.get('acting_faction', faction), request, action)
+    else:
+        error = _plan_structure_error(state, request.get('acting_faction', faction), request, action)
+    if error:
+        return error
+    sim = deepcopy({k: v for k, v in state.items() if k != 'decision_agent'})
+    sim['_diviciacus_preview'] = True
+    result = execute_free_action_plan(sim, faction, request, action)
+    error = _result_error(result)
+    if error:
+        return error
+    if not result or result.get('executed') is False:
+        return (result or {}).get('reason', 'The proposed free action has no legal effect.')
+    return None
+
+
+def _plan_structure_error(state, faction, request, action):
     from fs_bot.cli.human_plan import _faction_special_abilities
     from fs_bot.engine.action_validation import (
         command_regions, command_parts, compatible_sa, validate_command_interruption,
@@ -289,7 +315,6 @@ def _validate_plan(state, faction, request, action):
         EVENT_BATTLE_FIELDS,
     )
     from fs_bot.map.map_data import get_playable_regions_for_state
-    faction = request.get('acting_faction', faction)
     from fs_bot.commands.sa_intimidate import human_plan_error
     error = human_plan_error(action)
     if error:
@@ -361,11 +386,8 @@ def _validate_plan(state, faction, request, action):
     parts = command_parts(action)
     selected = []
     for part in parts:
-        if cmd == 'Battle':
-            entries = (part.get('details') or {}).get('battle_plan') or []
-            from fs_bot.board.pieces import count_pieces
-            if any(not count_pieces(state, entry.get('region'), faction) for entry in entries):
-                return "Battle requires the acting Faction's pieces in every selected Region."
+        # The simulator checks each Battle on the live board at that step.
+        # A preceding Scout or timing action can supply its attacking pieces.
         selected.extend(command_regions(part))
         if cmd == 'March':
             details = part.get('details') or {}
@@ -400,14 +422,14 @@ def _validate_plan(state, faction, request, action):
     # A concrete plan is required; never let an omitted plan invoke a bot's
     # board-wide automatic chooser after a restricted human selection.
     details = action.get('details') or {}
-    merged = dict(details.get('sa_details') or {}); merged.update(details)
+    from fs_bot.engine.execute import _sa_detail
     required = {'Build':'build_plan', 'Scout':'scout_plan', 'Suborn':'suborn_plan',
                 'Enlist':'enlist',
                 'Intimidate':'intimidate_plan'}.get(sa)
     if sa in ('Entreat', 'Rampage') and not any(
             isinstance(e, dict) for e in action.get('sa_regions') or []):
         return 'Supply an explicit Special Ability plan with targets.'
-    if required and required not in merged:
+    if required and _sa_detail(action, required) is None:
         return f'Supply an explicit {required}.'
     if (EVENT_BATTLE_FIELDS.intersection(details) or any(k in details for k in (
                                   'transfers', 'as_if_control',
@@ -423,14 +445,6 @@ def _validate_plan(state, faction, request, action):
         routes = list(routes.values()) + [e.get('route') for e in plan.get('extra_groups') or []]
         if any(not path or path[-1] not in destinations for path in routes):
             return 'Every March group must end in the Event destination.'
-    sim = deepcopy({k:v for k,v in state.items() if k != 'decision_agent'})
-    sim['_diviciacus_preview'] = True
-    result = execute_free_action_plan(sim, faction, request, action)
-    error = _result_error(result)
-    if error:
-        return error
-    if not result or result.get('executed') is False:
-        return (result or {}).get('reason', 'The proposed free action has no legal effect.')
     return None
 
 

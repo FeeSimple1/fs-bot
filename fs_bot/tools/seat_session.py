@@ -38,12 +38,13 @@ def fingerprint(value):
 
 
 def _decision_signatures(state, request):
-    """Accept old empty Supply scopes without ignoring any actual agreement.
+    """Accept older request and empty Supply shapes on the same live board.
 
     An absent cache and an empty dictionary both mean no accepted Supply
     promises. Older writers used both shapes, depending on the enclosing
-    action. Keep their signatures replayable; every nonempty cache, other
-    board field and request field still has to match exactly.
+    action. Assembly and Druids used ordinary free Command requests before
+    their new choices were exposed. Other board and request fields still
+    have to match exactly.
     """
     board = board_copy(state)
     # Engine re-entrancy/authority frames are transient call-stack state,
@@ -51,14 +52,21 @@ def _decision_signatures(state, request):
     board.pop('_action_window_scope', None)
     board.pop('_action_window_busy', None)
     key = "_supply_line_agreements"
+    boards = [board]
     if key not in board or (type(board[key]) is dict and not board[key]):
         board.pop(key, None)
-        signature = fingerprint({"board": board, "request": request})
-        with_empty = dict(board, **{key: {}})
-        return signature, (signature, fingerprint({
-            "board": with_empty, "request": request}))
-    signature = fingerprint({"board": board, "request": request})
-    return signature, (signature,)
+        boards.append(dict(board, **{key: {}}))
+    requests = [request]
+    if request.get('request_type') == 'event_command':
+        if request.get('max_special_abilities') == 2:
+            requests.append({k: v for k, v in request.items() if k != 'max_special_abilities'})
+        elif request.get('gallic_event_card') == 48 and request.get('attempt') == 1:
+            new_fields = {'card_id', 'gallic_event_card', 'allow_decline',
+                          'validate_default_response', 'attempt'}
+            requests.append({k: v for k, v in request.items() if k not in new_fields})
+    signatures = tuple(fingerprint({"board": snapshot, "request": prompt})
+                       for prompt in requests for snapshot in boards)
+    return signatures[0], signatures
 
 
 def validate_response(state, request, response):

@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 16,
-  "closed": 6,
-  "open": 10,
+  "closed": 10,
+  "open": 6,
   "severity_counts": {
     "medium": 5,
     "high": 11
@@ -250,7 +250,9 @@
       "evidence": "final-session/observations.json",
       "fixture": "Census-valid controlled Great Revolt board from build_initial_state, manually sets current52 and deck and places Roman Carnutes/Provincia forces and two Belgic Sequani Warbands using piece helpers. No altered reference files. Includes the permanent Roman Fort in Provincia required by Chapter1.",
       "partition": "frontend",
-      "status": "open"
+      "status": "closed",
+      "repair_batch": 2,
+      "repair_report": "fourth-comparison-batch2-2026-11-10.md"
     },
     {
       "id": "FE4-02",
@@ -305,7 +307,9 @@
       "evidence": "final-scope/observations.json",
       "fixture": "Census-valid controlled Great Revolt board, current9, three Roman Auxilia in Provincia and Carnutes. Public execute_decision drives actual requests. Canonical invalid, shadow invalid, and legal control run independently. Includes the permanent Roman Fort in Provincia required by Chapter1.",
       "partition": "frontend",
-      "status": "open"
+      "status": "closed",
+      "repair_batch": 2,
+      "repair_report": "fourth-comparison-batch2-2026-11-10.md"
     },
     {
       "id": "FE4-03",
@@ -369,7 +373,9 @@
       "evidence": "final-second-sa/observations.json",
       "fixture": "Census-valid controlled Great Revolt board from build_initial_state, current52, Romans control Carnutes, Caesar/four Auxilia in Provincia. All factions human; callback supplies one choice and is ready for another if requested. Includes the permanent Roman Fort in Provincia required by Chapter1.",
       "partition": "frontend",
-      "status": "open"
+      "status": "closed",
+      "repair_batch": 2,
+      "repair_report": "fourth-comparison-batch2-2026-11-10.md"
     },
     {
       "id": "BM4-01",
@@ -498,7 +504,7 @@
       "id": "BE4-03",
       "title": "Druids ignores beneficiary restrictions, distinctness, initiative order and mandatory Commands",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "expected": "Card48 selects one to three distinct Gallic Factions, which execute one free Limited Command each in printed Aedui-Arverni-Belgae order. Possible Commands cannot be waived as optional.",
       "observed": "An accepted Roman target gets free Recruit and places an Auxilia. Repeating Aedui gives two free Rally Commands and two new Warbands instead of the control one. [Belgae,Aedui,Arverni] executes in submitted order. Empty targets in an all-human state commit no grant; a selected Aedui can explicitly decline even though the legal control Rally is available.",
       "rule_sources": [
@@ -535,7 +541,9 @@
       "observations": "observed.json editions.{original,second-edition}.BE4-03",
       "fixture": "Unchanged Great Revolt setup seed4 with all-human seats; callback supplies a legal one-piece Recruit/Rally in own normal Region.",
       "validation": "Seven accepted cases per edition, including positive single-target and printed-order controls; all pre/post census and structure checks clean. No claim about whose eligibility the final sentence affects.",
-      "partition": "base-events"
+      "partition": "base-events",
+      "repair_batch": 2,
+      "repair_report": "fourth-comparison-batch2-2026-11-10.md"
     },
     {
       "id": "BE4-04",
@@ -966,31 +974,29 @@
     "No production repair or new balance matrix was performed."
   ],
   "open_severity_counts": {
-    "medium": 4,
-    "high": 6
+    "high": 4,
+    "medium": 2
   },
   "latest_repair": {
-    "batch": 1,
+    "batch": 2,
     "date": "2026-11-10",
-    "report": "fourth-comparison-batch1-2026-11-10.md",
-    "evidence": "fourth-comparison-batch1-2026-11-10-evidence.zip",
+    "report": "fourth-comparison-batch2-2026-11-10.md",
+    "evidence": "fourth-comparison-batch2-2026-11-10-evidence.zip",
     "source": {
-      "commit": "ee05f5f33754aa0362632a965a2249cf00ecc381",
+      "commit": "55fa4847f3da9112ec1c6d42542341f12859297d",
       "dirty": true,
-      "source_sha256": "bc5631828c67b6b02de07e5c3065d3defd3e4714bd08a367aa6fb1037e755eb9",
+      "source_sha256": "b97a582f9a3af89b343abc9669ecf9e677118eb21e36514a9f403cad7830f267",
       "python": "3.12.14",
-      "python_files": 586
+      "python_files": 589
     },
     "closed_ids": [
-      "BE4-01",
-      "BE4-02",
-      "BE4-04",
-      "EX4-01",
-      "EX4-02",
-      "WS4-01"
+      "FE4-01",
+      "FE4-02",
+      "FE4-03",
+      "BE4-03"
     ],
-    "passed_tests": 9722,
-    "new_regressions": 36,
+    "passed_tests": 9777,
+    "new_regressions": 55,
     "balance_guardrail_exit": 0
   },
   "repair_history": [
@@ -999,6 +1005,12 @@
       "report": "fourth-comparison-batch1-2026-11-10.md",
       "closed": 6,
       "open": 10
+    },
+    {
+      "batch": 2,
+      "report": "fourth-comparison-batch2-2026-11-10.md",
+      "closed": 10,
+      "open": 6
     }
   ]
 }

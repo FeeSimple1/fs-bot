@@ -1,4 +1,4 @@
-"""Executor and beneficiary choices for Gallic Shouts, Celtic Rites and Arduenna."""
+"""Executor and beneficiary choices for Gallic Shouts, Celtic Rites, Druids and Arduenna."""
 
 from fs_bot.cli.action_windows import inspect_board
 from fs_bot.cli.menus import prompt_choice
@@ -14,6 +14,19 @@ def collect_params(state, faction, card_id, shaded, stdin, stdout):
 
 def collect_selection(state, faction, request, stdin, stdout):
     """Choose a recipient or the recipient's order without silently delegating."""
+    if request['request_type'] == 'druids_beneficiaries':
+        selected = []
+        with inspect_board(state, stdout):
+            while len(selected) < len(request['factions']):
+                choices = [(recipient, recipient) for recipient in request['factions']
+                           if recipient not in selected]
+                if selected:
+                    choices.append(('Done', None))
+                choice = prompt_choice(stdin, stdout, f'{faction}: Druids beneficiary?', choices)
+                if choice is None:
+                    break
+                selected.append(choice)
+        return {'target_factions': selected}
     if request['request_type'] == 'gallic_event_beneficiary':
         choices = [(recipient, {'faction': recipient})
                    for recipient in request['factions']]

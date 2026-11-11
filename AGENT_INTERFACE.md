@@ -1558,6 +1558,50 @@ response does not override that requirement. An engine-supplied
 such as German pieces under Divination. Do not add or change grant fields in
 a submitted action.
 
+Shaded Assembly of Gaul sends the human Carnutes controller an
+`event_command` with `max_special_abilities: 2`. Use the ordinary action
+fields for zero or one ability. For two, submit a single ordered Command
+plan with `sa: "No SA"` and `special_abilities` containing two distinct
+ability objects. Each object supplies `sa`, `sa_timing`, `sa_regions`
+where needed, and the normal ability-specific `details`.
+
+```json
+{
+  "command": "Recruit",
+  "regions": ["Provincia"],
+  "sa": "No SA",
+  "details": {"recruit_plan": [{"region": "Provincia", "action": "place_auxilia", "count": 1}]},
+  "special_abilities": [
+    {"sa": "Scout", "sa_timing": "after", "details": {"scout_plan": {
+      "auxilia_moves": [{"from_region": "Provincia", "to_region": "Sequani",
+                         "count": 1, "piece_state": "Hidden"}],
+      "scout_targets": []
+    }}},
+    {"sa": "Build", "sa_timing": "after", "details": {"build_plan": {
+      "allies": [{"region": "Provincia", "tribe": "Helvii"}]
+    }}}
+  ]
+}
+```
+
+For `during`, supply `after_step` as the one-based completed Command
+step, or `{"group": 1, "hop": 0}` for a March group after origin preparation
+or a completed hop. Ambush and Besiege use `during` and their selected
+Battle Regions without an `after_step`. Choose a boundary with more of the
+Command to resolve. Abilities at the same boundary use list order. The
+grant reports the abilities' results in `special_ability_results` and
+their executed count in `sa_count`.
+
+Druids accepts `event_params.target_factions` with one to three distinct
+names from Aedui, Arverni, and Belgae. When the field is absent, the
+executor receives a `druids_beneficiaries` request and responds with
+`{"target_factions": [...]}`. The selected factions act in printed order
+regardless of response order. Each human recipient who can act receives
+an `event_command` with `max_regions: 1`, `with_sa: true` and
+`allow_decline: false`. The Region cap covers the Command. The optional
+ability uses its own selection rules. An unavailable bot default leaves
+the recipient's choice pending.
+
 Cards 35 shaded, 46 shaded and numeric 67 accept initial Event parameters
 `{"faction": beneficiary}` or an empty object. Empty parameters defer
 beneficiary selection to the Event executor's live `gallic_event_beneficiary`
@@ -1575,7 +1619,7 @@ boundaries: `handler_complete`, the corresponding `grant.card_*` step,
 `67.hide`, as applicable to that card. They do not authorize the executor
 to answer recipient-owned decisions.
 
-For 35/46 shaded, the legal expansion Arverni beneficiary resolves under
+For 35/46/52 shaded and Druids, an expansion Arverni beneficiary resolves under
 [PR-10](docs/provisional-rulings.md#pr-10). Actual At War permits the first
 possible allowed Command in A6.2 order, respecting grant limits; Battle
 retains its inherent Ambush condition. At Peace produces a legal no-effect.

@@ -27,6 +27,7 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [10 November fourth comparison repair Batch 2](reviews/fourth-comparison-batch2-2026-11-10.md)
 - [10 November fourth comparison repair Batch 1](reviews/fourth-comparison-batch1-2026-11-10.md)
   records the six Event and Harvest repairs and their validation.
 

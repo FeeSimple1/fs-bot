@@ -1,6 +1,6 @@
 """Executor-selected Gallic beneficiaries, with their own live Command choices.
 
-Card Reference 35S, 46S and 67; §§3.1, 5.1–5.1.3, 5.4, 8.2.3.
+Card Reference 35S, 46S, 48 and 67; §§3.1, 5.1–5.1.3, 5.4, 8.2.3.
 The outer Event executor retains timing authority throughout every grant.
 """
 from copy import deepcopy
@@ -10,6 +10,7 @@ from fs_bot.engine.free_actions import (command_options, consult_free_action,
                                          execute_free_action_plan)
 
 ORDERS = (('command', 'limited_command'), ('limited_command', 'command'))
+DRUIDS_ORDER = (rc.AEDUI, rc.ARVERNI, rc.BELGAE)
 
 
 def supported(card_id, shaded):
@@ -56,13 +57,44 @@ def order_request():
             'allow_decline': False, 'validate_default_response': True}
 
 
+def druids_request():
+    return {'kind': 'free_action', 'request_type': 'druids_beneficiaries',
+            'card_id': 48, 'factions': list(DRUIDS_ORDER),
+            'allow_decline': False, 'validate_default_response': True}
+
+
+def _druids_targets(targets):
+    if (not isinstance(targets, (list, tuple)) or not 1 <= len(targets) <= 3
+            or any(faction not in DRUIDS_ORDER for faction in targets)
+            or len(set(targets)) != len(targets)):
+        raise ValueError('Druids requires one to three distinct Gallic Factions.')
+    return [faction for faction in DRUIDS_ORDER if faction in targets]
+
+
+def select_druids_targets(state, executor, params):
+    authored = _druids_targets(params['target_factions']) if 'target_factions' in params else None
+    if executor in state.get('non_player_factions', ()):
+        if executor not in DRUIDS_ORDER:
+            raise ValueError('A Non-player must be able to select itself for Druids (§8.2.3, A8.2.3).')
+        if authored is not None and authored != [executor]:
+            raise ValueError('A Non-player selects only itself for Druids (§8.2.3).')
+        return [executor]
+    if authored is not None:
+        return authored
+    if executor is not None:
+        response = consult_free_action(state, executor, druids_request())
+        if response is not None:
+            return _druids_targets(response['target_factions'])
+    return [executor if executor in DRUIDS_ORDER else state['rng'].choice(DRUIDS_ORDER)]
+
+
 def command_request(actor, card_id, *, limited=False):
     return {'kind': 'free_action', 'request_type': 'event_command',
             'card_id': card_id, 'gallic_event_card': card_id,
             'allowed_commands': [c for c in command_options(actor)
                                   if card_id != 35 or c != rc.CMD_BATTLE],
-            'allowed_regions': None, 'max_regions': 1 if limited else None,
-            'with_sa': False, 'free': True, 'allow_decline': False,
+            'allowed_regions': None, 'max_regions': 1 if limited or card_id == 48 else None,
+            'with_sa': card_id == 48, 'free': True, 'allow_decline': False,
             'validate_default_response': True}
 
 
@@ -93,7 +125,12 @@ def validate_response(state, actor, request, response):
                 or tuple(response['order']) not in ORDERS):
             raise ValueError('Choose Command then Limited Command, or Limited Command then Command.')
         return
-    if 'command_parts' in (response.get('details') or {}):
+    if request['request_type'] == 'druids_beneficiaries':
+        if set(response) != {'target_factions'}:
+            raise ValueError('Choose the Gallic Factions that receive the Druids Commands.')
+        _druids_targets(response['target_factions'])
+        return
+    if not request['with_sa'] and 'command_parts' in (response.get('details') or {}):
         raise ValueError('This grant is one uninterrupted Command without a Special Ability.')
     error = _validate_plan(state, actor, request, response)
     if error:
@@ -123,7 +160,8 @@ def _default_command(state, actor, request):
         return resolve_command(state, request)
     return _resolve_free_command(state, actor, _consult=False,
         exclude_commands=set(command_options(actor)) - set(request['allowed_commands']),
-        limited=request.get('max_regions') == 1, allow_decline=False)
+        limited=request.get('max_regions') == 1, with_sa=request['with_sa'],
+        allow_decline=False, _announce=request.get('gallic_event_card') != 48)
 
 
 def command_witness(state, actor, request):
@@ -151,16 +189,21 @@ def _resolve_command(state, actor, card_id, *, limited=False):
     from fs_bot.cards.arduenna import consult_mandatory
     automatic = actor == rc.ARVERNI and state['scenario'] in rc.ARIOVISTUS_SCENARIOS
     request = command_request(actor, card_id, limited=limited)
-    if automatic or not state.get('decision_agent') or actor in state.get('non_player_factions', ()):
+    if (automatic or actor in state.get('non_player_factions', ())
+            or (card_id != 48 and not state.get('decision_agent'))):
         return _default_command(state, actor, request)
     attempt, previous_error = 1, None
     while True:
-        if command_witness(state, actor, request) is None:
+        witness = command_witness(state, actor, request)
+        if witness is None:
             return {'executed': False, 'declined_no_effect': True, 'reason': 'No legal Command is possible.'}
         request.update(attempt=attempt)
         if previous_error:
             request['previous_error'] = previous_error
         action, explicit = consult_mandatory(state, actor, request)
+        if (card_id == 48 and not explicit
+                and not _default_command(_copy(state), actor, request).get('executed')):
+            action = witness
         result = (execute_free_action_plan(state, actor, request, action) if action is not None
                   else _default_command(state, actor, request))
         if not explicit or result.get('executed'):
@@ -169,6 +212,16 @@ def _resolve_command(state, actor, card_id, *, limited=False):
         # mandatory Commands are replanned on the actual resulting board.
         attempt += 1
         previous_error = result.get('reason', 'The selected action did not execute; choose another Command.')
+
+
+def resolve_druids(state, targets):
+    from fs_bot.cards.card_effects import _event_step
+    results = []
+    for actor in targets:
+        _event_step(state, 'resolve_free_command', beneficiary=actor)
+        results.append({'free_action': 'free_command', 'flag': 'card_48',
+                        'faction': actor, 'result': _resolve_command(state, actor, 48)})
+    return results
 
 
 def resolve(state, executor, card_id):

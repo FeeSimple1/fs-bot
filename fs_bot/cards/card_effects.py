@@ -1851,11 +1851,12 @@ def execute_card_48(state, shaded=False):
 
     Source: Card Reference, card 48
     """
-    params = state.get("event_params", {})
+    from fs_bot.cards.gallic_event_grants import select_druids_targets
+    params = state.get("event_params") or {}
     faction = state.get("executing_faction")
+    target_factions = select_druids_targets(state, faction, params)
     state.setdefault("event_modifiers", {})
     state["event_modifiers"]["card_48_druids"] = True
-    target_factions = params.get("target_factions", [])
     state["event_modifiers"]["card_48_target_factions"] = target_factions
     # Executing faction stays Eligible
     if faction:

@@ -8,6 +8,29 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
+### Q-ASSEMBLY-ABILITY-TYPES — two uses of the same ability (10 November 2026)
+
+Card Reference 52 says “Command that may add 2 Special Abilities, free.”
+Its Tip requires both to be allowed with the chosen Command. Chapter 4
+§4.1 normally allows “one type” of Special Ability and permits a given
+Region only once for a given ability. The engine allows two distinct
+types. The other reading allows the same type twice, with each use
+selecting distinct Regions. The supplied sources do not expressly address
+repeating the type. The Non-player flowcharts provide at most one
+selected ability.
+
+### Q-ASSEMBLY-GERMAN-GUIDANCE — game-run Carnutes controller (10 November 2026)
+
+Shaded Assembly of Gaul assigns the free Command to the Carnutes
+controller. Chapter 3 §3.4 gives base-game Germans Commands when
+another faction guides them by Event. Chapter 5 §5.1 gives the Event
+executor unspecified choices. A base-game German controller currently
+reaches the generic Command flowchart, which has no base German seat.
+The fourth-audit repair concerns two Special Activities for a human
+controller. The German case needs a determination of whether the
+executor guides one Command under §3.4 or the Germans Phase priorities
+choose one Command. A German Battle in either case requires Ambush.
+
 ### Q-A33-OUTNUMBERED — Wailing Women counting scope (10 November 2026)
 
 Unconfirmed source question, excluded from the fourth audit's confirmed defect count.

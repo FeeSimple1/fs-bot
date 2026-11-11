@@ -21,6 +21,24 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November fourth comparison repair Batch 2
+
+The [second repair batch](reviews/fourth-comparison-batch2-2026-11-10.md)
+closes four groups. Free Battles check both forces at resolution, and
+Event scope validation reads the ability plan the executor will use.
+Shaded Assembly of Gaul accepts two free Special Activities with their
+own timing. Druids validates the beneficiary list, then resolves the
+mandatory Limited Commands in printed order.
+
+All **9,777 tests pass**, including 55 new cases. Twenty second-edition
+bot games pass audit. Twenty mixed-player cases match across two hash
+seeds with replay, zero hard findings and one soft partial plan. The
+100-game balance check passes its 15-point band. All 23 winner changes
+across the bot matrices first diverge on Druids.
+
+The [fourth-audit ledger](reviews/comparison-audit-round4-2026-11-10.json)
+records **10 of 16 repaired, 6 open**.
+
 ### 10 November fourth comparison repair Batch 1
 
 The [first repair batch](reviews/fourth-comparison-batch1-2026-11-10.md)

@@ -29,7 +29,8 @@ def collect_free_action(state, faction, request, stdin, stdout):
     if request.get('request_type') == 'fixed_event_battle':
         from fs_bot.cli.fixed_event_battles import collect_battle
         return collect_battle(state, faction, request, stdin, stdout)
-    if request.get('request_type') in ('gallic_event_beneficiary', 'gallic_command_order'):
+    if request.get('request_type') in ('gallic_event_beneficiary', 'gallic_command_order',
+                                       'druids_beneficiaries'):
         from fs_bot.cli.gallic_event_grants import collect_selection
         return collect_selection(state, faction, request, stdin, stdout)
     if request.get('request_type') == 'remi_event_effect':
@@ -98,9 +99,13 @@ def collect_free_action(state, faction, request, stdin, stdout):
             label = ("Become Eligible" if request.get('alternative') == 'eligible'
                      else "Decline")
             options.append((label, "decline"))
+        if request.get('max_special_abilities') == 2:
+            from fs_bot.cli.human_plan import _faction_special_abilities
+            if len(_faction_special_abilities(actor, state['scenario'])) >= 2:
+                options.append(('Plan a Command with two Special Activities', 'two_sas'))
         with inspect_board(state, stdout):
             choice = prompt_choice(stdin, stdout, message, options)
-        if choice != "plan":
+        if choice not in ('plan', 'two_sas'):
             response = {"use_default" if choice == "default" else "decline": True}
             if request.get('validate_default_response'):
                 error = validate_free_action_response(state, faction, request, response)
@@ -116,7 +121,10 @@ def collect_free_action(state, faction, request, stdin, stdout):
                 as_if_control=request.get("as_if_control", False),
                 allow_devastated=request.get("allow_devastated", False),
                 regions=request.get("allowed_regions")):
-            if request.get("request_type") == "event_sa":
+            if choice == 'two_sas':
+                from fs_bot.cli.assembly_of_gaul import collect_pair
+                action = collect_pair(planning, actor, request, stdin, stdout)
+            elif request.get("request_type") == "event_sa":
                 action = {"command": None, "regions": [], "sa": "No SA",
                           "sa_regions": [], "details": {}}
                 action = _collect_sa_plan(

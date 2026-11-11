@@ -350,6 +350,8 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
     )
     if not isinstance(action, dict):
         return "The Command plan must be an object"
+    if 'special_abilities' in action:
+        return 'Only the Assembly of Gaul grant accepts a multi-ability plan.'
     details = action.get("details") or {}
     if not isinstance(details, dict):
         return "Command details must be an object"

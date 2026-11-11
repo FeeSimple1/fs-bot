@@ -927,7 +927,8 @@ def _constrain_bot_action(bot_action, allowed, *, state=None, faction=None,
 def _resolve_free_command(state, faction, allowed_regions=None,
                           exclude_commands=None, limited=False, with_sa=False,
                           _planner=None, _consult=True, allow_decline=True,
-                          _event_context=None):
+                          _event_context=None, _max_special_abilities=None,
+                          _announce=True):
     """Execute one *free* Command for ``faction`` using its real flowchart.
 
     Event cards that grant "a free Command" (e.g. card 9 Mons Cevenna, card 70
@@ -947,7 +948,8 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     from fs_bot.engine.free_actions import (command_options, consult_free_action,
                                              execute_free_action_plan)
     from fs_bot.cards.card_effects import _event_step
-    _event_step(state, "resolve_free_command", beneficiary=faction)
+    if _announce:
+        _event_step(state, "resolve_free_command", beneficiary=faction)
     request = {"kind": "free_action", "request_type": "event_command",
                "allowed_commands": [cmd for cmd in command_options(faction)
                                     if cmd not in (exclude_commands or ())],
@@ -962,6 +964,8 @@ def _resolve_free_command(state, faction, allowed_regions=None,
                 request[key] = _event_context[key]
     if not allow_decline:
         request["allow_decline"] = False
+    if _max_special_abilities is not None:
+        request["max_special_abilities"] = _max_special_abilities
     # A caller may already have accepted an explicit interface default (for
     # example Council). Skip only this initial choice; actual Command reactions
     # still use the live decision agent normally.
@@ -969,7 +973,13 @@ def _resolve_free_command(state, faction, allowed_regions=None,
     if response is not None:
         if response.get("decline"):
             return {"executed": False, "command": None, "reason": "free Command declined"}
-        return execute_free_action_plan(state, faction, request, response)
+        result = execute_free_action_plan(state, faction, request, response)
+        if 'special_abilities' in response:
+            from fs_bot.engine.free_actions import _result_error
+            error = _result_error(result)
+            if error or not result.get('executed'):
+                raise ValueError(error or result.get('reason', 'The free Command did not execute.'))
+        return result
     from fs_bot.engine.diviciacus import force_scope
     from fs_bot.engine.diviciacus_planning import (
         plan_with_diviciacus, confirm_plan, clear_confirmation)
@@ -1803,9 +1813,9 @@ def _resolve_free_actions_scoped(state, faction):
         _event_step(state, "grant.card_44_free_raid")
         results.extend(_resolve_card44_raid(state, faction))
     if mods.get("card_48_druids"):
+        from fs_bot.cards.gallic_event_grants import resolve_druids
         _event_step(state, "grant.card_48_druids")
-        results.extend(_resolve_card48_druids(
-            state, mods.get("card_48_target_factions")))
+        results.extend(resolve_druids(state, mods["card_48_target_factions"]))
     if mods.get("card_47_council"):
         _event_step(state, "grant.card_47_council")
         results.extend(_resolve_card47_council(state, faction))
@@ -2054,25 +2064,6 @@ def _resolve_winter_uprising(state, *, forced=False):
     """A66: holder-selected Quarters timing; mandatory at Gallic War Interlude."""
     from fs_bot.cards.winter_uprising_resolution import resolve
     return resolve(state, forced=forced)
-
-
-def _gallic_np_factions(state):
-    from fs_bot.rules_consts import ARVERNI, AEDUI, BELGAE
-    nps = state.get("non_player_factions", set())
-    return [f for f in (ARVERNI, AEDUI, BELGAE) if f in nps]
-
-
-def _resolve_card48_druids(state, target_factions):
-    """Card 48 Druids: 1-3 Gallic Factions each execute a free Limited Command
-    (which may add a free Special Ability), in initiative order. With no chosen
-    list, all Gallic Non-player Factions act."""
-    targets = [f for f in (target_factions or _gallic_np_factions(state))]
-    out = []
-    for fac in targets:
-        out.append({"free_action": "free_command", "flag": "card_48",
-                    "faction": fac,
-                    "result": _resolve_free_command(state, fac, limited=True, with_sa=True)})
-    return out
 
 
 def _resolve_card47_council(state, faction=None):
@@ -2429,26 +2420,28 @@ def _resolve_card35_gallic(state, faction):
 
 
 def _resolve_card52_free_command(state):
-    """Card 52 Assembly of Gaul (shaded): "Faction Controlling Carnutes Region
-    executes a Command that may add 2 Special Abilities, free."
-
-    The controller runs a free Command via the flowchart, which carries the
-    one Special Ability the bot selects (executed by _execute_bot_command). The
-    card *permits* up to two SAs, but the Non-player flowchart has no rule for
-    choosing a second SA — adding one would be invented behaviour — so the
-    Faction adds the single SA its flowchart selects (within the allowance).
-    The result reports whether a SA accompanied the Command."""
-    from fs_bot.rules_consts import CARNUTES, FACTIONS
+    """Card 52 shaded: the Carnutes controller gets one Command and up to two SAs."""
+    from fs_bot.rules_consts import CARNUTES, FACTIONS, ARVERNI, ARIOVISTUS_SCENARIOS
     from fs_bot.board.control import is_controlled_by
     controller = next((f for f in FACTIONS
                        if is_controlled_by(state, CARNUTES, f)), None)
     if controller is None:
         return [{"free_action": "free_command", "flag": "card_52",
                  "executed": False, "reason": "no Faction controls Carnutes"}]
-    res = _resolve_free_command(state, controller, with_sa=True)
+    if controller == ARVERNI and state['scenario'] in ARIOVISTUS_SCENARIOS:
+        from fs_bot.cards.gallic_arverni_np import resolve_command
+        from fs_bot.engine.free_actions import command_options
+        res = resolve_command(state, {'allowed_commands': command_options(controller)})
+    else:
+        res = _resolve_free_command(state, controller, with_sa=True,
+            _max_special_abilities=None if controller in state.get('non_player_factions', ()) else 2)
+    abilities = (res or {}).get('special_ability_results')
+    count = (sum(bool(ability['executed']) for ability in abilities) if abilities is not None
+             else int(bool(((res or {}).get('sa_execution') or {}).get('executed')
+                           or (res or {}).get('battle_sa_executed'))))
     return [{"free_action": "free_command", "flag": "card_52",
              "controller": controller,
-             "sa_included": bool((res or {}).get("sa_execution")),
+             "sa_included": count > 0, "sa_count": count,
              "result": res}]
 
 
@@ -3493,7 +3486,7 @@ def _execute_event(state, faction, bot_action, *, human=False):
 
 
 @_diviciacus_command_scope
-def _execute_seize(state, faction, bot_action):
+def _execute_seize(state, faction, bot_action, *, _after_step=None):
     """Execute a Seize Command — §3.2.3, target priorities §8.8.5.
 
     The Roman bot supplies ``regions`` (all Seize regions, dispersal-capable
@@ -3552,6 +3545,8 @@ def _execute_seize(state, faction, bot_action):
             res = dict(res)
             res["harassment"] = harass
         per_region.append(res)
+        if _after_step is not None:
+            _after_step(index + 1)
 
     return {
         "executed": len(per_region) > 0,
@@ -3603,7 +3598,7 @@ def _resolve_seize_rally(state, source_region, tribe, roll_result):
 
 
 @_diviciacus_command_scope
-def _execute_raid(state, faction, bot_action, *, _after_step=None):
+def _execute_raid(state, faction, bot_action, *, _after_step=None, _breakpoints=None):
     """Execute a Raid Command — §3.3.3.
 
     Bots emit ``details['raid_plan']`` as a flat list of per-flip entries
@@ -3644,21 +3639,22 @@ def _execute_raid(state, faction, bot_action, *, _after_step=None):
     gained_total = 0
     errors = []
     steps = 0
+    if _after_step is not None and _breakpoints is None:
+        _breakpoints = (details['sa_after_step'],)
     for index, region in enumerate(order):
         _timing_plan_step(state, faction, bot_action, 'raid_region',
                           index=index, region=region)
         actions = by_region[region][:max_raiders_per_region(state, faction)]
         if not actions:
             continue
-        within_region = details['sa_after_step'] - steps if _after_step else 0
-        interruption = {}
-        if 0 < within_region < len(actions):
-            interruption = {'interrupt_after': within_region,
-                            'interrupt': lambda: _after_step(steps + within_region)}
+        interruptions = {
+            boundary - steps: lambda boundary=boundary: _after_step(boundary)
+            for boundary in (_breakpoints or ()) if steps < boundary < steps + len(actions)
+        }
         try:
             res = raid_in_region(state, region, faction, actions,
                 after_flips=(details.get('raid_timing_actions') or {}).get(region),
-                **interruption)
+                interruptions=interruptions)
         except _EXEC_ERRORS as exc:
             if _after_step is not None:
                 # A failed flip must not silently undo the SA in the middle of
@@ -3713,7 +3709,7 @@ def _atomic_placement_plan(state, execute):
 
 
 @_diviciacus_command_scope
-def _execute_rally(state, faction, bot_action, *, _between_steps=None):
+def _execute_rally(state, faction, bot_action, *, _between_steps=None, _after_step=None):
     """Resolve ordered human options or the unchanged legacy NP priority lists."""
     from fs_bot.commands.rally import rally_plan_steps
     details = bot_action.get('details') or {}
@@ -3730,14 +3726,14 @@ def _execute_rally(state, faction, bot_action, *, _between_steps=None):
         return _placement_error(_CMD_RALLY, exc)
     execute = lambda: _execute_rally_steps(
         state, faction, steps, ordered='steps' in plan,
-        sa_after_step=boundary, between_steps=_between_steps)
+        sa_after_step=boundary, between_steps=_between_steps, after_step=_after_step)
     if 'steps' in plan or any('count' in entry or 'placement_owners' in entry for entry in steps):
         return _atomic_placement_plan(state, execute)
     return execute()
 
 
 def _execute_rally_steps(state, faction, steps, *, ordered=False,
-                         sa_after_step=None, between_steps=None):
+                         sa_after_step=None, between_steps=None, after_step=None):
     from fs_bot.commands.rally import validate_rally_option, validate_rally_sequence
     if ordered:
         try:
@@ -3777,6 +3773,8 @@ def _execute_rally_steps(state, faction, steps, *, ordered=False,
                 # Keep this Command's Region ledger across the SA: the second
                 # option uses the changed board but pays no second cost/bonus.
                 sa_result = between_steps()
+            if after_step is not None:
+                after_step(step_index + 1)
         except _EXEC_ERRORS as exc:
             errors.append({'region': region, 'action': action, 'error': str(exc)})
             if ordered:
@@ -4141,18 +4139,19 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
 
 @_diviciacus_command_scope
 @preserve_supply_agreements
-def _execute_recruit(state, faction, bot_action, *, _exact=False):
+def _execute_recruit(state, faction, bot_action, *, _exact=False, _after_step=None):
     from fs_bot.commands.rally import recruit_plan_entries
     try:
         plan = recruit_plan_entries((bot_action.get('details') or {}).get('recruit_plan') or [])
     except _EXEC_ERRORS as exc:
         return _placement_error(_CMD_RECRUIT, exc)
     exact = _exact or any('count' in entry or 'placement_owners' in entry for entry in plan)
-    execute = lambda: _execute_recruit_entries(state, faction, bot_action, exact=exact)
+    execute = lambda: _execute_recruit_entries(
+        state, faction, bot_action, exact=exact, after_step=_after_step)
     return _atomic_placement_plan(state, execute) if exact else execute()
 
 
-def _execute_recruit_entries(state, faction, bot_action, *, exact=False):
+def _execute_recruit_entries(state, faction, bot_action, *, exact=False, after_step=None):
     """Execute a Roman Recruit — §3.2.1 / §8.8.4.
 
     The Roman bot now emits ``details['recruit_plan']`` as an ordered list of
@@ -4170,6 +4169,7 @@ def _execute_recruit_entries(state, faction, bot_action, *, exact=False):
     errors = []
     superseded = []
     for index, entry in enumerate(plan):
+        previous = len(placed)
         with supply_query_scope(state):
             region = entry.get("region")
             _timing_plan_step(state, faction, bot_action, 'recruit_option',
@@ -4233,6 +4233,8 @@ def _execute_recruit_entries(state, faction, bot_action, *, exact=False):
             except _EXEC_ERRORS as exc:
                 errors.append({"region": region, "action": action,
                                "error": str(exc)})
+        if after_step is not None and len(placed) > previous:
+            after_step(index + 1)
 
     result = {
         "executed": len(placed) > 0,

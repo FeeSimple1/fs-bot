@@ -549,6 +549,18 @@ as a Roman Legion. It sends one Legion to Fallen and makes Romans Ineligible
 through the next card. Unshaded Assembly of Gaul drains eight Resources once
 from each chosen Gallic faction when the Carnutes condition is met.
 
+Shaded Assembly of Gaul gives the Carnutes controller one free Command
+and up to two free Special Activities. Choose the ordinary plan for zero
+or one activity. Choose **Plan a Command with two Special Activities** for
+two distinct types, and set each one's timing before, during, or after the
+Command. Ambush and Besiege resolve in the selected Battles. Choices at the
+same step resolve in the order selected.
+
+Druids asks the Event player to choose one to three distinct Gallic
+factions. Aedui, Arverni, then Belgae each resolve their own free Limited
+Command if selected and able, with an optional free Special Activity.
+Only the Event player receives the card's eligibility benefit.
+
 Shaded German Allegiances (65) lets you choose the exact German Warbands and
 Ally in Regions you Control, including visibility and Tribe, and whether
 each is removed or replaced. Romans receive Auxilia; Gallic factions receive

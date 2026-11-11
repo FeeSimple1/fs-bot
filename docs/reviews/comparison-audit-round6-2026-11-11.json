@@ -1,0 +1,1391 @@
+{
+  "audit": "Sixth Falling Sky / Liberty or Death comparison",
+  "date": "2026-11-11",
+  "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+  "source_sha256": "2423cb1f410650da300914e6569c1637675894cc43a9bd8284dfd92bd3b3ecb7",
+  "python_files": 596,
+  "python": "3.12.14",
+  "comparator_repository": "FeeSimple1/lod-bot",
+  "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+  "total": 14,
+  "closed": 0,
+  "open": 14,
+  "severity_counts": {
+    "high": 7,
+    "medium": 7
+  },
+  "engine_changes": false,
+  "reference_changes": false,
+  "previous_ledgers": [
+    {
+      "total": 50,
+      "closed": 50
+    },
+    {
+      "total": 21,
+      "closed": 21
+    },
+    {
+      "total": 15,
+      "closed": 15
+    },
+    {
+      "total": 16,
+      "closed": 16
+    },
+    {
+      "total": 11,
+      "closed": 11
+    }
+  ],
+  "validation": {
+    "source": {
+      "commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "dirty": false,
+      "source_sha256": "2423cb1f410650da300914e6569c1637675894cc43a9bd8284dfd92bd3b3ecb7"
+    },
+    "pytest": {
+      "passed": 9900,
+      "seconds": 324.887
+    },
+    "bots": {
+      "games": 20,
+      "complete": 20,
+      "interludes": 1,
+      "seeds": [
+        41,
+        42,
+        43,
+        44
+      ],
+      "edition": "second-edition",
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ]
+    },
+    "mixed": {
+      "games": 20,
+      "human_turns": 534,
+      "event_turns": 152,
+      "events_ok": 139,
+      "partial": 1,
+      "hard_findings": 0,
+      "batch_digest": "cc029bdda5981adf667c29ec6f2087ac2d20f2437cb5af3596127312a765cfba"
+    },
+    "hash_seeds": [
+      0,
+      987
+    ],
+    "mixed_exact_bytes_match": true,
+    "baseline_changed": false,
+    "balance_matrix_run": false
+  },
+  "portable_witnesses": [
+    {
+      "script": "events/probe_events.py",
+      "output": "events/probe_events-output.json"
+    },
+    {
+      "script": "frontend/probe_frontend.py",
+      "output": "frontend/probe_frontend-output.json"
+    },
+    {
+      "script": "frontend/probe_enlist.py",
+      "output": "frontend/probe_enlist-output.json"
+    },
+    {
+      "script": "battle/probe_battle.py",
+      "output": "battle/probe_battle-output.json"
+    },
+    {
+      "script": "bots/probe_bots.py",
+      "output": "bots/probe_bots-output.json"
+    },
+    {
+      "script": "lifecycle/probe_lifecycle.py",
+      "output": "lifecycle/probe_lifecycle.json"
+    },
+    {
+      "script": "review/probe_aedui_fort.py",
+      "output": "review/probe_aedui_fort-output.json"
+    }
+  ],
+  "review": {
+    "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+    "reviewer": "audit6_review",
+    "accepted_group_count": 14,
+    "accepted_ids": [
+      "BE6-01",
+      "BE6-02",
+      "BE6-03",
+      "BM6-01",
+      "BM6-02",
+      "BM6-03",
+      "FE6-01",
+      "FE6-02",
+      "NP6-01",
+      "NP6-02",
+      "NP6-03",
+      "WS6-01",
+      "WS6-02",
+      "WS6-03"
+    ],
+    "fifth_audit_regression_tests": {
+      "passed": 94,
+      "log": "review/fifth-regressions.log"
+    },
+    "independent_exact_reruns": [
+      {
+        "script": "bots/probe_bots.py",
+        "recorded": "bots/probe_bots-output.json",
+        "rerun": "review/bots-rerun.json"
+      },
+      {
+        "script": "lifecycle/probe_lifecycle.py",
+        "recorded": "lifecycle/probe_lifecycle.json",
+        "rerun": "review/lifecycle-rerun.json"
+      },
+      {
+        "script": "frontend/probe_frontend.py",
+        "recorded": "frontend/probe_frontend-output.json",
+        "rerun": "review/frontend-rerun.json"
+      },
+      {
+        "script": "frontend/probe_enlist.py",
+        "recorded": "frontend/probe_enlist-output.json",
+        "rerun": "review/enlist-rerun.json"
+      },
+      {
+        "script": "events/probe_events.py",
+        "recorded": "events/probe_events-output.json",
+        "rerun": "review/events-final-rerun.json"
+      },
+      {
+        "script": "battle/probe_battle.py",
+        "recorded": "battle/probe_battle-output.json",
+        "rerun": "review/battle-final-rerun.json"
+      }
+    ],
+    "reviewer_authored_probe": {
+      "script": "review/probe_aedui_fort.py",
+      "recorded": "review/probe_aedui_fort-output.json",
+      "root_rerun": "review/root-aedui-rerun.json",
+      "group": "NP6-02"
+    },
+    "excluded_exploration": [
+      {
+        "file": "review/events-rerun.json",
+        "reason": "Pre-final audit fixture incorrectly expected named Ambiorix in Great Revolt, whose setup has Successor. Corrected to Pax Gallica; final rerun separate. Not an engine failure."
+      }
+    ],
+    "limitations": [
+      "Constructed lawful positions prove mechanisms, not sampled frequency.",
+      "No production mutations or fixes.",
+      "Static leads and existing source questions excluded.",
+      "No claim of exhaustive capability/pathway coverage."
+    ],
+    "all_findings_final": true
+  },
+  "repair_batches": [
+    {
+      "batch": 1,
+      "scope": "Event completeness and bot Event decisions",
+      "findings": [
+        "BE6-01",
+        "BE6-02",
+        "BE6-03"
+      ]
+    },
+    {
+      "batch": 2,
+      "scope": "Automatic German Rally and March",
+      "findings": [
+        "WS6-01",
+        "WS6-02",
+        "WS6-03"
+      ]
+    },
+    {
+      "batch": 3,
+      "scope": "Battle Capability integration and repeated targets",
+      "findings": [
+        "BM6-01",
+        "BM6-02",
+        "BM6-03"
+      ]
+    },
+    {
+      "batch": 4,
+      "scope": "Free-action legality and Enlist choices",
+      "findings": [
+        "FE6-01",
+        "FE6-02"
+      ]
+    },
+    {
+      "batch": 5,
+      "scope": "Bot loss forecasts, target guarantees and Rampage threats",
+      "findings": [
+        "NP6-01",
+        "NP6-02",
+        "NP6-03"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "BE6-01",
+      "probe_output_key": "BE6-events-01",
+      "severity": "high",
+      "title": "Shaded Land of Mist and Mystery skips mandatory removal and Ally placement while granting Warbands",
+      "source": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            577,
+            582
+          ],
+          "quote": "Revolts: Remove an Ally or Dispersed from Britannia, and place any 1 Gallic Ally and up to 4 Warbands there.",
+          "line": 577
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            52,
+            54
+          ],
+          "quote": "All of an executed Event\u2019s text that can be carried out (within any selections that the text allows, 5.1), must be; if not all can be, carry out that which can.",
+          "line": 52
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            2103,
+            2121
+          ],
+          "reason": "The shaded handler takes optional removal and Ally parameters, skips absent/invalid Ally selections, then places the selected Warbands.",
+          "line": 2103
+        },
+        {
+          "path": "fs_bot/cards/land_of_mist.py",
+          "lines": [
+            25,
+            31
+          ],
+          "reason": "remove_target(None) silently returns even when removal_options is nonempty.",
+          "line": 25
+        }
+      ],
+      "public_entrypoint": "execute_decision(state, BELGAE, player_action Event card57 shaded)",
+      "fixture": "Sparse census-valid Great Revolt board, permanent Provincia Fort, a Roman Ally at Catuvellauni in Britannia, complete Available Belgic Ally/Warband supply. No claim of a naturally reached game transcript.",
+      "witnesses": [
+        {
+          "omission": "removal",
+          "actual": "Event succeeds; Roman Ally remains, requested replacement cannot occur, and 1 Belgic Warband is placed."
+        },
+        {
+          "omission": "Ally placement",
+          "actual": "Event succeeds; Roman Ally is removed, Catuvellauni remains Subdued, and 1 Belgic Warband is placed."
+        },
+        {
+          "omission": "both",
+          "actual": "Event succeeds; Roman Ally remains and 1 Belgic Warband is placed."
+        }
+      ],
+      "expected": "An implementable removal and post-removal Gallic Ally placement must both occur; absent required choices must not permit the later optional grant to commit.",
+      "controls": "For each exact same starting board, supplying removal=Catuvellauni, ally_tribe=Catuvellauni, ally_faction=Belgae and the same Warband choice removes the Roman Ally and places the Belgic Ally plus 1 Warband. All post-state oracles pass.",
+      "prior_relation": "Original BE-08 concerned unrepresentable CLI Event parameter shapes; its 6 November numeric57 repair supplied structured removal and legal post-removal menus. This finding is the surviving engine mandatory-effect guard. EX2-04 enumerates A30 shaded, A56 shaded and A65 shaded quotas only; BE2-03 concerns Remi Influence 68 unshaded. Neither reports numeric57 omission. This is a separate card/handler occurrence, not reopening those IDs.",
+      "suggested_repair": "Preflight the mandatory Britannia removal when available and the mandatory Ally placement against the post-removal board; request/reject missing required selections atomically. Preserve legal partial execution when a clause actually cannot be completed and optional zero-to-four Warbands.",
+      "status": "open",
+      "partition": "events",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "evidence_directory": "events",
+      "priority": "high",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            577,
+            582
+          ],
+          "quote": "Revolts: Remove an Ally or Dispersed from Britannia, and place any 1 Gallic Ally and up to 4 Warbands there.",
+          "line": 577
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            52,
+            54
+          ],
+          "quote": "All of an executed Event\u2019s text that can be carried out (within any selections that the text allows, 5.1), must be; if not all can be, carry out that which can.",
+          "line": 52
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            2103,
+            2121
+          ],
+          "reason": "The shaded handler takes optional removal and Ally parameters, skips absent/invalid Ally selections, then places the selected Warbands.",
+          "line": 2103
+        },
+        {
+          "path": "fs_bot/cards/land_of_mist.py",
+          "lines": [
+            25,
+            31
+          ],
+          "reason": "remove_target(None) silently returns even when removal_options is nonempty.",
+          "line": 25
+        }
+      ],
+      "observed": "Event succeeds; Roman Ally remains, requested replacement cannot occur, and 1 Belgic Warband is placed.; Event succeeds; Roman Ally is removed, Catuvellauni remains Subdued, and 1 Belgic Warband is placed.; Event succeeds; Roman Ally remains and 1 Belgic Warband is placed.",
+      "cause": "The shaded handler takes optional removal and Ally parameters, skips absent/invalid Ally selections, then places the selected Warbands. remove_target(None) silently returns even when removal_options is nonempty.",
+      "limits": "Only witnessed cards and paths are confirmed; no natural-play frequency or exhaustive scenario/edition coverage claim.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python events/probe_events.py",
+      "output": "events/probe_events-output.json"
+    },
+    {
+      "id": "BE6-02",
+      "probe_output_key": "NP6-events-01",
+      "severity": "medium",
+      "title": "Non-player Event execution omits A35 and A60 placement/replacement parameters",
+      "source": [
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            152,
+            156
+          ],
+          "quote": "Treveri counter-mobilize: Place 1 Gallic or Roman Ally at Treveri (replacing anything there) and up to 8 Warbands or 4 Auxilia there. Brothers mobilize Suebi: Place up to 8 Germanic Warbands and 1 Settlement total among Regions within 1 of Germania.",
+          "line": 152
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            272,
+            277
+          ],
+          "quote": "Remi submit: In Atrebates, replace up to 5 Roman pieces with Belgae\u2014Allies with Allies and/or Auxilia with Warbands.",
+          "line": 272
+        },
+        {
+          "path": "Reference Documents/Ariovistus/roman_bot_event_instructions_ariovistus.txt",
+          "lines": [
+            31,
+            32
+          ],
+          "quote": "Harudes, Nasua & Cimberius, Numidians: Place the full number of Auxilia; if not able, treat as No Romans.",
+          "line": 31
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            129,
+            132
+          ],
+          "quote": "select Event spaces to ensure that as many Legions, then Citadels, then Allies, then other pieces as possible are placed, removed, or replaced (8.3.1).",
+          "line": 129
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            149,
+            157
+          ],
+          "quote": "Non-players select Event Regions and Tribes ... to benefit themselves first; then to ensure that Event text places the most own or removes or replaces the most enemy Legions, then Citadels, then Allies, then other pieces possible (net by Faction).",
+          "line": 149
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            3447,
+            3455
+          ],
+          "reason": "A bot receives _derive_event_params output, with absent derivation converted to an empty dict.",
+          "line": 3447
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            5936,
+            5978
+          ],
+          "reason": "A35 and A60 have neither a registered deriver nor support in the routed card planner modules.",
+          "line": 5936
+        },
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            3185,
+            3244
+          ],
+          "reason": "A35 unshaded defaults to Roman Warbands when executed by Romans; shaded defaults placements to [].",
+          "line": 3185
+        },
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            3583,
+            3604
+          ],
+          "reason": "A60 shaded defaults replacements to [].",
+          "line": 3583
+        }
+      ],
+      "public_entrypoint": "dispatch_bot_turn followed by execute_decision with the returned bot_action; each dispatcher naturally selects Event in its fixture.",
+      "witnesses": [
+        {
+          "case": "German A35 shaded",
+          "fixture": "Physical Ariovistus setup_scenario(seed=1), active factions marked non-player, current card A35 injected. Seven German Warbands Available, legal Settlement space and pool.",
+          "actual": "Bot chooses shaded Event; execution succeeds with all recorded material game state unchanged.",
+          "control": "On the identical physical board, a complete legal player-authored placement plan places the seven Available German Warbands and one Settlement at Treveri."
+        },
+        {
+          "case": "Roman A35 unshaded",
+          "fixture": "Sparse census-valid Ariovistus board with full Roman Auxilia supply and legal Treveri Ally placement, permanent Provincia Fort.",
+          "actual": "Bot chooses unshaded Event; execution places Roman Ally at Treveri and zero Auxilia.",
+          "control": "On the identical starting board, explicit Roman beneficiary/Auxilia/count4 places the same Ally and four Auxilia."
+        },
+        {
+          "case": "Belgic A60 shaded",
+          "fixture": "Sparse census-valid Ariovistus board with Roman Ally at Remi and four Hidden Roman Auxilia in Atrebates, ample Available Belgic replacement pieces and permanent Provincia Fort.",
+          "actual": "Bot chooses shaded Event; execution succeeds without replacing any piece.",
+          "control": "On the identical starting board, five explicit replacements convert the Ally and four Auxilia to the Belgic Ally and four Warbands."
+        }
+      ],
+      "expected": "Non-player choice generation must implement the maximized own gains required by the Event priorities and the explicit full-Auxilia Roman instruction. Human up-to choices remain optional.",
+      "prior_relation": "Original EXP-08 repaired human up-to choices/refunds including A60 unshaded, not shaded non-player plans. EXP-09 repaired the enumerated expansion placement limits. EX3-03 repaired A35 unshaded Dispersed/Gathering marker replacement, not non-player choice generation. Grouping these three cases reflects one producer-to-consumer parameter seam; no additional cards inferred.",
+      "suggested_repair": "Implement card-specific A35 and shaded-A60 non-player parameter derivation using printed beneficiary, type, quantity, and location priorities. Reuse validated legal domains and correct pool limits. Add public dispatcher/executor controls for both A35 faces and A60 shaded.",
+      "status": "open",
+      "partition": "events",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "evidence_directory": "events",
+      "priority": "medium",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            152,
+            156
+          ],
+          "quote": "Treveri counter-mobilize: Place 1 Gallic or Roman Ally at Treveri (replacing anything there) and up to 8 Warbands or 4 Auxilia there. Brothers mobilize Suebi: Place up to 8 Germanic Warbands and 1 Settlement total among Regions within 1 of Germania.",
+          "line": 152
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            272,
+            277
+          ],
+          "quote": "Remi submit: In Atrebates, replace up to 5 Roman pieces with Belgae\u2014Allies with Allies and/or Auxilia with Warbands.",
+          "line": 272
+        },
+        {
+          "path": "Reference Documents/Ariovistus/roman_bot_event_instructions_ariovistus.txt",
+          "lines": [
+            31,
+            32
+          ],
+          "quote": "Harudes, Nasua & Cimberius, Numidians: Place the full number of Auxilia; if not able, treat as No Romans.",
+          "line": 31
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            129,
+            132
+          ],
+          "quote": "select Event spaces to ensure that as many Legions, then Citadels, then Allies, then other pieces as possible are placed, removed, or replaced (8.3.1).",
+          "line": 129
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            149,
+            157
+          ],
+          "quote": "Non-players select Event Regions and Tribes ... to benefit themselves first; then to ensure that Event text places the most own or removes or replaces the most enemy Legions, then Citadels, then Allies, then other pieces possible (net by Faction).",
+          "line": 149
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            3447,
+            3455
+          ],
+          "reason": "A bot receives _derive_event_params output, with absent derivation converted to an empty dict.",
+          "line": 3447
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            5936,
+            5978
+          ],
+          "reason": "A35 and A60 have neither a registered deriver nor support in the routed card planner modules.",
+          "line": 5936
+        },
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            3185,
+            3244
+          ],
+          "reason": "A35 unshaded defaults to Roman Warbands when executed by Romans; shaded defaults placements to [].",
+          "line": 3185
+        },
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            3583,
+            3604
+          ],
+          "reason": "A60 shaded defaults replacements to [].",
+          "line": 3583
+        }
+      ],
+      "observed": "Bot chooses shaded Event; execution succeeds with all recorded material game state unchanged.; Bot chooses unshaded Event; execution places Roman Ally at Treveri and zero Auxilia.; Bot chooses shaded Event; execution succeeds without replacing any piece.",
+      "cause": "A bot receives _derive_event_params output, with absent derivation converted to an empty dict. A35 and A60 have neither a registered deriver nor support in the routed card planner modules. A35 unshaded defaults to Roman Warbands when executed by Romans; shaded defaults placements to []. A60 shaded defaults replacements to [].",
+      "controls": "On the identical physical board, a complete legal player-authored placement plan places the seven Available German Warbands and one Settlement at Treveri.; On the identical starting board, explicit Roman beneficiary/Auxilia/count4 places the same Ally and four Auxilia.; On the identical starting board, five explicit replacements convert the Ally and four Auxilia to the Belgic Ally and four Warbands.",
+      "fixture": "Physical Ariovistus setup_scenario(seed=1), active factions marked non-player, current card A35 injected. Seven German Warbands Available, legal Settlement space and pool.; Sparse census-valid Ariovistus board with full Roman Auxilia supply and legal Treveri Ally placement, permanent Provincia Fort.; Sparse census-valid Ariovistus board with Roman Ally at Remi and four Hidden Roman Auxilia in Atrebates, ample Available Belgic replacement pieces and permanent Provincia Fort.",
+      "limits": "Only witnessed cards and paths are confirmed; no natural-play frequency or exhaustive scenario/edition coverage claim.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python events/probe_events.py",
+      "output": "events/probe_events-output.json"
+    },
+    {
+      "id": "BE6-03",
+      "probe_output_key": "NP6-events-02",
+      "severity": "medium",
+      "title": "Belgae choose ineffective Flight of Ambiorix when named Ambiorix is already on the map",
+      "source": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            30,
+            46
+          ],
+          "quote": "INEFFECTIVE EVENT EXAMPLE: Non-player Belgae are Eligible to play shaded Flight of Ambiorix. Ambiorix is on the map, so nothing would happen. The Belgae opt for a Command and Special Ability instead.",
+          "line": 30
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            567,
+            575
+          ],
+          "quote": "Returned: If Ambiorix is not on the map, place the Belgic Leader within 1 Region of Germania, symbol up (as Ambiorix).",
+          "line": 567
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/cards/event_eval.py",
+          "lines": [
+            1149,
+            1150
+          ],
+          "reason": "PLACES_LEADER returns effective unconditionally.",
+          "line": 1149
+        },
+        {
+          "path": "fs_bot/bots/bot_common.py",
+          "lines": [
+            369,
+            375
+          ],
+          "reason": "Decline logic trusts card-specific availability and generic effectiveness; no card56 guard corrects the unconditional result.",
+          "line": 369
+        },
+        {
+          "path": "fs_bot/cards/event_targets.py",
+          "lines": [
+            77,
+            96
+          ],
+          "reason": "Execution target helper already correctly distinguishes an on-map named Leader from a missing Leader or Successor; availability does not reuse the distinction.",
+          "line": 77
+        }
+      ],
+      "public_entrypoint": "dispatch_bot_turn followed by execute_decision with returned Belgic Event bot_action.",
+      "fixture": "Physical Pax Gallica setup_scenario(seed=1), named Ambiorix at Nervii, active factions non-player, current card56 injected and can_play_event=True.",
+      "actual": "should_decline_event returns False; dispatcher selects shaded Flight of Ambiorix; execute_decision reports success with all recorded material game state unchanged.",
+      "expected": "Decline the ineffective Event and follow the Command/Special Ability flowchart, exactly as the printed 8.1.1 example specifies.",
+      "controls": "Removing the named Leader using remove_piece on the same board makes the selected Event restore named Ambiorix and change material state. On the original physical board with Event access disabled, the dispatcher returns Rally rather than Event or Pass, demonstrating an available command fallback. Every initial/completed state passes pool and structure checks.",
+      "prior_relation": "BE2-05 repaired shaded Flight execution for an on-map Successor and forbade illegal return destinations; BE2-06 repaired unshaded Belgic victory counting. This finding concerns the non-player availability consumer with named Ambiorix already present, a different path. EX2-05 is Kinship and is unrelated.",
+      "suggested_repair": "Make numeric56 shaded non-player availability require an executable named-Leader return, reusing the corrected successor/Available-Leader target domain. Keep Successor returns effective and named-on-map cases ineffective.",
+      "status": "open",
+      "partition": "events",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "evidence_directory": "events",
+      "priority": "medium",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            30,
+            46
+          ],
+          "quote": "INEFFECTIVE EVENT EXAMPLE: Non-player Belgae are Eligible to play shaded Flight of Ambiorix. Ambiorix is on the map, so nothing would happen. The Belgae opt for a Command and Special Ability instead.",
+          "line": 30
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            567,
+            575
+          ],
+          "quote": "Returned: If Ambiorix is not on the map, place the Belgic Leader within 1 Region of Germania, symbol up (as Ambiorix).",
+          "line": 567
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/cards/event_eval.py",
+          "lines": [
+            1149,
+            1150
+          ],
+          "reason": "PLACES_LEADER returns effective unconditionally.",
+          "line": 1149
+        },
+        {
+          "path": "fs_bot/bots/bot_common.py",
+          "lines": [
+            369,
+            375
+          ],
+          "reason": "Decline logic trusts card-specific availability and generic effectiveness; no card56 guard corrects the unconditional result.",
+          "line": 369
+        },
+        {
+          "path": "fs_bot/cards/event_targets.py",
+          "lines": [
+            77,
+            96
+          ],
+          "reason": "Execution target helper already correctly distinguishes an on-map named Leader from a missing Leader or Successor; availability does not reuse the distinction.",
+          "line": 77
+        }
+      ],
+      "observed": "should_decline_event returns False; dispatcher selects shaded Flight of Ambiorix; execute_decision reports success with all recorded material game state unchanged.",
+      "cause": "PLACES_LEADER returns effective unconditionally. Decline logic trusts card-specific availability and generic effectiveness; no card56 guard corrects the unconditional result. Execution target helper already correctly distinguishes an on-map named Leader from a missing Leader or Successor; availability does not reuse the distinction.",
+      "limits": "Only witnessed cards and paths are confirmed; no natural-play frequency or exhaustive scenario/edition coverage claim.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python events/probe_events.py",
+      "output": "events/probe_events-output.json"
+    },
+    {
+      "id": "FE6-01",
+      "priority": "high",
+      "title": "Event-granted Aedui Battle accepts Ambush in multiple Regions",
+      "expected": "Aedui may Ambush in only one Region per Battle Command, including Assembly of Gaul\u2019s free Command; both ordinary and Event interfaces must reject a two-Region Ambush before it executes.",
+      "observed": "Card 52 shaded accepts a human single-SA plan with Ambush in Carnutes and Mandubii. Each Region begins with six Hidden Aedui and five Revealed Belgae. Both finish at six Aedui/two Belgae, avoiding the second Region\u2019s otherwise required one-Warband Counterattack loss. The one-Ambush control finishes Mandubii at five Aedui/two Belgae. The ordinary Command+SA validator and Assembly\u2019s two-ability schema both reject the same excessive Ambush scope.",
+      "cause": "free_actions._plan_structure_error checks Aedui Ambush scope only for Morasses; its generic free Command+SA route omits the normal action validator\u2019s one-Region guard. _execute_battle validates each Ambush locally without enforcing the Command-wide cap.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 4",
+          "line": 188,
+          "quote": "the Aedui may only Ambush in a maximum of one Region per Battle Command."
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 521,
+          "quote": "Faction Controlling Carnutes Region executes a Command that may add 2 Special Abilities, free."
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 523,
+          "quote": "The shaded actions are all free but have to follow the usual rules for space selection and so forth"
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 15,
+          "description": "3.1.2 retains other requirements/procedures for free actions unless Event text modifies them."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/engine/free_actions.py",
+          "line": 358
+        },
+        {
+          "path": "fs_bot/engine/free_actions.py",
+          "line": 375
+        },
+        {
+          "path": "fs_bot/engine/action_validation.py",
+          "line": 463
+        },
+        {
+          "path": "fs_bot/cards/assembly_of_gaul.py",
+          "line": 102
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 3996
+        }
+      ],
+      "fixture": "Controlled Great Revolt seed4 second-edition position using build_initial_state and place_piece; permanent Provincia Fort retained, six Aedui versus five Revealed Belgae in each of two Regions, Aedui Control Carnutes. Pre/post census and structural integrity clean. No NPC decisions or stochastic hard-piece saves needed. Defenders explicitly choose to stand in legal normal-Battle control.",
+      "controls": "Same two-Region plan is rejected unchanged under an ordinary Command+SA. Assembly two-ability schema also rejects it. One-Ambush free Battle succeeds and incurs the expected second-Battle Counterattack loss. Durable SeatSession pauses before the grant, accepts the illegal response after save/load, and replays identically with board/RNG equality. Preview leaves live state/RNG untouched.",
+      "prior_relation": "FE4-03 exposed only one of Assembly\u2019s two allowed abilities and was fixed by the new multi-ability schema. FE5-01 covered Britannia crossing with an accompanying SA. This is a separate Aedui-specific Command-wide Battle cap in the still-supported single-ability Event response.",
+      "limits": "Confirmed for numeric52 shaded single-ability human response. No claimed encounter frequency; no claim that NPC Aedui choose this illegal plan.",
+      "comparator_pattern": "Liberty or Death docs/human_mode_audit.md and lod_ai/event_choices.py: compare rule-defined legal choices and handler validation across frontend/grant paths, not just presence of existing hooks.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python frontend/probe_frontend.py",
+      "probe": "frontend/probe_frontend.py",
+      "output": "frontend/probe_frontend-output.json",
+      "status": "open",
+      "partition": "frontend",
+      "repair_recommendation": "Share the Aedui one-Ambush-Region constraint across ordinary and free-action validation, preserving the already-correct Assembly multi-ability and Morasses handling; test raw validation, Event execution, and durable sessions.",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "evidence_directory": "frontend"
+    },
+    {
+      "id": "FE6-02",
+      "priority": "medium",
+      "title": "Ariovistus Enlist March cannot divide four Warbands into multiple destination groups",
+      "expected": "Ariovistus Enlist\u2019s one free German Limited March may select one origin and split its total of at most four affected Warbands into different groups bound for different adjacent Regions, following A3.4.2 and \u00a73.3.2.",
+      "observed": "The production Enlist collector asks for exactly one origin and destination, then one total/visibility allocation, and returns. execute_free_enlist invokes march_group exactly once with all selected Warbands. Four Germans in Sugambri can be sent entirely to Nervii or partly left behind, but cannot be divided two to Nervii and two to Treveri in the free Command. On the identical Ariovistus board, a public ordinary German Limited Command supports and executes that exact 2+2 split with clean integrity.",
+      "cause": "enlist_free.py unconditionally retains the base-game one-moving-group schema and implementation for Ariovistus. Its CLI likewise has no group/destination list or continuation. The base single-group rule is replaced by A3.4.2 in the expansion.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A3",
+          "line": 108,
+          "quote": "The German Leader and Warbands March in the same way as Gallic Leaders and Warbands do (3.3.2; not into a 2 nd Region\u2014an effect particular to Vercingetorix)."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 249,
+          "quote": "Pieces within a Region may make up multiple groups."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 250,
+          "quote": "If this is a Limited Command (2.3.5), select just one origin Region."
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "line": 215,
+          "quote": "execute one free Limited Command with Germanic pieces (per 3.4, making choices as if a Germanic player; no March upon Frost, 2.3.8)"
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A4",
+          "line": 43,
+          "description": "A4.5.1 changes Enlist, caps four affected German Warbands/Allies and excludes Leader/Settlements and Ariovistus\u2019s Region; it supplies no single-group restriction."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 354,
+          "description": "Base \u00a73.4.2 expressly limits German March to one moving group; base one-group behavior remains correct."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/commands/enlist_free.py",
+          "line": 83
+        },
+        {
+          "path": "fs_bot/commands/enlist_free.py",
+          "line": 98
+        },
+        {
+          "path": "fs_bot/cli/human_plan.py",
+          "line": 817
+        },
+        {
+          "path": "fs_bot/cli/human_plan.py",
+          "line": 831
+        }
+      ],
+      "fixture": "Controlled Ariovistus seed7 position built with piece helpers: permanent Provincia Fort, Belgic Boduognatus/one Belgic Warband at Sugambri, four Hidden Germans there; no German Leader/Settlement present and both destinations empty. Full public Belgic Raid+Enlist executes the terminal-collected single-destination plan. Comparison ordinary German Limited March uses one origin and exactly four Warbands. Pre/post census/structure clean.",
+      "controls": "Base Great Revolt version uses Ambiorix and correctly permits one group only under \u00a73.4.2. Ariovistus public German Limited March moves two each to Nervii/Treveri. Production terminal collection returns after one destination/total. Both actual Enlist cases execute cleanly and send all selected Germans to the single destination.",
+      "prior_relation": "Original human-choice inventory SA-ENLIST-FREE verified Rally/Raid and explicitly delegated March/Battle internals. Earlier ledgers address borrowed-force identities and Event-granted transit drop-offs, not Ariovistus\u2019s multiple groups within the free Enlist subcommand. No matching open/closed issue found in rounds1\u20135.",
+      "limits": "This is a legal-choice omission demonstrated by the production menu/consumed schema and a source-backed same-board legal split control, not a claim that arbitrary unsupported input must be accepted. It applies only to Ariovistus; base single-group behavior is correct. No frequency estimate or durable replay defect claimed.",
+      "comparator_pattern": "Liberty or Death docs/human_mode_audit.md opening correction: inventories of existing hooks cannot establish completeness when the choice has no hook; validate against supplied rules.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python frontend/probe_enlist.py",
+      "probe": "frontend/probe_enlist.py",
+      "output": "frontend/probe_enlist-output.json",
+      "status": "open",
+      "partition": "frontend",
+      "repair_recommendation": "Add Ariovistus group destinations and exact physical allocations to the Enlist free March schema/CLI while enforcing one selected origin, aggregate four-piece cap, once-only movement and existing base single-group rule.",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "evidence_directory": "frontend"
+    },
+    {
+      "status": "open",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "partition": "battle",
+      "reproduction": "battle/probe_battle.py",
+      "output": "battle/probe_battle-output.json",
+      "fixture": "Controlled build_initial_state positions, canonical piece helpers, permanent Provincia Fort retained, human seats except scenario game-run factions, actual execute_decision Event acquisition. Census and structural checks empty before/after each witness. These are legal constructed positions, not sampled encounter-frequency claims.",
+      "id": "BM6-01",
+      "priority": "high",
+      "title": "German Phalanx still misses shaded Legio X protection and Slingers initial fire",
+      "expected": "A31 unshaded played after shaded card 15 must cancel the benefit to German defenders: Caesar plus two Legions inflicts five Losses, leaving three of eight German Warbands. A31 shaded played after card 13 unshaded must cancel its harmful initial fire on German attackers: four German Warbands then remove two Roman Auxilia and all four Germans survive.",
+      "observed": "The accepted Roman Battle predicts and inflicts only four Losses whether Inflexible is present or absent; four Germans survive. The control without card 15 inflicts five. The accepted German Battle with Stalwart and Slingers still loses one German before Attack, removes only one Auxilia and ends with three Germans and one Auxilia, exactly as without Stalwart; without card 13, four Germans and no Auxilia survive. Adding card 59 unshaded makes the still-uncancelled initial fire remove two Germans. Non-German Belgic controls correctly retain the effects of card 15 shaded and card 13 unshaded.",
+      "cause": "Both Attack calculators apply shaded 15 Caesar limitation without inspecting A31 unshaded cancellation. execute.py computes and resolves card 13 initial Losses (and its card 59 combined rate) without inspecting A31 shaded. Existing A31 support is manually distributed among individual consumers.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "line": 127,
+          "quote": "Event effects benefitting Germans in Battle are cancelled, and Ariovistus does not double Losses."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "line": 131,
+          "quote": "Event effects harming Germans in Battle are cancelled, and named enemy Leaders do not double Losses to Germans."
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 147,
+          "detail": "15 shaded limits doubled Caesar damage to one Legion."
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 125,
+          "detail": "13 unshaded initial Auxilia Losses and card 59 combined prefire rate."
+        },
+        {
+          "path": "QUESTIONS.md",
+          "line": 2859,
+          "detail": "Owner-supplied Q&A applies Event-effects wording to Capabilities; historical adopted provenance, not a fresh external-source consultation."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/battle/losses.py",
+          "line": 192
+        },
+        {
+          "path": "fs_bot/battle/resolve.py",
+          "line": 418
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 4031
+        }
+      ],
+      "controls": "Four shaded-Legio cases and five Slingers cases; A31 acquired last when present to avoid any played-later precedence question. All four involved cards are verified members of Ariovistus deck. Both ordinary calculation and live casualty prompts included.",
+      "prior_relation": "EX3-04 fixed card 59 ordinary Battle doubling. BM5-01 fixed card 15 UNSHADED final +2 and -1 modifiers vs A31 SHADED. This witness uses card 15 SHADED Caesar limitation vs A31 UNSHADED, plus card 13 initial fire and its card 59 combination. These are newly confirmed consumers after those fixes, grouped once for Phalanx cancellation rather than separate counts per clause.",
+      "repair_direction": "Centralize or consistently apply benefit/harm suppression at these remaining live and forecast consumers, preserving capability ownership/recording, non-German controls and later removal/dueling behavior.",
+      "limits": "No new claim for card 27 across Interlude or every possible Event interaction. The extra card 59 row is one prefire variant, not another finding.",
+      "evidence_directory": "battle"
+    },
+    {
+      "status": "open",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "partition": "battle",
+      "reproduction": "battle/probe_battle.py",
+      "output": "battle/probe_battle-output.json",
+      "fixture": "Controlled build_initial_state positions, canonical piece helpers, permanent Provincia Fort retained, human seats except scenario game-run factions, actual execute_decision Event acquisition. Census and structural checks empty before/after each witness. These are legal constructed positions, not sampled encounter-frequency claims.",
+      "id": "BM6-02",
+      "priority": "high",
+      "title": "Alternate German Ambush paths bypass Balearic Slingers",
+      "expected": "Card 13 unshaded applies once in an enemy Battle Command, including any Ambush and third-party Roman Auxilia. In the public card 17 unshaded witness, four German Warbands Ambush two Aedui Warbands beside two Roman Auxilia; Slingers first removes one German, then one Aedui is removed, leaving three Germans, one Aedui Warband and two Auxilia.",
+      "observed": "Public card 17 unshaded with explicit Roman empty March and explicit Carnutes/Aedui Ambush never requests Slingers and removes both Aedui, leaving four Germans, no Aedui Warbands and two Auxilia. A control without card 13 is identical. Ordinary Germans Phase Battle similarly leaves four Germans and none of the two Auxilia; ordinary engine Battle pipeline control asks Slingers and leaves three Germans and one Auxilia. Public card 53 with three Germans and four Auxilia (no German Control/Rally there) leaves three Germans and three Auxilia; correct initial fire would leave one German and four Auxilia.",
+      "cause": "german_guidance and germans_battle call low-level resolve_battle directly, bypassing the Command-scoped card 13 Region choice and prefire implemented only in _execute_battle. Other bypass routes are statically similar but not counted separately.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 125,
+          "quote": "Romans choose 1 Region per enemy Battle Command. Auxilia there first inflict \u00bd Loss each on attacker. Then resolve Battle."
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 132,
+          "detail": "Tip: any Ambush is a Battle Command and Romans may fire even when attacker Battles another Faction."
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 163,
+          "detail": "Card 17 unshaded Roman-directed German March and Ambush."
+        },
+        {
+          "path": "Reference Documents/Chapter 6",
+          "line": 55,
+          "detail": "6.2.4 Germans Phase conducts Battle with Ambush."
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 528,
+          "detail": "53 conducts Germans Phase without March and waives Hidden-enemy comparison."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/cards/german_guidance.py",
+          "line": 178
+        },
+        {
+          "path": "fs_bot/engine/germans_battle.py",
+          "line": 219
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 4031
+        }
+      ],
+      "controls": "Six cases: phase with card 13 active/inactive, normal engine command pipeline with card 13, public card 17 with card 13 on/off, public card 53 with card 13. The ordinary-command control is an engine API comparison only; it does not claim base Germans have a player turn. Public cards 17 and 53 are full legal Event entrypoints. No A31 capability in these base-game cases.",
+      "prior_relation": "Original BE-09 and 5 November Slingers work fixed owner Region choices/combined rates in ordinary/free _execute_battle pathways, and later queued candidates. Neither reports direct German-guidance/Germans-Phase low-level resolver omissions. Distinct from BM6-01, where the ordinary pipeline fires a Capability that Phalanx should suppress.",
+      "repair_direction": "Route these alternate Ambush Commands through shared Command-scoped capability activation and reactions; preserve owning Romans choices, exactly-one activation, timing, legal zero-Loss choices, replay, and alternate phase ordering.",
+      "limits": "Arverni Phase and other Event direct resolver callsites have the same static risk but no separate counted findings or proof of all card 59 effects. No full Winter cadence claim beyond the public phase procedure and full Events.",
+      "evidence_directory": "battle"
+    },
+    {
+      "status": "open",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "partition": "battle",
+      "reproduction": "battle/probe_battle.py",
+      "output": "battle/probe_battle-output.json",
+      "fixture": "Controlled build_initial_state positions, canonical piece helpers, permanent Provincia Fort retained, human seats except scenario game-run factions, actual execute_decision Event acquisition. Census and structural checks empty before/after each witness. These are legal constructed positions, not sampled encounter-frequency claims.",
+      "id": "BM6-03",
+      "priority": "high",
+      "title": "Consuetudine Battles multiple defenders in the same Region",
+      "expected": "53 changes the Hidden-enemy prerequisite but retains one defender per selected Battle Region. With four German Warbands, two Roman Auxilia and two Aedui Warbands at Carnutes, Germans choose one defending Faction; the other two-piece faction survives this Command.",
+      "observed": "Public card 53 conducts separate two-Loss Ambushes first against Aedui then against Romans in Carnutes, removing both entire stacks. Ordinary Germans Phase control on the same position removes Aedui only and leaves both Auxilia. All four Germans survive both runs. The fixture has no German Control and no German Ally in Carnutes, so Rally/raid do not change the local combatants.",
+      "cause": "force_ambush=True disables Hidden-superiority and zero-Hidden guards inside a loop over all candidate defenders. Normal Reveal happens to stop the later defenders, but no explicit one-Battle-per-Region stop remains when the Event bypasses that condition.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 528,
+          "detail": "53 Tip implements \u00a76.2 without March and Ambushes regardless of Hidden enemies; no multiple-defender exception."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 362,
+          "detail": "3.4.4 Germanic Battle procedure applies per Region; Step 1 at line 370 selects one non-German Faction."
+        },
+        {
+          "path": "Reference Documents/Chapter 6",
+          "line": 55,
+          "detail": "6.2.4 Battle in each eligible Region, player priority and random ties."
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "line": 25,
+          "detail": "Normal rules remain except explicit Event exceptions."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "line": 2013
+        },
+        {
+          "path": "fs_bot/engine/germans_battle.py",
+          "line": 191
+        },
+        {
+          "path": "fs_bot/engine/germans_battle.py",
+          "line": 204
+        },
+        {
+          "path": "fs_bot/engine/germans_battle.py",
+          "line": 219
+        }
+      ],
+      "controls": "Paired public card 53 versus ordinary Germans Phase from identical constructed position; deterministic seed 1; both pre/post inventories clean. Loss-choice trace identifies two distinct physical defenders in one Region in card 53, one in the ordinary phase.",
+      "prior_relation": "CM2-01 fixed authored ordinary Battle plans with repeated Regions/self-targets. BE3-01 fixed card 53 failure to waive Hidden superiority and the Scouted hide attempt. This is the resulting phase executor target loop, which still Battles every candidate after the repaired exception; it survives current main.",
+      "repair_direction": "After selecting/executing one legal defender in a Region, finish that Region independently of the Hidden prerequisite. Preserve live revalidation, player-before-NP priority, seeded ties, and the intended card 53 Hidden exception.",
+      "limits": "Only the public card 53 double-defender instance is counted; no claim of repeated Region behavior in unaffected ordinary phases.",
+      "evidence_directory": "battle"
+    },
+    {
+      "status": "open",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "partition": "bots",
+      "priority": "medium",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python bots/probe_bots.py",
+      "output": "bots/probe_bots-output.json",
+      "fixture": "Controlled build_initial_state positions; seed 6; pieces placed through canonical helpers, Legions explicitly taken from Track, permanent Provincia Fort retained. All pre/post schema census and structural checks pass. No claim of natural sampled-game encounter frequency.",
+      "limits": "Confirmed bounded controlled cases only; no claim to exhaust all bot priorities, Capability or SA forecasts. No production changes.",
+      "id": "NP6-01",
+      "title": "Belgic and Arverni offensive Battle forecasts still use pre-Attack defenders and miss Ambiorix strength",
+      "expected": "Six Belgic Warbands versus six Roman Auxilia should Battle (3 Attack Losses and 1 Counterattack Loss); ten Arverni Warbands versus ten Auxilia should Battle (5 Attack Losses and 2 Counterattack Losses). Ambiorix with two Warbands versus six Auxilia should Battle (3 Attack Losses and 1 Counterattack Loss), whereas a Successor with two Warbands produces 2 Losses on each side and should March. All cases are Command only, with Revealed troops and no relevant Capability or Special Ability.",
+      "observed": "Public dispatch instead selects and executes March in the favorable equal-starting-troop cases, in both base and Ariovistus for Belgae, and with named Ambiorix. Validated public Battle from the same original states executes with the source-derived losses and clean piece counts.",
+      "cause": "Each _can_battle_in_region separately estimates Counterattack from the entire initial defender stack. Belgae also value every Warband at one-half even with Ambiorix attacking. Their duplicate _estimate_battle_losses repeats the same arithmetic. Neither consumer uses the corrected surviving-defender forecast already used by Germans.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 244,
+          "description": "Battle only where enemy Losses exceed own; presume all Defender rolls remove pieces."
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 583,
+          "description": "Arverni require forced Legion Loss and/or inflict more Losses than suffered; assume defender removals."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 297,
+          "description": "Counterattack: surviving Defenders cause Losses to Attackers."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 315,
+          "description": "One-half per ordinary Warband; when Ambiorix attacks one per Belgic Warband."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/bots/belgae_bot.py",
+          "line": 268,
+          "description": "Basic attack formula omits named Ambiorix."
+        },
+        {
+          "path": "fs_bot/bots/belgae_bot.py",
+          "line": 280,
+          "description": "Counterattack counts initial defender stack."
+        },
+        {
+          "path": "fs_bot/bots/arverni_bot.py",
+          "line": 254,
+          "description": "Independent initial-stack Counterattack forecast."
+        }
+      ],
+      "controls": "Six Belgic Warbands versus four Auxilia and ten Arverni Warbands versus six Auxilia correctly Battle. Six Belgic Warbands versus twelve Auxilia and ten Arverni Warbands versus twenty Auxilia correctly March. Comparing Ambiorix with a Successor isolates the named Leader rate: correcting survivor counts alone still produces an incorrect estimate of 2 Losses on each side for Ambiorix. Eleven probe cases in total.",
+      "prior_relation": "NP5-03 fixed German bot _estimate_battle_losses only. These Belgic and Arverni consumers remain unchanged and are not regressions of that repaired German helper. Grouping both consumers and named-rate omission as one estimate repair group avoids counting each arithmetic symptom separately.",
+      "comparator_pattern": "coin-implementation-lessons.md E (flowchart conditions) and docs/audit_set_but_never_applied_s76.md section 5 (parallel-calculator drift).",
+      "suggested_repair": "Use shared, source-correct Attack and surviving-defender Counterattack prediction for Belgic and Arverni qualification and related estimates. Verify named Leaders, Successors, Special Ability forecasts and costs without retuning strategy.",
+      "evidence_directory": "bots"
+    },
+    {
+      "status": "open",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "partition": "bots",
+      "priority": "medium",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python bots/probe_bots.py",
+      "output": "bots/probe_bots-output.json",
+      "fixture": "Controlled build_initial_state positions; seed 6; pieces placed through canonical helpers, Legions explicitly taken from Track, permanent Provincia Fort retained. All pre/post schema census and structural checks pass. No claim of natural sampled-game encounter frequency.",
+      "limits": "Confirmed bounded controlled cases only; no claim to exhaust all bot priorities, Capability or SA forecasts. No production changes.",
+      "id": "NP6-02",
+      "title": "Arverni and Aedui high-value Battle triggers mistake target presence for a forced Loss",
+      "expected": "Ten Arverni Warbands versus twenty Roman Auxilia and one Legion must March: 5 Attack Losses remove only Auxilia, 8 Counterattack Losses exceed the 5 inflicted, and no Legion absorbs a Loss. Four Aedui Warbands versus a Roman Ally and Fort must not trigger a high-value Battle: the single Attack Loss can be assigned to the Fort while the Ally survives. Forts are absent from the high-value target list in section 8.6.2.",
+      "observed": "Arverni publicly selects and executes Battle, losing eight Warbands while the Legion remains untouched. Independently, Aedui selects a high_value Battle and the human Roman defender assigns its only Loss to the Fort; the Ally survives. Both execute cleanly and satisfy census checks.",
+      "cause": "The Arverni can_hit_legion predicate is true whenever any Legion exists and Attack Losses exceed zero, regardless of intervening Auxilia. The Aedui predicate checks high-value target presence and compares losses only with Warbands plus Auxilia, omitting the Fort as a legal alternative loss target.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 583,
+          "description": "Arverni must force at least one Loss (roll or removal) on a Legion, or inflict more than suffered."
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 448,
+          "description": "Aedui Battle only when sure to inflict Loss on Leader, Ally, Citadel or Legion, accounting for actual defender."
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 180,
+          "description": "Non-player own-piece losses use reverse removal priority, therefore Auxilia before Legions."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 324,
+          "description": "Eligible Forts can absorb Loss by saving roll."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 333,
+          "description": "No-Retreat static pieces absorb only after other pieces; Fort and Ally can both remain legal when no mobile defender."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/bots/arverni_bot.py",
+          "line": 250,
+          "description": "can_hit_legion ignores screening casualties."
+        },
+        {
+          "path": "fs_bot/bots/arverni_bot.py",
+          "line": 280,
+          "description": "Any can_hit_legion overrides unfavorable comparative Losses."
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 276,
+          "description": "The expendable count includes only Warbands plus Auxilia, excluding Forts."
+        }
+      ],
+      "controls": "Arverni correctly Marches in the control with the same twenty Auxilia and no Legion (see the NP6-01 table), and correctly Battles the unshielded Legion control. The reviewer's Aedui control without a Fort removes the Ally. The Aedui fixture has two Allies versus one Roman Ally, meeting the victory condition for targeting Romans, and no enemy mobile pieces to introduce Retreat ambiguity.",
+      "prior_relation": "NP5-02 corrected an Aedui trigger when no high-value piece existed at all; these positions contain real high-value pieces but a Loss is not guaranteed to reach them. NP5-01/NP5-03 concern Diviciacus safety and German comparative forecasts, not forced target identity. Arverni screened-Legion and Aedui Fort-protected Ally share this trigger-guarantee repair group.",
+      "comparator_pattern": "coin-implementation-lessons.md E: preserve the exact flowchart condition; D: evaluate the specified object, not merely a containing stack.",
+      "suggested_repair": "Determine whether a source-permitted defender casualty allocation can avoid all required target types. For Arverni use actual casualty order under the printed all-defender-removals assumption; for Aedui account for Fort absorption and all legal player loss selections.",
+      "additional_evidence": {
+        "reproduction": "PYTHONPATH=<fs-bot-root> python review/probe_aedui_fort.py",
+        "output": "review/probe_aedui_fort-output.json",
+        "reviewer": "audit6_review",
+        "fixture": "Seed 1; human Romans; four Aedui Warbands against a Roman Ally and Fort; two Aedui Allies elsewhere; permanent Provincia Fort retained. The human callback explicitly assigns the Loss to the Fort."
+      },
+      "evidence_directory": "bots"
+    },
+    {
+      "status": "open",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "partition": "bots",
+      "priority": "medium",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python bots/probe_bots.py",
+      "output": "bots/probe_bots-output.json",
+      "fixture": "Controlled build_initial_state positions; seed 6; pieces placed through canonical helpers, Legions explicitly taken from Track, permanent Provincia Fort retained. All pre/post schema census and structural checks pass. No claim of natural sampled-game encounter frequency.",
+      "limits": "Confirmed bounded controlled cases only; no claim to exhaust all bot priorities, Capability or SA forecasts. No production changes.",
+      "id": "NP6-03",
+      "title": "Roman threat gate caps Rampage at two victims and treats impossible Rampages as threats",
+      "expected": "With three Hidden Belgic Warbands, adjacent Ambiorix, and three Roman Legions plus two Auxilia, a legal Rampage can force a Legion casualty, so R1 should take the Battle/March branch. With two Hidden Belgic Warbands versus three Legions and one Auxilia, Rampage cannot trigger R1 when the Belgic Leader is absent or the Romans have a Fort.",
+      "observed": "The legal Rampage affecting three victims is ignored, and Romans select and execute Recruit. In both illegal-Rampage variants, Romans select and execute Battle. The matched control with two Hidden Warbands versus two Auxilia correctly does not trigger. The unfortified control with nearby Ambiorix and two Hidden Warbands versus one Auxilia does trigger. Actual Rampage execution from the legal fixtures removes a Legion exactly when required.",
+      "cause": "roman_bot._has_roman_threat uses min(2, belgic_hidden) without checking Leader range or the exclusion of targets with a Leader, Fort or Citadel. The actual Rampage executor already uses the full available capacity and checks legality.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 785,
+          "description": "Roman R1 responds to immediate enemy Battle or Rampage that can force Legion/Caesar Loss."
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "line": 223,
+          "description": "Rampage requires Hidden Belgic Warbands and either Ambiorix within one Region or a local Successor."
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "line": 230,
+          "description": "The target cannot have a Leader, Citadel or Fort. One victim is affected per selected Hidden Warband, with no two-victim cap."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/bots/roman_bot.py",
+          "line": 198,
+          "description": "Stale comment caps victims at two, and the min(2, hidden) condition omits legality checks."
+        },
+        {
+          "path": "fs_bot/commands/sa_rampage.py",
+          "line": 52,
+          "description": "Actual capacity is the smaller of the Hidden Warband count and the target mobile-piece count."
+        },
+        {
+          "path": "fs_bot/commands/sa_rampage.py",
+          "line": 82,
+          "description": "Actual leader-range validation."
+        },
+        {
+          "path": "fs_bot/commands/sa_rampage.py",
+          "line": 119,
+          "description": "Actual target protection validation."
+        }
+      ],
+      "controls": "Five cases differ only in Hidden Warband count, Roman Auxilia count, adjacent Ambiorix or a local Fort. Roman Control is retained throughout; no enemy Ally, Leader or Control independently triggers R1. Ordinary enemy Battle Losses are no greater than the Auxilia count in every case. No adjacent Roman-controlled refuge exists in the legal casualty witnesses.",
+      "prior_relation": "The original CMD-RAMPAGE-COUNT finding fixed actor quantity and the NPC execution cap on 4 November. This distinct Roman threat consumer still retains the old two-victim assumption. Neither that ledger nor the subsequent comparison ledgers of 21, 15, 16 and 11 findings lists Roman threat eligibility or capacity.",
+      "comparator_pattern": "docs/audit_set_but_never_applied_s76.md section 5: real consumer and planning consumer drift; coin-implementation-lessons.md D per-space leader scope.",
+      "suggested_repair": "Share source-correct Rampage Region and target legality and capacity with R1, while retaining the immediate-threat interpretation and accounting for permissible Retreats and protected Roman Leaders.",
+      "evidence_directory": "bots"
+    },
+    {
+      "id": "WS6-01",
+      "priority": "high",
+      "title": "Germans Phase Rally places multiple Allies in one Region and compounds their Warband gain",
+      "expected": "With two German Warbands controlling Sugambri and both its Tribes Subdued, place exactly one German Ally at Suebi (North), then one German Warband in Sugambri. The ordinary one-Ally-per-Region rule still applies to the Germans Phase.",
+      "observed": "Both the public Germans Phase Rally and complete public germans_phase place Allies at Suebi (North) and Sugambri in the same Rally. Sugambri then receives two Warbands. The extra Ally persists through the complete phase.",
+      "cause": "germans_phase_rally creates one candidate per Tribe and visits the Suebi/Germania/elsewhere lists without a Region-already-used guard. Its second phase then computes the Warband quota from the inflated Ally count.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 6",
+          "line": 19,
+          "quote": "First, Rally to place as many Germanic Allied Tribes as possible per the Rally procedure (3.3.1, 3.4.1), starting with Suebi"
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 213,
+          "quote": "In each selected Region ... If it Controls the Region (1.6), place one of its Ally pieces"
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 345,
+          "quote": "Place a Germanic Ally only if the Region already has Germanic Control ... Then place Germanic Warbands up to the number of Germanic Allied Tribes"
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/commands/rally.py",
+          "line": 1536
+        },
+        {
+          "path": "fs_bot/commands/rally.py",
+          "line": 1547
+        },
+        {
+          "path": "fs_bot/commands/rally.py",
+          "line": 1592
+        }
+      ],
+      "controls": "With Sugambri Tribe already German-allied, the same routine places only Suebi (North), which is legal. Running the ordinary Rally helper's Ally and Warbands options on the original fixture produces the required single Ally and single new Warband.",
+      "prior_relation": "Earlier original/second/third/fourth/fifth audit ledgers contain no Germans Phase per-Region Rally quota finding. BE3-01 concerns Consuetudine Ambush eligibility and Scouted hiding; ordinary Arverni Phase Rally repairs concern a different faction and command implementation.",
+      "comparator_pattern": "coin-implementation-lessons.md C and D: a scheduled procedure's separate implementation must preserve the normal command's per-space limits.",
+      "repair_scope": "Track Regions already receiving a German Ally across all three priority lists; retain Suebi-first ordering and place Warbands after the legal Ally choices.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python lifecycle/probe_lifecycle.py",
+      "output": "lifecycle/probe_lifecycle.json",
+      "fixture": "Controlled build_initial_state position in The Great Revolt, seed1, canonical place_piece and named Ally helper only. Permanent Provincia Fort retained. Pre/post validate_state and check_structural_integrity pass, including named Tribe restrictions. No sampled-game frequency claim.",
+      "limits": "The primary witness proves one Germanic Region with two Subdued Tribes. Similar multi-Tribe Regions follow the same loop but are not separately counted.",
+      "status": "open",
+      "partition": "lifecycle",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "evidence_directory": "lifecycle"
+    },
+    {
+      "id": "WS6-02",
+      "priority": "high",
+      "title": "Germans Phase March moves arriving Warbands a second time",
+      "expected": "Form original moving groups at March start. From Ubii5 and Sugambri3 (no German Allies), the original groups are four and two; each can move only into one adjacent Region. An arrival at Sugambri cannot join Sugambri's later group.",
+      "observed": "Seed0 marches four Warbands Ubii to Sugambri, then six Sugambri to Nervii. Sugambri started with only three Warbands, so at least three arriving pieces moved a second time. The complete Germans Phase also reproduces: after Rally Sugambri has five original Warbands, receives six from Ubii, and then sends eleven to Nervii.",
+      "cause": "candidate_origins saves each original warband_count, but actual_send recomputes the full current surplus after previous groups have arrived. The movement loop consumes current physical stacks without an original-piece cohort limit.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 6",
+          "line": 31,
+          "quote": "form a group of Germanic Warbands to March out of each Region"
+        },
+        {
+          "path": "Reference Documents/Chapter 6",
+          "line": 38,
+          "quote": "Move into at most one Region with each group (3.3.2, 3.4.2)."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 354,
+          "quote": "Germanic Warbands within a March origin Region may form at most a single moving Group to enter one adjacent Region"
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/commands/march.py",
+          "line": 1170
+        },
+        {
+          "path": "fs_bot/commands/march.py",
+          "line": 1243
+        },
+        {
+          "path": "fs_bot/commands/march.py",
+          "line": 1250
+        }
+      ],
+      "controls": "The identical original position at seed1 routes the first group elsewhere, so later groups do not exceed their original inventories; census and structure remain clean in both versions. Both isolated public March and complete public germans_phase reproduce seed0.",
+      "prior_relation": "Original BE-01 Germanic Chieftains/German Allegiances/Aduatuca repairs established original cohorts for human Event-guided movement. Their reports explicitly distinguish those guided Commands from the game-run Germans Phase. FE5-02 concerns transit drop-off decisions, not this separate automatic March implementation.",
+      "comparator_pattern": "coin-implementation-lessons.md B and C: preserving original action participants across a separate scheduled execution path.",
+      "repair_scope": "Preserve the original March groups and physical visibility cohorts; use only those original pieces when executing later origins, while respecting live Control and printed destination priorities.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python lifecycle/probe_lifecycle.py",
+      "output": "lifecycle/probe_lifecycle.json",
+      "fixture": "Controlled Great Revolt build_initial_state seed0: German Warbands Ubii5, Sugambri3, Treveri1, Sequani1, permanent Provincia Fort. No piece counts directly edited. Pre/post inventories and structure pass. Complete Germans Phase variant uses the actual Rally output to establish each origin's March-start inventory.",
+      "limits": "The no-Rally witness independently isolates the March defect; the complete-phase witness also contains WS6-01's extra Allies, but its double-movement proof is relative to the actual post-Rally inventory and does not depend on the Rally expectation.",
+      "status": "open",
+      "partition": "lifecycle",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "evidence_directory": "lifecycle"
+    },
+    {
+      "id": "WS6-03",
+      "priority": "medium",
+      "title": "Germans Phase March omits player-Control priority among newly controllable destinations",
+      "expected": "A four-Warband group at Ubii can add Germanic Control at empty Sugambri, empty Sequani, or Treveri with one human Roman Auxilia. It must select Treveri: within destinations that add Control, prioritize player-controlled Regions.",
+      "observed": "At seed0 the public Germans Phase March selects empty Sugambri instead. In a complete phase on seed1, Germans instead move seven Warbands to empty Sequani while leaving the human Roman Treveri force untouched. The add-Control tier gives player-controlled and empty Regions equal random chances.",
+      "cause": "add_control candidates are appended before the human-control test, which runs only in the branch for destinations where the moving group cannot gain Control. Thus the printed secondary priority never applies within the highest tier.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 6",
+          "line": 39,
+          "quote": "Select destination Regions first so that the moving groups can add Germanic Control ... then (among such Regions if possible, otherwise among others) Regions that are Controlled by player Factions"
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/commands/march.py",
+          "line": 1209
+        },
+        {
+          "path": "fs_bot/commands/march.py",
+          "line": 1214
+        },
+        {
+          "path": "fs_bot/commands/march.py",
+          "line": 1232
+        }
+      ],
+      "controls": "Changing Romans to NP removes the mandatory player preference, making the same empty-Sugambri selection legal. Giving human Romans twelve Auxilia makes Treveri unconquerable, so newly controllable empty Sugambri correctly has priority. Seed1 on the direct fixture happens to select Treveri, showing the current result depends on random selection rather than the source-required preference.",
+      "prior_relation": "No earlier finding addresses this game-run German destination secondary priority. NP4-01 concerns Roman March opponent-strength ranking, and WS6-02 concerns original movement participants rather than destination ranking.",
+      "comparator_pattern": "coin-implementation-lessons.md E: conditional branches and ordered bot/procedure priorities must match the printed specification without collapsing nested tiers.",
+      "repair_scope": "Implement lexicographic destination priority: adds Germanic Control, then player-controlled, then seeded random tie; preserve player/non-player distinction in both conquerable and unconquerable tiers.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python lifecycle/probe_lifecycle.py",
+      "output": "lifecycle/probe_lifecycle.json",
+      "fixture": "Controlled Great Revolt build_initial_state: Ubii5 German Warbands, Treveri1 Roman Auxilia (human), permanent Provincia Fort, other playable seats NP. Direct witness seed0, full phase seed1. All pieces placed through helpers; pre/post census/structure and named Tribe restrictions pass.",
+      "limits": "No claims about occurrence frequency or aggregate winner drift. Complete phase uses actual post-Rally group size and still has a uniquely required player-controlled destination.",
+      "status": "open",
+      "partition": "lifecycle",
+      "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
+      "evidence_directory": "lifecycle"
+    }
+  ],
+  "root_verification": {
+    "all_pass": true,
+    "source_sha256": "2423cb1f410650da300914e6569c1637675894cc43a9bd8284dfd92bd3b3ecb7",
+    "witnesses": [
+      {
+        "script": "events/probe_events.py",
+        "expected": "events/probe_events-output.json",
+        "exit_code": 0,
+        "exact_json_match": true,
+        "stderr": ""
+      },
+      {
+        "script": "frontend/probe_frontend.py",
+        "expected": "frontend/probe_frontend-output.json",
+        "exit_code": 0,
+        "exact_json_match": true,
+        "stderr": ""
+      },
+      {
+        "script": "frontend/probe_enlist.py",
+        "expected": "frontend/probe_enlist-output.json",
+        "exit_code": 0,
+        "exact_json_match": true,
+        "stderr": ""
+      },
+      {
+        "script": "battle/probe_battle.py",
+        "expected": "battle/probe_battle-output.json",
+        "exit_code": 0,
+        "exact_json_match": true,
+        "stderr": ""
+      },
+      {
+        "script": "bots/probe_bots.py",
+        "expected": "bots/probe_bots-output.json",
+        "exit_code": 0,
+        "exact_json_match": true,
+        "stderr": ""
+      },
+      {
+        "script": "lifecycle/probe_lifecycle.py",
+        "expected": "lifecycle/probe_lifecycle.json",
+        "exit_code": 0,
+        "exact_json_match": true,
+        "stderr": ""
+      },
+      {
+        "script": "review/probe_aedui_fort.py",
+        "expected": "review/probe_aedui_fort-output.json",
+        "exit_code": 0,
+        "exact_json_match": true,
+        "stderr": ""
+      }
+    ]
+  }
+}

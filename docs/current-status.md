@@ -19,6 +19,24 @@ Each dated report keeps
 its own revision, source digest and outcome evidence; earlier checkpoint
 measurements have not been relabeled as results of later changes.
 
+## Current audit backlog
+
+The [sixth Liberty or Death comparison audit](reviews/comparison-audit-round6-2026-11-11.md)
+confirms **14 new repair groups: 7 high and 7 medium priority, all open**.
+They cover Event completeness and bot Event plans, automatic German Rally
+and March, Battle Capability integration, free-action legality and choices,
+and bot Battle forecasts. The report supplies seven reproducible witness
+scripts and a five-batch repair order.
+
+The audited source at `86fb0c2` passed **9,900 tests**, 20 fresh audited bot
+games, and 20 mixed-player cases with identical replay across two hash seeds
+and zero hard findings. One mixed-player plan was a matching soft partial.
+These general checks do not cover every targeted rules boundary.
+The earlier 50-, 21-, 15-, 16- and 11-group ledgers remain closed.
+No production code or balance baseline changed in this audit.
+
+[Sixth-audit finding ledger](reviews/comparison-audit-round6-2026-11-11.json)
+
 ## Follow-up repairs
 
 ### 11 November fifth comparison repair Batch 5

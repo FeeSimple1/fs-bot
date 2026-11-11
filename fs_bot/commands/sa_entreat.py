@@ -42,7 +42,7 @@ from fs_bot.board.pieces import (
     place_piece, remove_piece, get_available, tribe_has_ally_disc, clear_allied_tribe,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
-from fs_bot.map.map_data import get_tribes_in_region, get_tribe_data
+from fs_bot.map.map_data import get_tribes_in_region_for_state, get_tribe_restriction
 from fs_bot.commands.common import action_cost, CommandError, check_leader_proximity
 
 
@@ -170,7 +170,7 @@ def validate_entreat_ally_target(state, region, target_faction, tribe):
     """Require the selected physical Ally disc before payment or removal (§4.3.1)."""
     if target_faction not in (AEDUI, BELGAE, GERMANS):
         raise CommandError('Entreat selects Aedui, Belgic, or Germanic Allied Tribe discs (§4.3.1).')
-    if tribe not in get_tribes_in_region(region, state['scenario']):
+    if tribe not in get_tribes_in_region_for_state(state, region):
         raise CommandError(f'Tribe {tribe} is not in {region}')
     if not tribe_has_ally_disc(state, region, tribe, target_faction):
         raise CommandError(f'Entreat requires a {target_faction} Allied Tribe disc at {tribe} (§4.3.1).')
@@ -218,9 +218,9 @@ def entreat_replace_ally(state, region, target_faction, tribe):
         )
 
     # Check stacking for Arverni Ally — §1.4.2
-    td = get_tribe_data(tribe)
+    restriction = get_tribe_restriction(tribe)
     can_place = True
-    if td.faction_restriction is not None and td.faction_restriction != ARVERNI:
+    if restriction is not None and restriction != ARVERNI:
         can_place = False
 
     # Pay cost

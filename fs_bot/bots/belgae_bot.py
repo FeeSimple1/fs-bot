@@ -54,7 +54,7 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region,
+    get_adjacent, get_playable_regions, get_tribes_in_region_for_state,
     get_region_group, is_city_tribe, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
@@ -989,7 +989,7 @@ def node_b_rally(state):
             continue
         if count_pieces(state, region, BELGAE, ALLY) < 1:
             continue
-        for tribe in get_tribes_in_region(region, scenario):
+        for tribe in get_tribes_in_region_for_state(state, region):
             tribe_info = state["tribes"].get(tribe, {})
             if (tribe_info.get("allied_faction") == BELGAE
                     and is_city_tribe(tribe)):
@@ -1801,7 +1801,7 @@ def node_b_quarters(state):
         if not is_devastated:
             continue
         has_ally = False
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes:
             if state["tribes"].get(tribe, {}).get("allied_faction") == BELGAE:
                 has_ally = True

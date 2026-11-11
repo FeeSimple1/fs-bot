@@ -50,7 +50,7 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import refresh_all_control
 from fs_bot.map.map_data import (
-    is_adjacent, get_tribes_in_region,
+    is_adjacent, get_tribes_in_region_for_state,
 )
 from fs_bot.commands.common import action_cost, CommandError
 
@@ -126,10 +126,7 @@ def suborn_region_limit(state):
 
 def suborn_tribes(state, region):
     """Printed Tribes plus Card 71's additional Colony Tribe in this Region."""
-    tribes = list(get_tribes_in_region(region, state['scenario']))
-    tribes.extend(tribe for tribe, info in state.get('tribes', {}).items()
-                  if tribe not in TRIBE_TO_REGION and info.get('region') == region)
-    return tribes
+    return list(get_tribes_in_region_for_state(state, region))
 
 
 def suborn_operation_cost(state, operation):

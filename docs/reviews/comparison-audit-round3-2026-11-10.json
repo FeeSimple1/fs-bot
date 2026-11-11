@@ -7,8 +7,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 15,
-  "closed": 12,
-  "open": 3,
+  "closed": 15,
+  "open": 0,
   "severity_counts": {
     "high": 14,
     "medium": 1
@@ -109,7 +109,9 @@
         "XC3-01",
         "XC3-02",
         "EX3-04"
-      ]
+      ],
+      "status": "closed",
+      "report": "third-comparison-batch4-2026-11-10.md"
     }
   ],
   "limits": [
@@ -764,7 +766,7 @@
       "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
       "reproduction": "PYTHONPATH=/path/to/fs-bot python expansion/probe.py",
       "fixture": "Controlled Ariovistus positions built with correct Available pools and normal piece operations. Pool and structural checks pass before and after; not full game transcripts.",
-      "status": "confirmed-open",
+      "status": "closed",
       "rules": [
         "Reference Documents/Ariovistus/A Card Reference:126-131, A31 shaded",
         "Reference Documents/Card Reference:602-618, card59 shaded",
@@ -774,13 +776,15 @@
       "code_locations": [
         "fs_bot/battle/resolve.py:495-502",
         "fs_bot/battle/losses.py:276-283"
-      ]
+      ],
+      "repair_batch": 4,
+      "repair_report": "third-comparison-batch4-2026-11-10.md"
     },
     {
       "id": "XC3-01",
       "title": "Existing Colony Tribes are ignored by Commands, Events, and Belgic scoring",
       "severity": "high",
-      "status": "confirmed-open",
+      "status": "closed",
       "expected": "Card 71's Colony is a real Tribe in its recorded Region. A Roman-Allied/Subdued Colony contributes +2 Seize Forage; a Subdued Colony is dispersible, Build can subdue/place its disc, Entreat can replace an eligible enemy disc, Trade includes a Subdued/Roman-Allied Colony under Aedui Control, and its Dispersed marker reduces Belgic Control Value. Acco and Procillus also include otherwise eligible Colony Allies.",
       "observed": "After real Colony Event creation, a full accepted Roman Seize in Mandubii earns 2 instead of 4; its Subdued Colony is absent from the dispersal menu and rejected by authored-plan validation. Valid Build/Entreat Regions reject the named physical Colony as not in its actual Region. Aedui Trade earns 6 instead of 8 with a Subdued Colony in Aedui. A valid controlled Dispersed Colony fixture leaves Belgic victory score 6 instead of 5. Shaded Acco leaves a Colony Ally unchanged; Procillus accepts a selected Colony Ally near Caesar and silently ignores it.",
       "rules": [
@@ -992,13 +996,15 @@
           ]
         }
       ],
-      "grouping": "One shared static-versus-live Tribe consumer repair group. Creation under an empty Ally pool is BE3-03 and remains separate."
+      "grouping": "One shared static-versus-live Tribe consumer repair group. Creation under an empty Ally pool is BE3-03 and remains separate.",
+      "repair_batch": 4,
+      "repair_report": "third-comparison-batch4-2026-11-10.md"
     },
     {
       "id": "XC3-02",
       "title": "Seize treats Razed Cities as Subdued and replaces their permanent marker",
       "severity": "high",
-      "status": "confirmed-open",
+      "status": "closed",
       "expected": "A City Razed by Sacking is Dispersed for Seize, yields no ordinary Forage, cannot be Dispersed again, and retains its Razed marker through Spring.",
       "observed": "An accepted Sacking Event Razes Roman-controlled Alesia. Seize's menu offers Mandubii for dispersal and its Forage calculator returns 4 instead of 2. A full authored Seize is accepted, earns 8, and changes Razed to ordinary Dispersed. Two Spring phases then clear the status, whereas a matched control remains Razed. State and structural validation report no errors throughout.",
       "rules": [
@@ -1036,45 +1042,43 @@
       "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/patterns/probe_razed_seize.py",
       "output": "razed_seize_results.json",
       "fixture_limits": "Standard Great Revolt setup, current Event set to 23 for the controlled test. Real execute_decision handles both Sacking and Seize. The production spring_phase runs twice to demonstrate loss of permanence, with the unmodified Razed position as control. No gameplay source changed.",
-      "prior_relation": "New downstream unshaded Sacking/Seize interaction. BE2-01 repaired shaded Sacking prerequisites, not this marker lifecycle. Unrelated to known Circumvallation persistence."
+      "prior_relation": "New downstream unshaded Sacking/Seize interaction. BE2-01 repaired shaded Sacking prerequisites, not this marker lifecycle. Unrelated to known Circumvallation persistence.",
+      "repair_batch": 4,
+      "repair_report": "third-comparison-batch4-2026-11-10.md"
     }
   ],
-  "open_severity_counts": {
-    "high": 3
-  },
+  "open_severity_counts": {},
   "latest_repair": {
-    "batch": 3,
+    "batch": 4,
     "date": "2026-11-10",
     "findings": [
-      "BE3-01",
-      "BE3-03",
-      "BE3-04",
-      "EX3-01",
-      "EX3-03"
+      "XC3-01",
+      "XC3-02",
+      "EX3-04"
     ],
-    "report": "third-comparison-batch3-2026-11-10.md",
+    "report": "third-comparison-batch4-2026-11-10.md",
     "engine_changes": true,
     "reference_changes": false,
     "tested_source": {
-      "commit": "c6ed9dd43597cbe4958821c2474ed9e5f9fbb406",
+      "commit": "9c180986c5bde4f56c5a92e7ed2173bfc7603f82",
       "dirty": true,
-      "source_sha256": "407a932c9ded7d54facf434fff2c24c1e0837af3f565166ae51604ae0308851c"
+      "source_sha256": "fb0bbf5af4a7513bbac1157f17054948d2ec5b3724ab612296b10a1d017ea51b"
     },
     "parent_source": {
-      "commit": "c6ed9dd43597cbe4958821c2474ed9e5f9fbb406",
-      "source_sha256": "e0c0f1e5dd86bf95978cb6f3226c82d5e46859fb006424b7374f8137aa515f24"
+      "commit": "9c180986c5bde4f56c5a92e7ed2173bfc7603f82",
+      "source_sha256": "407a932c9ded7d54facf434fff2c24c1e0837af3f565166ae51604ae0308851c"
     },
     "validation": {
       "pytest": {
-        "tests": 9582,
+        "tests": 9686,
         "failures": 0,
         "errors": 0,
         "skipped": 0
       },
-      "new_cases": 60,
+      "new_cases": 104,
       "parent_regressions": {
-        "tests": 60,
-        "failures": 37,
+        "tests": 104,
+        "failures": 68,
         "errors": 0,
         "skipped": 0
       },
@@ -1082,7 +1086,7 @@
         "games": 20,
         "audit_failures": 0,
         "winner_changes_from_parent": 0,
-        "final_state_changes_from_parent": 0
+        "final_state_changes_from_parent": 1
       },
       "mixed": {
         "games": 20,
@@ -1091,7 +1095,7 @@
         "events_ok": 134,
         "partial": 4,
         "hard_findings": 0,
-        "batch_digest": "95a1f6e6632f6d105e3444ea31cd5a707233c9d0f3e21e48c30db3bf079bb8d9"
+        "batch_digest": "1e28701b9b0d080a6523ac8c0132d53ff2e2267b3719e75b8b19be57d0d920f5"
       },
       "mixed_hashes_identical": true,
       "mixed_case_changes_from_parent": 1,
@@ -1099,11 +1103,24 @@
         "games": 100,
         "guardrail_exit": 0,
         "band": 0.15,
-        "winner_changes_from_parent": 3,
-        "length_changes_from_parent": 3,
+        "winner_changes_from_parent": 0,
+        "length_changes_from_parent": 1,
         "baseline_sha256": "5c14af61d455068527ed2032857192f849eb854b7e0bf4793d475e2974ab262a",
         "baseline_updated": false
       },
+      "balance_changes": [
+        {
+          "scenario_seed": "Reconquest of Gaul|1",
+          "parent": {
+            "winner": "Romans",
+            "cards": 59
+          },
+          "repaired": {
+            "winner": "Romans",
+            "cards": 46
+          }
+        }
+      ],
       "bot_and_mixed_seeds": [
         21,
         22,
@@ -1138,7 +1155,7 @@
         987
       ]
     },
-    "compatibility": "Unavailable replacements and impossible placement retain legal partial execution. Old incomplete Harudes or Migration submissions require correction. Existing exact ordering, timing and physical cohort ownership remain supported."
+    "compatibility": "Existing Colony names and saved Regions remain valid. Exact Seize plans must exclude Razed Cities. Germanic Horse retains its saved Capability and per-Command choice when Stalwart suppresses extra Losses to Germans."
   },
   "repair_history": [
     {
@@ -1407,6 +1424,115 @@
         ]
       },
       "compatibility": "Unavailable replacements and impossible placement retain legal partial execution. Old incomplete Harudes or Migration submissions require correction. Existing exact ordering, timing and physical cohort ownership remain supported."
+    },
+    {
+      "batch": 4,
+      "date": "2026-11-10",
+      "findings": [
+        "XC3-01",
+        "XC3-02",
+        "EX3-04"
+      ],
+      "report": "third-comparison-batch4-2026-11-10.md",
+      "engine_changes": true,
+      "reference_changes": false,
+      "tested_source": {
+        "commit": "9c180986c5bde4f56c5a92e7ed2173bfc7603f82",
+        "dirty": true,
+        "source_sha256": "fb0bbf5af4a7513bbac1157f17054948d2ec5b3724ab612296b10a1d017ea51b"
+      },
+      "parent_source": {
+        "commit": "9c180986c5bde4f56c5a92e7ed2173bfc7603f82",
+        "source_sha256": "407a932c9ded7d54facf434fff2c24c1e0837af3f565166ae51604ae0308851c"
+      },
+      "validation": {
+        "pytest": {
+          "tests": 9686,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "new_cases": 104,
+        "parent_regressions": {
+          "tests": 104,
+          "failures": 68,
+          "errors": 0,
+          "skipped": 0
+        },
+        "bots": {
+          "games": 20,
+          "audit_failures": 0,
+          "winner_changes_from_parent": 0,
+          "final_state_changes_from_parent": 1
+        },
+        "mixed": {
+          "games": 20,
+          "human_turns": 662,
+          "event_turns": 155,
+          "events_ok": 134,
+          "partial": 4,
+          "hard_findings": 0,
+          "batch_digest": "1e28701b9b0d080a6523ac8c0132d53ff2e2267b3719e75b8b19be57d0d920f5"
+        },
+        "mixed_hashes_identical": true,
+        "mixed_case_changes_from_parent": 1,
+        "balance": {
+          "games": 100,
+          "guardrail_exit": 0,
+          "band": 0.15,
+          "winner_changes_from_parent": 0,
+          "length_changes_from_parent": 1,
+          "baseline_sha256": "5c14af61d455068527ed2032857192f849eb854b7e0bf4793d475e2974ab262a",
+          "baseline_updated": false
+        },
+        "balance_changes": [
+          {
+            "scenario_seed": "Reconquest of Gaul|1",
+            "parent": {
+              "winner": "Romans",
+              "cards": 59
+            },
+            "repaired": {
+              "winner": "Romans",
+              "cards": 46
+            }
+          }
+        ],
+        "bot_and_mixed_seeds": [
+          21,
+          22,
+          23,
+          24
+        ],
+        "balance_seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "card_edition": "legacy",
+        "hash_seeds": [
+          0,
+          987
+        ]
+      },
+      "compatibility": "Existing Colony names and saved Regions remain valid. Exact Seize plans must exclude Razed Cities. Germanic Horse retains its saved Capability and per-Command choice when Stalwart suppresses extra Losses to Germans."
     }
   ]
 }

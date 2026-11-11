@@ -47,7 +47,7 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region,
+    get_adjacent, get_playable_regions, get_tribes_in_region_for_state,
     get_region_group, is_city_tribe,
 )
 from fs_bot.bots.bot_common import (
@@ -1006,7 +1006,7 @@ def node_v_rally(state):
             continue
         if count_pieces(state, region, ARVERNI, ALLY) < 1:
             continue
-        for tribe in get_tribes_in_region(region, scenario):
+        for tribe in get_tribes_in_region_for_state(state, region):
             tribe_info = state["tribes"].get(tribe, {})
             if (tribe_info.get("allied_faction") == ARVERNI
                     and is_city_tribe(tribe)):
@@ -1535,7 +1535,7 @@ def _check_entreat(state, scenario, *, allowed_regions=None):
                 continue
             citadel_here = (
                 count_pieces(state, region, target_faction, CITADEL) > 0)
-            tribes = get_tribes_in_region(region, scenario)
+            tribes = get_tribes_in_region_for_state(state, region)
             # Cap Ally targets at the number of Ally DISCS in the Region: more
             # allied tribes than Ally pieces (the surplus held by Citadels)
             # would otherwise emit a replace_ally per tribe and overrun the
@@ -1617,7 +1617,7 @@ def _check_entreat(state, scenario, *, allowed_regions=None):
                     continue
                 citadel_here = (
                     count_pieces(state, region, target_faction, CITADEL) > 0)
-                tribes = get_tribes_in_region(region, scenario)
+                tribes = get_tribes_in_region_for_state(state, region)
                 ally_taken = 0
                 for tribe in tribes:
                     if ally_taken >= ally_pieces:
@@ -1711,7 +1711,7 @@ def node_v_quarters(state):
             continue
         # Check for Ally or Citadel
         has_ally = False
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes:
             if state["tribes"].get(tribe, {}).get("allied_faction") == ARVERNI:
                 has_ally = True

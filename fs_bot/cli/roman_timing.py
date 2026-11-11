@@ -14,7 +14,7 @@ def collect_build(state, faction, stdin, stdout, *, pending=None):
         validate_build_region, build_fort, build_subdue, build_place_ally,
     )
     from fs_bot.engine.action_validation import command_parts, command_regions
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.map.map_data import get_tribes_in_region_for_state
     from fs_bot.cards.capabilities import is_capability_active
     sim = planning_copy(state)
     view = HumanTurnDisplay(stdout)
@@ -56,7 +56,7 @@ def collect_build(state, faction, stdin, stdout, *, pending=None):
                 if legal(build_fort, region):
                     options.append(('Place a Fort', region))
             else:
-                for tribe in get_tribes_in_region(region, sim['scenario']):
+                for tribe in get_tribes_in_region_for_state(sim, region):
                     owner = sim['tribes'][tribe].get('allied_faction')
                     if key == 'subdue' and owner not in (None, faction):
                         if legal(build_subdue, region, tribe, owner):

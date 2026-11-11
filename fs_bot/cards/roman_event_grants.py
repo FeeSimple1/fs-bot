@@ -11,7 +11,7 @@ from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, remove_piece
 from fs_bot.commands.seize import count_dispersed_on_map, validate_seize_region
 from fs_bot.engine.free_actions import consult_free_action, execute_free_action_plan
-from fs_bot.map.map_data import get_adjacent_for_state, get_tribes_in_region
+from fs_bot.map.map_data import get_adjacent_for_state, get_tribes_in_region_for_state
 
 SEIZE_GRANT = '_roman_event_seize_grant'
 
@@ -62,10 +62,9 @@ def command_request(state, card_id, command):
 
 def subdued_tribes(state, region):
     """All physical choices, even when fewer markers than Tribes remain."""
-    return [tribe for tribe in get_tribes_in_region(region, state['scenario'])
+    return [tribe for tribe in get_tribes_in_region_for_state(state, region)
             if state['tribes'][tribe].get('allied_faction') is None
-            and state['tribes'][tribe].get('status') not in
-            (rc.DISPERSED, rc.DISPERSED_GATHERING)]
+            and state['tribes'][tribe].get('status') is None]
 
 
 @contextmanager

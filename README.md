@@ -144,16 +144,16 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The [third comparison's third repair batch](docs/reviews/third-comparison-batch3-2026-11-10.md)
-repairs Consuetudine, Colony, Migration, Harudes, and Nasua & Cimberius. All
-**9,582 tests pass**, including 60 new cases. Twenty audited bot games are clean;
-twenty mixed-player cases match across hash seeds with replay, zero hard findings
-and four soft partial plans. The unchanged 100-game balance baseline passes
-its existing 15-point band.
+The [third comparison's final repair batch](docs/reviews/third-comparison-batch4-2026-11-10.md)
+fixes Colony Tribe handling, Razed City protection, and Stalwart's cancellation
+of Germanic Horse against Germans. All **9,686 tests pass**, including 104 new
+cases. Twenty audited bot games are clean, and twenty mixed-player cases match
+across hash seeds with replay and zero hard findings. The 100-game balance
+check passes the unchanged 15-point band, with no winner changes from the parent.
 
 The [third-audit ledger](docs/reviews/comparison-audit-round3-2026-11-10.json)
-records **12 of 15 groups repaired (80%), with 3 remaining** after the original
-50 and next 21 findings were repaired. Earlier repair reports and dated
+records **all 15 groups repaired** after the original 50 and next 21 findings
+were repaired. Earlier repair reports and dated
 checkpoints below retain their original measurements.
 
 The [first small audit repairs](docs/reviews/cheap-fixes-2026-10-29.md) close

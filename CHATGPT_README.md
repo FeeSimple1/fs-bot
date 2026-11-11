@@ -348,6 +348,12 @@ For current validation and the reports for each revision, see
   distinction affects later Ambush choices.
 
 
+Colony targets use the exact saved Tribe name and Region in Seize, Build,
+Entreat, Acco and Procillus plans. Trade and Belgic scoring include the Colony
+under the ordinary status and Control rules. Seize cannot overwrite Sacking's
+permanent Razed marker or earn ordinary Forage from that City. Stalwart
+cancels Germanic Horse's additional Losses against Germans in both directions.
+
 The [third comparison's Event repairs](docs/reviews/third-comparison-batch3-2026-11-10.md)
 require Harudes's attainable four Warbands and one Settlement before their Raid,
 and Migration's possible Ally after movement. Terminal choices use the live

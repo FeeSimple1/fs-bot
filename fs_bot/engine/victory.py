@@ -55,7 +55,7 @@ from fs_bot.rules_consts import (
 from fs_bot.board.pieces import count_pieces, count_on_map
 from fs_bot.board.control import get_controlled_regions, is_controlled_by
 from fs_bot.map.map_data import (
-    get_tribes_in_region, get_control_value, get_playable_regions,
+    get_region_for_tribe_for_state, get_control_value, get_playable_regions,
     ALL_REGION_DATA,
 )
 
@@ -253,7 +253,7 @@ def _calculate_belgic_control_value(state):
         if status in (MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
                       MARKER_RAZED):
             if tribe_name not in SUEBI_TRIBES:
-                tribe_region = TRIBE_TO_REGION.get(tribe_name)
+                tribe_region = get_region_for_tribe_for_state(state, tribe_name)
                 if tribe_region in belgic_regions:
                     bcv -= 1
 

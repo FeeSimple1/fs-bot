@@ -38,6 +38,13 @@ surviving placed Warbands' Raid. Shaded Migration requires an Ally at its
 destination whenever one can be placed. Its Ally choice follows the movement
 and reclamation window; movement still resolves if placement is impossible.
 
+The Colony counts as a Tribe in its recorded Region for Seize, Build, Entreat,
+Trade, replacement Events, and Belgic Control Value. Menus offer its actual
+name alongside the printed Tribes. A City Razed by Sacking earns no Seize
+Forage and cannot be Dispersed again; it stays Razed through Spring.
+Stalwart cancels Germanic Horse's extra Losses to Germans on both Attack
+and Counterattack, while the Capability retains its effects against others.
+
 For **March (between hops or groups)**, choose the routes and groups, then
 select the pause. The Special Activity choices use a preview of the board
 at that step. Live decisions before the pause can change the pieces that

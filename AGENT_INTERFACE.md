@@ -2271,6 +2271,21 @@ A changed board or unrelated request cannot use that path. New decisions
 continue using exact physical choices.
 
 
+## Colony, Razed Cities, and Stalwart (third comparison, Batch 4)
+
+Card 71's Colony is a Tribe identified by its saved name and `region` field.
+Seize's `details.disperse_tribes`, Build's `allies`/`subdue` entries, and Entreat's
+selected Ally entries accept that identity in its actual Region. The assistant
+and terminal offer it alongside the printed circles. A Colony has no City
+upgrade or printed faction restriction. Trade, Belgic Control Value, shaded
+Acco and unshaded Procillus apply the ordinary Tribe rules to it as well.
+
+Razed Cities are already Dispersed: Seize neither earns their ordinary Forage
+nor replaces their permanent marker. A refused exact dispersal rolls back the
+action. The marker survives successive Spring phases. Stalwart cancels both
+sides of Germanic Horse when they would increase Losses to Germans, including
+Counterattack; the owner's stored Capability and chosen Region stay intact.
+
 ## Printed Event completion (third comparison, Batch 3)
 
 Shaded Harudes (A29) uses `placements` entries naming German `Warband` or

@@ -41,7 +41,7 @@ from fs_bot.board.pieces import (
 )
 from fs_bot.board.control import is_controlled_by
 from fs_bot.map.map_data import (
-    is_adjacent, get_tribes_in_region, get_playable_regions,
+    is_adjacent, get_tribes_in_region_for_state, get_playable_regions,
 )
 from fs_bot.commands.common import CommandError
 from fs_bot.commands.rally import (has_supply_line, supply_agreement_scope,
@@ -318,7 +318,7 @@ def _trade(state, agreements, roman_agreed, *, allowed_regions, trade_region, ch
 
         # Where Aedui Control: Subdued Tribes
         if is_controlled_by(state, region, AEDUI):
-            tribes = get_tribes_in_region(region, scenario)
+            tribes = get_tribes_in_region_for_state(state, region)
             for tribe in tribes:
                 tribe_info = state["tribes"].get(tribe, {})
                 allied_faction = tribe_info.get("allied_faction")

@@ -52,7 +52,7 @@ from fs_bot.board.control import (
     calculate_control,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_tribes_in_region, is_city_tribe,
+    get_adjacent, get_tribes_in_region_for_state, is_city_tribe,
     ALL_REGION_DATA, get_region_data, get_playable_regions,
 )
 from fs_bot.commands.common import CommandError, _is_devastated, _is_intimidated
@@ -331,7 +331,7 @@ def _arverni_phase_rally(state, at_war_regions):
     # Step 1: Replace City Allies with Citadels — A6.2.1
     city_candidates = []
     for region in valid_regions:
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes:
             if not is_city_tribe(tribe):
                 continue

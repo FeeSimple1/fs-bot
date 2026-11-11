@@ -322,6 +322,25 @@ def get_tribes_in_region(region, scenario):
     return ALL_REGION_DATA[region].get_tribes(scenario)
 
 
+def get_region_for_tribe_for_state(state, tribe):
+    """Locate printed Tribes and Card 71's player-named Colony on this board."""
+    info = state.get("tribes", {}).get(tribe) or {}
+    return info.get("region") or TRIBE_TO_REGION.get(tribe)
+
+
+def get_tribes_in_region_for_state(state, region):
+    """Printed map order followed by the Event-created Tribe circles (§71).
+
+    Keep the scenario-only query for setup/static-map consumers. Live rules,
+    menus and non-player plans must also see the Colony's recorded Region.
+    A Colony is not a City and gains no printed faction stacking restriction.
+    """
+    printed = get_tribes_in_region(region, state["scenario"])
+    dynamic = tuple(name for name, info in state.get("tribes", {}).items()
+                    if name not in printed and info.get("region") == region)
+    return printed + dynamic
+
+
 def get_playable_regions(scenario, capabilities=None):
     """Get all playable regions for a scenario.
 

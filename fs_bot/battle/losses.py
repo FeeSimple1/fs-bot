@@ -15,7 +15,7 @@ Reference:
 import math
 
 from fs_bot.rules_consts import (
-    EVENT_UNSHADED,
+    EVENT_UNSHADED, EVENT_SHADED, MARKER_ABATIS,
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS,
@@ -69,7 +69,6 @@ def _a33_motivation_active(state):
 def defender_abatis_active(state, region, attacker, defender):
     """Whether the defending Abatis acts as a Fort, including A31."""
     from fs_bot.cards.capabilities import is_capability_active
-    from fs_bot.rules_consts import EVENT_SHADED, MARKER_ABATIS
 
     if state.get("markers", {}).get(region, {}).get(MARKER_ABATIS) != defender:
         return False
@@ -77,6 +76,22 @@ def defender_abatis_active(state, region, attacker, defender):
             "card_A31_cancel_german_benefits"):
         return False
     return attacker != GERMANS or not is_capability_active(state, "A31", EVENT_SHADED)
+
+
+def legio_x_final_losses(state, region, losses, inflicting_faction, taking_faction):
+    """Apply unshaded Legio X after rounding in Attack or Counterattack."""
+    from fs_bot.cards.capabilities import is_capability_active
+
+    participants = (inflicting_faction, taking_faction)
+    if ROMANS not in participants or not is_capability_active(state, 15, EVENT_UNSHADED):
+        return losses
+    # Both the extra Losses and the Roman reduction harm the Germans.
+    if GERMANS in participants and is_capability_active(state, 'A31', EVENT_SHADED):
+        return losses
+    if (get_leader_in_region(state, region, ROMANS) is None
+            or not count_pieces(state, region, ROMANS, LEGION)):
+        return losses
+    return losses + 2 if inflicting_faction == ROMANS else max(0, losses - 1)
 
 
 def calculate_losses(state, region, attacking_faction, defending_faction,
@@ -306,20 +321,8 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
                 and count_pieces(state, region, GERMANS) > 0):
             total += 1
 
-    # Round down — §3.2.4: "round any fractions down"
-    total = int(total)
-
-    # Card 15 unshaded: Battles with Roman Leader AND Legion — final
-    # Losses Romans inflict +2; final Losses against Romans -1.
-    if is_capability_active(state, 15, EVENT_UNSHADED):
-        if (get_leader_in_region(state, region, ROMANS) is not None
-                and count_pieces(state, region, ROMANS, LEGION) > 0):
-            if enemy_faction == ROMANS:
-                total += 2
-            if defending_faction == ROMANS:
-                total = max(0, total - 1)
-
-    return total
+    # Round down before applying the final Legio X adjustment (§3.2.4, 15).
+    return legio_x_final_losses(state, region, int(total), enemy_faction, defending_faction)
 
 
 def _count_all_flippable(faction_pieces, piece_type):
@@ -433,17 +436,6 @@ def resolve_losses(state, region, faction, num_losses, *,
     arverni_legions_alive = card30_arverni_legion_warbands(state, region, faction)
     card30_active = arverni_legions_alive > 0
 
-    # Card A64 Abatis + errata-thread Clarification 1: "the Abatis marker
-    # absorbs Losses and can thereby be removed in the same way as a Fort
-    # when defending." Same last-priority tier as Forts; NP default spends
-    # the marker before real hard pieces. Only the Attack step's defender
-    # qualifies ("When you defend") — abatis_defender is set by that call.
-    from fs_bot.rules_consts import MARKER_ABATIS as _MAB_RL
-    _abatis_available = (
-        abatis_defender
-        and state.get("markers", {}).get(region, {}).get(_MAB_RL)
-        == faction)
-
     remaining = num_losses
     while remaining > 0:
         from fs_bot.battle import elite
@@ -457,32 +449,9 @@ def resolve_losses(state, region, faction, num_losses, *,
         # Build the priority list of pieces to take losses
         piece_order = _build_loss_priority(
             state, region, faction, is_retreat=is_retreat,
-            loss_order=loss_order,
+            loss_order=loss_order, abatis_defender=abatis_defender,
         )
         piece_order = _current_loss_tier(piece_order, is_retreat=is_retreat)
-
-        _hard_tier = (ALLY, CITADEL, FORT)
-        if _abatis_available and (
-                not piece_order or piece_order[0][0] in _hard_tier
-                or is_retreat):
-            # The marker absorbs like a Fort: a die roll per assigned
-            # Loss (1-3 removes it); Ambush auto-removes (§4.3.3
-            # semantics for hard targets) unless Caesar counterattacks.
-            if not is_ambush or caesar_counterattacks:
-                roll = state["rng"].randint(DIE_MIN, DIE_MAX)
-                removed = roll <= LOSS_ROLL_THRESHOLD
-                result["rolls"].append(("Abatis", roll, removed))
-            else:
-                removed = True
-            remaining -= 1
-            if removed:
-                state["markers"][region].pop(_MAB_RL, None)
-                _abatis_available = False
-                result["removed"].append(("Abatis", 1))
-                result["losses_taken"] += 1
-            else:
-                result["losses_absorbed"] += 1
-            continue
 
         if not piece_order:
             # No more pieces to remove — stop
@@ -491,14 +460,22 @@ def resolve_losses(state, region, faction, num_losses, *,
         # Take the first available piece from the priority list (default), or
         # let a human/LLM agent choose which present piece absorbs this Loss.
         chosen = piece_order[0]
-        if loss_order is None:
-            from fs_bot.engine.agent import consult_agent, LOSS_ORDER
-            _resp = consult_agent(state, faction, {
+        if loss_order is None and piece_order != [(MARKER_ABATIS, None)]:
+            from fs_bot.engine.agent import consult_agent, LOSS_ORDER, ABATIS_LOSS_STAGE
+            request = {
                 "kind": LOSS_ORDER, "region": region, "faction": faction,
                 "num_losses": remaining, "is_retreat": is_retreat,
-                "is_ambush": is_ambush, "pieces": list(piece_order)})
-            if _resp:
-                for preference in _resp:
+                "is_ambush": is_ambush, "pieces": list(piece_order),
+            }
+            if chosen[0] != SETTLEMENT and any(entry[0] == MARKER_ABATIS for entry in piece_order):
+                from fs_bot.engine import action_windows, resource_transfers
+                phase = state.get(action_windows.SCOPE, {}).get('phase', resource_transfers.SEQUENCE)
+                request['window'] = dict(phase=phase, stage=ABATIS_LOSS_STAGE,
+                                         card=state.get('current_card'), region=region,
+                                         num_losses=remaining)
+            response = consult_agent(state, faction, request)
+            if response:
+                for preference in response:
                     matched = next((entry for entry in piece_order
                                     if legacy_loss_choice_matches(preference, entry)), None)
                     if matched is not None:
@@ -509,7 +486,7 @@ def resolve_losses(state, region, faction, num_losses, *,
         physical_tribe = chosen[3] if piece_type == ALLY and len(chosen) >= 4 else None
 
         # Determine if this is a hard target that gets a die roll
-        is_hard_target = piece_type in HARD_TARGET_PIECES
+        is_hard_target = piece_type in HARD_TARGET_PIECES or piece_type == MARKER_ABATIS
         # Card 30 shaded: a surviving Arverni "Legion" Warband absorbs via the
         # §3.2.4 save roll, just like a Legion (and may be targeted repeatedly).
         is_legion_warband = (piece_type == WARBAND and
@@ -569,7 +546,8 @@ def resolve_losses(state, region, faction, num_losses, *,
             _remove_battle_piece(state, region, faction,
                                  piece_type, piece_state, physical_owner,
                                  tribe=physical_tribe)
-            result["rolls"].append((piece_type, None, True))
+            if piece_type != MARKER_ABATIS:
+                result["rolls"].append((piece_type, None, True))
             result["removed"].append((piece_type, 1))
             result["losses_taken"] += 1
         else:
@@ -592,6 +570,9 @@ def resolve_losses(state, region, faction, num_losses, *,
     return result
 
 
+_STATIC_LOSS_TYPES = (ALLY, CITADEL, FORT, SETTLEMENT, MARKER_ABATIS)
+
+
 def _current_loss_tier(piece_order, *, is_retreat=False):
     """Restrict a live casualty choice to the mandatory current tier.
 
@@ -600,14 +581,13 @@ def _current_loss_tier(piece_order, *, is_retreat=False):
     conversions and Diviciacus's last-piece restriction. The full priority
     builder also serves projections that must see later tiers.
     """
-    static_types = (ALLY, CITADEL, FORT, SETTLEMENT)
     first_tier = [entry for entry in piece_order
-                  if (entry[0] in static_types) == is_retreat]
+                  if (entry[0] in _STATIC_LOSS_TYPES) == is_retreat]
     return first_tier or piece_order
 
 
 def _build_loss_priority(state, region, faction, *, is_retreat=False,
-                         loss_order=None):
+                         loss_order=None, abatis_defender=False):
     """Build the ordered list of pieces eligible to take Losses.
 
     Returns a list of (piece_type, piece_state_or_None) tuples in order
@@ -636,7 +616,8 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
         # Rebuild after every Loss: a removed piece or a later tier cannot
         # absorb it, and A1.4/A3.2.4 keeps Diviciacus last of all.
         legal = _current_loss_tier(
-            _build_loss_priority(state, region, faction, is_retreat=is_retreat),
+            _build_loss_priority(state, region, faction, is_retreat=is_retreat,
+                                 abatis_defender=abatis_defender),
             is_retreat=is_retreat)
         for preferred in loss_order:
             for candidate in legal:
@@ -784,6 +765,15 @@ def _build_loss_priority(state, region, faction, *, is_retreat=False,
     from fs_bot.battle.elite import loss_choices as elite_losses
     result = elite_losses(state, region, faction, result)
     result = _human_loss_identities(state, region, faction, result)
+    # A64 makes the defending marker a Fort in the current tier. Preserve
+    # the default, including the existing Settlement choice when standing.
+    if (abatis_defender and state.get('markers', {}).get(region, {}).get(MARKER_ABATIS)
+            == faction):
+        first_static = next((i for i, entry in enumerate(result)
+                             if entry[0] in _STATIC_LOSS_TYPES), None)
+        after_settlement = (not is_retreat and first_static is not None
+                            and result[first_static][0] == SETTLEMENT)
+        result.insert(first_static + 1 if after_settlement else 0, (MARKER_ABATIS, None))
     # Humans choose among the offered pieces, so putting Diviciacus last
     # does not enforce "last possible piece". Do not offer him at all until
     # every other eligible piece, including cooperating Auxilia, is gone.
@@ -808,14 +798,19 @@ def legacy_loss_choice_matches(preference, candidate):
 
 
 def compatible_loss_request(current, saved):
-    """Only the added ordinary physical identities may differ from old prompts."""
+    """Match older prompts to the same physical casualties and board."""
     if (not isinstance(saved, dict) or saved.get('kind') != 'loss_order'
             or {key: value for key, value in current.items() if key != 'pieces'} !=
                {key: value for key, value in saved.items() if key != 'pieces'}):
         return False
     old, new = saved.get('pieces'), current.get('pieces')
-    return (isinstance(old, (list, tuple)) and isinstance(new, (list, tuple))
-            and len(old) == len(new) and all(
+    if not isinstance(old, (list, tuple)) or not isinstance(new, (list, tuple)):
+        return False
+    if new and new[0][0] == SETTLEMENT and len(new) == len(old) + 1:
+        # The standing Settlement prompt already existed before the marker
+        # became an alternative. Its recorded response is still legal.
+        new = [entry for entry in new if entry[0] != MARKER_ABATIS]
+    return (len(old) == len(new) and all(
                 legacy_loss_choice_matches(before, tuple(after))
                 for before, after in zip(old, new)))
 
@@ -923,7 +918,9 @@ def _remove_battle_piece(state, region, faction, piece_type, piece_state,
     state["tribes"] (the dict is authoritative for victory and must stay in
     sync with on-map pieces).
     """
-    if piece_type == LEGION:
+    if piece_type == MARKER_ABATIS:
+        state['markers'][region].pop(MARKER_ABATIS)
+    elif piece_type == LEGION:
         remove_piece(state, region, faction, LEGION, 1, to_fallen=True,
                      physical_owner=physical_owner)
     elif piece_type in FLIPPABLE_PIECES:

@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 6,
-  "open": 5,
+  "closed": 8,
+  "open": 3,
   "severity_counts": {
     "high": 7,
     "medium": 4
@@ -681,7 +681,9 @@
       "validation": "All before/after inventory and structural validations return empty lists. Public action executes with no errors. Witness assertions pass at bd30d522.",
       "limits": "Confirmed +2 Attack modifier only. The same code shows ungated Roman -1 and Counterattack consumers but those additional manifestations are not separately counted; Balearic prefire timing was not resolved or counted.",
       "repair_direction": "Apply source-scoped A31 cancellation to Legio X in live and forecast calculators, retaining ordinary non-German Battles and capability lifecycle; add public regression controls.",
-      "status": "open",
+      "status": "closed",
+      "repair_batch": 4,
+      "repair_report": "fifth-comparison-batch4-2026-11-11.md",
       "partition": "battle",
       "source_refs": [
         {
@@ -793,7 +795,9 @@
       "validation": "All before/after inventory and structure validators return empty lists. Both authored Battles validate and execute without errors. Recorded prompts demonstrate the omitted choice and premature Leader choice.",
       "limits": "Controlled legal positions rather than sampled natural games. No claim that all Abatis interactions were reviewed; no new Fort threshold or prefire timing ruling proposed.",
       "repair_direction": "Integrate defending Abatis as a legal physical casualty candidate within mandatory tiers and Diviciacus last-possible rule, with human choice and replay support; preserve current NP default where source permits.",
-      "status": "open",
+      "status": "closed",
+      "repair_batch": 4,
+      "repair_report": "fifth-comparison-batch4-2026-11-11.md",
       "partition": "battle",
       "source_refs": [
         {

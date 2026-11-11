@@ -12,6 +12,7 @@ import json
 import sys
 
 from fs_bot.engine.agent import RETREAT, RETREAT_DISPOSITION, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
+from fs_bot.engine.agent import ABATIS_LOSS_STAGE
 from fs_bot.engine import action_windows, resource_transfers
 from fs_bot.engine.march_choices import MARCH_DROPOFF, validate_dropoffs
 from fs_bot.engine.march_interruption import PAUSE as MARCH_SA_PAUSE
@@ -633,13 +634,15 @@ class SeatSession:
     def _skip_added_choice(self, state, request):
         """Keep the old default when a saved decision already follows it."""
         kind = request['kind']
-        if kind in (resource_transfers.KIND, MARCH_DROPOFF):
+        abatis_choice = (kind == LOSS_ORDER
+                         and request.get('window', {}).get('stage') == ABATIS_LOSS_STAGE)
+        if kind in (resource_transfers.KIND, MARCH_DROPOFF) or abatis_choice:
             saved, _ = self._next_saved_request()
             if saved.get('kind'):
                 return (saved['kind'] != kind or saved.get('faction') != request['faction']
                         or saved.get('window') != request['window'])
             return (self._window_replay_before is not None
-                    and request['window']['phase'] == resource_transfers.SEQUENCE
+                    and (abatis_choice or request['window']['phase'] == resource_transfers.SEQUENCE)
                     and action_windows.replay_position(state) < self._window_replay_before)
         later = ('spring_leader', 'interlude_expedition', 'interlude_marker')
         if kind == 'interlude_reduction':

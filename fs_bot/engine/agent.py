@@ -171,6 +171,7 @@ can retain their all-or-none ``{"retreat":bool,"region":...}`` contract.
 RETREAT = "retreat"
 RETREAT_DISPOSITION = "retreat_disposition"
 LOSS_ORDER = "loss_order"
+ABATIS_LOSS_STAGE = "battle_abatis_loss"
 AGREEMENT = "agreement"
 HARASSMENT_LOSS = "harassment_loss"
 

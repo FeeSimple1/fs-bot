@@ -39,6 +39,7 @@ from fs_bot.engine.game_engine import (
 )
 from fs_bot.state import serialize
 from fs_bot.engine import action_windows, resource_transfers
+from fs_bot.engine.agent import LOSS_ORDER, ABATIS_LOSS_STAGE
 from fs_bot.engine.march_choices import MARCH_DROPOFF
 from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.cli.dispatcher import make_decision_func, maybe_pause
@@ -520,10 +521,12 @@ def main(argv=None, stdin=None, stdout=None):
             if state_ is not state:
                 return None
             kind = request.get('kind')
-            if kind in (resource_transfers.KIND, MARCH_DROPOFF):
+            abatis_choice = (kind == LOSS_ORDER
+                             and request.get('window', {}).get('stage') == ABATIS_LOSS_STAGE)
+            if kind in (resource_transfers.KIND, MARCH_DROPOFF) or abatis_choice:
                 window = request['window']
                 saved_sequence = (replay_before is not None
-                                  and window['phase'] == resource_transfers.SEQUENCE
+                                  and (abatis_choice or window['phase'] == resource_transfers.SEQUENCE)
                                   and (replay_attempt['entry'] is not None
                                        or action_windows.replay_position(state_) < replay_before))
                 if saved_sequence or replay_reactive or replay_decisions:

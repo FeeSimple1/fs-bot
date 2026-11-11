@@ -46,7 +46,7 @@ from fs_bot.cards.capabilities import is_capability_active
 from fs_bot.battle.losses import (calculate_losses, resolve_losses,
                                   _remove_battle_piece,
                                   card30_arverni_legion_warbands,
-                                  defender_abatis_active)
+                                  defender_abatis_active, legio_x_final_losses)
 
 
 from fs_bot.engine.diviciacus import defensive_battle
@@ -475,11 +475,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
 
     # Card 27 unshaded: "Arverni Battle each Region inflicts 1 fewer
     # Defender Loss (before any halving)" — Arverni attack step only.
-    from fs_bot.rules_consts import (ARVERNI as _ARV, ROMANS as _RO,
-                                     EVENT_UNSHADED as _EUN2,
-                                     LEGION as _LG2)
-    if (attacking_faction == _ARV
-            and is_capability_active(state, 27, _EUN2)):
+    if attacking_faction == ARVERNI and is_capability_active(state, 27, EVENT_UNSHADED):
         total = max(0.0, total - 1)
 
     # Card 59 shaded: the owner doubles enemy Losses in the flagged
@@ -497,21 +493,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
             or _abatis_active or _motivated):
         total = total / 2
 
-    total = int(total)
-
-    # Card 15 unshaded: "In Battles that have Roman Leader and Legion,
-    # final Losses against Romans -1 and final Losses that Romans
-    # inflict +2" (Tip: fully calculate first, then subtract or add).
-    if is_capability_active(state, 15, _EUN2):
-        _ro_leader = get_leader_in_region(state, region, _RO) is not None
-        _ro_legion = count_pieces(state, region, _RO, _LG2) > 0
-        if _ro_leader and _ro_legion:
-            if attacking_faction == _RO:
-                total += 2
-            if defending_faction == _RO:
-                total = max(0, total - 1)
-
-    return total
+    return legio_x_final_losses(state, region, int(total), attacking_faction, defending_faction)
 
 
 def _count_all_flippable(faction_pieces, piece_type):

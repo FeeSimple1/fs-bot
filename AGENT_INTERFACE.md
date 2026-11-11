@@ -646,10 +646,13 @@ Requests can include additional context. Copy offered values rather than
 inventing pieces, regions, owners, or internal grant flags.
 
 For each Battle Loss, `LOSS_ORDER.pieces` contains only the currently legal
-tier: Allies/Forts/Citadels/Settlements first when retreating, last otherwise.
-Diviciacus remains the last possible casualty. Later losses rebuild the legal
-options, including when a hard piece survives its die roll. Ordinary human
-Warbands/Auxilia carry exact visibility, and Ally discs name their Tribe.
+tier. Allies, Forts, Citadels, Settlements, and defending Abatis go first
+when retreating and last otherwise. An offered Abatis is `["Abatis", null]`
+and uses the Fort saving roll. It can absorb multiple Losses while it stays
+in play. Diviciacus becomes eligible after the marker and other eligible
+casualties are gone. The engine rebuilds the offered pieces after each Loss.
+Ordinary human Warbands/Auxilia carry exact visibility, and Ally discs name
+their Tribe.
 When `LOSS_ORDER.is_ambush` is true, an assigned Loss removes a hard piece
 without a saving roll, even behind a Fort or Citadel. A successful Caesar
 test restores saving rolls and clears this flag for the Roman defender.
@@ -658,7 +661,7 @@ test restores saving rolls and clears this flag for the Roman defender.
 |---|---|---|
 | `RETREAT` | `stage:"declare", region, attacker, defender, is_ambush, legal_regions` | `{"retreat":bool}`. Retreat may be declared with an empty `legal_regions`. |
 | `RETREAT_DISPOSITION` | `region, attacker, defender, pieces, legal_regions, can_stay_leader, max_hidden_warbands, default, window` | `{"region":offered_region_or_null,"stay_leader":bool,"stay_hidden_warbands":n}` or explicit default |
-| `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces` | an ordered subset of the supplied entries; borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag; copy entries intact |
+| `LOSS_ORDER` | `region, faction, num_losses, is_retreat, is_ambush, pieces`, plus `window` when Abatis introduces a prompt | an ordered subset of the supplied entries. Borrowed forces may add `physical_owner`, and Elite counters may carry a fourth tag. Copy entries intact. |
 | `HARASSMENT_LOSS` | `region, harasser, loss_index, num_losses, phase, options`; March carries `departing_pieces`, Seize carries `pieces` | `{"choice": option}` from `options`; see the phases below |
 | `drought_loss` | `card_id:49, faction, region, targets` exact physical piece objects | `{"piece":<one offered target>}` or explicit default; no decline |
 | `event_up_to` | `card_id, shaded, faction, max_count`; A40 `legal_regions`; A51 `region, available` visibility/count cohorts; A60 `region, available_count` | A40 `{"regions":[...]}`; A51 `{"removals":[{"piece_state":...,"count":n},...]}`; A60 `{"count":n}`; or explicit default |

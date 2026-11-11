@@ -464,6 +464,10 @@ The Arverni replacement follows Available-piece and stacking limits (§4.3.1).
 Seize and Entreat cannot select a Region twice. Battle casualty menus show
 only the legally eligible group of pieces for the current loss: static pieces
 first when retreating and after other pieces otherwise, with Diviciacus last.
+Defending Abatis can absorb a Loss with a Fort's saving roll, or you can
+assign the Loss to another eligible piece. Diviciacus waits while the marker
+can still absorb. Stalwart cancels both Legio X adjustments when Rome and
+the Germans Battle, during the Attack and any Counterattack.
 Some exact physical casualty selections remain on the audit backlog.
 
 Recruit and Rally now ask how many Auxilia or Warbands to place. The

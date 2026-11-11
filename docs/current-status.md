@@ -21,6 +21,22 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 11 November fifth comparison repair Batch 4
+
+Stalwart cancels both Legio X Loss adjustments in Roman–German Battles.
+Defending Abatis joins the casualty choices in the Fort tier and can
+keep absorbing Losses while it survives. Diviciacus waits until no other
+casualty can absorb. Old default and new chosen casualties replay exactly
+in the directed assistant sessions.
+[Repair and validation](reviews/fifth-comparison-batch4-2026-11-11.md)
+
+All **9,879 tests pass**. The 120 audited bot games match the parent.
+Twenty mixed-player cases replay identically across two hash seeds with
+zero hard findings. The 100-game balance check passes.
+
+The fifth audit has **8 of 11 repaired, 3 open**.
+[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+
 ### 11 November fifth comparison repair Batch 3
 
 Event-granted March enforces the Britannia crossing restriction when a
@@ -34,8 +50,7 @@ their final boards and winners. Twenty mixed-player cases replay identically
 across both hash seeds with zero hard findings. The 100-game balance check
 passes.
 
-The fifth audit has **6 of 11 repaired, 5 open**.
-[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+This batch brought the total to six repaired findings.
 
 ### 11 November fifth comparison repair Batch 2
 

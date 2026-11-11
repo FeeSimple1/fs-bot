@@ -627,7 +627,7 @@ def _harvest_earnings(state):
     which A7.2 defines as Subdued + Dispersed + Roman Allies MINUS
     Settlements — the subtraction lives in calculate_victory_score.
 
-    Add Resources to each faction, capped at MAX_RESOURCES (45).
+    Keep each Resource total on the 0–45 track (§1.8).
 
     Returns:
         Dict with earnings per faction.
@@ -681,9 +681,9 @@ def _harvest_earnings(state):
 
 
 def _add_resources(state, faction, amount):
-    """Add Resources to a faction, capping at MAX_RESOURCES."""
+    """Apply Harvest earnings while keeping Resources on the track (§1.8)."""
     current = state["resources"].get(faction, 0)
-    state["resources"][faction] = min(current + amount, MAX_RESOURCES)
+    state["resources"][faction] = max(0, min(current + amount, MAX_RESOURCES))
 
 
 # ============================================================================

@@ -33,6 +33,14 @@ def np_event_available(state, card_id, faction, shaded):
     if card_id == 68 and shaded:
         from fs_bot.cards.remi_event_effect import np_available
         return np_available(state, faction)
+    if card_id == 22 and shaded:
+        from fs_bot.engine.execute import _derive_card_22
+        return bool(_derive_card_22(state, faction, shaded))
+    if card_id == 'A64':
+        from fs_bot.engine.execute import _derive_card_A64
+        return bool(_derive_card_A64(state, faction, shaded))
+    if card_id == 59 and shaded:
+        return faction in rc.GALLIC_FACTIONS
     from fs_bot.cards.event_piece_plans import supported as exact_piece_plan
     if exact_piece_plan(card_id, shaded):
         from fs_bot.cards.event_piece_plans import np_available

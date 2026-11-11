@@ -21,10 +21,29 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November fourth comparison repair Batch 1
+
+The [first repair batch](reviews/fourth-comparison-batch1-2026-11-10.md)
+closes six groups. Shaded Hostages binds both pieces to the chosen Tribe.
+Celtic Rites requires a Gallic selection and applies each loss once. Shaded
+Germanic Horse goes to its Gallic executor. Abatis requires a qualifying
+Region when available. Bellovaci checks the troop owner and type together.
+Harvest keeps Resources within the printed 0–45 track.
+
+All **9,722 tests pass**, including 36 added cases. The same cases produce
+34 failures and two passing controls on the parent. Twenty second-edition
+bot games are clean. Twenty mixed-player cases match across hash seeds with
+replay, zero hard findings, and one soft partial plan. The 100-game balance
+check passes its existing 15-point band. The report traces the two winner
+changes from the parent to Hostages and Celtic Rites.
+
+The [fourth-audit ledger](reviews/comparison-audit-round4-2026-11-10.json)
+records **6 of 16 repaired, 10 open**.
+
 ### 10 November fourth comparison audit
 
 The [fourth Liberty or Death comparison](reviews/comparison-audit-round4-2026-11-10.md)
-confirms **16 new open repair groups, 11 high and 5 medium priority**. These
+confirmed **16 repair groups, 11 high and 5 medium priority**. These
 cover Event target/beneficiary validation, free-action scope and choices,
 Battle and bot forecasts, negative Harvest Resources, and Interlude deck/Tribe
 conversion. Earlier 50-, 21-, and 15-group ledgers remain fully closed.
@@ -35,7 +54,7 @@ are clean. Twenty mixed-seat cases match across hash seeds with replay, zero
 hard findings, and one soft partial plan. Both matrices use second-edition
 cards and seeds 25–28 in all five scenarios. No gameplay code changed and no
 new balance matrix was run. The report provides a ledger, evidence and repair
-order; the new ledger starts at **0 of 16 repaired**.
+order. All 16 findings were open at the audit revision.
 
 A33 Wailing Women's undefined outnumbering comparison is recorded separately
 in `QUESTIONS.md` and is not counted as a confirmed defect. Existing

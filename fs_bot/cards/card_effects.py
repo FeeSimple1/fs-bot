@@ -1056,36 +1056,37 @@ def execute_card_22(state, shaded=False):
                     place_piece(state, region, executing, replace_type)
                 count_done += 1
     else:
-        # Shaded: Place Gallic Ally + Warband at 1-2 Subdued Tribes
-        # with Roman pieces. Placing an Ally allies that Subdued Tribe to the
-        # placing Faction (place_piece does not track allied_faction).
+        from fs_bot.cards.event_targets import hostages_ally_factions, hostages_tribes
         params = state.get("event_params", {})
         tribes = params.get("target_tribes", [])
         executing = state.get("executing_faction")
-        if not executing:
-            return
-        for tribe_info in _event_entries(state, "22.tribes", tribes[:2]):
-            region = tribe_info.get("region")
-            tribe = tribe_info.get("tribe")
-            faction = tribe_info.get("faction", executing)
-            if not region:
-                continue
-            t_info = state.get("tribes", {}).get(tribe) if tribe else None
-            # Subdued Tribes only — not already Allied and not Dispersed/Razed
-            # (status). Card requires "where Roman pieces".
-            if t_info is not None and (t_info.get("allied_faction") is not None
-                                       or t_info.get("status") is not None):
-                continue
-            if count_pieces(state, region, ROMANS) <= 0:
-                continue
-            # Place the Ally only at a known tribe so the piece and the
-            # tribes dict stay in sync (Q13).
-            if t_info is not None:
+        if (not isinstance(tribes, list) or len(tribes) > 2
+                or any(not isinstance(entry, dict) for entry in tribes)):
+            raise ValueError("Hostages selects one or two Subdued Tribes.")
+        seen = set()
+        for entry in _event_entries(state, "22.tribes", tribes):
+            tribe = entry.get("tribe")
+            if not isinstance(tribe, str) or tribe in seen:
+                raise ValueError("Hostages needs distinct named Tribes.")
+            seen.add(tribe)
+            region = hostages_tribes(state).get(tribe)
+            if region is None or entry.get("region", region) != region:
+                raise ValueError("Hostages needs a Subdued Tribe in its own Region with Roman pieces.")
+            faction = entry.get("faction", executing)
+            wb_faction = entry.get("warband_faction", faction)
+            ally_factions = hostages_ally_factions(state, tribe)
+            if ((ally_factions and faction not in ally_factions)
+                    or ("faction" in entry and faction not in GALLIC_FACTIONS)):
+                raise ValueError("Hostages places a Gallic Ally permitted at the selected Tribe.")
+            if wb_faction not in (*GALLIC_FACTIONS, GERMANS):
+                raise ValueError("Hostages places a Warband of a Faction that has Warbands.")
+            if ally_factions:
                 _ally_tribe(state, tribe, faction)
             _event_step(state, f"22.warband.{tribe}")
-            wb_faction = tribe_info.get("warband_faction", faction)
             if get_available(state, wb_faction, WARBAND) > 0:
                 place_piece(state, region, wb_faction, WARBAND)
+        if not tribes and hostages_tribes(state):
+            raise ValueError("Hostages must select at least one eligible Tribe.")
 
 def execute_card_23(state, shaded=False):
     """Card 23: Sacking — Razed marker / Remove Legion.
@@ -1792,12 +1793,17 @@ def execute_card_46(state, shaded=False):
     params = state.get("event_params", {})
     if not shaded:
         target_factions = params.get("target_factions", [])
-        for fac in target_factions:
-            if fac in GALLIC_FACTIONS:
-                _cap_resources(state, fac, -3)
-                state["eligibility"][fac] = INELIGIBLE
-                # "Ineligible through NEXT card" — persistent.
-                state.setdefault("forced_ineligible", {})[fac] = 1
+        if (not isinstance(target_factions, list) or not target_factions
+                or any(fac not in GALLIC_FACTIONS for fac in target_factions)):
+            raise ValueError("Celtic Rites must select one or more Gallic Factions.")
+        from fs_bot.rules_consts import ARIOVISTUS_SCENARIOS
+        for fac in dict.fromkeys(target_factions):
+            # A1.8 and A5.1.1: automatic Arverni track neither effect.
+            if fac == ARVERNI and state["scenario"] in ARIOVISTUS_SCENARIOS:
+                continue
+            _cap_resources(state, fac, -3)
+            state["eligibility"][fac] = INELIGIBLE
+            state.setdefault("forced_ineligible", {})[fac] = 1
     else:
         from fs_bot.cards.gallic_event_grants import initial_params
         initial_params(state, 46)
@@ -2159,22 +2165,19 @@ def execute_card_59(state, shaded=False):
 
     Source: Card Reference, card 59
     """
-    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
-    activate_capability(state, 59, side)
-    if shaded:
-        # Shaded is owner-scoped ("take this card" / "place near a
-        # Gallic Faction"): event_params["faction"] chooses; default is
-        # the executing Faction when Gallic (the NP reading).
+    if not shaded:
+        activate_capability(state, 59, EVENT_UNSHADED)
+        state.get("capability_owners", {}).pop(59, None)
+        return
+
+    params = state.get("event_params", {}) or {}
+    owner = state.get("executing_faction")
+    if params.get("faction") not in (None, owner):
+        raise ValueError("Shaded Germanic Horse belongs to its Gallic executor.")
+    if owner in GALLIC_FACTIONS:
         from fs_bot.cards.capabilities import set_capability_owner
-        from fs_bot.rules_consts import GALLIC_FACTIONS
-        owner = (state.get("event_params", {}) or {}).get("faction")
-        if owner is not None and owner not in GALLIC_FACTIONS:
-            owner = None  # "a Gallic Faction" — invalid choice ignored
-        ex = state.get("executing_faction")
-        if owner is None and ex in GALLIC_FACTIONS:
-            owner = ex
-        if owner is not None:
-            set_capability_owner(state, 59, owner)
+        activate_capability(state, 59, EVENT_SHADED)
+        set_capability_owner(state, 59, owner)
 
 def execute_card_60(state, shaded=False):
     """Card 60: Indutiomarus — Remove Belgic pieces / Place Belgic+German.
@@ -3661,7 +3664,7 @@ def execute_card_A63(state, shaded=False):
         set_capability_owner(state, "A63", owner)
 
 def execute_card_A64(state, shaded=False):
-    """Card A64: Abatis — Place Abatis marker.
+    """Card A64: Abatis — Place Abatis marker (A5.1.4).
 
     Both sides: Place your Faction's Abatis marker in a Region where
     you have a Warband. Acts as Fort for defense, negates Auxilia
@@ -3669,13 +3672,16 @@ def execute_card_A64(state, shaded=False):
 
     Source: A Card Reference, card A64
     """
+    from fs_bot.cards.event_targets import abatis_regions
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
     region = params.get("region")
-    if region and faction and count_pieces(state, region, faction, WARBAND):
-        markers = state.setdefault("markers", {})
-        region_markers = markers.setdefault(region, {})
-        region_markers[MARKER_ABATIS] = faction
+    regions = abatis_regions(state, faction)
+    if not regions and region is None:
+        return
+    if region not in regions:
+        raise ValueError("Abatis requires a Region with one of your Warbands.")
+    state.setdefault("markers", {}).setdefault(region, {})[MARKER_ABATIS] = faction
 
 def execute_card_A65(state, shaded=False):
     """Card A65: Kinship — Belgae/Germans Battle each other / Swap pieces.
@@ -3762,32 +3768,24 @@ def execute_card_A69(state, shaded=False):
     if not shaded:
         if t_info and region:
             from fs_bot.cards.base_piece_choices import resolve_a69_removals
+            ally_fac = params.get("ally_faction", AEDUI if faction == AEDUI else ROMANS)
+            if ally_fac not in (ROMANS, AEDUI):
+                raise ValueError("Bellovaci places a Roman or Aedui Ally.")
+            selected_owner = params.get("piece_faction", ally_fac)
+            default_type = WARBAND if selected_owner == AEDUI else AUXILIA
+            piece_type = params.get("piece_type", default_type)
+            pfac = params.get("piece_faction", AEDUI if piece_type == WARBAND else ROMANS)
+            if (pfac, piece_type) not in ((ROMANS, AUXILIA), (AEDUI, WARBAND)):
+                raise ValueError("Bellovaci places Roman Auxilia or Aedui Warbands.")
+
             # Remove Belgic Ally — piece and tribes dict together
             if t_info.get("allied_faction") == BELGAE:
                 _unally_tribe(state, TRIBE_BELLOVACI)
             _event_step(state, "A69.remove_warbands")
             resolve_a69_removals(state, params)
             _event_step(state, "A69.ally")
-            # Place Roman/Aedui Ally — the card names those two only.
-            ally_fac = params.get("ally_faction", AEDUI if faction == AEDUI else ROMANS)
-            if ally_fac not in (ROMANS, AEDUI):
-                raise ValueError(
-                    f"card A69: the Bellovaci Ally must be Roman or "
-                    f"Aedui, not {ally_fac!r}")
             _ally_tribe(state, TRIBE_BELLOVACI, ally_fac)
             _event_step(state, "A69.mobile")
-            # Place 4 Warbands or Auxilia — no other piece type.
-            default_type = WARBAND if params.get("piece_faction", ally_fac) == AEDUI else AUXILIA
-            piece_type = params.get("piece_type", default_type)
-            if piece_type not in (WARBAND, AUXILIA):
-                raise ValueError(
-                    f"card A69: may place Warbands or Auxilia, not "
-                    f"{piece_type!r}")
-            pfac = params.get("piece_faction", AEDUI if piece_type == WARBAND else ROMANS)
-            if pfac not in (ROMANS, AEDUI):
-                raise ValueError(
-                    f"card A69: pieces must be Roman or Aedui, not "
-                    f"{pfac!r}")
             avail = get_available(state, pfac, piece_type)
             to_place = min(4, avail)
             if to_place > 0:

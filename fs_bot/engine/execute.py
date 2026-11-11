@@ -6150,31 +6150,23 @@ def _derive_card_22(state, faction, shaded):
 
     Shaded (Casus belli): place a Gallic Ally and any 1 Warband at each of 1 or
     2 Subdued Tribes where Roman pieces (Card Reference 22). The NP benefits
-    itself (§8.2.3) — place its own Ally + own Warband. A Gallic Faction only;
-    a Roman/German acting Faction gains nothing from placing a Gallic Ally, so
-    no derivation (graceful no-op)."""
+    itself (§8.2.3) by placing its own Ally and Warband."""
     from fs_bot.rules_consts import FACTIONS, WARBAND, AUXILIA
     from fs_bot.board.control import is_controlled_by
     from fs_bot.board.pieces import count_pieces
     if shaded:
-        from fs_bot.rules_consts import (GALLIC_FACTIONS, ALLY, ROMANS,
-                                         TRIBE_TO_REGION)
+        from fs_bot.rules_consts import GALLIC_FACTIONS, ALLY
         from fs_bot.board.pieces import get_available
+        from fs_bot.cards.event_targets import hostages_ally_factions, hostages_tribes
         if (faction not in GALLIC_FACTIONS
                 or get_available(state, faction, ALLY) <= 0):
             return None
         target_tribes = []
-        for tribe in sorted(state.get("tribes", {})):
+        for tribe, region in sorted(hostages_tribes(state).items()):
             if len(target_tribes) >= 2:
                 break
-            ti = state["tribes"][tribe]
-            # Subdued Tribe = neither Allied nor Dispersed (Key Terms Index).
-            # Dispersed / Dispersed-Gathering / Razed live in tribe["status"].
-            if ti.get("allied_faction") is not None or ti.get("status") is not None:
+            if faction not in hostages_ally_factions(state, tribe):
                 continue
-            region = TRIBE_TO_REGION.get(tribe)
-            if not region or count_pieces(state, region, ROMANS) <= 0:
-                continue  # "where Roman pieces"
             target_tribes.append({"tribe": tribe, "region": region,
                                   "faction": faction,
                                   "warband_faction": faction})
@@ -6238,17 +6230,23 @@ def _derive_card_A37(state, faction, shaded):
     return derive_params(state, faction, shaded)
 
 
+def _derive_card_46(state, faction, shaded):
+    """Romans' printed unshaded Celtic Rites targets depend on the ruleset."""
+    from fs_bot.rules_consts import ROMANS, ARVERNI, BELGAE, ARIOVISTUS_SCENARIOS
+    if not shaded and faction == ROMANS:
+        targets = [BELGAE] if state["scenario"] in ARIOVISTUS_SCENARIOS else [ARVERNI, BELGAE]
+        return {"target_factions": targets}
+    return None
+
+
 def _derive_card_A64(state, faction, shaded):
     """Card A64 (Abatis): place the Faction's Abatis marker in a Region where
     it has a Warband — prefer a Region also holding an enemy (frontier
     defense). No existing Abatis there."""
-    from fs_bot.rules_consts import WARBAND, FACTIONS, MARKER_ABATIS
-    from fs_bot.board.pieces import count_pieces
-    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
+    from fs_bot.rules_consts import FACTIONS, MARKER_ABATIS
+    from fs_bot.cards.event_targets import abatis_regions
     frontier, plain = None, None
-    for region in sorted(playable):
-        if count_pieces(state, region, faction, WARBAND) <= 0:
-            continue
+    for region in sorted(abatis_regions(state, faction)):
         m = state.get("markers", {}).get(region) or {}
         if MARKER_ABATIS in m:
             continue
@@ -6612,6 +6610,7 @@ _EVENT_PARAM_DERIVERS = {
     "A64": _derive_card_A64,
     "A66": _derive_card_A66,
     22: _derive_card_22,
+    46: _derive_card_46,
     28: _derive_card_28,
     41: _derive_card_41,
     23: _derive_card_23,

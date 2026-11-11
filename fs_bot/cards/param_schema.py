@@ -260,7 +260,8 @@ def card_param_schema(card_id, scenario, card_edition=None):
 # and points the fuzzer at success paths; the handlers stay authoritative.
 _OVERRIDES = {
     35: {"faction": {"kind": "faction", "values": tuple(GALLIC_FACTIONS)}},
-    46: {"faction": {"kind": "faction", "values": tuple(GALLIC_FACTIONS)}},
+    46: {"faction": {"kind": "faction", "values": GALLIC_FACTIONS},
+         "target_factions": {"kind": "factions", "values": GALLIC_FACTIONS}},
     67: {"faction": {"kind": "faction", "values": (ROMANS, *GALLIC_FACTIONS)}},
     68: {"target_city": {"kind": "city", "values": (CITY_ALESIA, CITY_CENABUM)},
          "replacements": {"kind": "entries", "event_step": "68.replacements",
@@ -370,7 +371,8 @@ _OVERRIDES = {
                          "max_entries": 5, "entry_fields": {"faction": "faction",
                          "piece_type": "piece_type", "piece_state": "piece_state",
                          "tribe": "tribe"}}},
-    "A69": {"piece_type": {"values": (WARBAND, AUXILIA)},
+    # One generated troop choice determines both its owner and native type.
+    "A69": {"piece_type": {"kind": "omit"},
             "ally_faction": {"values": (ROMANS, AEDUI)},
             "piece_faction": {"values": (ROMANS, AEDUI)}},
     32: {"moves": {"region_pool": "card32_mainland", "entry_values": {
@@ -416,6 +418,7 @@ _OVERRIDES = {
     # event_params["faction"]; default (no param) = executing Gallic
     # Faction.
     10: {"faction": {"values": ("Arverni", "Aedui", "Belgae")}},
+    59: {"faction": {"kind": "omit"}},  # Shaded owner is the Gallic executor.
     63: {"faction": {"values": ("Arverni", "Aedui", "Belgae")}},
 }
 

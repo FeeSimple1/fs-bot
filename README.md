@@ -144,9 +144,16 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
+The [fourth comparison's first repair batch](docs/reviews/fourth-comparison-batch1-2026-11-10.md)
+closes six Event and Harvest findings. All **9,722 tests pass**, including
+36 added cases. Twenty second-edition bot games are clean. Twenty mixed-player
+cases match across hash seeds with replay and zero hard findings. The 100-game
+balance check passes its existing 15-point band. The fourth audit has ten
+open groups.
+
 The [third comparison's final repair batch](docs/reviews/third-comparison-batch4-2026-11-10.md)
 fixes Colony Tribe handling, Razed City protection, and Stalwart's cancellation
-of Germanic Horse against Germans. All **9,686 tests pass**, including 104 new
+of Germanic Horse against Germans. At that revision **9,686 tests passed**, including 104 new
 cases. Twenty audited bot games are clean, and twenty mixed-player cases match
 across hash seeds with replay and zero hard findings. The 100-game balance
 check passes the unchanged 15-point band, with no winner changes from the parent.

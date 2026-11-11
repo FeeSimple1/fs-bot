@@ -3618,16 +3618,17 @@ class TestShadedDerivers:
         assert count_pieces(s, "Mandubii", AEDUI, WARBAND) >= 1
 
     def test_card22_shaded_no_derivation_for_non_gallic(self):
-        # A Roman acting Faction gains nothing from a Gallic Ally — no-op.
+        # §8.2.3: Roman NP cannot choose the Gallic Ally for itself.
         from fs_bot.board.pieces import place_piece
         from fs_bot.board.control import refresh_all_control
-        from fs_bot.rules_consts import ROMANS, AUXILIA
+        from fs_bot.cards.event_conditions import np_event_available
+        from fs_bot.rules_consts import ROMANS, AUXILIA, MANDUBII
         s = self._base()
-        place_piece(s, "Mandubii", ROMANS, AUXILIA)
+        place_piece(s, MANDUBII, ROMANS, AUXILIA)
         refresh_all_control(s)
+        assert np_event_available(s, 22, ROMANS, True) is False
         res = execute_decision(s, ROMANS, self._ev(22))
-        # Executes (no crash) but derives nothing -> no Ally placed.
-        assert res["executed"] is True
+        assert res["rejected"] and not res["executed"]
 
     def test_card23_shaded_removes_legion_where_citadel(self):
         from fs_bot.board.pieces import place_piece, count_pieces

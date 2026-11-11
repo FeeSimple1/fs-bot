@@ -23,7 +23,7 @@ from fs_bot.rules_consts import (
     ARVERNI_SPECIAL_ABILITIES_BASE, ARVERNI_SPECIAL_ABILITIES_ARIOVISTUS,
     GERMAN_SPECIAL_ABILITIES_BASE, GERMAN_SPECIAL_ABILITIES_ARIOVISTUS,
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
-    FACTIONS, LEGION, AUXILIA, WARBAND, BRITANNIA,
+    FACTIONS, GALLIC_FACTIONS, LEGION, AUXILIA, WARBAND, BRITANNIA,
     EVENT_SHADED, EVENT_UNSHADED, ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.engine.game_engine import (
@@ -1396,12 +1396,71 @@ def _collect_timed_event_entries(state, faction, card_id, shaded, params,
     return entries if spec.get('allow_empty') else entries or None
 
 
+def _collect_hostages_params(state, faction, stdin, stdout):
+    from fs_bot.cards.event_preview import preview_event_prefix
+    from fs_bot.cards.event_targets import hostages_ally_factions, hostages_tribes
+    from fs_bot.cli.action_windows import inspect_board, prepare
+
+    entries = []
+    params = {'target_tribes': entries}
+    step = '22.tribes'
+    for index in range(2):
+        stage = preview_event_prefix(state, faction, 22, True, params, step=step, index=index)
+        chosen = {entry['tribe'] for entry in entries}
+        if not set(hostages_tribes(stage)) - chosen:
+            break
+        if entries and not prompt_yes_no(stdin, stdout, 'Place at a second Tribe?', default=False):
+            break
+        stage, actions = prepare(stage, faction, stdin, stdout,
+                                 stage='event_step', step=step, index=index)
+        targets = {tribe: region for tribe, region in hostages_tribes(stage).items()
+                   if tribe not in chosen}
+        if not targets:
+            if actions:
+                params.setdefault('stage_timing_actions', {})[f'{step}:{index}'] = actions
+            break
+        with inspect_board(stage, stdout):
+            tribe = prompt_choice(stdin, stdout, 'Hostages — choose a Tribe:',
+                                  [(f'{t} ({r})', t) for t, r in targets.items()])
+            entry = {'tribe': tribe}
+            owners = hostages_ally_factions(stage, tribe)
+            if owners:
+                entry['faction'] = prompt_choice(stdin, stdout, 'Whose Ally?',
+                                                 [(owner, owner) for owner in owners])
+            entry['warband_faction'] = prompt_choice(stdin, stdout, 'Whose Warband?',
+                [(owner, owner) for owner in (*GALLIC_FACTIONS, GERMANS)])
+        if actions:
+            entry['timing_actions'] = actions
+        entries.append(entry)
+    return params
+
+
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
     if ((card_id in (19, 22, 45, 58, 60, 61, 'A36') and not shaded)
             or (card_id in (3, 5, 6, 7, 11, 24, 31, 51, 'A5', 'A17', 'A58') and shaded)):
         return {}  # Live exact quantities/pieces use the actual Event-step board.
+    if card_id == 22 and shaded:
+        return _collect_hostages_params(state, faction, stdin, stdout)
+    if card_id == 46 and not shaded:
+        targets = []
+        while len(targets) < len(GALLIC_FACTIONS):
+            choices = [(owner, owner) for owner in GALLIC_FACTIONS if owner not in targets]
+            if targets:
+                choices.append(('Done', None))
+            target = prompt_choice(stdin, stdout, 'Celtic Rites — choose a Gallic Faction:', choices)
+            if target is None:
+                break
+            targets.append(target)
+        return {'target_factions': targets}
+    if card_id == 'A64':
+        from fs_bot.cards.event_targets import abatis_regions
+        regions = abatis_regions(state, faction)
+        if not regions:
+            return {}
+        return {'region': prompt_choice(stdin, stdout, 'Abatis — choose a Region:',
+                                        [(region, region) for region in regions])}
     if card_id == 'A69':
         if shaded:
             return {}  # Shaded Ambush choices are collected at the grant.

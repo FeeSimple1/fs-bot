@@ -1,6 +1,9 @@
 # Fourth Falling Sky comparison audit — 10 November 2026
 
-**Confirmed 16 additional repair groups — 11 high and 5 medium priority.** All remain open. The earlier 50-, 21-, and 15-group ledgers remain closed. No gameplay code, tests, or protected references changed in this audit.
+**The audit confirmed 16 additional repair groups, 11 high and 5 medium priority.**
+[Batch 1](fourth-comparison-batch1-2026-11-10.md) repairs six of them. The
+earlier 50-, 21-, and 15-group ledgers are closed. The results below record
+the original audit revision.
 
 Audited Falling Sky at `b951908af2b21cc87a7e27d9a5314b3f257d0147`, Python SHA-256 `fb0bbf5af4a7513bbac1157f17054948d2ec5b3724ab612296b10a1d017ea51b` across 585 Python files. Liberty or Death was inspected at `2991ea279062773548ec390a1da75f3e85381702`. Its implementation lessons guided the search. Falling Sky's supplied references and adopted provisional rulings govern every rules conclusion.
 

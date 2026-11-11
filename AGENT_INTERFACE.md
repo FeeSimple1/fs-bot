@@ -326,8 +326,23 @@ counts are rejected. Existing entry `timing_actions` and
 | A56 shaded | `warband_placements: [{region, count?}]` and `ally_placements: [{tribe}]` place four Warbands and two Belgic Allies as possible in Belgica before the Resource gain. An Ally can replace another faction's Ally disc. |
 | A65 shaded | `from_faction` selects Belgae or Germans. `warband_replacements: [{region, piece_state?}]` and `ally_replacements: [{tribe}]` replace four Warbands and two Allies as possible. A missing counterpart still leaves the source removed. |
 
-Abatis (A64) accepts a Region with a Warband of any visibility owned by
-the executor, including Scouted.
+Shaded Hostages (22) uses `target_tribes: [{tribe, faction?, warband_faction?, region?}]`.
+Choose one or two distinct Subdued Tribes with Roman pieces. The Tribe
+determines the Region for both placements, including a Colony's saved
+Region. An older `region` field must agree with the Tribe. `faction` names
+the Gallic Ally owner and defaults to the executor when Gallic.
+`warband_faction` names any faction with Warbands and defaults to the Ally
+owner. Place each selected piece as far as availability and stacking permit.
+
+Unshaded Celtic Rites (46) requires a nonempty `target_factions` list of
+Gallic factions. Each selected faction loses Resources and becomes
+Ineligible once where those tracks apply. In Ariovistus, the automatic
+Arverni track neither. Shaded Germanic Horse (59) belongs to its Gallic executor.
+Omit `faction`. A legacy matching value is also accepted.
+
+Abatis (A64) requires `region` with an executor-owned Warband of any
+visibility, including Scouted. Omit the Region when no eligible Warband
+exists. Invalid choices return the turn to the same pending decision.
 
 Unshaded Alaudae uses `target_region` under Roman Control. Unshaded
 Numidians uses `target_region` in the original edition and `region` in
@@ -860,9 +875,10 @@ four or all present if fewer. Use `{"use_default":true}` to delegate or
 provide the same list in `event_params.piece_choices` to author it in
 advance. Set `ally_faction` and `piece_faction` independently to `Romans`
 or `Aedui`. The troop faction determines whether Auxilia or Warbands are
-placed. Older plans can still specify `piece_type`. Without either troop
-field the default troops follow the Ally faction. Earlier histories may
-pause for the choice or diverge under corrected defaults.
+placed. Older plans can specify `piece_type` alone. If both troop fields
+are present, they must describe Roman Auxilia or Aedui Warbands. Without
+either troop field the default troops follow the Ally faction. Earlier
+histories may pause for the choice or diverge under corrected defaults.
 
 `march_cohort` | `phase, region, piece_type, count, available`; may include `acting_faction, physical_owner` | `{"counts": {visibility: count}}`, totaling exactly the requested `count` |
 | `march_dropoff` | `faction, acting_faction, region, destination, pieces, max_dropoffs, window`; may include `leader` | `{"dropoffs":[{"faction":owner,"piece_type":type,"piece_state":visibility_or_null,"count":n}]}` or explicit default |

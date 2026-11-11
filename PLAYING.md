@@ -28,9 +28,10 @@ before Battle may bring Auxilia into that Region. Scout movement uses the
 scenario's playable Regions and Gallia Togata marker; base Cisalpina needs
 that Event, and movement into or out of Britannia remains prohibited.
 
-Harvest counts each Allied Tribe disc and Citadel once. Lost Eagle restricts
-only the next Senate Phase, including when a scenario replaces the usual
-shift. Intervening Cicero and Pompey Events use their printed Senate effects.
+Harvest counts each Allied Tribe disc and Citadel once. Resource totals stay
+between 0 and 45, including when the Ariovistus Roman score is negative.
+Lost Eagle restricts only the next Senate Phase, including when a scenario
+replaces the usual shift. Cicero and Pompey use their printed Senate effects.
 
 Shaded Harudes places four German Warbands and one Settlement as far as supply
 and legal spaces allow. Choose their allocation and order, then direct the
@@ -148,6 +149,7 @@ is used only once in the Command. The prospective queue uses the live PR-13 choi
 Germanic Horse now asks its owner to select a Region in ordinary/free Battle
 plans. Romans may decline the unshaded bonus. The shaded Gallic owner selects
 one Region for attack or counterattack; its menu shows current protection.
+The Gallic faction that plays the shaded Event takes the card.
 A defending Fort, Citadel or active Abatis blocks attacking Horse doubling.
 A defending owner's Citadel blocks its counterattack doubling; Abatis alone
 does not. Choosing a currently blocked Region does not bypass that restriction.
@@ -176,6 +178,11 @@ only or replacement for each selected cohort. You can mix the actions. Your
 replacement is Roman Auxilia or your faction's Warband; an unavailable
 replacement leaves the original removed. Use `b`/`board` to inspect before
 choosing. These live choices survive pending replies, saving and replay.
+
+Shaded Hostages lets you choose one or two distinct Subdued Tribes where
+Roman pieces are present. Choose the Gallic Ally owner and the Warband owner
+at each Tribe. Both pieces use that Tribe's Region. An unavailable piece
+does not prevent the other placement.
 
 Shaded Lucterius restores the Arverni Successor as Vercingetorix. You can
 place him in his current Region or any legal destination. Shaded Flight of
@@ -612,6 +619,8 @@ Gallic Shouts also lets the beneficiary put its full and Limited Commands
 in either order; both are free, without Battle or a Special Activity.
 Celtic Rites permits Battle but no Special Activity, and keeps the original
 Event player Eligible. Required actions cannot be declined when possible.
+Unshaded Celtic Rites requires at least one Gallic target. Each selected
+faction loses three Resources and is Ineligible through the next card.
 The ordinary March menu's pending hide-without-movement limitation also
 affects these grants.
 
@@ -661,7 +670,8 @@ possible. Shaded Galba places its four Warbands and two Allies as far as
 possible before gaining Resources. Shaded Kinship requires the four
 Warband and two Ally replacements as far as the chosen source permits.
 The placement and replacement menus show each legal choice after the
-preceding steps. Abatis can be placed with a Scouted Warband.
+preceding steps. Abatis requires a Region with your Warband when one exists.
+Hidden, Revealed and Scouted Warbands all qualify.
 
 Shaded Land of Mist and Mystery (57) lets the executor name one Ally or
 Dispersed marker in Britannia. The terminal then offers the legal Gallic

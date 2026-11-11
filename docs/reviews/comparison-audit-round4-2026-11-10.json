@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 16,
-  "closed": 0,
-  "open": 16,
+  "closed": 6,
+  "open": 10,
   "severity_counts": {
     "medium": 5,
     "high": 11
@@ -428,7 +428,7 @@
       "id": "BE4-01",
       "title": "Shaded Hostages accepts mismatched Tribe/Region and a non-Gallic Ally recipient",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "expected": "Card 22 shaded places a Gallic Ally and any one Warband at each of one or two Subdued Tribes in Regions containing Roman pieces. Tribe and Region must identify the same place, and the Ally must be Arverni, Aedui, or Belgic.",
       "observed": "Accepted target Catuvellauni plus supplied Region Provincia allies Catuvellauni in empty Britannia to Belgae while placing the Warband in Provincia. A separate accepted Helvii target with faction Romans places a Roman Ally despite the Gallic restriction. The legal Helvii/Provincia/Belgae control places both pieces together.",
       "rule_sources": [
@@ -455,13 +455,15 @@
       "observations": "observed.json editions.{original,second-edition}.BE4-01",
       "fixture": "Great Revolt setup seed 4, remove Helvii Roman Ally via _unally_tribe to create legal Subdued target; Roman garrison stays in Provincia; Britannia has zero Romans.",
       "validation": "All three authored turn paths pass durable validation and detached preview, preserve preview board/RNG, execute, and have clean pre/post census and structure.",
-      "partition": "base-events"
+      "partition": "base-events",
+      "repair_batch": 1,
+      "repair_report": "fourth-comparison-batch1-2026-11-10.md"
     },
     {
       "id": "BE4-02",
       "title": "Celtic Rites applies repeated Resource losses and permits omitting its mandatory target",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "expected": "Card 46 unshaded selects one or more distinct Gallic Factions; each selected Faction loses three Resources once and is Ineligible through next card.",
       "observed": "With Arverni at 20 Resources, target_factions=[Arverni,Arverni] is accepted and reduces Resources to 14. The single-entry control leaves17. An empty list executes successfully without affecting any faction, despite legal targets.",
       "rule_sources": [
@@ -488,7 +490,9 @@
       "observations": "observed.json editions.{original,second-edition}.BE4-02",
       "fixture": "Great Revolt setup seed4; Arverni Resources set to20, all-human seats.",
       "validation": "Durable turn acceptance, successful isolated preview and execution; pre/post census and structure clean. Empty target recorded alongside duplicate rather than counted separately.",
-      "partition": "base-events"
+      "partition": "base-events",
+      "repair_batch": 1,
+      "repair_report": "fourth-comparison-batch1-2026-11-10.md"
     },
     {
       "id": "BE4-03",
@@ -537,7 +541,7 @@
       "id": "BE4-04",
       "title": "Shaded Germanic Horse can be gifted to a different Faction instead of the Gallic executor",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "expected": "Card59 shaded says If Gallic, take this card. The Gallic executing Faction takes it; the Event does not authorize selecting another beneficiary.",
       "observed": "Belgae executing59S with faction=Aedui makes Aedui the recorded owner. Roman executor can also award it to Aedui. A subsequent ordinary Aedui Battle with four Warbands removes four of eight German Warbands. The legal Belgic self-acquisition control removes only two in the same Aedui Battle.",
       "rule_sources": [
@@ -564,7 +568,9 @@
       "observations": "observed.json editions.{original,second-edition}.BE4-04",
       "fixture": "Great Revolt setup seed4; use Available pools to place4 Aedui and8 German Warbands at Pictones; all-human seats. Base Germans do not Retreat.",
       "validation": "Accepted Event and succeeding ordinary Battle on both editions. Owner changes flow into actual casualty count. Before/after census and structural checks clean.",
-      "partition": "base-events"
+      "partition": "base-events",
+      "repair_batch": 1,
+      "repair_report": "fourth-comparison-batch1-2026-11-10.md"
     },
     {
       "id": "EX4-01",
@@ -620,8 +626,10 @@
       "structural_before_after": true,
       "scope_limit": "Observed unshaded path; handler is identical for either side of this single-text Event. No whole-game frequency claim.",
       "partition": "expansion",
-      "status": "open",
-      "severity": "medium"
+      "status": "closed",
+      "severity": "medium",
+      "repair_batch": 1,
+      "repair_report": "fourth-comparison-batch1-2026-11-10.md"
     },
     {
       "id": "EX4-02",
@@ -679,14 +687,16 @@
       "structural_before_after": true,
       "scope_limit": "Typed durable/API Event plans demonstrated. CLI cross-field menus were not claimed to generate these invalid pairs.",
       "partition": "expansion",
-      "status": "open",
-      "severity": "high"
+      "status": "closed",
+      "severity": "high",
+      "repair_batch": 1,
+      "repair_report": "fourth-comparison-batch1-2026-11-10.md"
     },
     {
       "id": "WS4-01",
       "title": "Ariovistus Harvest can drive Roman Resources below zero",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "expected": "Roman Resources must remain within 0\u201345 even when the Ariovistus Roman victory formula is negative. This finding requires a nonnegative result and does not decide whether negative earnings may reduce a positive balance.",
       "observed": "A valid board with 26 non-Roman Allies and 6 Settlements has Roman victory -2 and no faction passing victory. Public harvest_phase changes starting Roman Resources0 to-2 and1 to-1. Public run_winter_round with no relocations also ends at-2 and a structural error. Removing all Settlements produces score4, Resources4, clean structure.",
       "mechanism": "_harvest_earnings passes the negative score to _add_resources, which clamps only the upper bound.",
@@ -724,7 +734,9 @@
         "Same Tribe board with Settlements removed earns4 and remains valid."
       ],
       "fixture": "Built from initialized Ariovistus state with legal piece helpers and matching Tribe records.26 non-Roman Allied Tribes,6 Settlements and enough Romans to prevent Belgic victory. All leaders/pools accounted. Census/structure clean; no winner before full Winter. Corrected after independent review to reserve Aedui and Arverni Tribes for their own factions, with an explicit TRIBE_FACTION_RESTRICTION assertion for every placement. Corrected fixture reproduces all outcomes. Initial illegal ownership fixture is retained under superseded filenames and is not accepted evidence.",
-      "partition": "seasonal"
+      "partition": "seasonal",
+      "repair_batch": 1,
+      "repair_report": "fourth-comparison-batch1-2026-11-10.md"
     },
     {
       "id": "WS4-02",
@@ -952,5 +964,41 @@
     "A33 Wailing Women outnumbered definition is a separate unconfirmed source question.",
     "Negative-Harvest finding requires a nonnegative Resource total only; treatment of negative earnings against a positive balance is not resolved.",
     "No production repair or new balance matrix was performed."
+  ],
+  "open_severity_counts": {
+    "medium": 4,
+    "high": 6
+  },
+  "latest_repair": {
+    "batch": 1,
+    "date": "2026-11-10",
+    "report": "fourth-comparison-batch1-2026-11-10.md",
+    "evidence": "fourth-comparison-batch1-2026-11-10-evidence.zip",
+    "source": {
+      "commit": "ee05f5f33754aa0362632a965a2249cf00ecc381",
+      "dirty": true,
+      "source_sha256": "bc5631828c67b6b02de07e5c3065d3defd3e4714bd08a367aa6fb1037e755eb9",
+      "python": "3.12.14",
+      "python_files": 586
+    },
+    "closed_ids": [
+      "BE4-01",
+      "BE4-02",
+      "BE4-04",
+      "EX4-01",
+      "EX4-02",
+      "WS4-01"
+    ],
+    "passed_tests": 9722,
+    "new_regressions": 36,
+    "balance_guardrail_exit": 0
+  },
+  "repair_history": [
+    {
+      "batch": 1,
+      "report": "fourth-comparison-batch1-2026-11-10.md",
+      "closed": 6,
+      "open": 10
+    }
   ]
 }

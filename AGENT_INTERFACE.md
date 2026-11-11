@@ -1295,10 +1295,11 @@ The validators are `commands.march.validate_harassment_response` and
 `engine.march_choices.validate_response`; both validate without moving
 pieces or consuming RNG.
 
-Ordinary March uses the live `march_dropoff` request after arrival and before
-Harassment. The acting player may leave any offered physical cohort and keep
-at least one piece moving. Use the offered faction, type and visibility
-with a positive integer `count` per cohort, within `max_dropoffs` in total.
+Ordinary and standard Event-granted March use the live `march_dropoff` request
+after arrival and before Harassment. The acting player may leave any offered
+physical cohort and keep at least one piece moving. Use the offered faction,
+type and visibility with a positive integer `count` per cohort, within
+`max_dropoffs` in total.
 Legions and Leaders use a null `piece_state`. The list can be empty, and
 explicit delegation keeps the group together. The next hop must be legal
 for the continuing pieces. The plan's route can end earlier if its remaining
@@ -1571,6 +1572,11 @@ response does not override that requirement. An engine-supplied
 `acting_faction` identifies the force commanded by a different chooser,
 such as German pieces under Divination. Do not add or change grant fields in
 a submitted action.
+
+The Britannia crossing restriction applies to an Event-granted March with
+an accompanying ability. Land of Mist and Mystery grants a crossing and a
+separate `event_sa` in Britannia. March grants with a required destination
+use the Event's movement procedure.
 
 Shaded Assembly of Gaul sends the human Carnutes controller an
 `event_command` with `max_special_abilities: 2`. Use the ordinary action

@@ -28,6 +28,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [11 November fifth comparison repair Batch 3](reviews/fifth-comparison-batch3-2026-11-11.md)
+  closes the free March restriction and transit choice findings.
+
 - [11 November fifth comparison repair Batch 2](reviews/fifth-comparison-batch2-2026-11-11.md)
   closes the Interlude home-City restoration finding.
 

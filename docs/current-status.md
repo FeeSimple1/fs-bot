@@ -21,6 +21,22 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 11 November fifth comparison repair Batch 3
+
+Event-granted March enforces the Britannia crossing restriction when a
+Special Ability accompanies it. Standard free Marches offer the live
+transit drop-off choice, including Assembly of Gaul with two abilities.
+The durable tests cover correction, save and resume, and replay.
+[Repair and validation](reviews/fifth-comparison-batch3-2026-11-11.md)
+
+All **9,863 tests pass**. All 120 audited bot games match the parent in
+their final boards and winners. Twenty mixed-player cases replay identically
+across both hash seeds with zero hard findings. The 100-game balance check
+passes.
+
+The fifth audit has **6 of 11 repaired, 5 open**.
+[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+
 ### 11 November fifth comparison repair Batch 2
 
 Bibracte and Gergovia restore their home Ally by clearing the named City.
@@ -33,8 +49,7 @@ changed winners first diverge during the Interlude adjustments. Twenty
 mixed-player cases replay identically across both hash seeds, including
 two Interludes. The 100-game balance check passes.
 
-The fifth audit has **4 of 11 repaired, 7 open**.
-[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+This batch brought the total to four repaired findings.
 
 ### 11 November fifth comparison repair Batch 1
 

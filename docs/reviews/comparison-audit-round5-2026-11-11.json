@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 4,
-  "open": 7,
+  "closed": 6,
+  "open": 5,
   "severity_counts": {
     "high": 7,
     "medium": 4
@@ -461,7 +461,7 @@
       "prior_findings": "CM2-02 repaired alternate representations of ordinary human March. Its ordinary canonical/alternate path now rejects this crossing. This is a separate unchecked Event-grant pipeline, using the canonical shape. FE4-01/02/03 concerned free Battle timing, nested SA Region scope and Assembly's second ability, respectively. No previous ledger records this free March path.",
       "fixture": "Controlled Great Revolt state from build_initial_state(seed=4), all human factions, permanent Roman Fort in Provincia, Aedui Warbands in Carnutes and Morini, 10 Aedui Resources, current52/next49. All physical placements use place_piece. Census and structure pass before and after. Carnutes is Aedui controlled. Not claimed naturally sampled.",
       "limit": "Dynamically confirmed for the single-ability free Command path on Assembly52. The generic helper serves other Event grants; those additional callers were not individually sampled. Two-ability Assembly has its own _with_sa=True check. No source ambiguity.",
-      "status": "open",
+      "status": "closed",
       "partition": "frontend",
       "source_refs": [
         {
@@ -499,7 +499,9 @@
       ],
       "prior_relation": "CM2-02 repaired alternate representations of ordinary human March. Its ordinary canonical/alternate path now rejects this crossing. This is a separate unchecked Event-grant pipeline, using the canonical shape. FE4-01/02/03 concerned free Battle timing, nested SA Region scope and Assembly's second ability, respectively. No previous ledger records this free March path.",
       "limits": "Dynamically confirmed for the single-ability free Command path on Assembly52. The generic helper serves other Event grants; those additional callers were not individually sampled. Two-ability Assembly has its own _with_sa=True check. No source ambiguity.",
-      "evidence_directory": "frontend"
+      "evidence_directory": "frontend",
+      "repair_batch": 3,
+      "repair_report": "fifth-comparison-batch3-2026-11-11.md"
     },
     {
       "id": "FE5-02",
@@ -555,7 +557,7 @@
       "prior_findings": "The original MARCH-DROPOFF finding expressly covered ordinary March and its repaired ordinary path passes this paired control. This is the missed generic Event-granted human Command integration. FE5-01 is a separate illegal-combination validation failure; this group concerns omitted legal player choice and a different required execution flag.",
       "fixture": "Controlled Great Revolt state from build_initial_state(seed=4), permanent Provincia Fort, one Roman Auxilia controlling Carnutes, two Roman Auxilia in Provincia, 10 Resources, current52/next49, all factions human. Route Provincia-Sequani-Mandubii is a legal two-step Roman March without Caesar. place_piece creates every physical fixture piece. No claim of natural sampled reach.",
       "limit": "Dynamic witness covers Assembly52's ordinary zero-ability free Command. Static inspection also shows its two-ability path uses choose_dropoffs=bool(interruption_steps), but that additional path is not included in the dynamic claim. Card-specific movement-only grants may have distinct printed rules and need individual review during repair.",
-      "status": "open",
+      "status": "closed",
       "partition": "frontend",
       "source_refs": [
         {
@@ -598,7 +600,9 @@
       ],
       "prior_relation": "The original MARCH-DROPOFF finding expressly covered ordinary March and its repaired ordinary path passes this paired control. This is the missed generic Event-granted human Command integration. FE5-01 is a separate illegal-combination validation failure; this group concerns omitted legal player choice and a different required execution flag.",
       "limits": "Dynamic witness covers Assembly52's ordinary zero-ability free Command. Static inspection also shows its two-ability path uses choose_dropoffs=bool(interruption_steps), but that additional path is not included in the dynamic claim. Card-specific movement-only grants may have distinct printed rules and need individual review during repair.",
-      "evidence_directory": "frontend"
+      "evidence_directory": "frontend",
+      "repair_batch": 3,
+      "repair_report": "fifth-comparison-batch3-2026-11-11.md"
     },
     {
       "id": "BM5-01",

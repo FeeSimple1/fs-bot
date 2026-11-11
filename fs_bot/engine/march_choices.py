@@ -207,8 +207,9 @@ def offer_dropoffs(state, faction, region, group, *, origin, step, destination,
             getattr(agent, 'supports_march_dropoffs', False)
             or getattr(getattr(agent, '__self__', None), 'supports_march_dropoffs', False)):
         return []
+    from fs_bot.engine.game_engine import get_sop_factions
     chooser = _chooser(state, faction)
-    if chooser in state.get('non_player_factions', ()):
+    if chooser not in get_sop_factions(state) or chooser in state.get('non_player_factions', ()):
         return []
     total = int(group.get(rc.LEADER) is not None) + sum(
         group.get(piece, 0) for piece in (rc.LEGION, rc.AUXILIA, rc.WARBAND))

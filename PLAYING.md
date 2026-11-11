@@ -565,6 +565,11 @@ two distinct types, and set each one's timing before, during, or after the
 Command. Ambush and Besiege resolve in the selected Battles. Choices at the
 same step resolve in the order selected.
 
+A free March into or out of Britannia excludes accompanying Special
+Abilities. During a standard free March, choose which pieces to leave at a
+transit Region before the rest move on. Land of Mist and Mystery separately
+grants a Special Ability in Britannia.
+
 Druids asks the Event player to choose one to three distinct Gallic
 factions. Aedui, Arverni, then Belgae each resolve their own free Limited
 Command if selected and able, with an optional free Special Activity.

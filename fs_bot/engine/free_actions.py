@@ -12,6 +12,7 @@ from copy import deepcopy
 from fs_bot.commands.common import CommandError, free_action_scope
 from fs_bot.commands.rally import preserve_supply_agreements
 from fs_bot.board.pieces import PieceError
+from fs_bot.rules_consts import CMD_MARCH
 
 
 @contextmanager
@@ -312,7 +313,7 @@ def _plan_structure_error(state, faction, request, action):
     from fs_bot.engine.action_validation import (
         command_regions, command_parts, compatible_sa, validate_command_interruption,
         validate_command_parts, validate_rally_interruption, validate_region_selections,
-        EVENT_BATTLE_FIELDS,
+        _validate_march_plan, EVENT_BATTLE_FIELDS,
     )
     from fs_bot.map.map_data import get_playable_regions_for_state
     from fs_bot.commands.sa_intimidate import human_plan_error
@@ -363,6 +364,10 @@ def _plan_structure_error(state, faction, request, action):
             return f'{faction} cannot execute {sa}.'
         if not standalone and not compatible_sa(cmd, sa):
             return f'{sa} cannot accompany {cmd}.'
+        if cmd == CMD_MARCH:
+            error = _validate_march_plan(state, faction, action, limited=False, with_sa=True)
+            if error:
+                return error
     from fs_bot.commands.sa_rampage import human_plan_error as rampage_plan_error
     error = rampage_plan_error(action)
     if error:

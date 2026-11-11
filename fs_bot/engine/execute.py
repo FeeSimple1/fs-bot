@@ -638,7 +638,7 @@ def _execute_interrupted_command(state, faction, action, *, _human_grant=None,
                     resolve_ability()
 
         result = _execute_march(state, faction, action, free=is_free_action(state, faction),
-                                choose_dropoffs=True, _after_hop=after_march_hop)
+                                choose_dropoffs=True, _after_hop=after_march_hop, _with_sa=True)
     else:
         handler = {_CMD_BATTLE: _execute_battle, _CMD_RAID: _execute_raid}[action['command']]
         result = handler(state, faction, action, _after_step=after_step)
@@ -671,10 +671,19 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
     executor. Returns the result dict, or None if the command is not one of
     the wired board Commands."""
     cmd = bot_action.get("command")
+    sa = bot_action.get("sa")
+    has_sa = bool(sa and sa != SA_ACTION_NONE_LABEL)
+    # A grant with a required destination uses its own movement constraint.
+    choose_dropoffs = _human_grant is not None and _human_grant.get('required_destinations') is None
+
+    def granted_march(board, actor, plan):
+        return _execute_march(board, actor, plan, free=True,
+                              choose_dropoffs=choose_dropoffs, _with_sa=has_sa)
+
     handlers = {
         _CMD_SEIZE: _execute_seize, _CMD_RAID: _execute_raid,
         _CMD_RALLY: _execute_rally, _CMD_BATTLE: _execute_battle,
-        _CMD_RECRUIT: _execute_recruit, _CMD_MARCH: _execute_march,
+        _CMD_RECRUIT: _execute_recruit, _CMD_MARCH: granted_march,
     }
     h = handlers.get(cmd)
     if (_human_grant or {}).get('request_type') == 'arduenna_march':
@@ -693,7 +702,6 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
     from fs_bot.commands.sa_enlist import is_borrow_plan
     if is_borrow_plan(bot_action):
         return _execute_borrowed_command(state, faction, bot_action, h)
-    sa = bot_action.get("sa")
     timing = bot_action.get("sa_timing")
     before = (timing == "before" if timing else _sa_runs_before_command(cmd, sa))
     sa_result = None
@@ -711,9 +719,7 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
                 grant=_human_grant,
                 completed_sa_result=sa_result if before or continuation else None)
         selected_command = chosen.get('command', cmd)
-        if selected_command == _CMD_MARCH:
-            result = handlers[_CMD_MARCH](state, faction, chosen, free=True)
-        elif selected_command == _CMD_RECRUIT and _human_grant is not None:
+        if selected_command == _CMD_RECRUIT and _human_grant is not None:
             result = _execute_recruit(state, faction, chosen, _exact=True)
         else:
             result = handlers[selected_command](state, faction, chosen)

@@ -151,7 +151,7 @@ def run_command(state, faction, action, steps, at_step):
                 at_step(step, lambda sa: pause(state, faction, region, group, arrivals, sa))
 
         return ex._execute_march(state, faction, action, free=True, _with_sa=True,
-                                 choose_dropoffs=bool(steps), _after_hop=after_hop if steps else None)
+                                 choose_dropoffs=True, _after_hop=after_hop if steps else None)
 
     def after_step(step):
         if step in steps:

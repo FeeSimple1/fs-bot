@@ -1,0 +1,1145 @@
+{
+  "audit": "Fifth Falling Sky / Liberty or Death comparison",
+  "date": "2026-11-11",
+  "audited_commit": "bd30d522e8baa2d303b9e372d7d9c550351e91a5",
+  "source_sha256": "31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341",
+  "python_files": 591,
+  "python": "3.12.14",
+  "comparator_repository": "FeeSimple1/lod-bot",
+  "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+  "total": 11,
+  "closed": 0,
+  "open": 11,
+  "severity_counts": {
+    "high": 7,
+    "medium": 4
+  },
+  "engine_changes": false,
+  "reference_changes": false,
+  "previous_ledgers": [
+    {
+      "total": 50,
+      "closed": 50
+    },
+    {
+      "total": 21,
+      "closed": 21
+    },
+    {
+      "total": 15,
+      "closed": 15
+    },
+    {
+      "total": 16,
+      "closed": 16
+    }
+  ],
+  "validation": {
+    "source": {
+      "commit": "bd30d522e8baa2d303b9e372d7d9c550351e91a5",
+      "dirty": false,
+      "source_sha256": "31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341",
+      "python": "3.12.14",
+      "python_files": 591,
+      "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702"
+    },
+    "pytest": {
+      "passed": 9806,
+      "failed": 0,
+      "seconds": 170.25,
+      "exit_code": 0,
+      "command": "python -m pytest -q -n 4"
+    },
+    "bots": {
+      "games": 20,
+      "seeds": [
+        29,
+        30,
+        31,
+        32
+      ],
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "card_edition": "second-edition",
+      "all_rows_independently_checked": true,
+      "failures": 0,
+      "interludes": 2
+    },
+    "mixed": {
+      "games": 20,
+      "human_turns": 768,
+      "event_turns": 176,
+      "events_ok": 166,
+      "partial": 2,
+      "hard_findings": 0,
+      "batch_digest": "ff365059736d6ec1d0f604f344317d12ce5255ff767c9a174e56542d8b63f2a5"
+    },
+    "hash_seeds": [
+      0,
+      987
+    ],
+    "fuzz_json_exact_match": true,
+    "fuzz_logs_exact_match": true,
+    "fresh_balance_run": false
+  },
+  "portable_witnesses": [
+    {
+      "script": "bots/probe_bots.py",
+      "script_sha256": "8097b2c511a31d6adad7b01c8410c8f02c79028730c10166cf5746e536ce772e",
+      "exit_code": 0,
+      "matches_recorded_json": true,
+      "output": "bots--probe_bots.json",
+      "stderr": "bots--probe_bots.stderr"
+    },
+    {
+      "script": "battle/probe_battle.py",
+      "script_sha256": "640fe45f85ab5da0a2a9e213e4590a4d9998d588e3e550ed809f85d017b0dd4c",
+      "exit_code": 0,
+      "matches_recorded_json": true,
+      "output": "battle--probe_battle.json",
+      "stderr": "battle--probe_battle.stderr"
+    },
+    {
+      "script": "events/probe_events.py",
+      "script_sha256": "94c7b869149cc562182958059ad615ff0886e60bcec670d4f45fd6510ffc5f15",
+      "exit_code": 0,
+      "matches_recorded_json": true,
+      "output": "events--probe_events.json",
+      "stderr": "events--probe_events.stderr"
+    },
+    {
+      "script": "frontend/probe_frontend.py",
+      "script_sha256": "8162ce1fd764c78aaf67e15c78049bd01f7e9c71ddd3f0688c0db663a5c0623a",
+      "exit_code": 0,
+      "matches_recorded_json": true,
+      "output": "frontend--probe_frontend.json",
+      "stderr": "frontend--probe_frontend.stderr"
+    },
+    {
+      "script": "lifecycle/probe_lifecycle.py",
+      "script_sha256": "2860357fa5d49b72fd058e33215026d0df774df7819fe58ea7d333f167772222",
+      "exit_code": 0,
+      "matches_recorded_json": true,
+      "output": "lifecycle--probe_lifecycle.json",
+      "stderr": "lifecycle--probe_lifecycle.stderr"
+    }
+  ],
+  "source_questions": [
+    {
+      "id": "Q-OPTIMATES-PAX-PHASE-COUNT",
+      "status": "unresolved",
+      "counted_as_defect": false,
+      "evidence": "lifecycle/questions.md"
+    }
+  ],
+  "repair_batches": [
+    {
+      "batch": 1,
+      "scope": "Event ownership and state-aware geography",
+      "findings": [
+        "BE5-01",
+        "BE5-02",
+        "BE5-03"
+      ]
+    },
+    {
+      "batch": 2,
+      "scope": "Interlude home-City restoration",
+      "findings": [
+        "WS5-01"
+      ]
+    },
+    {
+      "batch": 3,
+      "scope": "Free March restrictions and choices",
+      "findings": [
+        "FE5-01",
+        "FE5-02"
+      ]
+    },
+    {
+      "batch": 4,
+      "scope": "Battle capability cancellation and casualty choices",
+      "findings": [
+        "BM5-01",
+        "BM5-02"
+      ]
+    },
+    {
+      "batch": 5,
+      "scope": "Bot target and survival forecasts",
+      "findings": [
+        "NP5-01",
+        "NP5-02",
+        "NP5-03"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "BE5-01",
+      "title": "Shaded Ballistae and Winter Campaign can be activated without their required Gallic recipient",
+      "priority": "high",
+      "status": "open",
+      "cards": [
+        10,
+        63
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:681-696",
+        "fs_bot/cards/card_effects.py:2328-2343",
+        "fs_bot/engine/execute.py:4108-4114",
+        "fs_bot/engine/winter_campaign.py:141-161"
+      ],
+      "source_locations": [
+        "Reference Documents/Card Reference:94-103",
+        "Reference Documents/Card Reference:645-655",
+        "Reference Documents/Chapter 5:5-13",
+        "Reference Documents/Chapter 5:50-52"
+      ],
+      "expected": "The executor must assign the shaded Capability to a Gallic Faction. A Roman executor submitting no recipient or an explicitly Roman recipient must correct the selection before the Event commits. The selected Gallic Faction receives the actual ongoing effect.",
+      "observed": "On unmodified Great Revolt setup, the durable turn shape validator and public preview accept both missing and Roman recipient, and execute_decision installs the shaded Capability with no owner. This occurs with original and second-edition profiles. Card 63's production after-Harvest consumer returns None and asks no Faction. A separate source-valid Battle fixture proves ownerless Card 10 gives no post-Ambush removal request, leaving the defending Citadel alive; the same public acquisition with Belgae selected gives the request and removes the Citadel.",
+      "controls": "Both cards accept Belgae as recipient and record Belgae. Card 63 offers Belgae the Winter Campaign choice. Public Belgic Battle+Ambush under properly assigned Card 10 removes the exact surviving Arverni Citadel at Sequani. All before/after pool and structure checks pass; previews leave live state/RNG unchanged.",
+      "cause": "The two copied acquisition handlers activate first, convert an invalid recipient to None, fall back only for Gallic executors, and never require a resulting owner. Consumers correctly require an owner, so the skipped selection silently suppresses the benefit.",
+      "prior_distinction": "Not a repeat of fourth-audit BE4-04: shaded Germanic Horse belongs to its Gallic executor and previously could be gifted. Cards 10/63 instead require an independently selected Gallic recipient even when the executor is Roman. Original Battle/Winter Campaign human-choice repairs repaired consumers, not this acquisition validation.",
+      "evidence": [
+        "probe_events.py:recipient_witnesses",
+        "observed.json:recipient_acquisition"
+      ],
+      "fixture_limits": "Acquisition uses ordinary setup_scenario Great Revolt seed17 boards, selecting the audited current card without claiming a naturally sampled sequence. Ballistae follow-through uses a controlled initialized position assembled with piece helpers and the permanent Provincia Fort, an exact Sequani Citadel allegiance, one Belgic Warband plus Ambiorix, and four Revealed defending Arverni Warbands. Winter Campaign is the production consumer invoked directly at its after-Harvest boundary, not a claimed full Winter run.",
+      "comparison_pattern": "Typed, mandatory Event selections must be validated before committing, and stored effects must be traced to actual consumers. LoD event_choices.py:125-137 and coin-implementation-lessons.md data-shape/cross-faction sections guided the check, not the game-rule conclusion.",
+      "repair_scope": "Share or align recipient validation for numeric10/numeric63 shaded. Preserve allowed Gallic-to-other-Gallic gifts and NPC selection rules; reject missing/invalid human recipients rather than recording ownerless effects. Do not globally infer owners for historical unknown-provenance saves.",
+      "partition": "events",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 94,
+          "description": ""
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 645,
+          "description": ""
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "line": 5,
+          "description": ""
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "line": 50,
+          "description": ""
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "line": 681,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "line": 2328,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 4108,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/engine/winter_campaign.py",
+          "line": 141,
+          "description": ""
+        }
+      ],
+      "prior_relation": "Not a repeat of fourth-audit BE4-04: shaded Germanic Horse belongs to its Gallic executor and previously could be gifted. Cards 10/63 instead require an independently selected Gallic recipient even when the executor is Roman. Original Battle/Winter Campaign human-choice repairs repaired consumers, not this acquisition validation.",
+      "fixture": "Acquisition uses ordinary setup_scenario Great Revolt seed17 boards, selecting the audited current card without claiming a naturally sampled sequence. Ballistae follow-through uses a controlled initialized position assembled with piece helpers and the permanent Provincia Fort, an exact Sequani Citadel allegiance, one Belgic Warband plus Ambiorix, and four Revealed defending Arverni Warbands. Winter Campaign is the production consumer invoked directly at its after-Harvest boundary, not a claimed full Winter run.",
+      "limits": "Acquisition uses ordinary setup_scenario Great Revolt seed17 boards, selecting the audited current card without claiming a naturally sampled sequence. Ballistae follow-through uses a controlled initialized position assembled with piece helpers and the permanent Provincia Fort, an exact Sequani Citadel allegiance, one Belgic Warband plus Ambiorix, and four Revealed defending Arverni Warbands. Winter Campaign is the production consumer invoked directly at its after-Harvest boundary, not a claimed full Winter run.",
+      "evidence_directory": "events"
+    },
+    {
+      "id": "BE5-02",
+      "title": "Colony creates a Tribe and Ally in nonplayable map areas",
+      "priority": "high",
+      "status": "open",
+      "cards": [
+        71
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:2627-2652",
+        "fs_bot/map/map_data.py:390-403"
+      ],
+      "source_locations": [
+        "Reference Documents/Card Reference:729-733",
+        "Reference Documents/Chapter 1:115-133",
+        "Reference Documents/Ariovistus/Chapter A1:78-82",
+        "Reference Documents/Chapter 5:25-37"
+      ],
+      "expected": "Colony selects a playable Region under the executing Faction's Control or No Control. Its exception creates an additional Tribe circle in that Region; it does not turn a nonplayable area into a Region. Reject base Cisalpina without Gallia Togata and Ariovistus Britannia before adding any Tribe, marker or Ally.",
+      "observed": "From ordinary Great Revolt seed17 setup, a Roman public Event71 naming Cisalpina succeeds and creates Colony_Cisalpina, its marker and one Roman Ally despite no Gallia Togata. From ordinary Ariovistus seed17 setup, the same plan naming Britannia succeeds and creates Colony_Britannia and its Roman Ally. is_region_playable is false in both cases; durable shape validation, public mechanical preview and live execution all accept. Census and structural checks remain clean.",
+      "controls": "Roman Colony in Provincia succeeds in both scenarios. A real Card5 Gallia Togata followed by Roman Colony in Cisalpina succeeds legally. Each control creates exactly one matching named Tribe and Ally with clean inventory/structure.",
+      "cause": "The Colony handler checks only Control. Every represented map area has an empty space entry, and an empty nonplayable area reports No Control. No scenario-aware geography or faction stacking check guards marker/Tribe creation.",
+      "prior_distinction": "Third-audit BE3-03 fixed creating a legal Colony under scarce Ally supply; XC3-01 fixed existing dynamic Tribe consumers. This finding concerns the location of new Colony creation and reaches both base and expansion nonplayable areas. CM3-01 was ordinary Scout geography, a different execution path.",
+      "evidence": [
+        "probe_events.py:colony_witnesses",
+        "observed.json:colony_geography"
+      ],
+      "fixture_limits": "All main witnesses and controls start from full setup_scenario boards. The current card is selected explicitly for the probe. Both numeric71 and the geography rules are valid in the stated scenario. No forbidden off-deck numeric replacement card is used.",
+      "comparison_pattern": "Verify the actual selected location against current board rules, rather than equating storage presence or a generic No Control result with playability. LoD coin-implementation-lessons.md boundary/data-shape checks guided the probe.",
+      "repair_scope": "Validate the selected Colony Region with the state-aware geography and executor stacking rules before any new Tribe or marker is installed. Retain legal Gallia Togata access, No Control choices, and scarce-Ally creation.",
+      "partition": "events",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 729,
+          "description": ""
+        },
+        {
+          "path": "Reference Documents/Chapter 1",
+          "line": 115,
+          "description": ""
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A1",
+          "line": 78,
+          "description": ""
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "line": 25,
+          "description": ""
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "line": 2627,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/map/map_data.py",
+          "line": 390,
+          "description": ""
+        }
+      ],
+      "prior_relation": "Third-audit BE3-03 fixed creating a legal Colony under scarce Ally supply; XC3-01 fixed existing dynamic Tribe consumers. This finding concerns the location of new Colony creation and reaches both base and expansion nonplayable areas. CM3-01 was ordinary Scout geography, a different execution path.",
+      "fixture": "All main witnesses and controls start from full setup_scenario boards. The current card is selected explicitly for the probe. Both numeric71 and the geography rules are valid in the stated scenario. No forbidden off-deck numeric replacement card is used.",
+      "limits": "All main witnesses and controls start from full setup_scenario boards. The current card is selected explicitly for the probe. Both numeric71 and the geography rules are valid in the stated scenario. No forbidden off-deck numeric replacement card is used.",
+      "evidence_directory": "events"
+    },
+    {
+      "id": "BE5-03",
+      "title": "Forced Marches rejects legal Cisalpina movement after Gallia Togata",
+      "priority": "medium",
+      "status": "open",
+      "cards": [
+        5,
+        32
+      ],
+      "code_locations": [
+        "fs_bot/cards/card_effects.py:1375-1401",
+        "fs_bot/map/map_data.py:344-368",
+        "fs_bot/map/map_data.py:390-403"
+      ],
+      "source_locations": [
+        "Reference Documents/Card Reference:43-53",
+        "Reference Documents/Card Reference:318-325",
+        "Reference Documents/Chapter 5:25-28"
+      ],
+      "expected": "After Gallia Togata makes Cisalpina a playable Roman Region, Forced Marches may relocate the executor's Roman mobile pieces into or out of it. The card's sole geographic exclusion is Britannia, subject to ordinary current stacking rules.",
+      "observed": "On a full Great Revolt seed17 board, public Card5 correctly installs the marker and three Auxilia. A subsequent public Card32 selecting one Auxilia Cisalpina to Provincia is rejected with 'Forced Marches requires playable Regions'. A separate identical board rejects the legal reverse move from Provincia to Cisalpina. Both original and second-edition profiles fail, and the atomic rollback preserves the pieces and RNG.",
+      "controls": "Card32 Provincia to Sequani succeeds, moving exactly one Auxilia. Without Card5, Provincia to Cisalpina is correctly rejected. In the failing Card5 cases, the production is_region_playable helper returns true for both endpoints.",
+      "cause": "The handler calls get_playable_regions(scenario, state['capabilities']), while Card5 stores its map-changing state as a regional marker. The state-aware geography adapter already combines that marker with the legacy capability representation, but this Event does not call it.",
+      "prior_distinction": "New legal-choice failure in numeric32. Third-audit CM3-01 admitted illegal ordinary Scout into inactive Cisalpina; this is the opposite effect in a separate Event path after a real marker writer. Not a repeat of Interlude deck/Nori repairs.",
+      "evidence": [
+        "probe_events.py:forced_marches_witnesses",
+        "observed.json:forced_marches_geography"
+      ],
+      "fixture_limits": "Main witnesses are full Great Revolt scenario setups followed by an actual public Gallia Togata Event. Card order is controlled, not claimed to have arisen in a sampled game. No numeric32 claim is made in Ariovistus, whose ordinary deck replaces it with A32.",
+      "comparison_pattern": "Trace a legitimate writer to all consumers using the actual saved representation. LoD coin-implementation-lessons.md section B describes the same producer/consumer representation failure class.",
+      "repair_scope": "Use state-aware, faction-aware Region eligibility for numeric32 without widening Britannia or Gallia Togata's Roman-only constraints. Include marker-form and legacy compatibility controls.",
+      "partition": "events",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 43,
+          "description": ""
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 318,
+          "description": ""
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "line": 25,
+          "description": ""
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "line": 1375,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/map/map_data.py",
+          "line": 344,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/map/map_data.py",
+          "line": 390,
+          "description": ""
+        }
+      ],
+      "prior_relation": "New legal-choice failure in numeric32. Third-audit CM3-01 admitted illegal ordinary Scout into inactive Cisalpina; this is the opposite effect in a separate Event path after a real marker writer. Not a repeat of Interlude deck/Nori repairs.",
+      "fixture": "Main witnesses are full Great Revolt scenario setups followed by an actual public Gallia Togata Event. Card order is controlled, not claimed to have arisen in a sampled game. No numeric32 claim is made in Ariovistus, whose ordinary deck replaces it with A32.",
+      "limits": "Main witnesses are full Great Revolt scenario setups followed by an actual public Gallia Togata Event. Card order is controlled, not claimed to have arisen in a sampled game. No numeric32 claim is made in Ariovistus, whose ordinary deck replaces it with A32.",
+      "evidence_directory": "events"
+    },
+    {
+      "id": "FE5-01",
+      "priority": "high",
+      "title": "Event-granted March accepts a forbidden Britannia crossing with an accompanying Special Ability",
+      "expected": "Assembly of Gaul's free Command follows normal restrictions. Aedui may March Morini to Britannia, or combine a mainland March with Suborn, but may not combine the Britannia crossing with any accompanying Special Ability.",
+      "observed": "Full public execution of shaded card 52 accepts the canonical origins/destinations/routes plan, moves one Aedui Warband from Morini to Britannia, and places another Aedui Warband by Suborn at Carnutes. Both execute free. Ordinary execution of the identical March + Suborn rejects before changing board or RNG. Durable SeatSession validation also accepts the prohibited free action, commits it after a save/load, clears its pending decision, and replays the same incorrect result exactly.",
+      "rules": [
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": "38-39",
+          "rule": "4.1.3 prohibits a Special Ability accompanying March into or out of Britannia"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": "78-94",
+          "rule": "5.4 preserves other action restrictions unless Event text modifies them"
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": "518-526",
+          "rule": "Assembly52 shaded grants a free Command with up to two otherwise legal accompanying abilities"
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/engine/free_actions.py",
+          "lines": "386-420",
+          "issue": "The grant validator derives March origins but omits march_scope_error / the Britannia route check"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": "713-715",
+          "issue": "Free Command dispatch calls March with free=True but leaves _with_sa=False"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": "4406-4422",
+          "issue": "March only checks the accompanying-SA route restriction if _with_sa is passed"
+        }
+      ],
+      "controls": [
+        "Identical ordinary March+Suborn rejects atomically",
+        "Free Britannia crossing with No SA succeeds",
+        "Free Morini-to-Nervii March+Suborn succeeds",
+        "Validation leaves live board and RNG unchanged",
+        "Durable save/load and replay preserve the observed accepted action"
+      ],
+      "prior_findings": "CM2-02 repaired alternate representations of ordinary human March. Its ordinary canonical/alternate path now rejects this crossing. This is a separate unchecked Event-grant pipeline, using the canonical shape. FE4-01/02/03 concerned free Battle timing, nested SA Region scope and Assembly's second ability, respectively. No previous ledger records this free March path.",
+      "fixture": "Controlled Great Revolt state from build_initial_state(seed=4), all human factions, permanent Roman Fort in Provincia, Aedui Warbands in Carnutes and Morini, 10 Aedui Resources, current52/next49. All physical placements use place_piece. Census and structure pass before and after. Carnutes is Aedui controlled. Not claimed naturally sampled.",
+      "limit": "Dynamically confirmed for the single-ability free Command path on Assembly52. The generic helper serves other Event grants; those additional callers were not individually sampled. Two-ability Assembly has its own _with_sa=True check. No source ambiguity.",
+      "status": "open",
+      "partition": "frontend",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 4",
+          "line": 38,
+          "description": "4.1.3 prohibits a Special Ability accompanying March into or out of Britannia"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "line": 78,
+          "description": "5.4 preserves other action restrictions unless Event text modifies them"
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 518,
+          "description": "Assembly52 shaded grants a free Command with up to two otherwise legal accompanying abilities"
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/engine/free_actions.py",
+          "line": 386,
+          "description": "The grant validator derives March origins but omits march_scope_error / the Britannia route check"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 713,
+          "description": "Free Command dispatch calls March with free=True but leaves _with_sa=False"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 4406,
+          "description": "March only checks the accompanying-SA route restriction if _with_sa is passed"
+        }
+      ],
+      "prior_relation": "CM2-02 repaired alternate representations of ordinary human March. Its ordinary canonical/alternate path now rejects this crossing. This is a separate unchecked Event-grant pipeline, using the canonical shape. FE4-01/02/03 concerned free Battle timing, nested SA Region scope and Assembly's second ability, respectively. No previous ledger records this free March path.",
+      "limits": "Dynamically confirmed for the single-ability free Command path on Assembly52. The generic helper serves other Event grants; those additional callers were not individually sampled. Two-ability Assembly has its own _with_sa=True check. No source ambiguity.",
+      "evidence_directory": "frontend"
+    },
+    {
+      "id": "FE5-02",
+      "priority": "medium",
+      "title": "Human Event-granted March silently omits the transit drop-off decision",
+      "expected": "A Roman player receiving Assembly52's free March may leave one of two marching Auxilia in Sequani before continuing from Provincia through Sequani to Mandubii. The existing live march_dropoff interface should be offered just as it is for an ordinary March.",
+      "observed": "The public Event executor requests the human free Command and then moves both Auxilia to Mandubii without any march_dropoff request, leaving Sequani empty. The same plan and same callback advertised as supports_march_dropoffs in ordinary public execution receives the request and successfully leaves one Auxilia in Sequani while the other reaches Mandubii. Both executions have clean census and structure.",
+      "rules": [
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": "52-68",
+          "rule": "3.2.2 allows pieces of the Roman marching group to drop off before the rest move on"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": "78-94",
+          "rule": "5.4 changes cost and eligibility, preserving other normal procedures"
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": "518-526",
+          "rule": "Assembly52 shaded grants a normal free Command"
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": "713-715",
+          "issue": "Free Command dispatch leaves choose_dropoffs at its false default"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": "367-377",
+          "issue": "Ordinary human March enables choose_dropoffs=True"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": "4406-4425",
+          "issue": "Drop-off option is gated by choose_dropoffs"
+        },
+        {
+          "path": "fs_bot/engine/march_choices.py",
+          "lines": "202-243",
+          "issue": "The existing callback-driven chooser is never reached from this free March path"
+        }
+      ],
+      "controls": [
+        "Identical ordinary public March requests one live drop-off and preserves the player's selected piece",
+        "Callback explicitly declares supports_march_dropoffs=True in both cases",
+        "No Special Ability, enemy harassment or capability complicates the witness",
+        "Both before/after board census and structure are valid"
+      ],
+      "prior_findings": "The original MARCH-DROPOFF finding expressly covered ordinary March and its repaired ordinary path passes this paired control. This is the missed generic Event-granted human Command integration. FE5-01 is a separate illegal-combination validation failure; this group concerns omitted legal player choice and a different required execution flag.",
+      "fixture": "Controlled Great Revolt state from build_initial_state(seed=4), permanent Provincia Fort, one Roman Auxilia controlling Carnutes, two Roman Auxilia in Provincia, 10 Resources, current52/next49, all factions human. Route Provincia-Sequani-Mandubii is a legal two-step Roman March without Caesar. place_piece creates every physical fixture piece. No claim of natural sampled reach.",
+      "limit": "Dynamic witness covers Assembly52's ordinary zero-ability free Command. Static inspection also shows its two-ability path uses choose_dropoffs=bool(interruption_steps), but that additional path is not included in the dynamic claim. Card-specific movement-only grants may have distinct printed rules and need individual review during repair.",
+      "status": "open",
+      "partition": "frontend",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 52,
+          "description": "3.2.2 allows pieces of the Roman marching group to drop off before the rest move on"
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "line": 78,
+          "description": "5.4 changes cost and eligibility, preserving other normal procedures"
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 518,
+          "description": "Assembly52 shaded grants a normal free Command"
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 713,
+          "description": "Free Command dispatch leaves choose_dropoffs at its false default"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 367,
+          "description": "Ordinary human March enables choose_dropoffs=True"
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "line": 4406,
+          "description": "Drop-off option is gated by choose_dropoffs"
+        },
+        {
+          "path": "fs_bot/engine/march_choices.py",
+          "line": 202,
+          "description": "The existing callback-driven chooser is never reached from this free March path"
+        }
+      ],
+      "prior_relation": "The original MARCH-DROPOFF finding expressly covered ordinary March and its repaired ordinary path passes this paired control. This is the missed generic Event-granted human Command integration. FE5-01 is a separate illegal-combination validation failure; this group concerns omitted legal player choice and a different required execution flag.",
+      "limits": "Dynamic witness covers Assembly52's ordinary zero-ability free Command. Static inspection also shows its two-ability path uses choose_dropoffs=bool(interruption_steps), but that additional path is not included in the dynamic claim. Card-specific movement-only grants may have distinct printed rules and need individual review during repair.",
+      "evidence_directory": "frontend"
+    },
+    {
+      "id": "BM5-01",
+      "priority": "high",
+      "title": "Stalwart leaves Legio X bonus Losses active against Germans",
+      "expected": "With A31 shaded and Card15 unshaded active, Roman Caesar plus one Legion attacking Germans inflicts two Losses: the named-leader doubling and the harmful +2 Event modifier are both cancelled.",
+      "observed": "Full authored ordinary Battle in Carnutes removes four of eight German Warbands. Stalwart cancels Caesar doubling but the later Legio X block still adds two Losses. Both public Events activate successfully beforehand.",
+      "rules": [
+        {
+          "file": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            126,
+            131
+          ],
+          "point": "Stalwart cancels Event effects harming Germans in Battle and named-enemy-Leader doubling."
+        },
+        {
+          "file": "Reference Documents/Card Reference",
+          "lines": [
+            147,
+            154
+          ],
+          "point": "Legio X adds two final Losses inflicted by Romans when Roman Leader and Legion participate."
+        },
+        {
+          "file": "Reference Documents/Chapter 3",
+          "lines": [
+            159,
+            167
+          ],
+          "point": "Ordinary one-Legion plus Leader Attack inflicts two Losses without Caesar doubling."
+        },
+        {
+          "file": "Reference Documents/Ariovistus/A Setup",
+          "lines": [
+            36,
+            60
+          ],
+          "point": "Card15 is retained in the normal Ariovistus deck; A31 replaces31. These effects can coexist without Interlude."
+        }
+      ],
+      "code": [
+        {
+          "file": "fs_bot/battle/resolve.py",
+          "lines": [
+            388,
+            399
+          ],
+          "point": "Stalwart only resets named Leader flags here."
+        },
+        {
+          "file": "fs_bot/battle/resolve.py",
+          "lines": [
+            502,
+            512
+          ],
+          "point": "Legio X final modifier ignores Stalwart."
+        },
+        {
+          "file": "fs_bot/battle/losses.py",
+          "lines": [
+            312,
+            322
+          ],
+          "point": "Parallel modifier block also has no Stalwart gate."
+        }
+      ],
+      "controls": [
+        "A31 shaded with no15 removes two Germans.",
+        "15 unshaded with noA31 removes five Germans (Caesar doubling and +2 apply).",
+        "Runtime deck IDs confirm15,A31,A64 coexist; supplied setup replacement list corroborates this independently."
+      ],
+      "prior_relation": "EX3-04 covered Germanic Horse doubling against Germans. This newly demonstrated consumer is the independent Legio X final flat bonus, left active after that repair. It is one additional cancellation repair group, not separate counts for every potential A31 interaction.",
+      "fixture": "Controlled initial Ariovistus state, seed1, permanent Provincia Fort, canonical placement helpers. Caesar and one Legion plus eight German Warbands in Carnutes. Human Germans decline Retreat. Capability acquisitions use execute_decision ACTION_EVENT, battle uses validate_response and execute_decision ACTION_COMMAND.",
+      "evidence": "probe_battle.py / probe_battle.json legio_cases",
+      "validation": "All before/after inventory and structural validations return empty lists. Public action executes with no errors. Witness assertions pass at bd30d522.",
+      "limits": "Confirmed +2 Attack modifier only. The same code shows ungated Roman -1 and Counterattack consumers but those additional manifestations are not separately counted; Balearic prefire timing was not resolved or counted.",
+      "repair_direction": "Apply source-scoped A31 cancellation to Legio X in live and forecast calculators, retaining ordinary non-German Battles and capability lifecycle; add public regression controls.",
+      "status": "open",
+      "partition": "battle",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "line": 126,
+          "description": "Stalwart cancels Event effects harming Germans in Battle and named-enemy-Leader doubling."
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "line": 147,
+          "description": "Legio X adds two final Losses inflicted by Romans when Roman Leader and Legion participate."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 159,
+          "description": "Ordinary one-Legion plus Leader Attack inflicts two Losses without Caesar doubling."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Setup",
+          "line": 36,
+          "description": "Card15 is retained in the normal Ariovistus deck; A31 replaces31. These effects can coexist without Interlude."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/battle/resolve.py",
+          "line": 388,
+          "description": "Stalwart only resets named Leader flags here."
+        },
+        {
+          "path": "fs_bot/battle/resolve.py",
+          "line": 502,
+          "description": "Legio X final modifier ignores Stalwart."
+        },
+        {
+          "path": "fs_bot/battle/losses.py",
+          "line": 312,
+          "description": "Parallel modifier block also has no Stalwart gate."
+        }
+      ],
+      "evidence_directory": "battle"
+    },
+    {
+      "id": "BM5-02",
+      "priority": "high",
+      "title": "Abatis bypasses casualty choices and can force Diviciacus to absorb before his defensive marker",
+      "expected": "Abatis acts as a Fort while its owner defends. Once ordinary Warbands are removed, the human may choose an eligible Ally instead of rolling for the marker. Diviciacus cannot absorb while the Abatis can still absorb.",
+      "observed": "In the Ally witness, four Roman Legions cause two halved Losses to one Aedui Warband plus an Ally and Abatis. The Warband is offered, then the engine rolls/removes Abatis without a second loss-order request and preserves the Ally. In the Diviciacus witness, replacing the Ally with Diviciacus makes the engine offer and remove Diviciacus on seed2 while leaving Abatis in place.",
+      "rules": [
+        {
+          "file": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            288,
+            292
+          ],
+          "point": "When defending, owner Abatis acts as a Fort."
+        },
+        {
+          "file": "Reference Documents/Chapter 3",
+          "lines": [
+            159,
+            186
+          ],
+          "point": "Owner chooses removal versus eligible saving roll; Ally/Citadel/Fort share static mandatory tier."
+        },
+        {
+          "file": "Reference Documents/Ariovistus/Chapter A3",
+          "lines": [
+            63,
+            66
+          ],
+          "point": "Diviciacus may not absorb until last possible piece."
+        }
+      ],
+      "code": [
+        {
+          "file": "fs_bot/battle/losses.py",
+          "lines": [
+            440,
+            485
+          ],
+          "point": "Out-of-band Abatis auto-absorption precedes human callback, but only when piece_order empty/static or Retreating."
+        },
+        {
+          "file": "fs_bot/battle/losses.py",
+          "lines": [
+            491,
+            506
+          ],
+          "point": "Human request lists piece_order without Abatis."
+        },
+        {
+          "file": "fs_bot/battle/losses.py",
+          "lines": [
+            783,
+            815
+          ],
+          "point": "Diviciacus restriction only sees ordinary pieces, so the live Leader is exposed while Abatis survives."
+        }
+      ],
+      "controls": [
+        "Without marker and with two Legions producing the same two Losses, two requests remove Warband then the chosen named Ally.",
+        "The two-Loss Diviciacus plus Warband plus Ally control removes Warband/Ally and keeps Diviciacus.",
+        "Both marker positions acquire Abatis through an actual validA64 Event with an Aedui Warband present."
+      ],
+      "prior_relation": "Original BATTLE-LOSS-IDENTITY repaired physical Warband/Auxilia visibility and named Allied Tribe selection. Historical Abatis absorption implementation established saving rolls, but the marker still sits outside ordinary choice/last-piece handling. These two new manifestations share one missing marker-in-casualty-selection mechanism and count as one group.",
+      "fixture": "Controlled initial Ariovistus states, seeds1/2, permanent Provincia Fort, four Roman Legions and one Aedui Warband at Carnutes, Aedui Ally at Aulerci or Diviciacus. Explicit no Retreat. No unit mocks, altered RNG, or invalid piece identities. Actual public A64 then public normal Battle.",
+      "evidence": "probe_battle.py / probe_battle.json abatis_cases, diviciacus_abatis, diviciacus_ally_control",
+      "validation": "All before/after inventory and structure validators return empty lists. Both authored Battles validate and execute without errors. Recorded prompts demonstrate the omitted choice and premature Leader choice.",
+      "limits": "Controlled legal positions rather than sampled natural games. No claim that all Abatis interactions were reviewed; no new Fort threshold or prefire timing ruling proposed.",
+      "repair_direction": "Integrate defending Abatis as a legal physical casualty candidate within mandatory tiers and Diviciacus last-possible rule, with human choice and replay support; preserve current NP default where source permits.",
+      "status": "open",
+      "partition": "battle",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "line": 288,
+          "description": "When defending, owner Abatis acts as a Fort."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 159,
+          "description": "Owner chooses removal versus eligible saving roll; Ally/Citadel/Fort share static mandatory tier."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A3",
+          "line": 63,
+          "description": "Diviciacus may not absorb until last possible piece."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/battle/losses.py",
+          "line": 440,
+          "description": "Out-of-band Abatis auto-absorption precedes human callback, but only when piece_order empty/static or Retreating."
+        },
+        {
+          "path": "fs_bot/battle/losses.py",
+          "line": 491,
+          "description": "Human request lists piece_order without Abatis."
+        },
+        {
+          "path": "fs_bot/battle/losses.py",
+          "line": 783,
+          "description": "Diviciacus restriction only sees ordinary pieces, so the live Leader is exposed while Abatis survives."
+        }
+      ],
+      "evidence_directory": "battle"
+    },
+    {
+      "id": "NP5-01",
+      "priority": "high",
+      "title": "Diviciacus protection evaluates unrelated opponents and omits Ariovistus Counterattack doubling",
+      "expected": "Apply A8.6.2 to the actual selected defender and actual possible Counterattack. Diviciacus plus one Warband may safely Battle a lone Belgic Ally regardless of ten unrelated German Warbands sharing the Region. Conversely, with one escort he may not Battle Ariovistus, who can survive the Attack and inflict two Counterattack Losses.",
+      "observed": "The public Aedui dispatcher returns Pass in the safe Belgic-Ally case when unrelated Germans are present, but Battle when they are absent. In a second fixture it Battles at Veneti to remove a Belgic Ally and adds the Carnutes Battle against Ariovistus. Seed 6 leaves Ariovistus alive and removes both the Aedui escort and Diviciacus. Changing only Ariovistus to his Successor leaves Diviciacus alive, as one Counterattack Loss is absorbed by the escort.",
+      "cause": "node_a_battle removes Diviciacus's entire Region using a max-over-all-enemies helper before selecting a target. That helper uses a raw estimate that omits Ariovistus's Counterattack multiplier. These are grouped around the same defective safety check, not counted as separate findings.",
+      "sources": [
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "line": 53,
+          "detail": "A8.6.2 protects Diviciacus in both Battle conditions and priorities."
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 448,
+          "detail": "8.6.2 requires accounting for which enemy Aedui would Battle."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 132,
+          "detail": "3.2.4 Step 1 selects exactly one defender."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A3",
+          "line": 57,
+          "detail": "Ariovistus doubles Counterattack Losses; Diviciacus absorbs only after other pieces."
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 332
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 704
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 202
+        }
+      ],
+      "controls": "Same safe battle without uninvolved Germans is chosen and executes. Same dangerous Battle with German Successor loses only escort. Correct human-authored Belgic Battle validates and executes with both Diviciacus and escort intact.",
+      "prior_distinction": "NP4-02 fixed only the equality boundary for zero/equal Counterattack versus escort capacity. Its report expressly left unrelated-enemy cases uncounted. These fifth-pass witnesses still fail after that repair and identify target scoping and an omitted named-Leader multiplier. BM4-02 concerns defensive Retreat policy, not this offensive safety gate.",
+      "limits": "No claim about all possible Capability, Ambush, Retreat or casualty-choice forecasts. The seed-6 removal demonstrates one legal outcome; A8.6.2 forbids the Battle whenever such a Loss is possible, even on a saving roll.",
+      "status": "open",
+      "reproduction": "bots/probe_bots.py",
+      "output": "bots/probe_bots-output.json",
+      "audited_commit": "bd30d522e8baa2d303b9e372d7d9c550351e91a5",
+      "fixture": "Controlled build_initial_state position; pieces placed with canonical helpers and named Tribe helper; permanent Provincia Fort retained; pre/post inventory and structural integrity pass. No claim of natural sampled-game reachability.",
+      "partition": "bots",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "line": 53,
+          "description": "A8.6.2 protects Diviciacus in both Battle conditions and priorities."
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 448,
+          "description": "8.6.2 requires accounting for which enemy Aedui would Battle."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 132,
+          "description": "3.2.4 Step 1 selects exactly one defender."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A3",
+          "line": 57,
+          "description": "Ariovistus doubles Counterattack Losses; Diviciacus absorbs only after other pieces."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 332,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 704,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 202,
+          "description": ""
+        }
+      ],
+      "prior_relation": "NP4-02 fixed only the equality boundary for zero/equal Counterattack versus escort capacity. Its report expressly left unrelated-enemy cases uncounted. These fifth-pass witnesses still fail after that repair and identify target scoping and an omitted named-Leader multiplier. BM4-02 concerns defensive Retreat policy, not this offensive safety gate.",
+      "evidence_directory": "bots"
+    },
+    {
+      "id": "NP5-02",
+      "priority": "medium",
+      "title": "Aedui high-value Battle trigger succeeds when no high-value defender exists",
+      "expected": "With only eight Aedui and one Belgic Warband at Carnutes, and no enemy Leader, Ally, Citadel or Legion elsewhere, 8.6.2 does not trigger Battle. The next 8.6.3 branch Rallies because Carnutes Control permits placing an Ally.",
+      "observed": "In both The Great Revolt and Ariovistus, the public dispatcher labels the lone Belgic Warband a high_value target, chooses Battle, and executes it. The source-required Rally branch validates/executed separately from the identical initial position and places the Carnutes Aedui Ally.",
+      "cause": "_would_force_loss_on_high_value counts real high-value targets but guards zero only under Morasses. Outside that Event, effective_losses > expendable returns True even if high_value_count is zero.",
+      "sources": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 448,
+          "detail": "8.6.2 requires a sure Loss on Leader, Ally, Citadel or Legion before triggering Battle."
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 469,
+          "detail": "8.6.3 follows with Rally when it can place an Ally."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "line": 53,
+          "detail": "Settlements join the high-value list in expansion; none are present."
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 270
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 299
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 411
+        }
+      ],
+      "controls": "Adding a Belgic Carnutes Ally makes Battle correctly satisfy the high-value prerequisite. Both variants run in base and Ariovistus. The fixture uses Command-only planning to avoid Ambush eligibility affecting the proof.",
+      "prior_distinction": "None of the earlier 50/21/15/16 ledgers covers nonexistent high-value targets. This is separate from NP4-02 Diviciacus protection and NP4-01 Roman Settlement ranking.",
+      "limits": "The alternate legal Rally plan is obtained from node_a_rally and executed through public execute_decision. The audit does not alter the bot decision tree or claim sampled-game frequency.",
+      "status": "open",
+      "reproduction": "bots/probe_bots.py",
+      "output": "bots/probe_bots-output.json",
+      "audited_commit": "bd30d522e8baa2d303b9e372d7d9c550351e91a5",
+      "fixture": "Controlled build_initial_state position; pieces placed with canonical helpers and named Tribe helper; permanent Provincia Fort retained; pre/post inventory and structural integrity pass. No claim of natural sampled-game reachability.",
+      "partition": "bots",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 448,
+          "description": "8.6.2 requires a sure Loss on Leader, Ally, Citadel or Legion before triggering Battle."
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "line": 469,
+          "description": "8.6.3 follows with Rally when it can place an Ally."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "line": 53,
+          "description": "Settlements join the high-value list in expansion; none are present."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 270,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 299,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "line": 411,
+          "description": ""
+        }
+      ],
+      "prior_relation": "None of the earlier 50/21/15/16 ledgers covers nonexistent high-value targets. This is separate from NP4-02 Diviciacus protection and NP4-01 Roman Settlement ranking.",
+      "evidence_directory": "bots"
+    },
+    {
+      "id": "NP5-03",
+      "priority": "medium",
+      "title": "German Battle selection uses pre-Attack Counterattack forces and omits Ariovistus attack doubling",
+      "expected": "Six Revealed German Warbands versus six Revealed Roman Auxilia must Battle under A8.7.1: three Attack Losses leave three Auxilia for one Counterattack Loss, so 3 > 1. Ariovistus with four Warbands versus six Auxilia is also favorable: six Attack Losses remove every Auxilia and leave zero Counterattack.",
+      "observed": "The public German dispatcher predicts 3 versus 3 in both cases and chooses/executes March to Veneti. A normal validated public Battle from the identical initial board produces the source-derived 3/1 or 6/0 losses with clean post-state integrity.",
+      "cause": "The German-specific _estimate_battle_losses calculates Counterattack using the entire starting defender stack and uses only 1/2 per German Warband plus one Leader, without Ariovistus doubling. _can_battle_in_region rejects the resulting equal estimate before any SA forecast.",
+      "sources": [
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "line": 72,
+          "detail": "A8.7.1 requires comparing inflicted/suffered Losses, with defender removals assumed for saves."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 144,
+          "detail": "Counterattack uses surviving Defending Forces."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A3",
+          "line": 57,
+          "detail": "Ariovistus doubles Losses against undefended enemies."
+        }
+      ],
+      "code": [
+        {
+          "path": "fs_bot/bots/german_bot.py",
+          "line": 224
+        },
+        {
+          "path": "fs_bot/bots/german_bot.py",
+          "line": 265
+        },
+        {
+          "path": "fs_bot/bots/german_bot.py",
+          "line": 895
+        }
+      ],
+      "controls": "Six Germans versus four Auxilia correctly selects Battle (3 Attack, 0 Counterattack). Six Germans versus twelve Auxilia correctly selects March (3 Attack, 4 Counterattack). All witnesses disable SA through the standard Command-only planning flag and use no saving-roll pieces among defenders, avoiding forecast-policy ambiguity.",
+      "prior_distinction": "BM4-02 repaired defensive NPC Retreat forecasts in execute.py. It did not change german_bot.py's independent offensive Battle-selection estimate. No original/second/third/fourth ledger lists this active German flowchart consumer.",
+      "limits": "Confirmed for the two clean no-SA cases above. Other German Capability, Ambush, Intimidate and Successor estimates are statically suspicious but remain uncounted.",
+      "status": "open",
+      "reproduction": "bots/probe_bots.py",
+      "output": "bots/probe_bots-output.json",
+      "audited_commit": "bd30d522e8baa2d303b9e372d7d9c550351e91a5",
+      "fixture": "Controlled build_initial_state position; pieces placed with canonical helpers and named Tribe helper; permanent Provincia Fort retained; pre/post inventory and structural integrity pass. No claim of natural sampled-game reachability.",
+      "partition": "bots",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "line": 72,
+          "description": "A8.7.1 requires comparing inflicted/suffered Losses, with defender removals assumed for saves."
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "line": 144,
+          "description": "Counterattack uses surviving Defending Forces."
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A3",
+          "line": 57,
+          "description": "Ariovistus doubles Losses against undefended enemies."
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/bots/german_bot.py",
+          "line": 224,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/bots/german_bot.py",
+          "line": 265,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/bots/german_bot.py",
+          "line": 895,
+          "description": ""
+        }
+      ],
+      "prior_relation": "BM4-02 repaired defensive NPC Retreat forecasts in execute.py. It did not change german_bot.py's independent offensive Battle-selection estimate. No original/second/third/fourth ledger lists this active German flowchart consumer.",
+      "evidence_directory": "bots"
+    },
+    {
+      "id": "WS5-01",
+      "priority": "high",
+      "title": "Interlude home-City restoration clears all Forces in the containing Region",
+      "expected": "Restoring the Aedui Tribe at Bibracte or Arverni Tribe at Gergovia removes what occupies that Tribe circle/City. Roman Legions and other Forces elsewhere in the containing Region remain subject to their own Interlude instructions. Roman reductions expressly exclude Legions, and a declined expedition changes no Roman Forces.",
+      "observed": "Both mirrored branches iterate every faction and piece type across the entire Aedui/Arverni Region. Full third-Winter resolution restores a vacant home Tribe but also sends a colocated Roman Legion to the Legions Track. Six on-map Legions become five. The matched controls with the home Tribe occupied retain all six. Census/structure checks pass before and after every case.",
+      "reproduction": "PYTHONPATH=<fs-bot-root> python lifecycle/probe_lifecycle.py; WS5-01 contains four independent full run_winter_round cases on seed21.",
+      "source_refs": [
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "line": 51,
+          "description": "Bibracte restoration"
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "line": 61,
+          "description": "Gergovia restoration"
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "line": 65,
+          "description": "Roman reductions exclude Legions"
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "line": 82,
+          "description": "Declined expedition leaves Roman Forces unchanged"
+        },
+        {
+          "path": "Reference Documents/Chapter 1",
+          "line": 117,
+          "description": "Stacking distinguishes Tribe circles/City diamonds from Regions, including the Bibracte/Gergovia identities"
+        }
+      ],
+      "code_refs": [
+        {
+          "path": "fs_bot/engine/interlude.py",
+          "line": 640,
+          "description": ""
+        },
+        {
+          "path": "fs_bot/engine/interlude.py",
+          "line": 793,
+          "description": ""
+        }
+      ],
+      "fixture": "Controlled Gallic War setup, seed21. One Roman Legion moves from Provincia to the selected home Region with the normal piece helper. One Belgic Namnetes Ally is placed legally from Available so neither vacant-home witness passes Roman victory. Home Ally removed with _unally_tribe only in defect variants. All restricted Tribe ownership and permanent Provincia Fort assertions pass. Set winter_count2/current Winter to enter third Victory Phase. Romans are human and explicitly decline Britannia expedition; other seats are NP. Other human Interlude choices use the documented raw API default policy. This is a controlled phase integration, not a claim of sampled gameplay reach.",
+      "controls": "Occupied home Tribe controls retain the Legion in its Region and leave six on-map Legions; vacant cases restore the same Tribe but remove the Legion. No monkeypatches or engine edits.",
+      "distinct_from": "Earlier Interlude choice findings fixed human selection and bookkeeping. WS4-03 removes obsolete Nori at scenario change. Neither covers the Bibracte/Gergovia Region-wide wipe. Existing test_interlude_aedui_choices:test_bibracte_is_restored_when_only_a_colony_ally_survives_in_its_region and test_interlude_arverni_choices:test_cadurci_does_not_prevent_gergovia_restoration_and_reinforcement currently assert collateral clearing; those tests need source-correct expectations, not preservation.",
+      "comparator_pattern": "coin-implementation-lessons.md D: per-space scope must match the actual specified object; apply independently to City/Tribe versus containing Region.",
+      "probe": "lifecycle/probe_lifecycle.py",
+      "output": "lifecycle/probe_lifecycle.json",
+      "status": "open",
+      "partition": "lifecycle",
+      "prior_relation": "Earlier Interlude choice findings fixed human selection and bookkeeping. WS4-03 removes obsolete Nori at scenario change. Neither covers the Bibracte/Gergovia Region-wide wipe. Existing test_interlude_aedui_choices:test_bibracte_is_restored_when_only_a_colony_ally_survives_in_its_region and test_interlude_arverni_choices:test_cadurci_does_not_prevent_gergovia_restoration_and_reinforcement currently assert collateral clearing; those tests need source-correct expectations, not preservation.",
+      "limits": "Controlled integration cases; no encounter-frequency claim.",
+      "evidence_directory": "lifecycle"
+    }
+  ]
+}

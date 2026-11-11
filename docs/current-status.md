@@ -21,6 +21,29 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 11 November fifth comparison audit
+
+The [fifth Liberty or Death comparison](reviews/comparison-audit-round5-2026-11-11.md)
+confirms **11 additional repair groups, 7 high and 4 medium priority**.
+The [new ledger](reviews/comparison-audit-round5-2026-11-11.json) records
+**0 of 11 repaired**. Earlier 50-, 21-, 15- and 16-group ledgers remain closed.
+
+The findings cover ownerless Event Capabilities, Event geography, free March
+restrictions and drop-off choices, Legio X cancellation, Abatis casualty
+selection, Aedui/German Battle forecasts, and Interlude home-City restoration
+removing unrelated Forces from the containing Region.
+
+All **9,806 tests pass**. Five portable witness scripts pass independent and
+root reruns, matching their recorded output. Twenty fresh second-edition bot
+games pass all audit checks. Twenty mixed-seat cases match across hash seeds
+0 and 987 with replay, zero hard findings and two soft partial plans. Both
+matrices use seeds 29–32 in all five scenarios. These general checks do not
+cover every targeted boundary. No gameplay code or balance baseline changed.
+
+Optimates' counting of Pax Gallica's skipped first Victory Phase is a new
+unresolved source question, excluded from the defect count. The report
+provides the evidence, limits and proposed repair batches.
+
 ### 11 November fourth comparison repair Batch 4
 
 The [final repair batch](reviews/fourth-comparison-batch4-2026-11-11.md)

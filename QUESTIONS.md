@@ -8,6 +8,37 @@ issues are closed do not supersede that status.
 
 ## Current open source questions
 
+### Q-OPTIMATES-PAX-PHASE-COUNT — whether Pax's skipped Victory Phase counts for Optimates
+
+Unresolved source question from the fifth comparison audit, 11 November 2026.
+It is excluded from the confirmed defect count.
+
+The audit checked when Card 20 can first end Pax Gallica. `Card Reference`,
+lines 193–196, says, “Upon the game’s 2nd and each later Victory Phase”.
+The Pax Gallica scenario, lines 30–34, says, “Skip that Victory Phase (the
+game continues)” during the first Winter Round.
+
+`fs_bot/engine/winter.py:187–193` uses `winter_count >= 2`, counting that
+first Winter. The archived probe uses a source-valid Pax board with Roman
+score 13 and no qualifying victor, applies Optimates, and resolves the
+first Winter with its Victory Phase explicitly skipped. During the second
+Winter, Optimates removes all eight on-map Legions and ends the game. A
+diagnostic clone with the Event flag disabled continues. Both paths retain
+valid inventory and structure.
+
+The references permit two readings. The second scheduled Victory Phase
+could count even though the first was skipped, making current behavior
+correct. Alternatively, only actually conducted phases could count, so
+Optimates would first qualify during the third Pax Winter. The supplied
+text does not explicitly resolve whether a skipped phase retains its
+ordinal position, and no adopted ruling covers this case.
+
+Record the behavior without changing it until clarification or an adopted
+project ruling selects the convention. Do not infer a reset of first-half
+Victory Phases after the Gallic War Interlude from this separate Pax case.
+The [fifth-audit report](docs/reviews/comparison-audit-round5-2026-11-11.md)
+links the reproducible observation and control.
+
 ### Q-ASSEMBLY-ABILITY-TYPES — two uses of the same ability (10 November 2026)
 
 Card Reference 52 says “Command that may add 2 Special Abilities, free.”

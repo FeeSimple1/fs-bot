@@ -196,7 +196,8 @@ does not prevent the other placement.
 Shaded Lucterius restores the Arverni Successor as Vercingetorix. You can
 place him in his current Region or any legal destination. Shaded Flight of
 Ambiorix restores a Belgic Successor or the Available Leader in Germania,
-Morini, Nervii, Treveri, or Sequani. Its unshaded side uses the Belgic
+Morini, Nervii, Treveri, or Sequani. Bots decline the shaded side when
+named Ambiorix is already on the map. Its unshaded side uses the Belgic
 Control-Allies total shown on the board.
 
 Shaded Marcus Antonius (6) lets the executor choose up to four Roman Auxilia
@@ -710,10 +711,11 @@ The placement and replacement menus show each legal choice after the
 preceding steps. Abatis requires a Region with your Warband when one exists.
 Hidden, Revealed and Scouted Warbands all qualify.
 
-Shaded Land of Mist and Mystery (57) lets the executor name one Ally or
-Dispersed marker in Britannia. The terminal then offers the legal Gallic
-Ally placement and up to four Available Warbands. The Ally and Warbands
-may belong to different Gallic factions.
+Shaded Land of Mist and Mystery (57) requires the executor to remove one
+Ally or Dispersed marker in Britannia when a target exists. The terminal
+then shows the Gallic Ally choices on the resulting board. Place one if
+possible, followed by zero to four Available Warbands. The Ally and
+Warbands may belong to different Gallic factions.
 
 Shaded Surus lets the Event executor choose up to four Aedui Warbands
 by visibility in Treveri or one adjacent Region. Zero is allowed. A

@@ -144,14 +144,12 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The [sixth comparison audit](docs/reviews/comparison-audit-round6-2026-11-11.md)
-confirms **14 new repair groups, all open**, after the fifth audit's 11 fixes.
-Its report includes executable evidence and a five-batch repair order.
-The audited source passes **9,900 tests**, 20 fresh audited bot games and
-20 mixed-player cases with matching replay across two hash seeds and zero
-hard findings. These checks do not establish exhaustive rules coverage.
-The audit changes documentation only; see [current status](docs/current-status.md)
-for the active backlog and historical repair checkpoints.
+The first sixth-comparison batch closes three Event findings, leaving
+**11 of 14 open**. The repaired source passes **9,918 tests** and 120 audited
+bot games. Twenty mixed-player cases match across two hash seeds with zero
+hard findings and one partial plan.
+[Repair and validation](docs/reviews/sixth-comparison-batch1-2026-11-11.md) ·
+[Current status](docs/current-status.md)
 
 The [fourth comparison's final repair batch](docs/reviews/fourth-comparison-batch4-2026-11-11.md)
 corrects the Gallic War Interlude's deck rebuild and retires Nori when

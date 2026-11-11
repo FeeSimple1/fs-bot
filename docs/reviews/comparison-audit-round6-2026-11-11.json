@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 14,
-  "closed": 0,
-  "open": 14,
+  "closed": 3,
+  "open": 11,
   "severity_counts": {
     "high": 7,
     "medium": 7
@@ -198,7 +198,9 @@
         "BE6-01",
         "BE6-02",
         "BE6-03"
-      ]
+      ],
+      "status": "closed",
+      "repair_report": "sixth-comparison-batch1-2026-11-11.md"
     },
     {
       "batch": 2,
@@ -302,7 +304,7 @@
       "controls": "For each exact same starting board, supplying removal=Catuvellauni, ally_tribe=Catuvellauni, ally_faction=Belgae and the same Warband choice removes the Roman Ally and places the Belgic Ally plus 1 Warband. All post-state oracles pass.",
       "prior_relation": "Original BE-08 concerned unrepresentable CLI Event parameter shapes; its 6 November numeric57 repair supplied structured removal and legal post-removal menus. This finding is the surviving engine mandatory-effect guard. EX2-04 enumerates A30 shaded, A56 shaded and A65 shaded quotas only; BE2-03 concerns Remi Influence 68 unshaded. Neither reports numeric57 omission. This is a separate card/handler occurrence, not reopening those IDs.",
       "suggested_repair": "Preflight the mandatory Britannia removal when available and the mandatory Ally placement against the post-removal board; request/reject missing required selections atomically. Preserve legal partial execution when a clause actually cannot be completed and optional zero-to-four Warbands.",
-      "status": "open",
+      "status": "closed",
       "partition": "events",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "evidence_directory": "events",
@@ -351,7 +353,9 @@
       "cause": "The shaded handler takes optional removal and Ally parameters, skips absent/invalid Ally selections, then places the selected Warbands. remove_target(None) silently returns even when removal_options is nonempty.",
       "limits": "Only witnessed cards and paths are confirmed; no natural-play frequency or exhaustive scenario/edition coverage claim.",
       "reproduction": "PYTHONPATH=<fs-bot-root> python events/probe_events.py",
-      "output": "events/probe_events-output.json"
+      "output": "events/probe_events-output.json",
+      "repair_batch": 1,
+      "repair_report": "sixth-comparison-batch1-2026-11-11.md"
     },
     {
       "id": "BE6-02",
@@ -467,7 +471,7 @@
       "expected": "Non-player choice generation must implement the maximized own gains required by the Event priorities and the explicit full-Auxilia Roman instruction. Human up-to choices remain optional.",
       "prior_relation": "Original EXP-08 repaired human up-to choices/refunds including A60 unshaded, not shaded non-player plans. EXP-09 repaired the enumerated expansion placement limits. EX3-03 repaired A35 unshaded Dispersed/Gathering marker replacement, not non-player choice generation. Grouping these three cases reflects one producer-to-consumer parameter seam; no additional cards inferred.",
       "suggested_repair": "Implement card-specific A35 and shaded-A60 non-player parameter derivation using printed beneficiary, type, quantity, and location priorities. Reuse validated legal domains and correct pool limits. Add public dispatcher/executor controls for both A35 faces and A60 shaded.",
-      "status": "open",
+      "status": "closed",
       "partition": "events",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "evidence_directory": "events",
@@ -563,7 +567,9 @@
       "fixture": "Physical Ariovistus setup_scenario(seed=1), active factions marked non-player, current card A35 injected. Seven German Warbands Available, legal Settlement space and pool.; Sparse census-valid Ariovistus board with full Roman Auxilia supply and legal Treveri Ally placement, permanent Provincia Fort.; Sparse census-valid Ariovistus board with Roman Ally at Remi and four Hidden Roman Auxilia in Atrebates, ample Available Belgic replacement pieces and permanent Provincia Fort.",
       "limits": "Only witnessed cards and paths are confirmed; no natural-play frequency or exhaustive scenario/edition coverage claim.",
       "reproduction": "PYTHONPATH=<fs-bot-root> python events/probe_events.py",
-      "output": "events/probe_events-output.json"
+      "output": "events/probe_events-output.json",
+      "repair_batch": 1,
+      "repair_report": "sixth-comparison-batch1-2026-11-11.md"
     },
     {
       "id": "BE6-03",
@@ -626,7 +632,7 @@
       "controls": "Removing the named Leader using remove_piece on the same board makes the selected Event restore named Ambiorix and change material state. On the original physical board with Event access disabled, the dispatcher returns Rally rather than Event or Pass, demonstrating an available command fallback. Every initial/completed state passes pool and structure checks.",
       "prior_relation": "BE2-05 repaired shaded Flight execution for an on-map Successor and forbade illegal return destinations; BE2-06 repaired unshaded Belgic victory counting. This finding concerns the non-player availability consumer with named Ambiorix already present, a different path. EX2-05 is Kinship and is unrelated.",
       "suggested_repair": "Make numeric56 shaded non-player availability require an executable named-Leader return, reusing the corrected successor/Available-Leader target domain. Keep Successor returns effective and named-on-map cases ineffective.",
-      "status": "open",
+      "status": "closed",
       "partition": "events",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "evidence_directory": "events",
@@ -684,7 +690,9 @@
       "cause": "PLACES_LEADER returns effective unconditionally. Decline logic trusts card-specific availability and generic effectiveness; no card56 guard corrects the unconditional result. Execution target helper already correctly distinguishes an on-map named Leader from a missing Leader or Successor; availability does not reuse the distinction.",
       "limits": "Only witnessed cards and paths are confirmed; no natural-play frequency or exhaustive scenario/edition coverage claim.",
       "reproduction": "PYTHONPATH=<fs-bot-root> python events/probe_events.py",
-      "output": "events/probe_events-output.json"
+      "output": "events/probe_events-output.json",
+      "repair_batch": 1,
+      "repair_report": "sixth-comparison-batch1-2026-11-11.md"
     },
     {
       "id": "FE6-01",

@@ -22,22 +22,28 @@ measurements have not been relabeled as results of later changes.
 ## Current audit backlog
 
 The [sixth Liberty or Death comparison audit](reviews/comparison-audit-round6-2026-11-11.md)
-confirms **14 new repair groups: 7 high and 7 medium priority, all open**.
-They cover Event completeness and bot Event plans, automatic German Rally
-and March, Battle Capability integration, free-action legality and choices,
-and bot Battle forecasts. The report supplies seven reproducible witness
-scripts and a five-batch repair order.
-
-The audited source at `86fb0c2` passed **9,900 tests**, 20 fresh audited bot
-games, and 20 mixed-player cases with identical replay across two hash seeds
-and zero hard findings. One mixed-player plan was a matching soft partial.
-These general checks do not cover every targeted rules boundary.
-The earlier 50-, 21-, 15-, 16- and 11-group ledgers remain closed.
-No production code or balance baseline changed in this audit.
+found 14 repair groups. Batch 1 closed the three Event findings, leaving
+**11 open** across automatic German Rally and March, Battle Capabilities,
+free-action choices and bot forecasts. The audit report includes seven
+witness scripts and the repair order. The earlier 50-, 21-, 15-, 16- and
+11-group ledgers remain closed.
 
 [Sixth-audit finding ledger](reviews/comparison-audit-round6-2026-11-11.json)
 
 ## Follow-up repairs
+
+### 11 November sixth comparison repair Batch 1
+
+Shaded Land of Mist and Mystery enforces the Britannia removal and Ally
+placement when each is possible. Bots generate legal A35 and A60 choices
+and decline shaded Flight of Ambiorix when named Ambiorix is already in play.
+[Repair and validation](reviews/sixth-comparison-batch1-2026-11-11.md)
+
+All **9,918 tests pass**. The 120 audited bot games completed cleanly, and
+20 mixed-player cases replayed identically across two hash seeds with zero
+hard findings and one partial plan. The 100-game baseline refresh uses
+the first changed actions in all 20 changed-winner replays and the
+existing 15-point band.
 
 ### 11 November fifth comparison repair Batch 5
 

@@ -2109,7 +2109,10 @@ def execute_card_57(state, shaded=False):
         _event_step(state, "57.ally")
         ally_faction = params.get("ally_faction")
         ally_tribe = params.get("ally_tribe")
-        if (ally_tribe, ally_faction) in ally_options(state):
+        allies = ally_options(state)
+        if allies:
+            if (ally_tribe, ally_faction) not in allies:
+                raise ValueError("Choose an Available Gallic Ally at a Subdued Tribe in Britannia")
             _ally_tribe(state, ally_tribe, ally_faction)
         _event_step(state, "57.warbands")
         wb_faction = params.get("warband_faction")
@@ -3168,12 +3171,8 @@ def execute_card_A35(state, shaded=False):
 
     Source: A Card Reference, card A35
     """
-    from fs_bot.rules_consts import (
-        TREVERI, TRIBE_TREVERI, GERMANIA_REGIONS,
-    )
-    from fs_bot.map.map_data import get_adjacent
+    from fs_bot.rules_consts import TREVERI, TRIBE_TREVERI
     params = state.get("event_params", {})
-    scenario = state["scenario"]
     if not shaded:
         faction = state.get("executing_faction")
         # Validate the card's own constraints BEFORE mutating: the Ally is
@@ -3218,16 +3217,14 @@ def execute_card_A35(state, shaded=False):
                 place_piece(state, TREVERI, pfac, piece_type, count=to_place)
     else:
         # Place German pieces near Germania
-        adj_regions = set()
-        for g_region in GERMANIA_REGIONS:
-            adj_regions.add(g_region)
-            adj_regions.update(get_adjacent(g_region, scenario))
+        from fs_bot.cards.expansion_reinforcements import nasua_regions
+        regions = nasua_regions(state)
         placements = params.get("placements", [])
         wb_placed = 0
         settlement_placed = False
         for p in _event_entries(state, "A35.placements", placements):
             region = p["region"]
-            if region not in adj_regions:
+            if region not in regions:
                 continue
             pt = p.get("piece_type", WARBAND)
             if pt == WARBAND and wb_placed < 8:

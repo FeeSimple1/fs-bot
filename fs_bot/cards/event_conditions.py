@@ -13,6 +13,15 @@ from fs_bot.cards.capabilities import GALLIC_RECIPIENT_CAPABILITIES
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 57 and shaded:
+        from fs_bot.cards.land_of_mist import np_available
+        return np_available(state, faction)
+    if card_id == 'A35':
+        from fs_bot.cards.expansion_reinforcements import nasua_available
+        return nasua_available(state, faction, shaded)
+    if card_id == 'A60' and shaded:
+        from fs_bot.cards.expansion_reinforcements import iccius_available
+        return iccius_available(state)
     if card_id == 7 and shaded and faction == rc.GERMANS:
         from fs_bot.cards.base_piece_choices import alaudae_effective
         return alaudae_effective(state, faction)

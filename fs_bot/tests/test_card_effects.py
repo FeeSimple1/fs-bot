@@ -1204,15 +1204,19 @@ class TestDispersedStatusHandling:
             assert st["tribes"][t]["status"] != DISPERSED
 
     def test_card57_shaded_removes_dispersed_from_britannia(self):
-        from fs_bot.rules_consts import DISPERSED, SCENARIO_GREAT_REVOLT
+        from fs_bot.rules_consts import BELGAE, DISPERSED, SCENARIO_GREAT_REVOLT, TRIBE_CATUVELLAUNI
         from fs_bot.state.state_schema import build_initial_state
         st = build_initial_state(SCENARIO_GREAT_REVOLT, seed=1)
-        st["tribes"]["Catuvellauni"]["allied_faction"] = None
-        st["tribes"]["Catuvellauni"]["status"] = DISPERSED
-        st["event_params"] = {"removal": {
-            "type": "dispersed", "tribe": "Catuvellauni"}}
+        tribe = st["tribes"][TRIBE_CATUVELLAUNI]
+        tribe["allied_faction"] = None
+        tribe["status"] = DISPERSED
+        st["event_params"] = {
+            "removal": {"type": "dispersed", "tribe": TRIBE_CATUVELLAUNI},
+            "ally_tribe": TRIBE_CATUVELLAUNI, "ally_faction": BELGAE,
+        }
         execute_event(st, 57, shaded=True)
-        assert st["tribes"]["Catuvellauni"]["status"] is None
+        assert tribe["status"] is None
+        assert tribe["allied_faction"] == BELGAE
 
     def test_cardA51_dispersed_remi_does_not_qualify(self):
         from fs_bot.rules_consts import (DISPERSED, ROMANS, AUXILIA, ATREBATES,

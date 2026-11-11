@@ -6514,8 +6514,10 @@ def _derive_card_62(state, faction, shaded):
 
 from fs_bot.cards.ally_events import derive_gobannitio, derive_correus
 from fs_bot.cards.boii_np import derive_boii
+from fs_bot.cards.expansion_reinforcements import derive_iccius, derive_nasua
 from fs_bot.cards.surus import derive_params as derive_surus
 from fs_bot.cards.german_allegiances import derive_params as derive_german_allegiances
+from fs_bot.cards.land_of_mist import derive_params as derive_land_of_mist
 
 
 _EVENT_PARAM_DERIVERS = {
@@ -6524,6 +6526,9 @@ _EVENT_PARAM_DERIVERS = {
     37: derive_boii,
     26: derive_gobannitio,
     64: derive_correus,
+    57: derive_land_of_mist,
+    "A35": derive_nasua,
+    "A60": derive_iccius,
     "O38": _derive_o38_region,
     1: _derive_senate_direction,
     2: _derive_card_2,

@@ -21,6 +21,21 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 11 November fifth comparison repair Batch 2
+
+Bibracte and Gergovia restore their home Ally by clearing the named City.
+The restoration preserves nearby Legions, other Forces and Colony Allies.
+Gergovia's reinforcement counts surviving Arverni Warbands.
+[Repair and validation](reviews/fifth-comparison-batch2-2026-11-11.md)
+
+All **9,845 tests pass**. All 120 bot games pass their audits. The five
+changed winners first diverge during the Interlude adjustments. Twenty
+mixed-player cases replay identically across both hash seeds, including
+two Interludes. The 100-game balance check passes.
+
+The fifth audit has **4 of 11 repaired, 7 open**.
+[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+
 ### 11 November fifth comparison repair Batch 1
 
 Shaded Ballistae and Winter Campaign require an explicit Gallic recipient.
@@ -32,8 +47,7 @@ All **9,837 tests pass**. The 120 audited bot games match the parent in final
 boards and winners. Twenty mixed-player cases match across hash seeds with
 replay and zero hard findings. The 100-game balance check passes.
 
-The fifth audit has **3 of 11 repaired, 8 open**.
-[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+This batch closed three of the eleven findings.
 
 ### 11 November fifth comparison audit
 

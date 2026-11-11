@@ -146,8 +146,9 @@ def test_bibracte_is_restored_when_only_a_colony_ally_survives_in_its_region():
         assert _ally_tribe(state, tribe, AEDUI)
     result = _adjust_aedui_forces(state)
     assert result['allies_to_available'] == 2 and result['bibracte_replaced']
-    assert state['tribes'][colony]['allied_faction'] is None
+    assert state['tribes'][colony]['allied_faction'] == AEDUI
     assert state['tribes'][rc.TRIBE_AEDUI]['allied_faction'] == AEDUI
+    assert pieces.count_pieces(state, rc.AEDUI_REGION, AEDUI, rc.ALLY) == 2
     assert state['markers'][rc.AEDUI_REGION][rc.MARKER_COLONY]
     assert validate_state(state) == []
 

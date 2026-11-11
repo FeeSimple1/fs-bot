@@ -2234,6 +2234,10 @@ Aedui Region last for each type. The cohorts and counts reflect the
 Citadel step. Either request accepts `{"use_default":true}`. A save at the
 reduction prompt retains the accepted Citadel selection.
 
+The subsequent Bibracte restoration replaces the City occupant when it
+lacks an Aedui Ally or Citadel. Forces and Colony allegiance elsewhere in
+the Region remain in place.
+
 ### Arverni Interlude force adjustments
 
 The German seat controls this adjustment before the faction handover.
@@ -2253,6 +2257,10 @@ early. That exception applies only to those named discs.
 Either request accepts `{"use_default":true}`. Saving while awaiting
 the reduction retains the earlier German removals and Arverni Citadel
 choices. Older German-seat transcripts can pause for the added prompts.
+
+The subsequent Gergovia restoration replaces the City occupant when it
+lacks an Arverni Ally or Citadel. The reinforcement counts existing Arverni
+Warbands in the Region when filling up to three.
 
 ### Roman Interlude force reductions
 

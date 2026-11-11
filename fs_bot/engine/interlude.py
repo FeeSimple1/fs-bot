@@ -49,7 +49,7 @@ from fs_bot.rules_consts import (
     LEADER, LEGION, AUXILIA, WARBAND, FORT, ALLY, CITADEL, SETTLEMENT,
     FLIPPABLE_PIECES,
     # Piece states
-    HIDDEN, REVEALED, SCOUTED, ALLIED,
+    HIDDEN, REVEALED, SCOUTED,
     # Leaders
     CAESAR, VERCINGETORIX, AMBIORIX,
     ARIOVISTUS_LEADER, DIVICIACUS, SUCCESSOR,
@@ -67,7 +67,7 @@ from fs_bot.rules_consts import (
     # Tribes (used for Cadurci/Volcae and Nori)
     BASE_TRIBES, TRIBE_AEDUI, TRIBE_ARVERNI, TRIBE_CATUVELLAUNI, TRIBE_NORI,
     # Markers
-    MARKER_CIRCUMVALLATION, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING,
+    MARKER_CIRCUMVALLATION, MARKER_DISPERSED, MARKER_DISPERSED_GATHERING, MARKER_RAZED,
     MARKER_BRITANNIA_NOT_IN_PLAY, MARKER_ARVERNI_RALLY,
     MARKER_INTIMIDATED, MARKER_COLONY,
     MARKER_ABATIS, MARKER_WINTER_UPRISING, MARKER_AT_WAR,
@@ -579,6 +579,25 @@ def _adjust_belgae_forces(state):
 # ============================================================================
 
 
+def _restore_home_city(state, tribe, faction):
+    """Replace the named City's occupant with its home faction's Ally (A2.1)."""
+    from fs_bot.cards.card_effects import _ally_tribe, _tribe_piece_type, _unally_tribe
+    from fs_bot.cards.remi_event_effect import _discard_markers
+
+    info = state["tribes"][tribe]
+    if (info.get("allied_faction") == faction
+            and _tribe_piece_type(state, tribe) in (ALLY, CITADEL)):
+        return False
+    _unally_tribe(state, tribe)
+    info["status"] = None
+    # Both home Tribe names also key their Region's markers. Keep any
+    # regional effects, including Colony and Abatis, when clearing the City.
+    _discard_markers(state.get("markers", {}).get(tribe), (
+        MARKER_DISPERSED, MARKER_DISPERSED_GATHERING, MARKER_RAZED,
+    ))
+    return _ally_tribe(state, tribe, faction)
+
+
 def _adjust_aedui_forces(state):
     """Aedui adjustments.
 
@@ -590,7 +609,6 @@ def _adjust_aedui_forces(state):
     - If no Aedui Ally or Citadel at Bibracte, remove whatever is
       there and place Aedui Ally there.
     """
-    from fs_bot.cards.card_effects import _tribe_piece_type
     from fs_bot.engine.interlude_choices import choose_aedui_citadel
     from fs_bot.engine.interlude_reductions import AEDUI_HALF
 
@@ -637,51 +655,7 @@ def _adjust_aedui_forces(state):
     # Warbands to Available (Aedui Region last).
     result.update(_adjust_ally_and_warband_counts(state, AEDUI_HALF))
 
-    # Bibracte rule: if no Aedui Ally or Citadel at Bibracte, remove
-    # whatever is there and place an Aedui Ally there.
-    bibracte = state["tribes"][TRIBE_AEDUI]
-    if (bibracte.get("allied_faction") != AEDUI
-            or _tribe_piece_type(state, TRIBE_AEDUI) not in (ALLY, CITADEL)):
-        # Remove every non-permanent piece in the Aedui Region.
-        space = state["spaces"].get(AEDUI_REGION, {})
-        for faction in list(space.get("pieces", {}).keys()):
-            for pt in (WARBAND, AUXILIA):
-                for ps in (HIDDEN, REVEALED, SCOUTED):
-                    n = count_pieces_by_state(
-                        state, AEDUI_REGION, faction, pt, ps,
-                    )
-                    if n > 0:
-                        remove_piece(
-                            state, AEDUI_REGION, faction, pt, n,
-                            piece_state=ps,
-                        )
-            for pt in (ALLY, CITADEL, SETTLEMENT):
-                n = count_pieces(state, AEDUI_REGION, faction, pt)
-                if n > 0:
-                    remove_piece(
-                        state, AEDUI_REGION, faction, pt, n,
-                    )
-                    if pt in (ALLY, CITADEL):
-                        for _ in range(n):
-                            clear_allied_tribe(state, AEDUI_REGION, faction, pt)
-            n_fort = count_pieces(state, AEDUI_REGION, faction, FORT)
-            if n_fort > 0:
-                remove_piece(state, AEDUI_REGION, faction, FORT, n_fort)
-            n_leg = count_pieces(state, AEDUI_REGION, faction, LEGION)
-            if n_leg > 0:
-                remove_piece(
-                    state, AEDUI_REGION, faction, LEGION, n_leg,
-                    to_track=True,
-                )
-            if get_leader_in_region(
-                state, AEDUI_REGION, faction,
-            ) is not None:
-                remove_piece(state, AEDUI_REGION, faction, LEADER)
-        # Then place an Aedui Ally.
-        if get_available(state, AEDUI, ALLY) > 0:
-            place_piece(state, AEDUI_REGION, AEDUI, ALLY, 1)
-            bibracte.update(status=ALLIED, allied_faction=AEDUI)
-            result["bibracte_replaced"] = True
+    result["bibracte_replaced"] = _restore_home_city(state, TRIBE_AEDUI, AEDUI)
 
     refresh_all_control(state)
     return result
@@ -744,7 +718,6 @@ def _adjust_arverni_forces(state):
     - Place Arverni Warbands in the Arverni Region until at least 3
       are there.
     """
-    from fs_bot.cards.card_effects import _tribe_piece_type
     from fs_bot.engine.interlude_choices import choose_arverni_citadels
     from fs_bot.engine.interlude_reductions import ARVERNI_HALF, choose_reduction
 
@@ -791,49 +764,7 @@ def _adjust_arverni_forces(state):
         result.update(allies_to_available=removed[ALLY], warbands_to_available=removed[WARBAND])
 
     # 4. Gergovia rule.
-    gergovia = state["tribes"][TRIBE_ARVERNI]
-    if (gergovia.get("allied_faction") != ARVERNI
-            or _tribe_piece_type(state, TRIBE_ARVERNI) not in (ALLY, CITADEL)):
-        space = state["spaces"].get(ARVERNI_REGION, {})
-        for faction in list(space.get("pieces", {}).keys()):
-            for pt in (WARBAND, AUXILIA):
-                for ps in (HIDDEN, REVEALED, SCOUTED):
-                    n = count_pieces_by_state(
-                        state, ARVERNI_REGION, faction, pt, ps,
-                    )
-                    if n > 0:
-                        remove_piece(
-                            state, ARVERNI_REGION, faction, pt, n,
-                            piece_state=ps,
-                        )
-            for pt in (ALLY, CITADEL, SETTLEMENT):
-                n = count_pieces(state, ARVERNI_REGION, faction, pt)
-                if n > 0:
-                    remove_piece(
-                        state, ARVERNI_REGION, faction, pt, n,
-                    )
-                    if pt in (ALLY, CITADEL):
-                        for _ in range(n):
-                            clear_allied_tribe(state, ARVERNI_REGION, faction, pt)
-            n_fort = count_pieces(state, ARVERNI_REGION, faction, FORT)
-            if n_fort > 0:
-                remove_piece(
-                    state, ARVERNI_REGION, faction, FORT, n_fort,
-                )
-            n_leg = count_pieces(state, ARVERNI_REGION, faction, LEGION)
-            if n_leg > 0:
-                remove_piece(
-                    state, ARVERNI_REGION, faction, LEGION, n_leg,
-                    to_track=True,
-                )
-            if get_leader_in_region(
-                state, ARVERNI_REGION, faction,
-            ) is not None:
-                remove_piece(state, ARVERNI_REGION, faction, LEADER)
-        if get_available(state, ARVERNI, ALLY) > 0:
-            place_piece(state, ARVERNI_REGION, ARVERNI, ALLY, 1)
-            gergovia.update(status=None, allied_faction=ARVERNI)
-            result["gergovia_replaced"] = True
+    result["gergovia_replaced"] = _restore_home_city(state, TRIBE_ARVERNI, ARVERNI)
 
     # 5. Place Arverni Warbands in Arverni Region until >= 3.
     current_wb = count_pieces(state, ARVERNI_REGION, ARVERNI, WARBAND)

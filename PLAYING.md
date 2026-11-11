@@ -936,6 +936,10 @@ reduction. Choose Allies by Tribe and Warbands by Region and visibility.
 Use `b` or `board` during either choice. Saving at the reduction prompt
 retains the accepted Citadel selection when Winter resumes.
 
+If Bibracte lacks an Aedui Ally or Citadel after the reductions, restore
+the Aedui Ally at that City. Any occupant of Bibracte is cleared first.
+Other Forces and the Colony circle in the Aedui Region stay in place.
+
 ### Arverni Interlude force adjustments
 
 The German player makes the Arverni choices before taking over that seat.
@@ -949,6 +953,11 @@ Warbands to return to Available, rounding up. The Arverni Region goes
 last for each type. You may choose the Cadurci and Volcae Ally discs early.
 Use `b` or `board` to inspect the board, or delegate either choice to the
 bot. Saving at the later prompt retains the accepted Citadel choices.
+
+If Gergovia lacks an Arverni Ally or Citadel after the reductions, restore
+the Arverni Ally at that City. Other Forces and Tribe circles stay in place.
+The reinforcement then brings the Arverni Region up to three Arverni Warbands
+as far as the supply permits.
 
 ### Roman Interlude force reductions
 

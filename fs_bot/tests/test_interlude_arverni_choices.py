@@ -164,16 +164,20 @@ def test_cadurci_does_not_prevent_gergovia_restoration_and_reinforcement():
     for tribe in (rc.TRIBE_CADURCI, rc.TRIBE_CARNUTES, rc.TRIBE_PICTONES):
         assert _ally_tribe(state, tribe, ARVERNI)
     pieces.place_piece(state, HOME, rc.ROMANS, rc.AUXILIA, 1)
+    pieces.place_piece(state, HOME, ARVERNI, rc.WARBAND, 2, piece_state=rc.SCOUTED)
+    pieces.place_piece(state, rc.CARNUTES, ARVERNI, rc.WARBAND, 2)
     state['decision_agent'] = lambda board, faction, request: {'removals': [
         _cohort(request, 1, tribe=rc.TRIBE_CARNUTES),
         _cohort(request, 1, tribe=rc.TRIBE_PICTONES),
+        _cohort(request, 2, region=rc.CARNUTES, piece_type=rc.WARBAND),
     ]}
     result = _adjust_arverni_forces(state)
-    assert result['gergovia_replaced'] and result['warbands_placed_in_arverni'] == 3
-    assert state['tribes'][rc.TRIBE_CADURCI]['allied_faction'] is None
+    assert result['gergovia_replaced'] and result['warbands_placed_in_arverni'] == 1
+    assert state['tribes'][rc.TRIBE_CADURCI]['allied_faction'] == ARVERNI
     assert state['tribes'][rc.TRIBE_ARVERNI]['allied_faction'] == ARVERNI
-    assert not pieces.count_pieces(state, HOME, rc.ROMANS, rc.AUXILIA)
-    assert pieces.count_pieces_by_state(state, HOME, ARVERNI, rc.WARBAND, rc.HIDDEN) == 3
+    assert pieces.count_pieces(state, HOME, rc.ROMANS, rc.AUXILIA) == 1
+    assert pieces.count_pieces_by_state(state, HOME, ARVERNI, rc.WARBAND, rc.SCOUTED) == 2
+    assert pieces.count_pieces_by_state(state, HOME, ARVERNI, rc.WARBAND, rc.HIDDEN) == 1
     _validate_mid_interlude(state)
 
 

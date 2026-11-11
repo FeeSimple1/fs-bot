@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 3,
-  "open": 8,
+  "closed": 4,
+  "open": 7,
   "severity_counts": {
     "high": 7,
     "medium": 4
@@ -1141,11 +1141,13 @@
       "comparator_pattern": "coin-implementation-lessons.md D: per-space scope must match the actual specified object; apply independently to City/Tribe versus containing Region.",
       "probe": "lifecycle/probe_lifecycle.py",
       "output": "lifecycle/probe_lifecycle.json",
-      "status": "open",
+      "status": "closed",
       "partition": "lifecycle",
       "prior_relation": "Earlier Interlude choice findings fixed human selection and bookkeeping. WS4-03 removes obsolete Nori at scenario change. Neither covers the Bibracte/Gergovia Region-wide wipe. Existing test_interlude_aedui_choices:test_bibracte_is_restored_when_only_a_colony_ally_survives_in_its_region and test_interlude_arverni_choices:test_cadurci_does_not_prevent_gergovia_restoration_and_reinforcement currently assert collateral clearing; those tests need source-correct expectations, not preservation.",
       "limits": "Controlled integration cases; no encounter-frequency claim.",
-      "evidence_directory": "lifecycle"
+      "evidence_directory": "lifecycle",
+      "repair_batch": 2,
+      "repair_report": "fifth-comparison-batch2-2026-11-11.md"
     }
   ]
 }

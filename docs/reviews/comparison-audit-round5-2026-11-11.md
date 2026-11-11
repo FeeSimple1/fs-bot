@@ -4,6 +4,8 @@
 
 Batch 1 repaired Event recipients and geography, closing BE5-01, BE5-02 and BE5-03. [Batch 1 repairs and validation](fifth-comparison-batch1-2026-11-11.md)
 
+Batch 2 repaired Bibracte and Gergovia restoration in the Gallic War Interlude, closing WS5-01. [Batch 2 repairs and validation](fifth-comparison-batch2-2026-11-11.md)
+
 Falling Sky was audited at `bd30d522e8baa2d303b9e372d7d9c550351e91a5`, with Python-source SHA-256 `31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341` across 591 files. Liberty or Death was inspected at `2991ea279062773548ec390a1da75f3e85381702`. Its implementation patterns guided the search. Falling Sky's supplied references and thirteen adopted provisional rulings govern the conclusions.
 
 [Finding ledger](comparison-audit-round5-2026-11-11.json) · [Portable evidence](comparison-audit-round5-2026-11-11-evidence.zip) · [Current status](../current-status.md)

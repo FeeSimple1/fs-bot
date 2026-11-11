@@ -346,3 +346,11 @@ For current validation and the reports for each revision, see
 - Marching flips Revealed Warbands to Hidden (§3.3.2). Scouted Warbands
   instead lose their Scouted marker and remain Revealed (§4.2.2); that
   distinction affects later Ambush choices.
+
+
+The [third comparison's Event repairs](docs/reviews/third-comparison-batch3-2026-11-10.md)
+require Harudes's attainable four Warbands and one Settlement before their Raid,
+and Migration's possible Ally after movement. Terminal choices use the live
+placement/reclamation boundaries. Colony creates its Tribe despite Ally scarcity;
+Nasua & Cimberius replaces Treveri's Dispersed/Gathering marker. Invalid incomplete
+Event plans roll back for correction.

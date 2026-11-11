@@ -145,6 +145,8 @@ def test_selected_relocation_group_removal_never_substitutes_a_resident(card):
          'timing_actions': timing(remove(second, cohort=f'event.{card}.moves.1'))},
     ]
     params = {'moves': entries, 'target_region': destination}
+    if card == 66:
+        params['ally_tribe'] = rc.TRIBE_PICTONES
     run(state, card, params, card == 66)
     assert pieces.count_pieces(state, destination, rc.ARVERNI, rc.WARBAND) == 3
     assert pieces.count_pieces(state, second, rc.ARVERNI, rc.WARBAND) == 1

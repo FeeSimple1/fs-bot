@@ -32,6 +32,12 @@ Harvest counts each Allied Tribe disc and Citadel once. Lost Eagle restricts
 only the next Senate Phase, including when a scenario replaces the usual
 shift. Intervening Cicero and Pompey Events use their printed Senate effects.
 
+Shaded Harudes places four German Warbands and one Settlement as far as supply
+and legal spaces allow. Choose their allocation and order, then direct the
+surviving placed Warbands' Raid. Shaded Migration requires an Ally at its
+destination whenever one can be placed. Its Ally choice follows the movement
+and reclamation window; movement still resolves if placement is impossible.
+
 For **March (between hops or groups)**, choose the routes and groups, then
 select the pause. The Special Activity choices use a preview of the board
 at that step. Live decisions before the pause can change the pieces that

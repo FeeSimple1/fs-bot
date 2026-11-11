@@ -1,4 +1,4 @@
-"""Mandatory quantities and exact piece choices for 68 and A30/A51/A56/A65."""
+"""Mandatory quantities and exact piece choices for 68 and A29/A30/A51/A56/A65."""
 from fs_bot import rules_consts as rc
 from fs_bot.board.control import is_controlled_by
 from fs_bot.board.pieces import (
@@ -12,6 +12,7 @@ from fs_bot.map.map_data import (
 # Each operation records its existing timing boundary and printed range.
 STEPS = {
     68: (('replacements', '68.replacements', 1, 2),),
+    'A29': (('placements', 'A29.placements', 5, 5),),
     'A30': (('placements', 'A30.placements', 9, 9),),
     'A51': (('removals', 'A51.removals', 0, 5),),
     'A56': (('warband_placements', 'A56.warbands', 4, 4),
@@ -129,6 +130,19 @@ def options(state, card, key, params, remaining):
         return []
     if card == 68:
         return [{'tribe': e['tribe']} for e in _remi_allies(state)]
+    if card == 'A29':
+        from collections import Counter
+        used = Counter()
+        for entry in params.get('placements', []):
+            used[entry.get('piece_type', rc.WARBAND)] += entry.get('count', 1)
+        regions = sorted({region for home in rc.GERMANIA_REGIONS
+                          for region in get_adjacent_for_state(state, home, rc.GERMANS)})
+        choices = [dict(entry, piece_type=rc.WARBAND) for entry in
+                   _warband_placements(state, rc.GERMANS, regions, 4 - used[rc.WARBAND])]
+        if used[rc.SETTLEMENT] == 0 and get_available(state, rc.GERMANS, rc.SETTLEMENT):
+            choices.extend({'region': region, 'piece_type': rc.SETTLEMENT} for region in regions
+                           if not count_pieces(state, region, rc.GERMANS, rc.SETTLEMENT))
+        return choices
     if card == 'A30':
         return _orgetorix_options(state, remaining)
     if card == 'A51':
@@ -154,11 +168,13 @@ def may_finish(state, card, key, used, minimum, choices):
 def _selected_entry(state, card, key, entry, choices):
     from fs_bot.cards.card_effects import _tribe_region
     choice = {k: v for k, v in entry.items() if k != 'timing_actions'}
+    if card == 'A29':
+        choice.setdefault('piece_type', rc.WARBAND)
     kind = choice.get('piece_type')
     count = choice.pop('count', 1)
     if type(count) is not int or count < 1:
         raise ValueError(f'{card} piece count must be a positive integer')
-    placing_warbands = key == 'warband_placements' or (card == 'A30' and kind == rc.WARBAND)
+    placing_warbands = key == 'warband_placements' or (card in ('A29', 'A30') and kind == rc.WARBAND)
     if placing_warbands:
         if key == 'warband_placements' and kind == rc.WARBAND:
             choice.pop('piece_type')
@@ -217,6 +233,13 @@ def _apply_entry(state, card, key, params, entry):
     from fs_bot.cards.card_effects import _ally_tribe, _unally_tribe
     if card == 68:
         _replace_ally(state, entry['tribe'], rc.ROMANS)
+    elif card == 'A29':
+        from fs_bot.cards.card_effects import _track_event_placement
+        kind, count = entry['piece_type'], entry.get('count', 1)
+        place_piece(state, entry['region'], rc.GERMANS, kind, count)
+        if kind == rc.WARBAND:
+            _track_event_placement(state, 'card_A29_raid', rc.GERMANS,
+                                  entry['region'], kind, count)
     elif card == 'A30':
         kind = entry['piece_type']
         if kind == rc.WARBAND:
@@ -283,6 +306,7 @@ def execute(state, card):
         raise ValueError(f'{card} has unexpected or wrong-side Event choices')
     if card == 'A30':
         _clear_orgetorix(state)
+    completed = []
     for key, step, minimum, maximum in STEPS[card]:
         used = 0
         for entry in _event_entries(state, step, _entries(params, key)):
@@ -290,13 +314,27 @@ def execute(state, card):
                 # Preserve the capped Orgetorix placement tail and its
                 # existing timing boundary.
                 break
-            choices = options(state, card, key, params, maximum - used)
+            progress = dict(params, placements=completed) if card == 'A29' else params
+            choices = options(state, card, key, progress, maximum - used)
             selected = _selected_entry(state, card, key, entry, choices)
             _apply_entry(state, card, key, params, selected)
+            completed.append(selected)
             used += selected.get('count', 1)
-        choices = options(state, card, key, params, maximum - used)
+        progress = dict(params, placements=completed) if card == 'A29' else params
+        choices = options(state, card, key, progress, maximum - used)
         if not may_finish(state, card, key, used, minimum, choices):
             raise ValueError(f'{card} must complete its required {key} as far as possible')
+    if card == 'A29':
+        from collections import Counter
+        cohort = Counter()
+        for entry in completed:
+            if entry['piece_type'] == rc.WARBAND:
+                cohort[entry['region']] += entry.get('count', 1)
+        mods = state.setdefault('event_modifiers', {})
+        mods['card_A29_german_raid'] = True
+        mods['card_A29_raid_cohort'] = [
+            {'region': region, 'faction': rc.GERMANS, 'count': count}
+            for region, count in cohort.items()]
     if card == 'A56':
         _event_step(state, 'A56.resources')
         _cap_resources(state, rc.BELGAE, 4)
@@ -308,7 +346,7 @@ def _rank_entry(state, actor, entry):
     owner = entry.get('faction') or state['tribes'].get(tribe, {}).get('allied_faction')
     priority = get_faction_targeting_order(actor, state['scenario'])
     kind = entry.get('piece_type', rc.ALLY if tribe else rc.WARBAND)
-    structure = 2 if kind in (rc.CITADEL, rc.FORT) else int(kind == rc.ALLY)
+    structure = 2 if kind in (rc.CITADEL, rc.FORT, rc.SETTLEMENT) else int(kind == rc.ALLY)
     city_ally = kind == rc.ALLY and is_ally_in_city_or_remi(tribe, state['scenario'])
     ps = entry.get('piece_state')
     return (structure, city_ally, len(priority) - priority.index(owner) if owner in priority else 0,
@@ -328,6 +366,8 @@ def derive_params(state, actor, card, *, npc=None):
     params = {}
     if npc is None:
         npc = actor in state.get('non_player_factions', ())
+    if card == 'A29' and npc and actor != rc.GERMANS:
+        return None  # The shaded placements benefit only Germans (§8.2.3).
     if card == 'A65':
         sources = kinship_sources(sim)
         if actor in ATTACKERS:
@@ -352,6 +392,11 @@ def derive_params(state, actor, card, *, npc=None):
         used = 0
         while used < maximum:
             choices = options(sim, card, key, params, maximum - used)
+            if card == 'A29' and params[key]:
+                # §8.3.1: complete placements in the selected Region before
+                # selecting another. Settlement priority matches Citadels (A8.3.1).
+                last_region = params[key][-1]['region']
+                choices = [e for e in choices if e['region'] == last_region] or choices
             if card == 'A51':
                 choices = [entry for entry in choices if entry['faction'] != actor]
             if protect:

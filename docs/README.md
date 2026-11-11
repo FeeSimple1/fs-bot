@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Third Liberty or Death comparison](reviews/comparison-audit-round3-2026-11-10.md) | 15 additional groups, seven repaired in Batches 1–2, with eight remaining |
+| [Third Liberty or Death comparison](reviews/comparison-audit-round3-2026-11-10.md) | 15 additional groups, twelve repaired in Batches 1–3, with three remaining |
 | [Provisional rulings](provisional-rulings.md) | Thirteen owner-adopted interpretations, each subject to later authoritative correction |
 | [Question ledger](../QUESTIONS.md#current-open-source-questions) | Source questions, current provisional dispositions, and historical decisions |
 | [Developer instructions](../CLAUDE.md) | Source hierarchy, implementation constraints, tests, and commit discipline |
@@ -25,6 +25,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [10 November third comparison repair Batch 3](reviews/third-comparison-batch3-2026-11-10.md)
+  closes five Event groups with 9,582 passing tests and an unchanged balance baseline.
 
 - [10 November third comparison repair Batch 2](reviews/third-comparison-batch2-2026-11-10.md)
   closes four more findings with 9,522 passing tests and a causally reviewed balance refresh.

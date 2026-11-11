@@ -21,6 +21,24 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November third comparison repair Batch 3
+
+The [third repair batch](reviews/third-comparison-batch3-2026-11-10.md)
+closes BE3-01, BE3-03, BE3-04, EX3-01, and EX3-03. Consuetudine applies its
+printed Ambush exception and Scouted hide step. Colony creates its Tribe despite
+Ally scarcity. Migration requires possible Ally placement and preserves legal
+partial movement. Harudes completes its attainable reinforcements before its
+surviving cohort's Raid. Nasua & Cimberius replaces Treveri's actual marker.
+
+All **9,582 tests pass**, including 60 new cases. Those cases produce 37 failures
+and 23 positive controls on the parent. Twenty audited bot games match parent
+winners and final states. Twenty mixed-player cases match across hash seeds with
+replay, zero hard findings and four soft partial plans. The unchanged 100-game
+balance baseline passes its existing 15-point band, with three winner changes.
+
+The [third-audit ledger](reviews/comparison-audit-round3-2026-11-10.json)
+now records **12 of 15 groups repaired (80%), with 3 remaining**.
+
 ### 10 November third comparison repair Batch 2
 
 The [second repair batch](reviews/third-comparison-batch2-2026-11-10.md)
@@ -38,7 +56,7 @@ parent winners and game lengths. The corrected 100-game balance matrix passes
 against a reviewed baseline with the same seeds and 15-point band.
 
 The [third-audit ledger](reviews/comparison-audit-round3-2026-11-10.json)
-now records **7 of 15 groups repaired (47%), with 8 remaining**.
+recorded **7 of 15 groups repaired (47%), with 8 remaining** at the Batch 2 checkpoint.
 
 ### 10 November third comparison repair Batch 1
 

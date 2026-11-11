@@ -6073,11 +6073,8 @@ def _derive_card_71(state, faction, shaded):
     """Card 71 (Colony): place the Colony + the acting Faction's Ally in a
     Region it Controls (or No Control), with no Colony yet. §8.3.1 — choose a
     Region the Faction Controls (keeps the +1 Control Value)."""
-    from fs_bot.rules_consts import MARKER_COLONY, ALLY, NO_CONTROL
+    from fs_bot.rules_consts import MARKER_COLONY, NO_CONTROL
     from fs_bot.board.control import is_controlled_by, calculate_control
-    from fs_bot.board.pieces import get_available
-    if get_available(state, faction, ALLY) <= 0:
-        return None
     playable = get_playable_regions(state["scenario"], state.get("capabilities"))
     controlled, nocontrol = [], []
     for r in sorted(playable):

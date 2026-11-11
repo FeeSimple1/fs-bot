@@ -1523,6 +1523,8 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
                                state.get("card_edition"))
     params = {}
     for key, spec in schema.items():
+        if card_id == 66 and shaded and key == 'ally_tribe':
+            continue  # Choose the mandatory Ally on the actual post-move board.
         from fs_bot.cli.action_windows import available
         if spec.get('kind') == 'entries' and spec.get('event_step') and available(state):
             v = _collect_timed_event_entries(state, faction, card_id, shaded,
@@ -1531,6 +1533,23 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
             v = _prompt_event_param(state, key, spec, stdin, stdout)
         if v is not None:
             params[key] = v
+    if card_id == 66 and shaded and params.get('target_region'):
+        from fs_bot.cards.event_preview import preview_event_prefix
+        from fs_bot.cards.card_effects import migration_ally_options
+        from fs_bot.cli.action_windows import inspect_board, prepare
+        stage = preview_event_prefix(state, faction, card_id, shaded, params,
+                                     step='66.ally', index=None)
+        stage, actions = prepare(stage, faction, stdin, stdout,
+                                 stage='event_step', step='66.ally', index=None)
+        if actions:
+            params.setdefault('stage_timing_actions', {})['66.ally'] = actions
+        tribes = migration_ally_options(stage, params.get('faction', faction),
+                                        params['target_region'])
+        if tribes:
+            with inspect_board(stage, stdout):
+                params['ally_tribe'] = prompt_choice(stdin, stdout,
+                    'Migration: place the required Ally at which Tribe?',
+                    [(tribe, tribe) for tribe in tribes])
     return params
 
 

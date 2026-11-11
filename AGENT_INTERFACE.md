@@ -2269,3 +2269,31 @@ and the rest of the request match. The compatibility path changes only the
 added ordinary physical distinctions and retains the recorded response and ID.
 A changed board or unrelated request cannot use that path. New decisions
 continue using exact physical choices.
+
+
+## Printed Event completion (third comparison, Batch 3)
+
+Shaded Harudes (A29) uses `placements` entries naming German `Warband` or
+`Settlement` pieces and their Regions. Complete four Warbands and one Settlement
+to the extent current supply and legal spaces permit. The shared terminal and
+non-player planner preserve entry order, timing choices, and the surviving
+newly placed Raid cohort. A complete example is:
+
+```json
+{"placements":[{"region":"Treveri","piece_type":"Warband","count":4},{"region":"Treveri","piece_type":"Settlement"}]}
+```
+
+Shaded Migration (66) names its Gallic `faction`, `target_region`, `moves`, and
+an `ally_tribe` when placement is possible. `66.ally` is the post-movement timing
+window; an authored `stage_timing_actions` entry under that key can reclaim a
+disc before the Ally choice. A blocked Tribe cannot bypass another eligible
+circle in the selected Region. Unavailable supply or an absence of legal
+circles still permits the possible relocation effect.
+
+Colony (71) creates its new Tribe even with no Ally Available. Nasua & Cimberius
+(A35) removes Treveri's Dispersed/Gathering reminder before its Ally replacement,
+including when that replacement is unavailable. Consuetudine's forced Ambush
+exception belongs to that Event's Germans Phase; ordinary Germans Phase
+eligibility uses its normal Hidden comparison.
+
+See the [repair and validation report](docs/reviews/third-comparison-batch3-2026-11-10.md).

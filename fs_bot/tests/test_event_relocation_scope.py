@@ -239,10 +239,13 @@ def test_migration_requires_one_initially_uncontrolled_destination(invalid_choic
 
 
 def test_migration_keeps_legal_movement_when_ally_cannot_be_placed():
-    """Card 66 tip/§5.1.3: a Dispersed tribe cannot receive the Ally."""
+    """Card 66 tip/§5.1.3: neither Tribe in the destination can take the Ally."""
+    from fs_bot.rules_consts import TRIBE_SANTONES
     state = _state()
     place_piece(state, ARVERNI_REGION, ARVERNI, WARBAND)
-    state["tribes"][TRIBE_PICTONES]["status"] = MARKER_DISPERSED
+    for tribe in (TRIBE_PICTONES, TRIBE_SANTONES):
+        state["tribes"][tribe]["status"] = MARKER_DISPERSED
+        state['markers'][tribe] = {MARKER_DISPERSED: True}
     state["event_params"] = {"target_region": PICTONES,
                              "moves": [_move()], "ally_tribe": TRIBE_PICTONES}
 

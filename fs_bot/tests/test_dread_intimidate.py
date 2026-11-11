@@ -255,6 +255,12 @@ def test_a29_bonus_uses_surviving_placed_cohort_and_executor(new_warbands):
     place_piece(state, rc.TREVERI, rc.GERMANS, rc.LEADER, leader_name=rc.ARIOVISTUS_LEADER)
     place_piece(state, rc.TREVERI, rc.GERMANS, rc.WARBAND, 3)  # residents excluded
     place_piece(state, rc.TREVERI, rc.BELGAE, rc.WARBAND, 3)
+    if new_warbands < 4:
+        # A two-Warband reinforcement is legal only when the remaining
+        # German supply is scarce; the Event still places its Settlement.
+        from fs_bot.board.pieces import get_available
+        surplus = get_available(state, rc.GERMANS, rc.WARBAND) - new_warbands
+        place_piece(state, rc.SUGAMBRI, rc.GERMANS, rc.WARBAND, surplus)
     seen = []
     target = removal(rc.BELGAE, rc.WARBAND)
     def agent(current, chooser, request):

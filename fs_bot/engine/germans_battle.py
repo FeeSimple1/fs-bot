@@ -66,7 +66,7 @@ def _would_cause_loss(state, region, defending_faction):
     return losses > 0
 
 
-def _get_battle_candidates(state, region):
+def _get_battle_candidates(state, region, *, force_ambush=False):
     """Get valid Battle targets in a region for Germans Phase Battle.
 
     Per §6.2.4: Only where Hidden Germanic Warbands are with another
@@ -77,7 +77,7 @@ def _get_battle_candidates(state, region):
         where is_player indicates player (True) vs non-player (False).
     """
     german_hidden = _count_hidden_pieces(state, region, GERMANS)
-    if german_hidden == 0:
+    if german_hidden == 0 and not force_ambush:
         return []
 
     non_players = state.get("non_player_factions", set())
@@ -91,7 +91,7 @@ def _get_battle_candidates(state, region):
             continue
         # German Hidden must exceed enemy Hidden
         enemy_hidden = _count_hidden_pieces(state, region, faction)
-        if german_hidden <= enemy_hidden:
+        if german_hidden <= enemy_hidden and not force_ambush:
             continue
         # Must "would cause an enemy Loss"
         if not _would_cause_loss(state, region, faction):
@@ -103,13 +103,13 @@ def _get_battle_candidates(state, region):
     return candidates
 
 
-def germans_phase_battle(state):
+def germans_phase_battle(state, *, force_ambush=False):
     """Run the game procedure with optional human timing windows."""
     with action_windows.scope(state, phase='germans_battle'):
-        return _germans_phase_battle(state)
+        return _germans_phase_battle(state, force_ambush=force_ambush)
 
 
-def _germans_phase_battle(state):
+def _germans_phase_battle(state, *, force_ambush=False):
     """Execute Germans Phase Battle with Ambush — §6.2.4.
 
     Battle with Ambush in each region where the Germans currently are able
@@ -143,7 +143,7 @@ def _germans_phase_battle(state):
     # Find all regions with valid battle candidates
     battle_regions = []
     for region in state["spaces"]:
-        candidates = _get_battle_candidates(state, region)
+        candidates = _get_battle_candidates(state, region, force_ambush=force_ambush)
         if candidates:
             battle_regions.append(region)
 
@@ -155,7 +155,7 @@ def _germans_phase_battle(state):
         # A newly entering Leader can supply an enemy where none existed
         # when the original order was chosen. Completed Regions stay done.
         added = [r for r in state['spaces'] if r not in scheduled_regions
-                 and _get_battle_candidates(state, r)]
+                 and _get_battle_candidates(state, r, force_ambush=force_ambush)]
         if added:
             rng.shuffle(added)
             battle_regions.extend(added)
@@ -165,7 +165,7 @@ def _germans_phase_battle(state):
         action_windows.window(state, 'germans_battle_region', region=region)
         include_new_regions()
         # Re-evaluate candidates (state may have changed from prior battles)
-        candidates = _get_battle_candidates(state, region)
+        candidates = _get_battle_candidates(state, region, force_ambush=force_ambush)
         if not candidates:
             continue
 
@@ -195,18 +195,18 @@ def _germans_phase_battle(state):
                     # human target priority over subsequent NP targets.
                     if (ARVERNI not in scheduled_targets
                             and any(f == ARVERNI for f, _ in
-                                    _get_battle_candidates(state, region))):
+                                    _get_battle_candidates(state, region, force_ambush=force_ambush))):
                         factions_in_group.insert(index + 1, ARVERNI)
                         scheduled_targets.add(ARVERNI)
                 include_new_target()
                 # Re-verify this battle is still valid
                 german_hidden = _count_hidden_pieces(state, region, GERMANS)
-                if german_hidden == 0:
+                if german_hidden == 0 and not force_ambush:
                     break
                 enemy_hidden = _count_hidden_pieces(
                     state, region, defending_faction
                 )
-                if german_hidden <= enemy_hidden:
+                if german_hidden <= enemy_hidden and not force_ambush:
                     continue
                 if count_pieces(state, region, defending_faction) == 0:
                     continue

@@ -7,8 +7,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 15,
-  "closed": 7,
-  "open": 8,
+  "closed": 12,
+  "open": 3,
   "severity_counts": {
     "high": 14,
     "medium": 1
@@ -98,7 +98,9 @@
         "BE3-04",
         "EX3-01",
         "EX3-03"
-      ]
+      ],
+      "status": "closed",
+      "report": "third-comparison-batch3-2026-11-10.md"
     },
     {
       "batch": 4,
@@ -488,7 +490,7 @@
         "consuetudine_missing_forced_ambush",
         "consuetudine_scouted_not_cleared"
       ],
-      "status": "confirmed-open",
+      "status": "closed",
       "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
       "evidence": "base-events/observed.json",
       "profiles": [
@@ -516,7 +518,7 @@
           ],
           "prior_relation": "Original inventory base-53-original-unshaded and revised aliases were marked supported by static trace, with no finding. Not an Ambush Fort duplicate; no Fort or Citadel in witness.",
           "case": "consuetudine_missing_forced_ambush",
-          "status": "confirmed-open",
+          "status": "closed",
           "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
           "evidence": "base-events/observed.json",
           "profiles": [
@@ -524,7 +526,9 @@
             "second-edition"
           ],
           "validation": "All witnesses pass durable turn validate_response, execute through execute_decision, and preserve validate_state plus check_structural_integrity before and after. Assertions freeze observed defects, not desired behavior.",
-          "witness_id": "BE3-01-ambush"
+          "witness_id": "BE3-01-ambush",
+          "repair_batch": 3,
+          "repair_report": "third-comparison-batch3-2026-11-10.md"
         },
         {
           "severity": "medium",
@@ -543,7 +547,7 @@
           ],
           "prior_relation": "Distinct from EX2-01 Abatis Scouted prerequisite and previous A25/A26/A30/A56 removals. This is a fixed original Event hide operation previously unprobed.",
           "case": "consuetudine_scouted_not_cleared",
-          "status": "confirmed-open",
+          "status": "closed",
           "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
           "evidence": "base-events/observed.json",
           "profiles": [
@@ -551,7 +555,9 @@
             "second-edition"
           ],
           "validation": "All witnesses pass durable turn validate_response, execute through execute_decision, and preserve validate_state plus check_structural_integrity before and after. Assertions freeze observed defects, not desired behavior.",
-          "witness_id": "BE3-01-scouted"
+          "witness_id": "BE3-01-scouted",
+          "repair_batch": 3,
+          "repair_report": "third-comparison-batch3-2026-11-10.md"
         }
       ],
       "rules": [
@@ -562,7 +568,9 @@
         "fs_bot/cards/card_effects.py:2002\u20132026",
         "fs_bot/engine/germans_battle.py:206\u2013222",
         "fs_bot/engine/germans_battle.py:75\u2013105"
-      ]
+      ],
+      "repair_batch": 3,
+      "repair_report": "third-comparison-batch3-2026-11-10.md"
     },
     {
       "id": "BE3-03",
@@ -583,7 +591,7 @@
       ],
       "prior_relation": "Not the previously repaired Colony name collision or bot target-default issue. This is the initial Event scarce-pool partial-execution path; downstream scoring merely demonstrates the missing Tribe.",
       "case": "colony_no_available_ally_loses_tribe",
-      "status": "confirmed-open",
+      "status": "closed",
       "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
       "evidence": "base-events/observed.json",
       "profiles": [
@@ -597,7 +605,9 @@
       "code_locations": [
         "fs_bot/cards/card_effects.py:2626\u20132652",
         "fs_bot/engine/victory.py:112\u2013131"
-      ]
+      ],
+      "repair_batch": 3,
+      "repair_report": "third-comparison-batch3-2026-11-10.md"
     },
     {
       "id": "BE3-04",
@@ -618,7 +628,7 @@
       ],
       "prior_relation": "BE-12 fixed relocation ownership/geography/cohort validation. This surviving mandatory post-relocation placement was not a previous recorded finding, and is separate from EX2-04 mandatory A-card quotas.",
       "case": "migration_omits_mandatory_ally",
-      "status": "confirmed-open",
+      "status": "closed",
       "reproduction": "PYTHONPATH=. python ../comparison-audit-round3-2026-11-10/base-events/probe_events.py",
       "evidence": "base-events/observed.json",
       "profiles": [
@@ -632,7 +642,9 @@
       "code_locations": [
         "fs_bot/cards/card_effects.py:2450\u20132455",
         "fs_bot/cards/card_effects.py:2493\u20132500"
-      ]
+      ],
+      "repair_batch": 3,
+      "repair_report": "third-comparison-batch3-2026-11-10.md"
     },
     {
       "id": "EX3-01",
@@ -664,7 +676,7 @@
       "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
       "reproduction": "PYTHONPATH=/path/to/fs-bot python expansion/probe.py",
       "fixture": "Controlled Ariovistus positions built with correct Available pools and normal piece operations. Pool and structural checks pass before and after; not full game transcripts.",
-      "status": "confirmed-open",
+      "status": "closed",
       "rules": [
         "Reference Documents/Ariovistus/A Card Reference:108-109, A29 shaded",
         "Reference Documents/Chapter 5:5.1.3"
@@ -673,7 +685,9 @@
         "fs_bot/cards/card_effects.py:3077-3105",
         "fs_bot/engine/execute.py:6483-6486",
         "fs_bot/cards/expansion_validation.py:15-17"
-      ]
+      ],
+      "repair_batch": 3,
+      "repair_report": "third-comparison-batch3-2026-11-10.md"
     },
     {
       "id": "EX3-03",
@@ -707,7 +721,7 @@
       "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
       "reproduction": "PYTHONPATH=/path/to/fs-bot python expansion/probe.py",
       "fixture": "Controlled Ariovistus positions built with correct Available pools and normal piece operations. Pool and structural checks pass before and after; not full game transcripts.",
-      "status": "confirmed-open",
+      "status": "closed",
       "rules": [
         "Reference Documents/Ariovistus/A Card Reference:152-154, A35 unshaded",
         "Reference Documents/Chapter 5:5.1 and5.1.3",
@@ -716,7 +730,9 @@
       "code_locations": [
         "fs_bot/cards/card_effects.py:3265-3271",
         "fs_bot/cards/card_effects.py:309-333 (_unally_tribe only removes a piece)"
-      ]
+      ],
+      "repair_batch": 3,
+      "repair_report": "third-comparison-batch3-2026-11-10.md"
     },
     {
       "id": "EX3-04",
@@ -1024,74 +1040,70 @@
     }
   ],
   "open_severity_counts": {
-    "high": 7,
-    "medium": 1
+    "high": 3
   },
   "latest_repair": {
-    "batch": 2,
+    "batch": 3,
     "date": "2026-11-10",
     "findings": [
-      "CM3-01",
-      "CM3-03",
-      "WS3-01",
-      "WS3-02"
+      "BE3-01",
+      "BE3-03",
+      "BE3-04",
+      "EX3-01",
+      "EX3-03"
     ],
-    "report": "third-comparison-batch2-2026-11-10.md",
+    "report": "third-comparison-batch3-2026-11-10.md",
     "engine_changes": true,
     "reference_changes": false,
     "tested_source": {
-      "commit": "8b7227054fe520e05f74646a622296140e3d0f70",
+      "commit": "c6ed9dd43597cbe4958821c2474ed9e5f9fbb406",
       "dirty": true,
-      "source_sha256": "e0c0f1e5dd86bf95978cb6f3226c82d5e46859fb006424b7374f8137aa515f24"
+      "source_sha256": "407a932c9ded7d54facf434fff2c24c1e0837af3f565166ae51604ae0308851c"
     },
     "parent_source": {
-      "commit": "8b7227054fe520e05f74646a622296140e3d0f70",
-      "source_sha256": "42da33aca92ecd23c750e2ea17e29f3f71d50c66e2e50db03a0f325966c12069"
+      "commit": "c6ed9dd43597cbe4958821c2474ed9e5f9fbb406",
+      "source_sha256": "e0c0f1e5dd86bf95978cb6f3226c82d5e46859fb006424b7374f8137aa515f24"
     },
     "validation": {
       "pytest": {
-        "tests": 9522,
+        "tests": 9582,
         "failures": 0,
         "errors": 0,
         "skipped": 0
       },
+      "new_cases": 60,
       "parent_regressions": {
-        "tests": 50,
-        "failures": 28,
+        "tests": 60,
+        "failures": 37,
         "errors": 0,
         "skipped": 0
       },
-      "new_cases": 49,
-      "corrected_legacy_expectations": 1,
       "bots": {
-        "records": 20,
+        "games": 20,
         "audit_failures": 0,
-        "winners_changed_from_parent": 5,
-        "final_states_changed_from_parent": 17
+        "winner_changes_from_parent": 0,
+        "final_state_changes_from_parent": 0
       },
       "mixed": {
         "games": 20,
-        "human_turns": 681,
-        "event_turns": 159,
-        "events_ok": 138,
+        "human_turns": 662,
+        "event_turns": 155,
+        "events_ok": 134,
         "partial": 4,
         "hard_findings": 0,
-        "batch_digest": "4877bdaf343dedb63fe46aeed69a2fbea4e896507048e8c5fb3fb9510acaace7"
+        "batch_digest": "95a1f6e6632f6d105e3444ea31cd5a707233c9d0f3e21e48c30db3bf079bb8d9"
       },
       "mixed_hashes_identical": true,
-      "mixed_records_changed_from_parent": 8,
+      "mixed_case_changes_from_parent": 1,
       "balance": {
         "games": 100,
         "guardrail_exit": 0,
         "band": 0.15,
-        "winner_changes_from_parent": 22,
-        "length_changes_from_parent": 17,
-        "winner_changes_from_older_stored_baseline": 42,
+        "winner_changes_from_parent": 3,
+        "length_changes_from_parent": 3,
         "baseline_sha256": "5c14af61d455068527ed2032857192f849eb854b7e0bf4793d475e2974ab262a",
-        "old_baseline_sha256": "207a62e367e31caec165617b8f62fb5f5b0af82a114c4aaf3aee39f140d37d46",
-        "seasonal_counterfactual_matches_all_parent_outcomes": true
+        "baseline_updated": false
       },
-      "card_edition": "legacy",
       "bot_and_mixed_seeds": [
         21,
         22,
@@ -1120,12 +1132,13 @@
         19,
         20
       ],
+      "card_edition": "legacy",
       "hash_seeds": [
         0,
         987
       ]
     },
-    "balance_review": "The old stored band failed. A controlled reversion of only seasonal behavior reproduces all 100 parent outcomes. The same 100-seed baseline is refreshed; the existing 0.15 band and bot priorities are unchanged."
+    "compatibility": "Unavailable replacements and impossible placement retain legal partial execution. Old incomplete Harudes or Migration submissions require correction. Existing exact ordering, timing and physical cohort ownership remain supported."
   },
   "repair_history": [
     {
@@ -1296,6 +1309,104 @@
         ]
       },
       "balance_review": "The old stored band failed. A controlled reversion of only seasonal behavior reproduces all 100 parent outcomes. The same 100-seed baseline is refreshed; the existing 0.15 band and bot priorities are unchanged."
+    },
+    {
+      "batch": 3,
+      "date": "2026-11-10",
+      "findings": [
+        "BE3-01",
+        "BE3-03",
+        "BE3-04",
+        "EX3-01",
+        "EX3-03"
+      ],
+      "report": "third-comparison-batch3-2026-11-10.md",
+      "engine_changes": true,
+      "reference_changes": false,
+      "tested_source": {
+        "commit": "c6ed9dd43597cbe4958821c2474ed9e5f9fbb406",
+        "dirty": true,
+        "source_sha256": "407a932c9ded7d54facf434fff2c24c1e0837af3f565166ae51604ae0308851c"
+      },
+      "parent_source": {
+        "commit": "c6ed9dd43597cbe4958821c2474ed9e5f9fbb406",
+        "source_sha256": "e0c0f1e5dd86bf95978cb6f3226c82d5e46859fb006424b7374f8137aa515f24"
+      },
+      "validation": {
+        "pytest": {
+          "tests": 9582,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "new_cases": 60,
+        "parent_regressions": {
+          "tests": 60,
+          "failures": 37,
+          "errors": 0,
+          "skipped": 0
+        },
+        "bots": {
+          "games": 20,
+          "audit_failures": 0,
+          "winner_changes_from_parent": 0,
+          "final_state_changes_from_parent": 0
+        },
+        "mixed": {
+          "games": 20,
+          "human_turns": 662,
+          "event_turns": 155,
+          "events_ok": 134,
+          "partial": 4,
+          "hard_findings": 0,
+          "batch_digest": "95a1f6e6632f6d105e3444ea31cd5a707233c9d0f3e21e48c30db3bf079bb8d9"
+        },
+        "mixed_hashes_identical": true,
+        "mixed_case_changes_from_parent": 1,
+        "balance": {
+          "games": 100,
+          "guardrail_exit": 0,
+          "band": 0.15,
+          "winner_changes_from_parent": 3,
+          "length_changes_from_parent": 3,
+          "baseline_sha256": "5c14af61d455068527ed2032857192f849eb854b7e0bf4793d475e2974ab262a",
+          "baseline_updated": false
+        },
+        "bot_and_mixed_seeds": [
+          21,
+          22,
+          23,
+          24
+        ],
+        "balance_seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "card_edition": "legacy",
+        "hash_seeds": [
+          0,
+          987
+        ]
+      },
+      "compatibility": "Unavailable replacements and impossible placement retain legal partial execution. Old incomplete Harudes or Migration submissions require correction. Existing exact ordering, timing and physical cohort ownership remain supported."
     }
   ]
 }

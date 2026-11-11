@@ -5,7 +5,7 @@ import io
 import pytest
 
 from fs_bot import rules_consts as rc
-from fs_bot.board.pieces import count_pieces, count_pieces_by_state, place_piece
+from fs_bot.board.pieces import count_pieces, count_pieces_by_state, place_piece, remove_piece
 from fs_bot.cards.card_effects import execute_card_A29, execute_card_A69
 from fs_bot.cards.harudes_bellovaci import HARUDES, BELLOVACI, RAID_CHOOSER
 from fs_bot.cli.free_actions import collect_free_action
@@ -25,7 +25,8 @@ def board(card='A29', chooser=rc.ROMANS):
 
 def placements(count=4):
     return {'placements': [{'region': rc.TREVERI, 'piece_type': rc.WARBAND,
-                             'count': count}]}
+                             'count': count},
+                            {'region': rc.TREVERI, 'piece_type': rc.SETTLEMENT}]}
 
 
 def raid(target=None, count=1, region=rc.TREVERI):
@@ -229,8 +230,12 @@ def grant_state(card):
     if card == 'A29':
         place_piece(state, rc.TREVERI, rc.ROMANS, rc.AUXILIA)
         state['resources'][rc.ROMANS] = 1
-        state['event_params'] = placements(2)
+        state['event_params'] = placements()
         execute_card_A29(state, True)
+        # The placement is complete; these grant-only tests examine a
+        # surviving two-piece cohort, with unrelated reserves still Available.
+        remove_piece(state, rc.TREVERI, rc.GERMANS, rc.WARBAND, 2, piece_state=rc.HIDDEN)
+        state['event_modifiers']['card_A29_raid_cohort'][0]['count'] = 2
         request = {'kind': 'free_action', 'request_type': HARUDES, 'allow_decline': False}
     else:
         bellovaci(state)

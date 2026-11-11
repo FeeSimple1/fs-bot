@@ -91,7 +91,8 @@ def test_a29_raids_only_placed_cohort_and_never_unrelated_revealed_forces():
     place_piece(state, rc.NERVII, rc.GERMANS, rc.WARBAND, 4)
     actions = _event(state, rc.GERMANS, {'placements': [
         {'region': rc.NERVII, 'piece_type': rc.WARBAND, 'count': 1},
-        {'region': rc.TREVERI, 'piece_type': rc.WARBAND, 'count': 3}]})
+        {'region': rc.TREVERI, 'piece_type': rc.WARBAND, 'count': 3},
+        {'region': rc.TREVERI, 'piece_type': rc.SETTLEMENT}]})
     assert state['resources'][rc.GERMANS] == 3  # one Nervii raider, max2 Treveri
     assert count_pieces_by_state(state, rc.NERVII, rc.GERMANS, rc.WARBAND, rc.HIDDEN) == 4
     assert count_pieces_by_state(state, rc.UBII, rc.GERMANS, rc.WARBAND, rc.HIDDEN) == 3
@@ -101,9 +102,14 @@ def test_a29_raids_only_placed_cohort_and_never_unrelated_revealed_forces():
 
 
 def test_a29_places_no_more_than_one_settlement():
+    from fs_bot.engine.execute import execute_decision
+    from fs_bot.state.serialize import encode
     state = _state('A29')
-    _event(state, rc.GERMANS, {'placements': [
-        {'region': rc.NERVII, 'piece_type': rc.SETTLEMENT},
-        {'region': rc.TREVERI, 'piece_type': rc.SETTLEMENT}]})
-    assert count_pieces(state, rc.NERVII, rc.GERMANS, rc.SETTLEMENT) == 1
-    assert count_pieces(state, rc.TREVERI, rc.GERMANS, rc.SETTLEMENT) == 0
+    before = encode(state)
+    result = execute_decision(state, rc.GERMANS, {'player_action': {
+        'command': 'Event', 'sa': 'No SA', 'details': {'card_id': 'A29',
+            'text_preference': rc.EVENT_SHADED, 'event_params': {'placements': [
+                {'region': rc.NERVII, 'piece_type': rc.WARBAND, 'count': 4},
+                {'region': rc.NERVII, 'piece_type': rc.SETTLEMENT},
+                {'region': rc.TREVERI, 'piece_type': rc.SETTLEMENT}]}}}})
+    assert not result['executed'] and encode(state) == before

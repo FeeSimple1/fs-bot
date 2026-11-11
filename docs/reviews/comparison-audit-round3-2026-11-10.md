@@ -1,9 +1,10 @@
 # Third Falling Sky comparison audit — 10 November 2026
 
-Batches 1 and 2 repair seven findings. The [latest repair report](third-comparison-batch2-2026-11-10.md)
-and [ledger](comparison-audit-round3-2026-11-10.json) record **7 of 15 repaired
-(47%), with 8 remaining**. The [Batch 1 report](third-comparison-batch1-2026-11-10.md)
-retains its original measurements.
+Batches 1–3 repair twelve findings. The [latest repair report](third-comparison-batch3-2026-11-10.md)
+and [ledger](comparison-audit-round3-2026-11-10.json) record **12 of 15 repaired
+(80%), with 3 remaining**. The earlier
+[Batch 1](third-comparison-batch1-2026-11-10.md) and
+[Batch 2](third-comparison-batch2-2026-11-10.md) reports retain their original measurements.
 
 **The audit confirmed 15 additional repair groups — 14 high and 1 medium priority.** The evidence below records the audit revision. The previous 50-finding and 21-finding ledgers remain fully closed. Known Circumvallation persistence work and unresolved source questions are tracked separately.
 

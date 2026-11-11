@@ -144,18 +144,17 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The [third comparison's second repair batch](docs/reviews/third-comparison-batch2-2026-11-10.md)
-repairs Scout geography, Battle attacker presence, Harvest accounting, and
-Lost Eagle's Senate window. All **9,522 tests pass**. Twenty audited bot games
-are clean; twenty mixed-player cases match across hash seeds with replay,
-zero hard findings and four soft partial plans. A controlled seasonal reversion
-reproduces all 100 parent outcomes. The corrected 100-game matrix passes the
-reviewed baseline with the same seeds and 15-point band.
+The [third comparison's third repair batch](docs/reviews/third-comparison-batch3-2026-11-10.md)
+repairs Consuetudine, Colony, Migration, Harudes, and Nasua & Cimberius. All
+**9,582 tests pass**, including 60 new cases. Twenty audited bot games are clean;
+twenty mixed-player cases match across hash seeds with replay, zero hard findings
+and four soft partial plans. The unchanged 100-game balance baseline passes
+its existing 15-point band.
 
 The [third-audit ledger](docs/reviews/comparison-audit-round3-2026-11-10.json)
-records **7 of 15 groups repaired (47%), with 8 remaining** after the original
-50 and next 21 findings were repaired. The [first batch report](docs/reviews/third-comparison-batch1-2026-11-10.md)
-and dated checkpoints below retain their original measurements.
+records **12 of 15 groups repaired (80%), with 3 remaining** after the original
+50 and next 21 findings were repaired. Earlier repair reports and dated
+checkpoints below retain their original measurements.
 
 The [first small audit repairs](docs/reviews/cheap-fixes-2026-10-29.md) close
 five findings: mandatory Battle casualty tiers, repeated Seize/Entreat,

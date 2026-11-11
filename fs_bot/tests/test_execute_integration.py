@@ -3148,7 +3148,7 @@ def test_cards_A29_A34_A65_free_actions():
     st = setup_scenario(SCENARIO_ARIOVISTUS, seed=230)
     st["non_player_factions"] = set(get_sop_factions(st))
     st["current_card"] = "A29"
-    r = _execute_event(st, BELGAE, {"command": "Event", "sa": "No SA",
+    r = _execute_event(st, GERMANS, {"command": "Event", "sa": "No SA",
         "sa_regions": [], "details": {"card_id": "A29", "text_preference": EVENT_SHADED}})
     assert any(f.get("flag") == "card_A29" for f in (r.get("free_actions") or []))
     assert validate_state(st) == []

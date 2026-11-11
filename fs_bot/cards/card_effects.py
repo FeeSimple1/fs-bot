@@ -1983,12 +1983,17 @@ def execute_card_53(state, shaded=False):
     from fs_bot.commands.raid import germans_phase_raid_region
     from fs_bot.engine.germans_battle import germans_phase_battle
     from fs_bot.board.control import refresh_all_control
-    # Flip all Germanic Warbands to Hidden.
+    # §1.4.3: a Scouted piece receives one hide attempt, clearing its
+    # marker while staying Revealed. Do not hide that piece again.
     for region in state["spaces"]:
         revealed = count_pieces_by_state(state, region, GERMANS, WARBAND, REVEALED)
         if revealed > 0:
             flip_piece(state, region, GERMANS, WARBAND, revealed,
                        from_state=REVEALED, to_state=HIDDEN)
+        scouted = count_pieces_by_state(state, region, GERMANS, WARBAND, SCOUTED)
+        if scouted:
+            flip_piece(state, region, GERMANS, WARBAND, scouted,
+                       from_state=SCOUTED, to_state=HIDDEN)
     # Germans Phase as if Winter but skipping March: Rally, then Raid (only
     # where Germans have Hidden Warbands — germans_phase_raid_region raises
     # otherwise), then Battle with Ambush (§6.2.4 — "all Germans Ambush").
@@ -1996,18 +2001,15 @@ def execute_card_53(state, shaded=False):
     _event_step(state, "53.german_rally")
     germans_phase_rally(state)
     def _reserve_for_ambush(reg):
-        # §6.2.3: do not Raid away Hidden Warbands needed for an Ambush
-        # (Hidden-majority over a defender that would take a Loss).
+        # Keep the existing Raid reservation for a prospective Ambush,
+        # using Card 53's exception to the usual Hidden-enemy comparison.
         gh = count_pieces_by_state(state, reg, GERMANS, WARBAND, HIDDEN)
         if gh <= 0:
             return False
         for ef in FACTIONS:
             if ef == GERMANS or count_pieces(state, reg, ef) <= 0:
                 continue
-            eh = (count_pieces_by_state(state, reg, ef, WARBAND, HIDDEN)
-                  + count_pieces_by_state(state, reg, ef, AUXILIA, HIDDEN))
-            if gh <= eh:
-                continue
+            # Card 53 expressly waives the Hidden-enemy comparison.
             try:
                 if calculate_losses(state, reg, GERMANS, ef) > 0:
                     return True
@@ -2019,7 +2021,7 @@ def execute_card_53(state, shaded=False):
                 and not _reserve_for_ambush(region)):
             germans_phase_raid_region(state, region)
     _event_step(state, "53.german_battle")
-    germans_phase_battle(state)
+    germans_phase_battle(state, force_ambush=True)
     refresh_all_control(state)
 
 def execute_card_54(state, shaded=False):
@@ -2422,6 +2424,19 @@ def execute_card_65(state, shaded=False):
         from fs_bot.cards.german_allegiances import execute
         execute(state)
 
+def migration_ally_options(state, faction, region, *, require_available=True):
+    """Subdued circles for Migration's mandatory post-movement Ally."""
+    from fs_bot.rules_consts import TRIBE_FACTION_RESTRICTION
+    from fs_bot.map.map_data import get_playable_regions_for_state
+    if (region not in get_playable_regions_for_state(state, faction)
+            or (require_available and get_available(state, faction, ALLY) == 0)):
+        return []
+    return [tribe for tribe, info in sorted(state['tribes'].items())
+            if _tribe_region(state, tribe) == region
+            and info.get('allied_faction') is None and info.get('status') in (None, ALLIED)
+            and TRIBE_FACTION_RESTRICTION.get(tribe, faction) == faction]
+
+
 def execute_card_66(state, shaded=False):
     """Card 66: Migration — German Rally+March / Gallic relocation.
 
@@ -2432,8 +2447,7 @@ def execute_card_66(state, shaded=False):
 
     Source: Card Reference, card 66
     """
-    from fs_bot.map.map_data import get_playable_regions
-    from fs_bot.rules_consts import TRIBE_FACTION_RESTRICTION
+    from fs_bot.map.map_data import get_playable_regions_for_state
     params = state.get("event_params", {})
     if not shaded:
         # Germanic Rally then March — defer to caller
@@ -2456,8 +2470,7 @@ def execute_card_66(state, shaded=False):
         if target_region is None:
             target_region = (moves[0].get("to_region") if moves
                              else _tribe_region(state, ally_tribe))
-        playable = get_playable_regions(
-            state["scenario"], state.get("capabilities"))
+        playable = get_playable_regions_for_state(state, faction)
         if (target_region not in playable
                 or calculate_control(state, target_region) != NO_CONTROL):
             raise ValueError("card 66 destination must be a playable Region with No Control")
@@ -2488,11 +2501,11 @@ def execute_card_66(state, shaded=False):
 
         _relocate_event_groups(state, faction, "66.moves", planned_moves)
         _event_step(state, "66.ally")
-        # Card text orders Ally placement after movement. The shared helper
-        # limits it to Subdued tribes and Available discs (§§1.4.2/5.1.3).
-        # Faction-exclusive circles remain exclusive during Events (§5.1.1).
-        if (ally_tribe
-                and TRIBE_FACTION_RESTRICTION.get(ally_tribe, faction) == faction):
+        # §5.1.3: a possible printed Ally placement cannot be omitted.
+        possible_allies = migration_ally_options(state, faction, target_region)
+        if possible_allies and ally_tribe not in possible_allies:
+            raise ValueError('Migration must place its Ally when a legal Tribe and disc are available')
+        if ally_tribe in migration_ally_options(state, faction, target_region, require_available=False):
             _ally_tribe(state, ally_tribe, faction)
 
 def execute_card_67(state, shaded=False):
@@ -2619,33 +2632,22 @@ def execute_card_71(state, shaded=False):
     no_control = (calculate_control(state, region) == NO_CONTROL)
     if not (has_control or no_control):
         return
-    # Place Colony marker
+    # The Tribe exists even when §5.1.3 cannot supply its Ally disc.
+    colony_name = params.get("colony_tribe_name", f"Colony_{region}")
+    if not isinstance(colony_name, str) or not colony_name:
+        raise ValueError(f"card 71: colony name {colony_name!r} must identify a new Tribe")
+    if colony_name in state.get('tribes', {}):
+        raise ValueError(f"card 71: colony name {colony_name!r} already names a Tribe/Colony")
+    # Place Colony marker and its initially Subdued circle together.
     markers = state.setdefault("markers", {})
     region_markers = markers.setdefault(region, {})
     region_markers[MARKER_COLONY] = True
+    state.setdefault("tribes", {})[colony_name] = {
+        "status": None, "allied_faction": None, "region": region,
+    }
     _event_step(state, "71.ally")
-    # Place Ally
-    if get_available(state, faction, ALLY) > 0:
-        place_piece(state, region, faction, ALLY)
-        # The Colony becomes a tribe — track in tribes dict. The name
-        # must be NEW: a name matching an existing Tribe would silently
-        # overwrite that Tribe's allegiance entry, stranding its backing
-        # Ally piece (tribe<->piece desync; found by the player_fuzz
-        # schema-mode structural oracle, colony_tribe_name="Lingones").
-        colony_name = params.get("colony_tribe_name", f"Colony_{region}")
-        if colony_name in state.get("tribes", {}):
-            raise ValueError(
-                f"card 71: colony name {colony_name!r} already names a "
-                f"Tribe/Colony")
-        state.setdefault("tribes", {})[colony_name] = {
-            "status": None,
-            "allied_faction": faction,
-            # Dynamic tribe: carry the Region so sync/victory logic can
-            # locate the Colony (clear_allied_tribe and the Q13 sync
-            # helpers read this).
-            "region": region,
-        }
-        refresh_all_control(state)
+    _ally_tribe(state, colony_name, faction)
+    refresh_all_control(state)
 
 def execute_card_72(state, shaded=False):
     """Card 72: Impetuosity — March into Region + enemy Battle / Hidden March.
@@ -3058,47 +3060,12 @@ def execute_card_A29(state, shaded=False):
 
     Source: A Card Reference, card A29
     """
-    from fs_bot.rules_consts import GERMANIA_REGIONS
-    from fs_bot.map.map_data import get_adjacent
-    params = state.get("event_params", {})
-    scenario = state["scenario"]
     if not shaded:
         from fs_bot.cards.expansion_validation import execute
         execute(state, 'A29')
     else:
-        # Place 4 German Warbands + 1 Settlement adjacent to Germania
-        adj_regions = set()
-        for g_region in GERMANIA_REGIONS:
-            adj_regions.update(get_adjacent(g_region, scenario))
-        placements = params.get("placements", [])
-        wb_placed = 0
-        raid_cohort = {}
-        settlement_placed = False
-        for p in _event_entries(state, "A29.placements", placements):
-            region = p["region"]
-            if region not in adj_regions:
-                continue
-            piece_type = p.get("piece_type", WARBAND)
-            if piece_type == WARBAND and wb_placed < 4:
-                cnt = min(p.get("count", 1), 4 - wb_placed)
-                avail = get_available(state, GERMANS, WARBAND)
-                to_place = min(cnt, avail)
-                if to_place > 0:
-                    place_piece(state, region, GERMANS, WARBAND,
-                                count=to_place)
-                    wb_placed += to_place
-                    raid_cohort[region] = raid_cohort.get(region, 0) + to_place
-                    _track_event_placement(state, "card_A29_raid", GERMANS,
-                                           region, WARBAND, to_place)
-            elif piece_type == SETTLEMENT and not settlement_placed:
-                if get_available(state, GERMANS, SETTLEMENT) > 0:
-                    place_piece(state, region, GERMANS, SETTLEMENT)
-                    settlement_placed = True
-        state.setdefault("event_modifiers", {})
-        state["event_modifiers"]["card_A29_german_raid"] = True
-        state["event_modifiers"]["card_A29_raid_cohort"] = [
-            {"region": region, "faction": GERMANS, "count": count}
-            for region, count in raid_cohort.items()]
+        from fs_bot.cards.event_piece_plans import execute
+        execute(state, 'A29')
 
 def execute_card_A30(state, shaded=False):
     """Card A30: Orgetorix — Remove Arverni / Place Arverni.
@@ -3250,7 +3217,7 @@ def execute_card_A35(state, shaded=False):
         # player_fuzz structural oracle).
         ally_faction = params.get("ally_faction",
                                   state.get("executing_faction"))
-        if ally_faction == GERMANS:
+        if ally_faction not in (ROMANS, *GALLIC_FACTIONS):
             raise ValueError(
                 "card A35: the Treveri Ally must be Gallic or Roman")
         piece_type = params.get("piece_type", WARBAND)
@@ -3263,6 +3230,12 @@ def execute_card_A35(state, shaded=False):
             # Replace anything at Treveri with Ally — pieces and tribes
             # dict together
             _unally_tribe(state, TRIBE_TREVERI)
+            # "Replacing anything there" removes the Tribe's marker first;
+            # the unavailable counterpart still leaves that replacement removed.
+            t_info['status'] = None
+            tribe_markers = state.get('markers', {}).get(TRIBE_TREVERI, {})
+            from fs_bot.cards.remi_event_effect import _discard_markers
+            _discard_markers(tribe_markers, (MARKER_DISPERSED, MARKER_DISPERSED_GATHERING))
             if ally_faction:
                 _ally_tribe(state, TRIBE_TREVERI, ally_faction)
         _event_step(state, "A35.mobile")

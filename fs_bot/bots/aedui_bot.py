@@ -329,6 +329,14 @@ def _get_battle_enemies(state, scenario):
     return enemies
 
 
+def _counterattack_threatens_diviciacus(state, region, enemies, scenario):
+    # A3.2.4: The Leader cannot absorb a Loss while another piece can.
+    expendable = (count_pieces(state, region, AEDUI, WARBAND)
+                  + count_pieces(state, region, AEDUI, AUXILIA))
+    return any(_estimate_battle_losses(state, region, AEDUI, enemy, scenario)[1]
+               > expendable for enemy in enemies if count_pieces(state, region, enemy))
+
+
 # ============================================================================
 # NODE FUNCTIONS — Main flowchart
 # ============================================================================
@@ -693,34 +701,17 @@ def node_a_battle(state):
 
     battle_plan = []
 
-    # Per A8.6.2: "do not Battle where the Diviciacus Leader could take
-    # any Loss in a counterattack." — Ariovistus only.
-    diviciacus_region = None
+    # A8.6.2 applies the Diviciacus protection to both Battle priorities.
     if scenario in ARIOVISTUS_SCENARIOS:
         diviciacus_region = _diviciacus_region(state)
+        if (diviciacus_region in playable and _counterattack_threatens_diviciacus(
+                state, diviciacus_region, enemies, scenario)):
+            playable.remove(diviciacus_region)
 
     # Step 2: Battle where we force Loss on Leader, Ally, Citadel, Legion
     for region in playable:
         if count_pieces(state, region, AEDUI) == 0:
             continue
-
-        # A8.6.2: Skip if Diviciacus could take a counterattack Loss
-        if diviciacus_region == region:
-            skip_for_diviciacus = False
-            for enemy in enemies:
-                if count_pieces(state, region, enemy) == 0:
-                    continue
-                _, losses_suffered = _estimate_battle_losses(
-                    state, region, AEDUI, enemy, scenario)
-                # Expendable Aedui pieces that absorb losses before Diviciacus
-                aedui_wb = count_pieces(state, region, AEDUI, WARBAND)
-                aedui_aux = count_pieces(state, region, AEDUI, AUXILIA)
-                expendable_aedui = aedui_wb + aedui_aux
-                if losses_suffered >= expendable_aedui:
-                    skip_for_diviciacus = True
-                    break
-            if skip_for_diviciacus:
-                continue
 
         for enemy in enemies:
             if count_pieces(state, region, enemy) == 0:
@@ -755,23 +746,6 @@ def node_a_battle(state):
             continue
         if count_pieces(state, region, AEDUI) == 0:
             continue
-
-        # A8.6.2: Skip if Diviciacus could take a counterattack Loss
-        if diviciacus_region == region:
-            skip_for_diviciacus = False
-            for enemy in enemies:
-                if count_pieces(state, region, enemy) == 0:
-                    continue
-                _, losses_suffered = _estimate_battle_losses(
-                    state, region, AEDUI, enemy, scenario)
-                aedui_wb = count_pieces(state, region, AEDUI, WARBAND)
-                aedui_aux = count_pieces(state, region, AEDUI, AUXILIA)
-                expendable_aedui = aedui_wb + aedui_aux
-                if losses_suffered >= expendable_aedui:
-                    skip_for_diviciacus = True
-                    break
-            if skip_for_diviciacus:
-                continue
 
         for enemy in enemies:
             if count_pieces(state, region, enemy) == 0:

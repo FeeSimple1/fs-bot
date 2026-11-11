@@ -2143,11 +2143,8 @@ def _resolve_fixed_event_battle(state, faction, action, **options):
     # defender evaluates Retreat, before the Battle resolver is entered.
     with participants, defense_scope(state, region, faction, defender):
         if "retreat_declaration" not in options:
-            forecast = {key: options[key]
-                        for key in ('double_auxilia', 'extra_losses', 'ally_first')
-                        if key in options}
             options.update(_battle_retreat_options(
-                state, region, faction, defender, False, **forecast))
+                state, region, faction, defender, False, **options))
         return resolve_battle(state, region, faction, defender, **options)
 
 
@@ -4082,23 +4079,25 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             if _battle_observer is not None:
                 _battle_observer('before', state, region, defender,
                                  {'is_ambush': is_ambush})
+            battle = dict(
+                besiege_target=besiege_target,
+                citadel_at_start=citadel_at_start,
+                fort_at_start=fort_at_start,
+                full_loss_warbands=_full_loss_warbands,
+                _full_loss_cohort=_full_loss_cohort,
+                double_auxilia=_double_auxilia,
+                ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
+                             and faction == _ARV_B and region == PROVINCIA),
+            )
             try:
                 if _no_retreat_here:
                     retreat_options = {'retreat_declaration': False}
                 else:
                     retreat_options = _battle_retreat_options(
-                        state, region, faction, defender, is_ambush)
+                        state, region, faction, defender, is_ambush, **battle)
                 res = resolve_battle(
                     state, region, faction, defender,
-                    is_ambush=is_ambush, besiege_target=besiege_target,
-                    citadel_at_start=citadel_at_start,
-                    fort_at_start=fort_at_start,
-                    full_loss_warbands=_full_loss_warbands,
-                    _full_loss_cohort=_full_loss_cohort,
-                    double_auxilia=_double_auxilia,
-                    ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
-                                 and faction == _ARV_B and region == PROVINCIA),
-                    **retreat_options,
+                    is_ambush=is_ambush, **battle, **retreat_options,
                 )
             except _EXEC_ERRORS as exc:
                 errors.append({"region": region, "defender": defender,
@@ -5402,8 +5401,7 @@ def _battle_retreat_options(state, region, attacker, defender, is_ambush, **fore
 
 
 def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
-                            *, double_auxilia=False, extra_losses=0,
-                            ally_first=False, battle_options=None):
+                            *, battle_options=None, **battle):
     """Route the defending faction's Retreat decision per §8.4.3.
 
     Non-player Retreat rules (non_player_guidelines_summary.txt, §8.4.3):
@@ -5414,24 +5412,18 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
     Returns (retreat_declaration, retreat_region):
       - (False, None) if the defender will not or cannot Retreat.
       - (True, dest) if it Retreats and supplies a preliminary destination.
-      - (True, None) for a player who declares and chooses a destination later.
+      - (True, None) if the disposition is open or has no legal destination.
 
     A fresh player declaration leaves the destination for Step 6. Other
     factions' Control is usable only with their agreement during Step 2.
     """
-    from fs_bot.rules_consts import (
-        ROMANS, GERMANS, LEGION, AUXILIA, WARBAND, CITADEL, FORT, EVENT_SHADED,
-    )
-    from fs_bot.battle.losses import calculate_losses
     from fs_bot.battle.elite import window
-    from fs_bot.battle.retreat import can_declare
+    from fs_bot.battle.retreat import can_declare, non_player_should_retreat
     window(state, 'battle_retreat_choice', region=region,
            attacker=attacker, defender=defender)
 
     if not can_declare(state, region, attacker, defender, is_ambush):
         return (False, None)
-    from fs_bot.cards.capabilities import is_capability_active
-
     # Legal Retreat destinations (adjacent Regions the defender Controls, or
     # ones whose controller agrees — §1.5.2).
     agreements = {}
@@ -5456,78 +5448,13 @@ def _decide_defender_retreat(state, region, attacker, defender, is_ambush,
             return (True, destination)
         return (False, None)
 
-    # Default NP logic. Condition (3): a Retreat removes no pieces only if a
-    # legal destination exists.
-    if not legal:
-        return (False, None)
-    dest = max(sorted(legal), key=lambda r: count_pieces(state, r, defender))
+    dest = max(sorted(legal), key=lambda r: count_pieces(state, r, defender),
+               default=None)
     if battle_options is not None:
         battle_options.update(retreat_agreements=agreements, retreat_non_player=True)
 
-    # Fixed Event Battles retain their printed Loss modifiers when the
-    # defender applies §8.4.3. Aquitani adds its three Losses after halving,
-    # just as the actual Battle resolver does.
-    suffer = calculate_losses(state, region, attacker, defender,
-                              double_auxilia=double_auxilia) + extra_losses
-    suffer_if_retreat = calculate_losses(
-        state, region, attacker, defender, is_retreat=True,
-        double_auxilia=double_auxilia) + extra_losses
-    inflict = calculate_losses(
-        state, region, defender, attacker, is_counterattack=True)
-
-    mobile = (count_pieces(state, region, defender, LEGION)
-              + count_pieces(state, region, defender, AUXILIA)
-              + count_pieces(state, region, defender, WARBAND)
-              + (1 if get_leader_in_region(state, region, defender)
-                 is not None else 0))
-    has_hard = (count_pieces(state, region, defender, CITADEL) > 0
-                or count_pieces(state, region, defender, FORT) > 0)
-
-    # (a) Retreat to save the last piece: full Losses would wipe the mobile
-    #     group, but halved (Retreat) Losses leave a survivor.
-    from fs_bot.rules_consts import ALLY
-    first_ally = int(ally_first and count_pieces(state, region, defender, ALLY) > 0)
-    if (mobile > 0 and max(0, suffer - first_ally) >= mobile
-            and max(0, suffer_if_retreat - first_ally) < mobile):
-        return (True, dest)
-    # (b) Romans Retreat only when it lowers projected Legion Loss rolls
-    # (§8.4.3). Positive incoming Losses alone are insufficient: Auxilia
-    # may absorb all of them. Use the actual loss priority (including
-    # cooperating pieces and static-first Retreat), with each Defender
-    # roll presumed to remove its target for this forecast. Live rolls
-    # still resolve normally. A detached copy keeps priority inspection
-    # from consuming any live tie-breaking RNG.
-    if defender == ROMANS and count_pieces(state, region, defender, LEGION):
-        from copy import deepcopy
-        from fs_bot.battle.losses import _build_loss_priority
-        from fs_bot.rules_consts import MARKER_ABATIS
-
-        def legion_exposure(losses, retreat):
-            order = _build_loss_priority(
-                deepcopy({key: value for key, value in state.items()
-                          if key != "decision_agent"}),
-                region, defender, is_retreat=retreat)
-            if first_ally:
-                # The printed first Ally Loss precedes normal standing or
-                # Retreat priorities, so it cannot expose a Legion instead.
-                first = next((index for index, piece in enumerate(order)
-                              if piece[0] == ALLY), None)
-                if first is not None:
-                    order.insert(0, order.pop(first))
-            if (retreat and state.get("markers", {}).get(region, {}).get(
-                    MARKER_ABATIS) == defender
-                    and not (attacker == GERMANS and is_capability_active(
-                        state, "A31", EVENT_SHADED))):
-                # A64 and its clarification: defending Abatis absorbs as
-                # a Fort, ahead of mobile pieces when Retreating.
-                losses = max(0, losses - 1)
-            return sum(piece[0] == LEGION for piece in order[:losses])
-
-        if legion_exposure(suffer_if_retreat, True) < legion_exposure(suffer, False):
-            return (True, dest)
-    # (c) No Citadel/Fort, would inflict < 1/2 the Losses suffered, and a
-    #     valid (piece-preserving) destination exists.
-    if (not has_hard) and (inflict * 2 < suffer):
+    if non_player_should_retreat(state, region, attacker, defender,
+                                 destination=dest, agreements=agreements, **battle):
         return (True, dest)
 
     return (False, None)

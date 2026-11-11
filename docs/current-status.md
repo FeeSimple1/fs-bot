@@ -21,6 +21,26 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 11 November fourth comparison repair Batch 3
+
+The [third repair batch](reviews/fourth-comparison-batch3-2026-11-11.md)
+closes four groups. Motivation requires a surviving German defender.
+Non-players forecast their Counterattack after Attack Losses and can
+Retreat in place when permitted. Roman Battle and March priorities count
+Germanic Settlements in Ariovistus. The Aedui bot allows a Battle when
+projected Counterattack Losses fit within Diviciacus's supporting troops.
+
+All **9,794 tests pass**. The 120 bot games complete with zero audit
+failures. Twenty mixed-player cases match across two hash seeds with
+replay and zero hard findings.
+
+The 100-game balance baseline was refreshed after tracing changes on the
+same seeds. The prior baseline's largest change was a rise from 35% to
+55% for Arverni in The Great Revolt.
+
+The [fourth-audit ledger](reviews/comparison-audit-round4-2026-11-10.json)
+records **14 of 16 repaired, 2 open**, both in the Gallic War Interlude.
+
 ### 10 November fourth comparison repair Batch 2
 
 The [second repair batch](reviews/fourth-comparison-batch2-2026-11-10.md)

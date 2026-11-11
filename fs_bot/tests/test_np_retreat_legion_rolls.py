@@ -4,6 +4,7 @@ from copy import deepcopy
 import pytest
 
 from fs_bot import rules_consts as rc
+from fs_bot.battle.resolve import resolve_battle
 from fs_bot.board.control import refresh_all_control
 from fs_bot.board.pieces import place_piece
 from fs_bot.engine.execute import _decide_defender_retreat
@@ -65,9 +66,9 @@ def test_last_piece_survival_still_triggers_retreat_without_legions():
 
 
 def test_attacker_abatis_does_not_reduce_roman_counterattack():
-    # Romans take five Losses, inflict four, so ordinary half-loss criterion
-    # does not apply. Reduce their counterattack with Abatis owned by attacker.
-    state = position(warbands=10, auxilia=8, legions=0)
+    # Romans take five Losses. Seven surviving Auxilia can still inflict
+    # three Losses, which meets the half-loss criterion.
+    state = position(warbands=10, auxilia=12, legions=0)
     state['markers'].setdefault(rc.NERVII, {})[rc.MARKER_ABATIS] = rc.ARVERNI
     # Counterattack ignores Abatis (it only protects a defender), so no
     # independent Retreat condition applies; this does not invent shielding.
@@ -89,3 +90,7 @@ def test_german_phalanx_cancels_abatis_in_retreat_prediction():
     # on Retreat, but both Legions still roll; cancelled Abatis adds no shield.
     assert _decide_defender_retreat(
         state, rc.NERVII, rc.GERMANS, rc.ROMANS, False) == (False, None)
+    result = resolve_battle(state, rc.NERVII, rc.GERMANS, rc.ROMANS,
+                            retreat_declaration=True, retreat_region=rc.TREVERI)
+    assert all(piece != 'Abatis' for piece, _, _ in result['attack']['rolls'])
+    assert state['markers'][rc.NERVII][rc.MARKER_ABATIS] == rc.ROMANS

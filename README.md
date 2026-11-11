@@ -144,12 +144,11 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The [fourth comparison's first repair batch](docs/reviews/fourth-comparison-batch1-2026-11-10.md)
-closes six Event and Harvest findings. All **9,722 tests pass**, including
-36 added cases. Twenty second-edition bot games are clean. Twenty mixed-player
-cases match across hash seeds with replay and zero hard findings. The 100-game
-balance check passes its existing 15-point band. The fourth audit has ten
-open groups.
+The [fourth comparison's third repair batch](docs/reviews/fourth-comparison-batch3-2026-11-11.md)
+fixes Counterattack survival, non-player Retreat, Roman target ranking,
+and the Diviciacus Battle safety check. The fourth audit has two open
+Interlude groups. The report records the tests, game replays, and
+reviewed 100-game balance baseline.
 
 The [third comparison's final repair batch](docs/reviews/third-comparison-batch4-2026-11-10.md)
 fixes Colony Tribe handling, Razed City protection, and Stalwart's cancellation

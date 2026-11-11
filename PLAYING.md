@@ -766,6 +766,10 @@ Leader and any number of surviving Hidden Warbands in place. The rest move
 together or are removed. Any host agreement must come before the Attack.
 Non-player Leaders end a Retreat where the most of their own pieces can
 join them. Against Romans, non-player Hidden Warbands stay in place.
+Non-players forecast their Counterattack using the defenders that would
+survive the Attack. A defender can Retreat without an adjacent refuge
+when survivors can stay in the Battle Region under the Roman Battle rules.
+Shaded Motivation adds a Counterattack Loss when a German piece survives.
 
 When Harassment causes a loss, you can choose an offered soft casualty or a
 saving roll, then choose a hard casualty if the roll requires one. The menus

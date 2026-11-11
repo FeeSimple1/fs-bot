@@ -65,6 +65,20 @@ def _a33_motivation_active(state):
         return False
     return is_capability_active(state, "A33", EVENT_SHADED)
 
+
+def defender_abatis_active(state, region, attacker, defender):
+    """Whether the defending Abatis acts as a Fort, including A31."""
+    from fs_bot.cards.capabilities import is_capability_active
+    from fs_bot.rules_consts import EVENT_SHADED, MARKER_ABATIS
+
+    if state.get("markers", {}).get(region, {}).get(MARKER_ABATIS) != defender:
+        return False
+    if defender == GERMANS and state.get("event_modifiers", {}).get(
+            "card_A31_cancel_german_benefits"):
+        return False
+    return attacker != GERMANS or not is_capability_active(state, "A31", EVENT_SHADED)
+
+
 def calculate_losses(state, region, attacking_faction, defending_faction,
                      *, is_retreat=False, is_counterattack=False,
                      double_auxilia=False, allied_factions=(),
@@ -233,22 +247,10 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # Card A64 Abatis: defender-owned marker acts as a Fort and negates all
     # Losses caused by Auxilia (attack step only — "When you defend"). A31
     # interactions per BGG errata thread 2072553 clarification 1.
-    _abatis = False
-    if not is_counterattack:
-        from fs_bot.rules_consts import MARKER_ABATIS
-        _m = state.get("markers", {}).get(region, {})
-        _abatis = _m.get(MARKER_ABATIS) == defending_faction
-        if _abatis:
-            if (defending_faction == GERMANS and state.get(
-                    "event_modifiers", {}).get(
-                        "card_A31_cancel_german_benefits")):
-                _abatis = False
-            elif (enemy_faction == GERMANS
-                    and is_capability_active(state, "A31", _ESH)):
-                _abatis = False
-        if _abatis:
-            # recompute component B without the negated Auxilia
-            total -= enemy_auxilia * aux_factor
+    _abatis = not is_counterattack and defender_abatis_active(
+        state, region, enemy_faction, defending_faction)
+    if _abatis:
+        total -= enemy_auxilia * aux_factor
 
     # Halving: Defender's Fort, Citadel, or Retreat — §3.2.4, §3.3.4
     # "The above sum is cut in half for Defenders who are either Retreating
@@ -298,12 +300,10 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
                     and enemy_pieces.get(CITADEL, 0) == 0):
                 total *= 2
 
-        # Motivation: the German Counterattack (Germans firing back, i.e.
-        # attacking_faction == GERMANS here) inflicts +1 Loss. Applied after
-        # any Ariovistus doubling, as a flat rider, and only when a
-        # Counterattack actually occurs with at least one Loss-capable step
-        # (callers skip the Counterattack entirely when no Germans survive).
-        if _motivation and enemy_faction == GERMANS:
+        # Motivation adds one Loss after doubling, provided at least one
+        # German piece survived to Counterattack (§3.2.4, Step 4).
+        if (_motivation and enemy_faction == GERMANS
+                and count_pieces(state, region, GERMANS) > 0):
             total += 1
 
     # Round down — §3.2.4: "round any fractions down"

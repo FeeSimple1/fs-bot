@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 16,
-  "closed": 10,
-  "open": 6,
+  "closed": 14,
+  "open": 2,
   "severity_counts": {
     "medium": 5,
     "high": 11
@@ -259,7 +259,7 @@
       "severity": "high",
       "title": "A null top-level SA plan hides the executed nested Scout from Event Region restrictions",
       "expected": "Mons Cevenna follow-on Scout must originate in the March destination, Sequani. Reject a Scout from Carnutes before any Event effect commits.",
-      "observed": "Full public Event9 resolves March Provincia\u2192Sequani, then Seize Sequani and Scout Carnutes\u2192Veneti despite allowed_regions=[Sequani]. Response uses details.scout_plan=null and nested details.sa_details.scout_plan with real movement. Canonical top-level version correctly rejects atomically; legal Sequani\u2192Mandubii control succeeds. Board census and structure remain clean.",
+      "observed": "Full public Event9 resolves March Provincia→Sequani, then Seize Sequani and Scout Carnutes→Veneti despite allowed_regions=[Sequani]. Response uses details.scout_plan=null and nested details.sa_details.scout_plan with real movement. Canonical top-level version correctly rejects atomically; legal Sequani→Mandubii control succeeds. Board census and structure remain clean.",
       "sources": [
         {
           "path": "Reference Documents/Card Reference",
@@ -381,9 +381,9 @@
       "id": "BM4-01",
       "title": "Motivation inflicts a Counterattack Loss after every German defender has been removed",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "source": [
-        "Reference Documents/Chapter 3:144-146 (\u00a73.2.4 Step 4, surviving Defending Forces cause Counterattack Losses)",
+        "Reference Documents/Chapter 3:144-146 (§3.2.4 Step 4, surviving Defending Forces cause Counterattack Losses)",
         "Reference Documents/Ariovistus/A Card Reference:138-144 (A33 shaded Motivation +1 Counterattack Loss)"
       ],
       "code": [
@@ -397,20 +397,22 @@
         "With Motivation and three Germans initially, one German survives Attack and correctly inflicts the extra Loss (7 Belgae survive)."
       ],
       "newness": "Neither prior 50/21/15 inventories cover nonexistent German Counterattack. Prior A33 lifecycle/Retreat restrictions and EX3-04 Stalwart/Horse are different consumers and clauses.",
-      "fixture": "build_initial_state(Ariovistus, seed=1), all factions human, 20 Belgic Resources, 8 Belgic and 2 German Warbands at Carnutes, A33 shaded activated. All piece placements use helpers. Permanent Roman Fort explicitly placed in Provincia per \u00a71.4.2; fixture corrected and all final witnesses rerun, outcomes unchanged.",
+      "fixture": "build_initial_state(Ariovistus, seed=1), all factions human, 20 Belgic Resources, 8 Belgic and 2 German Warbands at Carnutes, A33 shaded activated. All piece placements use helpers. Permanent Roman Fort explicitly placed in Provincia per §1.4.2; fixture corrected and all final witnesses rerun, outcomes unchanged.",
       "witness": "probe_commands.py::motivation; durable validate_response + execute_decision; clean validate_state/check_structural_integrity before and after",
       "repair_direction": "Gate the Counterattack bonus/resolution on the required surviving defending force, preserving applicable structure-only edge cases according to the source; add wiped-force and surviving-force regressions.",
-      "partition": "commands"
+      "partition": "commands",
+      "repair_batch": 3,
+      "repair_report": "fourth-comparison-batch3-2026-11-11.md"
     },
     {
       "id": "BM4-02",
       "title": "Non-player Retreat decisions use pre-Attack strength and require an unnecessary escape destination",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "source": [
-        "Reference Documents/Chapter 8:207-219 (\u00a78.4.3 save last Defending piece, guarantee half the Losses, Gauls leave all Hidden Warbands when Retreating from Romans)",
-        "Reference Documents/Chapter 3:144-146 (\u00a73.2.4 surviving Defending Forces Counterattack)",
-        "Reference Documents/Chapter 3:150-159 (\u00a73.2.4 Retreat survivor movement and Hidden Warband/Leader exception)"
+        "Reference Documents/Chapter 8:207-219 (§8.4.3 save last Defending piece, guarantee half the Losses, Gauls leave all Hidden Warbands when Retreating from Romans)",
+        "Reference Documents/Chapter 3:144-146 (§3.2.4 surviving Defending Forces Counterattack)",
+        "Reference Documents/Chapter 3:150-159 (§3.2.4 Retreat survivor movement and Hidden Warband/Leader exception)"
       ],
       "code": [
         "fs_bot/engine/execute.py:5457-5474",
@@ -423,12 +425,14 @@
         "8 NP Aedui with safe destination stand and guarantee exactly half, inflicting 2 after suffering 4.",
         "The Hidden-survivor case with a safe destination correctly Retreats but does not actually move its surviving Hidden Warband."
       ],
-      "newness": "Earlier BATTLE-RETREAT-CHOICES addressed human declarations/dispositions; prior Roman Legion forecast corrections concerned \u00a78.4.3 second bullet. This finding concerns NPC third-bullet pre-casualty forecast and first-bullet destination veto.",
+      "newness": "Earlier BATTLE-RETREAT-CHOICES addressed human declarations/dispositions; prior Roman Legion forecast corrections concerned §8.4.3 second bullet. This finding concerns NPC third-bullet pre-casualty forecast and first-bullet destination veto.",
       "grouping": "Two errors in the same NPC Retreat decision function are one repair group rather than separate findings.",
-      "fixture": "Census/structurally valid controlled positions built with piece helpers. Great Revolt seed=1, only Aedui marked non-player. Carnutes/Veneti adjacent and safe destination controlled through one Aedui Warband. No saving-roll or choice uncertainty in the primary guarantee witness. Permanent Roman Fort explicitly placed in Provincia per \u00a71.4.2; fixture corrected and all final witnesses rerun, outcomes unchanged.",
+      "fixture": "Census/structurally valid controlled positions built with piece helpers. Great Revolt seed=1, only Aedui marked non-player. Carnutes/Veneti adjacent and safe destination controlled through one Aedui Warband. No saving-roll or choice uncertainty in the primary guarantee witness. Permanent Roman Fort explicitly placed in Provincia per §1.4.2; fixture corrected and all final witnesses rerun, outcomes unchanged.",
       "witness": "probe_commands.py::np_retreat and ::np_hidden_retreat; ordinary durable validation and live execution, with detached declaration diagnostic; all census/structure checks clean",
-      "repair_direction": "Evaluate surviving guaranteed Counterattack strength and actual Retreat removals/stay exceptions. Apply each \u00a78.4.3 condition independently, with deterministic detached forecasts and live survivor controls.",
-      "partition": "commands"
+      "repair_direction": "Evaluate surviving guaranteed Counterattack strength and actual Retreat removals/stay exceptions. Apply each §8.4.3 condition independently, with deterministic detached forecasts and live survivor controls.",
+      "partition": "commands",
+      "repair_batch": 3,
+      "repair_report": "fourth-comparison-batch3-2026-11-11.md"
     },
     {
       "id": "BE4-01",
@@ -705,34 +709,34 @@
       "title": "Ariovistus Harvest can drive Roman Resources below zero",
       "severity": "high",
       "status": "closed",
-      "expected": "Roman Resources must remain within 0\u201345 even when the Ariovistus Roman victory formula is negative. This finding requires a nonnegative result and does not decide whether negative earnings may reduce a positive balance.",
+      "expected": "Roman Resources must remain within 0–45 even when the Ariovistus Roman victory formula is negative. This finding requires a nonnegative result and does not decide whether negative earnings may reduce a positive balance.",
       "observed": "A valid board with 26 non-Roman Allies and 6 Settlements has Roman victory -2 and no faction passing victory. Public harvest_phase changes starting Roman Resources0 to-2 and1 to-1. Public run_winter_round with no relocations also ends at-2 and a structural error. Removing all Settlements produces score4, Resources4, clean structure.",
       "mechanism": "_harvest_earnings passes the negative score to _add_resources, which clamps only the upper bound.",
       "sources": [
         {
           "path": "Reference Documents/Chapter 1",
-          "lines": "212\u2013217",
-          "rule": "\u00a71.8 Resources between0 and45 at any moment"
+          "lines": "212–217",
+          "rule": "§1.8 Resources between0 and45 at any moment"
         },
         {
           "path": "Reference Documents/Ariovistus/Chapter A6",
-          "lines": "143\u2013148",
+          "lines": "143–148",
           "rule": "A6.4.1 Harvest equals Roman victory"
         },
         {
           "path": "Reference Documents/Ariovistus/Chapter A7",
-          "lines": "7\u201312",
+          "lines": "7–12",
           "rule": "A7.2 subtract Settlements"
         }
       ],
       "code": [
         {
           "path": "fs_bot/engine/winter.py",
-          "lines": "639\u2013643"
+          "lines": "639–643"
         },
         {
           "path": "fs_bot/engine/winter.py",
-          "lines": "683\u2013686"
+          "lines": "683–686"
         }
       ],
       "newness": "WS3-01 repaired counting physical Gallic Allies/Citadels. This is a distinct Ariovistus Roman negative-score boundary and missing Resource floor; absent from all earlier ledgers.",
@@ -757,24 +761,24 @@
       "sources": [
         {
           "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
-          "lines": "110\u2013125",
+          "lines": "110–125",
           "rule": "Lingering Events and Deck, explicitly useA38 and keep in-effect cards outside deck"
         },
         {
           "path": "Reference Documents/Setup",
-          "lines": "21\u201329",
+          "lines": "21–29",
           "rule": "Shuffle Event cards, deal specified piles, set remaining aside"
         },
         {
           "path": "Reference Documents/Scenario - Pax Gallica",
-          "lines": "19\u201323",
+          "lines": "19–23",
           "rule": "Deal70 Events"
         }
       ],
       "code": [
         {
           "path": "fs_bot/engine/interlude.py",
-          "lines": "1364\u20131379"
+          "lines": "1364–1379"
         }
       ],
       "newness": "Earlier repair covered which replacement identity is used, A38 versusO38, and Capability registry/side lifecycle. It did not exclude the already active substituted card or condition5/71 exclusion. Related deck membership symptoms grouped once.",
@@ -799,37 +803,37 @@
       "sources": [
         {
           "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
-          "lines": "86\u201389",
+          "lines": "86–89",
           "rule": "Markers remove NoriTribe"
         },
         {
           "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
-          "lines": "126\u2013129",
+          "lines": "126–129",
           "rule": "Original Falling Sky rules in second half"
         },
         {
           "path": "Reference Documents/Chapter 7",
-          "lines": "28\u201332",
-          "rule": "\u00a77.2 physical score shortcut,30 Tribes unlessColony"
+          "lines": "28–32",
+          "rule": "§7.2 physical score shortcut,30 Tribes unlessColony"
         },
         {
           "path": "Reference Documents/Chapter 6",
-          "lines": "100\u2013106",
-          "rule": "\u00a76.4.1 Harvest from Roman score"
+          "lines": "100–106",
+          "rule": "§6.4.1 Harvest from Roman score"
         }
       ],
       "code": [
         {
           "path": "fs_bot/engine/interlude.py",
-          "lines": "1140\u20131199"
+          "lines": "1140–1199"
         },
         {
           "path": "fs_bot/engine/interlude.py",
-          "lines": "1532\u20131542"
+          "lines": "1532–1542"
         },
         {
           "path": "fs_bot/engine/victory.py",
-          "lines": "112\u2013126"
+          "lines": "112–126"
         }
       ],
       "newness": "Different mechanism from XC3-01 dynamic Colony consumers. This removes an obsolete expansion Tribe at scenario transition; no Colony exists in the witness. Earlier Interlude choices/marker reports did not count this.",
@@ -845,7 +849,7 @@
       "id": "NP4-01",
       "title": "Roman March target ranking omits Germanic Settlements from total Allied strength",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "expected": "In Ariovistus, all Settlements count as Allies for Roman Battle/March conditions and priorities. With a tier-four die roll, Germans with one Ally plus two Settlements outrank Aedui with two Allies.",
       "observed": "A census/structure-valid seed-5 initialized position reaches Roman March through the complete public bot dispatcher. It chooses Carnutes/Aedui and moves all four Roman Legions there. German total_ac is one although it should be three. Replacing the two Settlements by two physical Allies makes the same dispatcher choose Germans. With only the one German Ally, the Aedui choice is correct.",
       "root_cause": "Roman destination collection includes Settlements in local_ac but calls a generic Ally-disc-plus-Citadel helper for total_ac. Tier four sorts by that incomplete total before local priorities.",
@@ -902,16 +906,18 @@
         "roman_settlement_ranking.ally_control",
         "roman_settlement_ranking.one_ally_control"
       ],
-      "fixture": "Controlled initialized Ariovistus board using canonical piece helpers, valid physical inventory and Tribe structures before and after. No claim of naturally sampled reach. Final accepted fixtures include the permanent Roman Fort in Provincia per Chapter 1:122\u2013124.",
+      "fixture": "Controlled initialized Ariovistus board using canonical piece helpers, valid physical inventory and Tribe structures before and after. No claim of naturally sampled reach. Final accepted fixtures include the permanent Roman Fort in Provincia per Chapter 1:122–124.",
       "scope_limits": "Dynamically confirmed for tier-four Roman March. The same generic helper is used by Roman Battle ranking, but that additional path is static corroboration only. Do not globally add Settlements for every consumer without each consumer source rule.",
       "comparator_pattern": "lod-bot coin-implementation-lessons.md E (flowchart fidelity), B (producer/consumer data shape), I (plausible code omits precise rule adjustment).",
-      "partition": "bots-review"
+      "partition": "bots-review",
+      "repair_batch": 3,
+      "repair_report": "fourth-comparison-batch3-2026-11-11.md"
     },
     {
       "id": "NP4-02",
       "title": "Diviciacus safety gate turns a guaranteed safe Aedui Battle into Pass",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "expected": "A lone Diviciacus in Carnutes with a Belgic Ally and ten Aedui Resources must Battle after declining/no access to Event. The Leader inflicts one Loss and the Ally has zero Counterattack. Diviciacus cannot take a Loss.",
       "observed": "node_a4 recognizes the guaranteed high-value Loss, but dispatch_bot_turn returns Pass. Executing the ordinary source-required Battle through execute_decision removes the Belgic Ally and leaves Diviciacus alive, with clean census/structure. Adding one Aedui Warband makes the complete bot dispatcher select Battle.",
       "root_cause": "Both Battle-selection loops reject losses_suffered >= expendable_aedui, so zero >= zero declares a threat to an unharmed Leader. The gate also uses a coarse pre-Attack estimate; only the zero-loss equality boundary is dynamically claimed here.",
@@ -960,10 +966,12 @@
         "diviciacus_zero_counterattack.lone_diviciacus",
         "diviciacus_zero_counterattack.with_one_warband_control"
       ],
-      "fixture": "Controlled initialized Ariovistus board using canonical piece helpers and named Tribe allegiance, valid census and structure before/after the legal Battle. Final accepted fixtures include the permanent Roman Fort in Provincia per Chapter 1:122\u2013124.",
+      "fixture": "Controlled initialized Ariovistus board using canonical piece helpers and named Tribe allegiance, valid census and structure before/after the legal Battle. Final accepted fixtures include the permanent Roman Fort in Provincia per Chapter 1:122–124.",
       "scope_limits": "Dynamically confirmed for zero counterattack Losses/zero supporting troops. Other equality and unrelated-enemy safety cases remain uncounted.",
       "comparator_pattern": "lod-bot coin-implementation-lessons.md E (flowchart violations and silent bot degradation), F (cross-faction effects), I (precise boundary misreading).",
-      "partition": "bots-review"
+      "partition": "bots-review",
+      "repair_batch": 3,
+      "repair_report": "fourth-comparison-batch3-2026-11-11.md"
     }
   ],
   "limits": [
@@ -974,30 +982,30 @@
     "No production repair or new balance matrix was performed."
   ],
   "open_severity_counts": {
-    "high": 4,
-    "medium": 2
+    "high": 2
   },
   "latest_repair": {
-    "batch": 2,
-    "date": "2026-11-10",
-    "report": "fourth-comparison-batch2-2026-11-10.md",
-    "evidence": "fourth-comparison-batch2-2026-11-10-evidence.zip",
+    "batch": 3,
+    "date": "2026-11-11",
+    "report": "fourth-comparison-batch3-2026-11-11.md",
+    "evidence": "fourth-comparison-batch3-2026-11-11-evidence.zip",
     "source": {
-      "commit": "55fa4847f3da9112ec1c6d42542341f12859297d",
+      "commit": "37a087d5c37671c1f1109ccdbbcb0136c216cb5b",
       "dirty": true,
-      "source_sha256": "b97a582f9a3af89b343abc9669ecf9e677118eb21e36514a9f403cad7830f267",
+      "source_sha256": "82bb5f648cbfcd83fc35302435d0c4a7fcddb5ea9de947bd424dfcd510983bc5",
       "python": "3.12.14",
-      "python_files": 589
+      "python_files": 590
     },
     "closed_ids": [
-      "FE4-01",
-      "FE4-02",
-      "FE4-03",
-      "BE4-03"
+      "BM4-01",
+      "BM4-02",
+      "NP4-01",
+      "NP4-02"
     ],
-    "passed_tests": 9777,
-    "new_regressions": 55,
-    "balance_guardrail_exit": 0
+    "passed_tests": 9794,
+    "new_regressions": 17,
+    "balance_guardrail_exit": 0,
+    "previous_balance_guardrail_exit": 1
   },
   "repair_history": [
     {
@@ -1011,6 +1019,12 @@
       "report": "fourth-comparison-batch2-2026-11-10.md",
       "closed": 10,
       "open": 6
+    },
+    {
+      "batch": 3,
+      "report": "fourth-comparison-batch3-2026-11-11.md",
+      "closed": 14,
+      "open": 2
     }
   ]
 }

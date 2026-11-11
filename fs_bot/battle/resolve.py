@@ -45,7 +45,8 @@ from fs_bot.board.control import refresh_all_control
 from fs_bot.cards.capabilities import is_capability_active
 from fs_bot.battle.losses import (calculate_losses, resolve_losses,
                                   _remove_battle_piece,
-                                  card30_arverni_legion_warbands)
+                                  card30_arverni_legion_warbands,
+                                  defender_abatis_active)
 
 
 from fs_bot.engine.diviciacus import defensive_battle
@@ -245,7 +246,8 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         is_ambush=ambush_attack and not caesar_counterattack_allowed,
         caesar_counterattacks=caesar_counterattack_allowed,
         loss_order=attack_loss_order,
-        abatis_defender=True,  # card A64: marker absorbs when defending
+        abatis_defender=defender_abatis_active(
+            state, region, attacking_faction, defending_faction),
     )
     if auto_legion_removed or ally_first_removed:
         attack_result = dict(attack_result)
@@ -335,14 +337,6 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
     return result
 
 
-def _abatis_defends(state, region, defending_faction):
-    """Card A64: True when the defending Faction owns the Abatis marker in
-    this Region ("When you defend, Abatis acts as a Fort for you")."""
-    from fs_bot.rules_consts import MARKER_ABATIS
-    m = state.get("markers", {}).get(region, {})
-    return m.get(MARKER_ABATIS) == defending_faction
-
-
 def _calculate_attack_losses(state, region, attacking_faction,
                              defending_faction, *, is_retreat,
                              had_citadel_at_start, had_fort_at_start,
@@ -412,14 +406,8 @@ def _calculate_attack_losses(state, region, attacking_faction,
     # voids a GERMAN defender's Abatis; the shaded capability (cancels
     # effects harming Germans) voids an enemy Abatis against GERMAN
     # attackers.
-    _abatis_active = _abatis_defends(state, region, defending_faction)
-    if _abatis_active:
-        if (defending_faction == _GE and state.get(
-                "event_modifiers", {}).get("card_A31_cancel_german_benefits")):
-            _abatis_active = False
-        elif (attacking_faction == _GE
-                and is_capability_active(state, "A31", _ESH)):
-            _abatis_active = False
+    _abatis_active = defender_abatis_active(
+        state, region, attacking_faction, defending_faction)
     if _abatis_active:
         enemy_auxilia = 0  # negates all Losses caused by Auxilia
 

@@ -248,6 +248,13 @@ def _enemy_at_victory(state, scenario):
 # R_BATTLE targeting helpers
 # ============================================================================
 
+def _count_roman_targets(state, faction, scenario):
+    total = count_faction_allies_and_citadels(state, faction)
+    if scenario in ARIOVISTUS_SCENARIOS:  # A8.8.1
+        total += count_on_map(state, faction, SETTLEMENT)
+    return total
+
+
 def _rank_battle_targets(state, region, scenario):
     """Rank enemy factions as Battle targets in a region per §8.8.1.
 
@@ -288,7 +295,7 @@ def _rank_battle_targets(state, region, scenario):
         has_leader = 1 if get_leader_in_region(state, region, enemy) else 0
         warbands = count_pieces(state, region, enemy, WARBAND)
         is_player = 0 if enemy in non_players else 1
-        allies_citadels = count_faction_allies_and_citadels(state, enemy)
+        allies_citadels = _count_roman_targets(state, enemy, scenario)
         try:
             margin = calculate_victory_margin(state, enemy)
         except Exception:
@@ -382,7 +389,7 @@ def _rank_march_destinations(state, scenario, *, allowed_regions=None,
                 "at_victory": margin >= 0,
                 "is_player": enemy not in non_players,
                 "local_ac": local_ac,
-                "total_ac": count_faction_allies_and_citadels(state, enemy),
+                "total_ac": _count_roman_targets(state, enemy, scenario),
                 "enemy_battle_losses": enemy_battle_losses,
                 "in_supply": in_supply,
                 "hidden_wb": enemy_hidden_wb,

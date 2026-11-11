@@ -379,7 +379,9 @@ def test_real_battle_uses_selected_roman_loss_rate(decline, monkeypatch):
     state['resources'][rc.ROMANS] = 2
     state['non_player_factions'] = {rc.BELGAE, rc.AEDUI, rc.ARVERNI}
     place_piece(state, REGIONS[0], rc.ROMANS, rc.AUXILIA, 3)
-    place_piece(state, REGIONS[0], rc.BELGAE, rc.WARBAND, 6)
+    # Five survivors can Counterattack for two, so Horse does not prompt
+    # the separate poor-Counterattack Retreat rule.
+    place_piece(state, REGIONS[0], rc.BELGAE, rc.WARBAND, 8)
     activate_capability(state, 59, rc.EVENT_UNSHADED)
     agent_for(state, {'decline': True} if decline else {'region': REGIONS[0]})
     records = []

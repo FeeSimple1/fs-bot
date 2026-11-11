@@ -242,8 +242,8 @@ def test_aquitani_np_retreat_accounts_for_extra_losses_after_halving():
     assert validate_state(state) == []
 
 
-def test_aquitani_forced_first_ally_loss_cannot_count_as_lost_last_mobile():
-    """25's first Ally absorbs one of four Losses, so Ambiorix can survive standing."""
+def test_aquitani_first_ally_absorbs_one_loss_when_outmatched_belgae_retreat():
+    """Standing would leave Ambiorix inflicting one Loss against four."""
     from fs_bot.board.control import refresh_all_control
     state = board()
     state['non_player_factions'] = {rc.ROMANS, rc.BELGAE}
@@ -255,10 +255,11 @@ def test_aquitani_forced_first_ally_loss_cannot_count_as_lost_last_mobile():
     place_piece(state, rc.CARNUTES, rc.BELGAE, rc.WARBAND)
     refresh_all_control(state)
     result = ex._resolve_card25_battle(state, rc.ROMANS, rc.PICTONES, 3)[0]['result']
-    assert not result['defender_retreated']
+    assert result['defender_retreated']
     assert result['attack']['ally_first_removed'] == 1
-    assert count_pieces(state, rc.PICTONES, rc.BELGAE, rc.LEADER) == 1
-    assert count_pieces(state, rc.PICTONES, rc.BELGAE, rc.WARBAND) == 0
+    assert result['attack']['losses_taken'] == 3
+    assert result['counterattack'] is None
+    assert count_pieces(state, rc.PICTONES, rc.BELGAE, rc.WARBAND) == 1
     assert validate_state(state) == []
 
 
@@ -269,6 +270,8 @@ def test_aquitani_first_ally_loss_does_not_falsely_expose_a_roman_legion():
     state['non_player_factions'] = {rc.AEDUI, rc.ROMANS}
     place_piece(state, rc.PICTONES, rc.ROMANS, rc.AUXILIA, 2)
     place_piece(state, rc.PICTONES, rc.ROMANS, rc.LEGION, from_legions_track=True)
+    # Rule out the separate poor-Counterattack reason to Retreat.
+    place_piece(state, rc.PICTONES, rc.ROMANS, rc.FORT)
     place_piece(state, rc.PICTONES, rc.ROMANS, rc.ALLY)
     state['tribes'][rc.TRIBE_PICTONES]['allied_faction'] = rc.ROMANS
     place_piece(state, rc.CARNUTES, rc.ROMANS, rc.AUXILIA)

@@ -6,6 +6,7 @@ from fs_bot.battle.losses import calculate_losses
 from fs_bot.battle.resolve import _calculate_attack_losses
 from fs_bot.board.pieces import count_pieces, place_piece
 from fs_bot.cards.capabilities import deactivate_capability, get_capability_owner
+from fs_bot.engine.agent import RETREAT
 from fs_bot.engine.execute import execute_decision
 from fs_bot.tests.test_colony_consumers import board, clean, play
 
@@ -21,7 +22,7 @@ def battle_board(horse, stalwart, *, roman=False, target=rc.GERMANS):
         play(state, 'A31', rc.GERMANS, shaded=True)
     # Full authored Battle must retain the trusted per-Command Region selection.
     state['decision_agent'] = lambda _s, _f, req: (
-        {'retreat': False} if req['kind'] == 'RETREAT' else None)
+        {'retreat': False} if req['kind'] == RETREAT else None)
     return state, actor
 
 

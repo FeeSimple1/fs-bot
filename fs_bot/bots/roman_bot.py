@@ -58,7 +58,7 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions_for_state, get_adjacent_for_state, get_tribes_in_region,
+    get_adjacent, get_playable_regions_for_state, get_adjacent_for_state, get_tribes_in_region_for_state,
     get_region_group, ALL_REGION_DATA, is_adjacent,
 )
 from fs_bot.commands.common import _is_devastated
@@ -1125,7 +1125,7 @@ def node_r_seize(state):
         if not is_controlled_by(state, region, ROMANS):
             resource_regions.append(region)
             continue
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         can_disperse = False
         for tribe in tribes:
             # NOT Helvii — §8.8.5
@@ -1343,7 +1343,7 @@ def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
             continue  # §4.2.1 Build region eligibility
         if not _roman_control_now_or_with_fort(region):
             continue
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes:
             tribe_info = state["tribes"].get(tribe, {})
             allied_to = tribe_info.get("allied_faction")
@@ -1387,7 +1387,7 @@ def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
             continue  # §4.2.1 Build region eligibility
         if not _roman_control_now_or_with_fort(region):
             continue
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes:
             tribe_info = state["tribes"].get(tribe, {})
             if not (tribe_info.get("allied_faction") is None
@@ -1395,10 +1395,9 @@ def node_r_build(state, *, exclude_regions=None, allowed_regions=None):
                 continue
             # §1.4.2 stacking restriction (build_place_ally enforces it):
             # no Roman Ally at Aedui, Arverni, or Suebi tribes.
-            from fs_bot.map.map_data import get_tribe_data
-            td = get_tribe_data(tribe)
-            if (td.faction_restriction is not None
-                    and td.faction_restriction != ROMANS):
+            from fs_bot.map.map_data import get_tribe_restriction
+            restriction = get_tribe_restriction(tribe)
+            if restriction is not None and restriction != ROMANS:
                 continue
             ally_candidates.append((region, tribe))
 
@@ -1733,7 +1732,7 @@ def node_r_quarters(state):
         # Count pieces that stay: 1 Auxilia per Fort, 1 per Roman Ally
         forts = count_pieces(state, region, ROMANS, FORT)
         roman_allies_in_region = 0
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes:
             t_info = state["tribes"].get(tribe, {})
             if t_info.get("allied_faction") == ROMANS:
@@ -1752,7 +1751,7 @@ def node_r_quarters(state):
         if count_pieces(state, region, ROMANS) == 0:
             continue
         has_roman_ally = False
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes:
             t_info = state["tribes"].get(tribe, {})
             if t_info.get("allied_faction") == ROMANS:

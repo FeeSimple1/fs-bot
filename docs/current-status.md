@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 10 November third comparison repair Batch 4
+
+The [final repair batch](reviews/third-comparison-batch4-2026-11-10.md)
+closes XC3-01, XC3-02, and EX3-04. The Colony uses its recorded Region in
+Seize, Build, Entreat, Trade, replacement Events, and Belgic Control Value.
+Razed Cities earn no Seize Forage, cannot be Dispersed again, and retain
+their marker through Spring. Stalwart cancels both sides of Germanic Horse's
+additional Losses against Germans, including Counterattack.
+
+All **9,686 tests pass**, including 104 added cases. The same cases produce
+68 failures and 36 positive controls on the parent. Twenty audited bot
+games are clean. Twenty mixed-player cases match across hash seeds with
+replay, zero hard findings, and four soft partial plans. The 100-game
+balance check passes its unchanged 15-point band. No winners change from
+the parent; one Roman win ends earlier after a legal Colony dispersal.
+
+The [third-audit ledger](reviews/comparison-audit-round3-2026-11-10.json)
+records **15 of 15 groups repaired, 0 remaining**.
+
 ### 10 November third comparison repair Batch 3
 
 The [third repair batch](reviews/third-comparison-batch3-2026-11-10.md)
@@ -37,7 +56,7 @@ replay, zero hard findings and four soft partial plans. The unchanged 100-game
 balance baseline passes its existing 15-point band, with three winner changes.
 
 The [third-audit ledger](reviews/comparison-audit-round3-2026-11-10.json)
-now records **12 of 15 groups repaired (80%), with 3 remaining**.
+recorded **12 of 15 groups repaired (80%), with 3 remaining** at the Batch 3 checkpoint.
 
 ### 10 November third comparison repair Batch 2
 

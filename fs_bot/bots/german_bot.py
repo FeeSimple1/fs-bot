@@ -66,7 +66,7 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions_for_state, get_tribes_in_region,
+    get_adjacent, get_playable_regions_for_state, get_tribes_in_region_for_state,
     get_region_group, is_city_tribe, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
@@ -343,7 +343,7 @@ def _is_dispersed_tribe(tribe_info):
 def _count_dispersed_tribes_in_region(state, region, scenario):
     """Count Dispersed (or Dispersed-Gathering) tribes in a region."""
     count = 0
-    for tribe in get_tribes_in_region(region, scenario):
+    for tribe in get_tribes_in_region_for_state(state, region):
         if _is_dispersed_tribe(state["tribes"].get(tribe, {})):
             count += 1
     return count
@@ -352,7 +352,7 @@ def _count_dispersed_tribes_in_region(state, region, scenario):
 def _count_allied_tribes_in_region(state, region, scenario, faction):
     """Count tribes Allied to a faction in a region."""
     count = 0
-    for tribe in get_tribes_in_region(region, scenario):
+    for tribe in get_tribes_in_region_for_state(state, region):
         info = state["tribes"].get(tribe, {})
         if info.get("allied_faction") == faction:
             count += 1
@@ -794,7 +794,7 @@ def _count_placeable_warbands(state, scenario, resources, avail_warbands):
         if is_controlled_by(state, region, GERMANS):
             has_base = True
         if not has_base:
-            for tribe in get_tribes_in_region(region, scenario):
+            for tribe in get_tribes_in_region_for_state(state, region):
                 if state["tribes"].get(tribe, {}).get(
                         "allied_faction") == GERMANS:
                     has_base = True
@@ -2066,7 +2066,7 @@ def node_g_quarters(state):
         if not _is_devastated(state, region):
             continue
         has_ally = False
-        for tribe in get_tribes_in_region(region, scenario):
+        for tribe in get_tribes_in_region_for_state(state, region):
             if state["tribes"].get(tribe, {}).get(
                     "allied_faction") == GERMANS:
                 has_ally = True

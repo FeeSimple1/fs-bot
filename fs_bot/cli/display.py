@@ -55,7 +55,7 @@ from fs_bot.cards.card_data import (
 from fs_bot.cards.capabilities import get_active_capabilities
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available
 from fs_bot.map.map_data import (
-    get_playable_regions_for_state, get_tribes_in_region,
+    get_playable_regions_for_state, get_tribes_in_region_for_state,
 )
 
 
@@ -565,10 +565,7 @@ def format_tribes_table(state):
     for region in ALL_REGIONS:
         if region not in playable:
             continue
-        tribes = list(get_tribes_in_region(region, scenario))
-        # Colony Events can create a new tribal circle in a Region.
-        tribes += [t for t, info in state.get("tribes", {}).items()
-                   if info.get("region") == region and t not in tribes]
+        tribes = list(get_tribes_in_region_for_state(state, region))
         for tribe in tribes:
             info = state["tribes"].get(tribe, {})
             lines.append(

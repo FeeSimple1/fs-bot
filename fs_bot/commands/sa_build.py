@@ -43,7 +43,7 @@ from fs_bot.board.pieces import (
     place_piece, remove_piece, get_available, count_pieces, tribe_has_ally_disc,
 )
 from fs_bot.board.control import is_controlled_by, refresh_all_control
-from fs_bot.map.map_data import get_tribes_in_region, get_tribe_data
+from fs_bot.map.map_data import get_tribes_in_region_for_state, get_tribe_restriction
 from fs_bot.commands.common import action_cost, CommandError, check_leader_proximity
 from fs_bot.commands.rally import has_supply_line
 
@@ -171,7 +171,7 @@ def build_subdue(state, region, tribe, target_faction):
         raise CommandError("Cannot subdue a Roman Ally via Build")
 
     # Check the tribe is in this region
-    tribes = get_tribes_in_region(region, state["scenario"])
+    tribes = get_tribes_in_region_for_state(state, region)
     if tribe not in tribes:
         raise CommandError(f"Tribe {tribe} is not in {region}")
 
@@ -245,7 +245,7 @@ def build_place_ally(state, region, tribe):
         )
 
     # Check the tribe is in this region
-    tribes = get_tribes_in_region(region, state["scenario"])
+    tribes = get_tribes_in_region_for_state(state, region)
     if tribe not in tribes:
         raise CommandError(f"Tribe {tribe} is not in {region}")
 
@@ -256,11 +256,11 @@ def build_place_ally(state, region, tribe):
         raise CommandError(f"Tribe {tribe} is not Subdued")
 
     # Check stacking restriction — §1.4.2
-    td = get_tribe_data(tribe)
-    if td.faction_restriction is not None and td.faction_restriction != ROMANS:
+    restriction = get_tribe_restriction(tribe)
+    if restriction is not None and restriction != ROMANS:
         raise CommandError(
             f"Cannot place Roman Ally at {tribe} — restricted to "
-            f"{td.faction_restriction} (§1.4.2)"
+            f"{restriction} (§1.4.2)"
         )
 
     # Check Available

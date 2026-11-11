@@ -50,7 +50,7 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region,
+    get_adjacent, get_playable_regions, get_tribes_in_region_for_state,
     get_tribe_data,
     get_region_group, is_city_tribe,
 )
@@ -845,7 +845,7 @@ def node_a_rally(state):
             continue
         if count_pieces(state, region, AEDUI, ALLY) < 1:
             continue
-        for tribe in get_tribes_in_region(region, scenario):
+        for tribe in get_tribes_in_region_for_state(state, region):
             tribe_info = state["tribes"].get(tribe, {})
             if (tribe_info.get("allied_faction") == AEDUI
                     and is_city_tribe(tribe)):
@@ -1590,7 +1590,7 @@ def node_a_quarters(state):
             continue
         # Check for Ally or Citadel
         has_ally = False
-        tribes = get_tribes_in_region(region, scenario)
+        tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes:
             if state["tribes"].get(tribe, {}).get(
                     "allied_faction") == AEDUI:

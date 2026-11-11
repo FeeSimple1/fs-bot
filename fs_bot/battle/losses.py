@@ -132,7 +132,8 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         and not is_counterattack
     )
     # A31 shaded CAPABILITY "Stalwart": named enemy Leaders do not double
-    # Losses to Germans.
+    # Losses to Germans. Its Event-effect clause also cancels Card 59's
+    # additional Losses against Germans in Attack and Counterattack below.
     from fs_bot.cards.capabilities import is_capability_active
     from fs_bot.rules_consts import EVENT_SHADED as _ESH
     _a31_stalwart = (defending_faction == GERMANS
@@ -185,7 +186,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     aux_factor = 1.0 if double_auxilia else 0.5
     # Card 59 unshaded (Germanic Horse): Roman Auxilia inflict 1 Loss each
     # in the flagged Region this Battle Command (attack and counterattack).
-    if (enemy_faction == ROMANS
+    if (enemy_faction == ROMANS and not _a31_stalwart
             and state.get("event_modifiers", {}).get(
                 "card59_unshaded_region") == region):
         aux_factor = 1.0
@@ -277,6 +278,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         # flagged Region unless the Defender has Fort/Citadel.
         if (state.get("event_modifiers", {}).get(
                 "card59_shaded_region") == region
+                and not _a31_stalwart
                 and not (has_fort or has_citadel or _abatis)):
             from fs_bot.cards.capabilities import get_capability_owner
             if get_capability_owner(state, 59) == enemy_faction:
@@ -289,7 +291,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         # Card 59 shaded (Tips): the owner ALSO doubles when defending —
         # their Counterattack in the flagged Region — unless they defend
         # with a Citadel.
-        if (state.get("event_modifiers", {}).get(
+        if (not _a31_stalwart and state.get("event_modifiers", {}).get(
                 "card59_shaded_region") == region):
             from fs_bot.cards.capabilities import get_capability_owner
             if (get_capability_owner(state, 59) == enemy_faction

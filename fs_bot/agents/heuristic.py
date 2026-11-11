@@ -449,10 +449,10 @@ def _ac_by_faction(state):
 
 def _allied_tribes_in_region(state, region, faction):
     """Tribes in *region* currently allied to *faction* (tribes dict)."""
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.map.map_data import get_tribes_in_region_for_state
     out = []
     try:
-        tribes = get_tribes_in_region(region, state["scenario"])
+        tribes = get_tribes_in_region_for_state(state, region)
     except Exception:
         return out
     for t in tribes:
@@ -541,10 +541,9 @@ def build_rally_deep(state, budget, max_regions=3):
                     and count_pieces(state, region, rc.AEDUI, CIT) == 0
                     and tribe in (moves.subdued_tribes(state, region) or [tribe])
                     or tin.get("allied_faction") == rc.AEDUI):
-                from fs_bot.map.map_data import get_tribes_in_region
+                from fs_bot.map.map_data import get_tribes_in_region_for_state
                 try:
-                    if tribe in get_tribes_in_region(region,
-                                                     state["scenario"]):
+                    if tribe in get_tribes_in_region_for_state(state, region):
                         citadels.append({"region": region, "tribe": tribe})
                         spent += 1
                         break

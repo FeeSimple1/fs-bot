@@ -27,7 +27,7 @@ from fs_bot.rules_consts import (
     # Scenarios
     BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
     # Markers
-    MARKER_DEVASTATED,
+    MARKER_DEVASTATED, MARKER_RAZED,
     # Tribe statuses
     DISPERSED, DISPERSED_GATHERING,
     # Dispersed limit
@@ -48,7 +48,7 @@ from fs_bot.board.control import (
     is_controlled_by, refresh_all_control,
 )
 from fs_bot.map.map_data import (
-    ALL_REGION_DATA, get_tribes_in_region,
+    ALL_REGION_DATA, get_tribes_in_region_for_state,
 )
 from fs_bot.commands.common import CommandError, _is_devastated
 
@@ -141,8 +141,6 @@ def get_dispersible_tribes(state, region, as_if_control=False, *, limit_to_marke
     Returns:
         List of tribe name constants that can be Dispersed.
     """
-    scenario = state["scenario"]
-
     # Must have Roman Control for Dispersal — §3.2.3
     if not as_if_control and not is_controlled_by(state, region, ROMANS):
         return []
@@ -153,7 +151,7 @@ def get_dispersible_tribes(state, region, as_if_control=False, *, limit_to_marke
         return []
 
     result = []
-    tribes = get_tribes_in_region(region, scenario)
+    tribes = get_tribes_in_region_for_state(state, region)
     remaining_markers = MAX_DISPERSED_MARKERS - current_dispersed
 
     for tribe in tribes:
@@ -165,7 +163,7 @@ def get_dispersible_tribes(state, region, as_if_control=False, *, limit_to_marke
         # Must be Subdued: no allied faction, no Dispersed status
         if tribe_state.get("allied_faction") is not None:
             continue
-        if tribe_state.get("status") in (DISPERSED, DISPERSED_GATHERING):
+        if tribe_state.get("status") in (DISPERSED, DISPERSED_GATHERING, MARKER_RAZED):
             continue
 
         result.append(tribe)
@@ -215,7 +213,7 @@ def seize_plan_error(action, *, require_exact=False, state=None):
                 or len(tribes) != len(set(tribes))):
             return 'Each Seize Region needs a list of distinct Tribe names'
         if state is not None and (region not in ALL_REGION_DATA or
-                not set(tribes) <= set(get_tribes_in_region(region, state['scenario']))):
+                not set(tribes) <= set(get_tribes_in_region_for_state(state, region))):
             return 'Choose Tribes belonging to their selected Seize Region'
     return None
 
@@ -243,8 +241,7 @@ def calculate_forage(state, region, tribes_just_dispersed):
     if _is_devastated(state, region):
         return 0
 
-    scenario = state["scenario"]
-    tribes = get_tribes_in_region(region, scenario)
+    tribes = get_tribes_in_region_for_state(state, region)
     resources = 0
 
     for tribe in tribes:
@@ -254,8 +251,8 @@ def calculate_forage(state, region, tribes_just_dispersed):
 
         tribe_state = state.get("tribes", {}).get(tribe, {})
 
-        # Skip already-Dispersed tribes
-        if tribe_state.get("status") in (DISPERSED, DISPERSED_GATHERING):
+        # Card 23's Razed City is permanently Dispersed, including for Forage.
+        if tribe_state.get("status") in (DISPERSED, DISPERSED_GATHERING, MARKER_RAZED):
             continue
 
         # Subdued (no ally, no dispersed) or Roman Allied
@@ -568,7 +565,7 @@ def _seize_in_region(state, region, tribes_to_disperse=None,
             )
 
         # Validate each tribe
-        region_tribes = get_tribes_in_region(region, scenario)
+        region_tribes = get_tribes_in_region_for_state(state, region)
         for tribe in tribes_to_disperse:
             if tribe not in region_tribes:
                 raise CommandError(
@@ -580,7 +577,7 @@ def _seize_in_region(state, region, tribes_to_disperse=None,
                     f"Tribe {tribe} has an Ally — cannot Disperse"
                 )
             if tribe_state.get("status") in (DISPERSED,
-                                              DISPERSED_GATHERING):
+                                              DISPERSED_GATHERING, MARKER_RAZED):
                 raise CommandError(
                     f"Tribe {tribe} is already Dispersed"
                 )

@@ -158,9 +158,9 @@ def _battle_regions(state, faction):
 
 
 def _subdued_tribes(state, region):
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.map.map_data import get_tribes_in_region_for_state
     out = []
-    for t in get_tribes_in_region(region, state["scenario"]):
+    for t in get_tribes_in_region_for_state(state, region):
         ti = state.get("tribes", {}).get(t, {})
         if ti.get("allied_faction") is None and ti.get("status") is None:
             out.append(t)
@@ -451,9 +451,9 @@ def _citadel_upgrade_tribes(state, region, faction):
     from fs_bot.rules_consts import TRIBE_TO_CITY
     if faction not in (AEDUI, ARVERNI, BELGAE):
         return []
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.map.map_data import get_tribes_in_region_for_state
     out = []
-    for t in get_tribes_in_region(region, state["scenario"]):
+    for t in get_tribes_in_region_for_state(state, region):
         ti = state.get("tribes", {}).get(t, {})
         if ti.get("allied_faction") == faction and t in TRIBE_TO_CITY:
             out.append(t)
@@ -462,10 +462,10 @@ def _citadel_upgrade_tribes(state, region, faction):
 
 def _enemy_ally_tribes(state, region, faction):
     """Physical enemy Ally discs eligible for Arverni Entreat (§4.3.1)."""
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.map.map_data import get_tribes_in_region_for_state
     from fs_bot.board.pieces import tribe_has_ally_disc
     out = []
-    for t in get_tribes_in_region(region, state["scenario"]):
+    for t in get_tribes_in_region_for_state(state, region):
         owner = state.get("tribes", {}).get(t, {}).get("allied_faction")
         if (owner in (AEDUI, BELGAE, GERMANS) and owner != faction
                 and tribe_has_ally_disc(state, region, t, owner)):
@@ -881,7 +881,7 @@ def _collect_build(state, faction, stdin, stdout, *, pending=None):
         return collect_build(state, faction, stdin, stdout, pending=pending)
     single = False
     from fs_bot.commands.sa_build import validate_build_region
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.map.map_data import get_tribes_in_region_for_state
     from fs_bot.rules_consts import ROMANS, FORT
     cands = [r for r in _regions_with_pieces(state, ROMANS)
              if validate_build_region(state, r)[0]]

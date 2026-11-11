@@ -249,9 +249,8 @@ def _cap_resources(state, faction, amount):
 def _tribe_region(state, tribe):
     """Region a tribe sits in. Dynamic tribes (Card 71 Colony) carry their
     Region in the tribes-dict entry; static tribes use TRIBE_TO_REGION."""
-    from fs_bot.rules_consts import TRIBE_TO_REGION
-    info = state.get("tribes", {}).get(tribe) or {}
-    return info.get("region") or TRIBE_TO_REGION.get(tribe)
+    from fs_bot.map.map_data import get_region_for_tribe_for_state
+    return get_region_for_tribe_for_state(state, tribe)
 
 
 def _tribe_piece_type(state, tribe):
@@ -1480,7 +1479,7 @@ def execute_card_34(state, shaded=False):
     Source: Card Reference, card 34
     """
     from fs_bot.rules_consts import CARNUTES, MANDUBII
-    from fs_bot.map.map_data import get_tribes_in_region
+    from fs_bot.map.map_data import get_tribes_in_region_for_state
     if not shaded:
         params = state.get("event_params", {})
         beneficiary = params.get("faction", state.get("executing_faction"))
@@ -1494,9 +1493,8 @@ def execute_card_34(state, shaded=False):
     else:
         # Replace all Allies with Arverni Allies in Carnutes & Mandubii
         # Replace all Citadels with Arverni Citadels
-        scenario = state["scenario"]
         for region in (CARNUTES, MANDUBII):
-            tribes = get_tribes_in_region(region, scenario)
+            tribes = get_tribes_in_region_for_state(state, region)
             for tribe in _event_entries(state, f"34.replacements.{region}", tribes):
                 tribe_info = state.get("tribes", {}).get(tribe)
                 if not tribe_info:
@@ -2765,7 +2763,6 @@ def execute_card_A19(state, shaded=False):
 
     Source: A Card Reference, card A19
     """
-    from fs_bot.rules_consts import TRIBE_TO_REGION
     params = state.get("event_params", {})
     if not shaded:
         from fs_bot.cards.event_targets import roman_leader_regions
@@ -2774,7 +2771,7 @@ def execute_card_A19(state, shaded=False):
         replacements = params.get("replacements", [])
         for r in _event_entries(state, "A19.replacements", replacements[:3]):
             tribe = r["tribe"]
-            region = TRIBE_TO_REGION.get(tribe)
+            region = _tribe_region(state, tribe)
             if region not in roman_leader_regions(state, caesar_only=True):
                 continue
             t_info = state.get("tribes", {}).get(tribe)

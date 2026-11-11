@@ -65,7 +65,7 @@ from fs_bot.board.control import (
     is_controlled_by, refresh_all_control, calculate_control,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_tribes_in_region, get_tribe_data,
+    get_adjacent, get_tribes_in_region_for_state, get_tribe_data,
     get_region_data, get_region_group, is_city_tribe,
     ALL_REGION_DATA, is_region_playable, get_gallia_togata_card,
 )
@@ -688,12 +688,7 @@ def _find_subdued_tribe_for_ally(state, region, faction):
     Returns:
         List of eligible tribe names.
     """
-    scenario = state["scenario"]
-    tribes = list(get_tribes_in_region(region, scenario))
-    # Card 71's player-named Colony is a real Tribe in its recorded Region,
-    # and remains recruitable/rallyable after its original Ally is removed.
-    tribes.extend(name for name, info in state.get('tribes', {}).items()
-                  if info.get('region') == region and name not in tribes)
+    tribes = list(get_tribes_in_region_for_state(state, region))
     eligible = []
 
     for tribe_name in tribes:

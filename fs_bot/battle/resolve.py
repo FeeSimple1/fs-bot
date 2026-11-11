@@ -393,9 +393,11 @@ def _calculate_attack_losses(state, region, attacking_faction,
     ambiorix_attacking = (enemy_leader == AMBIORIX)
     # A31 shaded CAPABILITY "Stalwart": "named enemy Leaders do not double
     # Losses to Germans" — Caesar's x2 Legions and Ambiorix's x1 Warbands
-    # revert to normal rates against a German defender.
-    if (defending_faction == _GE
-            and is_capability_active(state, "A31", _ESH)):
+    # revert to normal rates against a German defender. Its Event-effect
+    # clause also cancels Card 59's additional Losses against Germans below.
+    stalwart = (defending_faction == _GE
+                and is_capability_active(state, "A31", _ESH))
+    if stalwart:
         caesar_attacking = False
         ambiorix_attacking = False
     ariovistus_in_battle = (
@@ -450,7 +452,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
     aux_factor = 1.0 if double_auxilia else 0.5
     # Card 59 unshaded: Roman Auxilia inflict 1 Loss each in the flagged
     # Region this Battle Command.
-    if (attacking_faction == _RO59
+    if (attacking_faction == _RO59 and not stalwart
             and state.get("event_modifiers", {}).get(
                 "card59_unshaded_region") == region):
         aux_factor = 1.0
@@ -496,6 +498,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
     # Region unless the Defender has Fort/Citadel (at-start state).
     if (state.get("event_modifiers", {}).get(
             "card59_shaded_region") == region
+            and not stalwart
             and not (had_fort_at_start or had_citadel_at_start or _abatis_active)):
         from fs_bot.cards.capabilities import get_capability_owner
         if get_capability_owner(state, 59) == attacking_faction:

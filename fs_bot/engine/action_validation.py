@@ -5,8 +5,9 @@ these constraints concern the whole Command and cannot change mid-action.
 """
 
 from fs_bot.rules_consts import (
-    BRITANNIA, AEDUI, FACTIONS, FIRST_DID_EVENT, CMD_BATTLE, CMD_MARCH, CMD_RAID,
-    CMD_RALLY, CMD_RECRUIT, CMD_SEIZE, SA_AMBUSH, SA_BESIEGE, SA_BUILD,
+    BRITANNIA, AEDUI, FACTIONS, FIRST_DID_EVENT, EVENT_SHADED,
+    CMD_BATTLE, CMD_MARCH, CMD_RAID, CMD_RALLY, CMD_RECRUIT, CMD_SEIZE,
+    SA_AMBUSH, SA_BESIEGE, SA_BUILD,
     SA_DEVASTATE, SA_ENTREAT, SA_ENLIST, SA_RAMPAGE, SA_SCOUT, SA_SUBORN, SA_INTIMIDATE,
 )
 from fs_bot.commands.common import CommandError
@@ -378,6 +379,15 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
                 current is None or is_winter_card(current)
                 or type(card_id) is not type(current) or card_id != current):
             return f'Play the current Event card ({current}), as shown on the board (§2.3.4).'
+        from fs_bot.cards.capabilities import (
+            GALLIC_RECIPIENT_CAPABILITIES, require_gallic_capability_recipient,
+        )
+        if (details.get('text_preference') == EVENT_SHADED
+                and card_id in GALLIC_RECIPIENT_CAPABILITIES):
+            try:
+                require_gallic_capability_recipient(card_id, details.get('event_params'))
+            except ValueError as exc:
+                return str(exc)
     if limited and has_sa:
         return 'A Limited Command cannot add a Special Ability (§4.1)'
     if action_type == ACTION_COMMAND and has_sa:

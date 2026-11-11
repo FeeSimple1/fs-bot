@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 0,
-  "open": 11,
+  "closed": 3,
+  "open": 8,
   "severity_counts": {
     "high": 7,
     "medium": 4
@@ -185,7 +185,7 @@
       "id": "BE5-01",
       "title": "Shaded Ballistae and Winter Campaign can be activated without their required Gallic recipient",
       "priority": "high",
-      "status": "open",
+      "status": "closed",
       "cards": [
         10,
         63
@@ -262,13 +262,15 @@
       "prior_relation": "Not a repeat of fourth-audit BE4-04: shaded Germanic Horse belongs to its Gallic executor and previously could be gifted. Cards 10/63 instead require an independently selected Gallic recipient even when the executor is Roman. Original Battle/Winter Campaign human-choice repairs repaired consumers, not this acquisition validation.",
       "fixture": "Acquisition uses ordinary setup_scenario Great Revolt seed17 boards, selecting the audited current card without claiming a naturally sampled sequence. Ballistae follow-through uses a controlled initialized position assembled with piece helpers and the permanent Provincia Fort, an exact Sequani Citadel allegiance, one Belgic Warband plus Ambiorix, and four Revealed defending Arverni Warbands. Winter Campaign is the production consumer invoked directly at its after-Harvest boundary, not a claimed full Winter run.",
       "limits": "Acquisition uses ordinary setup_scenario Great Revolt seed17 boards, selecting the audited current card without claiming a naturally sampled sequence. Ballistae follow-through uses a controlled initialized position assembled with piece helpers and the permanent Provincia Fort, an exact Sequani Citadel allegiance, one Belgic Warband plus Ambiorix, and four Revealed defending Arverni Warbands. Winter Campaign is the production consumer invoked directly at its after-Harvest boundary, not a claimed full Winter run.",
-      "evidence_directory": "events"
+      "evidence_directory": "events",
+      "repair_batch": 1,
+      "repair_report": "fifth-comparison-batch1-2026-11-11.md"
     },
     {
       "id": "BE5-02",
       "title": "Colony creates a Tribe and Ally in nonplayable map areas",
       "priority": "high",
-      "status": "open",
+      "status": "closed",
       "cards": [
         71
       ],
@@ -332,13 +334,15 @@
       "prior_relation": "Third-audit BE3-03 fixed creating a legal Colony under scarce Ally supply; XC3-01 fixed existing dynamic Tribe consumers. This finding concerns the location of new Colony creation and reaches both base and expansion nonplayable areas. CM3-01 was ordinary Scout geography, a different execution path.",
       "fixture": "All main witnesses and controls start from full setup_scenario boards. The current card is selected explicitly for the probe. Both numeric71 and the geography rules are valid in the stated scenario. No forbidden off-deck numeric replacement card is used.",
       "limits": "All main witnesses and controls start from full setup_scenario boards. The current card is selected explicitly for the probe. Both numeric71 and the geography rules are valid in the stated scenario. No forbidden off-deck numeric replacement card is used.",
-      "evidence_directory": "events"
+      "evidence_directory": "events",
+      "repair_batch": 1,
+      "repair_report": "fifth-comparison-batch1-2026-11-11.md"
     },
     {
       "id": "BE5-03",
       "title": "Forced Marches rejects legal Cisalpina movement after Gallia Togata",
       "priority": "medium",
-      "status": "open",
+      "status": "closed",
       "cards": [
         5,
         32
@@ -403,7 +407,9 @@
       "prior_relation": "New legal-choice failure in numeric32. Third-audit CM3-01 admitted illegal ordinary Scout into inactive Cisalpina; this is the opposite effect in a separate Event path after a real marker writer. Not a repeat of Interlude deck/Nori repairs.",
       "fixture": "Main witnesses are full Great Revolt scenario setups followed by an actual public Gallia Togata Event. Card order is controlled, not claimed to have arisen in a sampled game. No numeric32 claim is made in Ariovistus, whose ordinary deck replaces it with A32.",
       "limits": "Main witnesses are full Great Revolt scenario setups followed by an actual public Gallia Togata Event. Card order is controlled, not claimed to have arisen in a sampled game. No numeric32 claim is made in Ariovistus, whose ordinary deck replaces it with A32.",
-      "evidence_directory": "events"
+      "evidence_directory": "events",
+      "repair_batch": 1,
+      "repair_report": "fifth-comparison-batch1-2026-11-11.md"
     },
     {
       "id": "FE5-01",

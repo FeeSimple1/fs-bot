@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Fifth Liberty or Death comparison](reviews/comparison-audit-round5-2026-11-11.md) | 11 open findings, independent witnesses, source evidence and repair order |
+| [Fifth Liberty or Death comparison](reviews/comparison-audit-round5-2026-11-11.md) | 11 findings with independent witnesses, source evidence and a repair ledger |
 | [Fourth Liberty or Death comparison](reviews/comparison-audit-round4-2026-11-10.md) | 16 findings with executable evidence, all repaired in Batches 1–4 |
 | [Third Liberty or Death comparison](reviews/comparison-audit-round3-2026-11-10.md) | 15 additional groups, all repaired in Batches 1–4 |
 | [Provisional rulings](provisional-rulings.md) | Thirteen owner-adopted interpretations, each subject to later authoritative correction |
@@ -27,6 +27,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [11 November fifth comparison repair Batch 1](reviews/fifth-comparison-batch1-2026-11-11.md)
+  closes the three Event recipient and geography findings.
 
 - [11 November fifth comparison audit](reviews/comparison-audit-round5-2026-11-11.md)
   records 11 new groups, five independently rerun witness scripts, 9,806 passing tests,

@@ -39,6 +39,12 @@ surviving placed Warbands' Raid. Shaded Migration requires an Ally at its
 destination whenever one can be placed. Its Ally choice follows the movement
 and reclamation window; movement still resolves if placement is impossible.
 
+Colony adds a Tribe in a playable Region under your Control or with No Control.
+In the base game, Gallia Togata opens Cisalpina to Roman placement. With that
+Event in effect, Romans can also use Forced Marches to relocate mobile Forces
+into or out of Cisalpina. Choose Forced Marches origins and destinations
+outside Britannia.
+
 The Colony counts as a Tribe in its recorded Region for Seize, Build, Entreat,
 Trade, replacement Events, and Belgic Control Value. Menus offer its actual
 name alongside the printed Tribes. A City Razed by Sacking earns no Seize
@@ -130,6 +136,9 @@ Caesar rolls 4–6, or 5–6 against Belgae. A successful test restores Roman
 saving rolls and allows a Counterattack. Base-game German Battle follows the
 same Ambush procedure. In Ariovistus, ordinary German Battle uses the normal
 saving rolls and Counterattack rules.
+
+When playing shaded Ballistae or Winter Campaign, choose Arverni, Aedui or
+Belgae to receive the Capability. This choice belongs to the Event executor.
 
 If your Faction owns shaded Ballistae, each completed Ambush with a surviving
 defending Fort or Citadel now asks whether to remove it. You may decline.

@@ -1025,12 +1025,14 @@ class TestCard10Ballistae:
     def test_card_10_shaded_activates_capability(self):
         """Shaded: activates shaded capability (Gallic Faction Ambush benefit)."""
         state = _setup_base_state()
+        state["event_params"] = {"faction": BELGAE}
         execute_event(state, 10, shaded=True)
         assert is_capability_active(state, 10, EVENT_SHADED)
 
     def test_card_10_unshaded_replaces_shaded(self):
         """Per §5.1.2: dueling event replaces opposite side."""
         state = _setup_base_state()
+        state["event_params"] = {"faction": BELGAE}
         execute_event(state, 10, shaded=True)
         assert is_capability_active(state, 10, EVENT_SHADED)
         execute_event(state, 10, shaded=False)
@@ -1040,6 +1042,7 @@ class TestCard10Ballistae:
     def test_card_10_no_other_state_mutation(self):
         """Capability-only: no pieces, resources, or senate changes."""
         state = _setup_base_state()
+        state["event_params"] = {"faction": BELGAE}
         resources_before = dict(state["resources"])
         senate_before = dict(state["senate"])
         execute_event(state, 10, shaded=True)

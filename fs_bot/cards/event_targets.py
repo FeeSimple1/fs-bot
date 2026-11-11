@@ -1,12 +1,21 @@
 """Region eligibility shared by Event resolution and planning."""
 
 from fs_bot import rules_consts as rc
-from fs_bot.board.control import get_controlled_regions
+from fs_bot.board.control import calculate_control, get_controlled_regions
 from fs_bot.board.pieces import count_pieces, find_leader, get_available, get_leader_in_region
 from fs_bot.map.map_data import (
     get_adjacent_for_state, get_playable_regions_for_state,
     get_region_for_tribe_for_state, get_tribe_restriction, get_tribes_in_region_for_state,
 )
+
+
+def colony_regions(state, faction):
+    """Card 71 adds a Tribe circle in an eligible Region of the current map."""
+    if faction not in rc.FACTIONS:
+        return ()
+    control = (rc.FACTION_CONTROL[faction], rc.NO_CONTROL)
+    return tuple(region for region in get_playable_regions_for_state(state, faction)
+                 if calculate_control(state, region) in control)
 
 
 def alaudae_regions(state):

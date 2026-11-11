@@ -21,20 +21,35 @@ measurements have not been relabeled as results of later changes.
 
 ## Follow-up repairs
 
+### 11 November fifth comparison repair Batch 1
+
+Shaded Ballistae and Winter Campaign require an explicit Gallic recipient.
+Colony checks the executor's playable Regions and Control. Forced Marches
+recognizes Cisalpina after Gallia Togata, including its saved marker forms.
+[Repair and validation](reviews/fifth-comparison-batch1-2026-11-11.md)
+
+All **9,837 tests pass**. The 120 audited bot games match the parent in final
+boards and winners. Twenty mixed-player cases match across hash seeds with
+replay and zero hard findings. The 100-game balance check passes.
+
+The fifth audit has **3 of 11 repaired, 8 open**.
+[Finding ledger](reviews/comparison-audit-round5-2026-11-11.json)
+
 ### 11 November fifth comparison audit
 
 The [fifth Liberty or Death comparison](reviews/comparison-audit-round5-2026-11-11.md)
 confirms **11 additional repair groups, 7 high and 4 medium priority**.
-The [new ledger](reviews/comparison-audit-round5-2026-11-11.json) records
-**0 of 11 repaired**. Earlier 50-, 21-, 15- and 16-group ledgers remain closed.
+All eleven findings were open on the audited revision. Earlier 50-, 21-,
+15- and 16-group ledgers were closed.
 
 The findings cover ownerless Event Capabilities, Event geography, free March
 restrictions and drop-off choices, Legio X cancellation, Abatis casualty
 selection, Aedui/German Battle forecasts, and Interlude home-City restoration
 removing unrelated Forces from the containing Region.
 
-All **9,806 tests pass**. Five portable witness scripts pass independent and
-root reruns, matching their recorded output. Twenty fresh second-edition bot
+At the audit revision, all **9,806 tests passed**. Five portable witness
+scripts passed independent and root reruns, matching their recorded output.
+Twenty fresh second-edition bot
 games pass all audit checks. Twenty mixed-seat cases match across hash seeds
 0 and 987 with replay, zero hard findings and two soft partial plans. Both
 matrices use seeds 29–32 in all five scenarios. These general checks do not

@@ -391,7 +391,8 @@ _OVERRIDES = {
     # Card 71 Colony: the colony name must be NEW — never an existing
     # Tribe. Omit it from generated/prompted params; the handler's
     # per-Region default ("Colony_<region>") is always safe.
-    71: {"colony_tribe_name": {"kind": "omit"}},
+    71: {"region": {"region_pool": "card71_colony", "required": True},
+         "colony_tribe_name": {"kind": "omit"}},
     # Card 22 Hostages unshaded: "remove or replace ... Warbands or
     # Auxilia" — entry piece_type takes those two only.
     22: {"replacements": {"entry_values": {"piece_type": (WARBAND, AUXILIA)}}},
@@ -413,19 +414,22 @@ _OVERRIDES = {
               "from_faction": "faction", "piece_state": "piece_state", "count": "count"},
           "entry_values": {"faction": (*GALLIC_FACTIONS, GERMANS),
                            "piece_state": (HIDDEN, REVEALED, SCOUTED), "count": (1, 2, 3, 4)}}},
-    # Cards 10/63 shaded: "Place this card near a Gallic Faction" — the
-    # player CHOOSES the receiving Faction (may gift it). Handlers read
-    # event_params["faction"]; default (no param) = executing Gallic
-    # Faction.
-    10: {"faction": {"values": ("Arverni", "Aedui", "Belgae")}},
+    # Cards 10/63 shaded require the executor to name the Gallic recipient.
+    10: {"faction": {"values": GALLIC_FACTIONS, "required": True}},
     59: {"faction": {"kind": "omit"}},  # Shaded owner is the Gallic executor.
-    63: {"faction": {"values": ("Arverni", "Aedui", "Belgae")}},
+    63: {"faction": {"values": GALLIC_FACTIONS, "required": True}},
 }
 
 
-def region_pool(state, name):
+def region_pool(state, name, *, faction=None):
     """Named region pools for constrained cards."""
     from fs_bot.map.map_data import get_playable_regions_for_state
+    if name == "card32_mainland":
+        return sorted(region for region in get_playable_regions_for_state(state, faction)
+                      if region != BRITANNIA)
+    if name == "card71_colony" and faction is not None:
+        from fs_bot.cards.event_targets import colony_regions
+        return sorted(colony_regions(state, faction))
     playable = set(get_playable_regions_for_state(state))
     if name in ("card40_alpine", "card51_surus"):
         from fs_bot.cards.base_event_limits import adjacent_cisalpina, surus_regions
@@ -439,8 +443,6 @@ def region_pool(state, name):
     if name == "cardA66_uprising":
         from fs_bot.cards.winter_uprising import placement_regions
         return placement_regions(state)
-    if name == "card32_mainland":
-        return sorted(playable - {BRITANNIA})
     if name == "card62_coastal":
         from fs_bot.map.map_data import get_adjacent
         return sorted(playable & {ARVERNI_REGION, PICTONES, BRITANNIA,
@@ -448,7 +450,7 @@ def region_pool(state, name):
     return sorted(playable)
 
 
-def kind_values(state, kind, spec=None):
+def kind_values(state, kind, spec=None, *, faction=None):
     """Candidate values for a kind — the shared vocabulary for CLI menus
     and fuzz generation. Returns a list (may contain None for optional
     piece_state)."""
@@ -459,7 +461,7 @@ def kind_values(state, kind, spec=None):
     if spec and spec.get("values"):
         return list(spec["values"])
     if kind in ("region", "regions"):
-        return region_pool(state, (spec or {}).get("region_pool"))
+        return region_pool(state, (spec or {}).get("region_pool"), faction=faction)
     if kind in ("faction", "factions"):
         return list(FACTIONS)
     if kind == "optional_faction":
@@ -492,7 +494,7 @@ def _list_item_kind(kind):
     return kind[5:] if kind.startswith("list:") else None
 
 
-def generate_params(state, card_id, rng, *, include_p=0.9):
+def generate_params(state, card_id, rng, *, include_p=0.9, faction=None):
     """Random-but-typed event_params drawn from the card's schema (the
     fuzzer's success-path generator). Every entry field the handler reads
     is populated (subscript reads raise KeyError otherwise)."""
@@ -511,13 +513,13 @@ def generate_params(state, card_id, rng, *, include_p=0.9):
             for _ in range(rng.randrange(1, 3)):
                 e = {}
                 for sub, sk in fields.items():
-                    vals = kind_values(state, sk, spec)
+                    vals = kind_values(state, sk, spec, faction=faction)
                     e[sub] = vals[rng.randrange(len(vals))]
                 entries.append(e)
             params[key] = entries
         elif kind in ("regions", "factions") or kind.startswith("list:"):
             item = _list_item_kind(kind) or kind[:-1]
-            vals = kind_values(state, item, spec)
+            vals = kind_values(state, item, spec, faction=faction)
             n = rng.randrange(1, min(4, len(vals) + 1))
             picks = []
             for _ in range(n):
@@ -526,7 +528,7 @@ def generate_params(state, card_id, rng, *, include_p=0.9):
                     picks.append(v)
             params[key] = picks
         else:
-            vals = kind_values(state, kind, spec)
+            vals = kind_values(state, kind, spec, faction=faction)
             if not vals:
                 continue
             params[key] = vals[rng.randrange(len(vals))]

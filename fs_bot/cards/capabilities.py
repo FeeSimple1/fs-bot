@@ -15,10 +15,12 @@ Source: §5.3, §5.1.2, Card Reference, A Card Reference
 """
 
 from fs_bot.rules_consts import (
-    EVENT_SHADED, EVENT_UNSHADED,
+    EVENT_SHADED, EVENT_UNSHADED, GALLIC_FACTIONS,
     CAPABILITY_CARDS, CAPABILITY_CARDS_ARIOVISTUS,
     ARIOVISTUS_SCENARIOS, CARD_O38,
 )
+
+GALLIC_RECIPIENT_CAPABILITIES = (10, 63)
 
 
 # Companion event_modifiers set by capability handlers, keyed by
@@ -90,6 +92,25 @@ def set_capability_owner(state, card_id, faction):
     """Record the Faction that holds an owner-scoped capability card
     ("Take this card ..." / "Place this card near a ... Faction")."""
     state.setdefault("capability_owners", {})[card_id] = faction
+
+
+def require_gallic_capability_recipient(card_id, params):
+    """Cards 10 and 63 shaded require the executor to choose a Gallic owner."""
+    recipient = params.get('faction') if isinstance(params, dict) else None
+    if recipient not in GALLIC_FACTIONS:
+        raise ValueError(f'Shaded card {card_id} requires a Gallic Faction recipient.')
+    return recipient
+
+
+def activate_gallic_recipient_capability(state, card_id, shaded):
+    """Resolve the required owner before installing or replacing the effect."""
+    if shaded:
+        recipient = require_gallic_capability_recipient(card_id, state.get('event_params'))
+        activate_capability(state, card_id, EVENT_SHADED)
+        set_capability_owner(state, card_id, recipient)
+    else:
+        activate_capability(state, card_id, EVENT_UNSHADED)
+        state.get('capability_owners', {}).pop(card_id, None)
 
 
 def get_capability_owner(state, card_id):

@@ -626,7 +626,7 @@ def _build_event_action(state, faction, frng, key_pool):
         # handler reads — the success-path generator.
         from fs_bot.cards.param_schema import generate_params
         try:
-            params = generate_params(state, card, frng)
+            params = generate_params(state, card, frng, faction=faction)
         except Exception:
             params = {}
         if not params:

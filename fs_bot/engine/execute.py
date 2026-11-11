@@ -5940,6 +5940,10 @@ def _derive_event_params(state, faction, card_id, shaded):
     per-card workstream; those remain reported as 'needs parameters' rather
     than guessed.
     """
+    from fs_bot.cards.capabilities import GALLIC_RECIPIENT_CAPABILITIES
+    from fs_bot.rules_consts import GALLIC_FACTIONS
+    if shaded and card_id in GALLIC_RECIPIENT_CAPABILITIES:
+        return {'faction': faction} if faction in GALLIC_FACTIONS else None
     from fs_bot.cards.gallic_event_grants import supported as gallic_supported, factions as gallic_factions
     if gallic_supported(card_id, shaded):
         return {"faction": faction} if faction in gallic_factions(card_id) else None
@@ -6002,22 +6006,16 @@ def _derive_card_71(state, faction, shaded):
     """Card 71 (Colony): place the Colony + the acting Faction's Ally in a
     Region it Controls (or No Control), with no Colony yet. §8.3.1 — choose a
     Region the Faction Controls (keeps the +1 Control Value)."""
-    from fs_bot.rules_consts import MARKER_COLONY, NO_CONTROL
-    from fs_bot.board.control import is_controlled_by, calculate_control
-    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
-    controlled, nocontrol = [], []
-    for r in sorted(playable):
-        m = state.get("markers", {}).get(r) or {}
-        if MARKER_COLONY in m:
-            continue
-        if is_controlled_by(state, r, faction):
-            controlled.append(r)
-        elif calculate_control(state, r) == NO_CONTROL:
-            nocontrol.append(r)
-    cands = sorted(controlled) or sorted(nocontrol)
-    if not cands:
+    from fs_bot.rules_consts import MARKER_COLONY
+    from fs_bot.board.control import is_controlled_by
+    from fs_bot.cards.event_targets import colony_regions
+
+    markers = state.get('markers', {})
+    candidates = [region for region in sorted(colony_regions(state, faction))
+                  if MARKER_COLONY not in (markers.get(region) or {})]
+    if not candidates:
         return None
-    region = cands[0]
+    region = next((r for r in candidates if is_controlled_by(state, r, faction)), candidates[0])
     return {"region": region, "colony_tribe_name": f"Colony_{region}"}
 
 

@@ -594,28 +594,29 @@ class TestOwnerScopedCapabilityMatrix:
     CLI summary, honors a params-chosen Gallic recipient, rejects
     non-Gallic choices, and clears on removal."""
 
-    def _exec(self, st, faction, cid, shaded):
+    def _exec(self, st, faction, cid, shaded, *, params=None):
         from fs_bot.engine.execute import execute_decision
-        st["executing_faction"] = faction
-        return execute_decision(st, faction, {"bot_action": {
-            "command": "Event",
-            "details": {"card_id": cid,
-                        "text_preference": ("Shaded" if shaded
-                                            else "Unshaded")}}})
+        st['current_card'] = cid
+        details = {'card_id': cid, 'text_preference': EVENT_SHADED if shaded else EVENT_UNSHADED}
+        action = {'command': 'Event', 'details': details}
+        if params is not None:
+            details['event_params'] = params
+            return execute_decision(st, faction, {'player_action': action})
+        return execute_decision(st, faction, {'bot_action': action})
 
     def test_owner_recorded_all_cards(self):
         from fs_bot.cards.capabilities import get_capability_owner
         cases = [
             (8, False, ROMANS, ROMANS),     # "Take this card" — any faction
             (8, True, BELGAE, BELGAE),
-            (10, True, ARVERNI, ARVERNI),   # Gallic executor defaults self
+            (10, True, ARVERNI, ARVERNI),   # Gallic Non-player selects itself
             (59, True, BELGAE, BELGAE),
             (63, True, AEDUI, AEDUI),
         ]
         for cid, shaded, executor, expect in cases:
             st = _state()
-            st["non_player_factions"] = set()
-            self._exec(st, executor, cid, shaded)
+            st['non_player_factions'] = {executor}
+            assert self._exec(st, executor, cid, shaded)['executed']
             assert get_capability_owner(st, cid) == expect, (cid, executor)
 
     def test_params_faction_gifts_the_card(self):
@@ -623,18 +624,16 @@ class TestOwnerScopedCapabilityMatrix:
         for cid in (10, 63):
             st = _state()
             st["non_player_factions"] = set()
-            st["event_params"] = {"faction": ARVERNI}
-            self._exec(st, BELGAE, cid, True)   # Belgae gift to Arverni
+            assert self._exec(st, BELGAE, cid, True, params={'faction': ARVERNI})['executed']
             assert get_capability_owner(st, cid) == ARVERNI, cid
 
     def test_non_gallic_choice_rejected(self):
         from fs_bot.cards.capabilities import get_capability_owner
         st = _state()
         st["non_player_factions"] = set()
-        st["event_params"] = {"faction": ROMANS}   # illegal recipient
-        self._exec(st, BELGAE, 63, True)
-        # Falls back to the executing Gallic faction, never Rome.
-        assert get_capability_owner(st, 63) == BELGAE
+        result = self._exec(st, BELGAE, 63, True, params={'faction': ROMANS})
+        assert result['rejected'] and not result['executed']
+        assert get_capability_owner(st, 63) is None
 
     def test_display_shows_holder_for_each(self):
         from fs_bot.cli.display import format_state_summary

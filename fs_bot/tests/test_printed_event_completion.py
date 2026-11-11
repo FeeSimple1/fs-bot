@@ -240,7 +240,7 @@ def test_migration_terminal_chooses_required_ally_after_its_moves(monkeypatch):
     place_piece(state, rc.ARVERNI_REGION, rc.ARVERNI, rc.WARBAND)
     before = encode(state)
     given = migration_plan()
-    def parameter(board, key, spec, stdin, stdout):
+    def parameter(board, key, spec, stdin, stdout, *, faction=None):
         assert key != 'ally_tribe'
         return given.get(key)
     def choose(stdin, stdout, prompt, choices):
@@ -364,7 +364,7 @@ def test_migration_terminal_reclaims_before_selecting_the_mandatory_ally(monkeyp
     action = {'kind': 'voluntary_removal', 'response': {'operations': [{
         'action': 'remove', 'region': region, 'piece_type': rc.ALLY,
         'tribe': tribe, 'count': 1}]}}
-    def parameter(board, key, spec, stdin, stdout):
+    def parameter(board, key, spec, stdin, stdout, *, faction=None):
         assert key != 'ally_tribe'
         return given.get(key)
     def prepare(current, actor, stdin, stdout, **context):

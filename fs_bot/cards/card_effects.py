@@ -42,7 +42,7 @@ from fs_bot.board.control import (
     is_controlled_by,
 )
 from fs_bot.cards.capabilities import (
-    activate_capability, deactivate_capability,
+    activate_capability, activate_gallic_recipient_capability, deactivate_capability,
 )
 
 
@@ -678,22 +678,7 @@ def execute_card_10(state, shaded=False):
 
     Source: Card Reference, card 10
     """
-    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
-    activate_capability(state, 10, side)
-    if shaded:
-        # Shaded is owner-scoped ("take this card" / "place near a
-        # Gallic Faction"): event_params["faction"] chooses; default is
-        # the executing Faction when Gallic (the NP reading).
-        from fs_bot.cards.capabilities import set_capability_owner
-        from fs_bot.rules_consts import GALLIC_FACTIONS
-        owner = (state.get("event_params", {}) or {}).get("faction")
-        if owner is not None and owner not in GALLIC_FACTIONS:
-            owner = None  # "a Gallic Faction" — invalid choice ignored
-        ex = state.get("executing_faction")
-        if owner is None and ex in GALLIC_FACTIONS:
-            owner = ex
-        if owner is not None:
-            set_capability_owner(state, 10, owner)
+    activate_gallic_recipient_capability(state, 10, shaded)
 
 def _place_numidian_auxilia(state, target):
     from fs_bot.cards.event_targets import roman_leader_regions
@@ -1374,14 +1359,13 @@ def execute_card_32(state, shaded=False):
     """
     _event_step(state, "32.relocation")
     from fs_bot.rules_consts import BRITANNIA, MOBILE_PIECES
-    from fs_bot.map.map_data import get_playable_regions
+    from fs_bot.map.map_data import get_playable_regions_for_state
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
     # moves: list of {"piece_type": ..., "from_region": ..., "to_region": ...,
     #                  "count": ..., "piece_state": ...}
     moves = params.get("moves", [])
-    playable = get_playable_regions(state["scenario"],
-                                    state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, faction)
     planned_moves = []
     for m in moves:
         from_region = m["from_region"]
@@ -2325,22 +2309,7 @@ def execute_card_63(state, shaded=False):
 
     Source: Card Reference, card 63
     """
-    side = EVENT_UNSHADED if not shaded else EVENT_SHADED
-    activate_capability(state, 63, side)
-    if shaded:
-        # Shaded is owner-scoped ("take this card" / "place near a
-        # Gallic Faction"): event_params["faction"] chooses; default is
-        # the executing Faction when Gallic (the NP reading).
-        from fs_bot.cards.capabilities import set_capability_owner
-        from fs_bot.rules_consts import GALLIC_FACTIONS
-        owner = (state.get("event_params", {}) or {}).get("faction")
-        if owner is not None and owner not in GALLIC_FACTIONS:
-            owner = None  # "a Gallic Faction" — invalid choice ignored
-        ex = state.get("executing_faction")
-        if owner is None and ex in GALLIC_FACTIONS:
-            owner = ex
-        if owner is not None:
-            set_capability_owner(state, 63, owner)
+    activate_gallic_recipient_capability(state, 63, shaded)
 
 def execute_card_64(state, shaded=False):
     """Card 64: Correus — Replace Belgic pieces / Remove+Rally Belgae.
@@ -2624,16 +2593,13 @@ def execute_card_71(state, shaded=False):
 
     Source: Card Reference, card 71
     """
-    params = state.get("event_params", {})
+    from fs_bot.cards.event_targets import colony_regions
+
+    params = state.get("event_params") or {}
     faction = state.get("executing_faction")
     region = params.get("region")
-    if not region or not faction:
-        return
-    # Check Control prerequisite
-    has_control = is_controlled_by(state, region, faction)
-    no_control = (calculate_control(state, region) == NO_CONTROL)
-    if not (has_control or no_control):
-        return
+    if region not in colony_regions(state, faction):
+        raise ValueError('Colony requires a playable Region under your Control or with No Control.')
     # The Tribe exists even when §5.1.3 cannot supply its Ally disc.
     colony_name = params.get("colony_tribe_name", f"Colony_{region}")
     if not isinstance(colony_name, str) or not colony_name:

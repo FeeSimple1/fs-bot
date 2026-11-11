@@ -326,6 +326,20 @@ counts are rejected. Existing entry `timing_actions` and
 | A56 shaded | `warband_placements: [{region, count?}]` and `ally_placements: [{tribe}]` place four Warbands and two Belgic Allies as possible in Belgica before the Resource gain. An Ally can replace another faction's Ally disc. |
 | A65 shaded | `from_faction` selects Belgae or Germans. `warband_replacements: [{region, piece_state?}]` and `ally_replacements: [{tribe}]` replace four Warbands and two Allies as possible. A missing counterpart still leaves the source removed. |
 
+Shaded Ballistae (10) and Winter Campaign (63) require `event_params.faction`
+to name Arverni, Aedui or Belgae. The Event executor makes this choice.
+A missing or invalid recipient leaves the turn pending for correction.
+
+Colony (71) requires `event_params.region` under the executor's Control or
+with No Control. The Region must be playable for the executor on the current
+board. An optional `colony_tribe_name` must identify a new Tribe. The Tribe's
+default name is `Colony_<region>`.
+
+Forced Marches (32) uses `event_params.moves` entries with `from_region`,
+`to_region`, `piece_type`, and optional `count` and `piece_state`. Choose the
+executor's mobile Forces and playable endpoints outside Britannia. Roman
+endpoints include Cisalpina when Gallia Togata is in effect.
+
 Shaded Hostages (22) uses `target_tribes: [{tribe, faction?, warband_faction?, region?}]`.
 Choose one or two distinct Subdued Tribes with Roman pieces. The Tribe
 determines the Region for both placements, including a Colony's saved

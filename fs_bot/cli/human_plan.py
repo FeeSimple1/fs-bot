@@ -1275,9 +1275,9 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
 # --------------------------------------------------------------------- #
 # Event parameter collection -- the human analogue of the NP derivers
 # (Sec.8.2.3). Keys a card's handler reads from event_params are extracted
-# from its source, then prompted with typed pickers; every key may be
-# skipped (the executor reports 'not applicable' and the validation loop
-# in menus.prompt_action lets the player re-plan).
+# from its source, then prompted with typed pickers. The executor checks
+# the choices and the validation loop in menus.prompt_action lets the
+# player re-plan if needed.
 # --------------------------------------------------------------------- #
 
 def _card_param_keys(state, card_id):
@@ -1287,11 +1287,11 @@ def _card_param_keys(state, card_id):
                                   state.get("card_edition")))
 
 
-def _kind_options(state, kind, spec):
+def _kind_options(state, kind, spec, *, faction=None):
     """(label, value) menu options for a schema kind."""
     from fs_bot.cards.param_schema import kind_values
     from fs_bot.rules_consts import SENATE_UP, SENATE_DOWN
-    vals = kind_values(state, kind, spec)
+    vals = kind_values(state, kind, spec, faction=faction)
     if kind == "direction":
         return [("Uproar (up)", SENATE_UP), ("Adulation (down)",
                                              SENATE_DOWN)]
@@ -1306,7 +1306,7 @@ def _kind_options(state, kind, spec):
     return [((str(v) if v is not None else "(none)"), v) for v in vals]
 
 
-def _prompt_event_param(state, key, spec, stdin, stdout):
+def _prompt_event_param(state, key, spec, stdin, stdout, *, faction=None):
     """Prompt a typed value for one event_params key per its schema spec;
     None to skip the key entirely."""
     kind = spec.get("kind", "value")
@@ -1315,6 +1315,8 @@ def _prompt_event_param(state, key, spec, stdin, stdout):
     skip = ("(skip)", "__skip__")
 
     def _pick(prompt, opts):
+        if spec.get('required'):
+            return prompt_choice(stdin, stdout, prompt, opts) if opts else None
         v = prompt_choice(stdin, stdout, prompt, list(opts) + [skip])
         return None if v == "__skip__" else v
 
@@ -1327,7 +1329,7 @@ def _prompt_event_param(state, key, spec, stdin, stdout):
             for sub, sub_kind in fields.items():
                 e[sub] = prompt_choice(
                     stdin, stdout, f"  {sub}:",
-                    _kind_options(state, sub_kind, spec))
+                    _kind_options(state, sub_kind, spec, faction=faction))
             entries.append(e)
         # Explicit [] declines Card 44's granted Raid; omission requests
         # its default plan. Keep that choice available in the typed menu.
@@ -1337,7 +1339,7 @@ def _prompt_event_param(state, key, spec, stdin, stdout):
         out = []
         while True:
             opts = [(label, v) for label, v in
-                    _kind_options(state, item, spec) if v not in out]
+                    _kind_options(state, item, spec, faction=faction) if v not in out]
             if not opts:
                 break
             v = _pick(f"{key} (add one):", opts)
@@ -1345,7 +1347,7 @@ def _prompt_event_param(state, key, spec, stdin, stdout):
                 break
             out.append(v)
         return out or None
-    return _pick(f"{key}:", _kind_options(state, kind, spec))
+    return _pick(f"{key}:", _kind_options(state, kind, spec, faction=faction))
 
 
 def _collect_timed_event_entries(state, faction, card_id, shaded, params,
@@ -1373,7 +1375,7 @@ def _collect_timed_event_entries(state, faction, card_id, shaded, params,
             with inspect_board(prepared, stdout):
                 for sub, sub_kind in fields.items():
                     entry[sub] = prompt_choice(stdin, stdout, f'  {sub}:',
-                                              _kind_options(prepared, sub_kind, spec))
+                                              _kind_options(prepared, sub_kind, spec, faction=faction))
             if actions:
                 entry['timing_actions'] = actions
             try:
@@ -1438,6 +1440,9 @@ def _collect_hostages_params(state, faction, stdin, stdout):
 def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     """event_params for a human Event: standard (derived) choices when
     available and accepted, else per-key typed prompts."""
+    from fs_bot.cards.capabilities import GALLIC_RECIPIENT_CAPABILITIES
+    if card_id in GALLIC_RECIPIENT_CAPABILITIES and not shaded:
+        return {}
     if ((card_id in (19, 22, 45, 58, 60, 61, 'A36') and not shaded)
             or (card_id in (3, 5, 6, 7, 11, 24, 31, 51, 'A5', 'A17', 'A58') and shaded)):
         return {}  # Live exact quantities/pieces use the actual Event-step board.
@@ -1589,7 +1594,7 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
             v = _collect_timed_event_entries(state, faction, card_id, shaded,
                                              params, key, spec, stdin, stdout)
         else:
-            v = _prompt_event_param(state, key, spec, stdin, stdout)
+            v = _prompt_event_param(state, key, spec, stdin, stdout, faction=faction)
         if v is not None:
             params[key] = v
     if card_id == 66 and shaded and params.get('target_region'):

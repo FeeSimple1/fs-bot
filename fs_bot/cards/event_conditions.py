@@ -8,6 +8,7 @@ and never query a human decision agent.
 from copy import deepcopy
 
 from fs_bot import rules_consts as rc
+from fs_bot.cards.capabilities import GALLIC_RECIPIENT_CAPABILITIES
 
 
 def np_event_available(state, card_id, faction, shaded):
@@ -39,8 +40,11 @@ def np_event_available(state, card_id, faction, shaded):
     if card_id == 'A64':
         from fs_bot.engine.execute import _derive_card_A64
         return bool(_derive_card_A64(state, faction, shaded))
-    if card_id == 59 and shaded:
+    if shaded and (card_id == 59 or card_id in GALLIC_RECIPIENT_CAPABILITIES):
         return faction in rc.GALLIC_FACTIONS
+    if card_id == 71:
+        from fs_bot.engine.execute import _derive_card_71
+        return _derive_card_71(state, faction, shaded) is not None
     from fs_bot.cards.event_piece_plans import supported as exact_piece_plan
     if exact_piece_plan(card_id, shaded):
         from fs_bot.cards.event_piece_plans import np_available

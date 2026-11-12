@@ -1180,7 +1180,8 @@ class _AllSavesRng(_AllRemovalsRng):
 
 
 def predict_battle(state, region, attacking_faction, defending_faction, *,
-                   defender_saves=False, is_ambush=False):
+                   defender_saves=False, is_ambush=False, is_retreat=False,
+                   avoid_defender_losses=(), attack_losses=None):
     """Deterministically predict a Battle's Losses for NP decision-making.
 
     Per the flowcharts' "presuming all Defender Loss rolls result in removals
@@ -1196,42 +1197,62 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
         attacker's Leader: the Leader absorbs LAST among mobile pieces
         (Warbands/Auxilia/Legions, no-Retreat order, §3.2.4), so it is reached
         only when ``taken`` exceeds those non-Leader mobile pieces.
-    For the Aedui's possible Counterattack check, ``defender_saves`` lets
-    each Defender roll succeed, and allows a human to choose a hard target.
-    Caesar can pass his Ambush test. The forecast covers the Battle steps
-    with effects already scoped to this Region.
+    ``defender_loss_types`` records any piece type that absorbs a Loss,
+    including pieces that survive a roll. For target guarantees,
+    ``avoid_defender_losses`` lets a player defender choose any legal
+    alternative first. ``is_retreat`` applies the Retreat loss rules and
+    skips Counterattack. ``attack_losses`` can carry a Command-specific
+    Attack forecast, such as Morasses after initial fire.
+
+    ``defender_saves`` lets each Defender roll succeed. For Counterattack
+    forecasts a player defender can choose a hard target, and Caesar can
+    pass his Ambush test.
     Returns that dict, or None if the Battle cannot be evaluated.
     """
     import copy
     from fs_bot.battle.resolve import _calculate_attack_losses
     from fs_bot.battle.losses import resolve_losses, calculate_losses, defender_abatis_active
-    from fs_bot.rules_consts import CITADEL, FORT, WARBAND, AUXILIA, LEGION, LEADER, CAESAR
+    from fs_bot.board.pieces import get_effective_faction_pieces
+    from fs_bot.engine.agent import LOSS_ORDER
+    from fs_bot.rules_consts import CITADEL, FORT, WARBAND, AUXILIA, LEGION, LEADER, CAESAR, PROVINCIA
     sim = copy.deepcopy({key: value for key, value in state.items()
                          if key not in ('decision_agent', 'rng')})
     sim["rng"] = _AllSavesRng() if defender_saves else _AllRemovalsRng()
     try:
-        d_pieces = sim["spaces"][region].get("pieces", {}).get(
-            defending_faction, {})
+        d_pieces = get_effective_faction_pieces(sim, region, defending_faction)
         had_citadel = d_pieces.get(CITADEL, 0) > 0
-        had_fort = d_pieces.get(FORT, 0) > 0
-        # Attacker inflicts (no Defender Retreat — best for the attacker).
-        inflicted = _calculate_attack_losses(
-            sim, region, attacking_faction, defending_faction,
-            is_retreat=False, had_citadel_at_start=had_citadel,
-            had_fort_at_start=had_fort)
+        ignore_fort = (attacking_faction == ARVERNI and region == PROVINCIA
+                       and sim.get('event_modifiers', {}).get('card_21_no_fort'))
+        had_fort = d_pieces.get(FORT, 0) > 0 and not ignore_fort
+        inflicted = attack_losses
+        if inflicted is None:
+            inflicted = _calculate_attack_losses(
+                sim, region, attacking_faction, defending_faction,
+                is_retreat=is_retreat, had_citadel_at_start=had_citadel,
+                had_fort_at_start=had_fort)
         caesar_can_counter = (is_ambush and defending_faction == ROMANS
                               and get_leader_in_region(sim, region, ROMANS) == CAESAR)
         ambush_blocks_counter = is_ambush and not caesar_can_counter
         player_defends = (defending_faction not in sim.get('non_player_factions', ())
                           and not (defending_faction == ARVERNI
                                    and sim['scenario'] in ARIOVISTUS_SCENARIOS))
-        loss_order = [(LEGION, None), (LEADER, None)] if defender_saves and player_defends else None
+        loss_order = None
+        if player_defends and avoid_defender_losses:
+            def choose_other_loss(_state, faction, request):
+                if faction == defending_faction and request['kind'] == LOSS_ORDER:
+                    return [piece for piece in request['pieces']
+                            if piece[0] not in avoid_defender_losses]
+
+            sim['decision_agent'] = choose_other_loss
+        elif defender_saves and player_defends:
+            loss_order = [(LEGION, None), (LEADER, None)]
         attack = resolve_losses(
             sim, region, defending_faction, inflicted, is_ambush=ambush_blocks_counter,
+            is_retreat=is_retreat,
             abatis_defender=defender_abatis_active(sim, region, attacking_faction, defending_faction),
             loss_order=loss_order)
         # Counterattack Loss COUNT from the surviving Defender.
-        taken = 0 if ambush_blocks_counter else calculate_losses(
+        taken = 0 if ambush_blocks_counter or is_retreat else calculate_losses(
             sim, region, attacking_faction=defending_faction,
             defending_faction=attacking_faction, is_counterattack=True,
             arverni_legion_override=attack.get('legion_warbands_surviving'))
@@ -1248,6 +1269,8 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
         "inflicted": inflicted,
         "taken": taken,
         "attacker_leader_lost": has_leader and taken > absorbers,
+        "defender_loss_types": ({piece for piece, _ in attack['removed']}
+                                | {piece for piece, _, _ in attack['rolls']}),
     }
 
 

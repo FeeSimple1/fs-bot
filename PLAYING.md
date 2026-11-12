@@ -488,11 +488,18 @@ the Germans Battle, during the Attack and any Counterattack.
 Some exact physical casualty selections remain on the audit backlog.
 
 The Aedui bot starts Battle when it can force a Loss on an enemy Leader,
-Ally, Citadel, Legion, or Settlement. When Diviciacus fights, it checks the
-selected defender's possible Counterattack after the Attack, with only the
-Battle assigned Ambush receiving its protection. The German bot forecasts
-Counterattack from surviving defenders and accounts for Ariovistus's
-doubling when he Attacks.
+Ally, Citadel, Legion, or an Ariovistus Settlement. It checks legal casualty
+choices and possible Retreats. For example, a defending player can assign
+a Loss to an eligible Fort to spare an Ally. When Diviciacus fights, the
+Aedui check the selected defender's possible Counterattack after the Attack,
+with Ambush protection in the assigned Region.
+
+The Belgic, Arverni, and German bots forecast Counterattack from surviving
+defenders. The forecast uses the named Leaders' Attack rates, including one
+Loss per Warband with Ambiorix. The Arverni check whether the Losses reach a
+Legion through its screening pieces. The Roman bot counts a Rampage threat
+when the Belgae can legally target the Region and their Hidden Warbands can
+affect more pieces than the Romans have Auxilia there.
 
 Recruit and Rally now ask how many Auxilia or Warbands to place. The
 quantity menu includes zero where the rules allow it, and includes any

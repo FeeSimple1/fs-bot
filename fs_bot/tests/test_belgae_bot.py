@@ -410,8 +410,8 @@ class TestBattleEstimation:
             state, MANDUBII, SCENARIO_PAX_GALLICA, ARVERNI)
         # 6 Warbands × 0.5 = 3 inflicted
         assert losses_inflicted == 3
-        # 4 Warbands × 0.5 = 2 suffered
-        assert losses_suffered == 2
+        # One defending Warband survives, which rounds down to zero Losses.
+        assert losses_suffered == 0
 
     def test_estimate_losses_with_fort_halving(self):
         """Fort halves attack losses."""
@@ -424,14 +424,13 @@ class TestBattleEstimation:
         assert losses_inflicted == 1
 
     def test_estimate_losses_with_leader(self):
-        """Leader adds to losses."""
+        """Ambiorix and each of his attacking Warbands inflict one Loss."""
         state = _make_state()
         _place_belgae_force(state, MANDUBII, warbands=4, leader=True)
         place_piece(state, MANDUBII, ARVERNI, WARBAND, 2)
         losses_inflicted, _ = _estimate_battle_losses(
             state, MANDUBII, SCENARIO_PAX_GALLICA, ARVERNI)
-        # 4 × 0.5 + 1 (leader) = 3
-        assert losses_inflicted == 3
+        assert losses_inflicted == 5
 
     def test_can_battle_checks_losses(self):
         """Can Battle only when inflicting more than suffering."""
@@ -454,9 +453,9 @@ class TestBattleEstimation:
     def test_cannot_battle_if_ambiorix_would_die(self):
         """Cannot Battle if Ambiorix would take a Loss."""
         state = _make_state()
-        # Ambiorix + 1 Warband vs 3 Legions → Ambiorix could die
+        # Two Legions survive the Attack and can reach Ambiorix.
         _place_belgae_force(state, MANDUBII, warbands=1, leader=True)
-        _place_roman_force(state, MANDUBII, legions=3)
+        _place_roman_force(state, MANDUBII, legions=4)
         assert not _can_battle_in_region(
             state, MANDUBII, SCENARIO_PAX_GALLICA, ROMANS)
 

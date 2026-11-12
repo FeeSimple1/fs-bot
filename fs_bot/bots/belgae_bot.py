@@ -83,7 +83,7 @@ from fs_bot.bots.bot_common import (
     np_agrees_to_supply_line,
     is_no_faction_event,
     # Rally prevalidation (executor-legal plans)
-    prevalidate_rally_plan,
+    prevalidate_rally_plan, predict_battle, card27_shaded_absorption,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.common import _is_devastated
@@ -265,87 +265,20 @@ def _can_battle_in_region(state, region, scenario, enemy):
     if enemy_pieces == 0:
         return False
 
-    # Estimate Belgae Attack Losses inflicted per §3.3.4:
-    # Losses = ½ per Warband + 1 per Leader, rounded down
-    attack_raw = belgae_wb * 0.5 + (1 if has_ambiorix else 0)
-
-    # Enemy Fort/Citadel halves Attack Losses inflicted — §3.3.4
-    enemy_fort = count_pieces(state, region, enemy, FORT)
-    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    if enemy_fort > 0 or enemy_citadel > 0:
-        attack_raw = attack_raw / 2
-
-    losses_inflicted = int(attack_raw)
-
-    # Estimate Counterattack Losses suffered per §3.3.4:
-    enemy_warbands = count_pieces(state, region, enemy, WARBAND)
-    enemy_auxilia = count_pieces(state, region, enemy, AUXILIA)
-    enemy_legions = count_pieces(state, region, enemy, LEGION)
-    enemy_leader = get_leader_in_region(state, region, enemy)
-
-    counter_raw = (enemy_legions * 1
-                   + enemy_warbands * 0.5
-                   + (1 if enemy_leader else 0)
-                   + enemy_auxilia * 0.5)
-
-    # Our Fort/Citadel halves Counterattack Losses suffered — §3.3.4
-    our_fort = count_pieces(state, region, BELGAE, FORT)
-    our_citadel = count_pieces(state, region, BELGAE, CITADEL)
-    if our_fort > 0 or our_citadel > 0:
-        counter_raw = counter_raw / 2
-
-    losses_suffered = int(counter_raw)
-
-    # Check: no Loss on Ambiorix — §8.5.1
-    # "presuming all Defender Loss rolls result in removals"
-    # Ambiorix would take a Loss only if all Warbands removed first
-    if has_ambiorix and losses_suffered >= belgae_wb + 1:
+    losses_inflicted, losses_suffered = _estimate_battle_losses(
+        state, region, scenario, enemy)
+    if has_ambiorix and losses_suffered > belgae_wb:
         return False
-
-    # Condition: Belgic Losses less than enemy's — §8.5.1
-    if losses_inflicted > losses_suffered:
-        return True
-
-    return False
+    return losses_inflicted > losses_suffered
 
 
 def _estimate_battle_losses(state, region, scenario, enemy):
-    """Estimate losses inflicted and suffered for a Battle.
-
-    Returns:
-        (losses_inflicted, losses_suffered) tuple.
-    """
-    belgae_wb = count_pieces(state, region, BELGAE, WARBAND)
-    has_ambiorix = get_leader_in_region(state, region, BELGAE) is not None
-
-    attack_raw = belgae_wb * 0.5 + (1 if has_ambiorix else 0)
-    enemy_fort = count_pieces(state, region, enemy, FORT)
-    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    if enemy_fort > 0 or enemy_citadel > 0:
-        attack_raw = attack_raw / 2
-    losses_inflicted = int(attack_raw)
-
-    enemy_warbands = count_pieces(state, region, enemy, WARBAND)
-    enemy_auxilia = count_pieces(state, region, enemy, AUXILIA)
-    enemy_legions = count_pieces(state, region, enemy, LEGION)
-    enemy_leader = get_leader_in_region(state, region, enemy)
-
-    counter_raw = (enemy_legions * 1
-                   + enemy_warbands * 0.5
-                   + (1 if enemy_leader else 0)
-                   + enemy_auxilia * 0.5)
-
-    our_fort = count_pieces(state, region, BELGAE, FORT)
-    our_citadel = count_pieces(state, region, BELGAE, CITADEL)
-    if our_fort > 0 or our_citadel > 0:
-        counter_raw = counter_raw / 2
-    losses_suffered = int(counter_raw)
-    # Card 27 shaded: 6+ Arverni Warbands force 1 extra absorbed Loss.
-    from fs_bot.bots.bot_common import card27_shaded_absorption
-    losses_suffered += card27_shaded_absorption(state, region, BELGAE,
-                                                enemy)
-
-    return (losses_inflicted, losses_suffered)
+    """Apply §8.5.1's all-removals assumption before Counterattack."""
+    forecast = predict_battle(state, region, BELGAE, enemy)
+    if forecast is None:
+        return 0, 0
+    return (forecast['inflicted'],
+            forecast['taken'] + card27_shaded_absorption(state, region, BELGAE, enemy))
 
 
 def _estimate_rally_would_qualify(state, scenario):
@@ -1364,7 +1297,7 @@ def _check_ambush(state, battle_plan, scenario):
     should_ambush_first = False
 
     # Estimate Belgae Attack losses
-    losses_inflicted, losses_suffered = _estimate_battle_losses(
+    losses_inflicted, _ = _estimate_battle_losses(
         state, region, scenario, enemy)
 
     # (a) "Retreat out could lessen removals" — §8.5.1

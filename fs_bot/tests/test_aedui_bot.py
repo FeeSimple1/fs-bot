@@ -349,38 +349,32 @@ class TestBattleEstimation:
             state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA)
 
     def test_retreat_halves_losses_prevents_high_value(self):
-        """Enemy Retreat halves losses — may protect high-value targets.
-
-        Per §8.6.2: must account for "a possible enemy Retreat".
-        6 Aedui Warbands → 3 raw losses.  Enemy has 1 Warband + Ally.
-        Without Retreat: 3 losses > 1 expendable → hits Ally.
-        With Retreat: 3/2=1 loss ≤ 1 expendable → does NOT reach Ally.
-        """
+        """Retreat cuts three Attack Losses to one, which Auxilia can absorb."""
         state = _make_state()
         _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
-        state["tribes"][TRIBE_MANDUBII]["allied_faction"] = ARVERNI
-        place_piece(state, MANDUBII, ARVERNI, ALLY)
-        place_piece(state, MANDUBII, ARVERNI, WARBAND, 1)
-        # Enemy has mobile pieces → could Retreat
-        # Without ambush: losses halved → 1 loss ≤ 1 expendable
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
         assert not _would_force_loss_on_high_value(
-            state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA,
+            state, MANDUBII, AEDUI, ROMANS, SCENARIO_PAX_GALLICA,
             ambush_possible=False)
 
     def test_ambush_prevents_retreat_forces_high_value(self):
-        """Ambush prevents Retreat — full losses hit high-value target.
+        """An Ambush makes the Romans absorb all three Losses, reaching the Legion."""
+        state = _make_state()
+        _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
+        _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        assert _would_force_loss_on_high_value(
+            state, MANDUBII, AEDUI, ROMANS, SCENARIO_PAX_GALLICA,
+            ambush_possible=True)
 
-        Same setup as above, but with Ambush: enemy can't Retreat.
-        """
+    def test_retreating_ally_takes_losses_before_warbands(self):
+        """The Ally takes the first Retreat Loss under §3.3.4."""
         state = _make_state()
         _place_aedui_force(state, MANDUBII, warbands=6, hidden=False)
         state["tribes"][TRIBE_MANDUBII]["allied_faction"] = ARVERNI
         place_piece(state, MANDUBII, ARVERNI, ALLY)
         place_piece(state, MANDUBII, ARVERNI, WARBAND, 1)
-        # With ambush: full 3 losses > 1 expendable → hits Ally
         assert _would_force_loss_on_high_value(
-            state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA,
-            ambush_possible=True)
+            state, MANDUBII, AEDUI, ARVERNI, SCENARIO_PAX_GALLICA)
 
     def test_settlements_count_as_allies_in_ariovistus(self):
         """Per A8.6.2: count Settlements as Allies for Battle conditions.

@@ -180,29 +180,24 @@ def _has_roman_threat(state, region, scenario):
         if is_controlled_by(state, region, enemy):
             return True
 
-    # OR: an immediate enemy Battle or Rampage now would force a Loss on a
-    # Legion or Caesar (§8.8.1). Romans absorb mobile Losses with Auxilia
-    # before any Legion/Caesar (no-Retreat order, §3.2.4), and static
-    # Allies/Forts absorb LAST — so a Legion/Caesar is reached once the Loss
-    # count exceeds the Roman Auxilia present.
-    if has_legion or has_caesar:
-        from fs_bot.battle.losses import calculate_losses
-        roman_aux = count_pieces(state, region, ROMANS, AUXILIA)
-        for enemy in FACTIONS:
-            if enemy == ROMANS:
-                continue
-            # Battle: Losses the enemy would inflict here.
-            if calculate_losses(state, region, attacking_faction=enemy,
-                                defending_faction=ROMANS) > roman_aux:
-                return True
-            # Rampage (Belgic SA, §4.5.2): up to 2 forced removals/retreats.
-            if enemy == BELGAE:
-                belgic_hidden = count_pieces_by_state(
-                    state, region, BELGAE, WARBAND, HIDDEN)
-                if belgic_hidden > 0 and roman_aux < min(2, belgic_hidden):
-                    return True
+    # Auxilia can take Battle Losses ahead of Caesar or the Legions.
+    from fs_bot.battle.losses import calculate_losses
+    from fs_bot.commands.sa_rampage import (
+        rampage_capacity, validate_rampage_region, validate_rampage_target,
+    )
 
-    return False
+    roman_aux = count_pieces(state, region, ROMANS, AUXILIA)
+    for enemy in FACTIONS:
+        if enemy != ROMANS and calculate_losses(
+                state, region, attacking_faction=enemy,
+                defending_faction=ROMANS) > roman_aux:
+            return True
+
+    # §4.5.2 affects one victim per Hidden Warband if the Leader is in
+    # range and the Romans lack a Leader, Citadel or Fort here.
+    return (rampage_capacity(state, region, ROMANS) > roman_aux
+            and validate_rampage_region(state, region)[0]
+            and validate_rampage_target(state, region, ROMANS)[0])
 
 
 def _get_threat_regions(state, scenario):

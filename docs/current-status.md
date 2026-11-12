@@ -22,15 +22,28 @@ measurements have not been relabeled as results of later changes.
 ## Current audit backlog
 
 The [sixth Liberty or Death comparison audit](reviews/comparison-audit-round6-2026-11-11.md)
-found 14 repair groups. Batches 1–4 closed 11 Event, German procedure,
-Battle and free-action findings, leaving **three open** in bot forecasts.
-The audit report includes seven witness scripts and the
-repair order. The earlier 50-, 21-, 15-, 16- and
-11-group ledgers remain closed.
+found 14 repair groups. Batches 1–5 closed **all 14** across Events,
+German procedures, Battle, free actions and bot forecasts. The audit
+report includes seven witness scripts and the repair sequence.
 
 [Sixth-audit finding ledger](reviews/comparison-audit-round6-2026-11-11.json)
 
 ## Follow-up repairs
+
+### 11 November sixth comparison repair Batch 5
+
+The Belgic and Arverni bots calculate Counterattack Losses from surviving
+defenders. The Belgic forecast applies Ambiorix's named Attack rate. The
+Arverni check for Losses that reach a Legion, and the Aedui check legal
+casualty choices and Retreat before opening Battle on a high-value target.
+Roman threat detection checks Rampage legality and the full victim count.
+[Repair and validation](reviews/sixth-comparison-batch5-2026-11-11.md)
+
+All **9,991 tests pass**. All 120 audited bot games complete cleanly, and
+20 mixed-player cases match across two hash seeds with zero hard findings
+and one partial plan. The 83 changed final boards first diverge on cards
+where one of the repaired bot checks changes. The refreshed 100-game
+baseline passes the 15-point guardrail on the same seeds.
 
 ### 11 November sixth comparison repair Batch 4
 

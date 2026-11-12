@@ -29,7 +29,7 @@ from fs_bot.rules_consts import (
     VERCINGETORIX, CAESAR,
     HARASSMENT_WARBANDS_PER_LOSS,
     # Regions
-    AEDUI_REGION, BRITANNIA, PROVINCIA,
+    AEDUI_REGION, BRITANNIA,
     # Events
     EVENT_SHADED,
     # Die
@@ -76,7 +76,7 @@ from fs_bot.bots.bot_common import (
     np_agrees_to_supply_line,
     is_no_faction_event,
     # Rally prevalidation (executor-legal plans)
-    prevalidate_rally_plan,
+    prevalidate_rally_plan, predict_battle,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.common import _is_devastated
@@ -230,60 +230,13 @@ def _can_battle_in_region(state, region, scenario, enemy):
     if enemy_pieces == 0:
         return False
 
-    # Estimate Arverni Attack Losses inflicted per §3.3.4:
-    # Losses = ½ per Warband + 1 per Leader + ½ per Auxilia, rounded down.
-    # Arverni have no Auxilia, so: int(arverni_wb * 0.5 + (1 if leader else 0))
-    attack_raw = arverni_wb * 0.5 + (1 if has_verc else 0)
-
-    # Enemy Fort/Citadel halves Attack Losses inflicted — §3.3.4
-    enemy_fort = count_pieces(state, region, enemy, FORT)
-    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    # The Province's scoped free Battle is "as if no Fort". Apply its
-    # exception to the flowchart's Loss comparison as well as execution.
-    ignore_fort = (region == PROVINCIA
-                   and state.get('event_modifiers', {}).get('card_21_no_fort'))
-    if (enemy_fort > 0 and not ignore_fort) or enemy_citadel > 0:
-        attack_raw = attack_raw / 2
-
-    losses_inflicted = int(attack_raw)
-
-    # Check for Legion loss — can we force at least one Loss on a Legion?
-    enemy_legions = count_pieces(state, region, enemy, LEGION)
-    can_hit_legion = enemy_legions > 0 and losses_inflicted > 0
-
-    # Estimate Counterattack Losses suffered per §3.3.4:
-    # Losses = ½ per enemy Warband + ½ per enemy Auxilia + 1 per enemy Leader
-    # + 1 per enemy Legion, rounded down.
-    enemy_warbands = count_pieces(state, region, enemy, WARBAND)
-    enemy_auxilia = count_pieces(state, region, enemy, AUXILIA)
-    enemy_leader = get_leader_in_region(state, region, enemy)
-
-    counter_raw = (enemy_legions * 1
-                   + enemy_warbands * 0.5
-                   + (1 if enemy_leader else 0)
-                   + enemy_auxilia * 0.5)
-
-    # Our Fort/Citadel halves Counterattack Losses suffered — §3.3.4
-    our_fort = count_pieces(state, region, ARVERNI, FORT)
-    our_citadel = count_pieces(state, region, ARVERNI, CITADEL)
-    if our_fort > 0 or our_citadel > 0:
-        counter_raw = counter_raw / 2
-
-    losses_suffered = int(counter_raw)
-
-    # Check: no Loss on Vercingetorix — §8.7.1
-    # "presuming all Defender Loss rolls result in removals"
-    # Vercingetorix would take a Loss only if all Warbands removed first
-    if has_verc and losses_suffered >= arverni_wb + 1:
+    forecast = predict_battle(
+        state, region, ARVERNI, enemy, avoid_defender_losses=(LEGION,))
+    if forecast is None or forecast['attacker_leader_lost']:
         return False
 
-    # Condition: force Loss on Legion AND/OR inflict more Losses than suffered
-    if can_hit_legion:
-        return True
-    if losses_inflicted > losses_suffered:
-        return True
-
-    return False
+    return (LEGION in forecast['defender_loss_types']
+            or forecast['inflicted'] > forecast['taken'])
 
 
 def _caesar_in_region(state, region):
@@ -1375,7 +1328,7 @@ def _check_ambush(state, battle_plan, scenario):
     # Check if Ambush is needed in 1st Battle — §8.7.1
     should_ambush_first = False
 
-    # Estimate Arverni Attack losses (same formula as _can_battle_in_region)
+    # Estimate whether Retreat could spare a defender from the Attack.
     arverni_wb = count_pieces(state, region, ARVERNI, WARBAND)
     has_verc = get_leader_in_region(state, region, ARVERNI) is not None
     attack_raw = arverni_wb * 0.5 + (1 if has_verc else 0)

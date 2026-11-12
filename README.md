@@ -144,13 +144,13 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The fourth sixth-comparison batch enforces the Aedui Ambush limit and adds
-split Enlist March groups in Ariovistus, bringing the audit to **11 of 14
-findings repaired**. All **9,975 tests pass**. The 120 audited bot games
-match the preceding batch. Twenty mixed-player cases match across two
-hash seeds with zero hard findings and one partial plan. The 100-game
-balance check passes within the existing 15-point band.
-[Repair and validation](docs/reviews/sixth-comparison-batch4-2026-11-11.md) ·
+The sixth comparison audit is complete with **14 of 14 findings repaired**.
+The final batch corrects bot Battle forecasts, high-value target checks,
+and Roman Rampage threat detection. All **9,991 tests pass**, 120 audited
+bot games complete cleanly, and 20 mixed-player cases match across two hash
+seeds with zero hard findings and one partial plan. The refreshed 100-game
+balance check passes within the 15-point band.
+[Repair and validation](docs/reviews/sixth-comparison-batch5-2026-11-11.md) ·
 [Current status](docs/current-status.md)
 
 The [fourth comparison's final repair batch](docs/reviews/fourth-comparison-batch4-2026-11-11.md)

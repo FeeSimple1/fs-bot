@@ -1412,18 +1412,11 @@ class TestHelpers:
         assert _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
 
     def test_can_battle_enemy_leader_counts_full_loss(self):
-        """_can_battle_in_region: Enemy Leader contributes 1 to Counterattack — §3.3.4.
-
-        Bug 4: Old code estimated enemy counterattack as enemy_mobile // 2
-        which undercounts Leaders.
-        """
+        """A Leader who survives the Attack contributes one Counterattack Loss."""
         state = _make_state()
         _place_arverni_force(state, MANDUBII, warbands=2)
-        # Caesar alone: Counterattack = int(0 + 0 + 1 + 0) = 1
-        _place_roman_force(state, MANDUBII, leader=True)
-        # Arverni Attack: int(2 * 0.5) = 1
-        # 1 is not > 1, no legion → can_hit_legion = False
-        # losses_inflicted (1) NOT > losses_suffered (1) → False
+        _place_roman_force(state, MANDUBII, leader=True, auxilia=1)
+        # The single Loss removes the Auxilia. Caesar inflicts one in return.
         assert not _can_battle_in_region(state, MANDUBII, state["scenario"], ROMANS)
 
     def test_can_battle_fort_halving_correct(self):

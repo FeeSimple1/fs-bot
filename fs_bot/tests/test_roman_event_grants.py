@@ -389,7 +389,8 @@ def test_aduatuci_default_retry_refreshes_targets_after_live_battle_window(scena
     st = state('A58', scenario)
     st['non_player_factions'].discard(rc.BELGAE)
     place_piece(st, rc.NERVII, rc.ROMANS, rc.LEGION, 3, from_legions_track=True)
-    place_piece(st, rc.NERVII, rc.BELGAE, rc.WARBAND)
+    # Two Warbands can inflict a Battle Loss against the unescorted Legions.
+    place_piece(st, rc.NERVII, rc.BELGAE, rc.WARBAND, 2)
     if remaining_battle:
         # A legal human Battle remains, but not one Roman NP priorities use.
         place_piece(st, rc.MORINI, rc.ROMANS, rc.FORT)
@@ -402,7 +403,7 @@ def test_aduatuci_default_retry_refreshes_targets_after_live_battle_window(scena
                 assert faction == rc.BELGAE
                 removed_at.append(request['window']['stage'])
                 return {'operations': [{'action': 'remove', 'region': rc.NERVII,
-                    'piece_type': rc.WARBAND, 'piece_state': rc.HIDDEN, 'count': 1}]}
+                    'piece_type': rc.WARBAND, 'piece_state': rc.HIDDEN, 'count': 2}]}
             return {'done': True}
         if request['kind'] != 'free_action':
             return None

@@ -8,8 +8,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 14,
-  "closed": 11,
-  "open": 3,
+  "closed": 14,
+  "open": 0,
   "severity_counts": {
     "high": 7,
     "medium": 7
@@ -241,7 +241,9 @@
         "NP6-01",
         "NP6-02",
         "NP6-03"
-      ]
+      ],
+      "status": "closed",
+      "repair_report": "sixth-comparison-batch5-2026-11-11.md"
     }
   ],
   "findings": [
@@ -1026,7 +1028,9 @@
       "evidence_directory": "battle"
     },
     {
-      "status": "open",
+      "status": "closed",
+      "repair_batch": 5,
+      "repair_report": "sixth-comparison-batch5-2026-11-11.md",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "partition": "bots",
       "priority": "medium",
@@ -1085,7 +1089,9 @@
       "evidence_directory": "bots"
     },
     {
-      "status": "open",
+      "status": "closed",
+      "repair_batch": 5,
+      "repair_report": "sixth-comparison-batch5-2026-11-11.md",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "partition": "bots",
       "priority": "medium",
@@ -1155,7 +1161,9 @@
       "evidence_directory": "bots"
     },
     {
-      "status": "open",
+      "status": "closed",
+      "repair_batch": 5,
+      "repair_report": "sixth-comparison-batch5-2026-11-11.md",
       "audited_commit": "86fb0c2d8ddf86a4548a863dc9c9da27d0c708ad",
       "partition": "bots",
       "priority": "medium",

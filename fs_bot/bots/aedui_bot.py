@@ -80,7 +80,7 @@ from fs_bot.bots.bot_common import (
     np_agrees_to_supply_line,
     is_no_faction_event,
     # Rally prevalidation (executor-legal plans)
-    prevalidate_rally_plan,
+    prevalidate_rally_plan, predict_battle,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.common import _is_devastated
@@ -232,65 +232,30 @@ def _estimate_battle_losses(state, region, attacker, defender, scenario):
 def _would_force_loss_on_high_value(state, region, attacker, defender,
                                      scenario, *,
                                      ambush_possible=False):
-    """Check if Battle would force a Loss on enemy Leader, Ally, Citadel,
-    or Legion — per §8.6.2.
+    """Check that every legal response exposes a §8.6.2 target to a Loss."""
+    from fs_bot.battle.retreat import can_declare
 
-    "accounting for which enemy the Aedui would Battle, any Aedui Ambush,
-    a possible enemy Retreat, Aedui Resources, and so on"
-
-    Per §8.6.2: must account for "a possible enemy Retreat". Retreat halves
-    Attack Losses. When the enemy has mobile pieces that could Retreat, use
-    reduced losses for the check since a rational defender WILL Retreat to
-    protect high-value targets. Exception: if Ambush would apply, the enemy
-    cannot Retreat — use full losses.
-
-    Args:
-        ambush_possible: If True, enemy cannot Retreat (Ambush prevents it).
-
-    Returns:
-        True if Battle is sure to inflict a Loss on a high-value target.
-    """
-    # Check if enemy has high-value targets that would take a Loss
-    def_leader = get_leader_in_region(state, region, defender)
-    def_legions = count_pieces(state, region, defender, LEGION)
-    def_allies = count_pieces(state, region, defender, ALLY)
-    def_citadels = count_pieces(state, region, defender, CITADEL)
-
-    # Per A8.6.2: count Settlements as "Allies" in Ariovistus scenarios
-    def_settlements = 0
+    targets = {LEADER, LEGION, ALLY, CITADEL}
     if scenario in ARIOVISTUS_SCENARIOS:
-        def_settlements = count_pieces(state, region, defender, SETTLEMENT)
-
-    high_value_count = (
-        (1 if def_leader else 0)
-        + def_legions + def_allies + def_citadels + def_settlements
-    )
-
-    if high_value_count == 0:
+        targets.add(SETTLEMENT)
+    if not any(count_pieces(state, region, defender, piece) for piece in targets):
         return False
 
-    losses_inflicted, _ = _estimate_battle_losses(
-        state, region, attacker, defender, scenario)
-
-    # Count total defender pieces to see if losses reach high-value targets
-    # Losses remove pieces in defender's choice, but we check if losses
-    # are enough that a high-value piece MUST be hit.
-    # Lower-value pieces (Warbands/Auxilia) are removed first by defender.
-    def_warbands = count_pieces(state, region, defender, WARBAND)
-    def_auxilia = count_pieces(state, region, defender, AUXILIA)
-    expendable = def_warbands + def_auxilia
-
-    # Account for enemy Retreat — §8.6.2
-    # Retreat halves Attack Losses. If enemy has mobile pieces (anything
-    # except lone Ally/Citadel/Fort), they could Retreat to protect
-    # high-value targets. Exception: Ambush prevents Retreat.
-    enemy_mobile = count_mobile_pieces(state, region, defender)
-    effective_losses = losses_inflicted
-    if enemy_mobile > 0 and not ambush_possible:
-        # Enemy could Retreat → use halved losses
-        effective_losses = int(losses_inflicted / 2)
-
-    return effective_losses > expendable
+    attack_losses = None
+    if state.get('_morasses_ambush'):
+        attack_losses, _ = _estimate_battle_losses(
+            state, region, attacker, defender, scenario)
+    standing = predict_battle(
+        state, region, attacker, defender, is_ambush=ambush_possible,
+        defender_saves=True, avoid_defender_losses=targets, attack_losses=attack_losses)
+    if standing is None or not targets.intersection(standing['defender_loss_types']):
+        return False
+    if not can_declare(state, region, attacker, defender, ambush_possible):
+        return True
+    retreating = predict_battle(
+        state, region, attacker, defender, is_retreat=True,
+        defender_saves=True, avoid_defender_losses=targets)
+    return retreating is not None and bool(targets.intersection(retreating['defender_loss_types']))
 
 
 def _get_battle_enemies(state, scenario):
@@ -319,7 +284,7 @@ def _counterattack_threatens_diviciacus(state, region, enemy, *, is_ambush):
     if (state['scenario'] not in ARIOVISTUS_SCENARIOS
             or get_leader_in_region(state, region, AEDUI) != DIVICIACUS):
         return False
-    from fs_bot.bots.bot_common import predict_battle, card27_shaded_absorption
+    from fs_bot.bots.bot_common import card27_shaded_absorption
 
     forecast = predict_battle(state, region, AEDUI, enemy,
                               defender_saves=True, is_ambush=is_ambush)

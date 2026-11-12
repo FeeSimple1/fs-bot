@@ -1637,75 +1637,9 @@ def _determine_march_sa(state, scenario, *, before_march=False):
 # ============================================================================
 
 def node_v_quarters(state):
-    """V_QUARTERS: Quarters Phase.
-
-    Per §8.7.7:
-    - Leave Devastated if no Ally/Citadel.
-    - Move Leader/Warband group to join most, end next to most
-      Regions with Arverni able; leave 1+ OR for Control.
-
-    Returns:
-        Quarters action details dict.
-    """
-    scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
-
-    quarters_plan = {
-        "leave_devastated": [],
-        "leader_move": None,
-    }
-
-    # Step 1: Leave Devastated Regions with no Ally/Citadel — §8.7.7
-    for region in playable:
-        if count_pieces(state, region, ARVERNI) == 0:
-            continue
-        is_devastated = _is_devastated(state, region)
-        if not is_devastated:
-            continue
-        # Check for Ally or Citadel
-        has_ally = False
-        tribes = get_tribes_in_region_for_state(state, region)
-        for tribe in tribes:
-            if state["tribes"].get(tribe, {}).get("allied_faction") == ARVERNI:
-                has_ally = True
-                break
-        has_citadel = count_pieces(state, region, ARVERNI, CITADEL) > 0
-        if not has_ally and not has_citadel:
-            # Find adjacent Arverni-Controlled region
-            for adj in get_adjacent(region, scenario):
-                if is_controlled_by(state, adj, ARVERNI):
-                    quarters_plan["leave_devastated"].append({
-                        "from": region, "to": adj,
-                    })
-                    break
-
-    # Step 2: Move Leader/group to join most Warbands, near most
-    # Regions with Arverni — §8.7.7
-    verc_region = _vercingetorix_region(state)
-    if verc_region:
-        best_dest = None
-        best_wb_count = -1
-        best_adj_count = -1
-
-        candidates = [verc_region] + list(get_adjacent(verc_region, scenario))
-        for dest in candidates:
-            wb_count = count_pieces(state, dest, ARVERNI, WARBAND)
-            if dest == verc_region:
-                pass  # Already there
-            adj_count = _count_adjacent_arverni_regions(state, dest, scenario)
-            if (wb_count > best_wb_count
-                    or (wb_count == best_wb_count
-                        and adj_count > best_adj_count)):
-                best_wb_count = wb_count
-                best_adj_count = adj_count
-                best_dest = dest
-
-        if best_dest and best_dest != verc_region:
-            quarters_plan["leader_move"] = {
-                "from": verc_region, "to": best_dest,
-            }
-
-    return quarters_plan
+    """Build executable Quarters moves for §8.7.7."""
+    from fs_bot.bots.quarters import plan_relocations
+    return plan_relocations(state, ARVERNI)
 
 
 def node_v_spring(state):

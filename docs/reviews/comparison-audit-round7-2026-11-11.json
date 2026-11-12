@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 9,
-  "closed": 2,
-  "open": 7,
+  "closed": 3,
+  "open": 6,
   "severity_counts": {
     "high": 2,
     "medium": 7
@@ -278,7 +278,8 @@
       "findings": [
         "WS7-01"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "seventh-comparison-batch2-2026-11-11.md"
     },
     {
       "batch": 3,
@@ -611,7 +612,8 @@
       "output": "lifecycle/probe_lifecycle-output.json",
       "fixture": "Lawful controlled build_initial_state positions (Great Revolt for Belgae/Aedui/Arverni; Ariovistus for Germans), seed1, all playable seats NP, Provincia permanent Fort, physical pieces placed with canonical helpers and pre/post census and structure clean. Public full-Winter pair starts from actual Pax setup, seed1, with Germans legally skipped. No input stubs or monkeypatches.",
       "limits": "Seventeen directed cases establish the dead routing and concrete consequences. They do not measure encounter frequency or aggregate win-rate effects. The explicit relocation controls establish lawful available actions; they are not offered as a complete implementation of all NPC tie-breaks or multi-origin planning. Aedui human agreement alternatives and expansion Belgic geographic secondary priorities are for repair coverage rather than additional counted findings.",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "seventh-comparison-batch2-2026-11-11.md"
     },
     {
       "status": "open",

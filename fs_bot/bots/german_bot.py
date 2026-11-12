@@ -2013,96 +2013,9 @@ def node_g_settle(state):
 # ============================================================================
 
 def node_g_quarters(state):
-    """G_QUARTERS: Quarters Phase per A8.7.6.
-
-    Per A8.7.6:
-    - First leave any (Drought) Devastated Region where Germans have no
-      Ally or Settlement for random adjacent Regions they Control.
-    - Then move their Leader and/or one group of Warbands to join the
-      Leader with the largest group of Germanic Warbands able and, within
-      that, to get or keep the Leader within one Region of the most
-      Regions with Germanic Forces able.
-    - Leave behind at least 1 Warband and at least the number of Warbands
-      needed to retain German Control.
-
-    Returns:
-        Quarters action details dict.
-    """
-    scenario = state["scenario"]
-    playable = get_playable_regions_for_state(state, GERMANS)
-
-    quarters_plan = {
-        "leave_devastated": [],
-        "leader_move": None,
-    }
-
-    for region in playable:
-        if count_pieces(state, region, GERMANS) == 0:
-            continue
-        if not _is_devastated(state, region):
-            continue
-        has_ally = False
-        for tribe in get_tribes_in_region_for_state(state, region):
-            if state["tribes"].get(tribe, {}).get(
-                    "allied_faction") == GERMANS:
-                has_ally = True
-                break
-        has_settlement = _has_settlement(state, region)
-        if has_ally or has_settlement:
-            continue
-        controlled_adj = sorted([
-            adj for adj in get_adjacent(region, scenario)
-            if is_controlled_by(state, adj, GERMANS)
-        ])
-        if controlled_adj:
-            dest = random_select(state, controlled_adj)
-            quarters_plan["leave_devastated"].append({
-                "from": region, "to": dest,
-            })
-
-    aristos_region = _ariovistus_region(state)
-    if aristos_region:
-        candidates = [aristos_region] + sorted(
-            get_adjacent(aristos_region, scenario))
-        best_dest = None
-        best_wb = -1
-        best_adj = -1
-        for dest in candidates:
-            wb = count_pieces(state, dest, GERMANS, WARBAND)
-            adj_count = 0
-            if count_pieces(state, dest, GERMANS) > 0:
-                adj_count += 1
-            for a in get_adjacent(dest, scenario):
-                if count_pieces(state, a, GERMANS) > 0:
-                    adj_count += 1
-            if (wb > best_wb
-                    or (wb == best_wb and adj_count > best_adj)):
-                best_wb = wb
-                best_adj = adj_count
-                best_dest = dest
-        if best_dest and best_dest != aristos_region:
-            origin_wb = count_pieces(state, aristos_region, GERMANS, WARBAND)
-            min_leave = 1
-            if is_controlled_by(state, aristos_region, GERMANS):
-                total_non_german = sum(
-                    count_pieces(state, aristos_region, f)
-                    for f in (ROMANS, ARVERNI, AEDUI, BELGAE)
-                )
-                german_non_wb = (
-                    count_pieces(state, aristos_region, GERMANS) - origin_wb)
-                german_staying_non_wb = max(0, german_non_wb - 1)
-                wb_for_control = max(
-                    0, total_non_german - german_staying_non_wb + 1)
-                min_leave = max(min_leave, wb_for_control)
-            movable = max(0, origin_wb - min_leave)
-            quarters_plan["leader_move"] = {
-                "from": aristos_region,
-                "to": best_dest,
-                "warbands_moved": movable,
-                "warbands_left": min_leave,
-            }
-
-    return quarters_plan
+    """Build executable Quarters moves for A8.7.6."""
+    from fs_bot.bots.quarters import plan_relocations
+    return plan_relocations(state, GERMANS)
 
 
 def node_g_spring(state):

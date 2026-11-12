@@ -21,9 +21,9 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-Batch 1 closes two of the seventh comparison audit's nine repair groups.
-**Seven remain open** across non-Roman bot Quarters, base German March
-group limits, bot Events, and bot Ambush and Raid planning.
+Batches 1 and 2 close three of the seventh comparison audit's nine repair
+groups. **Six remain open** across base German March group limits, bot
+Events, and bot Ambush and Raid planning.
 [Audit report](reviews/comparison-audit-round7-2026-11-11.md)
 
 [Seventh-audit finding ledger](reviews/comparison-audit-round7-2026-11-11.json) ·
@@ -33,6 +33,20 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 11 November seventh comparison repair Batch 2
+
+Belgae, Aedui, base-game Arverni, and Ariovistus Germans evacuate eligible
+Devastated Regions before desertion. Belgae, Arverni, and Germans can
+gather the Leader with the largest reachable Warband stack while retaining
+Control. Winter executes these plans through the shared Quarters validator
+and can suspend for a human host's decision.
+[Repair and validation](reviews/seventh-comparison-batch2-2026-11-11.md)
+
+All **10,032 tests pass**. All 120 audited bot games complete cleanly, and
+20 mixed-player cases match across two hash seeds with zero hard findings.
+The paired replays trace 101 changed games to Quarters. The refreshed
+100-game balance check passes on the original seeds and tolerance.
 
 ### 11 November seventh comparison repair Batch 1
 

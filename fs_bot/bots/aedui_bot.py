@@ -1443,47 +1443,9 @@ def _determine_suborn_sa(state, scenario, *, allowed_regions=None):
 # ============================================================================
 
 def node_a_quarters(state):
-    """A_QUARTERS: Quarters Phase.
-
-    Per §8.6.7: Non-player Aedui move only to leave Devastated Regions
-    where they have no Ally or Citadel, if they can.
-
-    Returns:
-        Quarters action details dict.
-    """
-    scenario = state["scenario"]
-    playable = get_playable_regions(scenario, state.get("capabilities"))
-
-    quarters_plan = {
-        "leave_devastated": [],
-    }
-
-    for region in playable:
-        if count_pieces(state, region, AEDUI) == 0:
-            continue
-        is_devastated = _is_devastated(state, region)
-        if not is_devastated:
-            continue
-        # Check for Ally or Citadel
-        has_ally = False
-        tribes = get_tribes_in_region_for_state(state, region)
-        for tribe in tribes:
-            if state["tribes"].get(tribe, {}).get(
-                    "allied_faction") == AEDUI:
-                has_ally = True
-                break
-        has_citadel = count_pieces(state, region, AEDUI, CITADEL) > 0
-        if not has_ally and not has_citadel:
-            # Find adjacent non-Devastated region to move to
-            for adj in get_adjacent(region, scenario):
-                adj_devastated = _is_devastated(state, adj)
-                if not adj_devastated:
-                    quarters_plan["leave_devastated"].append({
-                        "from": region, "to": adj,
-                    })
-                    break
-
-    return quarters_plan
+    """Build executable Quarters moves for §8.6.7."""
+    from fs_bot.bots.quarters import plan_relocations
+    return plan_relocations(state, AEDUI)
 
 
 # ============================================================================

@@ -1875,6 +1875,13 @@ Legality also depends on the current board and any host agreement. `{"Belgae":[]
 relocations. Arrivals cannot make a second adjacent relocation in the same
 step; Roman movement to Provincia is a later step.
 
+Seated non-Roman bots build and execute relocation plans in Quarters
+order. Their plans use the same adjacent movement and agreement checks as
+player plans. When a bot chooses a Region under human Control, the host
+receives an `agreement` request with `request_type: quarters`, the
+requesting faction, and `context.region`. A refusal lets the bot consider
+another legal destination. The answer is reused when executing the move.
+
 Romans may also include `"Romans_quartering"`, mapping Regions to choices
 with `free_pieces` and `pay_pieces` lists of `[piece_type, visibility, count]`
 (use null visibility for Legions), or aggregate `pay`/`roll` counts. Optional

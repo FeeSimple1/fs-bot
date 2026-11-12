@@ -1179,38 +1179,27 @@ class TestNodeBQuarters:
         _place_belgae_force(state, CARNUTES, warbands=5)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        if result["leave_devastated"]:
-            assert result["leave_devastated"][0]["from"] == MANDUBII
+        assert result == [(WARBAND, MANDUBII, CARNUTES, 3)]
 
     def test_quarters_moves_leader(self):
         """Quarters: move Leader to most Warbands."""
         state = _make_state()
         _place_belgae_force(state, MANDUBII, leader=True, warbands=1)
         _place_belgae_force(state, CARNUTES, warbands=6)
+        place_piece(state, CARNUTES, AEDUI, WARBAND)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        if result["leader_move"]:
-            assert result["leader_move"]["from"] == MANDUBII
-            assert result["leader_move"]["to"] == CARNUTES
+        assert result == [(LEADER, MANDUBII, CARNUTES, 1)]
 
     def test_quarters_ariovistus_prefers_belgica_treveri(self):
-        """A8.5.6: Quarters first moves to Morini, Nervii, or Treveri."""
+        """A8.5.6 uses a preferred Region to break a largest-stack tie."""
         state = _make_state(scenario=SCENARIO_ARIOVISTUS)
-        # Ambiorix in a non-target region
         _place_belgae_force(state, MANDUBII, leader=True, warbands=1)
-        # More Warbands in Morini (one of the target regions)
-        _place_belgae_force(state, MORINI, warbands=5)
-        # Also some in a non-target adjacent
+        _place_belgae_force(state, TREVERI, warbands=8)
         _place_belgae_force(state, CARNUTES, warbands=8)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        # In Ariovistus, should prefer Morini/Nervii/Treveri if adjacent
-        if result["leader_move"]:
-            # Mandubii may not be adjacent to Morini, so check
-            # whatever the result is
-            dest = result["leader_move"]["to"]
-            # Should try for Morini/Nervii/Treveri first
-            assert dest is not None
+        assert result == [(LEADER, MANDUBII, TREVERI, 1)]
 
 
 # ===================================================================
@@ -1745,8 +1734,7 @@ class TestQuartersEdgeCases:
         state["spaces"][MANDUBII]["devastated"] = True
         refresh_all_control(state)
         result = node_b_quarters(state)
-        # Has Ally → don't leave
-        assert len(result["leave_devastated"]) == 0
+        assert result == []
 
     def test_quarters_stays_in_devastated_with_citadel(self):
         """Quarters: don't leave Devastated if have Citadel — §8.5.6."""
@@ -1755,20 +1743,12 @@ class TestQuartersEdgeCases:
         state["spaces"][MANDUBII]["devastated"] = True
         refresh_all_control(state)
         result = node_b_quarters(state)
-        assert len(result["leave_devastated"]) == 0
+        assert result == []
 
     def test_quarters_leaves_devastated_randomly(self):
         """Quarters: random adjacent Controlled region — §8.5.6."""
-        state = _make_state()
-        _place_belgae_force(state, MANDUBII, warbands=3)
-        state["spaces"][MANDUBII]["devastated"] = True
-        # Multiple adjacent Belgae-Controlled regions
-        _place_belgae_force(state, CARNUTES, warbands=5)
-        _place_belgae_force(state, BITURIGES, warbands=5)
-        refresh_all_control(state)
-        # Run multiple times to verify randomness
         destinations = set()
-        for s in range(50):
+        for s in (0, 1):
             st = _make_state(seed=s)
             _place_belgae_force(st, MANDUBII, warbands=3)
             st["spaces"][MANDUBII]["devastated"] = True
@@ -1776,10 +1756,9 @@ class TestQuartersEdgeCases:
             _place_belgae_force(st, BITURIGES, warbands=5)
             refresh_all_control(st)
             res = node_b_quarters(st)
-            if res["leave_devastated"]:
-                destinations.add(res["leave_devastated"][0]["to"])
-        # Should see multiple destinations due to randomness
-        assert len(destinations) >= 1
+            assert len(res) == 1
+            destinations.add(res[0][2])
+        assert destinations == {CARNUTES, BITURIGES}
 
     def test_quarters_leader_move_leaves_warbands(self):
         """Quarters: leave behind 1+ Warbands when moving — §8.5.6."""
@@ -1787,10 +1766,10 @@ class TestQuartersEdgeCases:
         # Ambiorix in Mandubii with 3 Warbands, more in Carnutes
         _place_belgae_force(state, MANDUBII, leader=True, warbands=3)
         _place_belgae_force(state, CARNUTES, warbands=8)
+        place_piece(state, CARNUTES, AEDUI, WARBAND)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        if result["leader_move"]:
-            assert result["leader_move"]["warbands_left"] >= 1
+        assert result == [(LEADER, MANDUBII, CARNUTES, 1), (WARBAND, MANDUBII, CARNUTES, 2)]
 
     def test_quarters_leader_move_keeps_control(self):
         """Quarters: keep enough for Control when moving — §8.5.6."""
@@ -1799,36 +1778,31 @@ class TestQuartersEdgeCases:
         _place_belgae_force(state, MANDUBII, leader=True, warbands=4)
         place_piece(state, MANDUBII, AEDUI, WARBAND, 2)
         _place_belgae_force(state, CARNUTES, warbands=8)
+        place_piece(state, CARNUTES, AEDUI, WARBAND, 6)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        if result["leader_move"]:
-            # Must leave enough to keep Control over the 2 Aedui
-            assert result["leader_move"]["warbands_left"] >= 3
+        assert result == [(LEADER, MANDUBII, CARNUTES, 1), (WARBAND, MANDUBII, CARNUTES, 1)]
 
-    def test_quarters_no_move_when_already_at_largest(self):
-        """Quarters: no move when Leader already at largest group."""
+    def test_quarters_adds_warbands_to_leader_already_with_largest_group(self):
         state = _make_state()
         _place_belgae_force(state, MANDUBII, leader=True, warbands=10)
         _place_belgae_force(state, CARNUTES, warbands=3)
+        place_piece(state, MANDUBII, AEDUI, WARBAND, 2)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        assert result["leader_move"] is None
+        assert result == [(WARBAND, CARNUTES, MANDUBII, 2)]
 
     def test_quarters_ariovistus_targets_morini(self):
         """A8.5.6: In Ariovistus, Quarters prefers Morini/Nervii/Treveri."""
         state = _make_state(scenario=SCENARIO_ARIOVISTUS)
         # Ambiorix in Atrebates (adjacent to Morini and Nervii)
         _place_belgae_force(state, ATREBATES, leader=True, warbands=1)
-        # More Warbands in Morini (Ariovistus target)
+        # The two adjacent stacks tie for the largest reachable group.
         _place_belgae_force(state, MORINI, warbands=3)
-        # Even more in a non-target region
-        _place_belgae_force(state, MANDUBII, warbands=6)
+        _place_belgae_force(state, MANDUBII, warbands=3)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        if result["leader_move"]:
-            # Should prefer Morini/Nervii/Treveri over Mandubii per A8.5.6
-            dest = result["leader_move"]["to"]
-            assert dest in (MORINI, NERVII, TREVERI)
+        assert result == [(LEADER, ATREBATES, MORINI, 1)]
 
 
 # ===================================================================
@@ -1938,20 +1912,16 @@ class TestAriovistusModifications:
         assert not _can_battle_in_region(
             state, SUGAMBRI, SCENARIO_PAX_GALLICA, GERMANS)
 
-    def test_a856_quarters_prefers_belgica_treveri(self):
-        """A8.5.6: Quarters first moves to Morini/Nervii/Treveri."""
+    def test_a856_quarters_keeps_largest_stack_as_primary_priority(self):
+        """The expansion substitutes geography for proximity within a size tie."""
         state = _make_state(scenario=SCENARIO_ARIOVISTUS)
-        # Ambiorix in Nervii (one of the target regions)
         _place_belgae_force(state, ATREBATES, leader=True, warbands=1)
         _place_belgae_force(state, NERVII, warbands=4)
         _place_belgae_force(state, MANDUBII, warbands=7)
+        place_piece(state, MANDUBII, AEDUI, WARBAND)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        if result["leader_move"]:
-            dest = result["leader_move"]["to"]
-            # Should prefer Nervii (Ariovistus target) over Mandubii
-            # even though Mandubii has more Warbands
-            assert dest in (MORINI, NERVII, TREVERI)
+        assert result == [(LEADER, ATREBATES, MANDUBII, 1)]
 
     def test_a856_quarters_fallback_when_no_target_reachable(self):
         """A8.5.6: Fall back to normal logic when no target reachable."""
@@ -1959,8 +1929,7 @@ class TestAriovistusModifications:
         # Ambiorix far from Morini/Nervii/Treveri
         _place_belgae_force(state, PROVINCIA, leader=True, warbands=1)
         _place_belgae_force(state, AEDUI_REGION, warbands=5)
+        place_piece(state, AEDUI_REGION, AEDUI, WARBAND)
         refresh_all_control(state)
         result = node_b_quarters(state)
-        if result["leader_move"]:
-            # Falls back to joining most Warbands
-            assert result["leader_move"]["to"] == AEDUI_REGION
+        assert result == [(LEADER, PROVINCIA, AEDUI_REGION, 1)]

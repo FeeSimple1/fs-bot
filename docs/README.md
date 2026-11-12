@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Seventh Liberty or Death comparison](reviews/comparison-audit-round7-2026-11-11.md) | Two of nine repair groups closed, with reproducible witness scripts and repair sequence |
+| [Seventh Liberty or Death comparison](reviews/comparison-audit-round7-2026-11-11.md) | Three of nine repair groups closed, with reproducible witness scripts and repair sequence |
 | [Sixth Liberty or Death comparison](reviews/comparison-audit-round6-2026-11-11.md) | 14 findings with seven witness scripts. All repaired in Batches 1–5. |
 | [Fifth Liberty or Death comparison](reviews/comparison-audit-round5-2026-11-11.md) | 11 findings, all repaired in Batches 1–5, with source evidence and a repair ledger |
 | [Fourth Liberty or Death comparison](reviews/comparison-audit-round4-2026-11-10.md) | 16 findings with executable evidence, all repaired in Batches 1–4 |
@@ -29,6 +29,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [11 November seventh comparison repair Batch 2](reviews/seventh-comparison-batch2-2026-11-11.md)
+  closes non-Roman bot Quarters with full Winter and save-and-resume coverage.
 
 - [11 November seventh comparison repair Batch 1](reviews/seventh-comparison-batch1-2026-11-11.md)
   closes the Battle capability and Stalwart Fort-save findings.

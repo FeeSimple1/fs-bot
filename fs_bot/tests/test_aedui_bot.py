@@ -996,10 +996,10 @@ class TestQuarters:
         """Leave Devastated region with no Ally/Citadel."""
         state = _make_state()
         _place_aedui_force(state, MANDUBII, warbands=3)
+        _place_aedui_force(state, CARNUTES, warbands=1)
         state["spaces"][MANDUBII]["devastated"] = True
         plan = node_a_quarters(state)
-        assert len(plan["leave_devastated"]) > 0
-        assert plan["leave_devastated"][0]["from"] == MANDUBII
+        assert plan == [(WARBAND, MANDUBII, CARNUTES, 3)]
 
     def test_stays_in_devastated_with_ally(self):
         """Stay in Devastated region when Ally present."""
@@ -1008,7 +1008,7 @@ class TestQuarters:
                            ally_tribe=TRIBE_MANDUBII)
         state["spaces"][MANDUBII]["devastated"] = True
         plan = node_a_quarters(state)
-        assert len(plan["leave_devastated"]) == 0
+        assert plan == []
 
 
 # ===================================================================

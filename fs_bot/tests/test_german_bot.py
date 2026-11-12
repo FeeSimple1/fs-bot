@@ -1137,27 +1137,22 @@ class TestNodeGQuarters:
 
     def test_quarters_leader_move_to_largest_group(self):
         state = _make_state()
-        # Leader alone in SUGAMBRI; bigger group in UBII (adjacent)
-        _place_german_force(state, SUGAMBRI, leader=True, warbands=0)
+        _place_german_force(state, SUGAMBRI, leader=True, warbands=2)
         _place_german_force(state, UBII, warbands=4)
+        _place_roman_force(state, UBII, auxilia=1)
         refresh_all_control(state)
         plan = node_g_quarters(state)
-        if plan["leader_move"]:
-            assert plan["leader_move"]["to"] == UBII
+        assert plan == [(LEADER, SUGAMBRI, UBII, 1), (WARBAND, SUGAMBRI, UBII, 1)]
 
     def test_quarters_leaves_devastated_without_ally(self):
         state = _make_state()
         _place_german_force(state, TREVERI, warbands=2)
-        state.setdefault("markers", {}).setdefault(TREVERI, {})[
-            "devastated"] = True
+        state["spaces"][TREVERI]["devastated"] = True
         # Adjacent controlled region: place Germans heavily in SUGAMBRI
         _place_german_force(state, SUGAMBRI, warbands=5)
         refresh_all_control(state)
         plan = node_g_quarters(state)
-        # If TREVERI is Devastated and has no German Ally/Settlement, and
-        # an adjacent controlled region exists, Germans leave.
-        if plan["leave_devastated"]:
-            assert plan["leave_devastated"][0]["from"] == TREVERI
+        assert plan == [(WARBAND, TREVERI, SUGAMBRI, 2)]
 
 
 class TestNodeGSpring:

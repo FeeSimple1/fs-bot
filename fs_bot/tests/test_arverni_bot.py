@@ -1172,9 +1172,7 @@ class TestWinterNodes:
         _place_arverni_force(state, CARNUTES, warbands=5)
         refresh_all_control(state)
         plan = node_v_quarters(state)
-        # Should suggest leaving Mandubii
-        if plan["leave_devastated"]:
-            assert plan["leave_devastated"][0]["from"] == MANDUBII
+        assert plan == [(WARBAND, MANDUBII, CARNUTES, 3)]
 
     def test_quarters_stay_if_ally(self):
         """Quarters: Stay in Devastated region if Ally present."""
@@ -1183,7 +1181,7 @@ class TestWinterNodes:
                              ally_tribe=TRIBE_MANDUBII)
         state["spaces"][MANDUBII]["devastated"] = True
         plan = node_v_quarters(state)
-        assert plan["leave_devastated"] == []
+        assert plan == []
 
     def test_spring_places_leader(self):
         """Spring: Place a Successor at most Arverni pieces."""

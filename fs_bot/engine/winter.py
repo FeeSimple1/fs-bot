@@ -345,11 +345,8 @@ def _quarters_phase(state, relocations=None):
     Each faction relocates its Forces, then forced die rolls for
     pieces in Devastated regions.
 
-    The relocations parameter accepts pre-made player decisions.
-    For Phase 4, this implements the forced/mechanical parts:
-    - German relocation to Germania (§6.3.1)
-    - Warband die rolls in Devastated regions (§6.3.2)
-    - Player-choice relocations can be passed as parameters.
+    With no pre-made plan, ask each player or run the faction's
+    non-player relocation procedure in Quarters order.
 
     Args:
         state: Game state dict. Modified in place.
@@ -395,6 +392,14 @@ def _quarters_phase(state, relocations=None):
                     if faction == ROMANS:
                         from fs_bot.bots.roman_bot import build_np_winter_relocations
                         plan = build_np_winter_relocations(state)
+                    elif faction in state.get('non_player_factions', ()):
+                        from fs_bot.bots.aedui_bot import node_a_quarters
+                        from fs_bot.bots.arverni_bot import node_v_quarters
+                        from fs_bot.bots.belgae_bot import node_b_quarters
+                        from fs_bot.bots.german_bot import node_g_quarters
+                        planners = {AEDUI: node_a_quarters, ARVERNI: node_v_quarters,
+                                    BELGAE: node_b_quarters, GERMANS: node_g_quarters}
+                        plan = {faction: planners[faction](state)}
                     else:
                         plan = {faction: []}
             # An explicitly supplied full-phase plan may include other
@@ -1285,7 +1290,7 @@ def _run_winter_round(state, is_final=False,
 
     # §6.3/A6.3 decisions are collected in faction order, after earlier
     # relocations/desertions have changed the board. Every human faction
-    # can choose; a deferring Roman still receives the standard NP plan.
+    # can choose. Non-player factions and a deferring Roman use bot plans.
     result["phases"]["quarters"] = quarters_phase(
         state, relocations=relocations
     )

@@ -84,6 +84,12 @@ take the later Provincia step if eligible. If Supply changes and the remaining
 Provincia choices reopen, the menu again offers exact visibility cohorts.
 `b`/`board` remains available at these prompts.
 
+During bot Quarters, Belgae, Aedui, base-game Arverni, and Ariovistus
+Germans evacuate unprotected Devastated Regions when they have a legal
+refuge. Belgae, Arverni, and Germans also gather Warbands around their
+Leader while keeping enough pieces behind for Control. You can agree to
+or decline a bot's request to quarter in a Region you Control.
+
 After a player selects a Command or Event, either party can give Resources
 as long as the gift involves the executing faction. Opening gifts can fund
 the Command before you choose its Regions. Choose one or more recipients and

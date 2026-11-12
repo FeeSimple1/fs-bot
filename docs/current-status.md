@@ -21,6 +21,25 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
+The [eighth comparison audit](reviews/comparison-audit-round8-2026-11-12.md) records **11 open groups**:
+four high priority and seven medium. No production repairs were made in this audit.
+
+| Batch | Findings | Scope |
+|---|---|---|
+| 1 | LC8-01, LC8-02 | Correct post-Interlude final-Winter detection and standard solo victory policy. |
+| 2 | BM8-01, BM8-02 | Share Archers Battle orchestration and apply both German Phalanx cancellation effects. |
+| 3 | UI8-01, UI8-02 | Validate Winter Campaign Command scope and restore live human March drop-offs. |
+| 4 | EV8-01, EV8-02, EV8-03 | Repair Event decline conditions and the Roman Forced Marches producer. |
+| 5 | NP8-01, NP8-02 | Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection. |
+
+[Eighth-audit ledger](reviews/comparison-audit-round8-2026-11-12.json) ·
+[Portable evidence](reviews/comparison-audit-round8-2026-11-12-evidence.zip)
+
+All 10,116 existing tests pass. Twenty fresh second-edition bot games have clean
+integrity/completion checks, and 20 mixed cases match at hash seeds 0/987 with no
+hard findings or partials. These checks do not establish that the newly witnessed
+rule defects are absent. Full evidence and fixture limits are in the report.
+
 Batches 1–5 close **all nine repair groups** in the seventh comparison
 audit.
 [Audit report](reviews/comparison-audit-round7-2026-11-11.md)

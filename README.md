@@ -144,6 +144,14 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
+The [eighth comparison audit](docs/reviews/comparison-audit-round8-2026-11-12.md) finds **11 new groups**
+(four high priority, seven medium), organized into five repair batches. All remain open.
+All **10,116 existing tests pass**; 20 fresh audited bot games and 20 mixed-player
+cases are clean, with exact mixed-case replay across two hash seeds. Directed
+witnesses nevertheless expose game-ending, Battle, Winter Campaign and bot defects.
+[Finding ledger](docs/reviews/comparison-audit-round8-2026-11-12.json) ·
+[Portable evidence](docs/reviews/comparison-audit-round8-2026-11-12-evidence.zip)
+
 The seventh comparison audit is complete with **all nine repair groups closed**.
 The final batch accounts for legal Ambushes before selecting Battles and
 uses shaded Baggage Trains' three-Warband limit when planning Raids.

@@ -21,12 +21,24 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The [sixth Liberty or Death comparison audit](reviews/comparison-audit-round6-2026-11-11.md)
-found 14 repair groups. Batches 1–5 closed **all 14** across Events,
-German procedures, Battle, free actions and bot forecasts. The audit
-report includes seven witness scripts and the repair sequence.
+The [seventh Liberty or Death comparison audit](reviews/comparison-audit-round7-2026-11-11.md)
+found **nine open repair groups, two high and seven medium priority**.
+They cover omitted Battle capabilities, skipped non-Roman bot Quarters,
+base German March group limits, incomplete or ineffective bot Events,
+and bot Ambush/Raid planning. Five independently rerun witness scripts
+and a five-batch repair sequence accompany the report. No gameplay code
+changed during this audit.
 
-[Sixth-audit finding ledger](reviews/comparison-audit-round6-2026-11-11.json)
+The fresh existing suite passes all **9,991 tests**. Twenty audited bot
+games complete cleanly, and twenty mixed-player cases match across two
+hash seeds with zero hard findings and one partial plan. These sampled
+checks do not cover the newly demonstrated directed rules failures.
+
+[Seventh-audit finding ledger](reviews/comparison-audit-round7-2026-11-11.json) ·
+[Portable evidence](reviews/comparison-audit-round7-2026-11-11-evidence.zip)
+
+The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
+remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
 

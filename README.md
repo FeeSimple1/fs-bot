@@ -144,6 +144,13 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
+The [seventh comparison audit](docs/reviews/comparison-audit-round7-2026-11-11.md)
+found **nine new open repair groups, two high and seven medium priority**.
+All **9,991 existing tests pass**; fresh second-edition bot and mixed-player
+samples complete cleanly. Five directed witness scripts reproduce the new
+rules failures. The report includes source evidence and a repair sequence;
+gameplay code is unchanged by the audit.
+
 The sixth comparison audit is complete with **14 of 14 findings repaired**.
 The final batch corrects bot Battle forecasts, high-value target checks,
 and Roman Rampage threat detection. All **9,991 tests pass**, 120 audited

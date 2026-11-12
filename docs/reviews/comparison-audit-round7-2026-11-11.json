@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 9,
-  "closed": 3,
-  "open": 6,
+  "closed": 4,
+  "open": 5,
   "severity_counts": {
     "high": 2,
     "medium": 7
@@ -287,7 +287,8 @@
       "findings": [
         "FE7-01"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "seventh-comparison-batch3-2026-11-11.md"
     },
     {
       "batch": 4,
@@ -515,7 +516,8 @@
       "output": "frontend/probe_surus-output.json",
       "fixture": "Controlled build_initial_state Great Revolt seed7, second-edition numeric51 current, all player seats human; permanent Provincia Fort and four Hidden Aedui Warbands at Treveri placed with canonical helpers. No pre-existing German Warbands. All schema and structural checks pass before and after each case.",
       "limits": "Constructed legal sparse positions prove the mechanism; no natural-game frequency or winner impact estimate. The durable path preserves and replays the illegal accepted move correctly; no independent serialization defect is claimed. The same mechanism is one repair group across four interface representations.",
-      "status": "open",
+      "status": "closed",
+      "repair_report": "seventh-comparison-batch3-2026-11-11.md",
       "partition": "frontend",
       "audited_commit": "c67d501711471bf790d805c017c2125b2c254639",
       "evidence_directory": "frontend",

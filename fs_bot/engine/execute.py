@@ -4407,8 +4407,11 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
     are selected. Multiple groups/steps never incur additional origin fees.
     Free Event Commands and base-game German movement remain free.
     """
+    from fs_bot.commands.march import validate_march_group_origins
     from fs_bot.engine.action_windows import window
     from fs_bot.engine.march_arrivals import MarchArrivals, acting_counts
+    validate_march_group_origins(state, faction,
+                                 ((move.get("origin"), move.get("path")) for move in moves))
     window(state, 'march_before_payment', marching_faction=faction)
     select_as_you_go = _after_hop is not None
     selected, costs, deferred, errors = _select_affordable_march_moves(

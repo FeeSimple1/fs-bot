@@ -225,6 +225,11 @@ Each extra group uses an origin already selected for the March. A legacy
 Limited Command rule and the Britannia Special Ability restriction apply to
 both formats and to routes produced by the destination planner.
 
+Base-game German Marches allow one moving group per origin (§3.4.2),
+including for Event grants. This applies to `extra_groups` and
+`explicit_moves` and uses the physical acting faction. Warbands can stay
+behind. Ariovistus German Marches use the ordinary Gallic group rules.
+
 For an origin that stays in place, supply an explicit empty route in
 `details.routes` (or `details.march_plan.routes`):
 
@@ -1541,7 +1546,9 @@ If any newly placed Warbands survive, Surus gives the Event executor an
 `acting_faction: "Germans"`. Choose March, Raid, or Battle using only the newly
 placed surviving German Warbands, from the offered Region. The grant is free,
 selects one Region, allows no SA and cannot be declined when an action is
-possible. Existing residents do not join it. Base-game German Battle keeps
+possible. Existing residents do not join it. March can send one moving
+group to one adjacent Region. A split response leaves the choice pending
+for correction and rolls back the Event. Base-game German Battle keeps
 its intrinsic Ambush requirements. `acting_faction` does not transfer
 voluntary-removal ownership to the chooser or the Germans.
 

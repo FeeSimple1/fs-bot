@@ -62,6 +62,18 @@ class MarchError(CommandError):
     pass
 
 
+def is_base_german_march(state, faction):
+    return faction == GERMANS and state["scenario"] in BASE_SCENARIOS
+
+
+def validate_march_group_origins(state, faction, routes):
+    """§3.4.2 permits one moving group per origin. Empty routes just hide."""
+    if is_base_german_march(state, faction):
+        moving_origins = [origin for origin, path in routes if path]
+        if len(moving_origins) != len(set(moving_origins)):
+            raise MarchError("Germanic March permits only one moving group per origin (§3.4.2)")
+
+
 # ============================================================================
 # COST CALCULATIONS
 # ============================================================================
@@ -978,6 +990,11 @@ def march_from_origin(state, faction, origin, groups_and_destinations, *,
             "flip_result": result from flipping at origin
             "group_results": [march_group result dicts]
     """
+    if is_base_german_march(state, faction):
+        groups_and_destinations = list(groups_and_destinations)
+        validate_march_group_origins(state, faction,
+                                     ((origin, path) for _, path in groups_and_destinations))
+
     # Step 1: Flip Revealed pieces at origin — §3.2.2, §3.3.2, §3.4.2
     flip_result = _flip_origin_pieces(state, origin, faction)
     if _arrivals is not None and _arrivals.in_region(origin):
@@ -1045,6 +1062,9 @@ def execute_march(state, faction, origins_data, *, free=False, limited=False):
     if limited and len(origins_data) > 1:
         raise MarchError(
             "Limited Command: March may select only one origin Region (§2.3.5)")
+
+    validate_march_group_origins(state, faction, (
+        (entry["origin"], path) for entry in origins_data for _, path in entry["groups"]))
 
     result = {
         "faction": faction,

@@ -144,9 +144,10 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The seventh comparison audit has **three of nine repair groups closed**.
-Batch 2 enables non-Roman bot Quarters evacuation and Leader consolidation.
+The seventh comparison audit has **four of nine repair groups closed**.
+Batch 3 enforces the base-game German March group limit for free Commands.
 [Audit report](docs/reviews/comparison-audit-round7-2026-11-11.md) ·
+[Batch 3 repair and validation](docs/reviews/seventh-comparison-batch3-2026-11-11.md) ·
 [Batch 2 repair and validation](docs/reviews/seventh-comparison-batch2-2026-11-11.md) ·
 [Batch 1 repair and validation](docs/reviews/seventh-comparison-batch1-2026-11-11.md)
 

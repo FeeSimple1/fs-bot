@@ -761,7 +761,9 @@ Shaded Surus lets the Event executor choose up to four Aedui Warbands
 by visibility in Treveri or one adjacent Region. Zero is allowed. A
 selected Aedui Warband is still removed if its German replacement is
 unavailable. Only surviving newly placed Germans can take the free
-March, Raid, or Battle.
+March, Raid, or Battle. A base-game German March can send one group from
+each origin to one adjacent Region. You can leave any of its Warbands
+behind.
 
 Seize's successful Rally checks resolve their free Rally
 choices immediately, before the next roll or Forage.

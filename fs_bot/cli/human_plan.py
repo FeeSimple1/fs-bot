@@ -356,6 +356,10 @@ def _collect_march(state, faction, stdin, stdout, single, *, excluded=()):
     if groups:
         plan["groups"] = groups
 
+    from fs_bot.commands.march import is_base_german_march
+    if is_base_german_march(state, faction):
+        return plan
+
     # Sec.3.2.2/3.3.2 (A3.4.2): any number of groups may leave an origin,
     # but no piece may March twice. Keep offering groups from the remaining
     # original pieces, including a Leader left behind by the first group.

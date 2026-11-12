@@ -21,9 +21,9 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-Batches 1 and 2 close three of the seventh comparison audit's nine repair
-groups. **Six remain open** across base German March group limits, bot
-Events, and bot Ambush and Raid planning.
+Batches 1–3 close four of the seventh comparison audit's nine repair
+groups. **Five remain open** across bot Events and bot Ambush and Raid
+planning.
 [Audit report](reviews/comparison-audit-round7-2026-11-11.md)
 
 [Seventh-audit finding ledger](reviews/comparison-audit-round7-2026-11-11.json) ·
@@ -33,6 +33,18 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 11 November seventh comparison repair Batch 3
+
+The March executor rejects a second moving group from a base-game German
+origin, including during a free Event Command. Shaded Surus leaves a
+rejected split choice pending for correction and rolls back the Event.
+The terminal offers one group per origin with the option to leave Warbands
+behind. [Repair and validation](reviews/seventh-comparison-batch3-2026-11-11.md)
+
+All **10,043 tests pass**. All 120 audited bot games match their paired
+Batch 2 outcomes, and 20 mixed-player cases match across two hash seeds
+with zero hard findings. The 100-game balance check passes.
 
 ### 11 November seventh comparison repair Batch 2
 

@@ -144,13 +144,14 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The [eighth comparison audit](docs/reviews/comparison-audit-round8-2026-11-12.md) finds **11 new groups**
-(four high priority, seven medium), organized into five repair batches. All remain open.
-All **10,116 existing tests pass**; 20 fresh audited bot games and 20 mixed-player
-cases are clean, with exact mixed-case replay across two hash seeds. Directed
-witnesses nevertheless expose game-ending, Battle, Winter Campaign and bot defects.
-[Finding ledger](docs/reviews/comparison-audit-round8-2026-11-12.json) ·
-[Portable evidence](docs/reviews/comparison-audit-round8-2026-11-12-evidence.zip)
+Batch 1 closes **two of 11 findings** from the eighth comparison audit.
+The Gallic War can reach its fifth Winter after Interlude, and the solo
+human's threshold crossing before final scoring lets play continue.
+All **10,126 tests pass**, with 120 audited bot games and 20 mixed-player
+cases. The 100-game balance check passes within the reviewed band.
+[Audit report](docs/reviews/comparison-audit-round8-2026-11-12.md) ·
+[Batch 1 repairs and validation](docs/reviews/eighth-comparison-batch1-2026-11-12.md) ·
+[Finding ledger](docs/reviews/comparison-audit-round8-2026-11-12.json)
 
 The seventh comparison audit is complete with **all nine repair groups closed**.
 The final batch accounts for legal Ambushes before selecting Battles and

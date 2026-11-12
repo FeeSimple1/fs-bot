@@ -152,9 +152,8 @@ def _optimates_remove_all_legions(state):
 def victory_phase(state, is_final=False):
     """Execute the Victory Phase — §6.1 / A6.1.
 
-    Check if any faction meets its victory condition. If the game ends,
-    return the winner. If it's the final Winter and no one wins, determine
-    ranking by margins.
+    Check for a threshold winner, including the standard solitaire timing
+    in §8.9. Use victory margins if the final Winter has no threshold winner.
 
     Args:
         state: Game state dict.
@@ -175,10 +174,15 @@ def victory_phase(state, is_final=False):
     # §6.1 ends the game now if this check succeeds. No later window can
     # alter that completed result.
     action_windows.window(state, 'winter_victory')
-    # Check victory — §6.1
     winner = check_any_victory(state)
     if winner is not None:
-        return _finish_victory(state, result, winner=winner)
+        from fs_bot.engine.game_engine import get_sop_factions
+        human_factions = set(get_sop_factions(state)).difference(
+            state.get("non_player_factions", ()))
+        # §8.9: in standard solitaire the player needs to reach final
+        # scoring. Non-player threshold wins still end the game here.
+        if is_final or human_factions != {winner}:
+            return _finish_victory(state, result, winner=winner)
 
     # Card 20 Optimates: on the game's 2nd and each later Victory Phase,
     # if Roman victory exceeds 12 (red Subdued+Dispersed+Allies marker at

@@ -60,6 +60,13 @@ retain their legacy behavior. The board stores current assignments in
 `faction_owners`. Frontend metadata saves `setup_faction_owners` for replay.
 At the Gallic War Interlude the German player ID follows the Arverni role.
 
+In standard solitaire, the sole human Faction wins by having the highest
+margin at final scoring.
+The Winter Victory Phase still ends immediately for a qualifying Non-player.
+`check_victory` continues to report threshold status for scoring and Frost
+checks (§7.2, §8.4.4, §8.9). The Victory Phase applies the timing rule to
+both current player assignments and legacy `non_player_factions` saves.
+
 In a paired game, a Winter victory result adds `winner_player`,
 `winner_factions`, and `player_rankings`. The player ID is `None` for a
 Non-player winner. Each ranking row has `player` (the player ID), `factions`,

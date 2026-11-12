@@ -324,6 +324,8 @@ agreement or casualty choices.
 
 These summarize threshold checks in Chapter 7/A7. Final-Winter ranking,
 Non-player victory priority, and scenario-specific exceptions also apply.
+In standard solitaire, the human needs the highest margin at final scoring.
+A Non-player can end the game by qualifying in any Victory Phase (§8.9).
 A Spare Factions pair uses its lower margin and needs both Factions to pass
 their thresholds for early victory. Great Revolt's Arverni and Belgae pair
 uses its higher margin and qualifies when either Faction passes. Use the

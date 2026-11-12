@@ -29,7 +29,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS, GALLIC_FACTIONS,
     # Scenarios
-    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS,
+    BASE_SCENARIOS, ARIOVISTUS_SCENARIOS, SCENARIO_GALLIC_WAR,
     # Eligibility
     ELIGIBLE, INELIGIBLE,
     # Pass resources — §2.3.3, A2.3.3
@@ -744,8 +744,8 @@ def resolve_winter_card(state, britannia_decision=None,
                         roman_dispersed_keep=None):
     """Handle a Winter card — §2.4.
 
-    Triggers a Winter Round (§6.0). The winter_count is tracked to
-    determine final Winter (§2.4.1).
+    Triggers a Winter Round (§6.0). The drawn Winter is final when no
+    Winter cards remain in the draw deck (§2.4.1).
 
     For SCENARIO_GALLIC_WAR, the Gallic War Interlude (A2.1) replaces
     the rest of the 3rd Winter Round if no faction has won. Pass
@@ -760,19 +760,13 @@ def resolve_winter_card(state, britannia_decision=None,
     Returns:
         Dict with winter round results.
     """
-    total_winters = _count_winter_cards_in_game(state)
-    is_final = (state["winter_count"] + 1 >= total_winters)
-    from fs_bot.rules_consts import SCENARIO_GALLIC_WAR
+    # The current Winter has already left the deck. The remaining deck
+    # holds every future Winter, including after the Interlude rebuild.
+    is_final = not any(is_winter_card(card) for card in state["deck"])
     if (state["scenario"] == SCENARIO_GALLIC_WAR
             and not state.get("interlude_completed", False)):
-        # A2.1 (The Gallic War): the first half's 3rd Victory Phase does
-        # NOT end the game on victory margins — "If the game does not end
-        # by the 3rd Victory Phase", the Interlude resets the board and
-        # the second half (Pax Gallica?-style deck) continues. Outright
-        # victory still ends the first half inside victory_phase. Without
-        # this, is_final=True at the 3rd Winter declared a margins winner
-        # and the Interlude was UNREACHABLE — every Gallic War game was
-        # byte-identical to Ariovistus (found by play_quality telemetry).
+        # A2.1: if the third Victory Phase produces no winner, the
+        # Interlude supplies a new deck and play continues.
         is_final = False
 
     winter_result = run_winter_round(
@@ -787,45 +781,20 @@ def resolve_winter_card(state, britannia_decision=None,
     }
 
 
-def _count_winter_cards_in_game(state):
-    """Count total Winter cards in the game (played + remaining in deck).
-
-    Used to determine if the current Winter is the final one.
-    """
-    count = 0
-    for card_id in state["played_cards"]:
-        if is_winter_card(card_id):
-            count += 1
-    for card_id in state["deck"]:
-        if is_winter_card(card_id):
-            count += 1
-    # The Gallic War Interlude rebuilds the deck and clears played_cards,
-    # losing the first half's Winters from the count above. winter_count
-    # tracks every Winter actually resolved and survives the reset — take
-    # the larger base so the second half's LAST Winter (not its second)
-    # is final (A2.1).
-    played_winters = sum(1 for c in state["played_cards"]
-                         if is_winter_card(c))
-    return count - played_winters + max(played_winters,
-                                        state.get("winter_count", 0))
-
-
 def next_winter_is_final(state):
     """Read the live deck for NP final-year decisions (§8.1.1, A66).
 
-Like Winter resolution, the Gallic War's first half continues into its
-Interlude instead of ending on the third Winter. After that reset, resolved
-Winter counts may exceed the rebuilt played-card pile; use the same counting
-helper as the Winter engine. An old explicit flag remains useful to raw
-callers that supply no Winter cards, but never overrides a populated deck.
-"""
-    from fs_bot.rules_consts import SCENARIO_GALLIC_WAR
+    A single remaining Winter is the final one. The Gallic War's first
+    half can continue into the Interlude and its replacement deck. Raw
+    callers with no Winter cards can still supply an explicit final_year.
+    """
     if (state["scenario"] == SCENARIO_GALLIC_WAR
             and not state.get("interlude_completed", False)):
         return False
     deck = state.get("deck", [])
-    if any(is_winter_card(card) for card in deck):
-        return state.get("winter_count", 0) + 1 >= _count_winter_cards_in_game(state)
+    remaining_winters = sum(1 for card in deck if is_winter_card(card))
+    if remaining_winters:
+        return remaining_winters == 1
     # The metadata API and older direct-call fixtures use W1-W5 identities;
     # live scenario decks use the canonical WINTER_CARD sentinel instead.
     legacy_winters = sum(card in ("W1", "W2", "W3", "W4", "W5") for card in deck)

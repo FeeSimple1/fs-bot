@@ -21,12 +21,12 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The [eighth comparison audit](reviews/comparison-audit-round8-2026-11-12.md) records **11 open groups**:
-four high priority and seven medium. No production repairs were made in this audit.
+The eighth comparison audit has **two repaired groups and nine open**.
+[Audit report](reviews/comparison-audit-round8-2026-11-12.md)
 
 | Batch | Findings | Scope |
 |---|---|---|
-| 1 | LC8-01, LC8-02 | Correct post-Interlude final-Winter detection and standard solo victory policy. |
+| 1 | LC8-01, LC8-02 | Closed. [Post-Interlude final Winter and standard solo victory](reviews/eighth-comparison-batch1-2026-11-12.md). |
 | 2 | BM8-01, BM8-02 | Share Archers Battle orchestration and apply both German Phalanx cancellation effects. |
 | 3 | UI8-01, UI8-02 | Validate Winter Campaign Command scope and restore live human March drop-offs. |
 | 4 | EV8-01, EV8-02, EV8-03 | Repair Event decline conditions and the Roman Forced Marches producer. |
@@ -34,11 +34,6 @@ four high priority and seven medium. No production repairs were made in this aud
 
 [Eighth-audit ledger](reviews/comparison-audit-round8-2026-11-12.json) ·
 [Portable evidence](reviews/comparison-audit-round8-2026-11-12-evidence.zip)
-
-All 10,116 existing tests pass. Twenty fresh second-edition bot games have clean
-integrity/completion checks, and 20 mixed cases match at hash seeds 0/987 with no
-hard findings or partials. These checks do not establish that the newly witnessed
-rule defects are absent. Full evidence and fixture limits are in the report.
 
 Batches 1–5 close **all nine repair groups** in the seventh comparison
 audit.
@@ -51,6 +46,19 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 12 November eighth comparison repair Batch 1
+
+The last Winter card in the rebuilt Gallic War deck triggers final scoring.
+In standard solitaire, an early human threshold crossing lets play continue.
+The Victory Phase still applies bot threshold wins and Optimates.
+[Repair and validation](reviews/eighth-comparison-batch1-2026-11-12.md)
+
+All **10,126 tests pass**. All 120 audited bot games complete with clean
+integrity and ranking checks. Twenty mixed-player cases match across two hash
+seeds with zero hard findings and zero partials. Two Gallic War games continue
+to their fifth post-Interlude Winter and change winners. The 100-game balance
+check passes within the 15-point band.
 
 ### 11 November seventh comparison repair Batch 5
 

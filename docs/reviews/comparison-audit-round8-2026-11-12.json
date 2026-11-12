@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 0,
-  "open": 11,
+  "closed": 2,
+  "open": 9,
   "severity_counts": {
     "high": 4,
     "medium": 7
@@ -320,7 +320,9 @@
         "LC8-01",
         "LC8-02"
       ],
-      "scope": "Correct post-Interlude final-Winter detection and standard solo victory policy."
+      "scope": "Correct post-Interlude final-Winter detection and standard solo victory policy.",
+      "status": "closed",
+      "report": "eighth-comparison-batch1-2026-11-12.md"
     },
     {
       "batch": 2,
@@ -361,7 +363,7 @@
       "id": "LC8-01",
       "title": "Gallic War ends at its fourth post-Interlude Winter while the fifth remains in the deck",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "repair_batch": 1,
       "expected": "With no Faction passing a victory threshold, the fourth of five second-half Winter cards must continue through the remaining Winter phases and into the final year. The fifth second-half Winter is the last Winter and forces final scoring.",
       "observed": "At the fourth second-half Winter, cumulative winter_count is 6, rebuilt played_cards contains 4 Winters, and the deck still contains 1 Winter. play_card reports is_final=true and game_over=true, performs only Victory, and leaves that fifth Winter unplayed. No Faction passes its threshold: Romans 15; Arverni 6 off-map Legions and 7 Allies/Citadels; Aedui 1; Belgae 8. Validated save/load reproduces the same outcome.",
@@ -419,13 +421,14 @@
         "lifecycle/witness_lifecycle.py",
         "lifecycle/results.json"
       ],
-      "original_lane_ledger": "lifecycle/findings.json"
+      "original_lane_ledger": "lifecycle/findings.json",
+      "repair_report": "eighth-comparison-batch1-2026-11-12.md"
     },
     {
       "id": "LC8-02",
       "title": "A sole human player wins immediately at a non-final Winter despite the standard solitaire rule",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "repair_batch": 1,
       "expected": "Under standard \u00a78.9, a sole human player does not win before final Winter. A human threshold crossing alone must leave this non-final Victory Phase open, while a Non-player threshold winner still ends the game. Multiplayer threshold victories and final-Winter ranking retain their ordinary behavior.",
       "observed": "A supported setup with only Romans assigned to a human and the other three seats Non-player has Roman score16 at the first Reconquest Winter; three Winter cards remain. play_card reports is_final=false but game_over=true and winner=Romans, then stops after Victory. No Easy option was selected or represented. The validated save/load repeat has exactly the same result.",
@@ -473,7 +476,8 @@
         "lifecycle/witness_lifecycle.py",
         "lifecycle/results.json"
       ],
-      "original_lane_ledger": "lifecycle/findings.json"
+      "original_lane_ledger": "lifecycle/findings.json",
+      "repair_report": "eighth-comparison-batch1-2026-11-12.md"
     },
     {
       "id": "BM8-01",

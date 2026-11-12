@@ -400,6 +400,14 @@ You can also install this checkout with `python -m pip install .` and use
 A setup wizard asks for the scenario and who runs each Faction. For a first
 game, try **The Great Revolt** as the **Arverni**.
 
+In standard solitaire, one human Faction plays against three Non-players.
+The human must survive to final scoring and place first by victory margin.
+A Non-player that passes its threshold wins in any Victory Phase, including
+the final one (§8.9).
+
+The Gallic War Interlude supplies a new deck with five Winter cards. Its
+fifth Winter is the final one for scoring by margins (§2.4.1, A2.1).
+
 ### Spare Factions
 
 Choose **Human** for a separate player or **Human with Aedui** or

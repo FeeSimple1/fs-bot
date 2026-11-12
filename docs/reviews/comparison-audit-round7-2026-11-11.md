@@ -1,6 +1,8 @@
 # Seventh Falling Sky comparison audit — 11 November 2026
 
-**The audit found nine new repair groups, two high and seven medium priority. All nine are open.** The sixth audit's fourteen findings remain closed. This pass records defects and repair scopes; gameplay code is unchanged.
+**The audit found nine repair groups, two high and seven medium priority.**
+Batch 1 closes BM7-01 and BM7-02. Seven groups remain open. The findings
+below describe the audited revision. [Batch 1 repairs and validation](seventh-comparison-batch1-2026-11-11.md)
 
 Audited Falling Sky commit `c67d501711471bf790d805c017c2125b2c254639`. Python-source SHA-256 `2ae5b3cedb16cfed6969442ebe9fefba99ed0f03933cd30c78a4deb6c002e801` across 602 files. Liberty or Death was inspected at `2991ea279062773548ec390a1da75f3e85381702`. Its implementation patterns guided the search; Falling Sky's supplied references and thirteen adopted provisional rulings govern the findings.
 

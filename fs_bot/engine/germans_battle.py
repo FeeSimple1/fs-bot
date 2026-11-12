@@ -29,7 +29,7 @@ from fs_bot.board.control import refresh_all_control
 from fs_bot.battle.losses import calculate_losses
 from fs_bot.battle.resolve import resolve_battle
 from fs_bot.commands.common import CommandError
-from fs_bot.engine import action_windows, slingers_choice
+from fs_bot.engine import action_windows, battle_capabilities, horse_choice, slingers_choice
 from fs_bot.engine.diviciacus import defense_scope
 
 
@@ -129,6 +129,7 @@ def germans_phase_battle(state, *, force_ambush=False):
         return _germans_phase_battle(state, force_ambush=force_ambush)
 
 
+@horse_choice.command_scope
 def _germans_phase_battle(state, *, force_ambush=False):
     """Execute Germans Phase Battle with Ambush — §6.2.4.
 
@@ -170,7 +171,7 @@ def _germans_phase_battle(state, *, force_ambush=False):
     # Choose order of Battles randomly — §6.2.4
     rng.shuffle(battle_regions)
     scheduled_regions = set(battle_regions)
-    slingers_used = False
+    capabilities_used = set()
 
     def new_regions():
         # A newly entering Leader can supply an enemy where none existed
@@ -195,11 +196,10 @@ def _germans_phase_battle(state, *, force_ambush=False):
 
         # §3.4.4 selects a single defender in each applicable Region.
         with defense_scope(state, region, GERMANS, defender):
-            if not slingers_used and slingers_choice.is_active_for(state, GERMANS):
-                potential = battle_regions[index + 1:] + new_regions()
-                if slingers_choice.choose_for_queue(state, region, GERMANS, defender, potential):
-                    slingers_choice.fire(state, region, GERMANS)
-                    slingers_used = True
+            potential = battle_regions[index + 1:] + new_regions()
+            if battle_capabilities.select_for_queue(
+                    state, region, GERMANS, defender, potential, capabilities_used):
+                slingers_choice.fire(state, region, GERMANS)
             battle_result = resolve_battle(state, region, GERMANS, defender, is_ambush=True)
         result['battles'].append({'region': region, 'defender': defender, 'result': battle_result})
         result['regions'].append(region)

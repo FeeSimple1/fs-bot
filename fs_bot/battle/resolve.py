@@ -247,6 +247,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
         is_ambush=ambush_attack and not caesar_counterattack_allowed,
         caesar_counterattacks=caesar_counterattack_allowed,
         loss_order=attack_loss_order,
+        inflicting_faction=attacking_faction,
         abatis_defender=defender_abatis_active(
             state, region, attacking_faction, defending_faction),
     )
@@ -285,6 +286,7 @@ def resolve_battle(state, region, attacking_faction, defending_faction,
             is_retreat=False,
             is_ambush=False,
             loss_order=defend_loss_order,
+            inflicting_faction=defending_faction,
         )
         result["counterattack"] = counter_result
         # A33 Wailing Women: unless Ariovistus is on the map, remove the

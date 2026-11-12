@@ -90,16 +90,16 @@ surviving targets. The [agent interface](AGENT_INTERFACE.md) describes the
 physical identities and save/replay behavior.
 
 A Roman `slingers_region` request selects one offered Region for unshaded
-Balearic Slingers before an enemy ordinary/free Battle plan. Return an offered
-`region` or explicit default. There is no decline; zero-Loss Regions can still
-be legal choices. Its accepted answer survives later Battle reactions.
-The [agent interface](AGENT_INTERFACE.md) lists the prospective-queue limit.
+Balearic Slingers before an enemy Battle plan, including fixed Event Battles.
+Return an offered `region` or explicit default. The choice is mandatory, and
+zero-Loss Regions can still be legal choices. Its accepted answer survives
+later Battle reactions. [Agent interface](AGENT_INTERFACE.md)
 
 A `horse_region` request belongs to Card 59's Roman or Gallic owner. Select
 an offered `region`, or explicitly delegate. Only the unshaded Roman request
-permits `{"decline":true}`. Shaded protection data is informational; choosing
-a guarded Region does not bypass its protection. See the
-[agent interface](AGENT_INTERFACE.md) for the prospective-queue limitation.
+permits `{"decline":true}`. Protection still applies when you select a guarded
+Region. Fixed Event Battles show the protection that applies under the
+Event's printed terms. [Agent interface](AGENT_INTERFACE.md)
 
 In a prospective queue, `horse_window` offers `activate`, `reserve` when a
 later candidate exists, or `decline` for the whole Command. Use only an action

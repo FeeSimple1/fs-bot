@@ -82,10 +82,4 @@ def fire(state, region, attacker):
     auxilia = count_pieces(state, region, rc.ROMANS, rc.AUXILIA)
     losses = auxilia if is_capability_active(state, 59, rc.EVENT_UNSHADED) else auxilia // 2
     if losses:
-        resolve_losses(state, region, attacker, losses)
-
-
-def fire_for_single_battle(state, region, attacker, defender):
-    """Select and apply Slingers for a Command with one fixed Battle."""
-    if choose_region(state, attacker, [{'region': region, 'target': defender}]) == region:
-        fire(state, region, attacker)
+        resolve_losses(state, region, attacker, losses, inflicting_faction=rc.ROMANS)

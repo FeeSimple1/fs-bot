@@ -1216,10 +1216,10 @@ and `b`/`board` inspection. Older cross-revision transcripts that passed this
 formerly automatic step may stop for the newly required choice. This repair
 does not close BE-09's separate Card 13/59 Region-selection gaps.
 
-`slingers_region` goes to Romans at the start of an enemy's ordinary or fixed
-free Battle plan, including single German Ambushes, when Roman Auxilia are
-present in any selected Battle Region. Stalwart cancels the choice and fire
-against attacking Germans.
+`slingers_region` goes to Romans at the start of an enemy's selected Battle
+plan, including fixed Event Battles and single German Ambushes, when Roman
+Auxilia are present in any selected Region. Stalwart cancels the choice and
+fire against attacking Germans.
 The request contains `attacker`, ordered `legal_regions`, `defenders` and
 per-Region `auxilia` counts. Return `{"region":"Mandubii"}` for one offered
 Region or explicit `{"use_default":true}`. Card 13 unshaded says to choose
@@ -1243,7 +1243,7 @@ the corrected NPC priority/fire rate. The private prospective Battle queue
 used by numeric 67's NPC branch uses the PR-13 live windows below. Horse's
 ordinary/free-plan choices and optional unshaded queue windows are implemented.
 
-`horse_region` goes to Card 59's owner before an ordinary/free Battle plan.
+`horse_region` goes to Card 59's owner before an ordinary or fixed free Battle plan.
 Unshaded belongs to Romans and offers their actual attacking/defending Battles;
 third-party Roman presence alone does not make a normal Horse Battle bonus.
 Shaded belongs to the recorded Gallic owner and offers that owner's actual
@@ -1257,8 +1257,10 @@ Region; selecting a currently protected Region is legal, but does not bypass
 its live protection. Attack doubling is blocked by a defending Fort/Citadel
 or active Abatis. The owner's defensive counterattack is blocked by its own
 Citadel, while Abatis alone permits doubling. Existing A31 cancellation of
-Abatis is respected. Auxilia's unshaded full-Loss rate still precedes normal
-halving and rounding. Zero-Auxilia Regions can be selected. Non-player/default
+Abatis is respected. For fixed Event Battles, `blocked` reflects the printed
+exceptions, such as Morasses ignoring a defending Citadel. Auxilia's unshaded
+full-Loss rate still precedes normal halving and rounding. Zero-Auxilia
+Regions can be selected. Non-player/default
 selection uses the first currently applicable selected Battle per §8.3.3.
 
 Each Battle Command scopes and clears its own Horse flags on completion or
@@ -1288,9 +1290,9 @@ earlier acceptance, rollback/save/resume/replay remain supported. PR-11's
 forecast branches these optional human choices and conservatively ranks the
 lower predicted Legion Losses; it consumes no live decisions or RNG.
 
-`capability_window` implements [PR-13](docs/provisional-rulings.md#pr-13)
-for Card 13 unshaded and Card 59 shaded in prospective queues. The Germans
-Phase and unshaded German Allegiances use this request for Slingers. It carries
+`capability_window` implements PR-13 for Card 13 unshaded and Card 59 shaded
+in prospective queues. The Arverni and Germans Phases and unshaded German
+Allegiances use the same one-use window. It carries
 `card_id`, `side`, `owner`, `region`, `attacker`, `defender`, live Roman
 `auxilia`, current `blocked` status, `potential_regions` and `actions`.
 Respond `{"action":"activate"}` or, while later candidates remain,
@@ -1307,8 +1309,8 @@ pre-fire. Each capability's use is independent. Terminal inspection, strict
 pending validation, rollback, earlier accepted responses, save/load and replay
 are supported. PR-11 prediction branches legal human responses without live
 input or random-state consumption. Older cross-revision histories can stop at
-the newly required request or diverge under expanded forecasts. PR-13 remains
-provisional, subject to official correction.
+the newly required request or diverge under corrected effects. PR-13 remains
+provisional, subject to official correction. [Provisional ruling](docs/provisional-rulings.md#pr-13)
 
 `march_cohort` identifies physical pieces after origin flipping (`formation`)
 or for the exact quantities in an Event's authored `dropoff`. For a request

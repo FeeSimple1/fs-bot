@@ -76,8 +76,7 @@ def _validate(state, response):
 
 def _resolve(state, executor):
     from fs_bot.engine.execute import _resolve_card58_german_ambush_default, _march_with_harassment
-    from fs_bot.engine.slingers_choice import fire_for_single_battle
-    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.engine.battle_capabilities import resolve_single
     from fs_bot.commands.march import _flip_origin_pieces
     from fs_bot.engine.action_windows import window
     if executor in state.get('non_player_factions', ()):
@@ -111,9 +110,8 @@ def _resolve(state, executor):
         return [{'free_action': 'ambush', 'flag': FLAG, 'region': destination,
                  'marches': movement, 'warbands_marched': marched, 'executed': bool(marched),
                  'declined_no_effect': not bool(marched), 'reason': 'No German/Roman force remains for Ambush.'}]
-    fire_for_single_battle(state, destination, rc.GERMANS, rc.ROMANS)
-    battle = resolve_battle(state, destination, rc.GERMANS, rc.ROMANS,
-                           is_ambush=True, ignore_fort=True)
+    battle = resolve_single(state, destination, rc.GERMANS, rc.ROMANS,
+                            is_ambush=True, ignore_fort=True)
     return [{'free_action': 'ambush', 'flag': FLAG, 'region': destination,
              'defender': rc.ROMANS, 'warbands_gathered': total,
              'warbands_marched': marched, 'marches': movement, 'result': battle}]

@@ -148,23 +148,27 @@ and the Citadel's Tribe, and `b`/`board` inspects the live post-combat board.
 Provincia's permanent Fort can never be removed and is excluded.
 
 Unshaded Balearic Slingers lets Romans select one Region in an enemy Battle
-Command, including free German Ambushes and the Germans Phase. You can use
+Command, including fixed Event Battles and automatic Ambushes. You can use
 it while defending or when the attacker is fighting a third Faction. The menu
 shows Roman Auxilia counts. A selected Region with zero or one Auxilia can cause zero
 initial Losses. There is no separate decline. If both Slingers and Germanic
 Horse are unshaded, the initial fire inflicts one Loss per Auxilia. Slingers
-is used only once in the Command. The Germans Phase and unshaded German
-Allegiances use the live PR-13 choices below.
+is used only once in the Command. The Arverni and Germans Phases and unshaded
+German Allegiances use the live PR-13 choices below.
 
 Stalwart German Phalanx cancels Slingers fire against attacking Germans.
+It also cancels the Fort protection from unshaded Ballistae. Fort saves
+against German Attack or Counterattack Losses remove the Fort on 1–3.
 Inflexible cancels the shaded Legio X limit when Caesar attacks German
 defenders, so each of his Legions inflicts two Losses before halving.
 
-Germanic Horse now asks its owner to select a Region in ordinary/free Battle
-plans. Romans may decline the unshaded bonus. The shaded Gallic owner selects
-one Region for attack or counterattack; its menu shows current protection.
+Germanic Horse asks its owner to select a Region in ordinary and free Battle
+plans, including fixed Event Battles. Romans may decline the unshaded bonus.
+The shaded Gallic owner selects one Region for attack or counterattack.
+The menu shows current protection.
 The Gallic faction that plays the shaded Event takes the card.
 A defending Fort, Citadel or active Abatis blocks attacking Horse doubling.
+Unshaded Morasses ignores its defender's Citadel for this calculation.
 A defending owner's Citadel blocks its counterattack doubling; Abatis alone
 does not. Choosing a currently blocked Region does not bypass that restriction.
 Use `b`/`board` to inspect the live position. The chosen Region survives later

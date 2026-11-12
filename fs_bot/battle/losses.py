@@ -372,7 +372,7 @@ from fs_bot.battle.elite import loss_scope
 def resolve_losses(state, region, faction, num_losses, *,
                    is_retreat=False, is_ambush=False,
                    caesar_counterattacks=False,
-                   loss_order=None, abatis_defender=False):
+                   loss_order=None, abatis_defender=False, inflicting_faction=None):
     """Resolve Losses for a faction, removing pieces one by one.
 
     The owner chooses which pieces to lose (for a bot, this will be
@@ -399,6 +399,7 @@ def resolve_losses(state, region, faction, num_losses, *,
         region: Region where battle occurs.
         faction: Faction taking Losses.
         num_losses: Number of Losses to resolve.
+        inflicting_faction: Opposing Faction that caused these Losses.
         is_retreat: If True, Allies/Forts/Citadels must go FIRST.
         is_ambush: If True, hard targets auto-removed (no roll).
         caesar_counterattacks: If True (Caesar rolled high enough), hard
@@ -523,11 +524,13 @@ def resolve_losses(state, region, faction, num_losses, *,
             else:
                 threshold = LOSS_ROLL_THRESHOLD
                 # Card 10 unshaded: "Battle rolls remove Forts on 1-2
-                # not 1-3" — Roman Forts are more defensible.
+                # not 1-3". Stalwart cancels this protection against Germans.
                 if piece_type == FORT:
                     from fs_bot.cards.capabilities import (
                         is_capability_active as _ica10)
-                    if _ica10(state, 10, EVENT_UNSHADED):
+                    if (_ica10(state, 10, EVENT_UNSHADED)
+                            and not (inflicting_faction == GERMANS
+                                     and _ica10(state, 'A31', EVENT_SHADED))):
                         threshold = 2
 
             if roll <= threshold:

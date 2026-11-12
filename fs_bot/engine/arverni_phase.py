@@ -60,7 +60,8 @@ from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.raid import max_raiders_per_region
 from fs_bot.battle.losses import calculate_losses
 from fs_bot.battle.resolve import resolve_battle
-from fs_bot.engine import action_windows
+from fs_bot.engine import action_windows, battle_capabilities, horse_choice, slingers_choice
+from fs_bot.engine.diviciacus import defense_scope
 
 
 # ============================================================================
@@ -773,6 +774,7 @@ def _get_raid_targets(state, region, target_faction):
 # A6.2.4 ARVERNI BATTLE WITH AMBUSH
 # ============================================================================
 
+@horse_choice.command_scope
 def _arverni_phase_battle(state, target_region, target_faction):
     """Execute Arverni Battle with Ambush per A6.2.4.
 
@@ -796,8 +798,9 @@ def _arverni_phase_battle(state, target_region, target_faction):
     ]
     rng.shuffle(other_regions)
     battle_regions.extend(other_regions)
+    capabilities_used = set()
 
-    for region in battle_regions:
+    for index, region in enumerate(battle_regions):
         # Check if Arverni can Ambush anyone here
         hidden = count_pieces_by_state(
             state, region, ARVERNI, WARBAND, HIDDEN
@@ -832,12 +835,19 @@ def _arverni_phase_battle(state, target_region, target_faction):
             if not _ambush_would_cause_loss(state, region, defending_faction):
                 continue
 
-            battle_result = resolve_battle(
-                state, region,
-                attacking_faction=ARVERNI,
-                defending_faction=defending_faction,
-                is_ambush=True,
-            )
+            # Later candidates are inspected without choosing targets or
+            # advancing the Phase's prescribed random order.
+            potential = []
+            for later in battle_regions[index + 1:]:
+                later_hidden = count_pieces_by_state(state, later, ARVERNI, WARBAND, HIDDEN)
+                if any(_eligible_ambush_defenders(state, later, later_hidden)):
+                    potential.append(later)
+            with defense_scope(state, region, ARVERNI, defending_faction):
+                if battle_capabilities.select_for_queue(
+                        state, region, ARVERNI, defending_faction, potential, capabilities_used):
+                    slingers_choice.fire(state, region, ARVERNI)
+                battle_result = resolve_battle(
+                    state, region, ARVERNI, defending_faction, is_ambush=True)
             result["battles"].append({
                 "region": region,
                 "defender": defending_faction,
@@ -848,17 +858,10 @@ def _arverni_phase_battle(state, target_region, target_faction):
     return result
 
 
-def _get_battle_targets(state, region, target_faction, arverni_hidden):
-    """Get ordered battle targets per A6.2.4 priority.
-
-    Target faction first (if there and would cause loss),
-    then players, then non-players.
-    """
-    non_players = state.get("non_player_factions", set())
-    targets = []
-    player_targets = []
-    np_targets = []
-
+def _eligible_ambush_defenders(state, region, arverni_hidden):
+    """List possible defenders before ordering or capability choices."""
+    if not arverni_hidden:
+        return
     for faction in FACTIONS:
         if faction == ARVERNI:
             continue
@@ -870,9 +873,17 @@ def _get_battle_targets(state, region, target_faction, arverni_hidden):
         )
         if arverni_hidden <= enemy_hidden:
             continue
-        if not _ambush_would_cause_loss(state, region, faction):
-            continue
+        if _ambush_would_cause_loss(state, region, faction):
+            yield faction
 
+
+def _get_battle_targets(state, region, target_faction, arverni_hidden):
+    """Order legal defenders by A6.2.4's target, player and non-player priorities."""
+    non_players = state.get("non_player_factions", set())
+    targets = []
+    player_targets = []
+    np_targets = []
+    for faction in _eligible_ambush_defenders(state, region, arverni_hidden):
         if faction == target_faction:
             targets.insert(0, faction)
         elif faction not in non_players:

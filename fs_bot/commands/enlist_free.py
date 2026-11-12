@@ -164,9 +164,7 @@ def execute_free_enlist(state, plan):
             return {"flipped": flipped, "march": marched}
 
     if kind == "german_battle":
-        from fs_bot.engine.execute import _battle_retreat_options
-        from fs_bot.engine.slingers_choice import fire_for_single_battle
-        from fs_bot.battle.resolve import resolve_battle
+        from fs_bot.engine.battle_capabilities import resolve_single
         target = plan.get("target")
         if target not in FACTIONS or target == GERMANS or not count_pieces(state, region, target):
             raise CommandError("Enlist Battle requires another Faction with pieces in the Region")
@@ -179,10 +177,8 @@ def execute_free_enlist(state, plan):
             if selected[HIDDEN] <= enemy_hidden:
                 raise CommandError("Base-game Germans may Battle only where they can Ambush")
         with free_action_scope(state, GERMANS), _force_scope(state, region, selected):
-            fire_for_single_battle(state, region, GERMANS, target)
-            retreat = _battle_retreat_options(
-                state, region, GERMANS, target, base)
-            return resolve_battle(state, region, GERMANS, target, is_ambush=base, **retreat)
+            return resolve_single(state, region, GERMANS, target,
+                                  is_ambush=base, choose_retreat=True)
 
     if kind == "german_raid":
         from fs_bot.commands.raid import raid_in_region

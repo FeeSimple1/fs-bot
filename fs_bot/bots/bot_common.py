@@ -1249,6 +1249,7 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
         attack = resolve_losses(
             sim, region, defending_faction, inflicted, is_ambush=ambush_blocks_counter,
             is_retreat=is_retreat,
+            inflicting_faction=attacking_faction,
             abatis_defender=defender_abatis_active(sim, region, attacking_faction, defending_faction),
             loss_order=loss_order)
         # Counterattack Loss COUNT from the surviving Defender.

@@ -28,10 +28,11 @@ def command_scope(function):
     return scoped
 
 
-def attack_blocked(state, region, attacker, defender):
+def attack_blocked(state, region, attacker, defender, *, ignore_fort=False,
+                   ignore_citadel=False):
     """A defending Fort/Citadel or active Abatis prevents shaded doubling."""
-    if (count_pieces(state, region, defender, rc.FORT)
-            or count_pieces(state, region, defender, rc.CITADEL)):
+    if ((not ignore_fort and count_pieces(state, region, defender, rc.FORT))
+            or (not ignore_citadel and count_pieces(state, region, defender, rc.CITADEL))):
         return True
     abatis = state.get('markers', {}).get(region, {}).get(rc.MARKER_ABATIS) == defender
     if (defender == rc.GERMANS and state.get('event_modifiers', {}).get(
@@ -42,7 +43,8 @@ def attack_blocked(state, region, attacker, defender):
     return abatis
 
 
-def selection_request(state, attacker, battle_plan, side):
+def selection_request(state, attacker, battle_plan, side, *, ignore_fort=False,
+                      ignore_citadel=False):
     """Offer the owner's actual Battles; blocked/zero-Loss choices stay legal."""
     owner = rc.ROMANS if side == rc.EVENT_UNSHADED else get_capability_owner(state, 59)
     if owner is None or (side == rc.EVENT_SHADED and owner not in rc.GALLIC_FACTIONS):
@@ -58,7 +60,8 @@ def selection_request(state, attacker, battle_plan, side):
             defenders.setdefault(region, defender)
     if not defenders:
         return None
-    blocked = {region: (attack_blocked(state, region, attacker, defender)
+    blocked = {region: (attack_blocked(state, region, attacker, defender,
+                        ignore_fort=ignore_fort, ignore_citadel=ignore_citadel)
                         if attacker == owner else bool(count_pieces(
                             state, region, owner, rc.CITADEL)))
                for region, defender in defenders.items()} if side == rc.EVENT_SHADED else {}
@@ -89,14 +92,16 @@ def validate_response(state, request, response):
     return response
 
 
-def select_for_command(state, attacker, battle_plan):
+def select_for_command(state, attacker, battle_plan, *, ignore_fort=False,
+                       ignore_citadel=False):
     """Ask the Roman/Gallic owner; the NPC uses its first applicable Region."""
     from fs_bot.engine.agent import consult_agent
     side = (rc.EVENT_UNSHADED if is_capability_active(state, 59, rc.EVENT_UNSHADED)
             else rc.EVENT_SHADED if is_capability_active(state, 59, rc.EVENT_SHADED) else None)
     if side is None:
         return
-    request = selection_request(state, attacker, battle_plan, side)
+    request = selection_request(state, attacker, battle_plan, side,
+                                ignore_fort=ignore_fort, ignore_citadel=ignore_citadel)
     if request is None:
         return
     default = next((region for region in request['legal_regions']

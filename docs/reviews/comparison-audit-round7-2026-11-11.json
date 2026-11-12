@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 9,
-  "closed": 0,
-  "open": 9,
+  "closed": 2,
+  "open": 7,
   "severity_counts": {
     "high": 2,
     "medium": 7
@@ -269,7 +269,8 @@
         "BM7-01",
         "BM7-02"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "seventh-comparison-batch1-2026-11-11.md"
     },
     {
       "batch": 2,
@@ -310,7 +311,7 @@
   "findings": [
     {
       "partition": "battle",
-      "status": "open",
+      "status": "closed",
       "audited_commit": "c67d501711471bf790d805c017c2125b2c254639",
       "reproduction": "PYTHONPATH=<fs-bot-root> python battle/probe_battle.py",
       "output": "battle/probe_battle-output.json",
@@ -395,11 +396,13 @@
       "comparator_pattern": "Liberty or Death coin-implementation-lessons.md A/C/F: implemented hooks must reach alternate scheduled/free actions and cross-faction effects; docs/audit_set_but_never_applied_s76.md pattern 5 audits every consumer, not only a stored flag.",
       "repair_scope": "Route all modified/free Battle callsites and automatic Arverni Battles through shared Command capability orchestration while preserving each Event exception, one-use limits, PR-13 reservation, ownership decisions, physical participating forces and action windows. Audit direct resolve_battle consumers systematically. Add public Event and full-phase regression controls.",
       "limits": "Proves only numeric2/25/36 Slingers, numeric36 shaded Horse, and automatic Arverni Slingers. Other fixed Event handlers and Archers are static leads, not additional confirmed findings. No claim of all capability combinations or automatic-phase multi-Region reservations.",
-      "severity": "high"
+      "severity": "high",
+      "repair_batch": 1,
+      "repair_report": "seventh-comparison-batch1-2026-11-11.md"
     },
     {
       "partition": "battle",
-      "status": "open",
+      "status": "closed",
       "audited_commit": "c67d501711471bf790d805c017c2125b2c254639",
       "reproduction": "PYTHONPATH=<fs-bot-root> python battle/probe_battle.py",
       "output": "battle/probe_battle-output.json",
@@ -444,7 +447,9 @@
       "comparator_pattern": "Liberty or Death docs/audit_set_but_never_applied_s76.md and coin-implementation-lessons.md F: a general effect must reach every affected casualty/beneficiary path, not just the main loss calculator.",
       "repair_scope": "Carry Battle participants/effect-cancellation context into casualty resolution and suppress Ballistae\u2019s Fort protection when it harms Germans protected by Stalwart. Preserve ordinary Fort saves, Belgic/other attacks, and Provincia Fort immunity. Add public Battle regressions with the fixed seeded roll and effect-off controls.",
       "limits": "Confirmed only ordinary Ariovistus German Attack against a Roman Fort. Other A31 interactions (Archers, Elite and one-shot modifiers) remain separate unproved leads; no new count is claimed for them.",
-      "severity": "medium"
+      "severity": "medium",
+      "repair_batch": 1,
+      "repair_report": "seventh-comparison-batch1-2026-11-11.md"
     },
     {
       "id": "FE7-01",

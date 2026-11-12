@@ -21,18 +21,10 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The [seventh Liberty or Death comparison audit](reviews/comparison-audit-round7-2026-11-11.md)
-found **nine open repair groups, two high and seven medium priority**.
-They cover omitted Battle capabilities, skipped non-Roman bot Quarters,
-base German March group limits, incomplete or ineffective bot Events,
-and bot Ambush/Raid planning. Five independently rerun witness scripts
-and a five-batch repair sequence accompany the report. No gameplay code
-changed during this audit.
-
-The fresh existing suite passes all **9,991 tests**. Twenty audited bot
-games complete cleanly, and twenty mixed-player cases match across two
-hash seeds with zero hard findings and one partial plan. These sampled
-checks do not cover the newly demonstrated directed rules failures.
+Batch 1 closes two of the seventh comparison audit's nine repair groups.
+**Seven remain open** across non-Roman bot Quarters, base German March
+group limits, bot Events, and bot Ambush and Raid planning.
+[Audit report](reviews/comparison-audit-round7-2026-11-11.md)
 
 [Seventh-audit finding ledger](reviews/comparison-audit-round7-2026-11-11.json) ·
 [Portable evidence](reviews/comparison-audit-round7-2026-11-11-evidence.zip)
@@ -41,6 +33,18 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 11 November seventh comparison repair Batch 1
+
+Fixed Event Battles and automatic Battle queues apply Slingers and Horse
+through the ordinary capability choices. The Arverni Phase lets Romans
+reserve Slingers for a later candidate under provisional PR-13. Stalwart
+restores the ordinary Fort roll when Germans inflict Attack or Counterattack
+Losses against Ballistae. [Repair and validation](reviews/seventh-comparison-batch1-2026-11-11.md)
+
+All **10,011 tests pass**. All 120 audited bot games complete cleanly, and
+20 mixed-player cases match across two hash seeds with zero hard findings
+and one partial plan. The 100 legacy winners match the reviewed baseline.
 
 ### 11 November sixth comparison repair Batch 5
 

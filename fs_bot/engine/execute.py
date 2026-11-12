@@ -60,7 +60,7 @@ from fs_bot.commands.seize import execute_harassment_loss as _seize_harass_loss
 from fs_bot.rules_consts import HARASSMENT_WARBANDS_PER_LOSS as _HWB_PER_LOSS
 from fs_bot.cards.card_effects import execute_event
 from fs_bot.engine.action_windows import sop_action, window as _timing_window
-from fs_bot.engine import resource_transfers, slingers_choice
+from fs_bot.engine import battle_capabilities, resource_transfers, slingers_choice
 from fs_bot.engine.horse_choice import command_scope as _horse_command_scope
 
 # Mechanic functions raise CommandError on rule violations and PieceError
@@ -1878,14 +1878,13 @@ def _resolve_free_actions_scoped(state, faction):
         results.extend(_resolve_card_A69_ambush(state, faction))
     if mods.get("card_A58_free_ambush"):
         _event_step(state, "grant.card_A58_free_ambush")
-        from fs_bot.battle.resolve import resolve_battle
         from fs_bot.cards.aduatuci import can_ambush
         region = mods["card_A58_free_ambush"]
         ambushes = []
         if can_ambush(state, region, faction):
-            slingers_choice.fire_for_single_battle(state, region, faction, _ROMANS_F)
             ambushes.append({"region": region, "defender": _ROMANS_F,
-                             "result": resolve_battle(state, region, faction, _ROMANS_F, is_ambush=True)})
+                             "result": battle_capabilities.resolve_single(
+                                 state, region, faction, _ROMANS_F, is_ambush=True)})
         results.append({"free_action": "ambush", "flag": "card_A58",
                         "ambushes": ambushes})
     if mods.get("card_A45_free_intimidate"):
@@ -2149,8 +2148,6 @@ def _request_event_diviciacus(state, faction, action, card_id):
 def _resolve_fixed_event_battle(state, faction, action, **options):
     """Preserve Event Battle modifiers inside the actual Command scope."""
     from contextlib import nullcontext
-    from fs_bot.engine.diviciacus import defense_scope
-    from fs_bot.battle.resolve import resolve_battle
     entry = action["details"]["battle_plan"][0]
     region, defender = entry["region"], entry["target"]
     participants = nullcontext()
@@ -2159,11 +2156,9 @@ def _resolve_fixed_event_battle(state, faction, action, **options):
         participants = only_attacker_auxilia(state, faction, region)
     # Revised Numidians excludes other Roman pieces even while the
     # defender evaluates Retreat, before the Battle resolver is entered.
-    with participants, defense_scope(state, region, faction, defender):
-        if "retreat_declaration" not in options:
-            options.update(_battle_retreat_options(
-                state, region, faction, defender, False, **options))
-        return resolve_battle(state, region, faction, defender, **options)
+    with participants:
+        return battle_capabilities.resolve_single(
+            state, region, faction, defender, choose_retreat=True, **options)
 
 
 def _resolve_card25_battle(state, faction, region, extra):
@@ -2592,7 +2587,6 @@ def _resolve_card17_march_ambush_default(state, march_limit, *, roman_guided=Non
     from fs_bot.board.pieces import count_pieces
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_playable_regions
-    from fs_bot.battle.resolve import resolve_battle
     if roman_guided is None:
         roman_guided = ROMANS in state.get("non_player_factions", ())
     marched = (_roman_german_setup_marches(state, march_limit) if roman_guided
@@ -2612,8 +2606,8 @@ def _resolve_card17_march_ambush_default(state, march_limit, *, roman_guided=Non
                  "executed": bool(marched), "declined_no_effect": not bool(marched),
                  "reason": "no legal German Ambush"}]
     try:
-        slingers_choice.fire_for_single_battle(state, best, GERMANS, best_tgt)
-        res = resolve_battle(state, best, GERMANS, best_tgt, is_ambush=True)
+        res = battle_capabilities.resolve_single(
+            state, best, GERMANS, best_tgt, is_ambush=True)
     except _EXEC_ERRORS as exc:
         return [{"free_action": "german_march_ambush",
                  "flag": "card_17_german_ambush", "marches": marched,
@@ -2788,6 +2782,7 @@ def _resolve_card65_german_march_ambush(state, march_limit, faction=None):
     return resolve(state, faction or state.get("executing_faction") or ROMANS, march_limit)
 
 
+@_horse_command_scope
 def _resolve_card65_german_march_ambush_default(state, march_limit):
     """Card 65 German Allegiances (unshaded): "March Germans from up to 2
     Regions, then Ambush with all Germans able."
@@ -2802,7 +2797,7 @@ def _resolve_card65_german_march_ambush_default(state, march_limit):
     from fs_bot.rules_consts import GERMANS
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_playable_regions
-    from fs_bot.battle.resolve import resolve_battle
+    from fs_bot.engine.diviciacus import defense_scope
     scen = state["scenario"]
     playable = list(get_playable_regions(scen, state.get("capabilities")))
 
@@ -2811,18 +2806,18 @@ def _resolve_card65_german_march_ambush_default(state, march_limit):
     # ---- Ambush with all Germans able (every legal Region).
     ambushes = []
     ordered = sorted(playable)
-    slingers_used = False
+    capabilities_used = set()
     for index, region in enumerate(ordered):
         tgt = _german_ambush_target(state, region)
         if tgt is None:
             continue
         try:
-            if not slingers_used and slingers_choice.is_active_for(state, GERMANS):
+            with defense_scope(state, region, GERMANS, tgt):
                 potential = [r for r in ordered[index + 1:] if _german_ambush_target(state, r)]
-                if slingers_choice.choose_for_queue(state, region, GERMANS, tgt, potential):
+                if battle_capabilities.select_for_queue(
+                        state, region, GERMANS, tgt, potential, capabilities_used):
                     slingers_choice.fire(state, region, GERMANS)
-                    slingers_used = True
-            res = resolve_battle(state, region, GERMANS, tgt, is_ambush=True)
+                res = resolve_battle(state, region, GERMANS, tgt, is_ambush=True)
         except _EXEC_ERRORS as exc:
             ambushes.append({"region": region, "executed": False,
                              "reason": repr(exc)})
@@ -2857,7 +2852,6 @@ def _resolve_card58_german_ambush_default(state):
     from fs_bot.board.pieces import count_pieces
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    from fs_bot.battle.resolve import resolve_battle
     scen = state["scenario"]
     playable = set(get_playable_regions(scen, state.get("capabilities")))
 
@@ -2892,9 +2886,8 @@ def _resolve_card58_german_ambush_default(state):
         marched += n
     refresh_all_control(state)
     try:
-        slingers_choice.fire_for_single_battle(state, R, GERMANS, ROMANS)
-        res = resolve_battle(state, R, GERMANS, ROMANS,
-                             is_ambush=True, ignore_fort=True)
+        res = battle_capabilities.resolve_single(
+            state, R, GERMANS, ROMANS, is_ambush=True, ignore_fort=True)
     except _EXEC_ERRORS as exc:
         return [{"free_action": "ambush", "flag": "card_58_german_march_battle",
                  "region": R, "executed": False, "reason": repr(exc)}]
@@ -2951,7 +2944,6 @@ def _resolve_card70_march_battle_default(state, target_regions, legion_limit):
     from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA, WARBAND, LEADER, CAESAR
     from fs_bot.map.map_data import get_adjacent, get_playable_regions
     from fs_bot.bots.roman_bot import _rank_battle_targets
-    from fs_bot.battle.resolve import resolve_battle
     from fs_bot.engine.diviciacus_planning import plan_with_diviciacus, clear_confirmation
     scen = state["scenario"]
     playable = set(get_playable_regions(scen, state.get("capabilities")))
@@ -3226,7 +3218,6 @@ def _resolve_a20_arverni_ambush(state):
                                      move_piece, get_leader_in_region)
     from fs_bot.board.control import refresh_all_control
     from fs_bot.map.map_data import get_adjacent
-    from fs_bot.battle.resolve import resolve_battle
 
     if (state.get("tribes", {}).get(TRIBE_VENETI, {}).get("allied_faction") != ARVERNI
             or count_pieces(state, VENETI, ARVERNI, ALLY) <= 0):
@@ -3287,8 +3278,8 @@ def _resolve_a20_arverni_ambush(state):
             if r != B:
                 move_piece(state, r, B, ARVERNI, WARBAND, count=n, piece_state=ps)
         with projected_battle(state, B, physical_sources) as survivors:
-            res = resolve_battle(state, B, attacking_faction=ARVERNI,
-                                 defending_faction=ROMANS, is_ambush=True)
+            res = battle_capabilities.resolve_single(
+                state, B, ARVERNI, ROMANS, is_ambush=True)
         # Step 5 reveals Hidden survivors, but leaves Scouted markers intact.
         # PR-09 records each casualty's physical origin during Counterattack;
         # return exactly that origin's survivors, not the first available ones.
@@ -3868,21 +3859,13 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
 
     from fs_bot.cards.capabilities import (
         is_capability_active as _ica_b, get_capability_owner as _gco_b)
-    from fs_bot.rules_consts import (EVENT_UNSHADED as _EU_B,
-                                     EVENT_SHADED as _ES_B,
-                                     ROMANS as _RO_B, AUXILIA as _AUX_B)
+    from fs_bot.rules_consts import EVENT_SHADED as _ES_B
     # Card 13 unshaded (Balearic Slingers): on an ENEMY Battle Command the
     # Romans choose 1 Region — Auxilia there first inflict 1/2 Loss each on
     # the attacker, then the Battle resolves. §8.3.3 uses the first applicable
     # selected Region for the NPC default; humans choose independently.
     _c13_region = (None if _skip_absent_targets
-                   else slingers_choice.choose_region(state, faction, battle_plan))
-
-    # Card 59 Tips: one selected Region for attack or Counterattack. Human
-    # owners choose independently; the NPC default follows §8.3.3.
-    if not _skip_absent_targets:
-        from fs_bot.engine.horse_choice import select_for_command
-        select_for_command(state, faction, battle_plan)
+                   else battle_capabilities.select_for_plan(state, faction, battle_plan))
 
     battles = []
     errors = []
@@ -3975,35 +3958,11 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             if _skip_absent_targets:
                 # §8.3.3: a limited-Region NP Capability is used where first
                 # applicable. Absent prospective targets consume no use.
-                from fs_bot.engine.capability_queue import choose_window as mandatory_window
                 potential = [row['region'] for row in battle_plan[battle_index + 1:]
                              if row.get('region') is not None]
-                auxilia_here = count_pieces(state, region, _RO_B, _AUX_B) > 0
-                if (13 not in _queue_capabilities_used
-                        and slingers_choice.is_active_for(state, faction)):
-                    if slingers_choice.choose_for_queue(state, region, faction, defender, potential):
-                        _c13_region = region
-                        _queue_capabilities_used.add(13)
-                if ('59u' not in _queue_capabilities_used
-                        and _ica_b(state, 59, _EU_B) and auxilia_here
-                        and _RO_B in (faction, defender)):
-                    from fs_bot.engine.horse_queue import choose_window
-                    choice = choose_window(state, region, faction, defender, potential)
-                    if choice != 'reserve':
-                        _queue_capabilities_used.add('59u')
-                    if choice == 'activate':
-                        state.setdefault('event_modifiers', {})['card59_unshaded_region'] = region
-                if '59s' not in _queue_capabilities_used and _ica_b(state, 59, _ES_B):
-                    owner = _gco_b(state, 59)
-                    if owner in (faction, defender):
-                        from fs_bot.engine.horse_choice import attack_blocked
-                        blocked = (attack_blocked(state, region, faction, defender)
-                                   if owner == faction else citadel_at_start)
-                        choice = mandatory_window(state, 59, owner, region, faction,
-                            defender, potential, applicable=not blocked, blocked=blocked)
-                        if choice == 'activate':
-                            state.setdefault('event_modifiers', {})['card59_shaded_region'] = region
-                            _queue_capabilities_used.add('59s')
+                if battle_capabilities.select_for_queue(
+                        state, region, faction, defender, potential, _queue_capabilities_used):
+                    _c13_region = region
             elite.ensure_selected(state, region)
 
             is_ambush = intrinsic_german_ambush or (sa == _SA_AMBUSH and region in sa_regions)

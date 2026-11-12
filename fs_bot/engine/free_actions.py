@@ -311,7 +311,8 @@ def _validate_plan(state, faction, request, action):
 def _plan_structure_error(state, faction, request, action):
     from fs_bot.cli.human_plan import _faction_special_abilities
     from fs_bot.engine.action_validation import (
-        command_regions, command_parts, compatible_sa, validate_command_interruption,
+        aedui_ambush_scope_error, command_regions, command_parts, compatible_sa,
+        validate_command_interruption,
         validate_command_parts, validate_rally_interruption, validate_region_selections,
         _validate_march_plan, EVENT_BATTLE_FIELDS,
     )
@@ -364,6 +365,9 @@ def _plan_structure_error(state, faction, request, action):
             return f'{faction} cannot execute {sa}.'
         if not standalone and not compatible_sa(cmd, sa):
             return f'{sa} cannot accompany {cmd}.'
+        error = aedui_ambush_scope_error(faction, action)
+        if error:
+            return error
         if cmd == CMD_MARCH:
             error = _validate_march_plan(state, faction, action, limited=False, with_sa=True)
             if error:
@@ -382,8 +386,6 @@ def _plan_structure_error(state, faction, request, action):
                 or len(ambush_regions) != len(set(ambush_regions))
                 or not set(ambush_regions).issubset(battle_regions)):
             return 'Morasses needs explicit Ambush Regions within the Battle Command.'
-        if faction == AEDUI and len(ambush_regions) != 1:
-            return 'Aedui Ambush still selects at most one Region (§4.4.3).'
         if faction != AEDUI and set(ambush_regions) != battle_regions:
             return 'The Morasses grant adds Ambush to each selected Battle Region.'
     if request.get('double_auxilia') and 'sa_after_step' in (action.get('details') or {}):

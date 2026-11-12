@@ -22,15 +22,28 @@ measurements have not been relabeled as results of later changes.
 ## Current audit backlog
 
 The [sixth Liberty or Death comparison audit](reviews/comparison-audit-round6-2026-11-11.md)
-found 14 repair groups. Batches 1–3 closed nine Event, German procedure
-and Battle findings, leaving **five open** across free-action choices and
-bot forecasts. The audit report includes seven witness scripts and the
+found 14 repair groups. Batches 1–4 closed 11 Event, German procedure,
+Battle and free-action findings, leaving **three open** in bot forecasts.
+The audit report includes seven witness scripts and the
 repair order. The earlier 50-, 21-, 15-, 16- and
 11-group ledgers remain closed.
 
 [Sixth-audit finding ledger](reviews/comparison-audit-round6-2026-11-11.json)
 
 ## Follow-up repairs
+
+### 11 November sixth comparison repair Batch 4
+
+Free Battles enforce the Aedui limit of one Ambush Region per Command.
+Ariovistus Enlist can divide the Warbands into several groups at one origin,
+with exact visibility and a shared four-Warband limit.
+[Repair and validation](reviews/sixth-comparison-batch4-2026-11-11.md)
+
+All **9,975 tests pass**. The 120 audited bot games match the parent in
+outcomes, rankings and final boards. Twenty mixed-player cases match
+across two hash seeds with zero hard findings and one partial plan.
+The 100-game balance check passes within the existing 15-point band,
+with a largest win-rate shift of 10 percentage points.
 
 ### 11 November sixth comparison repair Batch 3
 

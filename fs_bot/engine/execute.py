@@ -3838,8 +3838,11 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
     lets trusted NPC67 plans select each Region only when its defender is
     present, including arrivals from an earlier Retreat.
     """
-    from fs_bot.engine.action_validation import battle_target
+    from fs_bot.engine.action_validation import aedui_ambush_scope_error, battle_target
     from fs_bot.engine.action_windows import window
+    error = aedui_ambush_scope_error(faction, bot_action)
+    if error:
+        return {'executed': False, 'command': _CMD_BATTLE, 'errors': [{'error': error}]}
     window(state, 'battle_command', author=faction)
     details = bot_action.get("details") or {}
     battle_plan = details.get("battle_plan", []) or []
@@ -5913,7 +5916,7 @@ def _execute_enlist(state, faction, bot_action):
     German faction's own mechanics (free where the mechanic supports it):
       - german_battle: a free German Battle (with Ambush in base game; A4.5.1
         adds no Ambush in Ariovistus), routing the defender's Retreat.
-      - german_march: flip and March the German mobile group origin -> dest.
+      - german_march: flip and March the selected Warbands from one origin.
       - german_march_hide: flip the Region's Revealed German Warbands to Hidden.
       - german_rally: place a German Ally or Warbands.
       - german_raid: a free German Raid (steal from the named player, else gain).

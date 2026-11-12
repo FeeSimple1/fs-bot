@@ -10,8 +10,8 @@ from fs_bot.rules_consts import (
 )
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available
 from fs_bot.commands.common import CommandError, free_action_scope
-from fs_bot.commands.sa_enlist import validate_enlist_region
-from fs_bot.map.map_data import get_adjacent, get_playable_regions
+from fs_bot.commands.sa_enlist import validate_enlist_region, validate_enlist_ariovistus_limit
+from fs_bot.map.map_data import get_adjacent_for_state, is_region_playable
 
 
 def select_warbands(state, region, requested=None, *, hiding=False):
@@ -60,6 +60,68 @@ def _force_scope(state, region, selected):
     return scoped_free_force(state, region, selected)
 
 
+def parse_march_groups(state, plan):
+    """Validate a grouped March's footprint before consulting live pieces."""
+    if not isinstance(plan, dict) or 'groups' not in plan:
+        return None  # Legacy single-destination plan.
+    if state['scenario'] not in ARIOVISTUS_SCENARIOS:
+        raise CommandError('Enlist March groups are available only in Ariovistus (A3.4.2).')
+    if plan.get('type') != 'german_march' or set(plan) != {'type', 'origin', 'groups'}:
+        raise CommandError('Supply one origin and an ordered groups list for Enlist March.')
+    from fs_bot.engine.game_engine import is_frost
+    if is_frost(state):
+        raise CommandError('No Enlist March during Frost (§4.5.1)')
+    origin = plan['origin']
+    if not isinstance(origin, str) or not is_region_playable(state, origin, GERMANS):
+        raise CommandError('Enlist must select a playable origin Region.')
+    destinations = get_adjacent_for_state(state, origin, GERMANS)
+    groups = plan['groups']
+    if not isinstance(groups, list) or not groups:
+        raise CommandError('Enlist March needs at least one group.')
+
+    selected = dict.fromkeys((HIDDEN, REVEALED, SCOUTED), 0)
+    for group in groups:
+        if not isinstance(group, dict) or set(group) != {'destination', 'warbands'}:
+            raise CommandError('Each Enlist group needs its destination and Warband visibility counts.')
+        destination = group['destination']
+        if destination is not None and destination not in destinations:
+            raise CommandError('Enlist groups may enter one adjacent playable Region each.')
+        counts = group['warbands']
+        if (not isinstance(counts, dict) or counts.keys() - selected.keys()
+                or any(type(n) is not int or n < 0 for n in counts.values())
+                or not sum(counts.values())):
+            raise CommandError('Each Enlist group needs positive Warbands selected by visibility.')
+        for visibility, count in counts.items():
+            selected[visibility] += count
+    if all(group['destination'] is None for group in groups):
+        raise CommandError('Enlist March needs a moving group. Use the hide option to stay in place.')
+    valid, reason = validate_enlist_ariovistus_limit(state, sum(selected.values()))
+    if not valid:
+        raise CommandError(reason)
+    return groups, selected
+
+
+def _execute_grouped_march(state, origin, groups, selected):
+    from fs_bot.commands.march import march_from_origin
+    from fs_bot.engine.spring import atomic
+
+    selected = select_warbands(state, origin, selected)
+    movements = []
+    for group in groups:
+        destination = group['destination']
+        if destination is not None:
+            counts = group['warbands']
+            # The origin flip applies to the selected force once. A group's
+            # formerly Scouted pieces must still travel with that group.
+            after_flip = {HIDDEN: counts.get(HIDDEN, 0) + counts.get(REVEALED, 0),
+                          REVEALED: counts.get(SCOUTED, 0)}
+            movements.append(({WARBAND: sum(after_flip.values()),
+                               '_march_visibility': {WARBAND: after_flip}}, [destination]))
+    with atomic(state), free_action_scope(state, GERMANS), _force_scope(state, origin, selected):
+        result = march_from_origin(state, GERMANS, origin, movements, free=True)
+    return {'flipped': result['flip_result'], 'marches': result['group_results']}
+
+
 def execute_free_enlist(state, plan):
     """Resolve one source-defined free Command; reject invalid selections first."""
     kind = plan.get("type")
@@ -67,25 +129,27 @@ def execute_free_enlist(state, plan):
                "german_rally", "german_raid"}
     if kind not in allowed:
         raise CommandError("Unknown free Enlist sub-Command")
-    if kind in ("german_march", "german_march_hide"):
+    grouped = parse_march_groups(state, plan)
+    if grouped is None and kind in ("german_march", "german_march_hide"):
         from fs_bot.engine.game_engine import is_frost
         if is_frost(state):
             raise CommandError("No Enlist March during Frost (§4.5.1)")
     region = plan.get("origin") if kind == "german_march" else plan.get("region")
-    playable = get_playable_regions(state["scenario"], state.get("capabilities"))
-    if region not in playable:
+    if not isinstance(region, str) or not is_region_playable(state, region, GERMANS):
         raise CommandError("Enlist must select a playable Region")
     valid, reason = validate_enlist_region(state, region)
     if not valid:
         raise CommandError(reason)
     base = state["scenario"] in BASE_SCENARIOS
 
+    if grouped is not None:
+        return _execute_grouped_march(state, region, *grouped)
+
     if kind in ("german_march", "german_march_hide"):
         from fs_bot.commands.march import _flip_origin_pieces, march_group
         if kind == "german_march":
             destination = plan.get("destination")
-            if destination not in get_adjacent(region, state["scenario"],
-                                               state.get("capabilities")):
+            if destination not in get_adjacent_for_state(state, region, GERMANS):
                 raise CommandError("Enlisted Germans may March to one adjacent Region only")
         selected = select_warbands(state, region, plan.get("warbands"),
                                    hiding=kind == "german_march_hide")

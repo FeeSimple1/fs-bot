@@ -24,6 +24,7 @@ from fs_bot.rules_consts import (
     GERMAN_SPECIAL_ABILITIES_BASE, GERMAN_SPECIAL_ABILITIES_ARIOVISTUS,
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS, GALLIC_FACTIONS, LEGION, AUXILIA, WARBAND, BRITANNIA,
+    HIDDEN, REVEALED, SCOUTED, ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS,
     EVENT_SHADED, EVENT_UNSHADED, ARIOVISTUS_SCENARIOS,
 )
 from fs_bot.engine.game_engine import (
@@ -768,11 +769,46 @@ def _collect_enlist(state, faction, stdin, stdout, *, pending=None,
     return regions, details
 
 
+def _choose_enlist_warbands(available, budget, stdin, stdout):
+    selected = {}
+    for visibility in (HIDDEN, REVEALED, SCOUTED):
+        limit = min(budget, available.get(visibility, 0))
+        count = (prompt_choice(stdin, stdout, f'Use how many {visibility} German Warbands?',
+                               [(str(k), k) for k in range(limit, -1, -1)]) if limit else 0)
+        selected[visibility] = count
+        budget -= count
+    return selected
+
+
+def _collect_enlist_march_groups(origin, destinations, available, stdin, stdout):
+    groups = []
+    budget = ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS
+    while budget and any(available.values()):
+        choices = [(r, r) for r in destinations]
+        if groups and (available[REVEALED] or available[SCOUTED]):
+            choices.append(('Hide selected Warbands here', origin))
+        choices.append(('Finish March', None))
+        destination = prompt_choice(stdin, stdout, 'March Germans TO:', choices)
+        if destination is None:
+            break
+        eligible = {**available, HIDDEN: 0} if destination == origin else available
+        selected = _choose_enlist_warbands(eligible, budget, stdin, stdout)
+        count = sum(selected.values())
+        if not count:
+            stdout.write('Choose at least one Warband for this group.\n')
+            continue
+        groups.append({'destination': None if destination == origin else destination,
+                       'warbands': selected})
+        budget -= count
+        for visibility, count in selected.items():
+            available[visibility] -= count
+    return groups
+
+
 def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
                             before_state=None, borrow_only=False, _sub=None):
     """Choose either borrowed Warbands or a free German Command (§4.5.1)."""
     from fs_bot.commands.sa_enlist import validate_enlist_region
-    from fs_bot.rules_consts import HIDDEN, REVEALED, SCOUTED
     from fs_bot.board.pieces import count_pieces_by_state
     if _sub is not None:
         sub = _sub
@@ -796,7 +832,7 @@ def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
         if state["scenario"] not in ARIOVISTUS_SCENARIOS:
             return regions, {"enlist": {"type": "borrow", "regions": regions}}
         selected = {}
-        budget = 4 if state["scenario"] in ARIOVISTUS_SCENARIOS else float("inf")
+        budget = ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS
         for region in regions:
             selected[region] = {}
             for ps in (HIDDEN, REVEALED, SCOUTED):
@@ -814,11 +850,25 @@ def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
     if not german_regions:
         return None, None
     ed = {"type": sub}
+    ario = state["scenario"] in ARIOVISTUS_SCENARIOS
     if sub == "german_march":
         origin = prompt_choice(stdin, stdout, "March Germans FROM:",
                                [(r, r) for r in german_regions])
         dests = list(get_adjacent_for_state(state, origin, GERMANS))
+        if not dests:
+            return None, None
         ed["origin"] = origin
+        if ario:
+            available = {ps: count_pieces_by_state(state, origin, GERMANS, WARBAND, ps)
+                         for ps in (HIDDEN, REVEALED, SCOUTED)}
+            groups = _collect_enlist_march_groups(origin, dests, available, stdin, stdout)
+            if not groups:
+                return None, None
+            if len(groups) == 1:
+                ed.update(groups[0])
+            else:
+                ed['groups'] = groups
+            return [origin], {'enlist': ed}
         ed["destination"] = prompt_choice(stdin, stdout,
                                           "March Germans TO:",
                                           [(r, r) for r in dests])
@@ -827,19 +877,11 @@ def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
         region = prompt_choice(stdin, stdout, "In which Region?",
                                [(r, r) for r in german_regions])
         ed["region"] = region
-    ario = state["scenario"] in ARIOVISTUS_SCENARIOS
-    if ario and sub in ("german_battle", "german_march", "german_march_hide"):
-        # The human selects the actual counters: visibility matters to Battle,
-        # March and hiding, and A4.5.1 affects at most four in total.
-        selected, left = {}, 4
-        for ps in (HIDDEN, REVEALED, SCOUTED):
-            limit = min(left, count_pieces_by_state(state, region, GERMANS, WARBAND, ps))
-            n = (prompt_choice(stdin, stdout, f"Use how many {ps} German Warbands?",
-                               [(str(k), k) for k in range(limit, -1, -1)])
-                 if limit else 0)
-            selected[ps] = n
-            left -= n
-        ed["warbands"] = selected
+    if ario and sub in ("german_battle", "german_march_hide"):
+        available = {ps: count_pieces_by_state(state, region, GERMANS, WARBAND, ps)
+                     for ps in (HIDDEN, REVEALED, SCOUTED)}
+        ed['warbands'] = _choose_enlist_warbands(
+            available, ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS, stdin, stdout)
     elif sub == "german_march":
         n = count_pieces(state, region, GERMANS, WARBAND)
         ed["warbands"] = prompt_choice(stdin, stdout, "March how many German Warbands?",

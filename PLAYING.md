@@ -513,6 +513,12 @@ first option, then continue from the resulting position. The second option
 must still be legal when reached; entering or removing Vercingetorix can
 change that permission. You do not pay for the Region twice.
 
+For an Ariovistus Enlist March, choose one German origin, then a destination
+and the Warbands in that group by visibility. Use the remaining allowance for
+another group, to hide selected Warbands in the origin, or choose **Finish
+March**. All groups together can affect up to four Warbands. Each moving
+group enters one adjacent Region. Base-game Enlist March moves one group.
+
 During your Sequence-of-Play Command or Event, the menus offer voluntary
 removal of your own physical pieces and replacement of your Citadels with
 Allies. These choices appear before planning quantities, so an empty
@@ -590,8 +596,9 @@ Shaded Assembly of Gaul gives the Carnutes controller one free Command
 and up to two free Special Activities. Choose the ordinary plan for zero
 or one activity. Choose **Plan a Command with two Special Activities** for
 two distinct types, and set each one's timing before, during, or after the
-Command. Ambush and Besiege resolve in the selected Battles. Choices at the
-same step resolve in the order selected.
+Command. Ambush and Besiege resolve in the selected Battles. The Aedui may
+Ambush in one Region of the Command. Choices at the same step resolve in
+the order selected.
 
 A free March into or out of Britannia excludes accompanying Special
 Abilities. During a standard free March, choose which pieces to leave at a

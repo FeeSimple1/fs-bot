@@ -89,8 +89,6 @@ def plan_error(state, faction, request, action):
                     or len(regions) != len(set(regions))
                     or not set(regions).issubset(command_regions(command))):
                 return 'Ambush and Besiege select distinct Regions in the Battle plan.'
-            if faction == rc.AEDUI and len(regions) > 1:
-                return 'Aedui Ambush selects at most one Region (§4.4.3).'
         elif timing == 'during':
             step = ability.get('after_step')
             cmd = command['command']

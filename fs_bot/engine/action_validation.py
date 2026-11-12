@@ -139,6 +139,18 @@ def battle_target(entry):
     return target if target is not None else (ranked[0] if ranked else None)
 
 
+def aedui_ambush_scope_error(faction, action):
+    """Apply §4.4.3 to the whole Battle Command, including free Battles."""
+    if faction != AEDUI or action.get('sa') != SA_AMBUSH:
+        return None
+    regions = action.get('sa_regions') or []
+    if (not isinstance(regions, (list, tuple))
+            or any(not isinstance(region, str) for region in regions)
+            or len(set(regions)) > 1):
+        return 'Aedui Ambush is limited to one Region (§4.4.3)'
+    return None
+
+
 def validate_region_selections(faction, action):
     """Check unique Seize, Battle, Entreat and Devastate selections (§§3.1, 4.1).
 
@@ -459,8 +471,16 @@ def validate_human_structure(state, faction, action, *, limited=False, allow_fro
             return f"{faction} cannot execute {sa} in this scenario"
         if not compatible_sa(command, sa):
             return f"{sa} cannot accompany {command} (§4)"
-        if sa == "Ambush" and faction == AEDUI and len(set(action.get("sa_regions") or [])) > 1:
-            return "Aedui Ambush is limited to one Region (§4.4.3)"
+        error = aedui_ambush_scope_error(faction, action)
+        if error:
+            return error
+        if sa == SA_ENLIST:
+            from fs_bot.commands.enlist_free import parse_march_groups
+            from fs_bot.engine.execute import _sa_detail
+            try:
+                parse_march_groups(state, _sa_detail(action, 'enlist'))
+            except CommandError as exc:
+                return str(exc)
     from fs_bot.commands.sa_rampage import human_plan_error as rampage_plan_error
     error = rampage_plan_error(action)
     if error:

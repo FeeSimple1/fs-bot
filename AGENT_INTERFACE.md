@@ -181,6 +181,27 @@ total. With a base-game `place: "ally"`, it instead selects the following
 Warbands. Ariovistus's Ally option has only its compulsory Home addition
 and does not accept `count`.
 
+An Ariovistus Enlist March can specify several groups at one origin in
+`details.enlist`. Give each group its adjacent destination and the Warband
+counts by visibility before the origin flip. The four-Warband limit covers
+all groups together. Use `destination: null` for a group that stays to hide
+while another group moves. A hide-only plan uses `german_march_hide`.
+
+```json
+{
+  "type": "german_march",
+  "origin": "Sugambri",
+  "groups": [
+    {"destination": "Nervii", "warbands": {"Hidden": 2}},
+    {"destination": "Treveri", "warbands": {"Revealed": 1, "Scouted": 1}}
+  ]
+}
+```
+
+The result's `flipped` records the origin visibility changes and `marches`
+lists the moving groups in order. The compact single-destination plan uses
+`origin`, `destination` and `warbands` directly and returns `march`.
+
 With agreed Diviciacus cooperation, a placement entry can also specify
 `"placement_owners":{"Romans":0,"Aedui":1}` for one physical Aedui
 Warband acting as Auxilia. The total must equal that entry's actual troop
@@ -1613,8 +1634,9 @@ where needed, and the normal ability-specific `details`.
 For `during`, supply `after_step` as the one-based completed Command
 step, or `{"group": 1, "hop": 0}` for a March group after origin preparation
 or a completed hop. Ambush and Besiege use `during` and their selected
-Battle Regions without an `after_step`. Choose a boundary with more of the
-Command to resolve. Abilities at the same boundary use list order. The
+Battle Regions without an `after_step`. An Aedui Ambush selects at most one
+Region in either plan format. Choose a boundary with more of the Command to
+resolve. Abilities at the same boundary use list order. The
 grant reports the abilities' results in `special_ability_results` and
 their executed count in `sa_count`.
 

@@ -144,10 +144,11 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The seventh comparison audit has **seven of nine repair groups closed**.
-Batch 4 repairs bot plans for Oppida, Procillus, and Divico and checks the
-Legion prerequisite for shaded Rhenus Bridge.
+The seventh comparison audit is complete with **all nine repair groups closed**.
+The final batch accounts for legal Ambushes before selecting Battles and
+uses shaded Baggage Trains' three-Warband limit when planning Raids.
 [Audit report](docs/reviews/comparison-audit-round7-2026-11-11.md) ·
+[Batch 5 repair and validation](docs/reviews/seventh-comparison-batch5-2026-11-11.md) ·
 [Batch 4 repair and validation](docs/reviews/seventh-comparison-batch4-2026-11-11.md) ·
 [Batch 3 repair and validation](docs/reviews/seventh-comparison-batch3-2026-11-11.md) ·
 [Batch 2 repair and validation](docs/reviews/seventh-comparison-batch2-2026-11-11.md) ·

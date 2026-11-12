@@ -53,7 +53,6 @@ from fs_bot.rules_consts import (
     GERMAN_RALLY_COST_AT_SETTLEMENT,
     GERMAN_RALLY_COST_IN_GERMANIA,
     SETTLE_COST,
-    GALLIC_BATTLE_COST,
 )
 from fs_bot.board.pieces import (
     count_pieces, count_pieces_by_state, get_leader_in_region,
@@ -81,6 +80,7 @@ from fs_bot.bots.bot_common import (
     estimate_scoped_rally,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
+from fs_bot.bots.battle_planning import ambush_regions_for_plan, select_battle_plan
 from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
     get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
@@ -221,7 +221,7 @@ def _get_threat_regions(state, scenario):
     return sorted(r for r in playable if _has_german_threat(state, r))
 
 
-def _estimate_battle_losses(state, region, enemy):
+def _estimate_battle_losses(state, region, enemy, *, is_ambush=False):
     """Estimate Losses inflicted and suffered for a German Battle.
 
     Per A8.7.1 / §3.3.4: presume "all Defender Loss rolls result in
@@ -231,14 +231,14 @@ def _estimate_battle_losses(state, region, enemy):
         (losses_inflicted, losses_suffered) tuple of ints.
     """
     from fs_bot.bots.bot_common import predict_battle, card27_shaded_absorption
-    forecast = predict_battle(state, region, GERMANS, enemy)
+    forecast = predict_battle(state, region, GERMANS, enemy, is_ambush=is_ambush)
     if forecast is None:
         return (0, 0)
     return (forecast['inflicted'], forecast['taken']
             + card27_shaded_absorption(state, region, GERMANS, enemy))
 
 
-def _can_battle_in_region(state, region, enemy):
+def _can_battle_in_region(state, region, enemy, *, is_ambush=False):
     """Check if Germans can Battle a specific enemy in a region per A8.7.1.
 
     Conditions: Germans inflict MORE Losses than they suffer AND no Loss
@@ -267,7 +267,7 @@ def _can_battle_in_region(state, region, enemy):
         return False
 
     losses_inflicted, losses_suffered = _estimate_battle_losses(
-        state, region, enemy)
+        state, region, enemy, is_ambush=is_ambush)
 
     # No Loss on Ariovistus — A8.7.1
     # Ariovistus would take a Loss only if all Warbands removed first
@@ -868,89 +868,27 @@ def node_g_battle(state, *, threat_regions=None):
     if not threat_regions:
         return node_g_march_threat(state)
 
-    # Step 1 — Check Ariovistus refuses-to-Battle redirect — A8.7.1
-    aristos_region = _ariovistus_region(state)
-    if aristos_region and aristos_region in threat_regions:
-        can_ariovistus_battle = False
-        for enemy in _get_all_enemies(state):
-            if count_pieces(state, aristos_region, enemy) == 0:
-                continue
-            if _can_battle_in_region(state, aristos_region, enemy):
-                can_ariovistus_battle = True
-                break
-        if not can_ariovistus_battle:
-            return node_g_march_threat(state)
+    enemies = _get_all_enemies(state)
+    leader_region = _ariovistus_region(state)
+    priorities = []
+    required = None
+    if leader_region in threat_regions:
+        required = (leader_region, enemies)
+        own_mobile = count_mobile_pieces(state, leader_region, GERMANS)
+        weaker = [enemy for enemy in enemies
+                  if count_mobile_pieces(state, leader_region, enemy) < own_mobile]
+        priorities.append((leader_region, weaker, True))
 
-    battle_plan = []
-    resources = state.get("resources", {}).get(GERMANS, 0)
+    priorities.extend((region, enemies, True) for region in threat_regions)
+    playable = command_region_candidates(state, get_playable_regions_for_state(state, GERMANS))
+    priorities.extend((region, enemies, False) for region in playable
+                      if count_pieces(state, region, GERMANS))
 
-    # Step 3a — Ariovistus first vs enemy with fewer mobile than Germans
-    if aristos_region and aristos_region in threat_regions:
-        german_mobile = count_mobile_pieces(state, aristos_region, GERMANS)
-        candidates = []
-        for enemy in _get_all_enemies(state):
-            if count_pieces(state, aristos_region, enemy) == 0:
-                continue
-            enemy_mobile = count_mobile_pieces(state, aristos_region, enemy)
-            if enemy_mobile >= german_mobile:
-                continue
-            if _can_battle_in_region(state, aristos_region, enemy):
-                candidates.append(enemy)
-        if candidates:
-            # §8.3.4 random tie-break among equally-valid first-tier enemies
-            target = (random_select(state, candidates)
-                      if len(candidates) > 1 else candidates[0])
-            battle_plan.append({
-                "region": aristos_region,
-                "target": target,
-                "is_trigger": True,
-            })
+    def qualifies(region, enemy, *, is_ambush):
+        return _can_battle_in_region(state, region, enemy, is_ambush=is_ambush)
 
-    # Step 3 — Battle other trigger regions where Germans can
-    for region in threat_regions:
-        if any(bp["region"] == region for bp in battle_plan):
-            continue
-        candidates = []
-        for enemy in _get_all_enemies(state):
-            if count_pieces(state, region, enemy) == 0:
-                continue
-            if _can_battle_in_region(state, region, enemy):
-                candidates.append(enemy)
-        if candidates:
-            target = (random_select(state, candidates)
-                      if len(candidates) > 1 else candidates[0])
-            battle_plan.append({
-                "region": region,
-                "target": target,
-                "is_trigger": True,
-            })
-
-    # Step 4 — Battle other enemies where they can (no trigger required)
-    # "until they run out of candidate Regions or of Resources" — A8.7.1
-    playable = command_region_candidates(
-        state, get_playable_regions_for_state(state, GERMANS))
-    for region in playable:
-        if any(bp["region"] == region for bp in battle_plan):
-            continue
-        if count_pieces(state, region, GERMANS) == 0:
-            continue
-        candidates = []
-        for enemy in _get_all_enemies(state):
-            if count_pieces(state, region, enemy) == 0:
-                continue
-            if _can_battle_in_region(state, region, enemy):
-                candidates.append(enemy)
-        if candidates:
-            target = (random_select(state, candidates)
-                      if len(candidates) > 1 else candidates[0])
-            battle_plan.append({
-                "region": region,
-                "target": target,
-                "is_trigger": False,
-            })
-
-    from fs_bot.bots.bot_common import affordable_battle_plan
-    battle_plan = affordable_battle_plan(state, GERMANS, battle_plan)
+    battle_plan = select_battle_plan(
+        state, GERMANS, priorities, qualifies, required=required, random_ties=True)
 
     if not battle_plan:
         return node_g_march_threat(state)
@@ -1165,8 +1103,8 @@ def _is_devastated(state, region):
 def _would_raid_gain_enough(state, scenario, *, raiders=None):
     """Check if Raiding gains 2+ Resources total per A8.7.3.
 
-    Per §3.3.3 / A8.7.3: each Raid region flips 1-2 Hidden Warbands →
-    1 Resource each (steal from priority targets or non-Devastated gain).
+    Each flip steals 1 Resource or gains 1 in a non-Devastated Region.
+    Use the Command's regional limit, including shaded Baggage Trains.
 
     Per A8.7.3 priority:
       (1) Romans or Aedui where able,
@@ -1176,6 +1114,9 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
     Returns:
         (bool enough, list of raid plan dicts).
     """
+    from fs_bot.commands.raid import max_raiders_per_region, validate_raid_steal_target
+
+    raid_limit = max_raiders_per_region(state, GERMANS)
     playable = command_region_candidates(
         state, get_playable_regions_for_state(state, GERMANS))
     total_gain = 0
@@ -1194,13 +1135,6 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         if hidden_wb == 0:
             continue
 
-        raid_limit = 2
-        if raiders is not None:
-            from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
-            from fs_bot.rules_consts import EVENT_SHADED
-            if (is_capability_active(state, 8, EVENT_SHADED)
-                    and get_capability_owner(state, 8) == GERMANS):
-                raid_limit = 3
         flips = min(raid_limit, hidden_wb)
         is_devastated = _is_devastated(state, region)
 
@@ -1209,7 +1143,6 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         # steal the executor must refuse (§3.3.3 requires the target to have
         # pieces, no Citadel/Fort, AND at least 1 Resource — the missing
         # Resource check produced 'Cannot steal from <F>: <F> has 0 Resources').
-        from fs_bot.commands.raid import validate_raid_steal_target
         steal_targets = []
         for target in (ROMANS, AEDUI, BELGAE):
             valid, _ = validate_raid_steal_target(
@@ -1598,82 +1531,8 @@ def node_g_march_expand(state):
 # ============================================================================
 
 def _check_ambush(state, battle_plan):
-    """G_AMBUSH: Determine Ambush regions per A8.7.1.
+    return ambush_regions_for_plan(state, GERMANS, battle_plan)
 
-    Per A8.7.1:
-    1. In the 1st Battle, only if Retreat could lower removals AND/OR
-       Counterattack could inflict >=1 Loss on Germans.
-       NOTE: A defending Legion or Leader satisfies the 2nd requirement.
-    2. If Ambushed in 1st Battle, also Ambush in each other Battle possible.
-
-    Ambush eligibility ("can Ambush", A8.7.1) defers to the Germanic Ambush
-    Special-Ability rules:
-    - A4.6.3 makes Germanic Ambush work "like Arverni Ambush (4.3.3) but
-      uses Germanic... Ariovistus instead of Vercingetorix" — so §4.3.3's
-      two conjunctive conditions apply with Ariovistus as the named Leader:
-        (a) the Region begins with more Hidden Germanic pieces than Hidden
-            Defenders, AND
-        (b) the Region is within 1 of Ariovistus or has his Successor.
-    - A4.1.2 (Ariovistus) independently confirms (b): German Special
-      Abilities "may select only Regions within a distance of 1 Region of
-      that Faction's named Leader... or (for Germans) the same Region that
-      has its Successor Leader".
-    Both conditions are enforced by validate_ambush_region() — the same
-    check the SA execution layer applies — so the bot never proposes an
-    Ambush it could not legally perform (matching the Belgae/Aedui bots).
-
-    Returns:
-        List of Ambush regions, or empty.
-    """
-    from fs_bot.commands.sa_ambush import validate_ambush_region
-
-    if not command_sa_allowed(state):
-        return []
-    battle_plan = [bp for bp in battle_plan
-                   if command_region_candidates(state, [bp["region"]])]
-    if not battle_plan:
-        return []
-
-    first = battle_plan[0]
-    region = first["region"]
-    enemy = first["target"]
-
-    # A4.6.3 -> §4.3.3 (+ A4.1.2) eligibility for the 1st Battle:
-    # more Hidden Germans than Hidden Defenders AND within 1 of Ariovistus.
-    eligible, _ = validate_ambush_region(state, region, GERMANS, enemy)
-    if not eligible:
-        return []
-
-    should_ambush_first = False
-    losses_inflicted, _ = _estimate_battle_losses(state, region, enemy)
-
-    enemy_mobile = count_mobile_pieces(state, region, enemy)
-    if enemy_mobile > 0 and losses_inflicted > 0:
-        should_ambush_first = True
-
-    if count_pieces(state, region, enemy, LEGION) > 0:
-        should_ambush_first = True
-    if get_leader_in_region(state, region, enemy) is not None:
-        should_ambush_first = True
-
-    if not should_ambush_first:
-        return []
-
-    ambush_regions = [region]
-    for bp in battle_plan[1:]:
-        bp_region = bp["region"]
-        bp_enemy = bp["target"]
-        # "each other Battle possible" — filter to Ambush-eligible Regions.
-        bp_eligible, _ = validate_ambush_region(
-            state, bp_region, GERMANS, bp_enemy)
-        if bp_eligible:
-            ambush_regions.append(bp_region)
-    return ambush_regions
-
-
-# ============================================================================
-# SA: G_INTIMIDATE
-# ============================================================================
 
 def _can_intimidate_region(state, region):
     """Per A4.6.2: region has Ariovistus, OR Germanic Control + within

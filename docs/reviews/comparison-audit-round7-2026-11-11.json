@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 9,
-  "closed": 7,
-  "open": 2,
+  "closed": 9,
+  "open": 0,
   "severity_counts": {
     "high": 2,
     "medium": 7
@@ -308,7 +308,8 @@
         "NP7-01",
         "NP7-02"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "seventh-comparison-batch5-2026-11-11.md"
     }
   ],
   "findings": [
@@ -803,7 +804,7 @@
     {
       "partition": "bots",
       "audited_commit": "c67d501711471bf790d805c017c2125b2c254639",
-      "status": "open",
+      "status": "closed",
       "reproduction": "PYTHONPATH=<fs-bot-root> python bots/probe_bots.py",
       "output": "bots/probe_bots-output.json",
       "fixture": "Sparse build_initial_state controlled positions, canonical piece placement, permanent Provincia Fort retained. All relevant pre/post states pass validate_state and check_structural_integrity. No physical counts directly edited.",
@@ -870,12 +871,13 @@
       "controls": "Nine cases: three legal-Ambush failure witnesses plus the same three with all attacking Warbands Revealed and the same three with Command-only planning. Both control variants correctly March. Three public authored legal Ambush alternatives independently prove exact casualties, unchanged attacker counts and valid board accounting.",
       "prior_relation": "NP5-03 and NP6-01 repaired ordinary surviving-defender Counterattack estimates and named Attack multipliers; their recorded cases deliberately disabled Special Abilities. This is the distinct plan dependency that rejects a candidate before Ambush is considered; the ordinary arithmetic itself now agrees with execution. Human Ambush caps/alternate German Ambush resolution findings address different callers and rules.",
       "comparator_pattern": "coin-implementation-lessons.md sections B/C/E and docs/audit_set_but_never_applied_s76.md dual-calculator audit: follow a modifier into the decision that chooses whether the eventual action occurs.",
-      "repair_scope": "Evaluate legal/allowed first-Battle Ambush and its printed decision rule while constructing candidates, preserve Command-wide SA selection and first-Battle restrictions, and use that forecast in comparative/leader-safety gates. Keep no-SA and hidden/Leader-range controls; handle defending Caesar conservatively under the printed condition."
+      "repair_scope": "Evaluate legal/allowed first-Battle Ambush and its printed decision rule while constructing candidates, preserve Command-wide SA selection and first-Battle restrictions, and use that forecast in comparative/leader-safety gates. Keep no-SA and hidden/Leader-range controls; handle defending Caesar conservatively under the printed condition.",
+      "repair_report": "seventh-comparison-batch5-2026-11-11.md"
     },
     {
       "partition": "bots",
       "audited_commit": "c67d501711471bf790d805c017c2125b2c254639",
-      "status": "open",
+      "status": "closed",
       "reproduction": "PYTHONPATH=<fs-bot-root> python bots/probe_bots.py",
       "output": "bots/probe_bots-output.json",
       "fixture": "Sparse build_initial_state controlled positions, canonical piece placement, permanent Provincia Fort retained. All relevant pre/post states pass validate_state and check_structural_integrity. No physical counts directly edited.",
@@ -949,7 +951,8 @@
       "controls": "Eight cases across all four playable Raid bots, each with and without the owned Capability. Capacity helper, response validator and public execution agree on3 versus2. Every input/output pool and structure check passes. Resources start0 for all seats; four Revealed Roman Auxilia prevent local Control, Roman Resources0 exclude stealing, and no Leader or SA affects the fixture.",
       "prior_relation": "Earlier Baggage Trains tests cover the mechanics accepting three Raiders and stealing through Forts; original EXP-06 repair dealt with the German free-Intimidate count from actual Raiders. No prior comparison finding records ordinary NPC Raid quantity plans. Optional physical cohort logic supports card8 already but is not called by these ordinary policy nodes.",
       "comparator_pattern": "coin-implementation-lessons.md B/C and docs/audit_set_but_never_applied_s76.md: stored effect has a working execution consumer but misses a parallel planning consumer.",
-      "repair_scope": "Use shared max_raiders_per_region in each ordinary and restricted-cohort Raid plan, then cap by actual eligible Hidden participants. Preserve Resource limits, target priority, and any free-Intimidate accounting from actual Raiders."
+      "repair_scope": "Use shared max_raiders_per_region in each ordinary and restricted-cohort Raid plan, then cap by actual eligible Hidden participants. Preserve Resource limits, target priority, and any free-Intimidate accounting from actual Raiders.",
+      "repair_report": "seventh-comparison-batch5-2026-11-11.md"
     }
   ]
 }

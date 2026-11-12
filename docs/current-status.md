@@ -21,8 +21,8 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-Batches 1–4 close seven of the seventh comparison audit's nine repair
-groups. **Two remain open** in bot Ambush and Raid planning.
+Batches 1–5 close **all nine repair groups** in the seventh comparison
+audit.
 [Audit report](reviews/comparison-audit-round7-2026-11-11.md)
 
 [Seventh-audit finding ledger](reviews/comparison-audit-round7-2026-11-11.json) ·
@@ -32,6 +32,20 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 11 November seventh comparison repair Batch 5
+
+Belgae, Arverni, and Germans account for legal Ambushes in their Battle
+forecasts. The first affordable Battle selects the Command's Special
+Ability and eligible later Battles can use it. All four Raid bots use
+the Command's Warband limit, including the third Warband from shaded
+Baggage Trains.
+[Repair and validation](reviews/seventh-comparison-batch5-2026-11-11.md)
+
+All **10,116 tests pass**. All 120 audited bot games finish with clean
+integrity checks, and 20 mixed-player cases match across two hash seeds.
+Paired replays trace 90 changed final states to the repaired planners.
+The refreshed balance baseline passes on the original seeds and bands.
 
 ### 11 November seventh comparison repair Batch 4
 

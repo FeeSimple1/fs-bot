@@ -1197,6 +1197,7 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
         attacker's Leader: the Leader absorbs LAST among mobile pieces
         (Warbands/Auxilia/Legions, no-Retreat order, §3.2.4), so it is reached
         only when ``taken`` exceeds those non-Leader mobile pieces.
+    ``defender_removed`` counts actual Attack removals.
     ``defender_loss_types`` records any piece type that absorbs a Loss,
     including pieces that survive a roll. For target guarantees,
     ``avoid_defender_losses`` lets a player defender choose any legal
@@ -1270,6 +1271,7 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
         "inflicted": inflicted,
         "taken": taken,
         "attacker_leader_lost": has_leader and taken > absorbers,
+        "defender_removed": attack['losses_taken'],
         "defender_loss_types": ({piece for piece, _ in attack['removed']}
                                 | {piece for piece, _, _ in attack['rolls']}),
     }

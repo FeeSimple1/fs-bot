@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Seventh Liberty or Death comparison](reviews/comparison-audit-round7-2026-11-11.md) | Seven of nine repair groups closed, with reproducible witness scripts and repair sequence |
+| [Seventh Liberty or Death comparison](reviews/comparison-audit-round7-2026-11-11.md) | All nine repair groups closed, with reproducible witnesses and validation for each batch |
 | [Sixth Liberty or Death comparison](reviews/comparison-audit-round6-2026-11-11.md) | 14 findings with seven witness scripts. All repaired in Batches 1–5. |
 | [Fifth Liberty or Death comparison](reviews/comparison-audit-round5-2026-11-11.md) | 11 findings, all repaired in Batches 1–5, with source evidence and a repair ledger |
 | [Fourth Liberty or Death comparison](reviews/comparison-audit-round4-2026-11-10.md) | 16 findings with executable evidence, all repaired in Batches 1–4 |
@@ -29,6 +29,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [11 November seventh comparison repair Batch 5](reviews/seventh-comparison-batch5-2026-11-11.md)
+  closes bot Ambush and Raid planning.
 
 - [11 November seventh comparison repair Batch 4](reviews/seventh-comparison-batch4-2026-11-11.md)
   closes three bot Event findings across Oppida, Procillus, Divico, and Rhenus Bridge.
@@ -45,7 +48,7 @@ references and canonical constants remain read-only.
 - [11 November seventh comparison audit](reviews/comparison-audit-round7-2026-11-11.md)
   records nine new groups after the sixth audit's closure. All 9,991 existing
   tests pass; the report preserves directed rules failures, independent review,
-  clean fresh bot/mixed-player samples, and an open repair ledger.
+  clean fresh bot/mixed-player samples, and the repair ledger.
 
 - [11 November sixth comparison repair Batch 5](reviews/sixth-comparison-batch5-2026-11-11.md)
   closes the bot Battle and Rampage forecast findings and records the balance refresh.

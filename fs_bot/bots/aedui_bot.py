@@ -462,6 +462,9 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
     Returns:
         (bool, list of raid plan dicts).
     """
+    from fs_bot.commands.raid import max_raiders_per_region, validate_raid_steal_target
+
+    raid_limit = max_raiders_per_region(state, AEDUI)
     playable = command_region_candidates(
         state, get_playable_regions(scenario, state.get("capabilities")))
     non_players = state.get("non_player_factions", set())
@@ -504,13 +507,6 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         if hidden_wb == 0:
             continue
 
-        raid_limit = 2
-        if raiders is not None:
-            from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
-            from fs_bot.rules_consts import EVENT_SHADED
-            if (is_capability_active(state, 8, EVENT_SHADED)
-                    and get_capability_owner(state, 8) == AEDUI):
-                raid_limit = 3
         flips = min(raid_limit, hidden_wb)
         is_devastated = _is_devastated(state, region)
 
@@ -518,7 +514,6 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         # §3.3.3: a steal target must have pieces, no Citadel/Fort, AND >=1
         # Resource. Use the canonical validator (the missing Resource check
         # produced 'Cannot steal from <F>: <F> has 0 Resources').
-        from fs_bot.commands.raid import validate_raid_steal_target
         steal_targets = []
         for target in raid_targets:
             valid, _ = validate_raid_steal_target(state, region, AEDUI, target)

@@ -1515,16 +1515,21 @@ class TestAmbiorixProximity:
 class TestAmbushEdgeCases:
     """Additional Ambush edge case tests."""
 
-    def test_ambush_retreat_condition(self):
+    @pytest.mark.parametrize("refuge", [False, True])
+    def test_ambush_retreat_condition(self, refuge):
         """Ambush when retreat could lessen removals — §8.5.1."""
         state = _make_state()
         _place_belgae_force(state, MANDUBII, warbands=4, hidden=True,
                             leader=True)
-        # Enemy has mobile pieces that could retreat
+        # No Aedui survive a standing Attack. Retreat saves two if they have
+        # adjacent Control to Retreat to.
         place_piece(state, MANDUBII, AEDUI, WARBAND, 3)
+        if refuge:
+            place_piece(state, CARNUTES, AEDUI, WARBAND)
+        refresh_all_control(state)
         battle_plan = [{"region": MANDUBII, "target": AEDUI}]
         result = _check_ambush(state, battle_plan, SCENARIO_PAX_GALLICA)
-        assert len(result) > 0
+        assert result == ([MANDUBII] if refuge else [])
 
     def test_ambush_counterattack_condition(self):
         """Ambush when counterattack Loss to Belgae is possible — §8.5.1."""

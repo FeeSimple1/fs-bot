@@ -87,6 +87,7 @@ from fs_bot.bots.bot_common import (
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.common import _is_devastated
+from fs_bot.bots.battle_planning import ambush_regions_for_plan, select_battle_plan
 from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
     get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
@@ -232,7 +233,7 @@ def _get_threat_regions(state, scenario):
     return [r for r in playable if _has_belgae_threat(state, r, scenario)]
 
 
-def _can_battle_in_region(state, region, scenario, enemy):
+def _can_battle_in_region(state, region, scenario, enemy, *, is_ambush=False):
     """Check if Belgae can Battle a specific enemy in a region per §8.5.1.
 
     Conditions: Belgic Losses less than enemy's AND no Loss on Ambiorix
@@ -266,15 +267,15 @@ def _can_battle_in_region(state, region, scenario, enemy):
         return False
 
     losses_inflicted, losses_suffered = _estimate_battle_losses(
-        state, region, scenario, enemy)
+        state, region, scenario, enemy, is_ambush=is_ambush)
     if has_ambiorix and losses_suffered > belgae_wb:
         return False
     return losses_inflicted > losses_suffered
 
 
-def _estimate_battle_losses(state, region, scenario, enemy):
+def _estimate_battle_losses(state, region, scenario, enemy, *, is_ambush=False):
     """Apply §8.5.1's all-removals assumption before Counterattack."""
-    forecast = predict_battle(state, region, BELGAE, enemy)
+    forecast = predict_battle(state, region, BELGAE, enemy, is_ambush=is_ambush)
     if forecast is None:
         return 0, 0
     return (forecast['inflicted'],
@@ -297,8 +298,8 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
     """Check if Raiding would gain at least 2 Resources total.
 
     Per §8.5.4: Raid if would gain 2+ Resources.
-    Per §3.3.3: Each Raid region flips 1-2 Hidden Warbands; each flip either
-    steals 1 Resource from an enemy or gains 1 Resource (non-Devastated).
+    Each flip steals 1 Resource or gains 1 in a non-Devastated Region.
+    Use the Command's regional limit, including shaded Baggage Trains.
 
     Priority: (1) Romans (2) Aedui (3) Other — §8.5.4
 
@@ -306,6 +307,9 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         (bool, list of raid plan dicts) — whether 2+ Resources would be
         gained and the raid plan.
     """
+    from fs_bot.commands.raid import max_raiders_per_region, validate_raid_steal_target
+
+    raid_limit = max_raiders_per_region(state, BELGAE)
     playable = command_region_candidates(
         state, get_playable_regions(scenario, state.get("capabilities")))
     non_players = state.get("non_player_factions", set())
@@ -323,13 +327,6 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         if hidden_wb == 0:
             continue
 
-        raid_limit = 2
-        if raiders is not None:
-            from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
-            from fs_bot.rules_consts import EVENT_SHADED
-            if (is_capability_active(state, 8, EVENT_SHADED)
-                    and get_capability_owner(state, 8) == BELGAE):
-                raid_limit = 3
         flips = min(raid_limit, hidden_wb)
         is_devastated = _is_devastated(state, region)
 
@@ -340,7 +337,6 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         # canonical validator; here we only add the §8.5.4 "players only" gate
         # and the tier ordering. The missing Resource check previously produced
         # 'Cannot steal from <F>: <F> has 0 Resources'.
-        from fs_bot.commands.raid import validate_raid_steal_target
         if scenario in ARIOVISTUS_SCENARIOS:
             other_targets = (GERMANS,)  # Arverni excluded per A8.4
         else:
@@ -630,93 +626,33 @@ def node_b_battle(state, *, threat_regions=None):
     if not command_is_allowed(state, ACTION_BATTLE):
         return node_b_march_threat(state)
     scenario = state["scenario"]
-    non_players = state.get("non_player_factions", set())
     if threat_regions is None:
         threat_regions = _get_threat_regions(state, scenario)
 
     if not threat_regions:
         return node_b_march_threat(state)
 
-    # Step 1: Check Ambiorix — §8.5.1
-    ambiorix_region = _ambiorix_region(state)
-    if ambiorix_region and ambiorix_region in threat_regions:
-        # Check if Ambiorix can Battle here
-        can_ambiorix_battle = False
-        enemies = _get_non_german_enemies(scenario, state)
-        for enemy in enemies:
-            if count_pieces(state, ambiorix_region, enemy) == 0:
-                continue
-            if _can_battle_in_region(state, ambiorix_region, scenario, enemy):
-                can_ambiorix_battle = True
-                break
-
-        if not can_ambiorix_battle:
-            # "If Ambiorix meets condition at left BUT will not Battle,
-            # March instead." — §8.5.1
-            return node_b_march_threat(state)
-
-    # Build battle plan — §8.5.1
-    battle_plan = []
-
-    # Step 3a: Ambiorix versus enemy with fewer mobile forces — §8.5.1
-    if ambiorix_region and ambiorix_region in threat_regions:
-        belgae_mobile = count_mobile_pieces(state, ambiorix_region, BELGAE)
-        enemies = _get_non_german_enemies(scenario, state)
-        # Enemies with fewer mobile pieces than Belgae that can be Battled;
-        # §8.3.4 random tie-break among equal candidates.
-        cands = [e for e in enemies
-                 if count_pieces(state, ambiorix_region, e) > 0
-                 and count_mobile_pieces(state, ambiorix_region, e)
-                 < belgae_mobile
-                 and _can_battle_in_region(
-                     state, ambiorix_region, scenario, e)]
-        best_enemy = (random_select(state, cands) if len(cands) > 1
-                      else (cands[0] if cands else None))
-        if best_enemy:
-            battle_plan.append({
-                "region": ambiorix_region,
-                "target": best_enemy,
-                "is_trigger": True,
-            })
-
-    # Step 3/4: Fight enemies meeting trigger condition, then others — §8.5.1
-    # "the Belgae next Battle non-German enemies where they can"
-    # (or all enemies in Ariovistus per A8.5.1)
-    playable = command_region_candidates(
-        state, get_playable_regions(scenario, state.get("capabilities")))
     enemies = _get_non_german_enemies(scenario, state)
+    leader_region = _ambiorix_region(state)
+    priorities = []
+    required = None
+    if leader_region in threat_regions:
+        required = (leader_region, enemies)
+        own_mobile = count_mobile_pieces(state, leader_region, BELGAE)
+        weaker = [enemy for enemy in enemies
+                  if count_mobile_pieces(state, leader_region, enemy) < own_mobile]
+        priorities.append((leader_region, weaker, True))
 
-    for region in threat_regions:
-        if any(bp["region"] == region for bp in battle_plan):
-            continue
-        cands = [e for e in enemies
-                 if count_pieces(state, region, e) > 0
-                 and _can_battle_in_region(state, region, scenario, e)]
-        if cands:
-            target = (random_select(state, cands) if len(cands) > 1
-                      else cands[0])
-            battle_plan.append({
-                "region": region, "target": target, "is_trigger": True,
-            })
+    priorities.extend((region, enemies, True) for region in threat_regions)
+    playable = command_region_candidates(state, get_playable_regions(scenario, state.get("capabilities")))
+    priorities.extend((region, enemies, False) for region in playable
+                      if count_pieces(state, region, BELGAE))
 
-    # Step 4: Fight other non-Germans (or all in Ariovistus) — §8.5.1
-    for region in playable:
-        if any(bp["region"] == region for bp in battle_plan):
-            continue
-        if count_pieces(state, region, BELGAE) == 0:
-            continue
-        cands = [e for e in enemies
-                 if count_pieces(state, region, e) > 0
-                 and _can_battle_in_region(state, region, scenario, e)]
-        if cands:
-            target = (random_select(state, cands) if len(cands) > 1
-                      else cands[0])
-            battle_plan.append({
-                "region": region, "target": target, "is_trigger": False,
-            })
+    def qualifies(region, enemy, *, is_ambush):
+        return _can_battle_in_region(state, region, scenario, enemy, is_ambush=is_ambush)
 
-    from fs_bot.bots.bot_common import affordable_battle_plan
-    battle_plan = affordable_battle_plan(state, BELGAE, battle_plan)
+    battle_plan = select_battle_plan(
+        state, BELGAE, priorities, qualifies, required=required, random_ties=True)
 
     if not battle_plan:
         return node_b_march_threat(state)
@@ -1266,59 +1202,7 @@ def node_b_march(state):
 # ============================================================================
 
 def _check_ambush(state, battle_plan, scenario):
-    """B_AMBUSH: Determine Ambush regions.
-
-    Per §8.5.1:
-    1. In 1st Battle, BUT only if Retreat out could lessen removals
-       AND/OR any Counterattack Loss to Belgae is possible.
-    2. In all other Battles only if Belgae Ambushed in the 1st Battle.
-
-    Ambush requires (§4.5.3 / §4.3.3):
-    - More Hidden Belgic Warbands than Hidden Defenders in the region.
-    - Region must be within one Region of Ambiorix or have Successor.
-
-    Returns:
-        List of Ambush regions, or empty.
-    """
-    if not command_sa_allowed(state):
-        return []
-    if not battle_plan:
-        return []
-
-    first_battle = battle_plan[0]
-    region = first_battle["region"]
-    enemy = first_battle["target"]
-
-    from fs_bot.commands.sa_ambush import validate_ambush_region
-    if not validate_ambush_region(state, region, BELGAE, enemy)[0]:
-        return []
-
-    # Check if Ambush is needed in 1st Battle — §8.5.1
-    should_ambush_first = False
-
-    # Estimate Belgae Attack losses
-    losses_inflicted, _ = _estimate_battle_losses(
-        state, region, scenario, enemy)
-
-    # (a) "Retreat out could lessen removals" — §8.5.1
-    enemy_mobile = count_mobile_pieces(state, region, enemy)
-    if enemy_mobile > 0 and losses_inflicted > 0:
-        should_ambush_first = True
-
-    # (b) "any Counterattack Loss to Belgae is possible" — §8.5.1
-    # "A defending Legion or Leader would meet the 2nd requirement"
-    if count_pieces(state, region, enemy, LEGION) > 0:
-        should_ambush_first = True
-    if get_leader_in_region(state, region, enemy) is not None:
-        should_ambush_first = True
-
-    if not should_ambush_first:
-        return []
-
-    # "Each other Battle possible" still has its own Hidden/leader checks.
-    return [bp["region"] for bp in battle_plan
-            if validate_ambush_region(state, bp["region"], BELGAE,
-                                      bp["target"])[0]]
+    return ambush_regions_for_plan(state, BELGAE, battle_plan)
 
 
 def _check_rampage(state, scenario, *, before_battle=False, battle_plan=None, allowed_regions=None):

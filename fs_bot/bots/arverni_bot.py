@@ -80,6 +80,7 @@ from fs_bot.bots.bot_common import (
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.common import _is_devastated
+from fs_bot.bots.battle_planning import ambush_regions_for_plan, select_battle_plan
 from fs_bot.bots.bot_dispatch import BotDispatchError
 from fs_bot.cards.bot_instructions import (
     get_bot_instruction, NO_EVENT, SPECIFIC_INSTRUCTION, PLAY_EVENT,
@@ -195,7 +196,7 @@ def _get_threat_regions(state, scenario):
     return [r for r in playable if _has_arverni_threat(state, r, scenario)]
 
 
-def _can_battle_in_region(state, region, scenario, enemy):
+def _can_battle_in_region(state, region, scenario, enemy, *, is_ambush=False):
     """Check if Arverni can Battle a specific enemy in a region per §8.7.1.
 
     Conditions: Force at least one Loss on a Legion AND/OR inflict more
@@ -231,7 +232,8 @@ def _can_battle_in_region(state, region, scenario, enemy):
         return False
 
     forecast = predict_battle(
-        state, region, ARVERNI, enemy, avoid_defender_losses=(LEGION,))
+        state, region, ARVERNI, enemy, is_ambush=is_ambush,
+        avoid_defender_losses=(LEGION,))
     if forecast is None or forecast['attacker_leader_lost']:
         return False
 
@@ -283,9 +285,8 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
     """Check if Raiding would gain at least 2 Resources total.
 
     Per §8.7.5: Raid only if would gain 2+ Resources.
-    Per §3.3.3: Each Raid region flips 1-2 Hidden Warbands; each flip either
-    steals 1 Resource from an enemy (no Citadel/Fort) or gains 1 Resource
-    (non-Devastated, no faction target).  Max 2 flips per region total.
+    Each flip steals 1 Resource or gains 1 in a non-Devastated Region.
+    Use the Command's regional limit, including shaded Baggage Trains.
 
     Iterates by REGION first to avoid double-counting.  For each flip,
     assigns to highest-priority target: Romans → Aedui → Belgae (checking
@@ -295,6 +296,9 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         (bool, list of raid plan dicts) — whether 2+ Resources would be
         gained and the raid plan organized by region.
     """
+    from fs_bot.commands.raid import max_raiders_per_region, validate_raid_steal_target
+
+    raid_limit = max_raiders_per_region(state, ARVERNI)
     playable = command_region_candidates(
         state, get_playable_regions(scenario, state.get("capabilities")))
     total_gain = 0
@@ -311,14 +315,6 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         if hidden_wb == 0:
             continue
 
-        # Max flips in this region — §3.3.3: flip 1-2 Hidden Warbands
-        raid_limit = 2
-        if raiders is not None:
-            from fs_bot.cards.capabilities import is_capability_active, get_capability_owner
-            from fs_bot.rules_consts import EVENT_SHADED
-            if (is_capability_active(state, 8, EVENT_SHADED)
-                    and get_capability_owner(state, 8) == ARVERNI):
-                raid_limit = 3
         flips = min(raid_limit, hidden_wb)
 
         is_devastated = _is_devastated(state, region)
@@ -328,7 +324,6 @@ def _would_raid_gain_enough(state, scenario, *, raiders=None):
         # §3.3.3 legality (pieces, no Citadel/Fort, >=1 Resource, non-Germanic)
         # is enforced by the canonical validator — the missing Resource check
         # produced "Cannot steal from <F>: <F> has 0 Resources".
-        from fs_bot.commands.raid import validate_raid_steal_target
         steal_targets = []
         for target in (ROMANS, AEDUI, BELGAE):
             valid, _ = validate_raid_steal_target(
@@ -615,97 +610,29 @@ def node_v_battle(state):
     if not threat_regions:
         return node_v_march_threat(state)
 
-    # Step 1: Check Vercingetorix — §8.7.1
     verc_region = _vercingetorix_region(state)
-    if verc_region and verc_region in threat_regions:
-        # Check if Vercingetorix can Battle here
-        can_verc_battle = False
-        for enemy in (ROMANS, AEDUI):
-            if count_pieces(state, verc_region, enemy) == 0:
-                continue
-            # Check Caesar ratio — §8.7.1 step 4a
-            if enemy == ROMANS and _caesar_in_region(state, verc_region):
-                if not _check_caesar_ratio(state, verc_region):
-                    continue
-            if _can_battle_in_region(state, verc_region, scenario, enemy):
-                can_verc_battle = True
-                break
+    enemies = (ROMANS, AEDUI)
+    priorities = []
+    required = None
+    if verc_region in threat_regions:
+        required = (verc_region, enemies)
+        priorities.append((verc_region, (ROMANS,), True))
 
-        if not can_verc_battle:
-            # "the Arverni do not Battle at all, but instead March" — §8.7.1
-            return node_v_march_threat(state)
-
-    # Step 2: Build battle plan — pay Resources as selecting — §8.7.1
-    battle_plan = []
-
-    # First: Vercingetorix fights Romans (step 4) — §8.7.1
-    if verc_region and verc_region in threat_regions:
-        if count_pieces(state, verc_region, ROMANS) > 0:
-            # Check Caesar ratio
-            if _caesar_in_region(state, verc_region):
-                if _check_caesar_ratio(state, verc_region):
-                    if _can_battle_in_region(state, verc_region, scenario, ROMANS):
-                        battle_plan.append({
-                            "region": verc_region,
-                            "target": ROMANS,
-                            "is_trigger": True,
-                        })
-            else:
-                if _can_battle_in_region(state, verc_region, scenario, ROMANS):
-                    battle_plan.append({
-                        "region": verc_region,
-                        "target": ROMANS,
-                        "is_trigger": True,
-                    })
-
-    # Then other trigger regions — §8.7.1 (triggering enemies)
-    for region in threat_regions:
-        if any(bp["region"] == region for bp in battle_plan):
-            continue
-        for enemy in (ROMANS, AEDUI):
-            if count_pieces(state, region, enemy) == 0:
-                continue
-            if _can_battle_in_region(state, region, scenario, enemy):
-                battle_plan.append({
-                    "region": region,
-                    "target": enemy,
-                    "is_trigger": True,
-                })
-                break
-
-    # Step 5: Additional Battles vs Romans, Aedui, player Belgae — §8.7.1
-    # "spaces that did not trigger the Battle Command above"
-    # "Non-player Arverni do not Battle against Non-player Belgae or Germans."
+    priorities.extend((region, enemies, True) for region in threat_regions)
+    # §8.7.1 permits player Belgae only among additional Battles.
+    other_enemies = enemies if BELGAE in non_players else (*enemies, BELGAE)
     playable = command_region_candidates(
         state, get_playable_regions(scenario, state.get("capabilities")))
-    for region in playable:
-        if any(bp["region"] == region for bp in battle_plan):
-            continue
-        if count_pieces(state, region, ARVERNI) == 0:
-            continue
-        for enemy in (ROMANS, AEDUI):
-            if count_pieces(state, region, enemy) == 0:
-                continue
-            if _can_battle_in_region(state, region, scenario, enemy):
-                battle_plan.append({
-                    "region": region,
-                    "target": enemy,
-                    "is_trigger": False,
-                })
-                break
-        else:
-            # Check player Belgae only — §8.7.1 NOTE
-            if BELGAE not in non_players:
-                if count_pieces(state, region, BELGAE) > 0:
-                    if _can_battle_in_region(state, region, scenario, BELGAE):
-                        battle_plan.append({
-                            "region": region,
-                            "target": BELGAE,
-                            "is_trigger": False,
-                        })
+    priorities.extend((region, other_enemies, False) for region in playable
+                      if region not in threat_regions and count_pieces(state, region, ARVERNI))
 
-    from fs_bot.bots.bot_common import affordable_battle_plan
-    battle_plan = affordable_battle_plan(state, ARVERNI, battle_plan)
+    def qualifies(region, enemy, *, is_ambush):
+        if (region == verc_region and enemy == ROMANS
+                and _caesar_in_region(state, region) and not _check_caesar_ratio(state, region)):
+            return False
+        return _can_battle_in_region(state, region, scenario, enemy, is_ambush=is_ambush)
+
+    battle_plan = select_battle_plan(state, ARVERNI, priorities, qualifies, required=required)
 
     if not battle_plan:
         return node_v_march_threat(state)
@@ -1295,73 +1222,7 @@ def node_v_march_mass(state):
 # ============================================================================
 
 def _check_ambush(state, battle_plan, scenario):
-    """V_AMBUSH: Determine Ambush regions.
-
-    Per §4.3.3: Ambush requires:
-      (a) more Hidden Arverni than Hidden Defenders in the region, AND
-      (b) within one Region of Vercingetorix or has his Successor.
-
-    Per §8.7.1: Ambush in 1st Battle only if:
-      - Retreat out could lessen removals (enemy has mobile pieces that CAN
-        Retreat AND Arverni would inflict >0 losses so retreating saves them),
-        AND/OR
-      - Any Counterattack Loss to Arverni is possible (enemy has a Legion or
-        Leader that could survive Attack to Counterattack).
-    If Ambushed in 1st Battle, Ambush in all others.
-
-    Returns:
-        List of Ambush regions, or empty.
-    """
-    if not command_sa_allowed(state):
-        return []
-    if not battle_plan:
-        return []
-
-    first_battle = battle_plan[0]
-    region = first_battle["region"]
-    enemy = first_battle["target"]
-
-    from fs_bot.commands.sa_ambush import validate_ambush_region
-    if not validate_ambush_region(state, region, ARVERNI, enemy)[0]:
-        return []
-
-    # Check if Ambush is needed in 1st Battle — §8.7.1
-    should_ambush_first = False
-
-    # Estimate whether Retreat could spare a defender from the Attack.
-    arverni_wb = count_pieces(state, region, ARVERNI, WARBAND)
-    has_verc = get_leader_in_region(state, region, ARVERNI) is not None
-    attack_raw = arverni_wb * 0.5 + (1 if has_verc else 0)
-    enemy_fort = count_pieces(state, region, enemy, FORT)
-    enemy_citadel = count_pieces(state, region, enemy, CITADEL)
-    if enemy_fort > 0 or enemy_citadel > 0:
-        attack_raw = attack_raw / 2
-    losses_inflicted = int(attack_raw)
-
-    # (a) "Retreat out of that Region could lower the number of pieces
-    # [the enemy] would remove" — §8.7.1
-    # Retreat saves the enemy only if Arverni would inflict >0 losses
-    # (so the enemy gains from retreating to halve losses)
-    enemy_mobile = count_mobile_pieces(state, region, enemy)
-    if enemy_mobile > 0 and losses_inflicted > 0:
-        should_ambush_first = True
-
-    # (b) "any Counterattack Loss to Arverni is possible" — §8.7.1
-    # "A defending Legion or Leader would meet the 2nd requirement,
-    # because it could survive multiple die roll Losses to then inflict
-    # one Loss in Counterattack."
-    if count_pieces(state, region, enemy, LEGION) > 0:
-        should_ambush_first = True
-    if get_leader_in_region(state, region, enemy) is not None:
-        should_ambush_first = True
-
-    if not should_ambush_first:
-        return []
-
-    # "Each other Battle possible" still has its own Hidden/leader checks.
-    return [bp["region"] for bp in battle_plan
-            if validate_ambush_region(state, bp["region"], ARVERNI,
-                                      bp["target"])[0]]
+    return ambush_regions_for_plan(state, ARVERNI, battle_plan)
 
 
 def _check_devastate(state, scenario, *, allowed_regions=None):

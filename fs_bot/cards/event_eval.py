@@ -1001,6 +1001,14 @@ def is_event_effective(state, card_id, shaded=False):
     if card_id == "A5" and shaded and state.get("senate", {}).get("position") == ADULATION:
         return False
 
+    if card_id in (18, 'A18') and shaded:
+        from fs_bot.cards.event_targets import rhenus_bridge_has_legion
+        return rhenus_bridge_has_legion(state)
+
+    if card_id == 'A19' and not shaded:
+        from fs_bot.cards.procillus import replacement_targets
+        return bool(replacement_targets(state))
+
     if card_id == "A36" and not shaded:
         from fs_bot.cards.base_piece_choices import a36_removal_request
         return any(a36_removal_request(state)["required"].values())

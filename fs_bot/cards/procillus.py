@@ -1,12 +1,60 @@
-"""A19 Captured: executor selects one compulsory whole Roman March.
+"""A19: replace Allies near Caesar or March a whole Roman force.
 
 A Card Reference A19 and §5.1 assign the choice to the Event executor.
 Only German non-players apply their no-Fort/outnumber instruction.
 """
 from fs_bot import rules_consts as rc
-from fs_bot.board.pieces import count_pieces, get_leader_in_region
+from fs_bot.board.pieces import count_pieces, get_available, get_leader_in_region
 from fs_bot.engine.free_actions import consult_free_action
-from fs_bot.map.map_data import get_adjacent, get_playable_regions_for_state
+from fs_bot.map.map_data import get_adjacent, get_playable_regions_for_state, get_tribe_restriction
+
+
+MAX_REPLACEMENTS = 3
+
+
+def replacement_targets(state):
+    """Exact non-Roman Ally discs within one Region of named Caesar."""
+    from fs_bot.cards.event_targets import roman_leader_regions
+    from fs_bot.cards.expansion_validation import source_allies
+    regions = roman_leader_regions(state, caesar_only=True)
+    return {entry['tribe']: entry for entry in source_allies(state, regions)
+            if entry['faction'] != rc.ROMANS}
+
+
+def roman_ally_allowed(state, tribe):
+    # A Colony uses its own circle rather than a printed Tribe restriction.
+    return (bool(state['tribes'][tribe].get('region'))
+            or get_tribe_restriction(tribe) in (None, rc.ROMANS))
+
+
+def derive_params(state, faction, shaded):
+    if shaded:
+        return None
+    from fs_bot.bots.bot_common import get_faction_targeting_order, is_ally_in_city_or_remi, random_select
+
+    targets = replacement_targets(state)
+    available = get_available(state, rc.ROMANS, rc.ALLY)
+    order = get_faction_targeting_order(faction, state['scenario'])
+    priorities = {owner: index for index, owner in enumerate(order)}
+    replacements, last_region = [], None
+    while targets and len(replacements) < MAX_REPLACEMENTS:
+        # §§8.3.1/8.4.1: maximize actual replacements, then choose Cities or
+        # Remi before other discs and use the printed faction order. A pool
+        # shortage or stacking restriction still permits removal (§5.1.1).
+        scores = {tribe: (available > 0 and roman_ally_allowed(state, tribe),
+                          is_ally_in_city_or_remi(tribe, state['scenario']),
+                          -priorities.get(entry['faction'], len(priorities)))
+                  for tribe, entry in targets.items()}
+        best = max(scores.values())
+        choices = [tribe for tribe, score in scores.items() if score == best]
+        regions = sorted({targets[tribe]['region'] for tribe in choices})
+        region = last_region if last_region in regions else random_select(state, regions)
+        tribe = random_select(state, [t for t in choices if targets[t]['region'] == region])
+        replacements.append({'tribe': tribe})
+        available -= int(best[0])
+        last_region = region
+        del targets[tribe]
+    return {'replacements': replacements} if replacements else None
 
 
 def mobile_count(state, region):

@@ -604,6 +604,10 @@ separates “Skip Ally changes; decide Rally” from declining both effects.
 Missing or invalid answers stay pending. The same board and card information
 remains available while answering another faction's Event.
 
+Shaded Rhenus Bridge (18 and A18) applies the Roman Resource and
+Eligibility penalties when a Legion is in or adjacent to Germania. Bots
+continue their flowcharts when that requirement fails.
+
 Shaded Sacking requires one of the executor's Citadels in the same Region
 as a Roman Legion. It sends one Legion to Fallen and makes Romans Ineligible
 through the next card. Unshaded Assembly of Gaul drains eight Resources once
@@ -678,6 +682,8 @@ available defender. The first Battle forbids Retreat; the second uses normal
 Retreat rules. Gaius Valerius Procillus (A19), shaded, lets the Event player choose which
 whole Roman force Marches and its adjacent destination with Germans.
 Unshaded Procillus uses the named Caesar for its Ally replacement range.
+It removes a selected Ally if a Roman Ally is unavailable or cannot stack
+there. The Roman bot replaces or removes up to three eligible Allies.
 Harudes (A29) lets the Event player choose how the newly placed German
 Warbands Raid. Bellovaci (A69) lets that player choose the Ambush defender;
 only surviving newly placed Warbands receive the printed extra Losses.
@@ -723,7 +729,8 @@ Oppida (28) first offers Subdued Cities outside Roman Control for Gallic
 Ally placements. Then choose which City Allies to upgrade with Available
 Citadels of their own factions, including Allies placed during the first
 step. The menus show City names and recalculate the options after each
-placement, upgrade, or voluntary removal.
+placement, upgrade, or voluntary removal. Bots also use the board after
+their own Ally placements to choose City upgrades.
 
 Remi Influence (68 shaded) asks the Gallic faction allied with Remi whether
 to accept and which City to use: Alesia or Cenabum. That faction receives
@@ -740,6 +747,9 @@ for each Ally. You can finish with zero removals at Bibrax.
 The unshaded “remove all” effects of Ariovistus's Wife (A25), Divico (A26),
 Orgetorix (A30) and Galba (A56) include Scouted Warbands. Printed restrictions
 on Regions, factions and Leaders still apply.
+Shaded Divico places up to twelve Available Arverni Warbands in Aedui and
+Sequani. German bots divide the placement when needed to keep German Control
+and pass over the Event if neither Region can take any.
 
 A Citadel placed by shaded Orgetorix allies its City Tribe to the Arverni.
 The Event's stacking exception permits an Arverni Citadel at Bibracte.

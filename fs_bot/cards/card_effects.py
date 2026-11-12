@@ -822,6 +822,15 @@ def execute_card_17(state, shaded=False):
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_17_germans_phase"] = True
 
+def _apply_shaded_rhenus_bridge(state):
+    from fs_bot.cards.event_targets import rhenus_bridge_has_legion
+    if rhenus_bridge_has_legion(state):
+        _cap_resources(state, ROMANS, -6)
+        state["eligibility"][ROMANS] = INELIGIBLE
+        # "Ineligible through NEXT card" survives adjust_eligibility.
+        state.setdefault("forced_ineligible", {})[ROMANS] = 1
+
+
 def execute_card_18(state, shaded=False):
     """Card 18: Rhenus Bridge — Remove Germans / Roman Resources penalty.
 
@@ -836,31 +845,10 @@ def execute_card_18(state, shaded=False):
 
     Source: Card Reference, card 18
     """
-    from fs_bot.map.map_data import get_adjacent
-    from fs_bot.rules_consts import GERMANIA_REGIONS
     if not shaded:
         from fs_bot.cards.named_event_effects import execute
         return execute(state, 18)
-    else:
-        # Shaded: If any Legion is in or adjacent to a Germania Region,
-        # Romans -6 Resources and Ineligible
-        legion_near = False
-        for g_region in GERMANIA_REGIONS:
-            if count_pieces(state, g_region, ROMANS, LEGION) > 0:
-                legion_near = True
-                break
-            for adj in get_adjacent(g_region, state.get("scenario")):
-                if count_pieces(state, adj, ROMANS, LEGION) > 0:
-                    legion_near = True
-                    break
-            if legion_near:
-                break
-        if legion_near:
-            _cap_resources(state, ROMANS, -6)
-            state["eligibility"][ROMANS] = INELIGIBLE
-            # "Ineligible through NEXT card" — persistent flag,
-            # consumed by adjust_eligibility (else clobbered).
-            state.setdefault("forced_ineligible", {})[ROMANS] = 1
+    _apply_shaded_rhenus_bridge(state)
 
 def _place_named_successor(state, faction, region, leader_name):
     """Restore a checked Successor from the map or Available, symbol-up."""
@@ -2701,31 +2689,10 @@ def execute_card_A18(state, shaded=False):
 
     Source: A Card Reference, card A18
     """
-    from fs_bot.rules_consts import GERMANIA_REGIONS
-    from fs_bot.map.map_data import get_adjacent
-    params = state.get("event_params", {})
-    scenario = state["scenario"]
     if not shaded:
         from fs_bot.cards.named_event_effects import execute
         return execute(state, 'A18')
-    else:
-        has_legion_near = False
-        for g_region in GERMANIA_REGIONS:
-            if count_pieces(state, g_region, ROMANS, LEGION) > 0:
-                has_legion_near = True
-                break
-            for adj in get_adjacent(g_region, scenario):
-                if count_pieces(state, adj, ROMANS, LEGION) > 0:
-                    has_legion_near = True
-                    break
-            if has_legion_near:
-                break
-        if has_legion_near:
-            _cap_resources(state, ROMANS, -6)
-            state["eligibility"][ROMANS] = INELIGIBLE
-            # "Ineligible through NEXT card" — persistent flag,
-            # consumed by adjust_eligibility (else clobbered).
-            state.setdefault("forced_ineligible", {})[ROMANS] = 1
+    _apply_shaded_rhenus_bridge(state)
 
 def execute_card_A19(state, shaded=False):
     """Card A19: Gaius Valerius Procillus — Replace Allies / March Romans.
@@ -2739,21 +2706,16 @@ def execute_card_A19(state, shaded=False):
     params = state.get("event_params", {})
     if not shaded:
         from fs_bot.cards.event_targets import roman_leader_regions
+        from fs_bot.cards.procillus import MAX_REPLACEMENTS, replacement_targets, roman_ally_allowed
         if not roman_leader_regions(state, caesar_only=True):
             return
         replacements = params.get("replacements", [])
-        for r in _event_entries(state, "A19.replacements", replacements[:3]):
+        for r in _event_entries(state, "A19.replacements", replacements[:MAX_REPLACEMENTS]):
             tribe = r["tribe"]
-            region = _tribe_region(state, tribe)
-            if region not in roman_leader_regions(state, caesar_only=True):
-                continue
-            t_info = state.get("tribes", {}).get(tribe)
-            if (t_info and t_info.get("allied_faction")
-                    and t_info["allied_faction"] != ROMANS
-                    and _tribe_piece_type(state, tribe) == ALLY):
-                # "replace ... Allies" — Ally discs only; both records
+            if tribe in replacement_targets(state):
                 _unally_tribe(state, tribe)
-                _ally_tribe(state, tribe, ROMANS)
+                if roman_ally_allowed(state, tribe):
+                    _ally_tribe(state, tribe, ROMANS)
     else:
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A19_march_romans"] = True
@@ -2943,10 +2905,8 @@ def execute_card_A26(state, shaded=False):
 
     Source: A Card Reference, card A26
     """
-    from fs_bot.rules_consts import (
-        SEQUANI, AEDUI_REGION, TRIBE_HELVETII, TRIBE_TO_REGION,
-    )
     if not shaded:
+        from fs_bot.rules_consts import SEQUANI, AEDUI_REGION, TRIBE_HELVETII
         # Remove Arverni Ally at Helvetii
         t_info = state.get("tribes", {}).get(TRIBE_HELVETII)
         if t_info and t_info.get("allied_faction") == ARVERNI:
@@ -2960,18 +2920,18 @@ def execute_card_A26(state, shaded=False):
                                  count=c, piece_state=ps)
     else:
         # Place up to 12 Arverni Warbands among Aedui and Sequani
+        from fs_bot.cards.divico import MAX_WARBANDS, placement_limit
         params = state.get("event_params", {})
         placements = params.get("placements", [])
+        executor = state.get("executing_faction")
+        npc = executor if executor in state.get("non_player_factions", ()) else None
         total = 0
         for p in _event_entries(state, "A26.placements", placements):
-            if total >= 12:
+            if total >= MAX_WARBANDS:
                 break
             region = p["region"]
-            if region not in (AEDUI_REGION, SEQUANI):
-                continue
-            cnt = min(p.get("count", 1), 12 - total)
-            avail = get_available(state, ARVERNI, WARBAND)
-            to_place = min(cnt, avail)
+            to_place = min(p.get("count", 1), MAX_WARBANDS - total,
+                           placement_limit(state, npc, region))
             if to_place > 0:
                 place_piece(state, region, ARVERNI, WARBAND, count=to_place)
                 total += to_place

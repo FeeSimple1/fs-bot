@@ -74,6 +74,14 @@ def roman_leader_regions(state, *, caesar_only=False):
                  if region in within_one)
 
 
+def rhenus_bridge_has_legion(state):
+    """Cards 18/A18 shaded require a Legion in or adjacent to Germania."""
+    near = set(rc.GERMANIA_REGIONS)
+    for region in rc.GERMANIA_REGIONS:
+        near.update(get_adjacent_for_state(state, region, rc.ROMANS))
+    return any(count_pieces(state, region, rc.ROMANS, rc.LEGION) for region in near)
+
+
 def successor_regions(state, faction):
     """Lucterius and Flight of Ambiorix return the Leader symbol-up."""
     origin = find_leader(state, faction)

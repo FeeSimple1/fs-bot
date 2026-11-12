@@ -13,6 +13,12 @@ from fs_bot.cards.capabilities import GALLIC_RECIPIENT_CAPABILITIES
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 28:
+        from fs_bot.cards.oppida import np_available
+        return np_available(state, faction)
+    if card_id == 'A26' and shaded:
+        from fs_bot.cards.divico import np_available
+        return np_available(state, faction)
     if card_id == 57 and shaded:
         from fs_bot.cards.land_of_mist import np_available
         return np_available(state, faction)

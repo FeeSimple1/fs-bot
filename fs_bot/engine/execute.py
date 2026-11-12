@@ -5957,26 +5957,6 @@ def _derive_senate_direction(state, faction, shaded):
             else SENATE_UP}
 
 
-def _derive_card_28(state, faction, shaded):
-    """Card 28 (Oppida): place the acting Gallic Faction's Available Allies at
-    Subdued City Tribes not under Roman Control, and upgrade its City Allies to
-    Citadels (§8.2.3 — the NP benefits itself; §8.3.1 — at Cities). Only a
-    Gallic Faction benefits."""
-    from fs_bot.cards.oppida import ally_options, upgrade_options
-    from fs_bot.rules_consts import GALLIC_FACTIONS, CITY_TO_TRIBE, ALLY, CITADEL
-    from fs_bot.board.pieces import get_available
-    if faction not in GALLIC_FACTIONS:
-        return None
-    placements = [{"tribe": CITY_TO_TRIBE[city], "faction": faction}
-                  for city, owner in ally_options(state) if owner == faction]
-    placements = placements[:get_available(state, faction, ALLY)]
-    upgrades = [city for city, owner in upgrade_options(state).items() if owner == faction]
-    upgrades = upgrades[:get_available(state, faction, CITADEL)]
-    if not placements and not upgrades:
-        return None
-    return {"ally_placements": placements, "citadel_upgrades": upgrades}
-
-
 def _derive_card_71(state, faction, shaded):
     """Card 71 (Colony): place the Colony + the acting Faction's Ally in a
     Region it Controls (or No Control), with no Colony yet. §8.3.1 — choose a
@@ -6487,6 +6467,9 @@ from fs_bot.cards.expansion_reinforcements import derive_iccius, derive_nasua
 from fs_bot.cards.surus import derive_params as derive_surus
 from fs_bot.cards.german_allegiances import derive_params as derive_german_allegiances
 from fs_bot.cards.land_of_mist import derive_params as derive_land_of_mist
+from fs_bot.cards.oppida import derive_params as derive_oppida
+from fs_bot.cards.procillus import derive_params as derive_procillus
+from fs_bot.cards.divico import derive_params as derive_divico
 
 
 _EVENT_PARAM_DERIVERS = {
@@ -6510,6 +6493,8 @@ _EVENT_PARAM_DERIVERS = {
     11: _derive_card_11,
     "A17": _derive_card_A17,
     "A18": _derive_card_A18,
+    "A19": derive_procillus,
+    "A26": derive_divico,
     "A37": _derive_card_A37,
     "A29": _derive_card_A29,
     "A40": _derive_card_A40,
@@ -6518,7 +6503,7 @@ _EVENT_PARAM_DERIVERS = {
     "A66": _derive_card_A66,
     22: _derive_card_22,
     46: _derive_card_46,
-    28: _derive_card_28,
+    28: derive_oppida,
     41: _derive_card_41,
     23: _derive_card_23,
     32: _derive_card_32,

@@ -1552,6 +1552,14 @@ for correction and rolls back the Event. Base-game German Battle keeps
 its intrinsic Ambush requirements. `acting_faction` does not transfer
 voluntary-removal ownership to the chooser or the Germans.
 
+For unshaded Procillus, `event_params.replacements` holds up to three
+`{"tribe": "Bituriges"}` entries naming Ally discs within one Region of
+Caesar. A selected disc is removed when the Roman replacement is unavailable
+or stacking forbids it. Shaded Divico uses `event_params.placements`, with
+`region` and `count` entries for Aedui and Sequani and a combined limit of
+twelve. Empty lists are legal for both Events. The German bot caps Divico
+placements at the amount that preserves existing German Control.
+
 Winter Uprising's timing request belongs to its human holder. Deferring
 keeps the card, marker and delayed effect. Non-player holders activate at
 the earliest window; the Gallic War Interlude forces activation and skips

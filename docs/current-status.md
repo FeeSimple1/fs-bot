@@ -21,9 +21,8 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-Batches 1–3 close four of the seventh comparison audit's nine repair
-groups. **Five remain open** across bot Events and bot Ambush and Raid
-planning.
+Batches 1–4 close seven of the seventh comparison audit's nine repair
+groups. **Two remain open** in bot Ambush and Raid planning.
 [Audit report](reviews/comparison-audit-round7-2026-11-11.md)
 
 [Seventh-audit finding ledger](reviews/comparison-audit-round7-2026-11-11.json) ·
@@ -33,6 +32,20 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 11 November seventh comparison repair Batch 4
+
+Oppida plans upgrades after its Ally placements. The Roman bot derives
+Procillus replacements within one Region of named Caesar, and shaded
+Divico places Available Arverni Warbands while respecting the German bot's
+Control restriction. Both versions of shaded Rhenus Bridge use the same
+nearby Legion check for selection and execution.
+[Repair and validation](reviews/seventh-comparison-batch4-2026-11-11.md)
+
+All **10,068 tests pass**. All 120 audited bot games complete cleanly, and
+20 mixed-player cases match across two hash seeds with zero hard findings.
+Paired replays trace 47 changed final states to the repaired Events. The
+refreshed 100-game balance check passes on the original seeds and band.
 
 ### 11 November seventh comparison repair Batch 3
 

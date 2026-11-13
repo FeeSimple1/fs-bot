@@ -21,21 +21,20 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The eleventh comparison audit has **eight open medium-priority findings**.
+The eleventh comparison audit has **three of eight findings closed**.
 [Audit report](reviews/comparison-audit-round11-2026-11-13.md) · [Ledger](reviews/comparison-audit-round11-2026-11-13.json) · [Evidence](reviews/comparison-audit-round11-2026-11-13-evidence.zip)
 
 | Batch | Findings | Scope |
 |---|---|---|
-| 1 | EV11-01, EV11-02, EV11-03 | Lucterius, Assembly of Gaul and Shifting Loyalties bot choices |
+| 1 | EV11-01, EV11-02, EV11-03 | Closed. [Lucterius, Assembly of Gaul and Shifting Loyalties](reviews/eleventh-comparison-batch1-2026-11-13.md). |
 | 2 | BM11-01 | Divination forecast with active Abatis |
 | 3 | LC11-01 | Arverni removal priorities at the Gallic War Interlude |
 | 4 | UI11-01 | Winter Campaign terminal choice for Command plus borrowed Enlist |
 | 5 | NP11-01, NP11-02 | Belgic Enlist after March and German Leader movement |
 
-All **10,379 existing tests pass**. Twenty audited bot games complete cleanly,
-and 20 mixed-player cases reproduce across hash seeds 0 and 987 with zero
-hard findings and four retained soft partial plans. The five directed
-probes independently reproduce the eight findings and their controls.
+Batch 1 passes **10,420 tests**, 120 audited bot games and 20 mixed-player
+cases at hash seeds 0 and 987. The 100-game balance baseline records the
+reviewed Event outcomes using the same seeds and 15-point tolerance.
 
 ### Previous rounds
 
@@ -93,6 +92,14 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 13 November eleventh comparison repair Batch 1
+
+The Arverni bot restores Vercingetorix among its largest concentrations of
+pieces. Roman and Aedui bots choose legal Resource targets for unshaded
+Assembly of Gaul. Bots remove Capabilities using their faction's Shifting
+Loyalties priorities.
+[Repairs and validation](reviews/eleventh-comparison-batch1-2026-11-13.md)
 
 ### 13 November tenth comparison repair Batch 5
 

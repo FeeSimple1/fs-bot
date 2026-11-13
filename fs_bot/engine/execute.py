@@ -6066,6 +6066,25 @@ def _derive_card_42(state, faction, shaded):
     return derive_wine(state, faction, shaded)
 
 
+def _derive_card_19(state, faction, shaded):
+    """The Arverni bot places its returning Leader with most own pieces (§8.3.2)."""
+    from fs_bot.rules_consts import ARVERNI
+    if not shaded or faction != ARVERNI or faction not in state.get('non_player_factions', ()):
+        return None
+    from fs_bot.bots.bot_common import get_leader_placement_region
+    from fs_bot.cards.event_targets import successor_regions
+
+    region = get_leader_placement_region(state, ARVERNI, successor_regions(state, ARVERNI))
+    return {'target_region': region} if region is not None else None
+
+
+def _derive_card_52(state, faction, shaded):
+    if shaded or faction not in state.get('non_player_factions', ()):
+        return None
+    from fs_bot.cards.event_targets import np_assembly_targets
+    return {'target_factions': np_assembly_targets(state, faction)}
+
+
 def _derive_card_23(state, faction, shaded):
     """Card 23 (Sacking), unshaded: Romans Raze a City under Roman Control
     (+8 Resources, permanent Disperse). Choose a Roman-Controlled City.
@@ -6580,6 +6599,7 @@ from fs_bot.cards.land_of_mist import derive_params as derive_land_of_mist
 from fs_bot.cards.oppida import derive_params as derive_oppida
 from fs_bot.cards.procillus import derive_params as derive_procillus
 from fs_bot.cards.divico import derive_params as derive_divico
+from fs_bot.cards.shifting_loyalties import derive_params as derive_shifting_loyalties
 
 
 _EVENT_PARAM_DERIVERS = {
@@ -6615,7 +6635,10 @@ _EVENT_PARAM_DERIVERS = {
     46: _derive_card_46,
     28: derive_oppida,
     41: _derive_card_41,
+    19: _derive_card_19,
     23: _derive_card_23,
+    50: derive_shifting_loyalties,
+    52: _derive_card_52,
     32: _derive_card_32,
     33: _derive_card_33,
     62: _derive_card_62,

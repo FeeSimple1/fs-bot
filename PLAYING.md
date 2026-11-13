@@ -259,11 +259,21 @@ at each Tribe. Both pieces use that Tribe's Region. An unavailable piece
 does not prevent the other placement.
 
 Shaded Lucterius restores the Arverni Successor as Vercingetorix. You can
-place him in his current Region or any legal destination. Shaded Flight of
-Ambiorix restores a Belgic Successor or the Available Leader in Germania,
+place him in his current Region or any legal destination when you control
+the Arverni, including when another Faction plays the Event. The Arverni bot
+chooses among the Regions with the most Arverni pieces. Bots check for an
+eligible Successor before playing the shaded side. Shaded Flight of Ambiorix
+restores a Belgic Successor or the Available Leader in Germania,
 Morini, Nervii, Treveri, or Sequani. Bots decline the shaded side when
 named Ambiorix is already on the map. Its unshaded side uses the Belgic
 Control-Allies total shown on the board.
+
+Unshaded Assembly of Gaul lets the Roman and Aedui bots drain Resources
+from their instructed Gallic targets. The Aedui target player Factions.
+In Ariovistus both bots target Belgae. Shifting Loyalties selects a
+Capability using the acting bot's printed priorities and the current holder
+of any Capability assigned to a Faction.
+[Batch 1 repairs](docs/reviews/eleventh-comparison-batch1-2026-11-13.md)
 
 Shaded Marcus Antonius (6) lets the executor choose up to four Roman Auxilia
 to move to Provincia. Select their origin and visibility. The pieces keep

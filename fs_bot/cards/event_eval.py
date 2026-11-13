@@ -1040,9 +1040,9 @@ def is_event_effective(state, card_id, shaded=False):
         from fs_bot.cards.base_piece_choices import choice_request
         return bool(choice_request(state, 51)["available"])
 
-    if card_id == 56 and shaded:
+    if card_id in (19, 56) and shaded:
         from fs_bot.cards.event_targets import successor_regions
-        return bool(successor_regions(state, BELGAE))
+        return bool(successor_regions(state, ARVERNI if card_id == 19 else BELGAE))
 
     if card_id == 58 and not shaded:
         from fs_bot.cards.base_piece_choices import aduatuca_request

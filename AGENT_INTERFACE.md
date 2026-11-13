@@ -414,8 +414,12 @@ and the executor's Citadel. These checks run before placement,
 removal, or eligibility changes.
 
 Shaded Lucterius and Flight of Ambiorix accept `target_region` when the
-respective Successor is on the map or the Leader is Available. Flight
-limits the destination to Germania, Morini, Nervii, Treveri, or Sequani.
+respective Successor is on the map or the Leader is Available. When another
+Faction plays shaded Lucterius, omitting `target_region` lets the Arverni
+choose through a required `spring_leader` request with `source: "event"`.
+Reply with `{"region": "…"}` using an offered Region. The Arverni bot chooses
+among the Regions with the most Arverni pieces. Flight limits the destination
+to Germania, Morini, Nervii, Treveri, or Sequani.
 Assembly of Gaul unshaded counts each Gallic entry in `target_factions`
 once. Shaded A65 accepts Belgae or Germans in `from_faction` and uses the
 other faction as the replacement owner.

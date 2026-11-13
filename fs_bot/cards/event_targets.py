@@ -109,6 +109,25 @@ def bellovaci_is_belgic_ally(state):
     return bellovaci.get('allied_faction') == rc.BELGAE
 
 
+def assembly_carnutes_qualifies(state):
+    """An unallied Carnutes circle is Subdued or Dispersed (§1.7, card 52)."""
+    carnutes = state.get('tribes', {}).get(rc.TRIBE_CARNUTES)
+    return carnutes is not None and carnutes.get('allied_faction') in (None, rc.ROMANS)
+
+
+def np_assembly_targets(state, faction):
+    """Unshaded Assembly targets every instructed Gallic faction with Resources."""
+    if faction not in (rc.ROMANS, rc.AEDUI) or not assembly_carnutes_qualifies(state):
+        return []
+    # A5.1.1 keeps Germans outside the printed Gallic scope, including
+    # when the expansion Aedui instruction lists them as an opponent.
+    targets = ((rc.BELGAE,) if state['scenario'] in rc.ARIOVISTUS_SCENARIOS
+               else (rc.ARVERNI, rc.BELGAE))
+    non_players = state.get('non_player_factions', ())
+    return [target for target in targets if state['resources'].get(target, 0) > 0
+            and (faction == rc.ROMANS or target not in non_players)]
+
+
 def alpine_tribes_regions(state, faction):
     """A40 placement area with the recipient's current stacking restrictions."""
     if faction not in rc.FACTIONS:

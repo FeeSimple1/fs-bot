@@ -4,8 +4,10 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The eleventh comparison audit records eight additional medium-priority
-findings, with reproducible evidence and a five-batch repair sequence.
+Batch 1 of the eleventh audit closes three of eight findings. Bots now
+restore Vercingetorix with Lucterius, choose Resource targets for Assembly
+of Gaul, and follow the printed Shifting Loyalties priorities.
+[Repairs and validation](docs/reviews/eleventh-comparison-batch1-2026-11-13.md) ·
 [Audit and repair order](docs/reviews/comparison-audit-round11-2026-11-13.md)
 
 All nine tenth-audit repair groups are closed.
@@ -151,10 +153,10 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The eleventh audit passes **10,379 existing tests**, completes 20 new audited
-bot games and reproduces 20 mixed-player cases across two hash seeds. Four
-soft partial plans are retained in the evidence. Directed probes establish
-the eight open findings. [Audit validation](docs/reviews/comparison-audit-round11-2026-11-13.md#validation)
+The first eleventh-audit repair batch passes **10,420 tests** and completes
+120 audited bot games and 20 mixed-player cases across two hash seeds. The
+100-game balance check passes against the reviewed baseline.
+[Batch 1 validation](docs/reviews/eleventh-comparison-batch1-2026-11-13.md#verification)
 
 The fifth tenth-audit batch passes **10,379 tests**, completes all 120
 audited bot games and 20 mixed-player replay cases, and passes the 100-game

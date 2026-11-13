@@ -1,6 +1,9 @@
 # Eleventh Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Eight additional medium-priority findings are open.** The tenth audit is complete with all nine of its findings repaired.
+**13 November 2026. Eight additional medium-priority findings. Batch 1 closes three.**
+[Batch 1 repairs and validation](eleventh-comparison-batch1-2026-11-13.md)
+
+The tenth audit is complete with all nine of its findings repaired.
 
 The audited revision is `702d60a3754ce94a73ead0d0148d647232ecd816`, with Python source SHA-256 `489efe1d5b60a36f47ac5b7b46fd47595246d770606e32f6fa78d5b5b8d6a9e0` across 626 files, tested on Python 3.12.14. The Liberty or Death comparison uses `2991ea279062773548ec390a1da75f3e85381702`. Both checkouts matched their fetched main branches when review began.
 
@@ -43,7 +46,7 @@ The initial local test launcher rejected a relative pytest cache path before col
 
 | Batch | Findings | Scope |
 |---|---|---|
-| 1 | EV11-01, EV11-02, EV11-03 | Lucterius, Assembly of Gaul and Shifting Loyalties bot choices |
+| 1 | EV11-01, EV11-02, EV11-03 | Closed. [Lucterius, Assembly of Gaul and Shifting Loyalties](eleventh-comparison-batch1-2026-11-13.md). |
 | 2 | BM11-01 | Divination forecast with active Abatis |
 | 3 | LC11-01 | Arverni removal priorities at the Gallic War Interlude |
 | 4 | UI11-01 | Winter Campaign terminal choice for Command plus borrowed Enlist |
@@ -55,7 +58,7 @@ Convert the directed failures into source-derived regressions with their control
 
 ### EV11-01 — Non-player Lucterius never restores an eligible Arverni Leader and is selected with named Vercingetorix already present
 
-Open, medium priority.
+Closed in [Batch 1](eleventh-comparison-batch1-2026-11-13.md). Medium priority.
 
 When the Successor is Available or on-map, NP Arverni executing shaded numeric19 must select a legal destination and place the Leader symbol-up as Vercingetorix. If named Vercingetorix is already on-map, the Event has no effect and must be declined before the Auto1–4 decision.
 
@@ -79,7 +82,7 @@ Evidence files are `events/probe_events.py`, `events/results.json`.
 
 ### EV11-02 — Unshaded Assembly of Gaul NP plans omit every Resource target
 
-Open, medium priority.
+Closed in [Batch 1](eleventh-comparison-batch1-2026-11-13.md). Medium priority.
 
 With Carnutes Subdued and eligible opponents holding Resources, NP Romans/Aedui executing numeric52 must select eligible Factions and apply the printed eight-Resource drain, using the scenario-specific target instructions. Romans target Arverni then Belgae in base, Belgae in Ariovistus; Aedui target eligible player foes. German targets remain excluded by the printed Gallic scope.
 
@@ -103,7 +106,7 @@ Evidence files are `events/probe_events.py`, `events/results.json`.
 
 ### EV11-03 — Shifting Loyalties removes the first acquired Capability instead of the Roman bot’s instructed target
 
-Open, medium priority.
+Closed in [Batch 1](eleventh-comparison-batch1-2026-11-13.md). Medium priority.
 
 With unshaded Titus Labienus (12) and shaded Commius (55) active and Belgae a player, Roman NP Shifting Loyalties must remove shaded55, the eligible player-Belgae Capability. It must not remove beneficial unshaded12 merely because it entered the active table first.
 
@@ -251,4 +254,4 @@ Evidence files are `bots/probe_bots.py`, `bots/results.json`, `bots/report.md`.
 
 Extract the archive and run `python run_witnesses.py --repo /path/to/fs-bot` with the audited Python source bytes. The runner verifies source and protected-file hashes, runs all five probes in temporary directories at hash seeds 0 and 987, and compares each output with the preserved record. Its assertions characterize the observed defects and will need updating after repair. `SHA256SUMS` covers every other archive member. The README gives commands for the full test suite, audited games and mixed-player replay.
 
-The reports document excluded leads and tested boundaries. The lifecycle review inspected Winter gates, victory, automatic phases and Interlude conversion. The frontend review checked exact cohorts, grants and replay. Existing unresolved source questions retain their recorded status. These eight findings require no additional provisional ruling. The passing general suite and sampled games coexist with the failures reproduced by the directed probes. Repair implementation is the next stage.
+The reports document excluded leads and tested boundaries. The lifecycle review inspected Winter gates, victory, automatic phases and Interlude conversion. The frontend review checked exact cohorts, grants and replay. Existing unresolved source questions retain their recorded status. These eight findings require no additional provisional ruling. The passing general suite and sampled games coexist with the failures reproduced by the directed probes. Five findings remain open in Batches 2–5.

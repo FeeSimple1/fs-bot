@@ -907,8 +907,18 @@ def execute_card_19(state, shaded=False):
         params = state.get("event_params", {})
         target = params.get("target_region")
         regions = successor_regions(state, ARVERNI)
-        if target is None or not regions:
+        if not regions:
             return
+        if target is None:
+            executor = state.get("executing_faction")
+            if executor is None or executor == ARVERNI:
+                return
+            # The card assigns the placement to the Arverni even when
+            # another faction plays the Event.
+            from fs_bot.engine.spring import choose_region, placement_request
+            request = placement_request(state, ARVERNI, VERCINGETORIX,
+                                        source="event", legal_regions=regions, reason="lucterius")
+            target = choose_region(state, ARVERNI, request)
         if target not in regions:
             raise ValueError("Lucterius requires a playable Arverni destination")
         _place_named_successor(state, ARVERNI, target, VERCINGETORIX)
@@ -1900,24 +1910,17 @@ def execute_card_52(state, shaded=False):
 
     Source: Card Reference, card 52
     """
-    from fs_bot.rules_consts import TRIBE_CARNUTES
     params = state.get("event_params", {})
     if not shaded:
-        # Check Carnutes tribe status
-        tribe_info = state.get("tribes", {}).get(TRIBE_CARNUTES)
-        if tribe_info:
-            allied_fac = tribe_info.get("allied_faction")
-            markers = state.get("markers", {}).get(TRIBE_CARNUTES, {})
-            is_roman_ally = (allied_fac == ROMANS)
-            is_subdued = (allied_fac is None and MARKER_DISPERSED not in markers)
-            is_dispersed = (MARKER_DISPERSED in markers)
-            if is_roman_ally or is_subdued or is_dispersed:
-                target_factions = params.get("target_factions", [])
-                if not isinstance(target_factions, (list, tuple)):
-                    raise ValueError("Assembly of Gaul requires a list of target Factions")
-                for fac in GALLIC_FACTIONS:
-                    if fac in target_factions:
-                        _cap_resources(state, fac, -8)
+        from fs_bot.cards.event_targets import assembly_carnutes_qualifies
+        if not assembly_carnutes_qualifies(state):
+            return
+        target_factions = params.get("target_factions", [])
+        if not isinstance(target_factions, (list, tuple)):
+            raise ValueError("Assembly of Gaul requires a list of target Factions")
+        for fac in GALLIC_FACTIONS:
+            if fac in target_factions:
+                _cap_resources(state, fac, -8)
     else:
         # Faction Controlling Carnutes Region gets free Command + 2 SAs
         state.setdefault("event_modifiers", {})

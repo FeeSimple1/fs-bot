@@ -1513,6 +1513,8 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
     from fs_bot.cards.capabilities import GALLIC_RECIPIENT_CAPABILITIES
     if card_id in GALLIC_RECIPIENT_CAPABILITIES and not shaded:
         return {}
+    if card_id == 19 and shaded and faction != ARVERNI:
+        return {}  # The Arverni choose their Leader's destination during resolution.
     if ((card_id in (19, 22, 45, 58, 60, 61, 'A36') and not shaded)
             or (card_id in (3, 5, 6, 7, 11, 24, 31, 51, 'A5', 'A17', 'A58') and shaded)):
         return {}  # Live exact quantities/pieces use the actual Event-step board.

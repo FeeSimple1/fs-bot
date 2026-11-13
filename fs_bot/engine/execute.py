@@ -2814,10 +2814,8 @@ def _resolve_card65_german_march_ambush_default(state, march_limit):
         try:
             with defense_scope(state, region, GERMANS, tgt):
                 potential = [r for r in ordered[index + 1:] if _german_ambush_target(state, r)]
-                if battle_capabilities.select_for_queue(
-                        state, region, GERMANS, tgt, potential, capabilities_used):
-                    slingers_choice.fire(state, region, GERMANS)
-                res = resolve_battle(state, region, GERMANS, tgt, is_ambush=True)
+                res = battle_capabilities.resolve_in_queue(
+                    state, region, GERMANS, tgt, potential, capabilities_used)
         except _EXEC_ERRORS as exc:
             ambushes.append({"region": region, "executed": False,
                              "reason": repr(exc)})
@@ -3280,15 +3278,15 @@ def _resolve_a20_arverni_ambush(state):
         with projected_battle(state, B, physical_sources) as survivors:
             res = battle_capabilities.resolve_single(
                 state, B, ARVERNI, ROMANS, is_ambush=True)
-        # Step 5 reveals Hidden survivors, but leaves Scouted markers intact.
-        # PR-09 records each casualty's physical origin during Counterattack;
-        # return exactly that origin's survivors, not the first available ones.
+        # Follow the actual Reveal step. Archers can finish the Battle before
+        # Reveal. PR-09 tracks each origin's survivors, including any Scouted
+        # Warbands that keep their markers.
         for r, counts in survivors.items():
             if r == B:
                 continue
             for ps, n in counts.items():
                 if n > 0:
-                    returning_state = SCOUTED if ps == SCOUTED else REVEALED
+                    returning_state = REVEALED if ps == HIDDEN and res.get('reveal') else ps
                     move_piece(state, B, r, ARVERNI, WARBAND, count=n,
                                piece_state=returning_state)
         refresh_all_control(state)
@@ -4005,37 +4003,17 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 slingers_choice.fire(state, region, faction)
                 _c13_region = None  # once per Command
 
-            # Card 27 shaded (Massed Gallic Archers): at the start of Battles
-            # with 6+ Arverni Warbands, the other side first absorbs 1 extra
-            # Loss (attacking or defending — card Tip).
-            from fs_bot.rules_consts import (ARVERNI as _ARV_B, PROVINCIA,
-                                             WARBAND as _WB_B)
-            if _ica_b(state, 27, _ES_B):
-                from fs_bot.battle.losses import resolve_losses as _rl27
-                if (faction == _ARV_B
-                        and count_pieces(state, region, _ARV_B, _WB_B) >= 6
-                        and count_pieces(state, region, defender) > 0):
-                    _rl27(state, region, defender, 1)
-                elif (defender == _ARV_B
-                        and count_pieces(state, region, _ARV_B, _WB_B) >= 6
-                        and count_pieces(state, region, faction) > 0):
-                    _rl27(state, region, faction, 1)
-                # If the absorption emptied the defender, skip the battle.
-                if count_pieces(state, region, defender) <= 0:
-                    if _battle_observer is not None:
-                        _battle_observer('before', state, region, defender,
-                                         {'is_ambush': is_ambush})
-                        if _skip_absent_targets:
-                            # A completed prospective Battle still needs its
-                            # Frost/victory boundary when prefire removes the
-                            # last defender before ordinary Loss resolution.
-                            _battle_observer('after', state, region, defender,
-                                             {'card27_wiped': True})
-                    battles.append({"region": region, "defender": defender,
-                                    "is_ambush": is_ambush,
-                                    "besiege": besiege_target,
-                                    "result": {"card27_wiped": True}})
-                    continue
+            stopped, _ = battle_capabilities.apply_archers(state, region, faction, defender)
+            if stopped is not None:
+                if _battle_observer is not None:
+                    _battle_observer('before', state, region, defender,
+                                     {'is_ambush': is_ambush})
+                    if _skip_absent_targets:
+                        _battle_observer('after', state, region, defender, stopped)
+                battles.append({"region": region, "defender": defender,
+                                "is_ambush": is_ambush, "besiege": besiege_target,
+                                "result": stopped})
+                continue
 
             # A31 shaded: "Event effects harming Germans in Battle are
             # cancelled" — an event's no-retreat does not bind a German
@@ -4051,6 +4029,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
             if _battle_observer is not None:
                 _battle_observer('before', state, region, defender,
                                  {'is_ambush': is_ambush})
+            from fs_bot.rules_consts import ARVERNI, PROVINCIA
             battle = dict(
                 besiege_target=besiege_target,
                 citadel_at_start=citadel_at_start,
@@ -4059,7 +4038,7 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                 _full_loss_cohort=_full_loss_cohort,
                 double_auxilia=_double_auxilia,
                 ignore_fort=(state.get("event_modifiers", {}).get("card_21_no_fort", False)
-                             and faction == _ARV_B and region == PROVINCIA),
+                             and faction == ARVERNI and region == PROVINCIA),
             )
             try:
                 if _no_retreat_here:

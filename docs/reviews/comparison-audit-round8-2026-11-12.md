@@ -1,9 +1,11 @@
 # Eighth Falling Sky / Liberty or Death comparison audit
 
 **12 November 2026. The audit found eleven repair groups, four high and seven medium.**
-Batch 1 closes LC8-01 and LC8-02. Nine groups remain open.
+Batch 1 closes LC8-01 and LC8-02. Batch 2 closes BM8-01 and BM8-02.
+Seven groups remain open.
 The findings and validation below describe the audited revision.
-[Batch 1 repairs and validation](eighth-comparison-batch1-2026-11-12.md)
+[Batch 1 repairs and validation](eighth-comparison-batch1-2026-11-12.md) ·
+[Batch 2 repairs and validation](eighth-comparison-batch2-2026-11-12.md)
 
 Audited Falling Sky commit: `e62b0360c1b91032741ef8f6afa4d247c8ea2437`. Python source SHA-256: `3c047ebcfef915efef8e1da308cd63484b1e6c735b8aba8e5c095de2c5d106b9` across **611 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
 

@@ -21,13 +21,13 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The eighth comparison audit has **two repaired groups and nine open**.
+The eighth comparison audit has **four repaired groups and seven open**.
 [Audit report](reviews/comparison-audit-round8-2026-11-12.md)
 
 | Batch | Findings | Scope |
 |---|---|---|
 | 1 | LC8-01, LC8-02 | Closed. [Post-Interlude final Winter and standard solo victory](reviews/eighth-comparison-batch1-2026-11-12.md). |
-| 2 | BM8-01, BM8-02 | Share Archers Battle orchestration and apply both German Phalanx cancellation effects. |
+| 2 | BM8-01, BM8-02 | Closed. [Massed Gallic Archers and German Phalanx](reviews/eighth-comparison-batch2-2026-11-12.md). |
 | 3 | UI8-01, UI8-02 | Validate Winter Campaign Command scope and restore live human March drop-offs. |
 | 4 | EV8-01, EV8-02, EV8-03 | Repair Event decline conditions and the Roman Forced Marches producer. |
 | 5 | NP8-01, NP8-02 | Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection. |
@@ -46,6 +46,18 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 12 November eighth comparison repair Batch 2
+
+Shaded Massed Gallic Archers applies its opening Loss in fixed Event Battles
+and automatic Ambushes. Stalwart protects Germans from that Loss. Inflexible
+cancels the unshaded reduction against German defenders in both Attack
+calculations. Morbihan returns projected Warbands with their current
+visibility if the opening Loss ends combat before Reveal.
+[Repair and validation](reviews/eighth-comparison-batch2-2026-11-12.md)
+
+All **10,151 tests pass**. The 120 audited bot games and 20 mixed-player
+cases match their paired Batch 1 outcomes. The 100-game balance check passes.
 
 ### 12 November eighth comparison repair Batch 1
 

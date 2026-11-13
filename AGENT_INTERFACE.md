@@ -2391,6 +2391,11 @@ the original board and request before reusing recorded choices.
 
 ### Physical Battle casualty entries
 
+Shaded Massed Gallic Archers can issue a `loss_order` request with one Loss
+before Retreat and Attack, including in fixed Event and automatic Battles.
+The affected Faction owns the response. An opening Loss that ends ordinary
+combat can return `card27_wiped: true` in the Battle result.
+
 New human `loss_order` requests offer ordinary flippable pieces as
 `[piece_type,piece_state]`, such as `["Warband","Revealed"]`. Copy the offered
 entries into an ordered response list. Repeated entries represent separate

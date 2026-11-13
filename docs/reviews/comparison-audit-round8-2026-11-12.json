@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 2,
-  "open": 9,
+  "closed": 4,
+  "open": 7,
   "severity_counts": {
     "high": 4,
     "medium": 7
@@ -330,7 +330,9 @@
         "BM8-01",
         "BM8-02"
       ],
-      "scope": "Share Archers Battle orchestration and apply both German Phalanx cancellation effects."
+      "scope": "Share Archers Battle orchestration and apply both German Phalanx cancellation effects.",
+      "status": "closed",
+      "report": "eighth-comparison-batch2-2026-11-12.md"
     },
     {
       "batch": 3,
@@ -483,7 +485,7 @@
       "id": "BM8-01",
       "title": "Fixed Event Battles and the automatic Arverni Phase still omit shaded Massed Gallic Archers",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "repair_batch": 2,
       "expected": "With shaded Card 27 active, every Battle involving six Arverni Warbands first gives the other side one Loss. Six Arverni versus four Roman Auxilia should remove all four Romans through either public numeric2 shaded or the full Arverni Phase. Aedui four Warbands executing numeric36 unshaded against six Arverni should first lose one Aedui, then inflict one Attack Loss, leaving three Hidden Aedui and five Arverni; the printed no-Counterattack exception remains.",
       "observed": "Numeric2 shaded and the full Arverni Phase both leave one Roman Auxilia; turning Archers off gives exactly the same outcome. The matched ordinary public Battle correctly removes all four Romans. Numeric36 leaves four Hidden Aedui and four Arverni with or without Archers, and retains no Counterattack.",
@@ -556,13 +558,14 @@
         "battle/probe_battle.py",
         "battle/probe_battle-output.json"
       ],
-      "original_lane_ledger": "battle/findings.json"
+      "original_lane_ledger": "battle/findings.json",
+      "repair_report": "eighth-comparison-batch2-2026-11-12.md"
     },
     {
       "id": "BM8-02",
       "title": "Both sides of German Phalanx fail to cancel the corresponding Massed Gallic Archers effect",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "repair_batch": 2,
       "expected": "After A31 shaded is acquired later than Card27 shaded, four attacking German Warbands versus six Arverni should receive no initial Archers Loss, leaving two Germans and four Arverni. After A31 unshaded is acquired later than Card27 unshaded, a full Arverni Phase with six Arverni versus four Germans should inflict three Attack Losses, leaving one German; the Archers reduction benefits Germans and must be cancelled.",
       "observed": "Stalwart plus shaded Archers leaves one German and five Arverni, identical to Archers without Stalwart. Removing Archers leaves two Germans and four Arverni. Inflexible plus unshaded Archers still leaves two Germans after the full phase, identical to Archers without Inflexible; omitting Archers leaves one German. The non-German Belgic controls correctly retain both Archers effects.",
@@ -620,7 +623,8 @@
         "battle/probe_battle.py",
         "battle/probe_battle-output.json"
       ],
-      "original_lane_ledger": "battle/findings.json"
+      "original_lane_ledger": "battle/findings.json",
+      "repair_report": "eighth-comparison-batch2-2026-11-12.md"
     },
     {
       "id": "UI8-01",

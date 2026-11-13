@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Eighth Liberty or Death comparison](reviews/comparison-audit-round8-2026-11-12.md) | 11 findings in five batches. Batch 1 closes two. |
+| [Eighth Liberty or Death comparison](reviews/comparison-audit-round8-2026-11-12.md) | 11 findings in five batches. Batches 1 and 2 close four. |
 | [Seventh Liberty or Death comparison](reviews/comparison-audit-round7-2026-11-11.md) | All nine repair groups closed, with reproducible witnesses and validation for each batch |
 | [Sixth Liberty or Death comparison](reviews/comparison-audit-round6-2026-11-11.md) | 14 findings with seven witness scripts. All repaired in Batches 1–5. |
 | [Fifth Liberty or Death comparison](reviews/comparison-audit-round5-2026-11-11.md) | 11 findings, all repaired in Batches 1–5, with source evidence and a repair ledger |
@@ -30,6 +30,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [12 November eighth comparison repair Batch 2](reviews/eighth-comparison-batch2-2026-11-12.md)
+  closes the Archers opening Loss and German Phalanx findings.
 
 - [12 November eighth comparison repair Batch 1](reviews/eighth-comparison-batch1-2026-11-12.md)
   closes both game-ending defects, with saved-game tests and paired Gallic War replays.

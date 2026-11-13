@@ -27,10 +27,8 @@ from fs_bot.rules_consts import (
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state
 from fs_bot.board.control import refresh_all_control
 from fs_bot.battle.losses import calculate_losses
-from fs_bot.battle.resolve import resolve_battle
 from fs_bot.commands.common import CommandError
-from fs_bot.engine import action_windows, battle_capabilities, horse_choice, slingers_choice
-from fs_bot.engine.diviciacus import defense_scope
+from fs_bot.engine import action_windows, battle_capabilities, horse_choice
 
 
 def _count_hidden_pieces(state, region, faction):
@@ -195,12 +193,9 @@ def _germans_phase_battle(state, *, force_ambush=False):
             continue
 
         # §3.4.4 selects a single defender in each applicable Region.
-        with defense_scope(state, region, GERMANS, defender):
-            potential = battle_regions[index + 1:] + new_regions()
-            if battle_capabilities.select_for_queue(
-                    state, region, GERMANS, defender, potential, capabilities_used):
-                slingers_choice.fire(state, region, GERMANS)
-            battle_result = resolve_battle(state, region, GERMANS, defender, is_ambush=True)
+        potential = battle_regions[index + 1:] + new_regions()
+        battle_result = battle_capabilities.resolve_in_queue(
+            state, region, GERMANS, defender, potential, capabilities_used)
         result['battles'].append({'region': region, 'defender': defender, 'result': battle_result})
         result['regions'].append(region)
         include_new_regions()

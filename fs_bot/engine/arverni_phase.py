@@ -59,9 +59,7 @@ from fs_bot.commands.common import CommandError, _is_devastated, _is_intimidated
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.raid import max_raiders_per_region
 from fs_bot.battle.losses import calculate_losses
-from fs_bot.battle.resolve import resolve_battle
-from fs_bot.engine import action_windows, battle_capabilities, horse_choice, slingers_choice
-from fs_bot.engine.diviciacus import defense_scope
+from fs_bot.engine import action_windows, battle_capabilities, horse_choice
 
 
 # ============================================================================
@@ -842,12 +840,8 @@ def _arverni_phase_battle(state, target_region, target_faction):
                 later_hidden = count_pieces_by_state(state, later, ARVERNI, WARBAND, HIDDEN)
                 if any(_eligible_ambush_defenders(state, later, later_hidden)):
                     potential.append(later)
-            with defense_scope(state, region, ARVERNI, defending_faction):
-                if battle_capabilities.select_for_queue(
-                        state, region, ARVERNI, defending_faction, potential, capabilities_used):
-                    slingers_choice.fire(state, region, ARVERNI)
-                battle_result = resolve_battle(
-                    state, region, ARVERNI, defending_faction, is_ambush=True)
+            battle_result = battle_capabilities.resolve_in_queue(
+                state, region, ARVERNI, defending_faction, potential, capabilities_used)
             result["battles"].append({
                 "region": region,
                 "defender": defending_faction,

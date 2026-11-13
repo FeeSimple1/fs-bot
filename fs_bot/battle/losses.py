@@ -104,6 +104,27 @@ def caesar_legion_attack_losses(state, defender, legions):
     return legions * 2
 
 
+def arverni_archers_reduction(state, attacker, defender):
+    """Card 27 unshaded reduces Arverni Attack Losses before halving."""
+    from fs_bot.cards.capabilities import is_capability_active
+
+    return int(attacker == ARVERNI
+               and is_capability_active(state, 27, EVENT_UNSHADED)
+               and not (defender == GERMANS
+                        and is_capability_active(state, 'A31', EVENT_UNSHADED)))
+
+
+def card27_shaded_absorption(state, region, own_faction, enemy):
+    """Return the opening Loss against the participating Arverni Warbands."""
+    from fs_bot.cards.capabilities import is_capability_active
+
+    return int(enemy == ARVERNI and own_faction != ARVERNI
+               and is_capability_active(state, 27, EVENT_SHADED)
+               and not (own_faction == GERMANS
+                        and is_capability_active(state, 'A31', EVENT_SHADED))
+               and count_pieces(state, region, ARVERNI, WARBAND) >= 6)
+
+
 def calculate_losses(state, region, attacking_faction, defending_faction,
                      *, is_retreat=False, is_counterattack=False,
                      double_auxilia=False, allied_factions=(),
@@ -292,8 +313,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
 
         # Card 27 unshaded: Arverni attack inflicts 1 fewer Defender
         # Loss before any halving.
-        if (enemy_faction == ARVERNI
-                and is_capability_active(state, 27, EVENT_UNSHADED)):
+        if arverni_archers_reduction(state, enemy_faction, defending_faction):
             total = max(0.0, total - 1)
 
         # Card 59 shaded: the owner doubles the enemy's Losses in the

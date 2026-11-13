@@ -45,6 +45,7 @@ from fs_bot.board.control import refresh_all_control
 from fs_bot.cards.capabilities import is_capability_active
 from fs_bot.battle.losses import (calculate_losses, resolve_losses,
                                   _remove_battle_piece,
+                                  arverni_archers_reduction,
                                   card30_arverni_legion_warbands,
                                   defender_abatis_active, legio_x_final_losses,
                                   caesar_legion_attack_losses)
@@ -473,7 +474,7 @@ def _calculate_attack_losses(state, region, attacking_faction,
 
     # Card 27 unshaded: "Arverni Battle each Region inflicts 1 fewer
     # Defender Loss (before any halving)" — Arverni attack step only.
-    if attacking_faction == ARVERNI and is_capability_active(state, 27, EVENT_UNSHADED):
+    if arverni_archers_reduction(state, attacking_faction, defending_faction):
         total = max(0.0, total - 1)
 
     # Card 59 shaded: the owner doubles enemy Losses in the flagged

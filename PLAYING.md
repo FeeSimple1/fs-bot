@@ -168,6 +168,13 @@ against German Attack or Counterattack Losses remove the Fort on 1–3.
 Inflexible cancels the shaded Legio X limit when Caesar attacks German
 defenders, so each of his Legions inflicts two Losses before halving.
 
+Shaded Massed Gallic Archers makes the other side absorb one opening Loss
+when at least six Arverni Warbands take part, on either side of a Battle.
+This also applies in Event Battles and automatic Ambushes. The owner of
+the affected pieces chooses how to absorb the Loss when prompted. Stalwart
+protects Germans from this opening Loss. Inflexible cancels the unshaded
+Archers reduction in Arverni Attack Losses against Germans.
+
 Germanic Horse asks its owner to select a Region in ordinary and free Battle
 plans, including fixed Event Battles. Romans may decline the unshaded bonus.
 The shaded Gallic owner selects one Region for attack or counterattack.

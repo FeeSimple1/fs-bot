@@ -4,7 +4,7 @@ from copy import deepcopy
 from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces
 from fs_bot.commands.common import free_action_scope
-from fs_bot.engine import battle_capabilities, horse_choice, slingers_choice
+from fs_bot.engine import battle_capabilities, horse_choice
 from fs_bot.engine.free_actions import consult_free_action, _explicit_sentinel
 from fs_bot.engine.march_choices import chooser_scope
 from fs_bot.map.map_data import get_playable_regions_for_state
@@ -121,7 +121,6 @@ def _resolve(state, executor, limit, card_id):
     from fs_bot.engine.execute import (_resolve_card65_german_march_ambush_default,
                                       _resolve_card17_march_ambush_default)
     from fs_bot.cards.arduenna_march import execute_march
-    from fs_bot.battle.resolve import resolve_battle
     default = (_resolve_card17_march_ambush_default if card_id==17
                else _resolve_card65_german_march_ambush_default)
     if executor in state.get('non_player_factions',()):
@@ -183,10 +182,8 @@ def _resolve(state, executor, limit, card_id):
                     state, region, rc.GERMANS, enemy, is_ambush=True)
             else:
                 potential = [r for r in choices if r != region]
-                if battle_capabilities.select_for_queue(
-                        state, region, rc.GERMANS, enemy, potential, capabilities_used):
-                    slingers_choice.fire(state, region, rc.GERMANS)
-                battle = resolve_battle(state, region, rc.GERMANS, enemy, is_ambush=True)
+                battle = battle_capabilities.resolve_in_queue(
+                    state, region, rc.GERMANS, enemy, potential, capabilities_used)
         ambushes.append({'region':region,'defender':enemy,'result':battle})
         remaining.remove(region)
         if card_id==17:

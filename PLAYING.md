@@ -102,10 +102,14 @@ remain compulsory as possible. The Event's executor chooses, even when Romans
 receive the benefit. `b`/`board` is available at each live prompt.
 
 During Quarters, choose Hidden, Revealed or Scouted Warbands/Auxilia separately,
-including how many of each relocate. Their visibility stays the same. Only
-pieces originally present can take the adjacent step; Roman arrivals may then
-take the later Provincia step if eligible. If Supply changes and the remaining
-Provincia choices reopen, the menu again offers exact visibility cohorts.
+including how many of each relocate. Their visibility stays the same. Roman
+troops already adjacent to undevastated Provincia can move there in the
+adjacent step under Roman Control or with an eligible controller's Quarters
+agreement. After that step, troops in Supply Line Regions can transfer to
+Provincia, including troops that just arrived in those Regions. The Roman
+Leader can transfer from any Region. The menu offers both routes when
+they are available. If Supply changes and the remaining
+transfers reopen, the menu again offers exact visibility cohorts.
 `b`/`board` remains available at these prompts.
 
 During bot Quarters, Belgae, Aedui, base-game Arverni, and Ariovistus

@@ -1830,9 +1830,9 @@ def build_np_winter_relocations(state):
     1. One Auxilia per Roman Fort and per Roman Ally stays in place.
     2. Legions/Auxilia in Supply-Line Regions (3.2.1, determined now) and
        the Roman Leader from any Region relocate to Provincia.
-    3. Pieces not in a Supply-Line Region first hop to an adjacent
-       un-Devastated Region under Roman Control (or Control of a Faction
-       that agrees) that has a Supply Line, then on to Provincia.
+    3. Pieces without Supply can move directly to an adjacent, eligible
+       Provincia or via an adjacent un-Devastated Supply Line Region
+       under Roman or agreeing Control.
     4. Pieces in Devastated Regions that cannot reach Provincia move to an
        adjacent un-Devastated Roman/agreed-Control Region.
     5. Pay to avoid rolls for every remaining piece, in §8.8.7 priority
@@ -1840,6 +1840,7 @@ def build_np_winter_relocations(state):
        until Resources run out ("pay to avoid rolls" -- no reserve).
     """
     from fs_bot.commands.rally import has_supply_line
+    from fs_bot.engine.quarters import ADJACENT_STEP
 
     relocations = []
     remaining = {}          # region -> troops still needing payment or rolls
@@ -1888,12 +1889,15 @@ def build_np_winter_relocations(state):
         if mov_leg + mov_aux == 0:
             continue
 
-        if has_supply_line(state, region, ROMANS):
-            # Step 2: direct to Provincia.
-            if mov_leg:
-                relocations.append((LEGION, region, PROVINCIA, mov_leg))
-            if mov_aux:
-                relocations.append((AUXILIA, region, PROVINCIA, mov_aux))
+        supplied = has_supply_line(state, region, ROMANS)
+        direct = (not supplied and PROVINCIA in get_adjacent_for_state(state, region, ROMANS)
+                  and not _devastated(PROVINCIA)
+                  and _quarters_host_agrees(state, _controller(PROVINCIA), PROVINCIA))
+        if supplied or direct:
+            step = (ADJACENT_STEP,) if direct else ()
+            for piece, count in ((LEGION, mov_leg), (AUXILIA, mov_aux)):
+                if count:
+                    relocations.append((piece, region, PROVINCIA, count) + step)
             continue
 
         # Step 3: hop to an adjacent Supply-Line Region, then Provincia.

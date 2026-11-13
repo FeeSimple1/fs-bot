@@ -2,15 +2,17 @@
 from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state
 from fs_bot.engine.quarters import (
-    validate_quarters_plan, preview_relocations, quartering_inventory,
+    ADJACENT_STEP, SUPPLY_STEP, validate_quarters_plan, preview_relocations, quartering_inventory,
     quartering_cost, quartering_allocations,
 )
 from fs_bot.cli.menus import prompt_choice
 
 
-def _entry(piece, origin, destination, count, visibility):
+def _entry(piece, origin, destination, count, visibility, step=None):
     entry = (piece, origin, destination, count)
-    return entry + (visibility,) if visibility is not None else entry
+    if visibility is not None:
+        entry += (visibility,)
+    return entry + (step,) if step is not None else entry
 
 
 def _label(piece, visibility):
@@ -107,9 +109,13 @@ def collect_quarters_plan(state, faction, request, stdin, stdout):
                             continue
                         destinations = []
                         for destination in state['spaces']:
-                            attempt = moves + [_entry(piece, origin, destination, 1, visibility)]
-                            if not validate_quarters_plan(state, {faction: attempt}, faction=faction):
-                                destinations.append(destination)
+                            steps = (None,)
+                            if faction == rc.ROMANS and destination == rc.PROVINCIA:
+                                steps = (ADJACENT_STEP, None if piece == rc.LEADER else SUPPLY_STEP)
+                            for step in steps:
+                                attempt = moves + [_entry(piece, origin, destination, 1, visibility, step)]
+                                if not validate_quarters_plan(state, {faction: attempt}, faction=faction):
+                                    destinations.append((destination, step))
                         if destinations:
                             candidates.append((f'{_label(piece, visibility)} from {origin}',
                                                (piece, origin, number, destinations, visibility)))
@@ -117,13 +123,16 @@ def collect_quarters_plan(state, faction, request, stdin, stdout):
             if selected is None:
                 break
             piece, origin, number, destinations, visibility = selected
-            destination = prompt_choice(stdin, stdout, 'Destination (other factions must agree):',
-                                        [(r, r) for r in destinations])
+            labels = {ADJACENT_STEP: 'adjacent Quarters', SUPPLY_STEP: 'Supply transfer'}
+            destination, step = prompt_choice(
+                stdin, stdout, 'Destination (other factions must agree):',
+                [(f'{r} ({labels[stage]})' if stage else r, (r, stage))
+                 for r, stage in destinations])
             counts = [n for n in range(1, number + 1)
                       if not validate_quarters_plan(state, {faction: moves + [
-                          _entry(piece, origin, destination, n, visibility)]}, faction=faction)]
+                          _entry(piece, origin, destination, n, visibility, step)]}, faction=faction)]
             number = prompt_choice(stdin, stdout, 'How many pieces?', [(str(n), n) for n in counts])
-            moves.append(_entry(piece, origin, destination, number, visibility))
+            moves.append(_entry(piece, origin, destination, number, visibility, step))
             stdout.write(f'Planned: {number} {_label(piece, visibility)}, {origin} to {destination}.\n')
     plan = {faction: moves}
     if faction == rc.ROMANS:

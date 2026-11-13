@@ -8,7 +8,7 @@ from fs_bot.board.pieces import count_pieces, count_pieces_by_state, move_piece,
 from fs_bot.bots.roman_bot import build_np_winter_relocations
 from fs_bot.commands.rally import has_supply_line
 from fs_bot.engine.quarters import (
-    agreement_cache, apply_relocations, preview_relocations,
+    QuartersError, SUPPLY_STEP, agreement_cache, apply_relocations, preview_relocations,
     validate_quarters_plan,
 )
 from fs_bot.engine.victory import calculate_victory_score
@@ -66,7 +66,7 @@ def test_player_default_plan_and_actual_application_use_one_live_np_die():
 @pytest.mark.parametrize('seed,accepted', [(1, True), (5, False)])
 def test_confirmation_first_on_detached_board_advances_live_rng_once(seed, accepted):
     state = _player_roman_state(seed)
-    moves = [(rc.AUXILIA, rc.SEQUANI, rc.PROVINCIA, 1)]
+    moves = [(rc.AUXILIA, rc.SEQUANI, rc.PROVINCIA, 1, SUPPLY_STEP)]
     before = encode(state)
     expected_rng = deepcopy(state['rng'])
     assert (expected_rng.randint(1, 6) <= 4) is accepted
@@ -74,10 +74,11 @@ def test_confirmation_first_on_detached_board_advances_live_rng_once(seed, accep
         assert validate_quarters_plan(state, {rc.ROMANS: moves}) == []
         assert encode(state['rng']) == before['rng']
         assert encode(state['spaces']) == before['spaces']
-        # Sequani is also adjacent to Roman-controlled Provincia, so this
-        # relocation remains legal even when the separate Supply declaration
-        # is refused. That refusal still must not be rerolled by planning.
-        preview_relocations(state, rc.ROMANS, moves, confirm=True)
+        if accepted:
+            preview_relocations(state, rc.ROMANS, moves, confirm=True)
+        else:
+            with pytest.raises(QuartersError, match='no agreed Supply Line'):
+                preview_relocations(state, rc.ROMANS, moves, confirm=True)
         # The detached confirmation shares the authoritative RNG; later
         # live planning sees its exact answer rather than rolling again.
         assert state['rng'].getstate() == expected_rng.getstate()

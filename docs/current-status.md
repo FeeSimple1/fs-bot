@@ -21,7 +21,7 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-Batches 1 and 2 close **three of the nine tenth-audit groups**. Six remain open.
+Batches 1–3 close **four of the nine tenth-audit groups**. Five remain open.
 [Audit report](reviews/comparison-audit-round10-2026-11-13.md) ·
 [Ledger](reviews/comparison-audit-round10-2026-11-13.json) · [Evidence](reviews/comparison-audit-round10-2026-11-13-evidence.zip)
 
@@ -29,11 +29,11 @@ Batches 1 and 2 close **three of the nine tenth-audit groups**. Six remain open.
 |---|---|---|
 | 1 | EV10-01, EV10-02 | Closed. [Bellovaci and Siege of Bibrax](reviews/tenth-comparison-batch1-2026-11-13.md). |
 | 2 | BM10-01 | Closed. [Abatis protection in Battle forecasts](reviews/tenth-comparison-batch2-2026-11-13.md). |
-| 3 | LC10-01 | Open. Adjacent Roman Quarters into an agreeing host’s Provincia. |
+| 3 | LC10-01 | Closed. [Adjacent Roman Quarters in Provincia](reviews/tenth-comparison-batch3-2026-11-13.md). |
 | 4 | UI10-01, UI10-02, UI10-03 | Open. Completed Special Ability summaries, exact Enlist March cohorts and durable Quarters decisions. |
 | 5 | NP10-01, NP10-02 | Open. Arverni post-spread-March abilities and repeated Devastate. |
 
-Batch 2 passes **10,308 tests**, 120 audited bot games and 20 mixed-player
+Batch 3 passes **10,329 tests**, 120 audited bot games and 20 mixed-player
 replay cases. The fixed-seed balance check passes within its 15-point band.
 The audit evidence includes the separate Quarters replay defect in Batch 4.
 
@@ -76,6 +76,13 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 13 November tenth comparison repair Batch 3
+
+Roman Quarters can use an eligible Provincia controller's agreement during
+the adjacent step. Supply transfers then use the resulting board. The
+terminal and assistant plans can choose either route.
+[Repair and validation](reviews/tenth-comparison-batch3-2026-11-13.md)
 
 ### 13 November tenth comparison repair Batch 2
 

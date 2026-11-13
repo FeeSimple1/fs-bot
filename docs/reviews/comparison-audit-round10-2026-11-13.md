@@ -1,8 +1,9 @@
 # Tenth Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Nine additional repair groups, all medium priority. Batches 1 and 2 close three, with six open.**
+**13 November 2026. Nine additional repair groups, all medium priority. Batches 1–3 close four, with five open.**
 [Batch 1 repairs and validation](tenth-comparison-batch1-2026-11-13.md) ·
-[Batch 2 repair and validation](tenth-comparison-batch2-2026-11-13.md)
+[Batch 2 repair and validation](tenth-comparison-batch2-2026-11-13.md) ·
+[Batch 3 repair and validation](tenth-comparison-batch3-2026-11-13.md)
 The ninth audit remains complete with all eight of its scoped groups repaired. This audit records additional affected paths, including the ordinary spread-March extension of the earlier post-Command Special Ability defect. Production code and supplied references are unchanged.
 
 Audited commit: `ae238c6482a792dda98af4f1f9b11abf820a3964`. Python source SHA-256: `39076dca68ec449cf766e40256c765d2d36693c50989a2b0552745f208f94d45` across **620 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
@@ -45,7 +46,7 @@ Prior ledgers and repairs were checked for duplicates. BM10-01 promotes an expli
 |---|---|---|
 | 1 | EV10-01, EV10-02 | Closed. [Bellovaci and Siege of Bibrax](tenth-comparison-batch1-2026-11-13.md). |
 | 2 | BM10-01 | Closed. [Abatis protection in Battle forecasts](tenth-comparison-batch2-2026-11-13.md). |
-| 3 | LC10-01 | Open. Adjacent Roman Quarters into an agreeing host’s Provincia. |
+| 3 | LC10-01 | Closed. [Adjacent Roman Quarters in Provincia](tenth-comparison-batch3-2026-11-13.md). |
 | 4 | UI10-01, UI10-02, UI10-03 | Open. Completed Special Ability summaries, exact Enlist March cohorts and durable Quarters decisions. |
 | 5 | NP10-01, NP10-02 | Open. Arverni post-spread-March abilities and repeated Devastate. |
 
@@ -127,7 +128,7 @@ Closed in [Batch 2](tenth-comparison-batch2-2026-11-13.md). Medium priority.
 
 ### LC10-01 — Roman Quarters rejects legal adjacent relocation into an agreeing faction's Provincia
 
-**Status:** Open. **Priority:** medium.
+Closed in [Batch 3](tenth-comparison-batch3-2026-11-13.md). Medium priority.
 
 **Expected:** Under Chapter 6 §6.3.3, Romans may first move mobile pieces to any adjacent undevastated Region controlled by Rome or an agreeing eligible faction. This includes Aedui-controlled Provincia. The later transfer from Supply Line Regions to Provincia is a separate permission. A Roman Legion in German-controlled Arverni may therefore move directly to adjacent Aedui-controlled Provincia if the Aedui agrees, without a Supply Line through its German-controlled origin.
 

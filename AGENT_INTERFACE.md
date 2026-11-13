@@ -1906,8 +1906,16 @@ Legions and Leaders use four entries without visibility. Legacy four-entry
 Warband/Auxilia rows remain supported and consume Hidden, then Revealed, then
 Scouted pieces. Mixed legacy/exact rows reserve cohorts in plan order.
 Legality also depends on the current board and any host agreement. `{"Belgae":[]}` chooses no
-relocations. Arrivals cannot make a second adjacent relocation in the same
-step; Roman movement to Provincia is a later step.
+relocations. Roman moves to Provincia can append `"adjacent"` to use the
+adjacent step or `"supply"` to transfer troops after Supply Lines are fixed.
+For example, `["Auxilia","Arverni","Provincia",1,"Scouted","adjacent"]`
+chooses one original Scouted Auxilium. The adjacent step requires
+undevastated Provincia under Roman Control or eligible Control with the
+host's `quarters` agreement. The Supply step may include arriving troops.
+Untagged troop rows use the Supply step if a route is possible after the
+declared adjacent moves. If no route is possible, eligible untagged rows
+can use the adjacent step. An untagged Roman Leader can transfer to
+Provincia from any Region.
 
 Seated non-Roman bots build and execute relocation plans in Quarters
 order. Their plans use the same adjacent movement and agreement checks as
@@ -1924,9 +1932,10 @@ The printed free capacity and available Resources still apply. See
 `engine.quarters.validate_quarters_plan` and
 `fs_bot/tests/test_quarters_decisions.py` for concrete legal examples.
 
-If an intervening Leader entry changes Supply after adjacent relocations,
-`quarters_provincia` reopens only the remaining Provincia moves. Completed
-adjacent moves stay completed. `legal_moves` retains four-entry summary rows
+If a Supply refusal or intervening Leader entry changes Supply after adjacent
+relocations, `quarters_provincia` reopens the remaining Provincia transfers.
+Its troop choices use the frozen Supply Lines. The Roman Leader's
+unrestricted transfer is also available. `legal_moves` retains four-entry summary rows
 whose final count is the maximum offered across all visibility cohorts.
 Response moves accept the same optional fifth visibility as `quarters_plan`;
 aggregate counts must fit both that maximum and live selected cohorts.

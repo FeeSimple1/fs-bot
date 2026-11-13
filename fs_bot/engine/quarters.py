@@ -21,6 +21,11 @@ class QuartersError(ValueError):
     pass
 
 
+# A Roman Provincia row can explicitly choose its movement step.
+ADJACENT_STEP = 'adjacent'
+SUPPLY_STEP = 'supply'
+
+
 def _need(condition, reason):
     if not condition:
         raise QuartersError(reason)
@@ -170,6 +175,14 @@ def relocation_parts(move):
     return piece, origin, destination, count, visibility
 
 
+def relocation_row(move):
+    """Return the physical move and an optional Provincia step choice."""
+    if (isinstance(move, (list, tuple)) and len(move) >= 5
+            and move[-1] in (ADJACENT_STEP, SUPPLY_STEP)):
+        return move[:-1], move[-1]
+    return move, None
+
+
 def _reserve_states(remaining, origin, piece, count, visibility):
     states = (visibility,) if visibility is not None else (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)
     _need(count <= sum(remaining.get((origin, piece, ps), 0) for ps in states),
@@ -201,6 +214,69 @@ def _move(state, faction, piece, origin, destination, count, visibility=None):
         move_piece(state, origin, destination, faction, piece, count=count)
 
 
+def _adjacent_allocations(state, faction, moves, *, confirm):
+    """Reserve original pieces and obtain consent before any adjacent moves."""
+    if not moves:
+        return []
+    remaining = {}
+    remaining_states = _state_budget(state, faction)
+    allocated = []
+    permissions = {}
+    for piece, origin, destination, count, visibility in map(relocation_parts, moves):
+        _need(destination in get_adjacent_for_state(state, origin, faction),
+              'Quarters relocation must be to an adjacent Region')
+        _need(not _is_devastated(state, destination), 'Quarters destination is Devastated')
+        host = _controller(state, destination)
+        _need(eligible_quarters_host(state, faction, host),
+              'Quarters destination must have eligible faction Control')
+        key = (origin, piece)
+        if key not in remaining:
+            remaining[key] = count_pieces(state, origin, faction, piece)
+        _need(count <= remaining[key], 'Cannot relocate unavailable pieces or move arrivals again')
+        if confirm and host != faction:
+            host_key = (host, destination)
+            if host_key not in permissions:
+                permissions[host_key] = _host_agrees(state, faction, host, destination, 'quarters')
+            _need(permissions[host_key], f'{host} did not agree to Quarters in {destination}')
+        remaining[key] -= count
+        if piece in rc.FLIPPABLE_PIECES:
+            for ps, amount in _reserve_states(remaining_states, origin, piece, count, visibility):
+                allocated.append((piece, origin, destination, amount, ps))
+        else:
+            allocated.append((piece, origin, destination, count, None))
+    return allocated
+
+
+def _move_allocated(state, faction, allocated):
+    for piece, origin, destination, count, visibility in allocated:
+        move_piece(state, origin, destination, faction, piece,
+                   count=count, piece_state=visibility)
+
+
+def _implicit_provincia_adjacencies(state, adjacent, provincia):
+    """Interpret untagged rows as Supply where a route could exist.
+
+    Legacy rows can share a Supply path that a premature departure would
+    break. Forecast on the board with the declared adjacent moves first.
+    """
+    host = _controller(state, rc.PROVINCIA) if provincia else None
+    if not eligible_quarters_host(state, rc.ROMANS, host) or _is_devastated(state, rc.PROVINCIA):
+        return set()
+    candidates = [move for move, step in provincia
+                  if move[0] != rc.LEADER and step is None
+                  and rc.PROVINCIA in get_adjacent_for_state(state, move[1], rc.ROMANS)]
+    if not candidates:
+        return set()
+    projection = state
+    if adjacent:
+        projection = _clone(state)
+        allocated = _adjacent_allocations(state, rc.ROMANS, adjacent, confirm=False)
+        _move_allocated(projection, rc.ROMANS, allocated)
+    all_agree = dict.fromkeys(rc.FACTIONS, True)
+    return {origin for origin in dict.fromkeys(move[1] for move in candidates)
+            if not has_supply_line(projection, origin, rc.ROMANS, agreements=all_agree)}
+
+
 def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
                         _outcome=None):
     """Return a detached post-relocation board or raise QuartersError.
@@ -223,55 +299,39 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
              else (rc.LEADER, rc.WARBAND))
     adjacent, provincia = [], []
     for move in moves:
-        piece, origin, destination, count, visibility = relocation_parts(move)
+        row, step = relocation_row(move)
+        piece, origin, destination, count, visibility = relocation_parts(row)
         _need(piece in types, 'Only the faction\'s mobile pieces may relocate in Quarters')
         _need(origin in playable and destination in playable and origin != destination,
               f'Quarters relocation requires distinct playable Regions: {origin} to {destination}')
-        (provincia if faction == rc.ROMANS and destination == rc.PROVINCIA
-         else adjacent).append(tuple(move))
-    # Only pieces present before the adjacent step may take that step.
-    remaining = {(r, p): count_pieces(sim, r, faction, p)
-                 for r in playable for p in types}
-    remaining_states = {(r, p, ps): count_pieces_by_state(sim, r, faction, p, ps)
-                        for r in playable for p in types if p in rc.FLIPPABLE_PIECES
-                        for ps in (rc.HIDDEN, rc.REVEALED, rc.SCOUTED)}
-    allocated = []
-    permissions = {}
-    # §6.3.2-.3 selects the faction's adjacent relocations as one step.
-    # Validate all destination hosts before moving the selected pieces:
-    # a Legion and its accompanying Auxilia are not separate rules steps,
-    # and their arrival can remove the agreeing host's Control. Supply
-    # Lines are explicitly determined after this whole adjacent step.
-    for move in adjacent:
-        piece, origin, destination, count, visibility = relocation_parts(move)
-        _need(destination in get_adjacent_for_state(sim, origin, faction),
-              'Quarters relocation must be to an adjacent Region')
-        _need(not _is_devastated(sim, destination), 'Quarters destination is Devastated')
-        host = _controller(sim, destination)
-        _need(eligible_quarters_host(sim, faction, host),
-              'Quarters destination must have eligible faction Control')
-        _need(count <= remaining[origin, piece], 'Cannot relocate unavailable pieces or move arrivals again')
-        if confirm and host != faction:
-            key = (host, destination)
-            if key not in permissions:
-                permissions[key] = _host_agrees(sim, faction, host, destination, 'quarters')
-            _need(permissions[key], f'{host} did not agree to Quarters in {destination}')
-        remaining[origin, piece] -= count
-        if piece in rc.FLIPPABLE_PIECES:
-            # Reserve original cohorts before arrivals are physically moved.
-            for ps, amount in _reserve_states(remaining_states, origin, piece, count, visibility):
-                allocated.append((piece, origin, destination, amount, ps))
+        to_provincia = faction == rc.ROMANS and destination == rc.PROVINCIA
+        _need(not step or (to_provincia and (step == ADJACENT_STEP or piece != rc.LEADER)),
+              'A movement step can be specified for Roman moves to Provincia '
+              '(Supply transfers are for troops)')
+        if to_provincia and step != ADJACENT_STEP:
+            provincia.append((tuple(row), step))
         else:
-            allocated.append((piece, origin, destination, count, None))
-    for piece, origin, destination, count, visibility in allocated:
-        move_piece(sim, origin, destination, faction, piece,
-                   count=count, piece_state=visibility)
+            adjacent.append(tuple(row))
+    adjacent_origins = _implicit_provincia_adjacencies(sim, adjacent, provincia)
+    transfers = []
+    for move, step in provincia:
+        if step is None and move[0] != rc.LEADER and move[1] in adjacent_origins:
+            adjacent.append(move)
+        else:
+            transfers.append(move)
+    # §6.3.2-.3 selects the faction's adjacent relocations as one step.
+    # Supply Lines use the board after that step, including its Provincia moves.
+    _move_allocated(sim, faction, _adjacent_allocations(sim, faction, adjacent, confirm=confirm))
     if _live and faction == rc.ROMANS:
         from fs_bot.engine.action_windows import window
         window(sim, 'quarters_before_supply', faction=faction)
-    # Determine all Supply Line Regions once, after the adjacent step (§6.3.3).
-    supply_agreements = {f: True for f in rc.FACTIONS}
-    if confirm and any(p != rc.LEADER for p, *_ in provincia):
+    # Freeze Supply after the adjacent step (§6.3.3). The live continuation
+    # may select a different origin, so include the full set when needed.
+    supply_origins = {origin for piece, origin, *_ in transfers if piece != rc.LEADER}
+    if _live and supply_origins:
+        supply_origins = playable
+    supply_agreements = dict.fromkeys(rc.FACTIONS, True)
+    if confirm and supply_origins:
         for host in rc.FACTIONS:
             if host == rc.ROMANS:
                 continue
@@ -279,46 +339,38 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
             if regions:
                 supply_agreements[host] = _host_agrees(
                     sim, rc.ROMANS, host, regions[0], 'supply_line')
-    supplied = {origin for piece, origin, _, _, _ in map(relocation_parts, provincia)
-                if piece != rc.LEADER and has_supply_line(sim, origin, rc.ROMANS,
-                                                         agreements=supply_agreements)}
+    supplied = {origin for origin in supply_origins if has_supply_line(
+        sim, origin, rc.ROMANS, agreements=supply_agreements)}
     if _live and faction == rc.ROMANS:
         # Supply Line Regions are fixed now for the rest of Quarters. A
         # Spring entry between the adjacent step and this check may have
         # invalidated a previously legal Provincia plan; ask only for the
         # unfinished step, without replaying committed adjacent moves.
-        supplied = {region for region in playable if has_supply_line(
-            sim, region, rc.ROMANS, agreements=supply_agreements)}
         legal_moves = _provincia_options(sim, supplied)
         request = {'kind': 'quarters_provincia', 'faction': rc.ROMANS,
-                   'original_moves': [list(move) for move in provincia],
+                   'original_moves': [list(move) for move in transfers],
                    'legal_moves': legal_moves}
         try:
-            validate_provincia_response(sim, request, {'moves': provincia})
+            validate_provincia_response(sim, request, {'moves': transfers})
         except QuartersError as exc:
             request['errors'] = [str(exc)]
-            provincia = _reconsider_provincia(sim, request)
+            transfers = _reconsider_provincia(sim, request)
             if _outcome is not None:
                 _outcome['reconsider_quartering'] = True
-        for index, move in enumerate(provincia):
+        for index, move in enumerate(transfers):
             piece, origin, destination, count, visibility = relocation_parts(move)
             window(sim, 'quarters_provincia_move', faction=faction,
                    region=origin, index=index)
             _move(sim, faction, piece, origin, destination, count, visibility)
         refresh_all_control(sim)
         if _outcome is not None:
-            _outcome['moves'] = adjacent + [tuple(move) for move in provincia]
+            _outcome['moves'] = adjacent + [tuple(move) for move in transfers]
         return sim
-    for move in provincia:
+    for move in transfers:
         piece, origin, destination, count, visibility = relocation_parts(move)
         _need(count <= count_pieces(sim, origin, faction, piece),
               'Cannot relocate unavailable Roman pieces to Provincia')
-        # A direct adjacent move into friendly Provincia is also legal in
-        # the first step, even if its origin cannot trace a Supply Line.
-        direct_adjacent = (rc.PROVINCIA in get_adjacent_for_state(sim, origin, faction)
-                           and _controller(sim, rc.PROVINCIA) == rc.ROMANS
-                           and not _is_devastated(sim, rc.PROVINCIA))
-        _need(piece == rc.LEADER or origin in supplied or direct_adjacent,
+        _need(piece == rc.LEADER or origin in supplied,
               f'{origin} has no agreed Supply Line to Provincia')
         _move(sim, faction, piece, origin, destination, count, visibility)
     refresh_all_control(sim)
@@ -333,7 +385,8 @@ def apply_relocations(state, faction, moves):
 
 def _apply_relocations(state, faction, moves):
     from fs_bot.engine.action_windows import enabled, is_preview
-    outcome = {'moves': list(moves), 'reconsider_quartering': False}
+    outcome = {'moves': [relocation_row(move)[0] for move in moves],
+               'reconsider_quartering': False}
     if enabled(state) and not is_preview(state):
         from fs_bot.engine.spring import atomic
         # Missing responses restore the live step while its outer frontend
@@ -367,12 +420,9 @@ def _provincia_options(state, supplied):
     for region in sorted(get_playable_regions_for_state(state, rc.ROMANS)):
         if region == rc.PROVINCIA:
             continue
-        direct = (rc.PROVINCIA in get_adjacent_for_state(state, region, rc.ROMANS)
-                  and _controller(state, rc.PROVINCIA) == rc.ROMANS
-                  and not _is_devastated(state, rc.PROVINCIA))
         for piece in (rc.LEGION, rc.AUXILIA, rc.LEADER):
             count = count_pieces(state, region, rc.ROMANS, piece)
-            if count and (piece == rc.LEADER or region in supplied or direct):
+            if count and (piece == rc.LEADER or region in supplied):
                 options.append([piece, region, rc.PROVINCIA, count])
     return options
 

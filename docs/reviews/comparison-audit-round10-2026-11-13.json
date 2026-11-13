@@ -253,7 +253,9 @@
       "findings": [
         "LC10-01"
       ],
-      "scope": "Adjacent Roman Quarters into an agreeing host’s Provincia"
+      "scope": "Adjacent Roman Quarters into an agreeing host’s Provincia",
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch3-2026-11-13.md"
     },
     {
       "batch": 4,
@@ -710,7 +712,8 @@
         "lifecycle/results.hash987.json",
         "lifecycle/report.md"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch3-2026-11-13.md"
     },
     {
       "id": "UI10-01",

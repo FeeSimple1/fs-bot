@@ -83,7 +83,7 @@ from fs_bot.bots.bot_common import (
     np_agrees_to_supply_line,
     is_no_faction_event,
     # Rally prevalidation (executor-legal plans)
-    prevalidate_rally_plan, predict_battle, card27_shaded_absorption,
+    preview_rally_plan, predict_battle, card27_shaded_absorption, POST_COMMAND_SA,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.common import _is_devastated
@@ -292,6 +292,13 @@ def _estimate_rally_would_qualify(state, scenario):
     estimate = estimate_scoped_rally(state, BELGAE, node_b_rally)
     return bool(estimate["citadels"] or estimate["allies"]
                 or estimate["warbands"] >= 3 or estimate["adds_control"])
+
+
+def _rally_raid_action(state, command, regions, details, preview):
+    sa, sa_regions, sa_details = _forecast_rally_raid_sa(preview)
+    return _make_action(command, regions=regions, sa=sa, sa_regions=sa_regions,
+                        details={**details, POST_COMMAND_SA: command_sa_allowed(state),
+                                 **sa_details})
 
 
 def _would_raid_gain_enough(state, scenario, *, raiders=None):
@@ -847,7 +854,7 @@ def node_b_rally(state):
     }
 
     # Draft in flowchart priority order; legality, Available pools, and the
-    # Resource budget are enforced by prevalidate_rally_plan, which simulates
+    # Resource budget are enforced by preview_rally_plan, which simulates
     # the executor's own checks (fs_bot.commands.rally) in execution order.
 
     # Step 1: Citadels — replace a City ALLY with a Citadel (§8.5.3 / §3.3.1).
@@ -891,7 +898,7 @@ def node_b_rally(state):
     wb_candidates.sort(key=lambda x: x[1], reverse=True)
     rally_plan["warbands"] = [region for region, _ in wb_candidates]
 
-    rally_plan = prevalidate_rally_plan(state, BELGAE, rally_plan)
+    rally_plan, after_rally = preview_rally_plan(state, BELGAE, rally_plan)
 
     total_placed = (len(rally_plan["citadels"]) + len(rally_plan["allies"])
                     + len(rally_plan["warbands"]))
@@ -905,34 +912,12 @@ def node_b_rally(state):
             return node_b_raid(state)
         return node_b_march(state)
 
-    # SA: Rampage after Rally — §8.5.3 / flowchart B_RALLY → B_RAMPAGE
-    # If none: Enlist — flowchart B_RAMPAGE → If none: B_ENLIST
-    sa = SA_ACTION_NONE
-    sa_regions = []
-    sa_details = {}
-    rampage_regions = _check_rampage(state, scenario, before_battle=False)
-    if rampage_regions:
-        sa = SA_ACTION_RAMPAGE
-        sa_regions = rampage_regions
-    else:
-        # Flowchart: B_RAMPAGE → If none: B_ENLIST
-        enlist_details = _check_enlist_after_command(state, scenario)
-        if enlist_details:
-            sa = SA_ACTION_ENLIST
-            sa_regions = enlist_details.get("regions", [])
-            sa_details = {"enlist": enlist_details}
-
     all_regions = list({entry["region"] for entry in rally_plan["citadels"]}
                        | {entry["region"] for entry in rally_plan["allies"]}
                        | set(rally_plan["warbands"]))
 
-    return _make_action(
-        ACTION_RALLY,
-        regions=all_regions,
-        sa=sa,
-        sa_regions=sa_regions,
-        details={"rally_plan": rally_plan, **sa_details},
-    )
+    return _rally_raid_action(
+        state, ACTION_RALLY, all_regions, {"rally_plan": rally_plan}, after_rally)
 
 
 def node_b_raid(state):
@@ -956,30 +941,30 @@ def node_b_raid(state):
     if not enough:
         return _make_action(ACTION_PASS)
 
-    # SA: Rampage after Raid — §8.5.4 / flowchart B_RAID → B_RAMPAGE
-    # If none: Enlist — flowchart B_RAMPAGE → If none: B_ENLIST
-    sa = SA_ACTION_NONE
-    sa_regions = []
-    sa_details = {}
-    rampage_regions = _check_rampage(state, scenario, before_battle=False)
-    if rampage_regions:
-        sa = SA_ACTION_RAMPAGE
-        sa_regions = rampage_regions
-    else:
-        # Flowchart: B_RAMPAGE → If none: B_ENLIST
-        enlist_details = _check_enlist_after_command(state, scenario)
-        if enlist_details:
-            sa = SA_ACTION_ENLIST
-            sa_regions = enlist_details.get("regions", [])
-            sa_details = {"enlist": enlist_details}
+    regions = [r["region"] for r in raid_plan]
+    details = {"raid_plan": raid_plan}
+    if command_sa_allowed(state):
+        from copy import deepcopy
+        from fs_bot.engine.execute import _execute_raid
 
-    return _make_action(
-        ACTION_RAID,
-        regions=[r["region"] for r in raid_plan],
-        sa=sa,
-        sa_regions=sa_regions,
-        details={"raid_plan": raid_plan, **sa_details},
-    )
+        preview = deepcopy({key: value for key, value in state.items() if key != "decision_agent"})
+        result = _execute_raid(preview, BELGAE, {"details": details})
+        if result["executed"]:
+            return _rally_raid_action(state, ACTION_RAID, regions, details, preview)
+    return _make_action(ACTION_RAID, regions=regions,
+                        details={**details, POST_COMMAND_SA: command_sa_allowed(state)})
+
+
+def _forecast_rally_raid_sa(state):
+    """Preview the §8.5.1 chain on a detached post-Command board."""
+    scenario = state["scenario"]
+    rampages = _check_rampage(state, scenario)
+    if rampages:
+        return SA_ACTION_RAMPAGE, rampages, {}
+    enlist = _check_enlist_after_command(state, scenario)
+    if enlist:
+        return SA_ACTION_ENLIST, enlist["regions"], {"enlist": enlist}
+    return SA_ACTION_NONE, [], {}
 
 
 def node_b_march(state):

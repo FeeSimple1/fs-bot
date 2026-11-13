@@ -68,6 +68,9 @@ def command_sa_allowed(state):
     return state.get("_command_with_sa", True)
 
 
+POST_COMMAND_SA = "post_command_sa"
+
+
 def estimate_scoped_rally(state, faction, planner):
     """Measure an ordinary or Event-scoped Rally through its real mechanics.
 

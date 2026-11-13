@@ -40,7 +40,7 @@ from fs_bot.commands.rally import (
 from fs_bot.commands.march import march_group, _flip_origin_pieces
 from fs_bot.board.pieces import count_pieces, get_leader_in_region
 from fs_bot.map.map_data import get_playable_regions, get_playable_regions_for_state
-from fs_bot.bots.bot_common import random_select
+from fs_bot.bots.bot_common import random_select, POST_COMMAND_SA, command_sa_allowed
 from fs_bot.commands.sa_trade import trade as _sa_trade
 from fs_bot.commands.sa_settle import settle as _sa_settle
 from fs_bot.commands.sa_devastate import devastate_region as _sa_devastate
@@ -159,6 +159,22 @@ def _sa_runs_before_command(command, sa):
     if command == _CMD_RECRUIT and sa == _SA_BUILD:
         return True
     return False
+
+
+def _execute_post_command_sa(state, faction, action, *, with_sa, human=False, grant=None):
+    """Resolve an authorized bot's Rally or Raid chain on the resulting board."""
+    if (not human and faction in state.get("non_player_factions", ())
+            and action.get("command") in (_CMD_RALLY, _CMD_RAID)
+            and POST_COMMAND_SA in (action.get("details") or {})):
+        if not (with_sa and command_sa_allowed(state) and action["details"][POST_COMMAND_SA]):
+            return None
+        if faction == _ARVERNI_F:
+            return _execute_arverni_live_sa(state, faction, action, open_window=True)
+        if faction == _BELGAE_F:
+            return _execute_belgic_rally_raid_sa(state, faction, action, open_window=True)
+    if grant is None:
+        return _execute_sa(state, faction, action)
+    return _execute_sa(state, faction, action, _human_grant=grant)
 
 
 def _exact_human_placement(action):
@@ -518,7 +534,10 @@ def _execute_decision(state, faction, decision, *, sequence=False, choose_march_
         if not before:
             if (command == _CMD_EVENT or _command_executed(result)
                     or _sa_survives_empty_command(faction, command, sa)):
-                sa_result = _execute_sa(state, faction, bot_action)
+                from fs_bot.engine.game_engine import ACTION_COMMAND
+                sa_result = _execute_post_command_sa(
+                    state, faction, bot_action, with_sa=decision.get("action") != ACTION_COMMAND,
+                    human=is_human)
             else:
                 result = dict(result)
                 result["sa_skipped"] = "command produced no legal effect"
@@ -667,10 +686,11 @@ def _execute_bot_command(state, faction, bot_action, *, with_sa=False, _human_gr
             action['details'].pop('sa_after_step')
             action.pop('sa_timing', None)
     with free_action_scope(state, faction):
-        return _execute_free_bot_command(state, faction, action, _human_grant=_human_grant)
+        return _execute_free_bot_command(
+            state, faction, action, with_sa=with_sa, _human_grant=_human_grant)
 
 
-def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
+def _execute_free_bot_command(state, faction, bot_action, *, with_sa, _human_grant=None):
     """Route a bot_action's Command (never an Event) to the matching command
     executor. Returns the result dict, or None if the command is not one of
     the wired board Commands."""
@@ -746,7 +766,7 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
                                                  grant=_human_grant)
             if revised != bot_action:
                 result = _execute_free_bot_command(
-                    state, faction, revised, _human_grant=_human_grant)
+                    state, faction, revised, with_sa=with_sa, _human_grant=_human_grant)
                 result['supply_replacement'] = revised
                 return result
         from fs_bot.engine.action_validation import command_regions
@@ -772,7 +792,9 @@ def _execute_free_bot_command(state, faction, bot_action, *, _human_grant=None):
     if not before:
         if (_command_executed(result)
                 or _sa_survives_empty_command(faction, cmd, sa)):
-            sa_result = _execute_sa(state, faction, bot_action, **sa_kwargs)
+            sa_result = _execute_post_command_sa(
+                state, faction, bot_action, with_sa=with_sa,
+                human=_human_grant is not None, grant=_human_grant)
         else:
             result = dict(result)
             result["sa_skipped"] = "command produced no legal effect"
@@ -4890,30 +4912,11 @@ def _execute_sa_confirmed(state, faction, bot_action):
                 scout["fell_through_from"] = _SA_BUILD
                 return scout
         return result
-    if (sa == _SA_RAMPAGE
+    if (sa in (_SA_RAMPAGE, _SA_ENLIST)
             and faction == _BELGAE_F
             and bot_action.get("command") in (_CMD_RALLY, _CMD_RAID)
             and faction in state.get("non_player_factions", set())):
-        # §8.5.1: Rampage "after Rally or Raid" resolves AFTER the Command has
-        # moved/revealed pieces (a Raid Reveals the very Belgic Warbands a
-        # Rampage would flip). Re-derive against the current board, exactly as
-        # the German Intimidate / Aedui Trade-Suborn paths do; if none, no SA.
-        from fs_bot.bots.belgae_bot import _check_rampage
-        new_plan = _check_rampage(state, state["scenario"],
-                                  before_battle=False)
-        if not new_plan:
-            return {"executed": False, "sa": _SA_RAMPAGE,
-                    "declined_no_effect": True, "rederived_at_sa_time": True,
-                    "reason": "no legal Rampage at SA time (§8.5.1 'if "
-                              "none')"}
-        rederived = dict(bot_action)
-        rederived["sa_regions"] = new_plan
-        result = _execute_rampage(state, faction, rederived)
-        result.setdefault("rederived_at_sa_time", True)
-        if not result.get("executed") and not result.get("errors"):
-            # Re-derived plan still removed/Retreated nothing -> "if none".
-            result.setdefault("declined_no_effect", True)
-        return result
+        return _execute_belgic_rally_raid_sa(state, faction, bot_action)
     if sa == _SA_RAMPAGE:
         result = _execute_rampage(state, faction, bot_action)
         if not result.get("executed") and not result.get("errors"):
@@ -4928,22 +4931,51 @@ def _execute_sa_confirmed(state, faction, bot_action):
             # The entire free sub-Command is chosen AFTER the main Command
             # (§8.5.1); validating an old selection after moving the Leader
             # wastes the turn and can miss a different legal free Command.
-            from fs_bot.bots.belgae_bot import _check_enlist_after_command
-            fresh = _check_enlist_after_command(state, state["scenario"])
-            if fresh is None:
-                return {"executed": False, "sa": sa, "declined_no_effect": True,
-                        "rederived_at_sa_time": True, "reason": "no legal Enlist (if none)"}
-            rederived = dict(bot_action)
-            rederived["details"] = dict(bot_action.get("details") or {})
-            rederived["details"]["enlist"] = fresh
-            rederived["sa_regions"] = fresh.get("regions", [])
-            result = _execute_enlist(state, faction, rederived)
-            result["rederived_at_sa_time"] = True
-            return result
+            return _execute_belgic_live_enlist(state, faction, bot_action)
         return _execute_enlist(state, faction, bot_action)
 
     return {"executed": False, "sa": sa,
             "reason": f"unrecognized Special Activity label: {sa!r}"}
+
+
+def _execute_belgic_rally_raid_sa(state, faction, action, *, open_window=False):
+    """§8.5.1/3/4: try Rampage after the Command, then Enlist."""
+    from fs_bot.bots.belgae_bot import _check_rampage
+
+    plan = _check_rampage(state, state["scenario"])
+    if plan:
+        if open_window:
+            _timing_window(state, "special_ability", author=faction, sa=_SA_RAMPAGE)
+            plan = _check_rampage(state, state["scenario"])
+    if plan:
+        result = _execute_rampage(state, faction, dict(action, sa_regions=plan))
+        result["rederived_at_sa_time"] = True
+        if result.get("executed") or result.get("errors") or result.get("rampages"):
+            if open_window and result.get("executed"):
+                _timing_window(state, "special_ability_complete", author=faction, sa=_SA_RAMPAGE)
+            return result
+    return _execute_belgic_live_enlist(state, faction, action, open_window=open_window)
+
+
+def _execute_belgic_live_enlist(state, faction, action, *, open_window=False):
+    from fs_bot.bots.belgae_bot import _check_enlist_after_command
+
+    rng = state["rng"].getstate()
+    plan = _check_enlist_after_command(state, state["scenario"])
+    if plan and open_window:
+        state["rng"].setstate(rng)
+        _timing_window(state, "special_ability", author=faction, sa=_SA_ENLIST)
+        plan = _check_enlist_after_command(state, state["scenario"])
+    if plan is None:
+        return {"executed": False, "sa": _SA_ENLIST, "declined_no_effect": True,
+                "rederived_at_sa_time": True, "reason": "no legal Enlist at SA time (§8.5.1)"}
+    fresh = dict(action, sa=_SA_ENLIST, sa_regions=plan["regions"],
+                 details=dict(action.get("details") or {}, enlist=plan))
+    result = _execute_enlist(state, faction, fresh)
+    result["rederived_at_sa_time"] = True
+    if open_window and result.get("executed"):
+        _timing_window(state, "special_ability_complete", author=faction, sa=_SA_ENLIST)
+    return result
 
 
 def _execute_arverni_paid_battle(state, faction, bot_action):
@@ -4977,26 +5009,34 @@ def _execute_arverni_paid_battle(state, faction, bot_action):
     return result
 
 
-def _execute_arverni_live_sa(state, faction, bot_action):
+def _execute_arverni_live_sa(state, faction, bot_action, *, open_window=False):
     """§8.7.1 Devastate -> Entreat -> no SA, evaluated on the live board."""
     from fs_bot.bots.arverni_bot import _check_devastate, _check_entreat
     fresh = dict(bot_action)
     regions = _check_devastate(state, state["scenario"])
+    plan = [] if regions else _check_entreat(state, state["scenario"])
+    if open_window and (regions or plan):
+        _timing_window(state, "special_ability", author=faction,
+                       sa=_SA_DEVASTATE if regions else _SA_ENTREAT)
+        regions = _check_devastate(state, state["scenario"])
+        plan = [] if regions else _check_entreat(state, state["scenario"])
     if regions:
+        fresh["sa"] = _SA_DEVASTATE
         fresh["sa_regions"] = regions
         result = _execute_devastate(state, faction, fresh)
     else:
-        plan = _check_entreat(state, state["scenario"])
         if not plan:
             return {"executed": False, "sa": bot_action.get("sa"),
                     "declined_no_effect": True, "rederived_at_sa_time": True,
                     "reason": "no legal Devastate or Entreat at SA time (if none)"}
-        fresh["sa_regions"] = plan
+        fresh.update(sa=_SA_ENTREAT, sa_regions=plan)
         # Remove stale nested plans that would override the new candidates.
         fresh["details"] = dict(bot_action.get("details") or {})
         fresh["details"].pop("entreat_plan", None)
         result = _execute_entreat(state, faction, fresh)
     result["rederived_at_sa_time"] = True
+    if open_window and result.get("executed"):
+        _timing_window(state, "special_ability_complete", author=faction, sa=fresh["sa"])
     return result
 
 

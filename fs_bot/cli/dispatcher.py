@@ -44,7 +44,8 @@ def _translate_bot_action(bot_action, options):
     - command == "Event" -> ACTION_EVENT
     - command == "None"  -> ACTION_PASS (defensive — treat as a Pass)
     - command in {Battle, March, Rally, Raid, Recruit, Seize}:
-        - If sa != "No SA"            -> ACTION_COMMAND_SA
+        - If a Special Ability is chosen or checked after the Command
+                                      -> ACTION_COMMAND_SA
         - Else                        -> ACTION_COMMAND
       Then, if the engine's legal options does NOT include the chosen
       constant but DOES include LIMITED_COMMAND, downgrade to
@@ -85,8 +86,9 @@ def _translate_bot_action(bot_action, options):
 
     # Command of some kind
     if cmd in _BOT_COMMAND_NAMES:
+        from fs_bot.bots.bot_common import POST_COMMAND_SA
         sa = bot_action.get("sa", _BOT_SA_NONE)
-        if sa and sa != _BOT_SA_NONE:
+        if (sa and sa != _BOT_SA_NONE) or (bot_action.get("details") or {}).get(POST_COMMAND_SA):
             preferred = ACTION_COMMAND_SA
         else:
             preferred = ACTION_COMMAND

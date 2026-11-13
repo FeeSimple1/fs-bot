@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 8,
-  "closed": 6,
-  "open": 2,
+  "closed": 8,
+  "open": 0,
   "severity_counts": {
     "high": 1,
     "medium": 7
@@ -529,7 +529,7 @@
     {
       "id": "NP9-01",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "title": "Arverni Devastate forecasts piece presence instead of actual mandatory casualties",
       "expected": "Devastate only when it forces removal of a Legion or two Auxilia, or at least one enemy piece and at least as many Roman plus Aedui pieces combined as Arverni pieces.",
       "observed": "Public Rally+Devastate removes one of four Arverni Warbands against one Legion or two Auxilia, removes no Romans, and places a Devastated marker. Conversely, four Arverni versus three Aedui misses lawful one-for-one Devastation.",
@@ -594,12 +594,13 @@
       "cases_key": "NP9-01",
       "evidence_lane": "bots",
       "witness": "bots/probe_bots.py",
-      "output": "bots/probe_bots-output.json"
+      "output": "bots/probe_bots-output.json",
+      "repair_report": "ninth-comparison-batch4-2026-11-13.md"
     },
     {
       "id": "NP9-02",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "title": "Arverni Rally and Belgic Raid omit newly required post-Command Special Ability transitions",
       "expected": "After Rally, Arverni resolve newly legal Entreat. After Raid leaves no Hidden Warbands for Rampage, Belgae continue to legal Enlist.",
       "observed": "Arverni Rally creates two Hidden Warbands beside a Roman Auxilium but retains No SA; Roman remains and Resources7 instead of replacement and6. Belgic Raid Reveals its two Warbands, live Rampage declines, and two adjacent German Warbands stay Revealed instead of Enlist March hiding them.",
@@ -694,7 +695,8 @@
       "cases_key": "NP9-02",
       "evidence_lane": "bots",
       "witness": "bots/probe_bots.py",
-      "output": "bots/probe_bots-output.json"
+      "output": "bots/probe_bots-output.json",
+      "repair_report": "ninth-comparison-batch4-2026-11-13.md"
     },
     {
       "id": "UI9-01",
@@ -790,6 +792,16 @@
       ],
       "report": "ninth-comparison-batch3-2026-11-13.md",
       "evidence": "ninth-comparison-batch3-2026-11-13-evidence.zip"
+    },
+    {
+      "batch": 4,
+      "date": "2026-11-13",
+      "findings": [
+        "NP9-01",
+        "NP9-02"
+      ],
+      "report": "ninth-comparison-batch4-2026-11-13.md",
+      "evidence": "ninth-comparison-batch4-2026-11-13-evidence.zip"
     }
   ]
 }

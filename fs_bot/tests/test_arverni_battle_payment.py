@@ -47,7 +47,8 @@ def test_entreat_cannot_spend_battle_resources_before_resolution():
 
 
 def test_before_battle_devastation_does_not_raise_already_paid_price():
-    st = board(2, 1)
+    # The mandatory one Roman casualty matches the one Arverni loss.
+    st = board(3, 1)
     result = execute_decision(st, rc.ARVERNI, {'bot_action': action('Devastate')})
     assert result['executed'] and result['errors'] == []
     assert result['sa_execution']['executed']
@@ -61,9 +62,7 @@ def test_entreat_itself_remains_paid_after_battle_payment():
     # A separate adjacent Region offers Entreat without removing the battle target.
     place_piece(st, rc.AEDUI_REGION, rc.ARVERNI, rc.WARBAND)
     place_piece(st, rc.AEDUI_REGION, rc.AEDUI, rc.WARBAND)
-    # The planner normally avoids Entreat removing a lone target. Explicit
-    # plan with two Romans also makes Devastate eligible, so make this Region
-    # already Devastated: it still costs two to Battle and Entreat is paid.
+    # A Devastated Battle Region costs two. Entreat still costs one.
     st['markers'].setdefault(rc.MANDUBII, {})[rc.MARKER_DEVASTATED] = True
     st['resources'][rc.ARVERNI] = 3
     # Keep the enemy in the Battle Region out of Entreat by revealing the

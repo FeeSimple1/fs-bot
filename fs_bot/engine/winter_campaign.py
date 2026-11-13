@@ -8,6 +8,7 @@ import copy
 
 from fs_bot.engine.agent import consult_agent
 from fs_bot.engine import action_windows
+from fs_bot.bots.bot_common import POST_COMMAND_SA
 from fs_bot.rules_consts import ROMANS, EVENT_SHADED, ARIOVISTUS_SCENARIOS
 
 
@@ -135,6 +136,11 @@ def _resolve_winter_campaign(state, owner, card_id):
         if used == 0:
             break
         result = _execute_plan(state, owner, plan, uses_bot=uses_bot)
+        # A Rally or Raid may make an unforecast SA possible. It still costs
+        # the second paid action, which the bot can only plan with both left.
+        if (uses_bot and (plan.get("details") or {}).get(POST_COMMAND_SA)
+                and (result.get("sa_execution") or {}).get("executed")):
+            used = 2
         results.append({"plan": plan, "actions": used, "result": result})
         remaining -= used
         errors = []

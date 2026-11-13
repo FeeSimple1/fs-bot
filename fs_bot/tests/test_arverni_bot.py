@@ -952,12 +952,12 @@ class TestSpecialAbilities:
         # No Legion or Leader to Counterattack either → no Ambush
         assert len(regions) == 0
 
-    def test_devastate_with_legion(self):
-        """Devastate triggers in region with Roman Legion."""
+    def test_devastate_forces_legion_casualty(self):
+        """Three Legions and no Auxilia force the Romans to lose a Legion."""
         state = _make_state()
         # Need Arverni Control + Vercingetorix nearby — §4.3.2
         _place_arverni_force(state, MANDUBII, leader=True, warbands=8)
-        _place_roman_force(state, MANDUBII, legions=1, auxilia=2)
+        _place_roman_force(state, MANDUBII, legions=3)
         refresh_all_control(state)
         regions = _check_devastate(state, state["scenario"])
         assert MANDUBII in regions
@@ -966,7 +966,7 @@ class TestSpecialAbilities:
         """Devastate skips regions already Devastated."""
         state = _make_state()
         _place_arverni_force(state, MANDUBII, leader=True, warbands=8)
-        _place_roman_force(state, MANDUBII, legions=1)
+        _place_roman_force(state, MANDUBII, legions=3)
         refresh_all_control(state)
         state["spaces"][MANDUBII]["devastated"] = True
         regions = _check_devastate(state, state["scenario"])

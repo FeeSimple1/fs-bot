@@ -4,9 +4,10 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The ninth comparison audit has six of eight groups closed. The latest
-repairs cover Enlist Raid quantities and the board shown during Morbihan.
-[Audit and remaining work](docs/reviews/comparison-audit-round9-2026-11-12.md)
+The ninth comparison audit is complete with all eight groups closed. The
+final batch corrects Arverni Devastate forecasts and the Special Abilities
+the Arverni and Belgae choose after Rally and Raid.
+[Audit and repair reports](docs/reviews/comparison-audit-round9-2026-11-12.md)
 
 Roman Build now preserves the player's selected Region order, including
 Ally/Subdue before a Fort elsewhere. [Repair and validation](docs/reviews/build-order-2026-11-04.md).
@@ -148,10 +149,10 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-Batches 1–3 of the ninth comparison audit pass **10,251 tests**. All 120
-audited bot games and 35 mixed-player replay cases match the Batch 2
-results. The 100-game balance check passes against the existing baseline.
-[Enlist and Morbihan repairs and validation](docs/reviews/ninth-comparison-batch3-2026-11-13.md)
+The ninth comparison repairs pass **10,279 tests** and complete all 120
+audited bot games and 35 mixed-player replay cases. The 100-game balance
+baseline records the verified outcomes of the corrected bot decisions.
+[Final batch repairs and validation](docs/reviews/ninth-comparison-batch4-2026-11-13.md)
 
 Batches 1–5 close **all 11 findings** from the eighth comparison audit.
 Batch 5 corrects the Aedui bot's additional Battles and its Trade or Suborn

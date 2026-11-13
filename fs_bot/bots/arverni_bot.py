@@ -76,7 +76,7 @@ from fs_bot.bots.bot_common import (
     np_agrees_to_supply_line,
     is_no_faction_event,
     # Rally prevalidation (executor-legal plans)
-    prevalidate_rally_plan, predict_battle,
+    preview_rally_plan, predict_battle, POST_COMMAND_SA,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.common import _is_devastated
@@ -875,7 +875,7 @@ def node_v_rally(state):
     }
 
     # Draft in flowchart priority order; legality, Available pools, and the
-    # Resource budget are enforced by prevalidate_rally_plan, which simulates
+    # Resource budget are enforced by preview_rally_plan, which simulates
     # the executor's own checks (fs_bot.commands.rally) in execution order.
 
     # Step 1: Citadels — replace a City ALLY with a Citadel (§3.3.1). A City
@@ -915,7 +915,7 @@ def node_v_rally(state):
     # just-planned Ally/Citadel, Leader, or Home Region — §3.3.1).
     rally_plan["warbands"] = list(playable)
 
-    rally_plan = prevalidate_rally_plan(state, ARVERNI, rally_plan)
+    rally_plan, after_rally = preview_rally_plan(state, ARVERNI, rally_plan)
 
     total_placed = (len(rally_plan["citadels"]) + len(rally_plan["allies"])
                     + len(rally_plan["warbands"]))
@@ -926,7 +926,7 @@ def node_v_rally(state):
         return node_v_march_spread(state)
 
     # SA: Devastate or Entreat after Rally — §8.7.3
-    sa, sa_regions = _determine_march_sa(state, scenario, before_march=False)
+    sa, sa_regions = _determine_march_sa(after_rally, scenario)
 
     return _make_action(
         ACTION_RALLY,
@@ -937,7 +937,7 @@ def node_v_rally(state):
                      | set(rally_plan["warbands"])),
         sa=sa,
         sa_regions=sa_regions,
-        details={"rally_plan": rally_plan},
+        details={"rally_plan": rally_plan, POST_COMMAND_SA: command_sa_allowed(state)},
     )
 
 
@@ -1104,7 +1104,7 @@ def node_v_raid(state):
         regions=[r["region"] for r in raid_regions],
         sa=sa,
         sa_regions=sa_regions,
-        details={"raid_plan": raid_regions},
+        details={"raid_plan": raid_regions, POST_COMMAND_SA: command_sa_allowed(state)},
     )
 
 
@@ -1232,14 +1232,17 @@ def _check_devastate(state, scenario, *, allowed_regions=None):
       (a) the region is Arverni-Controlled, AND
       (b) within one Region of Vercingetorix or has his Successor.
 
-    Per §8.7.1: Devastate wherever able that will force removal of a Legion
-    or two Auxilia or at least as many Roman+Aedui pieces as Arverni.
+    Per §8.7.1: require a forced Legion or two Auxilia casualties, or an
+    enemy casualty with Roman and Aedui losses at least as high as Arverni.
 
     Returns:
         List of Devastate regions, or empty.
     """
     if not command_sa_allowed(state):
         return []
+    from fs_bot.commands.sa_devastate import validate_devastate_region
+    from fs_bot.engine.devastate_losses import removal_request
+
     scope = state.get("_command_region_scope")
     if scope is not None:
         allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
@@ -1249,43 +1252,21 @@ def _check_devastate(state, scenario, *, allowed_regions=None):
     devastate_regions = []
 
     for region in playable:
-        if count_pieces(state, region, ARVERNI) == 0:
+        if _is_devastated(state, region) or not validate_devastate_region(state, region)[0]:
             continue
-        # Can't Devastate if already Devastated
-        if _is_devastated(state, region):
-            continue
-
-        # §4.3.2: Must be Arverni-Controlled
-        if not is_controlled_by(state, region, ARVERNI):
-            continue
-
-        # §4.3.2: Must be within one Region of Vercingetorix or Successor
-        if not _is_within_one_of_vercingetorix(state, region, scenario):
-            continue
-
-        # Must have Arverni Warbands here (per §4.3.2 procedure)
-        if count_pieces(state, region, ARVERNI, WARBAND) == 0:
-            continue
-
-        # Check conditions — §8.7.1
-        roman_legions = count_pieces(state, region, ROMANS, LEGION)
-        roman_auxilia = count_pieces(state, region, ROMANS, AUXILIA)
-        roman_pieces = count_pieces(state, region, ROMANS)
-        aedui_pieces = count_pieces(state, region, AEDUI)
-        arverni_pieces = count_pieces(state, region, ARVERNI)
-
-        enemy_total = roman_pieces + aedui_pieces
-
-        # Force removal of a Legion
-        if roman_legions > 0:
+        roman = removal_request(state, region, ROMANS)
+        auxiliaries = sum(entry["count"] for entry in roman["available"]
+                          if entry["piece_type"] == AUXILIA)
+        # A Roman owner can avoid both triggers only by removing zero
+        # pieces or a single Auxilium.
+        if roman["count"] > min(auxiliaries, 1):
             devastate_regions.append(region)
             continue
-        # Force removal of 2 Auxilia
-        if roman_auxilia >= 2:
-            devastate_regions.append(region)
-            continue
-        # At least as many Roman+Aedui pieces as Arverni
-        if enemy_total >= 1 and enemy_total >= arverni_pieces:
+        roman_aedui = roman["count"] + removal_request(state, region, AEDUI)["count"]
+        arverni = removal_request(state, region, ARVERNI)["count"]
+        if roman_aedui >= arverni and (
+                roman_aedui or any(removal_request(state, region, enemy)["count"]
+                                   for enemy in (BELGAE, GERMANS))):
             devastate_regions.append(region)
 
     return devastate_regions

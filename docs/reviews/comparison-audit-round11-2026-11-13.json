@@ -1,0 +1,1378 @@
+{
+  "audit": "Eleventh Falling Sky / Liberty or Death comparison",
+  "date": "2026-11-13",
+  "timezone": "America/Chicago",
+  "audited_commit": "702d60a3754ce94a73ead0d0148d647232ecd816",
+  "source_sha256": "489efe1d5b60a36f47ac5b7b46fd47595246d770606e32f6fa78d5b5b8d6a9e0",
+  "python_files": 626,
+  "python": "3.12.14",
+  "comparator_repository": "FeeSimple1/lod-bot",
+  "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
+  "total": 8,
+  "closed": 0,
+  "open": 8,
+  "severity_counts": {
+    "medium": 8
+  },
+  "engine_changes": false,
+  "reference_changes": false,
+  "previous_round": {
+    "round": 10,
+    "total": 9,
+    "closed": 9,
+    "open": 0
+  },
+  "validation": {
+    "source": {
+      "commit": "702d60a3754ce94a73ead0d0148d647232ecd816",
+      "dirty": false,
+      "source_sha256": "489efe1d5b60a36f47ac5b7b46fd47595246d770606e32f6fa78d5b5b8d6a9e0",
+      "python": "3.12.14",
+      "python_files": 626,
+      "reference_files": 47
+    },
+    "source_identity_at_verification": {
+      "commit": "702d60a3754ce94a73ead0d0148d647232ecd816",
+      "dirty": true,
+      "source_sha256": "489efe1d5b60a36f47ac5b7b46fd47595246d770606e32f6fa78d5b5b8d6a9e0"
+    },
+    "protected_source_hashes_verified": true,
+    "pytest": {
+      "tests": 10379,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 10379,
+      "seconds": 182.832,
+      "workers": 4,
+      "hash_seed": 0,
+      "log": "pytest.log",
+      "junit": "pytest.xml",
+      "warnings": 5,
+      "console_seconds": 182.89,
+      "canary_passed": true,
+      "initial_launcher_failure": {
+        "exit_code": 3,
+        "tests_executed": 0,
+        "log": "pytest-initial-cache-path-error.log",
+        "cause": "pytest rejected relative cache_dir before collection; retried with absolute path."
+      }
+    },
+    "bots": {
+      "attempted": 20,
+      "games": 20,
+      "completed": 20,
+      "seeds": [
+        57,
+        58,
+        59,
+        60
+      ],
+      "edition": "second-edition",
+      "scenarios": [
+        "Pax Gallica?",
+        "Reconquest of Gaul",
+        "The Great Revolt",
+        "Ariovistus",
+        "The Gallic War"
+      ],
+      "errors": 0,
+      "integrity_findings": 0,
+      "ranking_issues": 0,
+      "interludes": 2,
+      "interlude_keys": [
+        [
+          "The Gallic War",
+          58
+        ],
+        [
+          "The Gallic War",
+          60
+        ]
+      ],
+      "diagnostic_groups": 154,
+      "diagnostic_occurrences": {
+        "legal-decline": 329
+      }
+    },
+    "mixed": {
+      "games": 20,
+      "human_turns": 758,
+      "event_turns": 171,
+      "events_ok": 153,
+      "partial": 4,
+      "hard_findings": 0,
+      "by_kind": {},
+      "batch_digest": "a588412824289ad9bde80c33a498bdaca09e90875c6edb2726004decb8ff4317",
+      "seeds": [
+        57,
+        58,
+        59,
+        60
+      ],
+      "hash_seeds": [
+        0,
+        987
+      ],
+      "edition": "second-edition",
+      "attempted": 20,
+      "completed": 20,
+      "byte_identical_json": true,
+      "byte_identical_stdout": true,
+      "replay": true,
+      "executions": 80,
+      "rejected_plans": 40,
+      "partial_cases": [
+        {
+          "scenario": "Pax Gallica?",
+          "seed": 58,
+          "seats": [
+            "Aedui",
+            "Arverni",
+            "Belgae"
+          ],
+          "card_edition": "second-edition",
+          "game_completed": true,
+          "ending_scenario": "Pax Gallica?",
+          "human_turns": 36,
+          "event_turns": 11,
+          "events_ok": 10,
+          "rejected": 2,
+          "findings": [],
+          "partial": 1,
+          "digest": "8ea2cc3c1beecbc3"
+        },
+        {
+          "scenario": "Pax Gallica?",
+          "seed": 60,
+          "seats": [
+            "Aedui",
+            "Belgae",
+            "Romans"
+          ],
+          "card_edition": "second-edition",
+          "game_completed": true,
+          "ending_scenario": "Pax Gallica?",
+          "human_turns": 35,
+          "event_turns": 4,
+          "events_ok": 3,
+          "rejected": 2,
+          "findings": [],
+          "partial": 1,
+          "digest": "927c0855880dcf18"
+        },
+        {
+          "scenario": "Reconquest of Gaul",
+          "seed": 59,
+          "seats": [
+            "Belgae",
+            "Romans"
+          ],
+          "card_edition": "second-edition",
+          "game_completed": true,
+          "ending_scenario": "Reconquest of Gaul",
+          "human_turns": 65,
+          "event_turns": 19,
+          "events_ok": 19,
+          "rejected": 3,
+          "findings": [],
+          "partial": 1,
+          "digest": "ef7d85b6a176bcb6"
+        },
+        {
+          "scenario": "Ariovistus",
+          "seed": 58,
+          "seats": [
+            "Aedui",
+            "Germans",
+            "Romans"
+          ],
+          "card_edition": "second-edition",
+          "game_completed": true,
+          "ending_scenario": "Ariovistus",
+          "human_turns": 69,
+          "event_turns": 21,
+          "events_ok": 18,
+          "rejected": 3,
+          "findings": [],
+          "partial": 1,
+          "digest": "89687d42e77c672c"
+        }
+      ],
+      "interlude_keys": [
+        [
+          "The Gallic War",
+          59
+        ],
+        [
+          "The Gallic War",
+          60
+        ]
+      ]
+    },
+    "balance_note": "Full pytest includes the existing 15-game legacy canary (seeds 1–3 across five scenarios, 40-point band). No fresh 100-game 15-point guardrail or baseline refresh was performed; no engine changes were made during this audit."
+  },
+  "witness_verification": {
+    "protected_files_verified": 48,
+    "source_sha256": "489efe1d5b60a36f47ac5b7b46fd47595246d770606e32f6fa78d5b5b8d6a9e0",
+    "witnesses": [
+      {
+        "byte_identical": true,
+        "hash_seeds": [
+          0,
+          987
+        ],
+        "lane": "battle",
+        "preserved_output_matches": true,
+        "sha256": "fcef248879c96d07cfc0d556127a5ff18426fff2ddece217c9966765c151710b"
+      },
+      {
+        "byte_identical": true,
+        "hash_seeds": [
+          0,
+          987
+        ],
+        "lane": "bots",
+        "preserved_output_matches": true,
+        "sha256": "dfe1b4740609819cba95380d140af03659af734f13164b79d271b114041d58cc"
+      },
+      {
+        "byte_identical": true,
+        "hash_seeds": [
+          0,
+          987
+        ],
+        "lane": "events",
+        "preserved_output_matches": true,
+        "sha256": "2c461ec8f4913078cc1e1088b43be5faf1034660885801abe0f547626a87ae53"
+      },
+      {
+        "byte_identical": true,
+        "hash_seeds": [
+          0,
+          987
+        ],
+        "lane": "frontend",
+        "preserved_output_matches": true,
+        "sha256": "632676155aef90559ce595eb60bcab6fdfb02cb0b09af4da85874974cdc0e833"
+      },
+      {
+        "byte_identical": true,
+        "hash_seeds": [
+          0,
+          987
+        ],
+        "lane": "lifecycle",
+        "preserved_output_matches": true,
+        "sha256": "3753fe828acb49291d91fb337043c476ac7642d172fe5e334e342d3861f95de1"
+      }
+    ]
+  },
+  "audited_parent_github_checks": {
+    "audited_commit": "702d60a3754ce94a73ead0d0148d647232ecd816",
+    "total_count": 14,
+    "checks": [
+      {
+        "id": 132157096888,
+        "name": "build-and-play (macos-latest)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093342/job/132157096888",
+        "completed_at": "2026-11-13T20:43:28Z"
+      },
+      {
+        "id": 132157096782,
+        "name": "build-and-play (windows-latest)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093342/job/132157096782",
+        "completed_at": "2026-11-13T20:43:52Z"
+      },
+      {
+        "id": 132157096396,
+        "name": "build-and-play (ubuntu-latest)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093342/job/132157096396",
+        "completed_at": "2026-11-13T20:43:32Z"
+      },
+      {
+        "id": 132157096133,
+        "name": "Tests (windows-latest, Python 3.12)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157096133",
+        "completed_at": "2026-11-13T20:50:23Z"
+      },
+      {
+        "id": 132157096113,
+        "name": "Full games (original)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157096113",
+        "completed_at": "2026-11-13T20:44:24Z"
+      },
+      {
+        "id": 132157096095,
+        "name": "balance-guardrail",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157096095",
+        "completed_at": "2026-11-13T20:44:39Z"
+      },
+      {
+        "id": 132157096090,
+        "name": "event-census",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157096090",
+        "completed_at": "2026-11-13T20:44:23Z"
+      },
+      {
+        "id": 132157096038,
+        "name": "Full games (legacy)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157096038",
+        "completed_at": "2026-11-13T20:44:26Z"
+      },
+      {
+        "id": 132157096027,
+        "name": "Tests (ubuntu-latest, Python 3.10)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157096027",
+        "completed_at": "2026-11-13T20:51:03Z"
+      },
+      {
+        "id": 132157096007,
+        "name": "Tests (macos-latest, Python 3.12)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157096007",
+        "completed_at": "2026-11-13T20:47:13Z"
+      },
+      {
+        "id": 132157095971,
+        "name": "Full games (second-edition)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157095971",
+        "completed_at": "2026-11-13T20:44:14Z"
+      },
+      {
+        "id": 132157095893,
+        "name": "sync-sweep",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157095893",
+        "completed_at": "2026-11-13T20:44:05Z"
+      },
+      {
+        "id": 132157095808,
+        "name": "Tests (ubuntu-latest, Python 3.12)",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157095808",
+        "completed_at": "2026-11-13T20:49:45Z"
+      },
+      {
+        "id": 132157095530,
+        "name": "player-fuzz",
+        "head_sha": "702d60a3754ce94a73ead0d0148d647232ecd816",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/FeeSimple1/fs-bot/actions/runs/43504093315/job/132157095530",
+        "completed_at": "2026-11-13T20:54:21Z"
+      }
+    ]
+  },
+  "suggested_batches": [
+    {
+      "batch": 1,
+      "findings": [
+        "EV11-01",
+        "EV11-02",
+        "EV11-03"
+      ],
+      "scope": "Lucterius, Assembly of Gaul and Shifting Loyalties bot choices",
+      "status": "open"
+    },
+    {
+      "batch": 2,
+      "findings": [
+        "BM11-01"
+      ],
+      "scope": "Divination forecast with active Abatis",
+      "status": "open"
+    },
+    {
+      "batch": 3,
+      "findings": [
+        "LC11-01"
+      ],
+      "scope": "Arverni removal priorities at the Gallic War Interlude",
+      "status": "open"
+    },
+    {
+      "batch": 4,
+      "findings": [
+        "UI11-01"
+      ],
+      "scope": "Winter Campaign terminal choice for Command plus borrowed Enlist",
+      "status": "open"
+    },
+    {
+      "batch": 5,
+      "findings": [
+        "NP11-01",
+        "NP11-02"
+      ],
+      "scope": "Belgic Enlist after March and German Leader movement",
+      "status": "open"
+    }
+  ],
+  "findings": [
+    {
+      "id": "EV11-01",
+      "title": "Non-player Lucterius never restores an eligible Arverni Leader and is selected with named Vercingetorix already present",
+      "severity": "medium",
+      "expected": "When the Successor is Available or on-map, NP Arverni executing shaded numeric19 must select a legal destination and place the Leader symbol-up as Vercingetorix. If named Vercingetorix is already on-map, the Event has no effect and must be declined before the Auto1–4 decision.",
+      "observed": "On Reconquest and Great Revolt scenario-based boards, natural Arverni dispatch chooses shaded Lucterius in all three Leader states: named Vercingetorix, Available Successor, and on-map Successor. Public execution reports success with no tracked game effects in all six cases. Available Leaders remain off-map and live Successors remain Successors. Four explicit target controls restore Vercingetorix; two explicit named-Leader controls correctly do nothing. Six Event-disabled controls execute non-Pass Commands.",
+      "cause": "No numeric19 entry in the NP parameter derivation table supplies target_region. execute_card_19 returns on a missing target even when successor_regions has legal destinations. Separately, the generic PLACES_LEADER flag returns true without checking the Successor prerequisite, and numeric19 has no corresponding NP applicability override. These are grouped as one incomplete shaded-Lucterius NP contract; a producer-only repair would still waste the Event with named Vercingetorix.",
+      "sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            181,
+            190
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            5,
+            13
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            52,
+            54
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            30,
+            46
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            120,
+            135
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            678,
+            700
+          ]
+        },
+        {
+          "path": "Reference Documents/arverni_bot_event_instructions.txt",
+          "lines": [
+            18,
+            23
+          ]
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            3534,
+            3552
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            5984,
+            6029
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            6585,
+            6625
+          ]
+        },
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            905,
+            914
+          ]
+        },
+        {
+          "path": "fs_bot/cards/event_targets.py",
+          "lines": [
+            122,
+            136
+          ]
+        },
+        {
+          "path": "fs_bot/cards/event_eval.py",
+          "lines": [
+            253,
+            257
+          ]
+        },
+        {
+          "path": "fs_bot/cards/event_eval.py",
+          "lines": [
+            1176,
+            1177
+          ]
+        },
+        {
+          "path": "fs_bot/bots/bot_common.py",
+          "lines": [
+            373,
+            381
+          ]
+        }
+      ],
+      "prior_distinction": "BE2-04 fixed human/direct shaded-Lucterius Successor prerequisites and same-Region symbol-up restoration; those explicit paths now pass. Original BE-06/07/08 Lucterius work concerned unshaded quantities/physical choices/menu shape. BE6-03 fixed numeric56 Flight of Ambiorix effectiveness, not numeric19. BE7-02 and EV10-02 were absent NP producers for other cards. No earlier repair is reopened.",
+      "controls": [
+        "Both production Reconquest and Great Revolt setups; only canonical remove_piece/place_piece change Leader form.",
+        "Four explicit target_region controls restore the Available or on-map Successor to Vercingetorix at the original Region. Two named-Leader controls preserve named Vercingetorix unchanged.",
+        "Six matched can_play_event=False controls execute their normal non-Pass Command with clean integrity.",
+        "should_decline_event is asserted board/RNG pure. All public executions pass pre/post census and structural checks."
+      ],
+      "repair_scope": "Add a shaded numeric19 NP destination producer under applicable NP selection priorities and use the actual Successor prerequisite for admission. Preserve human target choice, legal same-Region restoration, and the named-Leader guard. Auto1–4 must remain after the ineffectiveness gate.",
+      "limits": "Controlled scenario-derived positions, not a frequency estimate. Explicit human destinations prove a legal benefit exists, not the unique NP-priority destination. Pax Gallica Spring-box timing, expansion replacement A19 and arbitrary author-invalid plans are excluded. No deferred free action exists here: the missing mandatory placement is not a legal no-plan decline.",
+      "evidence": [
+        "events/probe_events.py",
+        "events/results.json"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "EV11-02",
+      "title": "Unshaded Assembly of Gaul NP plans omit every Resource target",
+      "severity": "medium",
+      "expected": "With Carnutes Subdued and eligible opponents holding Resources, NP Romans/Aedui executing numeric52 must select eligible Factions and apply the printed eight-Resource drain, using the scenario-specific target instructions. Romans target Arverni then Belgae in base, Belgae in Ariovistus; Aedui target eligible player foes. German targets remain excluded by the printed Gallic scope.",
+      "observed": "Six natural NP Events across Pax Gallica, Great Revolt, Ariovistus and Gallic War report executed=true and leave all game-effect fields unchanged despite positive Resources on legal targets. Six identical-board explicit-target controls drain the intended Arverni/Belgae (base) or Belgae (expansion), while preserving other Resources. Six blocked-condition controls with Carnutes Arverni Allied correctly produce no effect.",
+      "cause": "The NPC action includes the printed instruction string but no concrete target_factions. _derive_event_params has no numeric52 producer. execute_card_52 defaults missing targets to an empty list, so its otherwise functional drain loop visits no selected Faction. Generic REMOVES_RESOURCES effectiveness accepts the Event.",
+      "sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            518,
+            526
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            5,
+            13
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 5",
+          "lines": [
+            52,
+            54
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            69,
+            95
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            136,
+            146
+          ]
+        },
+        {
+          "path": "Reference Documents/roman_bot_event_instructions.txt",
+          "lines": [
+            17,
+            19
+          ]
+        },
+        {
+          "path": "Reference Documents/aedui_bot_event_instructions.txt",
+          "lines": [
+            30,
+            31
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/roman_bot_event_instructions_ariovistus.txt",
+          "lines": [
+            18,
+            20
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/aedui_bot_event_instructions_ariovistus.txt",
+          "lines": [
+            30,
+            31
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A5",
+          "lines": [
+            34,
+            36
+          ]
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            3534,
+            3552
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            5984,
+            6029
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            6585,
+            6625
+          ]
+        },
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            1903,
+            1920
+          ]
+        },
+        {
+          "path": "fs_bot/cards/event_eval.py",
+          "lines": [
+            453,
+            457
+          ]
+        },
+        {
+          "path": "fs_bot/cards/event_eval.py",
+          "lines": [
+            1122,
+            1124
+          ]
+        }
+      ],
+      "prior_distinction": "BE2-02 fixed duplicate numeric52 target entries draining the same Faction repeatedly. FE4-03/FE5-01/FE5-02/FE6-01 and UI8 findings address shaded Assembly free Command/Special Ability paths. Original generic Event schema work enabled authored arrays. None supplied the unshaded NP Resource-target producer. The present explicit-target controls confirm that the drain itself works.",
+      "controls": [
+        "Six explicit target_factions plans on identical physical boards drain exactly eight Resources per target, floored at zero.",
+        "Six canonical Carnutes-Arverni-Ally negative controls with the same explicit selectors leave effects unchanged, preserving the printed prerequisite.",
+        "Both player-target rulesets are covered; all other factions are human in these fixtures so Aedui has permitted opponents.",
+        "All pieces begin from production setup; Carnutes allegiance is changed through _unally_tribe/_ally_tribe. Pre/post integrity checks pass."
+      ],
+      "repair_scope": "Derive unshaded numeric52 target_factions from current legal text, Resources and scenario-specific NPC instructions; decline if no legal instructed target can be affected. Preserve human authored target lists, the corrected no-duplicate drain, the Carnutes guard and shaded free-action handling.",
+      "limits": "The six no-target cases are established; no exhaustive no-Resources, Dispersed, mixed player/NP target policy or free-Command coverage is claimed. Expansion Aedui instructions mention Germans, but A5.1.1 preserves Gallic meaning, so these witnesses use legally eligible Belgae only. The two base Roman setups whose flowchart begins with Battle were not used as Event witnesses.",
+      "evidence": [
+        "events/probe_events.py",
+        "events/results.json"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "EV11-03",
+      "title": "Shifting Loyalties removes the first acquired Capability instead of the Roman bot’s instructed target",
+      "severity": "medium",
+      "expected": "With unshaded Titus Labienus (12) and shaded Commius (55) active and Belgae a player, Roman NP Shifting Loyalties must remove shaded55, the eligible player-Belgae Capability. It must not remove beneficial unshaded12 merely because it entered the active table first.",
+      "observed": "After public acquisition of unshaded12 then shaded55, natural Roman NP Event50 removes12 and leaves55 in Pax Gallica, Ariovistus and Gallic War. Reversing the acquisition order yields the correct removal55, proving insertion-order dependence. All six explicit target_capability=55 controls remove55 and retain12. Integrity passes throughout.",
+      "cause": "The NP derivation hook has no numeric50 selector. execute_card_50 falls back to next(iter(get_active_capabilities(state))), disregarding the instruction carried by the bot plan. The action is materially effective but chooses the wrong side/beneficiary, so a no-op admission check cannot repair it.",
+      "sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            500,
+            505
+          ]
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            114,
+            119
+          ]
+        },
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            553,
+            558
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            69,
+            95
+          ]
+        },
+        {
+          "path": "Reference Documents/roman_bot_event_instructions.txt",
+          "lines": [
+            42,
+            43
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/roman_bot_event_instructions_ariovistus.txt",
+          "lines": [
+            49,
+            50
+          ]
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            3534,
+            3552
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            5984,
+            6029
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            6585,
+            6625
+          ]
+        },
+        {
+          "path": "fs_bot/cards/card_effects.py",
+          "lines": [
+            1852,
+            1872
+          ]
+        }
+      ],
+      "prior_distinction": "The 24 October capability-selection repair fixed CLI/schema selection of actual active Capabilities (including legacy A38) and display; it did not supply NP printed-priority selection. EV10-02 addressed A51 troop beneficiaries, not Capability removal. No earlier counted numeric50 NP-priority group was found in rounds1–10.",
+      "controls": [
+        "Both Capabilities are acquired through public player Event execution; no raw capability injection.",
+        "All three scenario cases are repeated with reversed acquisition order: only dictionary ordering changes the removal result.",
+        "Six explicit55 controls correctly preserve beneficial12; player Belgae is constant.",
+        "Public natural Roman dispatch selects Event50 and includes the relevant printed instruction. All pre/post integrity checks pass."
+      ],
+      "repair_scope": "Derive target_capability using the acting faction’s scenario-specific instruction and applicable NP tie rules. Retain human selectors and legal removal machinery. Audit other factions’ individual printed instructions as a scoped follow-up, without assuming the Roman witness proves each.",
+      "limits": "Confirmed for Roman primary priority with a single eligible player-Belgae target. Other faction selectors, absent-priority fallback, ties, owner-scoped capabilities, Interlude survivors and live Trade/Suborn capability-removal timing are not claimed. The latter existing source/timing issue remains separate.",
+      "evidence": [
+        "events/probe_events.py",
+        "events/results.json"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "BM11-01",
+      "title": "Divination treats an Abatis-protected Ally as a guaranteed high-value Loss",
+      "severity": "medium",
+      "expected": "A34 unshaded with a non-player Aedui beneficiary should March when Germans can inflict only three Losses on two Belgic Warbands plus Aulerci and active Abatis: the Belgae may stand and assign the third Loss to Abatis, so no high-value target is guaranteed to take a Loss.",
+      "observed": "Public A34 selects and executes Battle. The legal human defender removes two Warbands and assigns the last Loss to Abatis; Aulerci remains Belgic. Reproduces with Ariovistus plus ten German Warbands and without Ariovistus using twelve Warbands. Raw and live formulas agree on three Losses in both cases.",
+      "cause": "divination_np._high_value_forced calls _build_loss_priority without the abatis_defender flag and slices the first N entries as forced casualties. The marker is omitted, making the Ally appear forced even though live resolution correctly offers Abatis as an alternative. A34 retains a separate approximate guarantee gate from the ordinary repaired Aedui predicate.",
+      "sources": [
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            146,
+            150
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            288,
+            292
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A3",
+          "lines": [
+            118,
+            131
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 3",
+          "lines": [
+            311,
+            338
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            105,
+            118
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            448,
+            462
+          ]
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/cards/divination_np.py",
+          "lines": [
+            69,
+            83
+          ]
+        },
+        {
+          "path": "fs_bot/cards/divination_np.py",
+          "lines": [
+            105,
+            110
+          ]
+        },
+        {
+          "path": "fs_bot/cards/divination_np.py",
+          "lines": [
+            139,
+            142
+          ]
+        },
+        {
+          "path": "fs_bot/battle/losses.py",
+          "lines": [
+            615,
+            616
+          ]
+        },
+        {
+          "path": "fs_bot/battle/losses.py",
+          "lines": [
+            474,
+            478
+          ]
+        },
+        {
+          "path": "fs_bot/battle/losses.py",
+          "lines": [
+            794,
+            802
+          ]
+        },
+        {
+          "path": "fs_bot/bots/aedui_bot.py",
+          "lines": [
+            232,
+            258
+          ]
+        }
+      ],
+      "prior_distinction": "Newly demonstrated unrepaired A34 consumer of the known target-guarantee defect class. NP6-02 (round6 report256–276) fixed ordinary Aedui/Arverni target guarantees, not A34's separate list-slicing gate. BM10-01 (round10 report107–127) repaired canceled-Abatis loss arithmetic, which agrees with live results in every new case and remains correct in a retained positive control. BM5-02's live Abatis casualty choices work correctly here.",
+      "controls": [
+        "Defect repeats without Ariovistus: twelve German Warbands against the same active Abatis cause three Losses and wrongly Battle, proving independence from BM10's doubling bug.",
+        "Equal-three-Loss no-Abatis control: Ariovistus and one German Warband correctly trigger Battle and remove Aulerci.",
+        "Active Abatis with only two Losses correctly selects March.",
+        "Active Abatis without any high-value enemy target correctly selects March.",
+        "Round10 canceled-Abatis control: A64 then shaded A31 with Ariovistus and two Warbands correctly gives four Losses and Battles, removing Aulerci.",
+        "The resolver-backed ordinary Aedui target predicate correctly rejects both new defect fixtures with the same German force.",
+        "All public responses validate and all before/after census and structure checks are clean; no mocks or direct physical count changes."
+      ],
+      "repair_scope": "Bring A34's Aedui high-value gate onto the resolver-backed guaranteed-target calculation, preserving physical German force, active/canceled Abatis, legal alternative casualty choices and Retreat. Add public A34 active-marker and canceled-marker controls. Do not alter correct live Battle arithmetic or casualty options.",
+      "evidence": [
+        "battle/probe_battle.py",
+        "battle/results.json",
+        "battle/report.md"
+      ],
+      "limits": "Controlled legal Ariovistus states, not measured natural-game frequency. Primary witness preserves Aulerci regardless of the Abatis saving roll. One additional consumer group, not a new defect class. Other inspected Morasses/Frost direct consumers remain uncounted without a finalized public failure. No new ruling or general Elite/capability claim.",
+      "status": "open"
+    },
+    {
+      "id": "LC11-01",
+      "title": "Interlude non-player reductions give three extra Arverni Regions unprinted protection",
+      "severity": "medium",
+      "expected": "The Gallic War Interlude specifically removes Arverni pieces from the Arverni Region last, with a separate early exception for Cadurci/Volcae Allies. Non-player removal order is random among otherwise equal Regions. Veneti, Carnutes and Pictones must compete with other non-Arverni Regions rather than receive an additional protected tier.",
+      "observed": "Public run_winter_round reaches and completes the Interlude from legal Gallic War setup-derived positions. Equal four-Warband groups at Veneti/Sequani, Carnutes/Sequani and Pictones/Sequani always lose all four in Sequani and preserve the expansion Home, for seeds1–12 each. Code makes the probability of removing the expansion Home first zero. Ordinary Mandubii/Sequani controls remove either (7/5), while a human German's explicit removal of each of the three expansion Homes is accepted by the same full Interlude.",
+      "cause": "_np_arverni_reductions builds other from Regions outside ARVERNI_HOME_REGIONS_ARIOVISTUS, then a separate shuffled home list of Veneti/Carnutes/Pictones, then Arverni. It applies other+home+[Arverni] to the Warband quota, retaining an extra expansion-Home tier despite the narrower Interlude rule and human authored cohort legality.",
+      "sources": [
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "lines": [
+            24,
+            29
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Scenario - The Gallic War",
+          "lines": [
+            53,
+            64
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            163,
+            166
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            179,
+            186
+          ]
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/engine/interlude.py",
+          "lines": [
+            669,
+            703
+          ]
+        },
+        {
+          "path": "fs_bot/engine/interlude.py",
+          "lines": [
+            758,
+            764
+          ]
+        },
+        {
+          "path": "fs_bot/engine/interlude.py",
+          "lines": [
+            1418,
+            1425
+          ]
+        },
+        {
+          "path": "fs_bot/engine/interlude_reductions.py",
+          "lines": [
+            18,
+            25
+          ]
+        },
+        {
+          "path": "fs_bot/engine/interlude_reductions.py",
+          "lines": [
+            79,
+            85
+          ]
+        },
+        {
+          "path": "fs_bot/engine/winter.py",
+          "lines": [
+            1261,
+            1285
+          ]
+        }
+      ],
+      "prior_distinction": "WS5-01 restored only the named home City rather than clearing its Region; earlier Interlude choices gave humans exact allocations. WS7-01 wired NP Quarters planners, LC9-01 corrected Roman Quarters arrival payments and LC10-01 admitted adjacent agreed Provincia moves. None addresses the NP Interlude Arverni removal-tier definition. The human Interlude validator already uses only the base Arverni Home Region while the NP fallback preserves the extra expansion tier.",
+      "controls": [
+        "36 primary cases: each of Veneti/Carnutes/Pictones versus Sequani, four Hidden Warbands each, seeds1–12; all preserve the expansion Home and empty Sequani.",
+        "12 ordinary-Region controls: Mandubii versus Sequani, equal groups; removal selects Mandubii7 and Sequani5.",
+        "3 printed-priority controls: Arverni Region versus Sequani, seeds1–3; only Sequani is emptied.",
+        "3 human-German controls explicitly remove the Veneti/Carnutes/Pictones cohort; full Interlude accepts each and preserves Sequani.",
+        "All54 fixtures have no threshold winner and pass census/structural checks before and after public run_winter_round. Hash0/987 JSON output is byte-identical."
+      ],
+      "fixture": "Actual setup_scenario(The Gallic War, seed); canonical remove_piece returns all original Arverni Warbands to Available, then place_piece places equal groups of four in two legal Regions. All other setup pieces remain. Supply third-Winter metadata winter_count2/current Winter, mark human Rome to legally decline Britannia expedition and other playable seats NP. Human controls additionally make Germans human and supply an engine-authored legal Arverni reduction allocation. No private reducer invocation, mocks, monkeypatches or production edits.",
+      "repair_scope": "Use the specific Interlude Arverni-last tier for NP reductions, sharing priority definitions with authored human cohort legality where practical. Preserve Cadurci/Volcae Ally exception, exact minimum quotas, appropriate piece priorities, seeded random equal-Region choices and mandatory Gergovia restoration/reinforcement. Keep normal Ariovistus Arverni Home definitions unchanged.",
+      "evidence": [
+        "lifecycle/probe_lifecycle.py",
+        "lifecycle/results.json",
+        "lifecycle/results.hash987.json",
+        "lifecycle/report.md"
+      ],
+      "limits": "One constructed full-Winter integration defect group, not natural full-game frequency evidence. Multiple seeds support the code-level zero-selection proof; no particular random result is asserted mandatory for any individual seed. Dynamic proof isolates Hidden Warband removals; the same Region order feeds Allies but no separate Ally-priority finding is counted. Results summarize affected cohorts and validators, not complete-state hash independence. No terminal or saved-session reproduction claimed.",
+      "comparison": {
+        "repo": "lod-bot",
+        "revision": "2991ea279062773548ec390a1da75f3e85381702",
+        "implementation": [
+          {
+            "path": "lod_ai/bots/random_spaces.py",
+            "lines": [
+              150,
+              192
+            ]
+          }
+        ],
+        "engineering_lesson": "Actual pick_by_priority groups explicit substantive priority keys and resolves equal-key candidates within those groups. Share the specific reduction-stage priority definition rather than silently adding a generic scenario-Home key. LOD game rules, table distribution and owner rulings are not Falling Sky authority."
+      },
+      "status": "open"
+    },
+    {
+      "id": "UI11-01",
+      "title": "Winter Campaign terminal cannot combine borrowed Enlist Warbands with their Belgic Command",
+      "severity": "medium",
+      "expected": "With two actions remaining, allow a combined Belgic Command plus Enlist borrowing; the demonstrated borrowed Raid Reveals two German Warbands and gives Belgae two Resources, consuming both actions.",
+      "observed": "All five scenario terminal menus lack combined Enlist+Command. The offered standalone Enlist loan is rejected as Unknown free Enlist sub-Command and returns to the menu. The same combined plan validates, survives actual SeatSession pending/save-load/acceptance, and executes successfully.",
+      "cause": "Winter menu provides paired forms only for Battle+Ambush/Besiege; standalone SA collection sets command=None but still offers borrow, while Command-only collection cannot add borrowing. Standalone execution correctly routes to a free German subcommand rather than the combined loan scope.",
+      "sources": [
+        {
+          "path": "Reference Documents/Card Reference",
+          "lines": [
+            645,
+            655
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/A Card Reference",
+          "lines": [
+            279,
+            286
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": [
+            195,
+            214
+          ]
+        },
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A4",
+          "lines": [
+            44,
+            53
+          ]
+        },
+        {
+          "path": "AGENT_INTERFACE.md",
+          "lines": [
+            2263,
+            2280
+          ]
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/cli/winter_campaign.py",
+          "lines": [
+            13,
+            47
+          ]
+        },
+        {
+          "path": "fs_bot/cli/human_plan.py",
+          "lines": [
+            749,
+            760
+          ]
+        },
+        {
+          "path": "fs_bot/cli/human_plan.py",
+          "lines": [
+            1242,
+            1261
+          ]
+        },
+        {
+          "path": "fs_bot/engine/winter_campaign.py",
+          "lines": [
+            67,
+            77
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            602,
+            644
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            5952,
+            5978
+          ]
+        }
+      ],
+      "prior_distinction": "UI8-01/02 concern repeated Winter Battle Regions and March drop-offs. UI10-02 concerns physical visibility in Enlist's free German March; FE6-02/FE7-01 concern March groups. This is Winter terminal construction of a combined borrowed-force Command already supported by the ordinary collector and durable API.",
+      "controls": [
+        "Five terminal failures after actual shaded63/A63 activation and public after-Harvest hook; each preserves exact board/RNG",
+        "Five actual SeatSession pending/save-load/combined-plan acceptance controls execute two-action borrowed Raid and retain exact accepted plan",
+        "Great Revolt and Ariovistus ordinary terminal borrowed Command controls succeed with unchanged planning board",
+        "Great Revolt and Ariovistus standalone Winter Enlist free German March controls succeed and consume only one action",
+        "All 14 cases have clean physical conservation and structural checks before/after; hash0/987 output identical"
+      ],
+      "repair_scope": "Provide combined borrowed Enlist+Command while two Winter actions remain, using existing physical selection and detached planning. Preserve two-action accounting, single-action limit, standalone free German Commands, costs, geography and expansion four-piece limits. Hiding the broken standalone loan alone is insufficient.",
+      "limits": "Curated sparse positions with public Event activation then direct post-Harvest capability hook, not naturally sampled full Winters. Terminal availability defect; documented assistant/API combined-plan execution succeeds. No board corruption, balance claim, full-suite claim or production edits.",
+      "comparison": {
+        "repository": "lod-bot",
+        "commit": "2991ea279062773548ec390a1da75f3e85381702",
+        "sources": [
+          {
+            "path": "lod_ai/interactive_cli.py",
+            "lines": [
+              1023,
+              1035
+            ]
+          },
+          {
+            "path": "lod_ai/interactive_cli.py",
+            "lines": [
+              1107,
+              1122
+            ]
+          },
+          {
+            "path": "lod_ai/interactive_cli.py",
+            "lines": [
+              1351,
+              1373
+            ]
+          },
+          {
+            "path": "lod_ai/interactive_cli.py",
+            "lines": [
+              1402,
+              1420
+            ]
+          },
+          {
+            "path": "lod_ai/special_activities/common_cause.py",
+            "lines": [
+              43,
+              51
+            ]
+          },
+          {
+            "path": "lod_ai/special_activities/common_cause.py",
+            "lines": [
+              106,
+              106
+            ]
+          }
+        ],
+        "lesson": "Author a temporary borrowed-force modifier together with its consuming Command and retain their shared execution lifetime. Engineering comparison only, not imported game rules or equivalent Winter behavior."
+      },
+      "evidence": [
+        "frontend/probe_frontend.py",
+        "frontend/results.json",
+        "frontend/results.hash987.json",
+        "frontend/report.md"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "NP11-01",
+      "severity": "medium",
+      "title": "Belgic March omits Enlist newly enabled by the Leader's arrival",
+      "expected": "After March, evaluate Enlist using the resulting Leader range. Two Revealed Germans at Treveri become eligible when Ambiorix arrives in adjacent Atrebates and must March in place to Hide.",
+      "observed": "Full Pax Gallica dispatch selects March with No SA and translates it as Command only. Ambiorix and four Warbands move to Atrebates for four Resources; both Germans remain Revealed even though the live chooser then selects Enlist german_march_hide at Treveri.",
+      "cause": "node_b_march chooses Enlist before movement and emits no live post-Command intent. The translation treats No SA as Command only; the post-Command helper includes Belgic Rally/Raid but not March, and generic execution returns immediately for No SA.",
+      "sources": [
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            314,
+            338
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 8",
+          "lines": [
+            390,
+            412
+          ]
+        },
+        {
+          "path": "Reference Documents/Chapter 4",
+          "lines": [
+            215,
+            222
+          ]
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/bots/belgae_bot.py",
+          "lines": [
+            1153,
+            1181
+          ]
+        },
+        {
+          "path": "fs_bot/cli/dispatcher.py",
+          "lines": [
+            87,
+            105
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            164,
+            186
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            4823,
+            4825
+          ]
+        },
+        {
+          "path": "fs_bot/engine/execute.py",
+          "lines": [
+            4977,
+            4999
+          ]
+        }
+      ],
+      "controls": "Source-required authored Enlist on the identical March succeeds; natural preexisting Enlist succeeds; stale positive now-out-of-range Enlist correctly declines; genuine Command-only and absent-Germans controls do no SA; public scoped free Command excludes Treveri from SA scope and correctly leaves Germans Revealed. Seven cases, clean inventory/structure and unchanged planning board/RNG.",
+      "prior_distinction": "New consumer of the known post-Command forecast class: NP9-02 covered Rally/Raid, NP10-01 only Arverni March and explicitly excluded unproven Belgic March. FE6-02 and UI10-02 concern Enlist subcommand representation/physical selection after choosing Enlist.",
+      "repair_scope": "Carry authorized after-March Enlist intent through planning, translation and execution. Respect actual arrival, Command-only, Event scope, one-SA limit and actual Britannia crossings. March's fallback is Enlist only, never Rampage.",
+      "evidence": [
+        "bots/probe_bots.py",
+        "bots/results.json",
+        "bots/report.md"
+      ],
+      "limits": "Synthetic legal Pax Gallica board with named Ambiorix and five persistent base-game Devastated marker flags modeling prior Arverni actions; not a claimed full history or untouched setup. No Britannia or natural encounter-rate claim. Authored-SA control distinguished from natural dispatch. Canonical piece helpers throughout.",
+      "status": "open"
+    },
+    {
+      "id": "NP11-02",
+      "severity": "medium",
+      "title": "Surrounded German Leader never takes the required expansion advance",
+      "expected": "If the German Leader is in and adjacent only to German Control, expansion March advances him with the most movable Warbands toward a noncontrolled Region via a friendly adjacent step, retaining one origin Warband and Control.",
+      "observed": "Full Ariovistus dispatch with G1b/G5 No falls through to Raid, gaining six Resources and retaining Ariovistus plus twenty-six Warbands at Ubii. The public authored legal March Ubii to Treveri advances Leader plus twenty-five Warbands toward Roman-Controlled Mandubii, leaves one in Ubii and pays one Resource.",
+      "cause": "The option_b branch requires all adjacent playable Regions to be German Controlled, then searches those same adjacent Regions for non-German Control. The candidate list is necessarily empty; an immobile one-Warband alternative causes has-effect fallback to Rally/Raid.",
+      "sources": [
+        {
+          "path": "Reference Documents/Ariovistus/Chapter A8",
+          "lines": [
+            208,
+            241
+          ]
+        }
+      ],
+      "implementation": [
+        {
+          "path": "fs_bot/bots/german_bot.py",
+          "lines": [
+            1465,
+            1511
+          ]
+        }
+      ],
+      "controls": "All real German Warband/Ally/Settlement pools placed canonically to disable Rally and Settle; no initial victory and no markers. Public authored advance works. A directly adjacent noncontrolled Treveri makes natural March work; Frost and no-Leader controls correctly Raid. Five cases have clean pre/post census/structure and planning board/RNG purity.",
+      "prior_distinction": "No rounds1-10 finding covers the unreachable Ariovistus ordinary expansion Leader branch. WS6-02/03 were the base-game automatic Germans Phase; NP7-03 Winter consolidation; NP4-01 Roman target strength; BM10-01 Divination Battle forecasting.",
+      "repair_scope": "Separate a remote noncontrolled target from legal adjacent steps toward it, retaining the all-controlled condition and printed movement, largest group, leave-one, Control, scope and random-choice rules. Preserve Frost/no-movement fallbacks.",
+      "evidence": [
+        "bots/probe_bots.py",
+        "bots/results.json",
+        "bots/report.md"
+      ],
+      "limits": "Constructed Ariovistus board with exhausted placement pools, no winner, Event, Capability, Drought, Battle or callback. Treveri is a legal intermediate step, not asserted to be the unique correct choice. Earlier multiple-Drought-marker sketch discarded. No natural frequency/balance claim.",
+      "status": "open"
+    }
+  ],
+  "independent_review": {
+    "audited_commit": "702d60a3754ce94a73ead0d0148d647232ecd816",
+    "source_sha256": "489efe1d5b60a36f47ac5b7b46fd47595246d770606e32f6fa78d5b5b8d6a9e0",
+    "confirmed_groups": 8,
+    "findings": [
+      {
+        "id": "BM11-01",
+        "disposition": "confirmed",
+        "conclusion": "Confirmed active Abatis avoidance of the A34 high-value Loss guarantee; ordinary predicate and repaired BM10 controls pass."
+      },
+      {
+        "id": "NP11-01",
+        "disposition": "confirmed",
+        "conclusion": "Confirmed Belgic ordinary March misses newly legal Enlist; new consumer of scoped stale-SA family."
+      },
+      {
+        "id": "NP11-02",
+        "disposition": "confirmed",
+        "conclusion": "Confirmed impossible conjunction disables surrounded Ariovistus March toward an uncontrolled Region."
+      },
+      {
+        "id": "EV11-01",
+        "disposition": "confirmed",
+        "conclusion": "Confirmed Lucterius ineffective admission and absent restoration target; one automated-card execution group."
+      },
+      {
+        "id": "EV11-02",
+        "disposition": "confirmed",
+        "conclusion": "Confirmed Assembly of Gaul omits mandatory resource targets despite applicable printed instructions."
+      },
+      {
+        "id": "EV11-03",
+        "disposition": "confirmed",
+        "conclusion": "Confirmed Shifting Loyalties uses acquisition order instead of Roman shaded enemy-Capability priority."
+      },
+      {
+        "id": "LC11-01",
+        "disposition": "confirmed",
+        "conclusion": "Confirmed expanded Home-last protection contradicts Interlude exception and named Arverni Region rule."
+      },
+      {
+        "id": "UI11-01",
+        "disposition": "confirmed",
+        "conclusion": "Confirmed terminal Winter Campaign cannot compose borrowing Enlist with its accompanying Command; durable API succeeds."
+      }
+    ],
+    "source_review": "Supplied rule/card/flowchart sources, public-path probes, matched controls, and prior scoped repairs independently checked.",
+    "no_production_edits": true,
+    "final_scripts": 5,
+    "hash_seeds": [
+      0,
+      987
+    ],
+    "all_raw_outputs_byte_identical": true,
+    "protected_files_verified": 48,
+    "rerun_manifest": "review/reruns.json",
+    "portable_verification": "review/portable-run.json",
+    "detailed_report": "independent-review.md"
+  }
+}

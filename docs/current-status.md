@@ -21,6 +21,24 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
+The eleventh comparison audit has **eight open medium-priority findings**.
+[Audit report](reviews/comparison-audit-round11-2026-11-13.md) · [Ledger](reviews/comparison-audit-round11-2026-11-13.json) · [Evidence](reviews/comparison-audit-round11-2026-11-13-evidence.zip)
+
+| Batch | Findings | Scope |
+|---|---|---|
+| 1 | EV11-01, EV11-02, EV11-03 | Lucterius, Assembly of Gaul and Shifting Loyalties bot choices |
+| 2 | BM11-01 | Divination forecast with active Abatis |
+| 3 | LC11-01 | Arverni removal priorities at the Gallic War Interlude |
+| 4 | UI11-01 | Winter Campaign terminal choice for Command plus borrowed Enlist |
+| 5 | NP11-01, NP11-02 | Belgic Enlist after March and German Leader movement |
+
+All **10,379 existing tests pass**. Twenty audited bot games complete cleanly,
+and 20 mixed-player cases reproduce across hash seeds 0 and 987 with zero
+hard findings and four retained soft partial plans. The five directed
+probes independently reproduce the eight findings and their controls.
+
+### Previous rounds
+
 Batches 1–5 close **all nine tenth-audit groups**.
 [Audit report](reviews/comparison-audit-round10-2026-11-13.md) ·
 [Ledger](reviews/comparison-audit-round10-2026-11-13.json) · [Evidence](reviews/comparison-audit-round10-2026-11-13-evidence.zip)
@@ -37,7 +55,6 @@ Batch 5 passes **10,379 tests**, 120 audited bot games and 20 mixed-player
 replay cases. The balance baseline records the verified outcomes of the
 corrected bot decisions, with the original seeds and 15-point band.
 
-### Previous rounds
 
 Batches 1–4 close **all eight ninth-audit repair groups**.
 [Audit report](reviews/comparison-audit-round9-2026-11-12.md) ·

@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 9,
-  "closed": 2,
-  "open": 7,
+  "closed": 3,
+  "open": 6,
   "severity_counts": {
     "medium": 9
   },
@@ -244,7 +244,9 @@
       "findings": [
         "BM10-01"
       ],
-      "scope": "Effective Abatis protection in Battle forecasts"
+      "scope": "Effective Abatis protection in Battle forecasts",
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch2-2026-11-13.md"
     },
     {
       "batch": 3,
@@ -590,7 +592,8 @@
         "battle/results.json",
         "battle/report.md"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch2-2026-11-13.md"
     },
     {
       "id": "LC10-01",

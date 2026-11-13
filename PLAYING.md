@@ -194,6 +194,8 @@ German Allegiances use the live PR-13 choices below.
 Stalwart German Phalanx cancels Slingers fire against attacking Germans.
 It also cancels the Fort protection from unshaded Ballistae. Fort saves
 against German Attack or Counterattack Losses remove the Fort on 1–3.
+Against a German attack, Stalwart cancels an enemy Abatis's defense.
+Ariovistus can then double Losses unless the defender has a Fort or Citadel.
 Inflexible cancels the shaded Legio X limit when Caesar attacks German
 defenders, so each of his Legions inflicts two Losses before halving.
 

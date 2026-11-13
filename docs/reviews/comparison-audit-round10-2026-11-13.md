@@ -1,7 +1,8 @@
 # Tenth Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Nine additional repair groups, all medium priority. Batch 1 closes two, with seven open.**
-[Batch 1 repairs and validation](tenth-comparison-batch1-2026-11-13.md)
+**13 November 2026. Nine additional repair groups, all medium priority. Batches 1 and 2 close three, with six open.**
+[Batch 1 repairs and validation](tenth-comparison-batch1-2026-11-13.md) ·
+[Batch 2 repair and validation](tenth-comparison-batch2-2026-11-13.md)
 The ninth audit remains complete with all eight of its scoped groups repaired. This audit records additional affected paths, including the ordinary spread-March extension of the earlier post-Command Special Ability defect. Production code and supplied references are unchanged.
 
 Audited commit: `ae238c6482a792dda98af4f1f9b11abf820a3964`. Python source SHA-256: `39076dca68ec449cf766e40256c765d2d36693c50989a2b0552745f208f94d45` across **620 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
@@ -43,7 +44,7 @@ Prior ledgers and repairs were checked for duplicates. BM10-01 promotes an expli
 | Batch | Findings | Scope |
 |---|---|---|
 | 1 | EV10-01, EV10-02 | Closed. [Bellovaci and Siege of Bibrax](tenth-comparison-batch1-2026-11-13.md). |
-| 2 | BM10-01 | Open. Effective Abatis protection in Battle forecasts. |
+| 2 | BM10-01 | Closed. [Abatis protection in Battle forecasts](tenth-comparison-batch2-2026-11-13.md). |
 | 3 | LC10-01 | Open. Adjacent Roman Quarters into an agreeing host’s Provincia. |
 | 4 | UI10-01, UI10-02, UI10-03 | Open. Completed Special Ability summaries, exact Enlist March cohorts and durable Quarters decisions. |
 | 5 | NP10-01, NP10-02 | Open. Arverni post-spread-March abilities and repeated Devastate. |
@@ -102,7 +103,7 @@ Closed in [Batch 1](tenth-comparison-batch1-2026-11-13.md). Medium priority.
 
 ### BM10-01 — Canceled Abatis makes Divination skip a required Aedui Battle
 
-**Status:** Open. **Priority:** medium.
+Closed in [Batch 2](tenth-comparison-batch2-2026-11-13.md). Medium priority.
 
 **Expected:** After public A64 Belgic Abatis then shaded A31 Stalwart, A34 unshaded naming non-player Aedui must select German Battle: Ariovistus plus two Warbands inflicts four standing or two Retreat Losses on two Belgic Warbands plus the Aulerci Ally, guaranteeing a high-value Loss in either stance.
 

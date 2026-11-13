@@ -4,10 +4,10 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-Batch 1 closes two of the nine tenth-audit repair groups. Bots skip shaded
-Bellovaci and unshaded Siege of Bibrax when their printed conditions fail.
-The Aedui bot selects its own Warbands for Siege of Bibrax.
-[Batch 1 repairs and validation](docs/reviews/tenth-comparison-batch1-2026-11-13.md)
+The first two batches close three of the nine tenth-audit repair groups.
+Battle forecasts honor Stalwart's cancellation of defending Abatis, so
+the Aedui bot can select the required Battle when Divination lets it command
+the Germans. [Batch 2 repairs and validation](docs/reviews/tenth-comparison-batch2-2026-11-13.md)
 
 Roman Build now preserves the player's selected Region order, including
 Ally/Subdue before a Fort elsewhere. [Repair and validation](docs/reviews/build-order-2026-11-04.md).
@@ -149,7 +149,7 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The first tenth-audit batch passes **10,302 tests**, completes all 120
+The second tenth-audit batch passes **10,308 tests**, completes all 120
 audited bot games and 20 mixed-player replay cases, and passes the 100-game
 balance check against the reviewed baseline.
 [Tenth audit and repair order](docs/reviews/comparison-audit-round10-2026-11-13.md)

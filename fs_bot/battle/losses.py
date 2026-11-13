@@ -260,6 +260,10 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
         _wb_factor = 1.0 if warband_full_loss else 0.5
         total += _legion_wb * (1.0 - _wb_factor)
 
+    # A64's protection applies when defending and may be canceled by A31.
+    _abatis = not is_counterattack and defender_abatis_active(
+        state, region, enemy_faction, defending_faction)
+
     # Ariovistus doubling — A3.2.4, A3.4.4
     # Doubles total losses unless enemy (faction taking losses) is Defending
     # with Fort or Citadel. But an Attacker always takes double in
@@ -267,12 +271,10 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     if ariovistus_in_battle and not state.get("event_modifiers", {}).get(
             "card_A31_no_ario_double"):
         defender_pieces = get_effective_faction_pieces(state, region, defending_faction)
-        _m2 = state.get("markers", {}).get(region, {})
-        from fs_bot.rules_consts import MARKER_ABATIS as _MAB
         has_fort_or_citadel = (
             defender_pieces.get(FORT, 0) > 0
             or defender_pieces.get(CITADEL, 0) > 0
-            or _m2.get(_MAB) == defending_faction  # A64: acts as a Fort
+            or _abatis
         )
         if is_counterattack:
             # "An Attacker, even with a Fort or Citadel, fighting Ariovistus
@@ -285,11 +287,7 @@ def calculate_losses(state, region, attacking_faction, defending_faction,
     # Losses whether or not Retreating and inflict +1 Counterattack Loss."
     _motivation = _a33_motivation_active(state)
 
-    # Card A64 Abatis: defender-owned marker acts as a Fort and negates all
-    # Losses caused by Auxilia (attack step only — "When you defend"). A31
-    # interactions per BGG errata thread 2072553 clarification 1.
-    _abatis = not is_counterattack and defender_abatis_active(
-        state, region, enemy_faction, defending_faction)
+    # A64 also negates Losses caused by Auxilia.
     if _abatis:
         total -= enemy_auxilia * aux_factor
 

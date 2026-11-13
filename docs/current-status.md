@@ -21,7 +21,7 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The eighth comparison audit has **six repaired groups and five open**.
+The eighth comparison audit has **nine repaired groups and two open**.
 [Audit report](reviews/comparison-audit-round8-2026-11-12.md)
 
 | Batch | Findings | Scope |
@@ -29,7 +29,7 @@ The eighth comparison audit has **six repaired groups and five open**.
 | 1 | LC8-01, LC8-02 | Closed. [Post-Interlude final Winter and standard solo victory](reviews/eighth-comparison-batch1-2026-11-12.md). |
 | 2 | BM8-01, BM8-02 | Closed. [Massed Gallic Archers and German Phalanx](reviews/eighth-comparison-batch2-2026-11-12.md). |
 | 3 | UI8-01, UI8-02 | Closed. [Winter Campaign Battle Regions and March drop-offs](reviews/eighth-comparison-batch3-2026-11-12.md). |
-| 4 | EV8-01, EV8-02, EV8-03 | Repair Event decline conditions and the Roman Forced Marches producer. |
+| 4 | EV8-01, EV8-02, EV8-03 | Closed. [Event selection and Roman Forced Marches](reviews/eighth-comparison-batch4-2026-11-12.md). |
 | 5 | NP8-01, NP8-02 | Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection. |
 
 [Eighth-audit ledger](reviews/comparison-audit-round8-2026-11-12.json) ·
@@ -46,6 +46,19 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 12 November eighth comparison repair Batch 4
+
+Belgae decline Legiones when their Battle forecast finds no Legion Loss.
+Shaded Pompey and Gallia Togata use their printed prerequisites before a
+bot can select them. The Roman bot plans Forced Marches across eligible
+Regions using its March priorities, and the Event Hides its moving Auxilia.
+[Repair and validation](reviews/eighth-comparison-batch4-2026-11-12.md)
+
+All **10,178 tests pass**. The 120 audited bot games complete cleanly,
+and all 35 mixed-player cases match across hash seeds. The paired traces
+account for 19 changed bot games and three changed mixed games. The
+reviewed balance baseline passes the same 100-game check and the canary.
 
 ### 12 November eighth comparison repair Batch 3
 

@@ -433,6 +433,7 @@ def execute_card_3(state, shaded=False):
 
     Source: Card Reference, card 3
     """
+    from fs_bot.cards.base_piece_choices import remove_roman_pieces, roman_removal_applies
     if not shaded:
         # Unshaded: If Adulation, place 1 Legion in Provincia;
         # if not, shift Senate 1 box down
@@ -446,9 +447,7 @@ def execute_card_3(state, shaded=False):
     else:
         # Shaded: If Legions track has 4 or fewer, Romans remove 2
         # Legions to track
-        track_count = _count_on_legions_track(state)
-        if track_count <= 4:
-            from fs_bot.cards.base_piece_choices import remove_roman_pieces
+        if roman_removal_applies(state, 3):
             _event_step(state, "3.piece_choice")
             params = state.get("event_params") or {}
             if remove_roman_pieces(state, 3, params):
@@ -509,6 +508,7 @@ def execute_card_5(state, shaded=False):
 
     Source: Card Reference, card 5
     """
+    from fs_bot.cards.base_piece_choices import remove_roman_pieces, roman_removal_applies
     if not shaded:
         # Unshaded: Place Gallia Togata marker and 3 Auxilia in Cisalpina
         _add_region_marker(state, CISALPINA, MARKER_GALLIA_TOGATA)
@@ -520,8 +520,7 @@ def execute_card_5(state, shaded=False):
             place_piece(state, CISALPINA, ROMANS, AUXILIA, count=to_place)
     else:
         # Shaded: Unless Adulation, remove 1 Legion to track + 2 Auxilia
-        if state["senate"]["position"] != ADULATION:
-            from fs_bot.cards.base_piece_choices import remove_roman_pieces
+        if roman_removal_applies(state, 5):
             _event_step(state, "5.piece_choice")
             params = state.get("event_params") or {}
             if remove_roman_pieces(state, 5, params):
@@ -2639,6 +2638,7 @@ def execute_card_A5(state, shaded=False):
 
     Source: A Card Reference, card A5
     """
+    from fs_bot.cards.base_piece_choices import resolve_a5_removals, roman_removal_applies
     if not shaded:
         markers = state.setdefault("markers", {})
         region_markers = markers.setdefault(CISALPINA, {})
@@ -2652,8 +2652,7 @@ def execute_card_A5(state, shaded=False):
         state.setdefault("event_modifiers", {})
         state["event_modifiers"]["card_A5_remove_non_romans"] = True
     else:
-        if state["senate"]["position"] != ADULATION:
-            from fs_bot.cards.base_piece_choices import resolve_a5_removals
+        if roman_removal_applies(state, "A5"):
             _event_step(state, "A5.piece_choice")
             resolve_a5_removals(state, state.get("event_params") or {})
 

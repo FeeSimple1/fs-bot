@@ -2,11 +2,13 @@
 
 **12 November 2026. The audit found eleven repair groups, four high and seven medium.**
 Batch 1 closes LC8-01 and LC8-02. Batch 2 closes BM8-01 and BM8-02.
-Batch 3 closes UI8-01 and UI8-02. Five groups remain open.
+Batch 3 closes UI8-01 and UI8-02. Batch 4 closes EV8-01 through EV8-03.
+Two groups remain open.
 The findings and validation below describe the audited revision.
 [Batch 1 repairs and validation](eighth-comparison-batch1-2026-11-12.md) ·
 [Batch 2 repairs and validation](eighth-comparison-batch2-2026-11-12.md) ·
-[Batch 3 repairs and validation](eighth-comparison-batch3-2026-11-12.md)
+[Batch 3 repairs and validation](eighth-comparison-batch3-2026-11-12.md) ·
+[Batch 4 repairs and validation](eighth-comparison-batch4-2026-11-12.md)
 
 Audited Falling Sky commit: `e62b0360c1b91032741ef8f6afa4d247c8ea2437`. Python source SHA-256: `3c047ebcfef915efef8e1da308cd63484b1e6c735b8aba8e5c095de2c5d106b9` across **611 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
 
@@ -49,7 +51,7 @@ Five focused review lanes produced executable public-path witnesses and controls
 | 1 | LC8-01, LC8-02 | Correct post-Interlude final-Winter detection and standard solo victory policy. |
 | 2 | BM8-01, BM8-02 | Share Archers Battle orchestration and apply both German Phalanx cancellation effects. |
 | 3 | UI8-01, UI8-02 | Closed. [Validate Battle selection and offer March drop-offs](eighth-comparison-batch3-2026-11-12.md). |
-| 4 | EV8-01, EV8-02, EV8-03 | Repair Event decline conditions and the Roman Forced Marches producer. |
+| 4 | EV8-01, EV8-02, EV8-03 | Closed. [Event selection and Roman Forced Marches](eighth-comparison-batch4-2026-11-12.md). |
 | 5 | NP8-01, NP8-02 | Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection. |
 
 Fixes should turn the relevant defective witness into a regression test, preserve its positive controls, run the full suite and appropriate game/replay checks, and update this ledger. Game-outcome changes require causal review before any balance-baseline refresh. Batch 2 should share the Archers hook before applying cancellation so the two fixes cover the same execution paths.
@@ -206,6 +208,8 @@ Fixes should turn the relevant defective witness into a regression test, preserv
 
 ### EV8-01 — Belgae play Legiones despite the absence of any possible Legion Loss
 
+**Status:** Closed in [Batch 4](eighth-comparison-batch4-2026-11-12.md).
+
 **Expected:** Numeric2 shaded is No Belgae when no Loss can be forced on a Legion. With no Legion anywhere on the map, the bot must decline the Event and continue its flowchart, even though it could remove an Auxilia.
 
 **Observed:** Actual dispatch chooses Event2 and includes the exact instruction saying if none, No Belgae. Public execution Battles at Carnutes and removes its one Roman Auxilia, while no Legion Loss was possible. Disabling only the Event option on the original position produces a Rally continuation.
@@ -230,6 +234,8 @@ Fixes should turn the relevant defective witness into a regression test, preserv
 
 ### EV8-02 — Arverni choose ineffective Pompey and Gallia Togata when their removal prerequisites fail
 
+**Status:** Closed in [Batch 4](eighth-comparison-batch4-2026-11-12.md).
+
 **Expected:** Arverni must decline shaded numeric3 while more than four Legions remain on the track, and shaded numeric5 while the Senate is in Adulation. Both Events have no effect under those printed conditions, despite the presence of Roman pieces.
 
 **Observed:** In each controlled position actual Arverni dispatch selects the Auto1-4 Event; public execution reports executed=true and changes no game effect. Each position has two Roman Legions and two Auxilia at Provincia, ten track Legions, and Adulation. The Event-disabled flowchart instead selects Rally.
@@ -253,6 +259,8 @@ Fixes should turn the relevant defective witness into a regression test, preserv
 **Evidence:** `events/probe_events.py`; `events/probe_events-output.json` in the portable archive. The original lane ledger preserves additional source annotations.
 
 ### EV8-03 — Roman Forced Marches has no non-player movement producer
+
+**Status:** Closed in [Batch 4](eighth-comparison-batch4-2026-11-12.md).
 
 **Expected:** Numeric32 must relocate Roman Forces using the printed Roman March priorities. In the controlled board, Provincia is the sole mobile origin and Bituriges the sole enemy-base destination; Caesar, two Legions and eighteen Auxilia can relocate there, and the Auxilia become Hidden.
 

@@ -80,6 +80,13 @@ def choice_request(state, card_id):
             'auxilia_max': 5, 'auxilia_available': get_available(state, rc.ROMANS, rc.AUXILIA)}
 
 
+def roman_removal_applies(state, card_id):
+    """Printed prerequisites for shaded Pompey and both Gallia Togata cards."""
+    if card_id == 3:
+        return _count_on_legions_track(state) <= 4
+    return state.get('senate', {}).get('position') != rc.ADULATION
+
+
 def roman_removal_request(state, card_id):
     """Offer only on-map cohorts and require all printed removals possible."""
     regions = get_playable_regions_for_state(state, rc.ROMANS)

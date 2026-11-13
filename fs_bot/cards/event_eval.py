@@ -55,7 +55,6 @@ from fs_bot.rules_consts import (
     # Leaders
     CAESAR, VERCINGETORIX, AMBIORIX, ARIOVISTUS_LEADER,
     # Senate and Legions track
-    ADULATION,
     LEGIONS_ROW_BOTTOM, LEGIONS_ROW_MIDDLE, LEGIONS_ROW_TOP,
     # Max resources
     MAX_RESOURCES,
@@ -998,8 +997,10 @@ def is_event_effective(state, card_id, shaded=False):
         return (find_leader(state, AEDUI) is None
                 and state.get("removed_pieces", {}).get(AEDUI, {}).get(LEADER, 0) > 0)
 
-    if card_id == "A5" and shaded and state.get("senate", {}).get("position") == ADULATION:
-        return False
+    if card_id in (3, 5, 'A5') and shaded:
+        from fs_bot.cards.base_piece_choices import roman_removal_applies, roman_removal_request
+        return (roman_removal_applies(state, card_id)
+                and any(roman_removal_request(state, card_id)['required'].values()))
 
     if card_id in (18, 'A18') and shaded:
         from fs_bot.cards.event_targets import rhenus_bridge_has_legion

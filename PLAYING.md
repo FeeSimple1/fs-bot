@@ -43,7 +43,8 @@ Colony adds a Tribe in a playable Region under your Control or with No Control.
 In the base game, Gallia Togata opens Cisalpina to Roman placement. With that
 Event in effect, Romans can also use Forced Marches to relocate mobile Forces
 into or out of Cisalpina. Choose Forced Marches origins and destinations
-outside Britannia.
+outside Britannia. The Roman bot uses its March priorities for these
+relocations, and the Auxilia it moves become Hidden.
 
 The Colony counts as a Tribe in its recorded Region for Seize, Build, Entreat,
 Trade, replacement Events, and Belgic Control Value. Menus offer its actual
@@ -273,11 +274,13 @@ by faction and visibility, or all remaining eligible Warbands if fewer
 are present. The Warbands can come from any combination of factions.
 Each step applies as far as possible.
 
-Shaded Pompey and both versions of Gallia Togata ask the Roman player which pieces to
-remove, even when another faction plays the Event. Split Legions or Auxilia
-across Regions and choose the exact visibility of each Auxilia. Remove as
-many of each printed type as the board allows. Legions return to the Legions
-track and Auxilia return to Available.
+Shaded Pompey applies when four or fewer Legions remain on the track.
+Shaded Gallia Togata applies when the Senate is outside Adulation.
+When the removal applies, the Roman player chooses the pieces even if
+another faction played the Event. Split the removals across Regions
+and select the exact Auxilia visibility. Remove as many of each printed
+type as the board allows. Legions return to the track and Auxilia return
+to Available.
 
 Unshaded Usipetes & Tencteri (A36) lets the faction playing the Event choose
 which German Settlements and Warbands to remove in Morini, Nervii and

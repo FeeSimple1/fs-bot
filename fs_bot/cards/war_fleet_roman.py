@@ -1,4 +1,4 @@
-"""Card 62 Roman relocation using §8.8.1 priorities, without March limits."""
+"""Roman relocation for Cards 32 and 62 using §8.8.1 movement priorities."""
 from itertools import product
 
 from fs_bot import rules_consts as rc
@@ -155,7 +155,7 @@ def _can_consolidate(state, groups, destination):
     if count_on_map(state, rc.ROMANS, rc.LEGION) > 6 or destination in groups:
         return False
     # Existing destination residents count as already there; every other
-    # Legion and the on-map Leader must be in a selected coastal origin.
+    # Legion and the on-map Leader must be in a selected origin.
     for region in state['spaces']:
         if region != destination and region not in groups:
             if (count_pieces(state, region, rc.ROMANS, rc.LEGION)
@@ -303,3 +303,15 @@ def roman_moves(state, regions):
         index += 1
     state['rng'].setstate(initial_rng)
     return []
+
+
+def forced_marches_plan(state, *, preview=False):
+    """Card 32 uses Roman March priorities with its own relocation theatre."""
+    from fs_bot.cards.war_fleet import _copy
+    from fs_bot.map.map_data import get_playable_regions_for_state
+
+    planning = _copy(state) if preview else state
+    regions = [region for region in get_playable_regions_for_state(planning, rc.ROMANS)
+               if region != rc.BRITANNIA]
+    moves = roman_moves(planning, regions)
+    return {'moves': moves} if moves else None

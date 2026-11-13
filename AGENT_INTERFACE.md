@@ -372,6 +372,8 @@ Forced Marches (32) uses `event_params.moves` entries with `from_region`,
 `to_region`, `piece_type`, and optional `count` and `piece_state`. Choose the
 executor's mobile Forces and playable endpoints outside Britannia. Roman
 endpoints include Cisalpina when Gallia Togata is in effect.
+The Roman bot selects moves using its March priorities. Its availability
+check uses a detached board and RNG.
 
 Shaded Hostages (22) uses `target_tribes: [{tribe, faction?, warband_faction?, region?}]`.
 Choose one or two distinct Subdued Tribes with Roman pieces. The Tribe
@@ -865,8 +867,10 @@ keep their ordered faction preferences and timing windows, and the Event
 fills any shortfall within Nervii. Older histories may pause for the
 new choices or diverge under the corrected removals.
 
-Shaded Pompey (3) and Gallia Togata (5/A5) send `event_piece_choice` to
-the Romans, including when another faction executes the Event. After the
+Shaded Pompey (3) applies with four or fewer track Legions. Shaded Gallia
+Togata (5/A5) applies outside Senate Adulation. When the printed removal
+applies, `event_piece_choice` goes to the Romans even if another faction
+executes the Event. After the
 `3.piece_choice`, `5.piece_choice` or `A5.piece_choice` timing window, the request includes
 `available` cohorts and `required` totals keyed by piece type. Legions have
 `piece_state: null`. Auxilia have exact Hidden, Revealed or Scouted states.

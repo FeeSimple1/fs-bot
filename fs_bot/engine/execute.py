@@ -1408,7 +1408,7 @@ def _predicted_legion_losses(state, region, attacker):
     (default loss order), so Legion Losses = min(Legions, total - Auxilia).
 
     Implements the Belgic NP instruction "Battle where most Losses forced on
-    Legions" for the A21/A28/A57/Legiones card group.
+    Legions" for the A21/A28/A57 card group.
     """
     from fs_bot.rules_consts import ROMANS, LEGION, AUXILIA
     from fs_bot.board.pieces import count_pieces
@@ -1423,6 +1423,39 @@ def _predicted_legion_losses(state, region, attacker):
     except Exception:
         return 0
     return max(0, min(legions, total - auxilia))
+
+
+def _belgic_legiones_region(state, *, choose=False):
+    """Rank Card 2 Battles by the Legion Losses their Attack would force."""
+    from copy import deepcopy
+    from fs_bot import rules_consts as rc
+    from fs_bot.bots.bot_common import _AllRemovalsRng
+
+    # §8.5.1 assumes defending Loss rolls remove pieces. Forecast the
+    # printed Roman bot Retreat or the ordinary standing Battle for a player.
+    # A player's actual declaration and casualties still resolve live.
+    roman_bot = rc.ROMANS in state.get('non_player_factions', ())
+    scored = []
+    for region in get_playable_regions_for_state(state, rc.BELGAE):
+        if (not count_pieces(state, region, rc.ROMANS, rc.LEGION)
+                or not _attacker_has_force(state, region, rc.BELGAE)):
+            continue
+        trial = deepcopy({key: value for key, value in state.items()
+                          if key not in ('decision_agent', 'rng')})
+        trial['rng'] = _AllRemovalsRng()
+        result = battle_capabilities.resolve_single(
+            trial, region, rc.BELGAE, rc.ROMANS, choose_retreat=roman_bot,
+            auto_legion_loss=True)
+        attack = result.get('attack') or {}
+        losses = attack.get('auto_legion_removed', 0) + sum(
+            count for piece, count in attack.get('removed', []) if piece == rc.LEGION)
+        if losses:
+            scored.append((losses, region))
+    if not scored:
+        return None
+    best = max(losses for losses, _ in scored)
+    tied = sorted(region for losses, region in scored if losses == best)
+    return random_select(state, tied) if choose else tied[0]
 
 
 def _german_warband_floor_ok(state, region, faction, defender):
@@ -6191,15 +6224,17 @@ def _derive_card_2(state, faction, shaded):
     """Card 2 Legiones (shaded): "Free Battle against Romans in a Region. The
     first Loss removes a Legion automatically, if any there."
 
-    The acting (non-Roman) Faction chooses a Region where it can Battle the
-    Romans — preferring a Region holding a Roman Legion (so the auto-Legion
-    Loss bites) and where it has an attacking force, by Roman pieces present.
+    Non-player Belgae maximize Legion Losses and decline if none are possible.
+    Other Factions prefer a Region with a Legion, then more Roman pieces.
     Returns {"battle_region": R}, or None if no such Region (the unshaded side
     is the Senate/Legions placement, handled in the card).
     """
-    from fs_bot.rules_consts import ROMANS, LEGION
+    from fs_bot.rules_consts import ROMANS, BELGAE, LEGION
     if not shaded or faction == ROMANS:
         return None
+    if faction == BELGAE and faction in state.get('non_player_factions', ()):
+        region = _belgic_legiones_region(state, choose=True)
+        return {"battle_region": region} if region else None
     ROM = ROMANS
     from fs_bot.board.pieces import count_pieces
     from fs_bot.map.map_data import get_playable_regions
@@ -6381,18 +6416,18 @@ def _derive_o38_region(state, faction, shaded):
 
 
 def _derive_card_32(state, faction=None, shaded=False):
-    """Card 32 Forced Marches, NP relocation (found live as a bot no-op:
-    the event executed with no moves derived, wasting the bot's turn).
+    """Card 32 Forced Marches, using the actor's relocation priorities.
 
-    Arverni instruction: "move only per 8.7.6" — reuse the V_MARCH_SPREAD
-    planner's moves as the free relocation. Other NP factions' cards say
-    "No <Faction>" (event_eval routes them to the flowchart), so an empty
-    derivation there is correct.
+    Romans use Roman March priorities. Arverni use their spread priorities
+    (§8.7.6). The remaining factions have No Faction instructions.
     """
     import copy as _copy
     from fs_bot.rules_consts import (ARVERNI as _AR32, WARBAND as _WB32,
-                                     LEADER as _LD32)
+                                     LEADER as _LD32, ROMANS)
     faction = faction or state.get("executing_faction")
+    if faction == ROMANS and faction in state.get('non_player_factions', ()):
+        from fs_bot.cards.war_fleet_roman import forced_marches_plan
+        return forced_marches_plan(state)
     if faction != _AR32:
         return {}
     try:

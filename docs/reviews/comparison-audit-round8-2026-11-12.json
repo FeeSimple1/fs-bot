@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 6,
-  "open": 5,
+  "closed": 9,
+  "open": 2,
   "severity_counts": {
     "high": 4,
     "medium": 7
@@ -351,7 +351,9 @@
         "EV8-02",
         "EV8-03"
       ],
-      "scope": "Repair Event decline conditions and the Roman Forced Marches producer."
+      "scope": "Repair Event decline conditions and the Roman Forced Marches producer.",
+      "status": "closed",
+      "report": "eighth-comparison-batch4-2026-11-12.md"
     },
     {
       "batch": 5,
@@ -767,7 +769,7 @@
       "id": "EV8-01",
       "title": "Belgae play Legiones despite the absence of any possible Legion Loss",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "repair_batch": 4,
       "expected": "Numeric2 shaded is No Belgae when no Loss can be forced on a Legion. With no Legion anywhere on the map, the bot must decline the Event and continue its flowchart, even though it could remove an Auxilia.",
       "observed": "Actual dispatch chooses Event2 and includes the exact instruction saying if none, No Belgae. Public execution Battles at Carnutes and removes its one Roman Auxilia, while no Legion Loss was possible. Disabling only the Event option on the original position produces a Rally continuation.",
@@ -825,13 +827,14 @@
         "events/probe_events.py",
         "events/probe_events-output.json"
       ],
-      "original_lane_ledger": "events/findings.json"
+      "original_lane_ledger": "events/findings.json",
+      "repair_report": "eighth-comparison-batch4-2026-11-12.md"
     },
     {
       "id": "EV8-02",
       "title": "Arverni choose ineffective Pompey and Gallia Togata when their removal prerequisites fail",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "repair_batch": 4,
       "expected": "Arverni must decline shaded numeric3 while more than four Legions remain on the track, and shaded numeric5 while the Senate is in Adulation. Both Events have no effect under those printed conditions, despite the presence of Roman pieces.",
       "observed": "In each controlled position actual Arverni dispatch selects the Auto1-4 Event; public execution reports executed=true and changes no game effect. Each position has two Roman Legions and two Auxilia at Provincia, ten track Legions, and Adulation. The Event-disabled flowchart instead selects Rally.",
@@ -894,13 +897,14 @@
         "events/probe_events.py",
         "events/probe_events-output.json"
       ],
-      "original_lane_ledger": "events/findings.json"
+      "original_lane_ledger": "events/findings.json",
+      "repair_report": "eighth-comparison-batch4-2026-11-12.md"
     },
     {
       "id": "EV8-03",
       "title": "Roman Forced Marches has no non-player movement producer",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "repair_batch": 4,
       "expected": "Numeric32 must relocate Roman Forces using the printed Roman March priorities. In the controlled board, Provincia is the sole mobile origin and Bituriges the sole enemy-base destination; Caesar, two Legions and eighteen Auxilia can relocate there, and the Auxilia become Hidden.",
       "observed": "Actual Roman dispatch selects numeric32 with its correct Roman March instruction, but public execution returns success with all twenty-one mobile pieces stationary and no game effect. The untouched Pax Gallica physical setup independently chooses and executes the same no-op. An explicit public numeric32 plan from the controlled starting board relocates all twenty-one pieces and Hides the eighteen Auxilia.",
@@ -958,7 +962,8 @@
         "events/probe_events.py",
         "events/probe_events-output.json"
       ],
-      "original_lane_ledger": "events/findings.json"
+      "original_lane_ledger": "events/findings.json",
+      "repair_report": "eighth-comparison-batch4-2026-11-12.md"
     },
     {
       "id": "NP8-01",

@@ -13,6 +13,12 @@ from fs_bot.cards.capabilities import GALLIC_RECIPIENT_CAPABILITIES
 
 def np_event_available(state, card_id, faction, shaded):
     """Return False for a known unavailable grant, otherwise None/True."""
+    if card_id == 2 and shaded and faction == rc.BELGAE:
+        from fs_bot.engine.execute import _belgic_legiones_region
+        return _belgic_legiones_region(state) is not None
+    if card_id == 32 and faction == rc.ROMANS:
+        from fs_bot.cards.war_fleet_roman import forced_marches_plan
+        return forced_marches_plan(state, preview=True) is not None
     if card_id == 28:
         from fs_bot.cards.oppida import np_available
         return np_available(state, faction)

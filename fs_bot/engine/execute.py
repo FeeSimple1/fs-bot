@@ -26,7 +26,7 @@ Design notes:
     functions; CommandError is caught and reported, not propagated.
 """
 
-from fs_bot.rules_consts import EVENT_SHADED
+from fs_bot.rules_consts import BRITANNIA, EVENT_SHADED
 from fs_bot.engine.diviciacus import command_scope as _diviciacus_command_scope
 from fs_bot.commands.common import CommandError, free_action
 from fs_bot.board.pieces import PieceError
@@ -161,17 +161,26 @@ def _sa_runs_before_command(command, sa):
     return False
 
 
-def _execute_post_command_sa(state, faction, action, *, with_sa, human=False, grant=None):
-    """Resolve an authorized bot's Rally or Raid chain on the resulting board."""
-    if (not human and faction in state.get("non_player_factions", ())
-            and action.get("command") in (_CMD_RALLY, _CMD_RAID)
-            and POST_COMMAND_SA in (action.get("details") or {})):
-        if not (with_sa and command_sa_allowed(state) and action["details"][POST_COMMAND_SA]):
+def _execute_post_command_sa(state, faction, action, result, *, with_sa, human=False,
+                             grant=None, allow_britannia_sa=False):
+    """Resolve a flowchart's authorized Special Ability after its Command."""
+    command = action.get("command")
+    arverni = faction == _ARVERNI_F and command in (_CMD_MARCH, _CMD_RALLY, _CMD_RAID)
+    belgae = faction == _BELGAE_F and command in (_CMD_RALLY, _CMD_RAID)
+    details = action.get("details") or {}
+    if (not human and (arverni or belgae) and faction in state.get("non_player_factions", ())
+            and POST_COMMAND_SA in details):
+        if not (with_sa and command_sa_allowed(state) and details[POST_COMMAND_SA]):
             return None
-        if faction == _ARVERNI_F:
+        if arverni:
+            # A Britannia crossing stops the group, so the completed
+            # March records identify every crossing by origin or arrival.
+            if (command == _CMD_MARCH and not allow_britannia_sa
+                    and any(BRITANNIA in (move["origin"], move["final_region"])
+                            for move in result["marches"])):
+                return None
             return _execute_arverni_live_sa(state, faction, action, open_window=True)
-        if faction == _BELGAE_F:
-            return _execute_belgic_rally_raid_sa(state, faction, action, open_window=True)
+        return _execute_belgic_rally_raid_sa(state, faction, action, open_window=True)
     if grant is None:
         return _execute_sa(state, faction, action)
     return _execute_sa(state, faction, action, _human_grant=grant)
@@ -333,7 +342,8 @@ def _reconsider_untouched_split(state, faction, action, *, limited=False, grant=
     return revised
 
 
-def _execute_decision(state, faction, decision, *, sequence=False, choose_march_dropoffs=False):
+def _execute_decision(state, faction, decision, *, sequence=False, choose_march_dropoffs=False,
+                      allow_britannia_sa=False):
     """Apply a recorded SoP decision to the board, if supported.
 
     Args:
@@ -344,6 +354,7 @@ def _execute_decision(state, faction, decision, *, sequence=False, choose_march_
         sequence: Apply the ordinary Sequence of Play's scope and windows.
         choose_march_dropoffs: Offer human drop-offs for a paid grant outside
             the Sequence of Play, using the grant's own Command/SA scope.
+        allow_britannia_sa: Winter Campaign's two-action Britannia exception.
 
     A decision carries its executable plan under ``bot_action`` (produced by a
     bot flowchart) or ``player_action`` (produced by a human player / UI). Both
@@ -536,8 +547,9 @@ def _execute_decision(state, faction, decision, *, sequence=False, choose_march_
                     or _sa_survives_empty_command(faction, command, sa)):
                 from fs_bot.engine.game_engine import ACTION_COMMAND
                 sa_result = _execute_post_command_sa(
-                    state, faction, bot_action, with_sa=decision.get("action") != ACTION_COMMAND,
-                    human=is_human)
+                    state, faction, bot_action, result,
+                    with_sa=decision.get("action") != ACTION_COMMAND,
+                    human=is_human, allow_britannia_sa=allow_britannia_sa)
             else:
                 result = dict(result)
                 result["sa_skipped"] = "command produced no legal effect"
@@ -793,7 +805,7 @@ def _execute_free_bot_command(state, faction, bot_action, *, with_sa, _human_gra
         if (_command_executed(result)
                 or _sa_survives_empty_command(faction, cmd, sa)):
             sa_result = _execute_post_command_sa(
-                state, faction, bot_action, with_sa=with_sa,
+                state, faction, bot_action, result, with_sa=with_sa,
                 human=_human_grant is not None, grant=_human_grant)
         else:
             result = dict(result)
@@ -4539,7 +4551,6 @@ def _execute_march_moves(state, faction, moves, *, free=False, before_move=None,
 
 def _execute_arverni_threat_march(state, faction, bot_action):
     """§8.7.1: pay March, try Devastate/Entreat, move; otherwise try SA after."""
-    from fs_bot.rules_consts import BRITANNIA
     details = bot_action.get("details") or {}
     plan = details.get("march_plan") or details
     crosses_britannia = (BRITANNIA in (plan.get("origins") or []) or

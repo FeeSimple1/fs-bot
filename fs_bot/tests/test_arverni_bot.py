@@ -20,7 +20,7 @@ from fs_bot.rules_consts import (
     CARNUTES, PICTONES, VENETI, TREVERI,
     TRIBE_CARNUTES, TRIBE_ARVERNI, TRIBE_AEDUI,
     TRIBE_MANDUBII, TRIBE_BITURIGES, TRIBE_MORINI,
-    EVENT_SHADED,
+    EVENT_SHADED, MARKER_DEVASTATED,
     TRIBE_SENONES, TRIBE_LINGONES,
 )
 from fs_bot.state.state_schema import build_initial_state
@@ -962,15 +962,15 @@ class TestSpecialAbilities:
         regions = _check_devastate(state, state["scenario"])
         assert MANDUBII in regions
 
-    def test_devastate_skips_already_devastated(self):
-        """Devastate skips regions already Devastated."""
+    def test_devastate_selects_marked_region_when_losses_qualify(self):
+        """§4.3.2 places a marker only if absent and always applies losses."""
         state = _make_state()
         _place_arverni_force(state, MANDUBII, leader=True, warbands=8)
         _place_roman_force(state, MANDUBII, legions=3)
         refresh_all_control(state)
-        state["spaces"][MANDUBII]["devastated"] = True
+        state["markers"][MANDUBII] = {MARKER_DEVASTATED: True}
         regions = _check_devastate(state, state["scenario"])
-        assert MANDUBII not in regions
+        assert regions == [MANDUBII]
 
     def test_devastate_requires_arverni_control(self):
         """Devastate: must have Arverni Control in region — §4.3.2.

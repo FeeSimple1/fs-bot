@@ -74,7 +74,7 @@ def _execute_plan(state, faction, plan, *, uses_bot=False):
         return result
     return _execute_decision(
         state, faction, {"bot_action" if uses_bot else "player_action": plan},
-        choose_march_dropoffs=True)
+        choose_march_dropoffs=True, allow_britannia_sa=True)
 
 
 def validate_human_plan(state, faction, plan, remaining=2):
@@ -136,7 +136,7 @@ def _resolve_winter_campaign(state, owner, card_id):
         if used == 0:
             break
         result = _execute_plan(state, owner, plan, uses_bot=uses_bot)
-        # A Rally or Raid may make an unforecast SA possible. It still costs
+        # A Command may make an unforecast SA possible. It still costs
         # the second paid action, which the bot can only plan with both left.
         if (uses_bot and (plan.get("details") or {}).get(POST_COMMAND_SA)
                 and (result.get("sa_execution") or {}).get("executed")):

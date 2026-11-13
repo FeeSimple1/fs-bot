@@ -1,10 +1,11 @@
 # Tenth Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Nine additional repair groups, all medium priority. Batches 1–4 close seven, with two open.**
+**13 November 2026. Nine additional repair groups, all medium priority. Batches 1–5 close all nine.**
 [Batch 1 repairs and validation](tenth-comparison-batch1-2026-11-13.md) ·
 [Batch 2 repair and validation](tenth-comparison-batch2-2026-11-13.md) ·
 [Batch 3 repair and validation](tenth-comparison-batch3-2026-11-13.md) ·
-[Batch 4 repairs and validation](tenth-comparison-batch4-2026-11-13.md)
+[Batch 4 repairs and validation](tenth-comparison-batch4-2026-11-13.md) ·
+[Batch 5 repairs and validation](tenth-comparison-batch5-2026-11-13.md)
 The ninth audit remains complete with all eight of its scoped groups repaired. This audit records additional affected paths, including the ordinary spread-March extension of the earlier post-Command Special Ability defect. Production code and supplied references are unchanged.
 
 Audited commit: `ae238c6482a792dda98af4f1f9b11abf820a3964`. Python source SHA-256: `39076dca68ec449cf766e40256c765d2d36693c50989a2b0552745f208f94d45` across **620 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
@@ -49,7 +50,7 @@ Prior ledgers and repairs were checked for duplicates. BM10-01 promotes an expli
 | 2 | BM10-01 | Closed. [Abatis protection in Battle forecasts](tenth-comparison-batch2-2026-11-13.md). |
 | 3 | LC10-01 | Closed. [Adjacent Roman Quarters in Provincia](tenth-comparison-batch3-2026-11-13.md). |
 | 4 | UI10-01, UI10-02, UI10-03 | Closed. [Completed summaries, Enlist March and Quarters replay](tenth-comparison-batch4-2026-11-13.md). |
-| 5 | NP10-01, NP10-02 | Open. Arverni post-spread-March abilities and repeated Devastate. |
+| 5 | NP10-01, NP10-02 | Closed. [Arverni abilities after March and repeated Devastate](tenth-comparison-batch5-2026-11-13.md). |
 
 Turn each confirmed failure into a source-derived regression and retain its controls. Run the full suite and appropriate bot, human-session and replay checks after repairs. Explain any changed game outcomes before revising a balance baseline.
 
@@ -227,7 +228,7 @@ Closed in [Batch 4](tenth-comparison-batch4-2026-11-13.md). Medium priority.
 
 ### NP10-01 — Ordinary Arverni spread March omits newly enabled Entreat
 
-**Status:** Open. **Priority:** medium.
+Closed in [Batch 5](tenth-comparison-batch5-2026-11-13.md). Medium priority.
 
 **Expected:** After spread March creates a Hidden Warband and leader-range opportunity at Carnutes, Devastate then Entreat must be evaluated after movement and cost; one Auxilium becomes an Arverni Warband for one Resource.
 
@@ -251,7 +252,7 @@ Closed in [Batch 4](tenth-comparison-batch4-2026-11-13.md). Medium priority.
 
 ### NP10-02 — Existing Devastated marker incorrectly blocks a later bot Devastate
 
-**Status:** Open. **Priority:** medium.
+Closed in [Batch 5](tenth-comparison-batch5-2026-11-13.md). Medium priority.
 
 **Expected:** A new Command's Devastate may select a previously Devastated, Arverni-Controlled in-range Region and apply mandatory losses without adding another marker. Six Arverni Warbands versus four Legions force one Legion loss and meet the bot priority.
 

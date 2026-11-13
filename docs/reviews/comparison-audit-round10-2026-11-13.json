@@ -274,7 +274,9 @@
         "NP10-01",
         "NP10-02"
       ],
-      "scope": "Arverni post-spread-March abilities and repeated Devastate"
+      "scope": "Arverni post-spread-March abilities and repeated Devastate",
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch5-2026-11-13.md"
     }
   ],
   "findings": [
@@ -1085,7 +1087,8 @@
         "bots/results.json",
         "bots/report.md"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch5-2026-11-13.md"
     },
     {
       "id": "NP10-02",
@@ -1149,7 +1152,8 @@
         "bots/results.json",
         "bots/report.md"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch5-2026-11-13.md"
     }
   ]
 }

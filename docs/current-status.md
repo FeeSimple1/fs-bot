@@ -21,7 +21,7 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-Batches 1–4 close **seven of the nine tenth-audit groups**. Two remain open.
+Batches 1–5 close **all nine tenth-audit groups**.
 [Audit report](reviews/comparison-audit-round10-2026-11-13.md) ·
 [Ledger](reviews/comparison-audit-round10-2026-11-13.json) · [Evidence](reviews/comparison-audit-round10-2026-11-13-evidence.zip)
 
@@ -31,10 +31,11 @@ Batches 1–4 close **seven of the nine tenth-audit groups**. Two remain open.
 | 2 | BM10-01 | Closed. [Abatis protection in Battle forecasts](reviews/tenth-comparison-batch2-2026-11-13.md). |
 | 3 | LC10-01 | Closed. [Adjacent Roman Quarters in Provincia](reviews/tenth-comparison-batch3-2026-11-13.md). |
 | 4 | UI10-01, UI10-02, UI10-03 | Closed. [Completed summaries, Enlist March and Quarters replay](reviews/tenth-comparison-batch4-2026-11-13.md). |
-| 5 | NP10-01, NP10-02 | Open. Arverni post-spread-March abilities and repeated Devastate. |
+| 5 | NP10-01, NP10-02 | Closed. [Arverni abilities after March and repeated Devastate](reviews/tenth-comparison-batch5-2026-11-13.md). |
 
-Batch 4 passes **10,357 tests**, 120 audited bot games and 20 mixed-player
-replay cases. The fixed-seed balance check passes within its 15-point band.
+Batch 5 passes **10,379 tests**, 120 audited bot games and 20 mixed-player
+replay cases. The balance baseline records the verified outcomes of the
+corrected bot decisions, with the original seeds and 15-point band.
 
 ### Previous rounds
 
@@ -75,6 +76,13 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 13 November tenth comparison repair Batch 5
+
+The Arverni bot evaluates Devastate and Entreat after its spread and mass
+Marches. An existing Devastated marker still allows the bot to select an
+otherwise qualifying Region for a later Devastate.
+[Repairs and validation](reviews/tenth-comparison-batch5-2026-11-13.md)
 
 ### 13 November tenth comparison repair Batch 4
 

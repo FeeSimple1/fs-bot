@@ -25,6 +25,11 @@ Ambush and Besiege modify Battle directly.
 Completed card summaries show the Special Ability that actually resolved
 and its Regions when the outcome records them.
 
+After the Arverni bot pays for and moves a spread or mass March, it checks
+Devastate first, then Entreat. A previously Devastated Region can take
+casualties again on a later use of Devastate while keeping its one marker.
+[Arverni bot repairs](docs/reviews/tenth-comparison-batch5-2026-11-13.md)
+
 The Aedui bot checks how many defenders survive its Attack before choosing
 an additional Battle Region. It also checks whether a legal Retreat could
 make the exchange unfavorable. After Rally, the bot uses the placed pieces

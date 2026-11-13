@@ -1060,9 +1060,6 @@ def node_v_march_spread(state):
     if not has_any_march:
         return node_v_raid(state)
 
-    # SA: Devastate or Entreat after March — §8.7.4
-    sa, sa_regions = _determine_march_sa(state, scenario, before_march=False)
-
     all_dests = list(march_plan["spread_destinations"])
     if march_plan["control_destination"]:
         all_dests.append(march_plan["control_destination"])
@@ -1070,9 +1067,7 @@ def node_v_march_spread(state):
     return _make_action(
         ACTION_MARCH,
         regions=all_dests,
-        sa=sa,
-        sa_regions=sa_regions,
-        details={"march_plan": march_plan},
+        details={"march_plan": march_plan, POST_COMMAND_SA: command_sa_allowed(state)},
     )
 
 
@@ -1205,15 +1200,10 @@ def node_v_march_mass(state):
     if not march_plan_has_effect(state, ARVERNI, march_plan):
         return node_v_raid(state)
 
-    # SA: Devastate or Entreat after March — §8.7.6
-    sa, sa_regions = _determine_march_sa(state, scenario, before_march=False)
-
     return _make_action(
         ACTION_MARCH,
         regions=[march_plan["destination"]],
-        sa=sa,
-        sa_regions=sa_regions,
-        details={"march_plan": march_plan},
+        details={"march_plan": march_plan, POST_COMMAND_SA: command_sa_allowed(state)},
     )
 
 
@@ -1252,7 +1242,7 @@ def _check_devastate(state, scenario, *, allowed_regions=None):
     devastate_regions = []
 
     for region in playable:
-        if _is_devastated(state, region) or not validate_devastate_region(state, region)[0]:
+        if not validate_devastate_region(state, region)[0]:
             continue
         roman = removal_request(state, region, ROMANS)
         auxiliaries = sum(entry["count"] for entry in roman["available"]
@@ -1395,10 +1385,11 @@ def _check_entreat(state, scenario, *, allowed_regions=None):
                         "target_type": target_type,
                     })
 
-        # Player Allies only — §8.7.1
+        # Eligible player Allies only — §§4.3.1, 8.7.1. Base Germans
+        # are game-run and Roman Allies cannot be selected.
         # §4.3.1: removing an Allied Tribe (Subdue) also requires Arverni
         # Control of the Region, same as the replace branch.
-        for target_faction in (AEDUI, BELGAE, ROMANS):
+        for target_faction in (AEDUI, BELGAE):
             if target_faction in non_players:
                 continue  # Only player Factions
             for region in playable:

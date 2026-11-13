@@ -4,10 +4,10 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The first four batches close seven of the nine tenth-audit repair groups.
-Completed summaries report resolved Special Abilities, base Enlist March
-keeps exact Warband selections, and Quarters Supply agreements replay
-across process restarts. [Batch 4 repairs and validation](docs/reviews/tenth-comparison-batch4-2026-11-13.md)
+All nine tenth-audit repair groups are closed. The Arverni bot checks
+Devastate and Entreat after moving and paying for spread or mass March.
+It can Devastate a marked Region again when the losses meet its priorities.
+[Batch 5 repairs and validation](docs/reviews/tenth-comparison-batch5-2026-11-13.md)
 
 Roman Build now preserves the player's selected Region order, including
 Ally/Subdue before a Fort elsewhere. [Repair and validation](docs/reviews/build-order-2026-11-04.md).
@@ -149,7 +149,7 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The fourth tenth-audit batch passes **10,357 tests**, completes all 120
+The fifth tenth-audit batch passes **10,379 tests**, completes all 120
 audited bot games and 20 mixed-player replay cases, and passes the 100-game
 balance check against the reviewed baseline.
 [Tenth audit and repair order](docs/reviews/comparison-audit-round10-2026-11-13.md)

@@ -4,6 +4,8 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
+The [ninth comparison audit](docs/reviews/comparison-audit-round9-2026-11-12.md) records eight new open repair groups after the eighth round closed. Gameplay code is unchanged; directed evidence and the repair order are included.
+
 Roman Build now preserves the player's selected Region order, including
 Ally/Subdue before a Fort elsewhere. [Repair and validation](docs/reviews/build-order-2026-11-04.md).
 

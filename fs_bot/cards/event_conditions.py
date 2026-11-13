@@ -22,6 +22,13 @@ def np_event_available(state, card_id, faction, shaded):
     if card_id == 'A40' and not shaded:
         from fs_bot.engine.execute import _derive_card_A40
         return _derive_card_A40(state, faction, shaded, preview=True) is not None
+    if card_id == 'A51' and not shaded:
+        from fs_bot.board.pieces import get_available
+        from fs_bot.cards.expansion_reinforcements import derive_bibrax
+        # §8.2.3 requires a troop benefit for the executor. The shared
+        # effectiveness check also requires Remi to qualify.
+        params = derive_bibrax(state, faction, shaded)
+        return params is not None and get_available(state, faction, params['piece_type']) > 0
     if card_id == 28:
         from fs_bot.cards.oppida import np_available
         return np_available(state, faction)

@@ -1010,6 +1010,16 @@ def is_event_effective(state, card_id, shaded=False):
         from fs_bot.cards.event_targets import lost_eagle_regions
         return bool(lost_eagle_regions(state))
 
+    if card_id == 'A51' and not shaded:
+        from fs_bot.cards.event_targets import bibrax_remi_qualifies
+        if not bibrax_remi_qualifies(state):
+            return False
+
+    if card_id == 'A69' and shaded:
+        from fs_bot.cards.event_targets import bellovaci_is_belgic_ally
+        # Only the Warbands placed by this Event may Ambush.
+        return bellovaci_is_belgic_ally(state) and get_available(state, BELGAE, WARBAND) > 0
+
     if card_id == 'A19' and not shaded:
         from fs_bot.cards.procillus import replacement_targets
         return bool(replacement_targets(state))

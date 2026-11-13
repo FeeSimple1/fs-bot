@@ -4,11 +4,10 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The tenth comparison audit records nine additional medium-priority repair
-groups. All 10,279 tests pass, with clean held-out bot games and deterministic
-sampled mixed-player replays; directed witnesses expose the remaining defects.
-[Audit, evidence and repair order](docs/reviews/comparison-audit-round10-2026-11-13.md).
-The ninth audit remains complete with all eight of its groups repaired.
+Batch 1 closes two of the nine tenth-audit repair groups. Bots skip shaded
+Bellovaci and unshaded Siege of Bibrax when their printed conditions fail.
+The Aedui bot selects its own Warbands for Siege of Bibrax.
+[Batch 1 repairs and validation](docs/reviews/tenth-comparison-batch1-2026-11-13.md)
 
 Roman Build now preserves the player's selected Region order, including
 Ally/Subdue before a Fort elsewhere. [Repair and validation](docs/reviews/build-order-2026-11-04.md).
@@ -150,7 +149,12 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The ninth comparison repairs pass **10,279 tests** and complete all 120
+The first tenth-audit batch passes **10,302 tests**, completes all 120
+audited bot games and 20 mixed-player replay cases, and passes the 100-game
+balance check against the reviewed baseline.
+[Tenth audit and repair order](docs/reviews/comparison-audit-round10-2026-11-13.md)
+
+The ninth comparison repairs passed **10,279 tests** and completed all 120
 audited bot games and 35 mixed-player replay cases. The 100-game balance
 baseline records the verified outcomes of the corrected bot decisions.
 [Final batch repairs and validation](docs/reviews/ninth-comparison-batch4-2026-11-13.md)

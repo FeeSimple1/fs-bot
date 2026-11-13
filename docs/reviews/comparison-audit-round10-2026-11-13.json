@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 9,
-  "closed": 0,
-  "open": 9,
+  "closed": 2,
+  "open": 7,
   "severity_counts": {
     "medium": 9
   },
@@ -235,7 +235,9 @@
         "EV10-01",
         "EV10-02"
       ],
-      "scope": "Conditional Event admission and Siege of Bibrax troop ownership"
+      "scope": "Conditional Event admission and Siege of Bibrax troop ownership",
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch1-2026-11-13.md"
     },
     {
       "batch": 2,
@@ -377,7 +379,8 @@
         "events/probe_events.py",
         "events/results.json"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch1-2026-11-13.md"
     },
     {
       "id": "EV10-02",
@@ -458,7 +461,8 @@
         "events/probe_events.py",
         "events/results.json"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch1-2026-11-13.md"
     },
     {
       "id": "BM10-01",

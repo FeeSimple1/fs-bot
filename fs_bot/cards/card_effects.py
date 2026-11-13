@@ -3342,19 +3342,11 @@ def execute_card_A51(state, shaded=False):
     params = state.get("event_params", {})
     if not shaded:
         from fs_bot.cards.expansion_up_to import validate_params, choose
+        from fs_bot.cards.event_targets import bibrax_remi_qualifies
         validate_params('A51', params)
-        t_info = state.get("tribes", {}).get(TRIBE_REMI)
-        if not t_info:
+        if not bibrax_remi_qualifies(state):
             return
         region = TRIBE_TO_REGION.get(TRIBE_REMI)
-        allied = t_info.get("allied_faction")
-        # "If Remi Roman or Aedui Ally or Subdued" — a Subdued Tribe is neither
-        # Allied nor Dispersed (Key Terms Index); Disperse lives in
-        # tribe["status"]. A Dispersed Remi does not qualify.
-        is_valid = (allied in (ROMANS, AEDUI)
-                    or (allied is None and t_info.get("status") is None))
-        if not is_valid:
-            return
         # Place 4 Auxilia or Aedui Warbands — no other piece type (an
         # unvalidated Ally/Citadel would desync tribe<->piece backing).
         piece_type = params.get("piece_type", AUXILIA)
@@ -3689,8 +3681,8 @@ def execute_card_A69(state, shaded=False):
             if to_place > 0:
                 place_piece(state, region, pfac, piece_type, count=to_place)
     else:
-        if (t_info and t_info.get("allied_faction") == BELGAE
-                and region):
+        from fs_bot.cards.event_targets import bellovaci_is_belgic_ally
+        if region and bellovaci_is_belgic_ally(state):
             avail = get_available(state, BELGAE, WARBAND)
             to_place = min(6, avail)
             if to_place > 0:

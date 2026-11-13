@@ -93,6 +93,22 @@ def lost_eagle_regions(state):
                          for faction in (rc.ARVERNI, rc.BELGAE, rc.GERMANS)))
 
 
+def bibrax_remi_qualifies(state):
+    """Unshaded A51 requires a Roman or Aedui Ally or a Subdued Remi."""
+    remi = state.get('tribes', {}).get(rc.TRIBE_REMI)
+    if not remi:
+        return False
+    owner = remi.get('allied_faction')
+    return (owner in (rc.ROMANS, rc.AEDUI)
+            or (owner is None and remi.get('status') is None))
+
+
+def bellovaci_is_belgic_ally(state):
+    """Both effects of shaded A69 require a Belgic Ally at Bellovaci."""
+    bellovaci = state.get('tribes', {}).get(rc.TRIBE_BELLOVACI) or {}
+    return bellovaci.get('allied_faction') == rc.BELGAE
+
+
 def alpine_tribes_regions(state, faction):
     """A40 placement area with the recipient's current stacking restrictions."""
     if faction not in rc.FACTIONS:

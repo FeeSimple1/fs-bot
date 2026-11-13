@@ -1,6 +1,7 @@
 # Tenth Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Nine additional repair groups, all medium priority. All nine are open.**
+**13 November 2026. Nine additional repair groups, all medium priority. Batch 1 closes two, with seven open.**
+[Batch 1 repairs and validation](tenth-comparison-batch1-2026-11-13.md)
 The ninth audit remains complete with all eight of its scoped groups repaired. This audit records additional affected paths, including the ordinary spread-March extension of the earlier post-Command Special Ability defect. Production code and supplied references are unchanged.
 
 Audited commit: `ae238c6482a792dda98af4f1f9b11abf820a3964`. Python source SHA-256: `39076dca68ec449cf766e40256c765d2d36693c50989a2b0552745f208f94d45` across **620 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
@@ -41,7 +42,7 @@ Prior ledgers and repairs were checked for duplicates. BM10-01 promotes an expli
 
 | Batch | Findings | Scope |
 |---|---|---|
-| 1 | EV10-01, EV10-02 | Open. Conditional Event admission and Siege of Bibrax troop ownership. |
+| 1 | EV10-01, EV10-02 | Closed. [Bellovaci and Siege of Bibrax](tenth-comparison-batch1-2026-11-13.md). |
 | 2 | BM10-01 | Open. Effective Abatis protection in Battle forecasts. |
 | 3 | LC10-01 | Open. Adjacent Roman Quarters into an agreeing host’s Provincia. |
 | 4 | UI10-01, UI10-02, UI10-03 | Open. Completed Special Ability summaries, exact Enlist March cohorts and durable Quarters decisions. |
@@ -53,7 +54,7 @@ Turn each confirmed failure into a source-derived regression and retain its cont
 
 ### EV10-01 — Bots play conditional Bellovaci and Siege of Bibrax Events when their prerequisite is false
 
-**Status:** Open. **Priority:** medium.
+Closed in [Batch 1](tenth-comparison-batch1-2026-11-13.md). Medium priority.
 
 **Expected:** Per §8.1.1, NP Belgae decline A69 shaded unless Bellovaci is a Belgic Ally. NP Romans/Aedui decline A51 unshaded unless Remi is Roman/Aedui Allied or Subdued. With either printed prerequisite false, the entire chosen side has no effect and its ordinary flowchart must continue.
 
@@ -77,7 +78,7 @@ Turn each confirmed failure into a source-derived regression and retain its cont
 
 ### EV10-02 — Non-player Aedui give Siege of Bibrax troops to Romans despite Available Aedui Warbands
 
-**Status:** Open. **Priority:** medium.
+Closed in [Batch 1](tenth-comparison-batch1-2026-11-13.md). Medium priority.
 
 **Expected:** A51 unshaded offers four Roman Auxilia or Aedui Warbands. §8.2.3 requires NP Aedui to choose their own Event benefit. With at least four own Warbands Available and Remi legal, they must place four Aedui Warbands, while retaining the printed Roman Fort and enemy removals.
 

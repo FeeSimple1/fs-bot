@@ -21,24 +21,21 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The tenth comparison audit records **nine additional medium-priority groups; all nine are open**.
+Batch 1 closes **two of the nine tenth-audit groups**. Seven remain open.
 [Audit report](reviews/comparison-audit-round10-2026-11-13.md) ·
 [Ledger](reviews/comparison-audit-round10-2026-11-13.json) · [Evidence](reviews/comparison-audit-round10-2026-11-13-evidence.zip)
 
 | Batch | Findings | Scope |
 |---|---|---|
-| 1 | EV10-01, EV10-02 | Open. Conditional Event admission and Siege of Bibrax troop ownership. |
+| 1 | EV10-01, EV10-02 | Closed. [Bellovaci and Siege of Bibrax](reviews/tenth-comparison-batch1-2026-11-13.md). |
 | 2 | BM10-01 | Open. Effective Abatis protection in Battle forecasts. |
 | 3 | LC10-01 | Open. Adjacent Roman Quarters into an agreeing host’s Provincia. |
 | 4 | UI10-01, UI10-02, UI10-03 | Open. Completed Special Ability summaries, exact Enlist March cohorts and durable Quarters decisions. |
 | 5 | NP10-01, NP10-02 | Open. Arverni post-spread-March abilities and repeated Devastate. |
 
-All **10,279 tests pass**. The 20 held-out bot games complete cleanly.
-Twenty mixed-player cases match across hash seeds 0/987, with zero hard
-findings and one retained soft partial plan. Directed witnesses reproduce
-the findings and controls. Their final hash check also exposed a separate
-Quarters prompt/replay defect, preserved with both raw outputs. The audit
-changes no gameplay code or balance baseline.
+Batch 1 passes **10,302 tests**, 120 audited bot games and 20 mixed-player
+replay cases. The fixed-seed balance check passes within its 15-point band.
+The audit evidence includes the separate Quarters replay defect in Batch 4.
 
 ### Previous rounds
 
@@ -79,6 +76,13 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 13 November tenth comparison repair Batch 1
+
+Bots skip shaded Bellovaci and unshaded Siege of Bibrax when their printed
+Tribe conditions fail. The Aedui place their own Warbands at Bibrax, and
+Rome places Auxilia. Each bot plays Bibrax only if it can place some of
+its own troops. [Repairs and validation](reviews/tenth-comparison-batch1-2026-11-13.md)
 
 ### 13 November ninth comparison repair Batch 4
 

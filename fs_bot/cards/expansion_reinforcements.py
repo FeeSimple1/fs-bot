@@ -1,4 +1,4 @@
-"""Non-player placement and replacement plans for A35 and A60."""
+"""Non-player placement and replacement plans for A35, A51 and A60."""
 
 from fs_bot import rules_consts as rc
 from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_available, tribe_has_ally_disc
@@ -65,6 +65,14 @@ def derive_nasua(state, faction, shaded):
         if warbands:
             placements.append({'region': region, 'piece_type': rc.WARBAND, 'count': warbands})
     return {'placements': placements}
+
+
+def derive_bibrax(_state, faction, shaded):
+    """Choose the executor's own troops for unshaded A51 (§8.2.3)."""
+    if shaded:
+        return None
+    troop = {rc.ROMANS: rc.AUXILIA, rc.AEDUI: rc.WARBAND}.get(faction)
+    return {'piece_type': troop} if troop is not None else None
 
 
 def _iccius_allies(state):

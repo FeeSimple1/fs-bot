@@ -43,6 +43,13 @@ Unshaded Lost Eagle recovers a Fallen Legion in a Region that already has a
 Legion and a non-Aedui Warband. The terminal offers those destinations when
 recovery is possible.
 
+The Belgae bot needs a Belgic Ally at Bellovaci and Available Warbands
+before playing the shaded Event. Roman and Aedui bots skip unshaded Siege
+of Bibrax unless Remi is Roman Allied, Aedui Allied, or Subdued and they
+have their own troops to place. A player resolving the unshaded side may
+choose Roman Auxilia or Aedui Warbands and select up to six Belgic Warbands
+to remove.
+
 Shaded Harudes places four German Warbands and one Settlement as far as supply
 and legal spaces allow. Choose their allocation and order, then direct the
 surviving placed Warbands' Raid. Shaded Migration requires an Ally at its

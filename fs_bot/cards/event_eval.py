@@ -1006,6 +1006,10 @@ def is_event_effective(state, card_id, shaded=False):
         from fs_bot.cards.event_targets import rhenus_bridge_has_legion
         return rhenus_bridge_has_legion(state)
 
+    if card_id == 33 and not shaded:
+        from fs_bot.cards.event_targets import lost_eagle_regions
+        return bool(lost_eagle_regions(state))
+
     if card_id == 'A19' and not shaded:
         from fs_bot.cards.procillus import replacement_targets
         return bool(replacement_targets(state))

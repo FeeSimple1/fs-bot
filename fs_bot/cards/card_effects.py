@@ -1400,36 +1400,13 @@ def execute_card_33(state, shaded=False):
     Source: Card Reference, card 33
     """
     if not shaded:
-        # Unshaded: Place 1 Fallen Legion into Region with non-Aedui
-        # Warband and a Legion already
-        if state.get("fallen_legions", 0) < 1:
-            return  # No Fallen Legions
+        from fs_bot.cards.event_targets import lost_eagle_regions
+        regions = lost_eagle_regions(state)
         params = state.get("event_params", {})
         target = params.get("target_region")
-        if target is None:
-            # Auto-find: region with Legion and non-Aedui Warband
-            for region in state["spaces"]:
-                if count_pieces(state, region, ROMANS, LEGION) == 0:
-                    continue
-                # Check for non-Aedui Warbands
-                has_non_aedui_wb = False
-                for faction in (ARVERNI, BELGAE, GERMANS):
-                    if count_pieces(state, region, faction, WARBAND) > 0:
-                        has_non_aedui_wb = True
-                        break
-                if has_non_aedui_wb:
-                    target = region
-                    break
-        if target:
-            # Validate target has a Legion and a non-Aedui Warband
-            if count_pieces(state, target, ROMANS, LEGION) == 0:
-                return
-            has_non_aedui_wb = any(
-                count_pieces(state, target, fac, WARBAND) > 0
-                for fac in (ARVERNI, BELGAE, GERMANS)
-            )
-            if not has_non_aedui_wb:
-                return
+        if target is None and regions:
+            target = regions[0]
+        if target in regions:
             place_piece(state, target, ROMANS, LEGION, from_fallen=True)
     else:
         # Shaded: Remove 1 Fallen Legion permanently
@@ -3241,27 +3218,30 @@ def execute_card_A40(state, shaded=False):
 
     Source: A Card Reference, card A40
     """
-    from fs_bot.map.map_data import get_adjacent
     params = state.get("event_params", {})
     faction = state.get("executing_faction")
-    scenario = state["scenario"]
-    adj_cisalpina = list(get_adjacent(CISALPINA, scenario)) + [CISALPINA]
     if not shaded:
+        from fs_bot.cards.event_targets import alpine_tribes_regions
+        from fs_bot.map.map_data import get_tribe_restriction
         # "...up to any 3 Warbands, 2 Auxilia, or 1 Ally in each of 3 Regions
         # within 1 of Cisalpina" (A Card Reference A40): per Region one category
         # only, capped 3 / 2 / 1; at most 3 Regions.
-        from fs_bot.rules_consts import AUXILIA as _AUX, WARBAND as _WB
-        _CAP = {ALLY: 1, _AUX: 2, _WB: 3}
+        caps = {ALLY: 1, AUXILIA: 2, WARBAND: 3}
         placements = params.get("placements", [])
         region_cat = {}   # region -> the single piece category used there
         region_count = {}
         for p in _event_entries(state, "A40.placements", placements):
             region = p["region"]
-            if region not in adj_cisalpina:
-                continue
             piece_type = p["piece_type"]
             cnt = p.get("count", 1)
             pfac = p.get("faction", faction)
+            if region not in alpine_tribes_regions(state, pfac):
+                raise ValueError('Alpine Tribes requires a Region within one of Cisalpina '
+                                 'with legal stacking for the receiving Faction')
+            if (piece_type not in caps
+                    or (piece_type == AUXILIA and pfac != ROMANS)
+                    or (piece_type == WARBAND and pfac == ROMANS)):
+                raise ValueError('Alpine Tribes places Allies or the receiving Faction’s native troops')
             if region not in region_cat:
                 if len(region_cat) >= 3:
                     continue  # at most 3 Regions
@@ -3269,12 +3249,14 @@ def execute_card_A40(state, shaded=False):
                 region_count[region] = 0
             elif region_cat[region] != piece_type:
                 continue  # one category per Region ("3 WB, 2 Aux, or 1 Ally")
-            cap = _CAP.get(piece_type, 0)
+            cap = caps[piece_type]
             room = cap - region_count[region]
-            if room <= 0 or not pfac:
+            if room <= 0:
                 continue
             if piece_type == ALLY:
                 tribe = p.get("tribe")
+                if get_tribe_restriction(tribe) not in (None, pfac):
+                    raise ValueError('Alpine Tribes Ally violates Tribe stacking restrictions')
                 if (_tribe_region(state, tribe) == region
                         and _ally_tribe(state, tribe, pfac)):
                     region_count[region] += 1

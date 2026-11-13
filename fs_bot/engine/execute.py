@@ -5963,6 +5963,9 @@ def _derive_event_params(state, faction, card_id, shaded):
     if supported(card_id, shaded):
         from fs_bot.cards.expansion_validation import derive_params
         return derive_params(state, faction, card_id)
+    if card_id == 'A40':
+        return _derive_card_A40(state, faction, shaded,
+                               preview=faction not in state.get('non_player_factions', ()))
     fn = _EVENT_PARAM_DERIVERS.get(card_id)
     if fn is None:
         return None
@@ -6379,35 +6382,61 @@ def _derive_card_A29(state, faction, shaded):
     return None if shaded else derive_params(state, faction, 'A29')
 
 
-def _derive_card_A40(state, faction, shaded):
-    """A40 unshaded: place up to (3 Warbands / 2 Auxilia) of the acting Faction
-    in each of up to 3 Regions within 1 of Cisalpina (§8.2.3 — own pieces;
-    Romans place Auxilia, others place Warbands)."""
+def _derive_card_A40(state, faction, shaded, *, preview=False):
+    """Place own Allies first, then native troops in the remaining Regions (§8.3)."""
     if shaded:
         return None
-    from fs_bot.rules_consts import ROMANS, WARBAND, AUXILIA, CISALPINA
+    from fs_bot.rules_consts import ROMANS, WARBAND, AUXILIA, ALLY
     from fs_bot.board.pieces import get_available
-    from fs_bot.map.map_data import get_adjacent, get_playable_regions
-    scen = state["scenario"]
-    playable = set(get_playable_regions(scen, state.get("capabilities")))
-    near = [r for r in ([CISALPINA] + list(get_adjacent(CISALPINA, scen)))
-            if r in playable]
-    if not near:
+    from fs_bot.bots.bot_common import is_ally_in_city_or_remi
+    from fs_bot.cards.boii import eligible_allies
+    from fs_bot.cards.event_targets import alpine_tribes_regions
+    from fs_bot.map.map_data import get_region_for_tribe_for_state
+
+    regions = list(alpine_tribes_regions(state, faction))
+    if not regions:
         return None
-    pt, cap = (AUXILIA, 2) if faction == ROMANS else (WARBAND, 3)
-    avail = get_available(state, faction, pt)
+
+    def choose(candidates):
+        # Availability needs only one legal plan and must leave RNG untouched.
+        return candidates[0] if preview else random_select(state, candidates)
+
+    ally_stock = get_available(state, faction, ALLY)
+    tribes_by_region = {}
+    if ally_stock:
+        for tribe in eligible_allies(state, regions, faction):
+            region = get_region_for_tribe_for_state(state, tribe)
+            tribes_by_region.setdefault(region, []).append(tribe)
     placements = []
-    used = 0
-    for region in near:
-        if used >= 3 or avail <= 0:
+    for _ in range(min(3, ally_stock, len(tribes_by_region))):
+        region = choose(sorted(tribes_by_region))
+        tribes = tribes_by_region.pop(region)
+        preferred = [tribe for tribe in tribes if is_ally_in_city_or_remi(tribe, state['scenario'])]
+        placements.append({'region': region, 'piece_type': ALLY, 'faction': faction,
+                           'tribe': choose(preferred or tribes), 'count': 1})
+        regions.remove(region)
+
+    troop, cap = (AUXILIA, 2) if faction == ROMANS else (WARBAND, 3)
+    available = get_available(state, faction, troop)
+    for _ in range(3 - len(placements)):
+        if not regions or available <= 0:
             break
-        n = min(cap, avail)
-        if n > 0:
-            placements.append({"region": region, "piece_type": pt,
-                               "faction": faction, "count": n})
-            avail -= n
-            used += 1
+        region = choose(regions)
+        regions.remove(region)
+        count = min(cap, available)
+        placements.append({'region': region, 'piece_type': troop, 'faction': faction,
+                           'count': count})
+        available -= count
     return {"placements": placements} if placements else None
+
+
+def _derive_card_33(state, faction, shaded):
+    """Resolve a Non-player's equally eligible Fallen Legion destinations."""
+    if shaded or faction not in state.get('non_player_factions', ()):
+        return None
+    from fs_bot.cards.event_targets import lost_eagle_regions
+    regions = lost_eagle_regions(state)
+    return {'target_region': random_select(state, regions)} if regions else None
 
 
 def _derive_o38_region(state, faction, shaded):
@@ -6521,7 +6550,6 @@ _EVENT_PARAM_DERIVERS = {
     "A26": derive_divico,
     "A37": _derive_card_A37,
     "A29": _derive_card_A29,
-    "A40": _derive_card_A40,
     "A45": _derive_card_A45,
     "A64": _derive_card_A64,
     "A66": _derive_card_A66,
@@ -6531,6 +6559,7 @@ _EVENT_PARAM_DERIVERS = {
     41: _derive_card_41,
     23: _derive_card_23,
     32: _derive_card_32,
+    33: _derive_card_33,
     62: _derive_card_62,
     42: _derive_card_42,
     68: _derive_card_68,

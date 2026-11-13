@@ -1374,23 +1374,22 @@ class TestAuditConditionFixes:
 
     def test_cardA40_deriver_and_three_region_cap(self):
         from fs_bot.engine.execute import _derive_card_A40
-        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, WARBAND)
+        from fs_bot.rules_consts import (SCENARIO_ARIOVISTUS, AEDUI, ALLY, WARBAND)
         from fs_bot.board.pieces import count_pieces
         from fs_bot.state.state_schema import build_initial_state
         st = build_initial_state(SCENARIO_ARIOVISTUS, seed=1)
         d = _derive_card_A40(st, AEDUI, False)
         assert d is not None
-        # At most 3 Regions, each <= 3 Warbands.
-        assert len({p["region"] for p in d["placements"]}) <= 3
-        assert all(p["count"] <= 3 for p in d["placements"])
+        assert len({p["region"] for p in d["placements"]}) == 3
+        caps = {ALLY: 1, WARBAND: 3}
+        assert all(p["count"] <= caps[p["piece_type"]] for p in d["placements"])
         st["event_params"] = d
         st["executing_faction"] = AEDUI
         execute_event(st, "A40", shaded=False)
-        # No more than 3 Regions received Aedui Warbands from the event.
         from fs_bot.map.map_data import get_playable_regions
         got = [r for r in get_playable_regions(st["scenario"], st.get("capabilities"))
-               if count_pieces(st, r, AEDUI, WARBAND) > 0]
-        assert len(got) >= 1
+               if count_pieces(st, r, AEDUI, ALLY) or count_pieces(st, r, AEDUI, WARBAND)]
+        assert set(got) == {p["region"] for p in d["placements"]}
 
     def test_cardA70_rally_plus2_warbands_at_nervii(self):
         from fs_bot.commands.rally import rally_count_limits, rally_in_region

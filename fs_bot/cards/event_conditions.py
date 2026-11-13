@@ -19,6 +19,9 @@ def np_event_available(state, card_id, faction, shaded):
     if card_id == 32 and faction == rc.ROMANS:
         from fs_bot.cards.war_fleet_roman import forced_marches_plan
         return forced_marches_plan(state, preview=True) is not None
+    if card_id == 'A40' and not shaded:
+        from fs_bot.engine.execute import _derive_card_A40
+        return _derive_card_A40(state, faction, shaded, preview=True) is not None
     if card_id == 28:
         from fs_bot.cards.oppida import np_available
         return np_available(state, faction)

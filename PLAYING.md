@@ -39,6 +39,9 @@ Harvest counts each Allied Tribe disc and Citadel once. Resource totals stay
 between 0 and 45, including when the Ariovistus Roman score is negative.
 Lost Eagle restricts only the next Senate Phase, including when a scenario
 replaces the usual shift. Cicero and Pompey use their printed Senate effects.
+Unshaded Lost Eagle recovers a Fallen Legion in a Region that already has a
+Legion and a non-Aedui Warband. The terminal offers those destinations when
+recovery is possible.
 
 Shaded Harudes places four German Warbands and one Settlement as far as supply
 and legal spaces allow. Choose their allocation and order, then direct the
@@ -52,6 +55,12 @@ Event in effect, Romans can also use Forced Marches to relocate mobile Forces
 into or out of Cisalpina. Choose Forced Marches origins and destinations
 outside Britannia. The Roman bot uses its March priorities for these
 relocations, and the Auxilia it moves become Hidden.
+
+In Ariovistus, unshaded Alpine Tribes can place up to one Ally, two Auxilia
+or three Warbands in each of up to three Regions within one of Cisalpina.
+The placement must be legal for the Faction receiving the pieces. Once
+Gallia Togata takes effect, only Romans can receive placements in Cisalpina.
+The Roman and Aedui bots choose their own legal Allies before troops.
 
 The Colony counts as a Tribe in its recorded Region for Seize, Build, Entreat,
 Trade, replacement Events, and Belgic Control Value. Menus offer its actual

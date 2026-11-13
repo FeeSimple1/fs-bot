@@ -1,7 +1,9 @@
 # Ninth Falling Sky / Liberty or Death comparison audit
 
-**12 November 2026. Eight new repair groups: one high and seven medium. All eight are open.**
-The eighth audit remains closed at eleven of eleven groups. This audit changes documentation and evidence only.
+**12 November 2026. Eight repair groups, one high and seven medium.**
+Batch 1 closes the three Event groups. Five groups remain open. The findings
+and validation below describe the audited revision.
+[Batch 1 repairs and validation](ninth-comparison-batch1-2026-11-12.md)
 
 Audited commit: `f4c8372c396981c0a31dc6f4545e67f8c6f2e981`. Python source SHA-256: `57a94d20440986063d7f86224a6074fa0ea2ce471e58e24e9c5dd349ec799033` across **616 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
 
@@ -40,7 +42,7 @@ Fixtures use canonical piece operations and physical/structural validation. Spar
 
 | Batch | Findings | Work |
 |---|---|---|
-| 1 | EV9-01, EV9-02, EV9-03 | Alpine Tribes placement priorities and stacking; Lost Eagle applicability. |
+| 1 | EV9-01, EV9-02, EV9-03 | Closed. [Alpine Tribes and Lost Eagle](ninth-comparison-batch1-2026-11-12.md). |
 | 2 | LC9-01 | Roman Quarters payments after relocation. |
 | 3 | UI9-01, UI9-02 | Enlist Raid quantities and Morbihan pending displays. |
 | 4 | NP9-01, NP9-02 | Arverni Devastate forecasts and post-Command Special Ability transitions. |
@@ -51,7 +53,7 @@ Turn each defective witness into a source-derived regression, preserve its contr
 
 ### EV9-01 — Alpine Tribes non-player placement never selects higher-priority own Allies
 
-**Status:** Open. **Priority:** medium.
+**Status:** Closed in [Batch 1](ninth-comparison-batch1-2026-11-12.md). **Priority:** medium.
 
 **Expected:** On the controlled Ariovistus board, either Romans or Aedui should place three own Allies in three eligible Regions. Chapter 8 gives own Allies priority over other mobile pieces. With no own mobile counters Available, those same three Allied Tribe placements remain possible.
 
@@ -77,7 +79,7 @@ Turn each defective witness into a source-derived regression, preserve its contr
 
 ### EV9-02 — Romans select Lost Eagle without its Fallen Legion or qualifying destination
 
-**Status:** Open. **Priority:** medium.
+**Status:** Closed in [Batch 1](ninth-comparison-batch1-2026-11-12.md). **Priority:** medium.
 
 **Expected:** Unshaded numeric33 is ineffective unless a Fallen Legion exists and a playable Region contains both a Roman Legion and a non-Aedui Warband. Romans must continue their flowchart when either prerequisite is absent.
 
@@ -103,7 +105,7 @@ Turn each defective witness into a source-derived regression, preserve its contr
 
 ### EV9-03 — Alpine Tribes places non-Romans in Cisalpina after Gallia Togata forbids them
 
-**Status:** Open. **Priority:** high.
+**Status:** Closed in [Batch 1](ninth-comparison-batch1-2026-11-12.md). **Priority:** high.
 
 **Expected:** After actual unshaded A5 activation, Cisalpina permits only Roman pieces. A40 may place non-Romans in other legal nearby Regions, but supplies no explicit stacking exception. The Aedui bot must filter Cisalpina out, and the live handler must not place an authored non-Roman cohort there.
 

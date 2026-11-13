@@ -1512,6 +1512,13 @@ def _collect_event_params(state, faction, card_id, shaded, stdin, stdout):
             return {}
         return {'region': prompt_choice(stdin, stdout, 'Abatis — choose a Region:',
                                         [(region, region) for region in regions])}
+    if card_id == 33 and not shaded:
+        from fs_bot.cards.event_targets import lost_eagle_regions
+        regions = lost_eagle_regions(state)
+        if not regions:
+            return {}
+        return {'target_region': prompt_choice(stdin, stdout, 'Lost Eagle — place the Fallen Legion:',
+                                               [(region, region) for region in regions])}
     if card_id == 'A69':
         if shaded:
             return {}  # Shaded Ambush choices are collected at the grant.

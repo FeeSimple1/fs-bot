@@ -21,21 +21,16 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The ninth comparison audit identifies **eight new open repair groups**:
-one high and seven medium. [Audit report](reviews/comparison-audit-round9-2026-11-12.md) ·
+Batch 1 closes **three of the eight ninth-audit repair groups**. Five remain
+open. [Audit report](reviews/comparison-audit-round9-2026-11-12.md) ·
 [Ledger](reviews/comparison-audit-round9-2026-11-12.json) · [Evidence](reviews/comparison-audit-round9-2026-11-12-evidence.zip)
 
 | Batch | Findings | Scope |
 |---|---|---|
-| 1 | EV9-01, EV9-02, EV9-03 | Alpine Tribes placement priorities and stacking; Lost Eagle applicability. |
+| 1 | EV9-01, EV9-02, EV9-03 | Closed. [Alpine Tribes and Lost Eagle](reviews/ninth-comparison-batch1-2026-11-12.md). |
 | 2 | LC9-01 | Roman Quarters payments after relocation. |
 | 3 | UI9-01, UI9-02 | Enlist Raid quantities and Morbihan pending displays. |
 | 4 | NP9-01, NP9-02 | Arverni Devastate forecasts and post-Command Special Ability transitions. |
-
-The unchanged audited source passes 10,207 tests and 20 audited bot games.
-Twenty mixed cases match across two hashes with replay, zero hard findings
-and one soft partial plan. Directed witnesses establish the new defects;
-no gameplay source or rule interpretation changed during this audit.
 
 ### Previous rounds
 
@@ -64,6 +59,13 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 12 November ninth comparison repair Batch 1
+
+The Alpine Tribes bot places legal Allies before troops. Its plan and the
+live Event check stacking for the recipient, including Gallia Togata's
+Roman-only Cisalpina. Lost Eagle requires both Fallen supply and a qualifying
+destination. [Repair and validation](reviews/ninth-comparison-batch1-2026-11-12.md)
 
 ### 12 November eighth comparison repair Batch 5
 

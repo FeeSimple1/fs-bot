@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 8,
-  "closed": 0,
-  "open": 8,
+  "closed": 3,
+  "open": 5,
   "severity_counts": {
     "high": 1,
     "medium": 7
@@ -350,7 +350,7 @@
     {
       "id": "EV9-01",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "title": "Alpine Tribes non-player placement never selects higher-priority own Allies",
       "expected": "On the controlled Ariovistus board, either Romans or Aedui should place three own Allies in three eligible Regions. Chapter 8 gives own Allies priority over other mobile pieces. With no own mobile counters Available, those same three Allied Tribe placements remain possible.",
       "observed": "Unmodified dispatch selects A40 unshaded. Romans place six Auxilia; Aedui place nine Warbands; neither places any Ally. When their respective mobile pools are empty, both select and successfully execute the entire Event without any game effect, despite three legal own Ally placements. An explicit source-required Ally plan on the same public executor places three Allies with no errors.",
@@ -390,12 +390,13 @@
       ],
       "evidence_lane": "events",
       "witness": "events/probe_events.py",
-      "output": "events/probe_events-output.json"
+      "output": "events/probe_events-output.json",
+      "repair_report": "ninth-comparison-batch1-2026-11-12.md"
     },
     {
       "id": "EV9-02",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "title": "Romans select Lost Eagle without its Fallen Legion or qualifying destination",
       "expected": "Unshaded numeric33 is ineffective unless a Fallen Legion exists and a playable Region contains both a Roman Legion and a non-Aedui Warband. Romans must continue their flowchart when either prerequisite is absent.",
       "observed": "Roman public dispatch selects Lost Eagle and the public executor reports executed=true while board, pieces, resources, Senate and eligibility remain unchanged. Directed Great Revolt/Reconquest cases isolate zero Fallen, no qualifying Warband, and only an Aedui Warband beside a Legion. An untouched Pax physical setup with current Event33 independently produces the zero-Fallen no-op. With the Event disabled, directed boards have a non-Pass Recruit continuation.",
@@ -443,12 +444,13 @@
       ],
       "evidence_lane": "events",
       "witness": "events/probe_events.py",
-      "output": "events/probe_events-output.json"
+      "output": "events/probe_events-output.json",
+      "repair_report": "ninth-comparison-batch1-2026-11-12.md"
     },
     {
       "id": "EV9-03",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
       "title": "Alpine Tribes places non-Romans in Cisalpina after Gallia Togata forbids them",
       "expected": "After actual unshaded A5 activation, Cisalpina permits only Roman pieces. A40 may place non-Romans in other legal nearby Regions, but supplies no explicit stacking exception. The Aedui bot must filter Cisalpina out, and the live handler must not place an authored non-Roman cohort there.",
       "observed": "Public A5 activation places its marker and three Roman Auxilia. The subsequent ordinary Aedui A40 bot Event places three Aedui Warbands into Cisalpina, although is_region_playable(state,Cisalpina,Aedui) is false. A separate public authored A40 with only that forbidden placement also succeeds. Both preserve physical census and structural invariants, showing why those checks alone miss the rule violation.",
@@ -492,7 +494,8 @@
       ],
       "evidence_lane": "events",
       "witness": "events/probe_events.py",
-      "output": "events/probe_events-output.json"
+      "output": "events/probe_events-output.json",
+      "repair_report": "ninth-comparison-batch1-2026-11-12.md"
     },
     {
       "id": "LC9-01",
@@ -753,5 +756,18 @@
     "Existing unresolved source questions remain separate; no new ruling is adopted.",
     "Current-Event/Stalwart interaction is not promoted against section5.1.2 precedence.",
     "Numeric33 expansion examples were removed as deck-unreachable; Lost Eagle evidence is base-game only."
+  ],
+  "repair_batches": [
+    {
+      "batch": 1,
+      "date": "2026-11-12",
+      "findings": [
+        "EV9-01",
+        "EV9-02",
+        "EV9-03"
+      ],
+      "report": "ninth-comparison-batch1-2026-11-12.md",
+      "evidence": "ninth-comparison-batch1-2026-11-12-evidence.zip"
+    }
   ]
 }

@@ -6,6 +6,7 @@ from fs_bot.board.pieces import count_pieces, find_leader, get_available, get_le
 from fs_bot.map.map_data import (
     get_adjacent_for_state, get_playable_regions_for_state,
     get_region_for_tribe_for_state, get_tribe_restriction, get_tribes_in_region_for_state,
+    is_region_playable,
 )
 
 
@@ -80,6 +81,26 @@ def rhenus_bridge_has_legion(state):
     for region in rc.GERMANIA_REGIONS:
         near.update(get_adjacent_for_state(state, region, rc.ROMANS))
     return any(count_pieces(state, region, rc.ROMANS, rc.LEGION) for region in near)
+
+
+def lost_eagle_regions(state):
+    """Card 33 requires a Fallen Legion and a Region with both printed targets."""
+    if state.get('fallen_legions', 0) < 1:
+        return ()
+    return tuple(region for region in get_playable_regions_for_state(state, rc.ROMANS)
+                 if count_pieces(state, region, rc.ROMANS, rc.LEGION)
+                 and any(count_pieces(state, region, faction, rc.WARBAND)
+                         for faction in (rc.ARVERNI, rc.BELGAE, rc.GERMANS)))
+
+
+def alpine_tribes_regions(state, faction):
+    """A40 placement area with the recipient's current stacking restrictions."""
+    if faction not in rc.FACTIONS:
+        return ()
+    nearby = get_adjacent_for_state(state, rc.CISALPINA, faction)
+    if is_region_playable(state, rc.CISALPINA, faction):
+        return (rc.CISALPINA, *nearby)
+    return nearby
 
 
 def successor_regions(state, faction):

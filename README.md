@@ -4,10 +4,11 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The ninth comparison audit is complete with all eight groups closed. The
-final batch corrects Arverni Devastate forecasts and the Special Abilities
-the Arverni and Belgae choose after Rally and Raid.
-[Audit and repair reports](docs/reviews/comparison-audit-round9-2026-11-12.md)
+The tenth comparison audit records nine additional medium-priority repair
+groups. All 10,279 tests pass, with clean held-out bot games and deterministic
+sampled mixed-player replays; directed witnesses expose the remaining defects.
+[Audit, evidence and repair order](docs/reviews/comparison-audit-round10-2026-11-13.md).
+The ninth audit remains complete with all eight of its groups repaired.
 
 Roman Build now preserves the player's selected Region order, including
 Ally/Subdue before a Fort elsewhere. [Repair and validation](docs/reviews/build-order-2026-11-04.md).

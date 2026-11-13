@@ -21,6 +21,27 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
+The tenth comparison audit records **nine additional medium-priority groups; all nine are open**.
+[Audit report](reviews/comparison-audit-round10-2026-11-13.md) ·
+[Ledger](reviews/comparison-audit-round10-2026-11-13.json) · [Evidence](reviews/comparison-audit-round10-2026-11-13-evidence.zip)
+
+| Batch | Findings | Scope |
+|---|---|---|
+| 1 | EV10-01, EV10-02 | Open. Conditional Event admission and Siege of Bibrax troop ownership. |
+| 2 | BM10-01 | Open. Effective Abatis protection in Battle forecasts. |
+| 3 | LC10-01 | Open. Adjacent Roman Quarters into an agreeing host’s Provincia. |
+| 4 | UI10-01, UI10-02, UI10-03 | Open. Completed Special Ability summaries, exact Enlist March cohorts and durable Quarters decisions. |
+| 5 | NP10-01, NP10-02 | Open. Arverni post-spread-March abilities and repeated Devastate. |
+
+All **10,279 tests pass**. The 20 held-out bot games complete cleanly.
+Twenty mixed-player cases match across hash seeds 0/987, with zero hard
+findings and one retained soft partial plan. Directed witnesses reproduce
+the findings and controls. Their final hash check also exposed a separate
+Quarters prompt/replay defect, preserved with both raw outputs. The audit
+changes no gameplay code or balance baseline.
+
+### Previous rounds
+
 Batches 1–4 close **all eight ninth-audit repair groups**.
 [Audit report](reviews/comparison-audit-round9-2026-11-12.md) ·
 [Ledger](reviews/comparison-audit-round9-2026-11-12.json) · [Evidence](reviews/comparison-audit-round9-2026-11-12-evidence.zip)
@@ -32,7 +53,6 @@ Batches 1–4 close **all eight ninth-audit repair groups**.
 | 3 | UI9-01, UI9-02 | Closed. [Enlist Raid quantities and the pending Morbihan board](reviews/ninth-comparison-batch3-2026-11-13.md). |
 | 4 | NP9-01, NP9-02 | Closed. [Arverni Devastate and post-Command Special Abilities](reviews/ninth-comparison-batch4-2026-11-13.md). |
 
-### Previous rounds
 
 The eighth comparison audit is complete with **all 11 groups repaired**.
 [Audit report](reviews/comparison-audit-round8-2026-11-12.md)

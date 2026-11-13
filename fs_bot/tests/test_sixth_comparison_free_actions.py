@@ -205,7 +205,8 @@ def test_terminal_base_enlist_keeps_single_destination():
     regions, details = _collect_enlist_details(state, rc.BELGAE, source, output, _sub='german_march')
     assert regions == [ORIGIN] and not source.read()
     assert details['enlist'] == {'type': 'german_march', 'origin': ORIGIN,
-                                 'destination': DESTINATIONS[0], 'warbands': 2}
+                                 'destination': DESTINATIONS[0],
+                                 'warbands': {rc.HIDDEN: 2, rc.REVEALED: 0, rc.SCOUTED: 0}}
 
     result = _raid_and_enlist(state, details['enlist'])
 

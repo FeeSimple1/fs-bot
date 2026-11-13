@@ -900,9 +900,9 @@ def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
         if not dests:
             return None, None
         ed["origin"] = origin
+        available = {ps: count_pieces_by_state(state, origin, GERMANS, WARBAND, ps)
+                     for ps in (HIDDEN, REVEALED, SCOUTED)}
         if ario:
-            available = {ps: count_pieces_by_state(state, origin, GERMANS, WARBAND, ps)
-                         for ps in (HIDDEN, REVEALED, SCOUTED)}
             groups = _collect_enlist_march_groups(origin, dests, available, stdin, stdout)
             if not groups:
                 return None, None
@@ -914,7 +914,12 @@ def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
         ed["destination"] = prompt_choice(stdin, stdout,
                                           "March Germans TO:",
                                           [(r, r) for r in dests])
-        region = origin
+        while True:
+            selected = _choose_enlist_warbands(available, sum(available.values()), stdin, stdout)
+            if any(selected.values()):
+                ed['warbands'] = selected
+                return [origin], {'enlist': ed}
+            stdout.write('Choose at least one Warband for this group.\n')
     else:
         region = prompt_choice(stdin, stdout, "In which Region?",
                                [(r, r) for r in german_regions])
@@ -924,10 +929,6 @@ def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
                      for ps in (HIDDEN, REVEALED, SCOUTED)}
         ed['warbands'] = _choose_enlist_warbands(
             available, ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS, stdin, stdout)
-    elif sub == "german_march":
-        n = count_pieces(state, region, GERMANS, WARBAND)
-        ed["warbands"] = prompt_choice(stdin, stdout, "March how many German Warbands?",
-                                      [(str(k), k) for k in range(n, 0, -1)])
     if sub == "german_battle":
         enemies = _enemies_in_region(state, region, GERMANS)
         if not enemies:

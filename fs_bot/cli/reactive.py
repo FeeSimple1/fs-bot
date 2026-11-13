@@ -322,6 +322,13 @@ def make_cli_reactive(human_factions, stdin, stdout):
                         f"leave them nowhere to run. Agree?",
                         default=False)
                 if rt == "supply_line":
+                    if ctx.get("phase") == "quarters":
+                        regions = ", ".join(ctx["regions"])
+                        return prompt_yes_no(
+                            stdin, stdout,
+                            f"\n{faction}: let {rf} trace Supply Lines through "
+                            f"Regions you Control during Quarters (Sec.6.3.3)? "
+                            f"You currently Control {regions}. Agree?", default=True)
                     # Sec.3.2.1: chains need each controller's agreement.
                     return prompt_yes_no(
                         stdin, stdout,

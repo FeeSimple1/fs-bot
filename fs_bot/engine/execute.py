@@ -4136,16 +4136,22 @@ def _execute_battle(state, faction, bot_action, *, _paid_regions=(),
                             "besiege": besiege_target,
                             "result": res})
 
+    completed = [b for b in battles if not b["result"].get("card27_wiped")]
+    ambushes = [b["region"] for b in completed if b["is_ambush"]]
+    besieges = [b["region"] for b in completed if b["result"].get("besiege") is not None]
     result = {
         "executed": len(battles) > 0,
         "command": _CMD_BATTLE,
         "battles_resolved": [(b["region"], b["defender"]) for b in battles],
-        "battle_sa_executed": any(b.get("is_ambush") or b.get("result", {}).get("besiege") is not None
-                                  for b in battles if not b.get("result", {}).get("card27_wiped")),
+        "battle_sa_executed": bool(ambushes or besieges),
         "count": len(battles),
         "errors": errors,
         "ambush_blocked_by_diviciacus": diviciacus_blocks,
     }
+    if ambushes:
+        result["battle_sa"] = {"sa": _SA_AMBUSH, "regions": ambushes}
+    elif besieges:
+        result["battle_sa"] = {"sa": _SA_BESIEGE, "regions": besieges}
     if unavailable_ambushes:
         result['unavailable_ambushes'] = unavailable_ambushes
         if not battles:

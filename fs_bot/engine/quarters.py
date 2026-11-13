@@ -120,6 +120,13 @@ class _QuartersAgreementCache:
                 response = np_agrees_to_supply_line(
                     faction, request.get('requesting_faction'), board)
             else:
+                if (request.get('request_type') == 'supply_line'
+                        and request.get('requesting_faction') == rc.ROMANS):
+                    # Planning queries can reach a different Region first.
+                    # The cached declaration covers this host for Quarters.
+                    declaration = supply_declaration_context(board, faction)
+                    if declaration:
+                        request = dict(request, context=declaration)
                 response = self.original(board, faction, request) if self.original else None
                 if response is None:
                     response = _bot_host_agrees(board, request.get('requesting_faction'),
@@ -156,6 +163,18 @@ def agreement_cache(state):
 def _controller(state, region):
     control = state['spaces'][region].get('control')
     return next((f for f, flag in rc.FACTION_CONTROL.items() if flag == control), None)
+
+
+def supply_host_regions(state, host):
+    """List the host's playable Regions in map order for one declaration."""
+    return [region for region in get_playable_regions_for_state(state, rc.ROMANS)
+            if _controller(state, region) == host]
+
+
+def supply_declaration_context(state, host):
+    regions = supply_host_regions(state, host)
+    return ({'region': regions[0], 'regions': regions, 'phase': 'quarters'}
+            if regions else None)
 
 
 def relocation_parts(move):
@@ -335,7 +354,7 @@ def preview_relocations(state, faction, moves, *, confirm=False, _live=False,
         for host in rc.FACTIONS:
             if host == rc.ROMANS:
                 continue
-            regions = [r for r in playable if _controller(sim, r) == host]
+            regions = supply_host_regions(sim, host)
             if regions:
                 supply_agreements[host] = _host_agrees(
                     sim, rc.ROMANS, host, regions[0], 'supply_line')

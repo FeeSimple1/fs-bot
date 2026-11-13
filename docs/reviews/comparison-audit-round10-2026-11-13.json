@@ -264,7 +264,9 @@
         "UI10-02",
         "UI10-03"
       ],
-      "scope": "Completed Special Ability summaries, exact Enlist March cohorts and durable Quarters decisions"
+      "scope": "Completed Special Ability summaries, exact Enlist March cohorts and durable Quarters decisions",
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch4-2026-11-13.md"
     },
     {
       "batch": 5,
@@ -805,7 +807,8 @@
         "frontend/results.hash987.json",
         "frontend/report.md"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch4-2026-11-13.md"
     },
     {
       "id": "UI10-02",
@@ -905,7 +908,8 @@
         "frontend/results.hash987.json",
         "frontend/report.md"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch4-2026-11-13.md"
     },
     {
       "id": "UI10-03",
@@ -1009,7 +1013,8 @@
         "frontend/quarters-replay-results.json",
         "frontend/report.md"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "tenth-comparison-batch4-2026-11-13.md"
     },
     {
       "id": "NP10-01",

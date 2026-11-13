@@ -48,6 +48,8 @@ from fs_bot.rules_consts import (
     MARKER_AT_WAR,
     # Events
     EVENT_SHADED, EVENT_UNSHADED, WINTER_CARD,
+    # Special Abilities
+    SA_AMBUSH, SA_BESIEGE, SA_BUILD, SA_TRADE,
 )
 from fs_bot.cards.card_data import (
     get_card, get_np_symbols, get_faction_order, card_has_carnyx_trigger,
@@ -648,6 +650,42 @@ def format_action(action_dict, faction=None):
         else:
             base += f" (SA: {sa})"
     return base
+
+
+def format_completed_action(action, execution):
+    """Render the completed SA from the resolver, leaving the plan intact."""
+    if not isinstance(execution, dict):
+        return format_action(action)
+    standalone = execution.get('sa_execution') or {}
+    sa, regions = None, []
+    if standalone.get('executed'):
+        sa = standalone['sa']
+        regions = _completed_sa_regions(standalone)
+    elif execution.get('battle_sa_executed'):
+        # Older saved Battle results recorded only the Boolean and plan.
+        # Current results name the actual ability and its affected Regions.
+        battle = execution.get('battle_sa')
+        if battle:
+            sa, regions = battle['sa'], battle['regions']
+        elif action.get('sa') in (SA_AMBUSH, SA_BESIEGE):
+            sa, regions = action['sa'], action.get('sa_regions') or []
+    return format_action(dict(action, sa=sa, sa_regions=regions))
+
+
+def _completed_sa_regions(result):
+    """Read the successful operations recorded by each SA resolver."""
+    if result.get('regions'):
+        return result['regions']
+    if result.get('region'):
+        return [result['region']]
+    if result['sa'] == SA_BUILD:
+        return list(dict.fromkeys(entry[1] for entry in result.get('actions', ())))
+    if result['sa'] == SA_TRADE:
+        region = (result.get('result') or {}).get('trade_region')
+        return [region] if region else []
+    return list(dict.fromkeys(
+        row['region'] for key in ('actions', 'rampages', 'intimidations')
+        for row in result.get(key, ()) if isinstance(row, dict) and row.get('region')))
 
 
 def _label(item):

@@ -60,6 +60,13 @@ def _force_scope(state, region, selected):
     return scoped_free_force(state, region, selected)
 
 
+def _marching_warbands(selected):
+    """Translate a pre-flip selection into the group's marching visibility."""
+    counts = {HIDDEN: selected.get(HIDDEN, 0) + selected.get(REVEALED, 0),
+              REVEALED: selected.get(SCOUTED, 0)}
+    return {WARBAND: sum(counts.values()), '_march_visibility': {WARBAND: counts}}
+
+
 def enlist_raid_limit(state, region):
     """Count eligible Hidden German Warbands for one Enlist Raid."""
     from fs_bot.commands.raid import max_raiders_per_region
@@ -121,13 +128,7 @@ def _execute_grouped_march(state, origin, groups, selected):
     for group in groups:
         destination = group['destination']
         if destination is not None:
-            counts = group['warbands']
-            # The origin flip applies to the selected force once. A group's
-            # formerly Scouted pieces must still travel with that group.
-            after_flip = {HIDDEN: counts.get(HIDDEN, 0) + counts.get(REVEALED, 0),
-                          REVEALED: counts.get(SCOUTED, 0)}
-            movements.append(({WARBAND: sum(after_flip.values()),
-                               '_march_visibility': {WARBAND: after_flip}}, [destination]))
+            movements.append((_marching_warbands(group['warbands']), [destination]))
     with atomic(state), free_action_scope(state, GERMANS), _force_scope(state, origin, selected):
         result = march_from_origin(state, GERMANS, origin, movements, free=True)
     return {'flipped': result['flip_result'], 'marches': result['group_results']}
@@ -162,7 +163,8 @@ def execute_free_enlist(state, plan):
             destination = plan.get("destination")
             if destination not in get_adjacent_for_state(state, region, GERMANS):
                 raise CommandError("Enlisted Germans may March to one adjacent Region only")
-        selected = select_warbands(state, region, plan.get("warbands"),
+        requested = plan.get("warbands")
+        selected = select_warbands(state, region, requested,
                                    hiding=kind == "german_march_hide")
         if kind == "german_march_hide" and not (selected[REVEALED] or selected[SCOUTED]):
             raise CommandError("No selected German Warband can Hide or lose its Scouted marker")
@@ -170,8 +172,11 @@ def execute_free_enlist(state, plan):
             flipped = _flip_origin_pieces(state, region, GERMANS)
             if kind == "german_march_hide":
                 return {"flipped": flipped}
-            marched = march_group(state, GERMANS, region, [destination],
-                                   {WARBAND: sum(selected.values())}, free=True)
+            # Base counts historically take Hidden pieces first after the
+            # whole origin flips. An exact plan names the pre-flip cohorts.
+            group = ({WARBAND: sum(selected.values())} if base and not isinstance(requested, dict)
+                     else _marching_warbands(selected))
+            marched = march_group(state, GERMANS, region, [destination], group, free=True)
             return {"flipped": flipped, "march": marched}
 
     if kind == "german_battle":

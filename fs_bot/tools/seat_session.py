@@ -11,6 +11,7 @@ import hashlib
 import json
 import sys
 
+from fs_bot import rules_consts as rc
 from fs_bot.engine.agent import RETREAT, RETREAT_DISPOSITION, LOSS_ORDER, AGREEMENT, HARASSMENT_LOSS
 from fs_bot.engine.agent import ABATIS_LOSS_STAGE
 from fs_bot.engine import action_windows, resource_transfers
@@ -38,6 +39,18 @@ def fingerprint(value):
                                      separators=(",", ":")).encode()).hexdigest()
 
 
+def replay_board(state):
+    """Copy the board and RNG for durable comparison across display versions."""
+    board = board_copy(state)
+    for turn in (board.get('_card_turn'), (board.get('_resolved_card') or {}).get('turn_result')):
+        for entry in (turn or {}).get('actions_taken', {}).values():
+            execution = entry.get('execution')
+            if isinstance(execution, dict):
+                # The outcome flag and effects remain in the signature.
+                execution.pop('battle_sa', None)
+    return board
+
+
 def _decision_signatures(state, request):
     """Accept older request and empty Supply shapes on the same live board.
 
@@ -45,9 +58,10 @@ def _decision_signatures(state, request):
     promises. Older writers used both shapes, depending on the enclosing
     action. Assembly and Druids used ordinary free Command requests before
     their new choices were exposed. Other board and request fields still
-    have to match exactly.
+    have to match exactly. Quarters Supply used one representative Region
+    per host, sometimes chosen in hash order.
     """
-    board = board_copy(state)
+    board = replay_board(state)
     # Engine re-entrancy/authority frames are transient call-stack state,
     # never a game fact. The request's actual window remains fingerprinted.
     board.pop('_action_window_scope', None)
@@ -65,6 +79,18 @@ def _decision_signatures(state, request):
             new_fields = {'card_id', 'gallic_event_card', 'allow_decline',
                           'validate_default_response', 'attempt'}
             requests.append({k: v for k, v in request.items() if k not in new_fields})
+    if (request.get('kind') == AGREEMENT and request.get('request_type') == 'supply_line'
+            and request.get('requesting_faction') == rc.ROMANS
+            and (request.get('context') or {}).get('phase') == 'quarters'):
+        from fs_bot.engine.quarters import _QuartersAgreementCache, supply_declaration_context
+
+        host = request.get('faction')
+        if (host in rc.FACTIONS and host != rc.ROMANS
+                and isinstance(state.get('decision_agent'), _QuartersAgreementCache)):
+            current = supply_declaration_context(state, host)
+            if request['context'] == current:
+                requests.extend(dict(request, context={'region': region})
+                                for region in current['regions'])
     signatures = tuple(fingerprint({"board": snapshot, "request": prompt})
                        for prompt in requests for snapshot in boards)
     return signatures[0], signatures
@@ -293,7 +319,6 @@ class SeatSession:
         if not isinstance(self.data, dict) or self.data.get("version") != 1:
             raise ValueError("Unsupported assistant session version.")
         if 'player_id' in meta:
-            from fs_bot import rules_consts as rc
             anchor = (rc.ARVERNI if state.get('interlude_completed') and self.seat == rc.GERMANS
                       else self.seat)
             if anchor not in self.factions or self.data.get('origin_player_id') != meta['player_id']:

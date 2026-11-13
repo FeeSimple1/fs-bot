@@ -4,10 +4,10 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The first three batches close four of the nine tenth-audit repair groups.
-Romans can now quarter in adjacent Provincia with the controller's
-agreement, then transfer troops from Supply Line Regions.
-[Batch 3 repair and validation](docs/reviews/tenth-comparison-batch3-2026-11-13.md)
+The first four batches close seven of the nine tenth-audit repair groups.
+Completed summaries report resolved Special Abilities, base Enlist March
+keeps exact Warband selections, and Quarters Supply agreements replay
+across process restarts. [Batch 4 repairs and validation](docs/reviews/tenth-comparison-batch4-2026-11-13.md)
 
 Roman Build now preserves the player's selected Region order, including
 Ally/Subdue before a Fort elsewhere. [Repair and validation](docs/reviews/build-order-2026-11-04.md).
@@ -149,7 +149,7 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The third tenth-audit batch passes **10,329 tests**, completes all 120
+The fourth tenth-audit batch passes **10,357 tests**, completes all 120
 audited bot games and 20 mixed-player replay cases, and passes the 100-game
 balance check against the reviewed baseline.
 [Tenth audit and repair order](docs/reviews/comparison-audit-round10-2026-11-13.md)

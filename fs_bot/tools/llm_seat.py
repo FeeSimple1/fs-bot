@@ -40,7 +40,7 @@ from fs_bot.engine.game_engine import (start_game, play_card, ACTION_EVENT,
 from fs_bot.bots.bot_dispatch import dispatch_bot_turn
 from fs_bot.cli.dispatcher import _translate_bot_action
 from fs_bot.cli.display import HumanTurnDisplay, format_board
-from fs_bot.tools.seat_session import (SeatSession, DecisionPending, board_copy,
+from fs_bot.tools.seat_session import (SeatSession, DecisionPending, replay_board,
                                       fingerprint)
 
 
@@ -297,7 +297,7 @@ def cmd_replay(args):
     from fs_bot.engine.action_windows import replay_position
     status = cmd_play(Namespace(dir=args.output_dir), window_replay_before=replay_position(state))
     replayed, _meta, _log = load_game(target, validate=True)
-    if fingerprint(board_copy(replayed)) != fingerprint(board_copy(state)):
+    if fingerprint(replay_board(replayed)) != fingerprint(replay_board(state)):
         print("Replay stopped at a different checkpoint; inspect its pending decision.")
         return 1
     print("Replay verified: board and random-number state match the saved checkpoint.")

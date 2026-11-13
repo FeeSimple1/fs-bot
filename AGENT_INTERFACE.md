@@ -195,11 +195,17 @@ For an Enlist Raid, use `type: "german_raid"`, `region`, and an ordered
 three Warbands when Germans own shaded Baggage Trains. Base-game Germans
 must target a faction, which loses the Resources.
 
-An Ariovistus Enlist March can specify several groups at one origin in
-`details.enlist`. Give each group its adjacent destination and the Warband
-counts by visibility before the origin flip. The four-Warband limit covers
-all groups together. Use `destination: null` for a group that stays to hide
-while another group moves. A hide-only plan uses `german_march_hide`.
+An Enlist March uses `type: "german_march"`, one `origin`, an adjacent
+`destination`, and `warbands` with counts by visibility before the origin
+flip. For example, `{"Scouted":1}` selects one Scouted Warband. It loses its
+marker and arrives Revealed. In the base game, all German Warbands at the
+origin undergo the flip, including stayers. Legacy total counts still use
+Hidden-first movement after the base-game origin flip.
+
+An Ariovistus Enlist March can specify several groups at the same origin in
+`details.enlist`. The four-Warband limit covers all groups together.
+Use `destination: null` for a group that stays to hide while another group
+moves. A hide-only plan uses `german_march_hide`.
 
 ```json
 {
@@ -1923,6 +1929,13 @@ player plans. When a bot chooses a Region under human Control, the host
 receives an `agreement` request with `request_type: quarters`, the
 requesting faction, and `context.region`. A refusal lets the bot consider
 another legal destination. The answer is reused when executing the move.
+
+The Roman Quarters Supply request has `request_type: "supply_line"` and
+`context.phase: "quarters"`. Its `context.regions` lists the controller's
+playable Regions in map order, and `context.region` names the first.
+One declaration applies to that faction's Control for the Quarters
+Phase. Saved agreements with an older representative Region replay on
+the same board when that Region belongs to the same controller.
 
 Romans may also include `"Romans_quartering"`, mapping Regions to choices
 with `free_pieces` and `pay_pieces` lists of `[piece_type, visibility, count]`

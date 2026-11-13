@@ -22,6 +22,8 @@ completed Battle. For Raid, the menu offers the Special Activity after a
 flip and updates the next flip's choices. A single Raid Region keeps its
 normal flip limit and its one intrinsic Germanic Intimidate opportunity.
 Ambush and Besiege modify Battle directly.
+Completed card summaries show the Special Ability that actually resolved
+and its Regions when the outcome records them.
 
 The Aedui bot checks how many defenders survive its Attack before choosing
 an additional Battle Region. It also checks whether a legal Retreat could
@@ -110,7 +112,8 @@ Provincia, including troops that just arrived in those Regions. The Roman
 Leader can transfer from any Region. The menu offers both routes when
 they are available. If Supply changes and the remaining
 transfers reopen, the menu again offers exact visibility cohorts.
-`b`/`board` remains available at these prompts.
+The Quarters Supply prompt lists the controller's Regions. Its declaration
+applies for the phase. `b`/`board` remains available at these prompts.
 
 During bot Quarters, Belgae, Aedui, base-game Arverni, and Ariovistus
 Germans evacuate unprotected Devastated Regions when they have a legal
@@ -582,10 +585,12 @@ first option, then continue from the resulting position. The second option
 must still be legal when reached; entering or removing Vercingetorix can
 change that permission. You do not pay for the Region twice.
 
-For an Ariovistus Enlist March, choose one German origin, then a destination
-and the Warbands in that group by visibility. Use the remaining allowance for
-another group, to hide selected Warbands in the origin, or choose **Finish
-March**. All groups together can affect up to four Warbands. Each moving
+For an Enlist March, choose one German origin, then a destination and
+the Warbands in that group by visibility. In the base game all German
+Warbands at the origin flip, including stayers. A selected Scouted Warband
+loses its marker and arrives Revealed. In Ariovistus, use the remaining
+allowance for another group, to hide selected Warbands in the origin, or
+choose **Finish March**. All groups together can affect up to four Warbands. Each moving
 group enters one adjacent Region. Base-game Enlist March moves one group.
 
 An Enlist Raid can use three Hidden German Warbands when Germans own

@@ -33,6 +33,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [13 November tenth comparison repair Batch 4](reviews/tenth-comparison-batch4-2026-11-13.md)
+  fixes completed Special Ability summaries, base Enlist March and Quarters Supply replay.
+
 - [13 November tenth comparison repair Batch 3](reviews/tenth-comparison-batch3-2026-11-13.md)
   restores adjacent Roman Quarters into an agreeing host's Provincia.
 

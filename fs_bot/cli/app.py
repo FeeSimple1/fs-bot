@@ -45,7 +45,7 @@ from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.cli.dispatcher import make_decision_func, maybe_pause
 from fs_bot.cli.display import (
     format_state_summary, format_region_table, format_tribes_table,
-    format_victory_state, format_action, format_card,
+    format_victory_state, format_completed_action, format_card,
 )
 from fs_bot.cli.menus import prompt_choice
 from fs_bot.state import player_ownership
@@ -175,13 +175,13 @@ def display_card_result(card_result, stdout, scenario=None, card_edition=None):
         for f, info in actions.items():
             action = info.get("action", "?")
             bot_act = info.get("bot_action") or info.get("player_action")
+            ex = info.get("execution")
             if bot_act:
                 stdout.write(
-                    f"  {f}: {action}  | {format_action(bot_act)}\n"
+                    f"  {f}: {action}  | {format_completed_action(bot_act, ex)}\n"
                 )
             else:
                 stdout.write(f"  {f}: {action}\n")
-            ex = info.get("execution")
             if isinstance(ex, dict):
                 # An Event play names the side used and shows that text.
                 if "shaded" in ex and ex.get("card_id") is not None:

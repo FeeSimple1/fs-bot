@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 4,
-  "open": 7,
+  "closed": 6,
+  "open": 5,
   "severity_counts": {
     "high": 4,
     "medium": 7
@@ -340,7 +340,9 @@
         "UI8-01",
         "UI8-02"
       ],
-      "scope": "Validate Winter Campaign Command scope and restore live human March drop-offs."
+      "scope": "Validate Winter Campaign Command scope and restore live human March drop-offs.",
+      "status": "closed",
+      "report": "eighth-comparison-batch3-2026-11-12.md"
     },
     {
       "batch": 4,
@@ -630,7 +632,8 @@
       "id": "UI8-01",
       "title": "Winter Campaign accepts repeated Battle Regions as one of its two actions",
       "severity": "high",
-      "status": "open",
+      "status": "closed",
+      "repair_report": "eighth-comparison-batch3-2026-11-12.md",
       "repair_batch": 3,
       "expected": "Each Battle Command selects Carnutes once. Winter Campaign may repeat Battle as its second Command, but each Command consumes one of the two granted actions. A response selecting the same Region twice within one Battle must remain pending for correction with board and RNG restored.",
       "observed": "The public Winter Campaign validator accepts an Aedui Battle plan containing Carnutes twice and returns an action cost of 1. The public after-Harvest consumer resolves both entries, charging 2 Resources, leaving its second action available. Starting with 12 Aedui and 10 Revealed Belgae, it leaves 10 Aedui and 0 Belgae. The legal one-entry control leaves 10 Aedui and 4 Belgae and charges 1 Resource. The bad and good plans both report remaining_actions=1. A real saved SeatSession accepts and journals the repeated plan, pauses for casualty choices and its remaining action, resumes after save/load, and reproduces exactly under signature-verified replay. This reproduces with both numeric-card edition profiles and A63 in Ariovistus.",
@@ -699,7 +702,8 @@
       "id": "UI8-02",
       "title": "Winter Campaign March silently omits the intermediate drop-off decision",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
+      "repair_report": "eighth-comparison-batch3-2026-11-12.md",
       "repair_batch": 3,
       "expected": "A human Arverni player Marching Vercingetorix and Warbands through a first Region may leave selected Warbands there before the group continues to the second Region. The paid Winter Campaign Command retains that normal March choice.",
       "observed": "A saved Arverni Winter Campaign session accepts the legal Carnutes\u2192Mandubii\u2192Sequani March of Vercingetorix and four Warbands. It immediately advances to the second Winter Campaign action without any march_dropoff request and leaves all four Warbands at Sequani. On the otherwise identical ordinary Command control, the engine offers march_dropoff at Mandubii and accepts leaving two there, producing two at Mandubii and two at Sequani. Both paths cost one Resource. The durable Winter transcript contains only two winter_campaign responses; missing/invalid-input controls, rollback, save/load and signature-verified replay all pass.",

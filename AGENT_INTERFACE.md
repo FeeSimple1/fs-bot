@@ -1336,9 +1336,10 @@ The validators are `commands.march.validate_harassment_response` and
 `engine.march_choices.validate_response`; both validate without moving
 pieces or consuming RNG.
 
-Ordinary and standard Event-granted March use the live `march_dropoff` request
-after arrival and before Harassment. The acting player may leave any offered
-physical cohort and keep at least one piece moving. Use the offered faction,
+Ordinary March, standard Event-granted March, and paid Winter Campaign
+March use the live `march_dropoff` request after arrival and before
+Harassment. The acting player may leave any offered physical cohort and
+keep at least one piece moving. Use the offered faction,
 type and visibility with a positive integer `count` per cohort, within
 `max_dropoffs` in total.
 Legions and Leaders use a null `piece_state`. The list can be empty, and
@@ -2231,15 +2232,19 @@ normal Command plan, a standalone `{sa,sa_regions,details}` plan, or a combined
 Command+SA plan (two actions); `{decline:true}` ends the capability's actions.
 Ambush/Besiege must be paired with Battle. Cards 63/A63 permit other SAs
 independently of their usual accompanying Commands and pay normal costs.
-A single action resolves before the second decision is requested.
+A single action resolves before the second decision is requested. Select
+each Battle Region once per Command. A second paid Battle may select that
+Region again. A multi-Region March can pause for `march_dropoff` before
+the group departs an intermediate Region.
 Provisional [PR-04](docs/provisional-rulings.md#pr-04) resolves German-owned
 A63 during the Interlude before the scenario transition, then retains German
 ownership with no later activations in the base-game half. It does not
 transfer to the Arverni seat. Aedui/Belgic ownership continues to activate.
-`engine.winter_campaign.validate_human_plan` checks both the action budget
-and normal paid execution on a copy. Unaffordable, malformed, and ineffective
-human plans leave the same decision pending; the terminal offers another plan
-without spending an action. Preview validation never consumes live input or RNG.
+`engine.winter_campaign.validate_human_plan` checks the action budget and
+Region selections, then previews paid execution on a copy. Unaffordable,
+malformed, and ineffective human plans leave the same decision pending.
+The terminal offers another plan without spending an action. Preview
+validation never consumes live input or RNG.
 
 `replay --output-dir DIR` reconstructs the saved session from its origin and
 complete human decision log, verifies request context, and compares the final

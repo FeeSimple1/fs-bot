@@ -72,7 +72,8 @@ def _execute_plan(state, faction, plan, *, uses_bot=False):
         _apply_end_of_action_capabilities(state)
         return result
     return _execute_decision(
-        state, faction, {"bot_action" if uses_bot else "player_action": plan})
+        state, faction, {"bot_action" if uses_bot else "player_action": plan},
+        choose_march_dropoffs=True)
 
 
 def validate_human_plan(state, faction, plan, remaining=2):
@@ -80,9 +81,13 @@ def validate_human_plan(state, faction, plan, remaining=2):
     used = validate_plan(state, faction, plan, remaining)
     if not used:
         return used
+    from fs_bot.engine.action_validation import validate_region_selections
     from fs_bot.engine.free_actions import _result_error
     from fs_bot.commands.common import CommandError
     from fs_bot.board.pieces import PieceError
+    error = validate_region_selections(faction, plan)
+    if error:
+        raise ValueError(f"Invalid Winter Campaign plan: {error}")
     sim = copy.deepcopy({k: v for k, v in state.items() if k != "decision_agent"})
     sim['_diviciacus_preview'] = True
     try:

@@ -31,6 +31,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [12 November eighth comparison repair Batch 3](reviews/eighth-comparison-batch3-2026-11-12.md)
+  closes Winter Campaign Battle selection and March drop-off findings.
+
 - [12 November eighth comparison repair Batch 2](reviews/eighth-comparison-batch2-2026-11-12.md)
   closes the Archers opening Loss and German Phalanx findings.
 

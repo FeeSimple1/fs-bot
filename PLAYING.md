@@ -580,6 +580,11 @@ request the bot default, or decline where the card allows. Region and piece
 limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
 
+Winter Campaign gives its owner up to two paid actions after Harvest.
+Select each Battle Region once per Command. You can select it again in
+a second Battle Command. On a multi-Region March, choose which pieces
+to leave before the remaining group continues from an intermediate Region.
+
 Numidians, Aquitani, unshaded Morasses, shaded Litaviccus and Camulogenus's
 Battle step ask the battling player to select a legal Region and opponent.
 Where the Event already fixes the Region or defender, that restriction

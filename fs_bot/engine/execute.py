@@ -317,7 +317,7 @@ def _reconsider_untouched_split(state, faction, action, *, limited=False, grant=
     return revised
 
 
-def _execute_decision(state, faction, decision, *, sequence=False):
+def _execute_decision(state, faction, decision, *, sequence=False, choose_march_dropoffs=False):
     """Apply a recorded SoP decision to the board, if supported.
 
     Args:
@@ -325,6 +325,9 @@ def _execute_decision(state, faction, decision, *, sequence=False):
         faction: The acting faction constant.
         decision: The dict returned by the engine decision_func. For bot
             turns this contains ``bot_action`` (the full action dict).
+        sequence: Apply the ordinary Sequence of Play's scope and windows.
+        choose_march_dropoffs: Offer human drop-offs for a paid grant outside
+            the Sequence of Play, using the grant's own Command/SA scope.
 
     A decision carries its executable plan under ``bot_action`` (produced by a
     bot flowchart) or ``player_action`` (produced by a human player / UI). Both
@@ -364,17 +367,18 @@ def _execute_decision(state, faction, decision, *, sequence=False):
         _CMD_MARCH: _execute_march,
     }
 
-    if is_human and sequence:
+    if is_human and (sequence or choose_march_dropoffs):
         from fs_bot.engine.game_engine import ACTION_LIMITED_COMMAND
-        limited = decision.get('action') == ACTION_LIMITED_COMMAND
+        limited = sequence and decision.get('action') == ACTION_LIMITED_COMMAND
 
-        def ordinary_march(board, actor, plan):
+        def human_march(board, actor, plan):
             sa = plan.get('sa')
             return _execute_march(board, actor, plan,
                                   choose_dropoffs=command == _CMD_MARCH,
-                                  _limited=limited, _with_sa=bool(sa and sa != SA_ACTION_NONE_LABEL))
+                                  _limited=limited,
+                                  _with_sa=sequence and bool(sa and sa != SA_ACTION_NONE_LABEL))
 
-        _COMMAND_HANDLERS[_CMD_MARCH] = ordinary_march
+        _COMMAND_HANDLERS[_CMD_MARCH] = human_march
     handler = _COMMAND_HANDLERS.get(command)
     transfer_results = []
     if sequence and handler is not None:

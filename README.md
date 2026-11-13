@@ -144,14 +144,15 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-Batches 1 and 2 close **four of 11 findings** from the eighth comparison
-audit. The latest repair applies Massed Gallic Archers in Event and automatic
-Battles and enforces both German Phalanx effects. All **10,151 tests pass**,
-along with 120 audited bot games, 20 mixed-player replay cases and the
-100-game balance check.
+Batches 1–3 close **six of 11 findings** from the eighth comparison audit.
+The latest repair enforces one selection per Battle Region in Winter
+Campaign and restores intermediate March drop-offs. All **10,160 tests**
+pass, along with 120 audited bot games, 20 mixed-player replay cases, and
+the 100-game balance check.
 [Audit report](docs/reviews/comparison-audit-round8-2026-11-12.md) ·
 [Batch 1 repairs and validation](docs/reviews/eighth-comparison-batch1-2026-11-12.md) ·
 [Batch 2 repairs and validation](docs/reviews/eighth-comparison-batch2-2026-11-12.md) ·
+[Batch 3 repairs and validation](docs/reviews/eighth-comparison-batch3-2026-11-12.md) ·
 [Finding ledger](docs/reviews/comparison-audit-round8-2026-11-12.json)
 
 The seventh comparison audit is complete with **all nine repair groups closed**.

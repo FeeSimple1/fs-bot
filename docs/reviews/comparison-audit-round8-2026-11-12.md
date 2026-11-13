@@ -2,10 +2,11 @@
 
 **12 November 2026. The audit found eleven repair groups, four high and seven medium.**
 Batch 1 closes LC8-01 and LC8-02. Batch 2 closes BM8-01 and BM8-02.
-Seven groups remain open.
+Batch 3 closes UI8-01 and UI8-02. Five groups remain open.
 The findings and validation below describe the audited revision.
 [Batch 1 repairs and validation](eighth-comparison-batch1-2026-11-12.md) ·
-[Batch 2 repairs and validation](eighth-comparison-batch2-2026-11-12.md)
+[Batch 2 repairs and validation](eighth-comparison-batch2-2026-11-12.md) ·
+[Batch 3 repairs and validation](eighth-comparison-batch3-2026-11-12.md)
 
 Audited Falling Sky commit: `e62b0360c1b91032741ef8f6afa4d247c8ea2437`. Python source SHA-256: `3c047ebcfef915efef8e1da308cd63484b1e6c735b8aba8e5c095de2c5d106b9` across **611 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
 
@@ -47,7 +48,7 @@ Five focused review lanes produced executable public-path witnesses and controls
 |---|---|---|
 | 1 | LC8-01, LC8-02 | Correct post-Interlude final-Winter detection and standard solo victory policy. |
 | 2 | BM8-01, BM8-02 | Share Archers Battle orchestration and apply both German Phalanx cancellation effects. |
-| 3 | UI8-01, UI8-02 | Validate Winter Campaign Command scope and restore live human March drop-offs. |
+| 3 | UI8-01, UI8-02 | Closed. [Validate Battle selection and offer March drop-offs](eighth-comparison-batch3-2026-11-12.md). |
 | 4 | EV8-01, EV8-02, EV8-03 | Repair Event decline conditions and the Roman Forced Marches producer. |
 | 5 | NP8-01, NP8-02 | Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection. |
 
@@ -153,6 +154,8 @@ Fixes should turn the relevant defective witness into a regression test, preserv
 
 ### UI8-01 — Winter Campaign accepts repeated Battle Regions as one of its two actions
 
+**Status:** Closed in [Batch 3](eighth-comparison-batch3-2026-11-12.md).
+
 **Expected:** Each Battle Command selects Carnutes once. Winter Campaign may repeat Battle as its second Command, but each Command consumes one of the two granted actions. A response selecting the same Region twice within one Battle must remain pending for correction with board and RNG restored.
 
 **Observed:** The public Winter Campaign validator accepts an Aedui Battle plan containing Carnutes twice and returns an action cost of 1. The public after-Harvest consumer resolves both entries, charging 2 Resources, leaving its second action available. Starting with 12 Aedui and 10 Revealed Belgae, it leaves 10 Aedui and 0 Belgae. The legal one-entry control leaves 10 Aedui and 4 Belgae and charges 1 Resource. The bad and good plans both report remaining_actions=1. A real saved SeatSession accepts and journals the repeated plan, pauses for casualty choices and its remaining action, resumes after save/load, and reproduces exactly under signature-verified replay. This reproduces with both numeric-card edition profiles and A63 in Ariovistus.
@@ -176,6 +179,8 @@ Fixes should turn the relevant defective witness into a regression test, preserv
 **Evidence:** `frontend/probe_winter_campaign.py`; `frontend/probe_winter_campaign-output.json` in the portable archive. The original lane ledger preserves additional source annotations.
 
 ### UI8-02 — Winter Campaign March silently omits the intermediate drop-off decision
+
+**Status:** Closed in [Batch 3](eighth-comparison-batch3-2026-11-12.md).
 
 **Expected:** A human Arverni player Marching Vercingetorix and Warbands through a first Region may leave selected Warbands there before the group continues to the second Region. The paid Winter Campaign Command retains that normal March choice.
 

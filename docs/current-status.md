@@ -21,14 +21,14 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-Batch 1 closes **three of the eight ninth-audit repair groups**. Five remain
-open. [Audit report](reviews/comparison-audit-round9-2026-11-12.md) ·
+Batches 1–2 close **four of the eight ninth-audit repair groups**.
+[Audit report](reviews/comparison-audit-round9-2026-11-12.md) ·
 [Ledger](reviews/comparison-audit-round9-2026-11-12.json) · [Evidence](reviews/comparison-audit-round9-2026-11-12-evidence.zip)
 
 | Batch | Findings | Scope |
 |---|---|---|
 | 1 | EV9-01, EV9-02, EV9-03 | Closed. [Alpine Tribes and Lost Eagle](reviews/ninth-comparison-batch1-2026-11-12.md). |
-| 2 | LC9-01 | Roman Quarters payments after relocation. |
+| 2 | LC9-01 | Closed. [Roman Quarters payments after relocation](reviews/ninth-comparison-batch2-2026-11-13.md). |
 | 3 | UI9-01, UI9-02 | Enlist Raid quantities and Morbihan pending displays. |
 | 4 | NP9-01, NP9-02 | Arverni Devastate forecasts and post-Command Special Ability transitions. |
 
@@ -59,6 +59,12 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 13 November ninth comparison repair Batch 2
+
+The Roman bot pays for arrivals as well as resident troops during
+Quarters, after free Fort and Ally slots and subject to available Resources.
+[Repair and validation](reviews/ninth-comparison-batch2-2026-11-13.md)
 
 ### 12 November ninth comparison repair Batch 1
 

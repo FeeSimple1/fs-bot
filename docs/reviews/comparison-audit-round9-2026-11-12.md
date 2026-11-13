@@ -1,9 +1,10 @@
 # Ninth Falling Sky / Liberty or Death comparison audit
 
 **12 November 2026. Eight repair groups, one high and seven medium.**
-Batch 1 closes the three Event groups. Five groups remain open. The findings
-and validation below describe the audited revision.
-[Batch 1 repairs and validation](ninth-comparison-batch1-2026-11-12.md)
+Batches 1–2 close four groups. The findings and validation below describe
+the audited revision.
+[Batch 1 repairs and validation](ninth-comparison-batch1-2026-11-12.md) ·
+[Batch 2 repair and validation](ninth-comparison-batch2-2026-11-13.md)
 
 Audited commit: `f4c8372c396981c0a31dc6f4545e67f8c6f2e981`. Python source SHA-256: `57a94d20440986063d7f86224a6074fa0ea2ce471e58e24e9c5dd349ec799033` across **616 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
 
@@ -43,7 +44,7 @@ Fixtures use canonical piece operations and physical/structural validation. Spar
 | Batch | Findings | Work |
 |---|---|---|
 | 1 | EV9-01, EV9-02, EV9-03 | Closed. [Alpine Tribes and Lost Eagle](ninth-comparison-batch1-2026-11-12.md). |
-| 2 | LC9-01 | Roman Quarters payments after relocation. |
+| 2 | LC9-01 | Closed. [Roman Quarters payments after relocation](ninth-comparison-batch2-2026-11-13.md). |
 | 3 | UI9-01, UI9-02 | Enlist Raid quantities and Morbihan pending displays. |
 | 4 | NP9-01, NP9-02 | Arverni Devastate forecasts and post-Command Special Ability transitions. |
 
@@ -131,7 +132,7 @@ Turn each defective witness into a source-derived regression, preserve its contr
 
 ### LC9-01 — Roman non-player Quarters payment planning forgets arrivals in a later-visited Region
 
-**Status:** Open. **Priority:** medium.
+**Status:** Closed in [Batch 2](ninth-comparison-batch2-2026-11-13.md). **Priority:** medium.
 
 **Expected:** After moving 2 Auxilia from Devastated Morini into isolated Roman Nervii with 1 Auxilia, pay 6 of 20 Resources for all 3, without rolls.
 

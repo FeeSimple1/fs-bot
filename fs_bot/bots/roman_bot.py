@@ -1840,12 +1840,13 @@ def build_np_winter_relocations(state):
        until Resources run out ("pay to avoid rolls" -- no reserve).
     """
     from fs_bot.commands.rally import has_supply_line
-    from fs_bot.map.map_data import get_adjacent
-    from fs_bot.engine.victory import is_controlled_by
 
-    scenario = state["scenario"]
     relocations = []
-    remaining = {}          # region -> (legions, auxilia) left after moves
+    remaining = {}          # region -> troops still needing payment or rolls
+
+    def _add_remaining(region, count):
+        # A refuge can receive troops before its own garrison is counted.
+        remaining[region] = remaining.get(region, 0) + count
 
     def _devastated(region):
         return _is_devastated(state, region)
@@ -1885,7 +1886,6 @@ def build_np_winter_relocations(state):
         mov_leg, mov_aux = legions, auxilia - stay_aux
 
         if mov_leg + mov_aux == 0:
-            remaining[region] = (0, 0)
             continue
 
         if has_supply_line(state, region, ROMANS):
@@ -1894,7 +1894,6 @@ def build_np_winter_relocations(state):
                 relocations.append((LEGION, region, PROVINCIA, mov_leg))
             if mov_aux:
                 relocations.append((AUXILIA, region, PROVINCIA, mov_aux))
-            remaining[region] = (0, 0)
             continue
 
         # Step 3: hop to an adjacent Supply-Line Region, then Provincia.
@@ -1907,7 +1906,6 @@ def build_np_winter_relocations(state):
             if mov_aux:
                 relocations.append((AUXILIA, region, hop, mov_aux))
                 relocations.append((AUXILIA, hop, PROVINCIA, mov_aux))
-            remaining[region] = (0, 0)
             continue
 
         # Step 4: stuck -- if Devastated, at least move somewhere safer.
@@ -1918,11 +1916,9 @@ def build_np_winter_relocations(state):
                     relocations.append((LEGION, region, hop, mov_leg))
                 if mov_aux:
                     relocations.append((AUXILIA, region, hop, mov_aux))
-                hl, ha = remaining.get(hop, (0, 0))
-                remaining[hop] = (hl + mov_leg, ha + mov_aux)
-                remaining[region] = (0, 0)
+                _add_remaining(hop, mov_leg + mov_aux)
                 continue
-        remaining[region] = (mov_leg, mov_aux)
+        _add_remaining(region, mov_leg + mov_aux)
 
     # Roman Leader -> Provincia from any Region (§6.3.3).
     leader_region = None
@@ -1936,13 +1932,11 @@ def build_np_winter_relocations(state):
     # Step 5: pay plan, §8.8.7 priority order, pay-all-affordable.
     quartering = {}
     order = []
-    for region, (legs, aux) in remaining.items():
-        if legs + aux <= 0:
-            continue
+    for region, count in remaining.items():
         has_ally = count_pieces(state, region, ROMANS, ALLY) > 0
         priority = (0 if has_ally else 2 if _devastated(region) else 1)
         order.append((priority, region))
-        quartering[region] = {"pay": legs + aux}
+        quartering[region] = {"pay": count}
     order.sort()
     quartering["_pay_order"] = [r for _, r in order]
 

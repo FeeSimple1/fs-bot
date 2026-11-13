@@ -107,6 +107,11 @@ refuge. Belgae, Arverni, and Germans also gather Warbands around their
 Leader while keeping enough pieces behind for Control. You can agree to
 or decline a bot's request to quarter in a Region you Control.
 
+During Roman bot Quarters, troops that relocate and finish outside Provincia
+are counted alongside troops already there. The bot spends available
+Resources to avoid removal rolls, starting at Roman Allies, then in
+Regions without Devastation, then in Devastated Regions.
+
 After a player selects a Command or Event, either party can give Resources
 as long as the gift involves the executing faction. Opening gifts can fund
 the Command before you choose its Regions. Choose one or more recipients and

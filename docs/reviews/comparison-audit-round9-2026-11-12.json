@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 8,
-  "closed": 3,
-  "open": 5,
+  "closed": 4,
+  "open": 4,
   "severity_counts": {
     "high": 1,
     "medium": 7
@@ -500,7 +500,7 @@
     {
       "id": "LC9-01",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "title": "Roman non-player Quarters payment planning forgets arrivals in a later-visited Region",
       "expected": "After moving 2 Auxilia from Devastated Morini into isolated Roman Nervii with 1 Auxilia, pay 6 of 20 Resources for all 3, without rolls.",
       "observed": "Unmodified public quarters_phase moves the 2 Auxilia, pays 2 Resources for only 1, rolls [2,5] for the others, and removes 1. All five scenarios reproduce with clean before/after census and structure.",
@@ -523,7 +523,8 @@
       "prior_distinction": "WS7-01 was non-Roman planner wiring; original WS-F05 was human visibility; Q12 wired Romans. None reported this arrival-accounting overwrite.",
       "repair_scope": "Derive payment counts from the legal post-relocation board or preserve original stayers plus all arrivals. Preserve free garrisons, Supply agreements, affordability, visibility, ordered payments and human choices.",
       "limits": "Controlled public Quarters fixtures, no natural encounter-frequency claim. No production changes, monkeypatches or manual physical-count edits. No full-suite/game-matrix execution by this lane.",
-      "evidence_lane": "lifecycle"
+      "evidence_lane": "lifecycle",
+      "repair_report": "ninth-comparison-batch2-2026-11-13.md"
     },
     {
       "id": "NP9-01",
@@ -768,6 +769,15 @@
       ],
       "report": "ninth-comparison-batch1-2026-11-12.md",
       "evidence": "ninth-comparison-batch1-2026-11-12-evidence.zip"
+    },
+    {
+      "batch": 2,
+      "date": "2026-11-13",
+      "findings": [
+        "LC9-01"
+      ],
+      "report": "ninth-comparison-batch2-2026-11-13.md",
+      "evidence": "ninth-comparison-batch2-2026-11-13-evidence.zip"
     }
   ]
 }

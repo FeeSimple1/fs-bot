@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 9,
-  "closed": 3,
-  "open": 6,
+  "closed": 9,
+  "open": 0,
   "severity_counts": {
     "medium": 9
   },

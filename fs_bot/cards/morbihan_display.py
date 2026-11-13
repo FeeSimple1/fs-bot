@@ -1,9 +1,8 @@
 """A20's temporary Battle presence is separate from physical board locations.
 
 Morbihan resolves its Ambush with a gathered force and tracks each casualty's
-physical origin. While Romans choose their Losses, retain the original
-Warband locations in board displays. The live Battle state is never changed by
-this read view, and actual Roman losses remain visible between decisions.
+physical origin. The display shows surviving Warbands in their origin Regions
+along with the live Roman position.
 """
 from contextlib import contextmanager
 from copy import deepcopy
@@ -27,9 +26,8 @@ def snapshot_sources(state, regions):
 def projected_battle(state, region, sources):
     """Expose physical origins only while the synthetic Battle is resolving.
 
-    Arverni are game-run here: every human Loss decision occurs before their
-    Counterattack losses and Reveal. Yield a separate survivor ledger so the
-    Event can return each surviving counter to its actual origin.
+    The survivor ledger tracks opening and Counterattack Losses by origin.
+    The Event uses it to return the surviving counters after Battle.
     """
     previous = state.get(PROJECTION_KEY)
     survivors = deepcopy(sources)
@@ -83,17 +81,23 @@ def resolve_projected_losses(state, region, faction, num_losses):
     return result
 
 
+def surviving_origins(projection):
+    """Read the survivors, with a fallback for older saved display boards."""
+    return projection.get('survivors', projection['sources'])
+
+
 def physical_view(state):
     """Return a detached display representation, preserving live Roman changes."""
     context = state.get(PROJECTION_KEY)
     if not context:
         return state
+    survivors = surviving_origins(context)
     view = dict(state)
     view['spaces'] = dict(state['spaces'])
-    for region, counts in context['sources'].items():
+    for region, counts in survivors.items():
         space = deepcopy(state['spaces'][region])
-        # This is a presentation-only copy, not a piece operation. Restore
-        # just Warbands; retain actual Allies, other factions, and board effects.
+        # Restore surviving Warbands in the copy. Keep live Allies, other
+        # factions, and board effects.
         pieces = space.setdefault('pieces', {}).setdefault(ARVERNI, {})
         for visibility, number in counts.items():
             visible = pieces.setdefault(visibility, {})
@@ -105,6 +109,6 @@ def physical_view(state):
     # Gathering for "as if there" must not invent physical Control changes.
     # Preserve any other live force context when calculating real Control.
     from fs_bot.board.control import calculate_control
-    for region in context['sources']:
+    for region in survivors:
         view['spaces'][region]['control'] = calculate_control(view, region)
     return view

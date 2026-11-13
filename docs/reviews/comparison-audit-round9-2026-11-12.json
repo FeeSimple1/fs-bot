@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 8,
-  "closed": 4,
-  "open": 4,
+  "closed": 6,
+  "open": 2,
   "severity_counts": {
     "high": 1,
     "medium": 7
@@ -699,7 +699,7 @@
     {
       "id": "UI9-01",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "title": "Enlist Raid omits Baggage Trains' third Warband in the menu and compact plan",
       "expected": "With shaded Baggage Trains owned by Germans, Enlist may use three Hidden German Warbands in one Raid. Ariovistus' four-piece Enlist cap does not restrict that legal quantity.",
       "observed": "The supported terminal menu offers only two or one and rejects an attempted three. Public execute_decision refuses the compact count=3 Enlist subplan, leaving Germans at ten Resources; the equivalent explicit three gain actions succeeds, revealing all three and increasing Resources to thirteen.",
@@ -720,12 +720,13 @@
       "limits": "Controlled legal positions, not natural frequency. The ordinary terminal plan can use only two; the expanded programmatic plan is a successful control, not evidence that the menu supports three. The outer raw executor completes its Command and reports the refused SA separately. No NPC-planning or whole-session transactional failure is claimed.",
       "witness": "frontend/probe_frontend.py",
       "output": "frontend/probe_frontend-output.json",
-      "evidence_lane": "frontend"
+      "evidence_lane": "frontend",
+      "repair_report": "ninth-comparison-batch3-2026-11-13.md"
     },
     {
       "id": "UI9-02",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "title": "Morbihan's pending combat display restores removed Warbands and mixes physical pieces with synthetic Control",
       "expected": "Pending human decisions should show the surviving physical Warbands at their real origins and Control consistent with that physical board, while explaining their temporary combined Battle presence separately.",
       "observed": "At the real SeatSession Roman casualty prompt after A20 shaded and Slingers opening fire, the survivor ledger has three Arverni Warbands and Available has32, but board, snapshot and active-force summary show the original four. The region table labels Carnutes Arverni-controlled while showing only two Roman Auxilia there, and Pictones Aedui-controlled while showing two Arverni versus one Aedui. Saved pending sessions reproduce the discrepancy.",
@@ -749,7 +750,8 @@
       "limits": "Controlled real pending-decision consumer, not a natural full-game trace. Presentation defect only: the final game state and physical inventory are correct. Original sources may remain for historical explanation but must not be labeled current forces.",
       "witness": "frontend/probe_frontend.py",
       "output": "frontend/probe_frontend-output.json",
-      "evidence_lane": "frontend"
+      "evidence_lane": "frontend",
+      "repair_report": "ninth-comparison-batch3-2026-11-13.md"
     }
   ],
   "exclusions": [
@@ -778,6 +780,16 @@
       ],
       "report": "ninth-comparison-batch2-2026-11-13.md",
       "evidence": "ninth-comparison-batch2-2026-11-13-evidence.zip"
+    },
+    {
+      "batch": 3,
+      "date": "2026-11-13",
+      "findings": [
+        "UI9-01",
+        "UI9-02"
+      ],
+      "report": "ninth-comparison-batch3-2026-11-13.md",
+      "evidence": "ninth-comparison-batch3-2026-11-13-evidence.zip"
     }
   ]
 }

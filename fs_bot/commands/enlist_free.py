@@ -60,6 +60,17 @@ def _force_scope(state, region, selected):
     return scoped_free_force(state, region, selected)
 
 
+def enlist_raid_limit(state, region):
+    """Count eligible Hidden German Warbands for one Enlist Raid."""
+    from fs_bot.commands.raid import max_raiders_per_region
+
+    limit = min(max_raiders_per_region(state, GERMANS),
+                count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN))
+    if state["scenario"] in ARIOVISTUS_SCENARIOS:
+        limit = min(limit, ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS)
+    return limit
+
+
 def parse_march_groups(state, plan):
     """Validate a grouped March's footprint before consulting live pieces."""
     if not isinstance(plan, dict) or 'groups' not in plan:
@@ -186,8 +197,11 @@ def execute_free_enlist(state, plan):
         if actions is None:
             target = plan.get("target")
             count = plan.get("count", 1)
-            if type(count) is not int or not 1 <= count <= 2:
-                raise CommandError("Enlist Raid count must be one or two Warbands")
+            limit = enlist_raid_limit(state, region)
+            if type(count) is not int or not 1 <= count <= limit:
+                raise CommandError(
+                    f"Enlist Raid needs a positive Warband count with at most "
+                    f"{limit} eligible Hidden German Warbands in {region}")
             actions = [({"type": "steal", "target": target} if target
                         else {"type": "gain"}) for _ in range(count)]
         if not isinstance(actions, list) or any(not isinstance(a, dict) for a in actions):

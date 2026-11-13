@@ -356,6 +356,7 @@ def test_cli_free_raid_collects_two_separate_actions(monkeypatch):
     st = state(SCENARIO_ARIOVISTUS)
     place_piece(st, NERVII, GERMANS, WARBAND, 2)
     place_piece(st, NERVII, AEDUI, WARBAND, 1)
+    st["resources"][AEDUI] = 1
 
     def choose(stdin, stdout, title, options, **kwargs):
         if title.startswith("Enlist"):
@@ -363,8 +364,11 @@ def test_cli_free_raid_collects_two_separate_actions(monkeypatch):
         if "how many" in title:
             return 2
         if "Raid 1" in title:
+            assert (AEDUI, AEDUI) in options
             return AEDUI
         if "Raid 2" in title:
+            assert (AEDUI, AEDUI) not in options
+            assert ("(just gain 1 Resource)", None) in options
             return None
         return options[0][1]
 

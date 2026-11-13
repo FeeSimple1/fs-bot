@@ -575,6 +575,10 @@ another group, to hide selected Warbands in the origin, or choose **Finish
 March**. All groups together can affect up to four Warbands. Each moving
 group enters one adjacent Region. Base-game Enlist March moves one group.
 
+An Enlist Raid can use three Hidden German Warbands when Germans own
+shaded Baggage Trains. Choose how each Warband raids. The menu counts
+Resources still available to steal after each choice.
+
 During your Sequence-of-Play Command or Event, the menus offer voluntary
 removal of your own physical pieces and replacement of your Citadels with
 Allies. These choices appear before planning quantities, so an empty
@@ -740,6 +744,10 @@ including Forage without Dispersal; neither card allows enemy Rally, and
 A58 also prevents Harassment. Required choices remain pending if a bot
 default cannot perform a legal action. A refused troop loan lets you replan.
 Use `board` or `b` at these menus to inspect the current position.
+
+During shaded Morbihan, the board shows surviving Arverni Warbands in
+their origin Regions and updates Control there as casualties occur. The
+active-forces line names the Region where they fight together.
 
 Gallic Shouts (35 shaded) and Celtic Rites (46 shaded) let the Event player
 choose a Gallic beneficiary. That player makes its own Command choices.

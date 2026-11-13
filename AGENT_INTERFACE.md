@@ -188,6 +188,13 @@ total. With a base-game `place: "ally"`, it instead selects the following
 Warbands. Ariovistus's Ally option has only its compulsory Home addition
 and does not accept `count`.
 
+For an Enlist Raid, use `type: "german_raid"`, `region`, and an ordered
+`actions` list with one entry per Hidden German Warband. Each entry specifies
+`type: "gain"` or `type: "steal"` with a `target`. The compact form uses
+`count` and an optional `target` for identical actions. Both forms allow
+three Warbands when Germans own shaded Baggage Trains. Base-game Germans
+must target a faction, which loses the Resources.
+
 An Ariovistus Enlist March can specify several groups at one origin in
 `details.enlist`. Give each group its adjacent destination and the Warband
 counts by visibility before the origin flip. The four-Warband limit covers

@@ -142,15 +142,15 @@ def _active_force_context(state):
             lines.append(f"  {combined.get('source', 'Admagetobriga')} in {region}: "
                          f"{combined['faction']} use "
                          f"lent forces: {', '.join(forces) or '(none remaining)'}.")
-    from fs_bot.cards.morbihan_display import PROJECTION_KEY
+    from fs_bot.cards.morbihan_display import PROJECTION_KEY, surviving_origins
     projection = state.get(PROJECTION_KEY)
     if projection:
         origins = [f"{region}: {selected_warbands(counts)}"
-                   for region, counts in sorted(projection['sources'].items())
+                   for region, counts in sorted(surviving_origins(projection).items())
                    if any(counts.values())]
         lines.append(f"  Morbihan: {ARVERNI} Warbands fight {ROMANS} in "
-                     f"{projection['region']} as if there; physical origins: "
-                     + '; '.join(origins) + '.')
+                     f"{projection['region']} as if there. Surviving Warbands by origin: "
+                     + (", ".join(origins) or "(none remaining)") + ".")
     from fs_bot.battle.excluded_leader import AUXILIA_ONLY_KEY, EXCLUDED_LEADER_KEY
     exclusion = state.get(EXCLUDED_LEADER_KEY)
     if exclusion:
@@ -424,7 +424,6 @@ def format_state_summary(state):
 
 def _region_pieces_summary(state, region, faction, scenario):
     """One-cell summary of a faction's pieces in a region."""
-    state = _physical_piece_view(state)
     parts = []
     # Allied Tribe discs FIRST — they are victory points and battle
     # targets; omitting them made enemy Allies invisible in play.
@@ -483,6 +482,7 @@ def format_region_table(state):
     Returns:
         Multi-line string.
     """
+    state = _physical_piece_view(state)
     scenario = state["scenario"]
     playable = get_playable_regions_for_state(state)
     lines = []
@@ -517,11 +517,11 @@ def format_region_table(state):
             state["spaces"][region].get("control", NO_CONTROL), "-"
         )
         row = f"{region:<14}{ctrl:<6}"
-        row += f"{_region_pieces_summary(state, region, ROMANS, scenario):<{w_rom}}"
-        row += f"{_region_pieces_summary(state, region, ARVERNI, scenario):<{w_other}}"
-        row += f"{_region_pieces_summary(state, region, AEDUI, scenario):<{w_other}}"
-        row += f"{_region_pieces_summary(state, region, BELGAE, scenario):<{w_other}}"
-        row += f"{_region_pieces_summary(state, region, GERMANS, scenario):<{w_other}}"
+        row += f"{cells[region, ROMANS]:<{w_rom}}"
+        row += f"{cells[region, ARVERNI]:<{w_other}}"
+        row += f"{cells[region, AEDUI]:<{w_other}}"
+        row += f"{cells[region, BELGAE]:<{w_other}}"
+        row += f"{cells[region, GERMANS]:<{w_other}}"
         lines.append(row)
     lines.append(SEP_HEAVY)
     return "\n".join(lines)

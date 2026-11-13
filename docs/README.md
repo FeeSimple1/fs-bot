@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Ninth Liberty or Death comparison](reviews/comparison-audit-round9-2026-11-12.md) | Four of eight groups closed through Batch 2 |
+| [Ninth Liberty or Death comparison](reviews/comparison-audit-round9-2026-11-12.md) | Six of eight groups closed through Batch 3 |
 | [Eighth Liberty or Death comparison](reviews/comparison-audit-round8-2026-11-12.md) | All 11 findings closed in five batches |
 | [Seventh Liberty or Death comparison](reviews/comparison-audit-round7-2026-11-11.md) | All nine repair groups closed, with reproducible witnesses and validation for each batch |
 | [Sixth Liberty or Death comparison](reviews/comparison-audit-round6-2026-11-11.md) | 14 findings with seven witness scripts. All repaired in Batches 1–5. |
@@ -31,6 +31,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [13 November ninth comparison repair Batch 3](reviews/ninth-comparison-batch3-2026-11-13.md)
+  fixes Enlist Raid quantities and the pending Morbihan board.
 
 - [13 November ninth comparison repair Batch 2](reviews/ninth-comparison-batch2-2026-11-13.md)
   fixes Roman bot Quarters payments after relocation.

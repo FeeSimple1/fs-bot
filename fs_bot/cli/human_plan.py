@@ -809,6 +809,42 @@ def _collect_enlist_march_groups(origin, destinations, available, stdin, stdout)
     return groups
 
 
+def _collect_enlist_raid(state, regions, stdin, stdout):
+    from fs_bot.commands.common import _is_devastated
+    from fs_bot.commands.enlist_free import enlist_raid_limit
+    from fs_bot.commands.raid import get_valid_steal_targets
+
+    options = {}
+    for region in regions:
+        limit = enlist_raid_limit(state, region)
+        targets = get_valid_steal_targets(state, region, GERMANS)
+        stock = {target: state["resources"][target] for target in targets}
+        can_gain = (state["scenario"] in ARIOVISTUS_SCENARIOS
+                    and not _is_devastated(state, region))
+        if not can_gain:
+            limit = min(limit, sum(stock.values()))
+        if limit:
+            options[region] = (limit, can_gain, stock)
+    if not options:
+        return None, None
+    region = prompt_choice(stdin, stdout, "In which Region?", [(r, r) for r in options])
+    limit, can_gain, stock = options[region]
+    count = prompt_choice(stdin, stdout, "Raid with how many Hidden German Warbands?",
+                          [(str(k), k) for k in range(limit, 0, -1)])
+    actions = []
+    for index in range(count):
+        targets = [(target, target) for target, remaining in stock.items() if remaining]
+        if can_gain:
+            targets.append(("(just gain 1 Resource)", None))
+        target = prompt_choice(stdin, stdout, f"  Raid {index + 1} target in {region}?", targets)
+        if target is None:
+            actions.append({"type": "gain"})
+        else:
+            actions.append({"type": "steal", "target": target})
+            stock[target] -= 1
+    return [region], {"enlist": {"type": "german_raid", "region": region, "actions": actions}}
+
+
 def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
                             before_state=None, borrow_only=False, _sub=None):
     """Choose either borrowed Warbands or a free German Command (§4.5.1)."""
@@ -853,6 +889,8 @@ def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
                       and (sub == "german_rally" or count_pieces(state, r, GERMANS, WARBAND))]
     if not german_regions:
         return None, None
+    if sub == "german_raid":
+        return _collect_enlist_raid(state, german_regions, stdin, stdout)
     ed = {"type": sub}
     ario = state["scenario"] in ARIOVISTUS_SCENARIOS
     if sub == "german_march":
@@ -890,27 +928,12 @@ def _collect_enlist_details(state, faction, stdin, stdout, *, pending=None,
         n = count_pieces(state, region, GERMANS, WARBAND)
         ed["warbands"] = prompt_choice(stdin, stdout, "March how many German Warbands?",
                                       [(str(k), k) for k in range(n, 0, -1)])
-    if sub in ("german_battle", "german_raid"):
+    if sub == "german_battle":
         enemies = _enemies_in_region(state, region, GERMANS)
-        opts = [(f, f) for f in enemies]
-        if sub == "german_raid" and state["scenario"] in ARIOVISTUS_SCENARIOS:
-            opts.append(("(just gain 1 Resource)", None))
-        if not opts:
+        if not enemies:
             return None, None
-        if sub == "german_raid":
-            limit = min(2, count_pieces_by_state(state, region, GERMANS, WARBAND, HIDDEN))
-            if not limit:
-                return None, None
-            n = prompt_choice(stdin, stdout, "Raid with how many Hidden German Warbands?",
-                              [(str(k), k) for k in range(limit, 0, -1)])
-            ed["actions"] = []
-            for i in range(n):
-                target = prompt_choice(stdin, stdout, f"  Raid {i + 1} target in {region}?", opts)
-                ed["actions"].append({"type": "steal", "target": target} if target
-                                     else {"type": "gain"})
-        else:
-            ed["target"] = prompt_choice(stdin, stdout,
-                                         f"  Target in {region}?", opts)
+        ed["target"] = prompt_choice(stdin, stdout, f"  Target in {region}?",
+                                     [(f, f) for f in enemies])
     if sub == "german_rally":
         from fs_bot.cli.recruit_rally import collect_enlist_rally
         ed = collect_enlist_rally(state, region, stdin, stdout)

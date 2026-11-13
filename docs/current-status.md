@@ -21,7 +21,7 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-Batches 1–2 close **four of the eight ninth-audit repair groups**.
+Batches 1–3 close **six of the eight ninth-audit repair groups**.
 [Audit report](reviews/comparison-audit-round9-2026-11-12.md) ·
 [Ledger](reviews/comparison-audit-round9-2026-11-12.json) · [Evidence](reviews/comparison-audit-round9-2026-11-12-evidence.zip)
 
@@ -29,7 +29,7 @@ Batches 1–2 close **four of the eight ninth-audit repair groups**.
 |---|---|---|
 | 1 | EV9-01, EV9-02, EV9-03 | Closed. [Alpine Tribes and Lost Eagle](reviews/ninth-comparison-batch1-2026-11-12.md). |
 | 2 | LC9-01 | Closed. [Roman Quarters payments after relocation](reviews/ninth-comparison-batch2-2026-11-13.md). |
-| 3 | UI9-01, UI9-02 | Enlist Raid quantities and Morbihan pending displays. |
+| 3 | UI9-01, UI9-02 | Closed. [Enlist Raid quantities and the pending Morbihan board](reviews/ninth-comparison-batch3-2026-11-13.md). |
 | 4 | NP9-01, NP9-02 | Arverni Devastate forecasts and post-Command Special Ability transitions. |
 
 ### Previous rounds
@@ -59,6 +59,14 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 13 November ninth comparison repair Batch 3
+
+The Enlist Raid menu and compact plan allow a third Hidden German Warband
+when Germans own shaded Baggage Trains. The Morbihan board and decision
+summary show the surviving Warbands at their origins. The Region table
+uses Control from that same board.
+[Repairs and validation](reviews/ninth-comparison-batch3-2026-11-13.md)
 
 ### 13 November ninth comparison repair Batch 2
 

@@ -3,12 +3,13 @@
 **12 November 2026. The audit found eleven repair groups, four high and seven medium.**
 Batch 1 closes LC8-01 and LC8-02. Batch 2 closes BM8-01 and BM8-02.
 Batch 3 closes UI8-01 and UI8-02. Batch 4 closes EV8-01 through EV8-03.
-Two groups remain open.
+Batch 5 closes NP8-01 and NP8-02. All eleven groups are closed.
 The findings and validation below describe the audited revision.
 [Batch 1 repairs and validation](eighth-comparison-batch1-2026-11-12.md) ·
 [Batch 2 repairs and validation](eighth-comparison-batch2-2026-11-12.md) ·
 [Batch 3 repairs and validation](eighth-comparison-batch3-2026-11-12.md) ·
-[Batch 4 repairs and validation](eighth-comparison-batch4-2026-11-12.md)
+[Batch 4 repairs and validation](eighth-comparison-batch4-2026-11-12.md) ·
+[Batch 5 repairs and validation](eighth-comparison-batch5-2026-11-12.md)
 
 Audited Falling Sky commit: `e62b0360c1b91032741ef8f6afa4d247c8ea2437`. Python source SHA-256: `3c047ebcfef915efef8e1da308cd63484b1e6c735b8aba8e5c095de2c5d106b9` across **611 Python files**, Python 3.12.14. Comparator: `FeeSimple1/lod-bot` at `2991ea279062773548ec390a1da75f3e85381702`.
 
@@ -52,7 +53,7 @@ Five focused review lanes produced executable public-path witnesses and controls
 | 2 | BM8-01, BM8-02 | Share Archers Battle orchestration and apply both German Phalanx cancellation effects. |
 | 3 | UI8-01, UI8-02 | Closed. [Validate Battle selection and offer March drop-offs](eighth-comparison-batch3-2026-11-12.md). |
 | 4 | EV8-01, EV8-02, EV8-03 | Closed. [Event selection and Roman Forced Marches](eighth-comparison-batch4-2026-11-12.md). |
-| 5 | NP8-01, NP8-02 | Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection. |
+| 5 | NP8-01, NP8-02 | Closed. [Aedui Battle forecasts and post-Rally Special Abilities](eighth-comparison-batch5-2026-11-12.md). |
 
 Fixes should turn the relevant defective witness into a regression test, preserve its positive controls, run the full suite and appropriate game/replay checks, and update this ledger. Game-outcome changes require causal review before any balance-baseline refresh. Batch 2 should share the Archers hook before applying cancellation so the two fixes cover the same execution paths.
 
@@ -286,6 +287,8 @@ Fixes should turn the relevant defective witness into a regression test, preserv
 
 ### NP8-01 — Aedui omit favorable additional Battles by counting defenders already removed by the Attack
 
+**Status:** Closed in [Batch 5](eighth-comparison-batch5-2026-11-12.md).
+
 **Expected:** After the guaranteed Allied Tribe Loss at Carnutes triggers Battle, Aedui must also Battle four of their Revealed Warbands against six Revealed Belgic Warbands in Aedui. Standing causes 2 Attack Losses and 2 Counterattack Losses from the four survivors. Retreat causes 1 Attack Loss and no Counterattack. Both satisfy section 8.6.2's additional-Battle condition; two Regions cost only 2 of 10 Resources.
 
 **Observed:** Unmodified dispatch_bot_turn chooses Battle only at Carnutes in both Great Revolt and Ariovistus. execute_decision removes the Carnutes Ally, leaves all four Aedui and all six Belgic Warbands in Aedui, and leaves 9 Resources. The additional gate's legacy estimate is (2 inflicted, 3 taken), whereas predict_battle and direct live standing resolution both report (2, 2). Supplying the source-required second Battle to the same public executor succeeds, leaves two Aedui and four Belgic Warbands, and costs the second Resource.
@@ -309,6 +312,8 @@ Fixes should turn the relevant defective witness into a regression test, preserv
 **Evidence:** `bots/probe_bots.py`; `bots/probe_bots-output.json` in the portable archive. The original lane ledger preserves additional source annotations.
 
 ### NP8-02 — Aedui never reconsider an initially empty Special Ability after Rally enables Suborn
+
+**Status:** Closed in [Batch 5](eighth-comparison-batch5-2026-11-12.md).
 
 **Expected:** With no Aedui pieces on the map and 10 Resources, Rally places one Hidden Warband in the Aedui Home Region for 1 Resource. Section 8.6.3 then checks Trade/Suborn against the current board. Trade does not meet its threshold in this fixture, but Suborn can and must place the Aedui Ally and two Warbands for 4 more Resources. Expected final Aedui Region: one Ally, three Warbands, 5 Resources.
 

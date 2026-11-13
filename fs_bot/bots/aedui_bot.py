@@ -80,7 +80,7 @@ from fs_bot.bots.bot_common import (
     np_agrees_to_supply_line,
     is_no_faction_event,
     # Rally prevalidation (executor-legal plans)
-    prevalidate_rally_plan, predict_battle,
+    preview_rally_plan, predict_battle,
 )
 from fs_bot.commands.rally import _find_subdued_tribe_for_ally
 from fs_bot.commands.common import _is_devastated
@@ -280,21 +280,20 @@ def _get_battle_enemies(state, scenario):
     return enemies
 
 
-def _counterattack_threatens_diviciacus(state, region, enemy, *, is_ambush):
+def _counterattack_threatens_diviciacus(state, region, enemy, *, is_ambush,
+                                       earlier_battles):
     if (state['scenario'] not in ARIOVISTUS_SCENARIOS
             or get_leader_in_region(state, region, AEDUI) != DIVICIACUS):
         return False
-    from fs_bot.bots.bot_common import card27_shaded_absorption
-
     forecast = predict_battle(state, region, AEDUI, enemy,
-                              defender_saves=True, is_ambush=is_ambush)
+                              defender_saves=True, is_ambush=is_ambush,
+                              earlier_battles=earlier_battles)
     if forecast is None:
         return True
     # A3.2.4: Diviciacus absorbs last, after every other eligible piece.
     # Each other casualty may be removed on its first Loss.
     other_pieces = count_pieces(state, region, AEDUI) - 1
-    prefire = card27_shaded_absorption(state, region, AEDUI, enemy)
-    return forecast['taken'] + prefire > other_pieces
+    return forecast['taken'] > other_pieces
 
 
 # ============================================================================
@@ -604,6 +603,22 @@ def node_a_event(state):
     )
 
 
+def _favorable_battle(state, region, enemy, *, is_ambush, earlier_battles):
+    """§8.6.2 requires a favorable exchange even if the enemy Retreats."""
+    from fs_bot.battle.retreat import can_declare
+
+    can_retreat = can_declare(state, region, AEDUI, enemy, is_ambush)
+    stances = (False, True) if can_retreat else (False,)
+    for is_retreat in stances:
+        forecast = predict_battle(
+            state, region, AEDUI, enemy, defender_saves=True, is_ambush=is_ambush,
+            is_retreat=is_retreat, earlier_battles=earlier_battles)
+        if (forecast is None or forecast['defender_losses'] == 0
+                or forecast['defender_losses'] < forecast['taken']):
+            return False
+    return True
+
+
 def _aedui_battle_plan(state, *, first_only=False):
     """Select affordable, safe targets in the two §8.6.2 Battle priorities."""
     from fs_bot.cards.morasses import ambush_active
@@ -641,10 +656,10 @@ def _aedui_battle_plan(state, *, first_only=False):
                     qualifies = _would_force_loss_on_high_value(
                         state, region, AEDUI, enemy, scenario, ambush_possible=ambush)
                 else:
-                    inflicted, taken = _estimate_battle_losses(state, region, AEDUI, enemy, scenario)
-                    qualifies = inflicted > 0 and inflicted >= taken
+                    qualifies = _favorable_battle(
+                        state, region, enemy, is_ambush=ambush, earlier_battles=battle_plan)
                 if not qualifies or _counterattack_threatens_diviciacus(
-                        state, region, enemy, is_ambush=ambush):
+                        state, region, enemy, is_ambush=ambush, earlier_battles=battle_plan):
                     continue
                 battle_plan.append(entry)
                 if first_only:
@@ -680,7 +695,7 @@ def node_a_battle(state):
     )
 
 
-def node_a_rally(state):
+def node_a_rally(state, *, rally_regions=None):
     """A_RALLY: Rally process.
 
     Per §8.6.3: Rally wherever able to place a piece:
@@ -697,6 +712,8 @@ def node_a_rally(state):
     scenario = state["scenario"]
     playable = command_region_candidates(
         state, get_playable_regions(scenario, state.get("capabilities")))
+    if rally_regions is not None:
+        playable = [region for region in playable if region in rally_regions]
 
     rally_plan = {
         "citadels": [],
@@ -705,7 +722,7 @@ def node_a_rally(state):
     }
 
     # Draft in flowchart priority order; legality, Available pools, and the
-    # Resource budget are enforced by prevalidate_rally_plan, which simulates
+    # Resource budget are enforced by preview_rally_plan, which simulates
     # the executor's own checks (fs_bot.commands.rally) in execution order.
 
     # Step 1: Citadels — replace a City ALLY with a Citadel (§3.3.1). Skip a
@@ -740,7 +757,7 @@ def node_a_rally(state):
     # just-planned Ally/Citadel, or Home Region — §3.3.1).
     rally_plan["warbands"] = list(playable)
 
-    rally_plan = prevalidate_rally_plan(state, AEDUI, rally_plan)
+    rally_plan, after_rally = preview_rally_plan(state, AEDUI, rally_plan)
 
     total_placed = (len(rally_plan["citadels"]) + len(rally_plan["allies"])
                     + len(rally_plan["warbands"]))
@@ -749,9 +766,10 @@ def node_a_rally(state):
     if total_placed == 0:
         return node_a_raid(state)
 
-    # SA: Trade after Rally — §8.6.3
+    # §8.6.3 checks Trade and Suborn after Rally has changed the board and
+    # spent Resources. Confirm the forecast against live conditions at SA time.
     sa, sa_regions, sa_details = _determine_trade_sa(
-        state, scenario, battled=False)
+        after_rally, scenario, battled=False)
 
     return _make_action(
         ACTION_RALLY,

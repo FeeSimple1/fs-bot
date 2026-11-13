@@ -67,9 +67,11 @@ def test_diviciacus_safety_uses_only_the_selected_defender(unrelated_warbands):
 
 
 @pytest.mark.parametrize('defender,counterattack', [(rc.ARIOVISTUS_LEADER, 2), (rc.SUCCESSOR, 1)])
-def test_diviciacus_safety_counts_the_named_leader_multiplier_in_an_additional_battle(
+def test_diviciacus_safety_counts_the_named_leader_multiplier(
         defender, counterattack):
     state = _board()
+    # Prevent a Retreat from halving the one-Loss Attack to zero.
+    activate_capability(state, 'A33', rc.EVENT_UNSHADED)
     place_piece(state, rc.CARNUTES, rc.AEDUI, rc.LEADER, leader_name=rc.DIVICIACUS)
     place_piece(state, rc.CARNUTES, rc.AEDUI, rc.WARBAND, piece_state=rc.REVEALED)
     place_piece(state, rc.CARNUTES, rc.GERMANS, rc.LEADER, leader_name=defender)
@@ -83,7 +85,7 @@ def test_diviciacus_safety_counts_the_named_leader_multiplier_in_an_additional_b
     action = dispatch_bot_turn(state, rc.AEDUI)
     expected = [(rc.VENETI, rc.BELGAE)]
     if defender == rc.SUCCESSOR:
-        expected.append((rc.CARNUTES, rc.GERMANS))
+        expected.insert(0, (rc.CARNUTES, rc.GERMANS))
     assert _targets(action) == expected
     _execute(state, rc.AEDUI, action)
     assert get_leader_in_region(state, rc.CARNUTES, rc.AEDUI) == rc.DIVICIACUS
@@ -116,6 +118,7 @@ def test_unsafe_high_value_battle_falls_through_to_rally():
 def test_diviciacus_safety_accounts_for_attack_casualties_and_own_allies(
         defending_warbands, ally, safe):
     state = _board()
+    activate_capability(state, 'A33', rc.EVENT_UNSHADED)
     place_piece(state, rc.CARNUTES, rc.AEDUI, rc.LEADER, leader_name=rc.DIVICIACUS)
     place_piece(state, rc.CARNUTES, rc.GERMANS, rc.WARBAND, defending_warbands)
     if ally:
@@ -135,13 +138,15 @@ def test_diviciacus_safety_accounts_for_attack_casualties_and_own_allies(
 
 @pytest.mark.parametrize('player_defends', [False, True])
 def test_diviciacus_safety_accounts_for_the_players_legal_saving_rolls(player_defends):
-    state = _board(seed=17)
+    # Three Attack Losses match the NPC's three-Loss Counterattack. A player
+    # can absorb all three with the Ariovistus Leader and counter for six.
+    state = _board(seed=11)
     if player_defends:
         state['non_player_factions'].remove(rc.GERMANS)
     place_piece(state, rc.CARNUTES, rc.AEDUI, rc.LEADER, leader_name=rc.DIVICIACUS)
-    place_piece(state, rc.CARNUTES, rc.AEDUI, rc.WARBAND, 3, piece_state=rc.REVEALED)
+    place_piece(state, rc.CARNUTES, rc.AEDUI, rc.WARBAND, 4, piece_state=rc.REVEALED)
     place_piece(state, rc.CARNUTES, rc.GERMANS, rc.LEADER, leader_name=rc.ARIOVISTUS_LEADER)
-    place_piece(state, rc.CARNUTES, rc.GERMANS, rc.WARBAND, 3)
+    place_piece(state, rc.CARNUTES, rc.GERMANS, rc.WARBAND, 4)
     place_piece(state, rc.VENETI, rc.AEDUI, rc.WARBAND, 2)
     assert _ally_tribe(state, rc.TRIBE_VENETI, rc.BELGAE)
     _integrity(state)
@@ -149,7 +154,7 @@ def test_diviciacus_safety_accounts_for_the_players_legal_saving_rolls(player_de
     witness = resolve_battle(
         deepcopy(state), rc.CARNUTES, rc.AEDUI, rc.GERMANS,
         retreat_declaration=False, attack_loss_order=[(rc.LEADER, None)] if player_defends else None)
-    assert witness['counterattack']['losses_requested'] == (5 if player_defends else 3)
+    assert witness['counterattack']['losses_requested'] == (6 if player_defends else 3)
     action = dispatch_bot_turn(state, rc.AEDUI)
     expected = [(rc.VENETI, rc.BELGAE)]
     if not player_defends:

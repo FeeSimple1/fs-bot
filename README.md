@@ -144,15 +144,17 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-Batches 1–4 close **nine of 11 findings** from the eighth comparison audit.
-The latest repair corrects three Event selection and execution findings.
-All **10,178 tests** pass, along with 120 audited bot games, 35 mixed-player
+Batches 1–5 close **all 11 findings** from the eighth comparison audit.
+Batch 5 corrects the Aedui bot's additional Battles and its Trade or Suborn
+selection after Rally.
+All **10,207 tests** pass, along with 120 audited bot games, 35 mixed-player
 replay cases, and the 100-game balance check.
 [Audit report](docs/reviews/comparison-audit-round8-2026-11-12.md) ·
 [Batch 1 repairs and validation](docs/reviews/eighth-comparison-batch1-2026-11-12.md) ·
 [Batch 2 repairs and validation](docs/reviews/eighth-comparison-batch2-2026-11-12.md) ·
 [Batch 3 repairs and validation](docs/reviews/eighth-comparison-batch3-2026-11-12.md) ·
 [Batch 4 repairs and validation](docs/reviews/eighth-comparison-batch4-2026-11-12.md) ·
+[Batch 5 repairs and validation](docs/reviews/eighth-comparison-batch5-2026-11-12.md) ·
 [Finding ledger](docs/reviews/comparison-audit-round8-2026-11-12.json)
 
 The seventh comparison audit is complete with **all nine repair groups closed**.

@@ -23,6 +23,13 @@ flip and updates the next flip's choices. A single Raid Region keeps its
 normal flip limit and its one intrinsic Germanic Intimidate opportunity.
 Ambush and Besiege modify Battle directly.
 
+The Aedui bot checks how many defenders survive its Attack before choosing
+an additional Battle Region. It also checks whether a legal Retreat could
+make the exchange unfavorable. After Rally, the bot uses the placed pieces
+and remaining Resources to decide whether it can Trade or Suborn. Roman
+players still give their Trade agreement when the Special Ability resolves.
+[Aedui Battle and Rally repairs](docs/reviews/eighth-comparison-batch5-2026-11-12.md)
+
 Battle requires your Forces in the selected Region when it resolves. Scout
 before Battle may bring Auxilia into that Region. Scout movement uses the
 scenario's playable Regions and Gallia Togata marker; base Cisalpina needs

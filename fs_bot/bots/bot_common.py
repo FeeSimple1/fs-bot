@@ -1174,15 +1174,50 @@ class _AllRemovalsRng:
     def shuffle(self, seq):
         return None
 
+    def getstate(self):
+        return ()
+
+    def setstate(self, state):
+        pass
+
 
 class _AllSavesRng(_AllRemovalsRng):
     def randint(self, a, b):
         return b
 
 
+def _forecast_battle_opening(state, region, attacker, defender, earlier_battles):
+    """Apply opening Losses and scope Horse for the next prospective Battle."""
+    from fs_bot.cards.capabilities import get_capability_owner, is_capability_active
+    from fs_bot.engine import battle_capabilities, horse_choice, slingers_choice
+
+    current = {'region': region, 'target': defender}
+    plan = [*earlier_battles, current]
+    current_first = [current, *earlier_battles]
+    non_players = state.get('non_player_factions', ())
+
+    # Non-players use the first applicable Region (§8.3.3). A player
+    # opponent could choose the candidate Region even with earlier Battles.
+    for flag in horse_choice.FLAGS:
+        state.get('event_modifiers', {}).pop(flag, None)
+    horse_owner = (ROMANS if is_capability_active(state, 59, EVENT_UNSHADED)
+                   else get_capability_owner(state, 59))
+    defender_chooses_horse = horse_owner == defender and defender not in non_players
+    horse_plan = current_first if defender_chooses_horse else plan
+    horse_choice.select_for_command(state, attacker, horse_plan)
+
+    before = count_pieces(state, region, attacker)
+    slingers_plan = plan if ROMANS in non_players else current_first
+    if slingers_choice.choose_region(state, attacker, slingers_plan) == region:
+        slingers_choice.fire(state, region, attacker)
+    battle_capabilities.apply_archers(state, region, attacker, defender)
+    return before - count_pieces(state, region, attacker)
+
+
 def predict_battle(state, region, attacking_faction, defending_faction, *,
                    defender_saves=False, is_ambush=False, is_retreat=False,
-                   avoid_defender_losses=(), attack_losses=None):
+                   avoid_defender_losses=(), attack_losses=None,
+                   earlier_battles=None):
     """Deterministically predict a Battle's Losses for NP decision-making.
 
     Per the flowcharts' "presuming all Defender Loss rolls result in removals
@@ -1198,13 +1233,19 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
         attacker's Leader: the Leader absorbs LAST among mobile pieces
         (Warbands/Auxilia/Legions, no-Retreat order, §3.2.4), so it is reached
         only when ``taken`` exceeds those non-Leader mobile pieces.
-    ``defender_removed`` counts actual Attack removals.
+    ``defender_removed`` counts actual Attack removals, and
+    ``defender_losses`` includes Losses absorbed by a saving roll.
     ``defender_loss_types`` records any piece type that absorbs a Loss,
     including pieces that survive a roll. For target guarantees,
     ``avoid_defender_losses`` lets a player defender choose any legal
     alternative first. ``is_retreat`` applies the Retreat loss rules and
     skips Counterattack. ``attack_losses`` can carry a Command-specific
     Attack forecast, such as Morasses after initial fire.
+
+    Supply ``earlier_battles`` (possibly empty) for a Command-aware forecast.
+    It applies Slingers and Archers before the Attack and scopes Horse to
+    the selected Region. ``taken`` then includes opening Losses to the
+    attacker. Opening rolls force removals before any Defender save rolls.
 
     ``defender_saves`` lets each Defender roll succeed. For Counterattack
     forecasts a player defender can choose a hard target, and Caesar can
@@ -1219,13 +1260,20 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
     from fs_bot.rules_consts import CITADEL, FORT, WARBAND, AUXILIA, LEGION, LEADER, CAESAR, PROVINCIA
     sim = copy.deepcopy({key: value for key, value in state.items()
                          if key not in ('decision_agent', 'rng')})
-    sim["rng"] = _AllSavesRng() if defender_saves else _AllRemovalsRng()
+    sim["rng"] = _AllRemovalsRng()
     try:
         d_pieces = get_effective_faction_pieces(sim, region, defending_faction)
         had_citadel = d_pieces.get(CITADEL, 0) > 0
         ignore_fort = (attacking_faction == ARVERNI and region == PROVINCIA
                        and sim.get('event_modifiers', {}).get('card_21_no_fort'))
         had_fort = d_pieces.get(FORT, 0) > 0 and not ignore_fort
+        had_leader = get_leader_in_region(sim, region, attacking_faction) is not None
+        opening_taken = 0
+        if earlier_battles is not None:
+            opening_taken = _forecast_battle_opening(
+                sim, region, attacking_faction, defending_faction, earlier_battles)
+        if defender_saves:
+            sim['rng'] = _AllSavesRng()
         inflicted = attack_losses
         if inflicted is None:
             inflicted = _calculate_attack_losses(
@@ -1255,7 +1303,7 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
             abatis_defender=defender_abatis_active(sim, region, attacking_faction, defending_faction),
             loss_order=loss_order)
         # Counterattack Loss COUNT from the surviving Defender.
-        taken = 0 if ambush_blocks_counter or is_retreat else calculate_losses(
+        counterattack = 0 if ambush_blocks_counter or is_retreat else calculate_losses(
             sim, region, attacking_faction=defending_faction,
             defending_faction=attacking_faction, is_counterattack=True,
             arverni_legion_override=attack.get('legion_warbands_surviving'))
@@ -1270,9 +1318,10 @@ def predict_battle(state, region, attacking_faction, defending_faction, *,
         return None
     return {
         "inflicted": inflicted,
-        "taken": taken,
-        "attacker_leader_lost": has_leader and taken > absorbers,
+        "taken": opening_taken + counterattack,
+        "attacker_leader_lost": had_leader and (not has_leader or counterattack > absorbers),
         "defender_removed": attack['losses_taken'],
+        "defender_losses": attack['losses_taken'] + attack['losses_absorbed'],
         "defender_loss_types": ({piece for piece, _ in attack['removed']}
                                 | {piece for piece, _, _ in attack['rolls']}),
     }
@@ -1306,11 +1355,17 @@ def roman_battle_is_favorable(state, region, defending_faction):
 # cheaper later ones — exactly what the executor's sequential charging does.
 
 def prevalidate_rally_plan(state, faction, rally_plan, *, resources=None):
+    """Return the executable options from a draft Rally."""
+    plan, _ = preview_rally_plan(state, faction, rally_plan, resources=resources)
+    return plan
+
+
+def preview_rally_plan(state, faction, rally_plan, *, resources=None):
     """Filter a draft Rally through the actual §3.3.1/A3.4.1 procedure.
 
     The copied board enforces one option per Region, Vercingetorix's two-option
     exception (one payment), German home bonuses, stock limits and Control
-    changes. No live pieces, Resources, RNG or decision agent are touched.
+    changes. Return the filtered plan and its resulting detached board.
     """
     from copy import deepcopy
     from fs_bot.commands.rally import rally_in_region, validate_rally_option
@@ -1341,7 +1396,7 @@ def prevalidate_rally_plan(state, faction, rally_plan, *, resources=None):
             selected.setdefault(region, set()).add(option)
             kept.append(entry)
         out[key] = kept
-    return out
+    return out, sim
 
 
 def affordable_battle_plan(state, faction, plan):

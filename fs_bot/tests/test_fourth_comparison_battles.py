@@ -188,6 +188,8 @@ def test_aedui_bot_battles_with_diviciacus_when_counterattack_cannot_reach_him(s
 def test_diviciacus_safety_also_applies_to_additional_battles(support):
     state = _bot_board()
     state['_command_with_sa'] = False
+    # A33 prevents a Retreat from reducing this one-Loss Attack to zero.
+    activate_capability(state, 'A33', rc.EVENT_UNSHADED)
     place_piece(state, rc.CARNUTES, rc.AEDUI, rc.LEADER, leader_name=rc.DIVICIACUS)
     if support:
         place_piece(state, rc.CARNUTES, rc.AEDUI, rc.WARBAND, support)

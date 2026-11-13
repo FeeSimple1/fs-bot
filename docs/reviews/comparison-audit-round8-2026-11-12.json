@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 11,
-  "closed": 9,
-  "open": 2,
+  "closed": 11,
+  "open": 0,
   "severity_counts": {
     "high": 4,
     "medium": 7
@@ -361,7 +361,9 @@
         "NP8-01",
         "NP8-02"
       ],
-      "scope": "Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection."
+      "scope": "Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection.",
+      "status": "closed",
+      "report": "eighth-comparison-batch5-2026-11-12.md"
     }
   ],
   "findings": [
@@ -1007,7 +1009,10 @@
         "bots/probe_bots.py",
         "bots/probe_bots-output.json"
       ],
-      "original_lane_ledger": "bots/findings.json"
+      "original_lane_ledger": "bots/findings.json",
+      "status": "closed",
+      "repair_batch": 5,
+      "repair_report": "eighth-comparison-batch5-2026-11-12.md"
     },
     {
       "id": "NP8-02",
@@ -1061,7 +1066,10 @@
         "bots/probe_bots.py",
         "bots/probe_bots-output.json"
       ],
-      "original_lane_ledger": "bots/findings.json"
+      "original_lane_ledger": "bots/findings.json",
+      "status": "closed",
+      "repair_batch": 5,
+      "repair_report": "eighth-comparison-batch5-2026-11-12.md"
     }
   ],
   "limits": [

@@ -1133,21 +1133,29 @@ def _replan_placement_regions(planning, faction, command, regions, original):
     }
     module, name = nodes[faction]
     narrowed = _free_command_planning_state(
-        planning, faction, regions, forced_command=command,
+        planning, faction, (planning.get('_command_region_scope')
+                            if faction == _AEDUI_F else regions), forced_command=command,
         with_sa=planning.get("_command_with_sa", False))
-    action = getattr(importlib.import_module(f"fs_bot.bots.{module}_bot"), name)(narrowed)
+    planner = getattr(importlib.import_module(f"fs_bot.bots.{module}_bot"), name)
+    # Aedui Rally forecasts Trade or Suborn after the retained placements.
+    # The Limited Command cap leaves the Event's broader SA scope in force.
+    action = (planner(narrowed, rally_regions=regions) if faction == _AEDUI_F
+              else planner(narrowed))
     if not isinstance(action, dict) or action.get("command") != command:
         raise ValueError("retained placement Region no longer has its selected Command")
     action = _constrain_bot_action(action, set(regions), state=narrowed,
                                    faction=faction, constrain_sa=False)
     if action is None:
         raise ValueError("retained placement Region has no legal planned placement")
-    # A Limited Command's Region limit does not itself limit an explicitly
-    # granted accompanying SA (Druids); retain that separate chosen plan.
-    for key in ("sa", "sa_regions", "sa_timing"):
-        if key in original:
-            action[key] = original[key]
     details = dict(original.get("details") or {})
+    if faction == _AEDUI_F:
+        details['sa_details'] = action['details']['sa_details']
+    else:
+        # The placement cap leaves other factions' independently chosen
+        # Special Abilities in their original Event scope.
+        for key in ("sa", "sa_regions", "sa_timing"):
+            if key in original:
+                action[key] = original[key]
     plan_key = "recruit_plan" if command == _CMD_RECRUIT else "rally_plan"
     details[plan_key] = action["details"][plan_key]
     if command == _CMD_RECRUIT:
@@ -4782,10 +4790,8 @@ def _execute_sa_confirmed(state, faction, bot_action):
         # §8.6.3 evaluates Trade "at that moment" — i.e. when the Special
         # Ability resolves, AFTER the Command has spent/earned Resources —
         # and falls through Trade -> Suborn -> no SA. Re-derive the whole
-        # choice now against the current board (the decision-time pick used
-        # pre-Command Resources; e.g. a Rally can spend the Aedui below the
-        # Suborn price between planning and resolution). Humans keep their
-        # declared SA.
+        # choice now against the current board and actual Supply agreements.
+        # Humans keep their declared SA.
         from fs_bot.commands.sa_trade import trade_declarations
         with trade_declarations(state):
             from fs_bot.bots.aedui_bot import (_determine_trade_sa,

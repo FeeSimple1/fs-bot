@@ -21,7 +21,7 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The eighth comparison audit has **nine repaired groups and two open**.
+The eighth comparison audit is complete with **all 11 groups repaired**.
 [Audit report](reviews/comparison-audit-round8-2026-11-12.md)
 
 | Batch | Findings | Scope |
@@ -30,7 +30,7 @@ The eighth comparison audit has **nine repaired groups and two open**.
 | 2 | BM8-01, BM8-02 | Closed. [Massed Gallic Archers and German Phalanx](reviews/eighth-comparison-batch2-2026-11-12.md). |
 | 3 | UI8-01, UI8-02 | Closed. [Winter Campaign Battle Regions and March drop-offs](reviews/eighth-comparison-batch3-2026-11-12.md). |
 | 4 | EV8-01, EV8-02, EV8-03 | Closed. [Event selection and Roman Forced Marches](reviews/eighth-comparison-batch4-2026-11-12.md). |
-| 5 | NP8-01, NP8-02 | Correct Aedui additional-Battle forecasting and post-Rally Special Ability selection. |
+| 5 | NP8-01, NP8-02 | Closed. [Aedui Battle forecasts and post-Rally Special Abilities](reviews/eighth-comparison-batch5-2026-11-12.md). |
 
 [Eighth-audit ledger](reviews/comparison-audit-round8-2026-11-12.json) ·
 [Portable evidence](reviews/comparison-audit-round8-2026-11-12-evidence.zip)
@@ -46,6 +46,20 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 12 November eighth comparison repair Batch 5
+
+Additional Aedui Battles use the survivors of the Attack to forecast
+Counterattack. The bot checks legal Retreats, the single Ambush, and
+opening Capability Losses. Aedui Rally forecasts Trade or Suborn after
+its legal placements and Resource costs, including the one-Region Rally
+granted by Druids. The Special Ability uses the live board and declarations.
+[Repair and validation](reviews/eighth-comparison-batch5-2026-11-12.md)
+
+All **10,207 tests pass**. The 120 audited bot games complete cleanly.
+All 35 mixed-player cases match across hash seeds, with zero hard findings
+and two existing partial plans in the additional sample. The 100-game
+balance check passes with the current baseline.
 
 ### 12 November eighth comparison repair Batch 4
 

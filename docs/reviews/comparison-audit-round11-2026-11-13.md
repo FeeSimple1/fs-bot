@@ -1,7 +1,8 @@
 # Eleventh Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Eight additional medium-priority findings. Batch 1 closes three.**
-[Batch 1 repairs and validation](eleventh-comparison-batch1-2026-11-13.md)
+**13 November 2026. Eight additional medium-priority findings. Batches 1–2 close four.**
+[Batch 1 repairs and validation](eleventh-comparison-batch1-2026-11-13.md) ·
+[Batch 2 repairs and validation](eleventh-comparison-batch2-2026-11-13.md)
 
 The tenth audit is complete with all nine of its findings repaired.
 
@@ -47,7 +48,7 @@ The initial local test launcher rejected a relative pytest cache path before col
 | Batch | Findings | Scope |
 |---|---|---|
 | 1 | EV11-01, EV11-02, EV11-03 | Closed. [Lucterius, Assembly of Gaul and Shifting Loyalties](eleventh-comparison-batch1-2026-11-13.md). |
-| 2 | BM11-01 | Divination forecast with active Abatis |
+| 2 | BM11-01 | Closed. [Divination forecast with active Abatis](eleventh-comparison-batch2-2026-11-13.md). |
 | 3 | LC11-01 | Arverni removal priorities at the Gallic War Interlude |
 | 4 | UI11-01 | Winter Campaign terminal choice for Command plus borrowed Enlist |
 | 5 | NP11-01, NP11-02 | Belgic Enlist after March and German Leader movement |
@@ -130,7 +131,7 @@ Evidence files are `events/probe_events.py`, `events/results.json`.
 
 ### BM11-01 — Divination treats an Abatis-protected Ally as a guaranteed high-value Loss
 
-Open, medium priority.
+Closed in [Batch 2](eleventh-comparison-batch2-2026-11-13.md). Medium priority.
 
 A34 unshaded with a non-player Aedui beneficiary should March when Germans can inflict only three Losses on two Belgic Warbands plus Aulerci and active Abatis: the Belgae may stand and assign the third Loss to Abatis, so no high-value target is guaranteed to take a Loss.
 

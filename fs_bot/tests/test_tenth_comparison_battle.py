@@ -1,4 +1,4 @@
-"""BM10-01: A31 Stalwart cancels the A64 defense in A34 Battle planning."""
+"""A34 Battle planning with active and canceled Abatis (BM10-01, BM11-01)."""
 
 import pytest
 
@@ -33,13 +33,13 @@ def play_event(state, card, actor, *, shaded=False, **params):
     return result
 
 
-def position(*, abatis=True, stalwart=True, citadel=False, leader=True):
+def position(*, abatis=True, stalwart=True, citadel=False, leader=True, warbands=2):
     state = build_initial_state(rc.SCENARIO_ARIOVISTUS, seed=13)
     state['non_player_factions'] = {rc.AEDUI}
     place_piece(state, rc.PROVINCIA, rc.ROMANS, rc.FORT)
     if leader:
         place_piece(state, REGION, rc.GERMANS, rc.LEADER, leader_name=rc.ARIOVISTUS_LEADER)
-    place_piece(state, REGION, rc.GERMANS, rc.WARBAND, 2)
+    place_piece(state, REGION, rc.GERMANS, rc.WARBAND, warbands)
     place_piece(state, REGION, rc.BELGAE, rc.WARBAND, 2)
     assert _ally_tribe(state, rc.TRIBE_AULERCI, rc.BELGAE)
     if citadel:
@@ -102,3 +102,39 @@ def test_divination_retains_ariovistus_and_fortification_rules(conditions, expec
         assert state['tribes'][rc.TRIBE_AULERCI]['allied_faction'] == rc.BELGAE
     else:
         assert state['tribes'][rc.TRIBE_AULERCI]['allied_faction'] is None
+
+
+@pytest.mark.parametrize('leader,warbands', [(True, 10), (False, 12)])
+def test_aedui_divination_marches_when_abatis_can_spare_ally(leader, warbands):
+    state = position(stalwart=False, leader=leader, warbands=warbands)
+    state['resources'][rc.GERMANS] = 20
+    assert forecast(state, False) == 3
+    defender_requests = []
+
+    def defend(_board, faction, request):
+        if faction == rc.BELGAE and request['kind'] in (RETREAT, LOSS_ORDER):
+            defender_requests.append(request['kind'])
+
+    state['decision_agent'] = defend
+    action = play_event(state, 'A34', rc.ROMANS, faction=rc.AEDUI)['free_actions'][0]
+    assert action['chooser'] == rc.AEDUI and action['acting_faction'] == rc.GERMANS
+    assert action['result']['executed'] and action['result']['command'] == rc.CMD_MARCH
+    assert defender_requests == []
+    assert state['resources'][rc.GERMANS] == 20
+    assert count_pieces(state, REGION, rc.BELGAE, rc.WARBAND) == 2
+    assert state['tribes'][rc.TRIBE_AULERCI]['allied_faction'] == rc.BELGAE
+    assert state['markers'][REGION][rc.MARKER_ABATIS] == rc.BELGAE
+
+
+def test_aedui_divination_prioritizes_forced_ally_over_abatis_defense():
+    state = position(stalwart=False, warbands=10)
+    assert _ally_tribe(state, rc.TRIBE_CARNUTES, rc.ARVERNI)
+    assert validate_state(state) == check_structural_integrity(state) == []
+
+    result = play_event(state, 'A34', rc.ROMANS, faction=rc.AEDUI)['free_actions'][0]['result']
+    assert result['executed'] and result['command'] == rc.CMD_BATTLE
+    assert result['battles_resolved'] == [(REGION, rc.ARVERNI)]
+    assert not result['battle_sa_executed']
+    assert state['tribes'][rc.TRIBE_CARNUTES]['allied_faction'] is None
+    assert count_pieces(state, REGION, rc.BELGAE, rc.WARBAND) == 2
+    assert state['tribes'][rc.TRIBE_AULERCI]['allied_faction'] == rc.BELGAE

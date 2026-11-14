@@ -211,6 +211,12 @@ Ariovistus can then double Losses unless the defender has a Fort or Citadel.
 Inflexible cancels the shaded Legio X limit when Caesar attacks German
 defenders, so each of his Legions inflicts two Losses before halving.
 
+When Divination lets the Aedui bot command German pieces, it checks whether
+a defender can spare its key pieces through legal Loss choices or Retreat.
+An active Abatis can absorb a Loss and keep an Ally from being a guaranteed
+target. If every target can avoid a high-value Loss, the bot attempts March.
+[Divination repair](docs/reviews/eleventh-comparison-batch2-2026-11-13.md)
+
 Shaded Massed Gallic Archers makes the other side absorb one opening Loss
 when at least six Arverni Warbands take part, on either side of a Battle.
 This also applies in Event Battles and automatic Ambushes. The owner of

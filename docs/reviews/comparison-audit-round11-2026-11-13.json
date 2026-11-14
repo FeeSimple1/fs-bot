@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 8,
-  "closed": 3,
-  "open": 5,
+  "closed": 4,
+  "open": 4,
   "severity_counts": {
     "medium": 8
   },
@@ -418,7 +418,8 @@
         "BM11-01"
       ],
       "scope": "Divination forecast with active Abatis",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch2-2026-11-13.md"
     },
     {
       "batch": 3,
@@ -934,7 +935,8 @@
         "battle/report.md"
       ],
       "limits": "Controlled legal Ariovistus states, not measured natural-game frequency. Primary witness preserves Aulerci regardless of the Abatis saving roll. One additional consumer group, not a new defect class. Other inspected Morasses/Frost direct consumers remain uncounted without a finalized public failure. No new ruling or general Elite/capability claim.",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch2-2026-11-13.md"
     },
     {
       "id": "LC11-01",

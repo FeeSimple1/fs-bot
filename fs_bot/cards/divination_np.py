@@ -67,20 +67,11 @@ def _shuffle_sort(state, values, key):
 
 
 def _high_value_forced(state, region, enemy):
-    """A4, with the granted normal Battle's possible Retreat and no Ambush."""
-    from fs_bot.cards.capabilities import is_capability_active
-    high = {rc.LEADER, rc.LEGION, rc.ALLY, rc.CITADEL, rc.SETTLEMENT}
-    choices = [False]
-    if (enemy != rc.ARVERNI and count_mobile_pieces(state, region, enemy)
-            and not (enemy == rc.BELGAE and is_capability_active(
-                state, 'A70', rc.EVENT_UNSHADED))):
-        choices.append(True)
-    for retreat in choices:
-        losses = calculate_losses(state, region, rc.GERMANS, enemy, is_retreat=retreat)
-        order = _build_loss_priority(state, region, enemy, is_retreat=retreat)
-        if not any(p[0] in high for p in order[:losses]):
-            return False
-    return True
+    """Apply the Aedui Battle condition to the German force without Ambush."""
+    from fs_bot.bots.aedui_bot import _would_force_loss_on_high_value
+
+    return _would_force_loss_on_high_value(
+        state, region, rc.GERMANS, enemy, state['scenario'])
 
 
 def _battle(state, chooser, limit):
@@ -88,6 +79,7 @@ def _battle(state, chooser, limit):
     regions, enemies = _regions(state), _enemies(state, chooser)
     leader_region = find_leader(state, rc.GERMANS)
     threats = []
+    forced_targets = {}
     for region in regions:
         if not _force(state, region):
             continue
@@ -103,7 +95,10 @@ def _battle(state, chooser, limit):
                 _bases(state, region, e) or get_leader_in_region(state, region, e)
                 or is_controlled_by(state, region, e) for e in targets)
         else:
-            triggered = any(_high_value_forced(state, region, e) for e in targets)
+            forced_targets[region] = {
+                enemy for enemy in targets if _high_value_forced(state, region, enemy)
+            }
+            triggered = bool(forced_targets[region])
         if triggered:
             threats.append(region)
     if not threats:
@@ -137,7 +132,7 @@ def _battle(state, chooser, limit):
                     state, region, enemy) < _force(state, region)
                 key = (not leader_first, region not in threats)
             else:
-                high = _high_value_forced(state, region, enemy)
+                high = enemy in forced_targets[region]
                 favorable = high or (inflicted > 0 and inflicted >= taken)
                 key = (not high, enemies.index(enemy))
             if favorable and _battle_frost_ok(state, region, enemy):

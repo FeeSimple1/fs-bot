@@ -21,6 +21,23 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
+The twelfth comparison audit has **seven open findings**.
+[Audit report](reviews/comparison-audit-round12-2026-11-13.md) · [Ledger](reviews/comparison-audit-round12-2026-11-13.json) · [Evidence](reviews/comparison-audit-round12-2026-11-13-evidence.zip)
+
+| Batch | Findings | Scope |
+|---|---|---|
+| 1 | EV12-01, EV12-02 | Sappers and Drought non-player target selection |
+| 2 | BM12-01 | Slingers opening fire in three bot Battle forecasts |
+| 3 | LC12-01, LC12-02 | Interlude Cisalpina relocation and exact Allied Tribe removals |
+| 4 | NP12-01, NP12-02 | Aedui March groups and post-March Trade or Suborn |
+
+The audited baseline passes **10,449 fresh tests**, 20 fresh audited bot games
+and 20 mixed-seat cases at two hash seeds. All seven findings have independently
+reproduced witnesses and controls. Five partial mixed-seat plans are retained in
+the evidence.
+
+### Eleventh round completed
+
 The eleventh comparison audit is complete with **all eight findings closed**.
 [Audit report](reviews/comparison-audit-round11-2026-11-13.md) · [Ledger](reviews/comparison-audit-round11-2026-11-13.json) · [Evidence](reviews/comparison-audit-round11-2026-11-13-evidence.zip)
 

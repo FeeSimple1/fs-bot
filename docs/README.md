@@ -15,7 +15,8 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Eleventh Liberty or Death comparison](reviews/comparison-audit-round11-2026-11-13.md) | Six of eight findings closed in Batches 1–4 |
+| [Twelfth Liberty or Death comparison](reviews/comparison-audit-round12-2026-11-13.md) | Seven new findings and four proposed repair batches |
+| [Eleventh Liberty or Death comparison](reviews/comparison-audit-round11-2026-11-13.md) | All eight findings closed in Batches 1–5 |
 | [Tenth Liberty or Death comparison](reviews/comparison-audit-round10-2026-11-13.md) | All nine findings closed in five batches |
 | [Ninth Liberty or Death comparison](reviews/comparison-audit-round9-2026-11-12.md) | All eight findings closed in four batches |
 | [Eighth Liberty or Death comparison](reviews/comparison-audit-round8-2026-11-12.md) | All 11 findings closed in five batches |

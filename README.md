@@ -4,11 +4,11 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The eleventh audit has six of eight findings closed. The Winter Campaign
-terminal now lets Belgae spend both actions on a Command with borrowed
-German Warbands.
-[Repairs and validation](docs/reviews/eleventh-comparison-batch4-2026-11-13.md) ·
-[Audit and repair order](docs/reviews/comparison-audit-round11-2026-11-13.md)
+The twelfth cross-repository audit confirms seven new findings across Event
+targets, Battle forecasts, Aedui March and the Gallic War Interlude.
+The preceding eleventh audit is complete with all eight findings repaired.
+[New audit and four repair batches](docs/reviews/comparison-audit-round12-2026-11-13.md) ·
+[Completed eleventh-audit repairs](docs/reviews/eleventh-comparison-batch5-2026-11-13.md)
 
 All nine tenth-audit repair groups are closed.
 [Final tenth-audit batch](docs/reviews/tenth-comparison-batch5-2026-11-13.md)

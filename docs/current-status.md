@@ -21,12 +21,12 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The twelfth comparison audit has **seven open findings**.
+The twelfth comparison audit has **two findings closed and five open**.
 [Audit report](reviews/comparison-audit-round12-2026-11-13.md) · [Ledger](reviews/comparison-audit-round12-2026-11-13.json) · [Evidence](reviews/comparison-audit-round12-2026-11-13-evidence.zip)
 
 | Batch | Findings | Scope |
 |---|---|---|
-| 1 | EV12-01, EV12-02 | Sappers and Drought non-player target selection |
+| 1 | EV12-01, EV12-02 | Closed. [Sappers and Drought non-player target selection](reviews/twelfth-comparison-batch1-2026-11-14.md). |
 | 2 | BM12-01 | Slingers opening fire in three bot Battle forecasts |
 | 3 | LC12-01, LC12-02 | Interlude Cisalpina relocation and exact Allied Tribe removals |
 | 4 | NP12-01, NP12-02 | Aedui March groups and post-March Trade or Suborn |
@@ -109,6 +109,13 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 14 November twelfth comparison repair Batch 1
+
+Roman and Aedui bots apply the printed targets for unshaded Sappers and
+the new Drought marker. Drought applies Resource halving and losses in
+already Devastated Regions when no new Region qualifies.
+[Repairs and validation](reviews/twelfth-comparison-batch1-2026-11-14.md)
 
 ### 13 November eleventh comparison repair Batch 5
 

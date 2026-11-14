@@ -109,6 +109,23 @@ def bellovaci_is_belgic_ally(state):
     return bellovaci.get('allied_faction') == rc.BELGAE
 
 
+def sappers_factions(state):
+    """Unshaded Sappers selects a Gallic faction with a Citadel."""
+    return tuple(faction for faction in rc.GALLIC_FACTIONS
+                 if any(count_pieces(state, region, faction, rc.CITADEL)
+                        for region in state['spaces']))
+
+
+def np_sappers_target(state, faction):
+    """Choose the first effective target under the base Sappers instructions."""
+    candidates = sappers_factions(state)
+    non_players = state.get('non_player_factions', ())
+    return next((target for target in (rc.ARVERNI, rc.BELGAE)
+                 if target in candidates
+                 and state['resources'].get(target, 0) > 0
+                 and (faction == rc.ROMANS or target not in non_players)), None)
+
+
 def assembly_carnutes_qualifies(state):
     """An unallied Carnutes circle is Subdued or Dispersed (§1.7, card 52)."""
     carnutes = state.get('tribes', {}).get(rc.TRIBE_CARNUTES)

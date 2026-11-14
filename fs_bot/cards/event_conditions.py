@@ -19,6 +19,13 @@ def np_event_available(state, card_id, faction, shaded):
     if card_id == 32 and faction == rc.ROMANS:
         from fs_bot.cards.war_fleet_roman import forced_marches_plan
         return forced_marches_plan(state, preview=True) is not None
+    if (card_id == 24 and not shaded and faction in (rc.ROMANS, rc.AEDUI)
+            and state['scenario'] in rc.BASE_SCENARIOS):
+        from fs_bot.cards.event_targets import np_sappers_target
+        return np_sappers_target(state, faction) is not None
+    if card_id == 49 and faction in (rc.ROMANS, rc.AEDUI):
+        from fs_bot.cards.drought import np_available
+        return np_available(state, faction)
     if card_id == 50:
         from fs_bot.cards.shifting_loyalties import removal_candidates
         return bool(removal_candidates(state, faction))

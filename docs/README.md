@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Twelfth Liberty or Death comparison](reviews/comparison-audit-round12-2026-11-13.md) | Seven new findings and four proposed repair batches |
+| [Twelfth Liberty or Death comparison](reviews/comparison-audit-round12-2026-11-13.md) | Two of seven findings closed in Batch 1 |
 | [Eleventh Liberty or Death comparison](reviews/comparison-audit-round11-2026-11-13.md) | All eight findings closed in Batches 1–5 |
 | [Tenth Liberty or Death comparison](reviews/comparison-audit-round10-2026-11-13.md) | All nine findings closed in five batches |
 | [Ninth Liberty or Death comparison](reviews/comparison-audit-round9-2026-11-12.md) | All eight findings closed in four batches |
@@ -34,6 +34,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [14 November twelfth comparison repair Batch 1](reviews/twelfth-comparison-batch1-2026-11-14.md)
+  applies the printed non-player Sappers and Drought targets.
 
 - [13 November eleventh comparison repair Batch 5](reviews/eleventh-comparison-batch5-2026-11-13.md)
   fixes Belgic Enlist after March and the German expansion March.

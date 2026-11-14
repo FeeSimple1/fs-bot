@@ -4,10 +4,11 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The twelfth cross-repository audit confirms seven new findings across Event
-targets, Battle forecasts, Aedui March and the Gallic War Interlude.
+Batch 1 of the twelfth audit repairs non-player targeting for Sappers and
+Drought. Two of the audit's seven findings are closed.
 The preceding eleventh audit is complete with all eight findings repaired.
-[New audit and four repair batches](docs/reviews/comparison-audit-round12-2026-11-13.md) ·
+[Twelfth audit and repair batches](docs/reviews/comparison-audit-round12-2026-11-13.md) ·
+[Sappers and Drought repair](docs/reviews/twelfth-comparison-batch1-2026-11-14.md) ·
 [Completed eleventh-audit repairs](docs/reviews/eleventh-comparison-batch5-2026-11-13.md)
 
 All nine tenth-audit repair groups are closed.
@@ -152,6 +153,11 @@ all players' agreement at setup. The same flags are available to assistant
 | Browse all project documentation | [Documentation index](docs/README.md) |
 
 ## Current validation
+
+Batch 1 of the twelfth comparison passes **10,490 tests**, 120 audited bot
+games, and 20 mixed-seat replay cases. The 100-game balance check and
+15-game canary pass against the reviewed outcomes.
+[Batch 1 validation](docs/reviews/twelfth-comparison-batch1-2026-11-14.md#verification)
 
 The eleventh comparison audit is complete. The final batch passes
 **10,449 tests** and completes 120 audited bot games and 20 mixed-player

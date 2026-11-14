@@ -96,8 +96,10 @@ Drought now asks each human owner which single piece to lose in every
 Devastated Region. Choose exact visibility, a named Allied Tribe/Citadel, or a
 Leader, Fort or Legion as offered. Legions go to Fallen. Germans must lose
 Warbands before Allied Tribes; Provincia's permanent Fort cannot be removed.
-The Event executor chooses the new marker location, while each owner chooses
-its own losses. `b`/`board` remains available, and interrupted choices can resume
+The Event executor chooses the new marker location. Roman and Aedui bots
+use their printed targeting instructions. If there is no eligible new
+Region, they apply Resource halving and losses in already Devastated Regions.
+`b`/`board` remains available, and interrupted choices can resume
 without halving Resources or applying earlier casualties twice.
 
 Three expansion Events now ask how much of their optional effect you want:
@@ -304,6 +306,11 @@ Shaded Sappers (24) lets the executor choose one Region with an Arverni
 Citadel and remove any mix of two Roman Legions and Auxilia there. If the
 chosen Region has fewer than two eligible pieces, remove all of them.
 Choose Auxilia by visibility. Removed Legions go to Fallen.
+
+Unshaded Sappers has a Gallic faction with a Citadel lose up to ten Resources.
+The Roman bot targets the Arverni first, then the Belgae. The Aedui bot
+targets player seats of those factions. Both bots continue down their
+Command flowcharts when no instructed target can lose Resources.
 
 Shaded Cotuatus & Conconnetodumnus (31) lets the executor name one Roman
 Ally, one Aedui Ally, and one additional Ally of either faction. Each

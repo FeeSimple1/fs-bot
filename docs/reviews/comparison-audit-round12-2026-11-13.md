@@ -2,6 +2,9 @@
 
 **13 November 2026. Seven new medium-priority findings, arranged into four repair batches.**
 
+Batch 1 closed EV12-01 and EV12-02 on 14 November. Five findings remain open.
+[Batch 1 repair and validation](twelfth-comparison-batch1-2026-11-14.md)
+
 The eleventh audit is complete with all eight findings repaired. This review starts at Falling Sky commit `1563e41d84f61dfce43ce4008106eca2a1639aed`, with Python source SHA-256 `7cb64407ff5594eb2bbd671a8159c408410fa8cc26e7a784da7afe0fd47363db` across 629 files. The Liberty or Death comparison uses `2991ea279062773548ec390a1da75f3e85381702`. Both revisions matched their remote `main` branches at the start of review.
 
 [Finding ledger](comparison-audit-round12-2026-11-13.json) · [Reproduction evidence](comparison-audit-round12-2026-11-13-evidence.zip) · [Current status](../current-status.md)
@@ -45,7 +48,7 @@ The fresh suite includes the existing 15-game balance canary. The 100-game guard
 
 | Batch | Findings | Scope |
 |---|---|---|
-| 1 | EV12-01, EV12-02 | Sappers and Drought non-player target selection |
+| 1 | EV12-01, EV12-02 | Closed. [Sappers and Drought non-player target selection](twelfth-comparison-batch1-2026-11-14.md). |
 | 2 | BM12-01 | Slingers opening fire in three bot Battle forecasts |
 | 3 | LC12-01, LC12-02 | Interlude Cisalpina relocation and exact Allied Tribe removals |
 | 4 | NP12-01, NP12-02 | Aedui March groups and post-March Trade or Suborn |

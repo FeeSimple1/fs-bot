@@ -20,7 +20,7 @@ Source: Card Reference, A Card Reference
 
 from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE,
-    GERMANS, GALLIC_FACTIONS, FACTIONS, LEADER,
+    GERMANS, GALLIC_FACTIONS, FACTIONS, BASE_SCENARIOS, LEADER,
     LEGION, AUXILIA, WARBAND, FORT,
     ALLY, CITADEL, SETTLEMENT, HIDDEN,
     REVEALED, SCOUTED, CAESAR, VERCINGETORIX,
@@ -1117,27 +1117,21 @@ def execute_card_24(state, shaded=False):
     Source: Card Reference, card 24
     """
     if not shaded:
-        # Unshaded: A Gallic Faction with a Citadel loses 10 Resources
-        params = state.get("event_params", {})
+        from fs_bot.cards.event_targets import sappers_factions, np_sappers_target
+        params = state.get("event_params") or {}
         target_faction = params.get("target_faction")
-        if target_faction is None:
-            # Auto-select: first Gallic faction with a Citadel on map
-            for faction in GALLIC_FACTIONS:
-                for region in state["spaces"]:
-                    if count_pieces(state, region, faction, CITADEL) > 0:
-                        target_faction = faction
-                        break
-                if target_faction:
-                    break
-        if target_faction is None:
-            return  # No Gallic faction has a Citadel
-        # Validate the target faction actually has a Citadel on map
-        has_citadel = False
-        for region in state["spaces"]:
-            if count_pieces(state, region, target_faction, CITADEL) > 0:
-                has_citadel = True
-                break
-        if has_citadel and target_faction in state.get("resources", {}):
+        actor = state.get("executing_faction")
+        if (target_faction is None and actor in (ROMANS, AEDUI)
+                and state["scenario"] in BASE_SCENARIOS
+                and actor in state.get("non_player_factions", ())):
+            target_faction = np_sappers_target(state, actor)
+        else:
+            candidates = sappers_factions(state)
+            if target_faction is None:
+                target_faction = next(iter(candidates), None)
+            if target_faction not in candidates:
+                return
+        if target_faction in state.get("resources", {}):
             _cap_resources(state, target_faction, -10)
     else:
         from fs_bot.cards.base_piece_choices import resolve_sappers
@@ -1836,7 +1830,7 @@ def execute_card_49(state, shaded=False):
 
     Source: Card Reference, card 49
     """
-    from fs_bot.cards.drought import validate_params, marker_regions, remove_loss
+    from fs_bot.cards.drought import validate_params, choose_marker_region, remove_loss
     from fs_bot.map.map_data import get_playable_regions_for_state
     params = state.get("event_params")
     if params is None:
@@ -1847,8 +1841,9 @@ def execute_card_49(state, shaded=False):
             state['resources'][faction] //= 2
     _event_step(state, '49.devastation')
     validate_params(state, params)
-    legal = marker_regions(state)
-    region = params.get('devastate_region', legal[0] if legal else None)
+    region = params.get('devastate_region')
+    if region is None:
+        region = choose_marker_region(state, state.get('executing_faction'))
     if region is not None:
         _add_region_marker(state, region, MARKER_DEVASTATED)
     playable = set(get_playable_regions_for_state(state))

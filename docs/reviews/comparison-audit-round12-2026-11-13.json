@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 7,
-  "closed": 0,
-  "open": 7,
+  "closed": 2,
+  "open": 5,
   "severity_counts": {
     "medium": 7
   },
@@ -342,7 +342,8 @@
         "EV12-02"
       ],
       "scope": "Sappers and Drought non-player target selection",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "twelfth-comparison-batch1-2026-11-14.md"
     },
     {
       "batch": 2,
@@ -376,7 +377,7 @@
       "id": "EV12-01",
       "title": "Unshaded Sappers ignores non-player target restrictions and admits Events without a Citadel target",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "expected": "Base Roman Sappers targets Arverni then Belgae and excludes Aedui. Base Aedui Sappers targets player Arverni or Belgae only. If no legal Citadel target can lose Resources, the Non-player must continue its Command flowchart.",
       "actual": "Seven natural dispatch/execution cases drain the wrong Faction. Romans and Aedui drain Aedui instead of player Belgae in four cases. Aedui drain Non-player Arverni instead of player Belgae in three cases. Two no-Citadel Pax Gallica cases select and execute an Event with no game effect.",
       "root_cause": "_EVENT_PARAM_DERIVERS has no numeric24 producer. The handler falls back to the first Citadel faction in GALLIC_FACTIONS, ordered Arverni, Aedui, Belgae. Generic REMOVES_RESOURCES effectiveness returns true without checking the Citadel or printed target conditions.",
@@ -470,13 +471,14 @@
         "events/results.json",
         "events/results.hash987.json"
       ],
-      "lane": "events"
+      "lane": "events",
+      "repair_report": "twelfth-comparison-batch1-2026-11-14.md"
     },
     {
       "id": "EV12-02",
       "title": "Non-player Drought places its marker by map order and removes forbidden targets",
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "expected": "Romans place Drought to remove player Arverni/Belgae in base or player Germans/Belgae in expansion, with no Roman loss. Aedui select only player Arverni/Belgae in base or player Germans/Belgae in expansion. A legal player-only Carnutes target exists in every witness.",
       "actual": "All twelve natural Event executions place Devastated at Morini, removing a Non-player Belgic piece and leaving the eligible player piece at Carnutes. The six Roman cases also remove their own Auxilia at Morini, contrary to the explicit instruction. All twelve exact Carnutes controls remove the player opponent and preserve Morini.",
       "root_cause": "Numeric49 has no NP parameter deriver. execute_card_49 defaults missing devastate_region to marker_regions(state)[0], which is Morini on these maps, ignoring the instruction text already carried by the bot action.",
@@ -585,7 +587,8 @@
         "events/results.json",
         "events/results.hash987.json"
       ],
-      "lane": "events"
+      "lane": "events",
+      "repair_report": "twelfth-comparison-batch1-2026-11-14.md"
     },
     {
       "id": "BM12-01",

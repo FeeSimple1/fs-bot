@@ -59,6 +59,75 @@ def targets(state, region, faction):
     return result
 
 
+def _np_marker_regions(state, faction, regions):
+    """Best legal Regions under the Roman and Aedui Event instructions."""
+    if not regions:
+        return []
+    from fs_bot.bots.bot_common import is_ally_in_city_or_remi
+
+    scenario = state['scenario']
+    primary = rc.GERMANS if scenario in rc.ARIOVISTUS_SCENARIOS else rc.ARVERNI
+    opponents = (primary, rc.BELGAE)
+    non_players = state.get('non_player_factions', ())
+    players = tuple(owner for owner in opponents if owner not in non_players)
+    if not players:
+        return []
+    # The Aedui instruction says "only". The Roman instruction forbids
+    # Roman losses and targeting the Non-player seats of the named opponents.
+    if faction == rc.AEDUI:
+        excluded = tuple(owner for owner in rc.FACTIONS if owner not in players)
+    else:
+        excluded = (rc.ROMANS, *(owner for owner in opponents if owner in non_players))
+
+    def priority(target):
+        piece = target['piece_type']
+        visibility = target.get('piece_state')
+        structure = piece in (rc.CITADEL, rc.SETTLEMENT)
+        ally = piece == rc.ALLY
+        city_ally = ally and is_ally_in_city_or_remi(target.get('tribe'), scenario)
+        # §§8.2.3 and 8.3.1 rank removals by location, then §8.4.1
+        # distinguishes the eligible casualties within each type.
+        return (structure, ally, 1, piece == rc.LEADER, city_ally,
+                visibility == rc.HIDDEN, visibility == rc.REVEALED)
+
+    ranks = {}
+    for region in regions:
+        losses = [targets(state, region, owner) for owner in players]
+        if not any(losses) or any(targets(state, region, owner) for owner in excluded):
+            continue
+        # Each enemy chooses its own casualty. Score the loss the owner can
+        # be made to take, allowing it to keep a higher-priority piece.
+        guaranteed = [min(map(priority, options)) for options in losses if options]
+        totals = tuple(sum(category) for category in zip(*guaranteed))
+        ranks[region] = totals + tuple(bool(options) for options in losses)
+    best = max(ranks.values(), default=None)
+    return sorted(region for region, rank in ranks.items() if rank == best)
+
+
+def choose_marker_region(state, faction):
+    """Choose at the marker step, after any intervening board changes."""
+    regions = marker_regions(state)
+    if (faction not in (rc.ROMANS, rc.AEDUI)
+            or faction not in state.get('non_player_factions', ())):
+        return next(iter(regions), None)
+
+    from fs_bot.bots.bot_common import random_select
+    candidates = _np_marker_regions(state, faction, regions)
+    # §5.1.3: a marker with no legal target is inapplicable. Resource
+    # halving and losses in already Devastated Regions can still apply.
+    return random_select(state, candidates) if candidates else None
+
+
+def np_available(state, faction):
+    """Check the effects left by the instructions without choosing a target."""
+    return (any(amount > 0 for amount in state['resources'].values())
+            or bool(_np_marker_regions(state, faction, marker_regions(state)))
+            or any(targets(state, region, owner)
+                   for region in get_playable_regions_for_state(state)
+                   if rc.MARKER_DEVASTATED in state.get('markers', {}).get(region, {})
+                   for owner in rc.FACTIONS))
+
+
 def request_for(state, region, faction):
     return {'kind': KIND, 'card_id': 49, 'region': region, 'faction': faction,
             'targets': targets(state, region, faction)}

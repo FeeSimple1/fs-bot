@@ -1,9 +1,10 @@
 # Eleventh Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Eight additional medium-priority findings. Batches 1–3 close five.**
+**13 November 2026. Eight additional medium-priority findings. Batches 1–4 close six.**
 [Batch 1 repairs and validation](eleventh-comparison-batch1-2026-11-13.md) ·
 [Batch 2 repairs and validation](eleventh-comparison-batch2-2026-11-13.md) ·
-[Batch 3 repairs and validation](eleventh-comparison-batch3-2026-11-13.md)
+[Batch 3 repairs and validation](eleventh-comparison-batch3-2026-11-13.md) ·
+[Batch 4 repairs and validation](eleventh-comparison-batch4-2026-11-13.md)
 
 The tenth audit is complete with all nine of its findings repaired.
 
@@ -51,7 +52,7 @@ The initial local test launcher rejected a relative pytest cache path before col
 | 1 | EV11-01, EV11-02, EV11-03 | Closed. [Lucterius, Assembly of Gaul and Shifting Loyalties](eleventh-comparison-batch1-2026-11-13.md). |
 | 2 | BM11-01 | Closed. [Divination forecast with active Abatis](eleventh-comparison-batch2-2026-11-13.md). |
 | 3 | LC11-01 | Closed. [Arverni removal priorities at the Gallic War Interlude](eleventh-comparison-batch3-2026-11-13.md). |
-| 4 | UI11-01 | Winter Campaign terminal choice for Command plus borrowed Enlist |
+| 4 | UI11-01 | Closed. [Winter Campaign terminal choice for Command plus borrowed Enlist](eleventh-comparison-batch4-2026-11-13.md). |
 | 5 | NP11-01, NP11-02 | Belgic Enlist after March and German Leader movement |
 
 Convert the directed failures into source-derived regressions with their controls. Run the full suite and relevant bot, human-session and replay checks after each repair. Explain changed game outcomes before considering any balance baseline refresh.
@@ -182,7 +183,7 @@ Evidence files are `lifecycle/probe_lifecycle.py`, `lifecycle/results.json`, `li
 
 ### UI11-01 — Winter Campaign terminal cannot combine borrowed Enlist Warbands with their Belgic Command
 
-Open, medium priority.
+Closed in [Batch 4](eleventh-comparison-batch4-2026-11-13.md). Medium priority.
 
 With two actions remaining, allow a combined Belgic Command plus Enlist borrowing; the demonstrated borrowed Raid Reveals two German Warbands and gives Belgae two Resources, consuming both actions.
 
@@ -256,4 +257,4 @@ Evidence files are `bots/probe_bots.py`, `bots/results.json`, `bots/report.md`.
 
 Extract the archive and run `python run_witnesses.py --repo /path/to/fs-bot` with the audited Python source bytes. The runner verifies source and protected-file hashes, runs all five probes in temporary directories at hash seeds 0 and 987, and compares each output with the preserved record. Its assertions characterize the observed defects and will need updating after repair. `SHA256SUMS` covers every other archive member. The README gives commands for the full test suite, audited games and mixed-player replay.
 
-The reports document excluded leads and tested boundaries. The lifecycle review inspected Winter gates, victory, automatic phases and Interlude conversion. The frontend review checked exact cohorts, grants and replay. Existing unresolved source questions retain their recorded status. These eight findings require no additional provisional ruling. The passing general suite and sampled games coexist with the failures reproduced by the directed probes. Five findings remain open in Batches 2–5.
+The reports document excluded leads and tested boundaries. The lifecycle review inspected Winter gates, victory, automatic phases and Interlude conversion. The frontend review checked exact cohorts, grants and replay. Existing unresolved source questions retain their recorded status. These eight findings require no additional provisional ruling. The passing general suite and sampled games coexist with the failures reproduced by the directed probes. Two findings remain open in Batch 5.

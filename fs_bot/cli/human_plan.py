@@ -25,7 +25,7 @@ from fs_bot.rules_consts import (
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
     FACTIONS, GALLIC_FACTIONS, LEGION, AUXILIA, WARBAND, BRITANNIA,
     HIDDEN, REVEALED, SCOUTED, ENLIST_MAX_GERMAN_PIECES_ARIOVISTUS,
-    EVENT_SHADED, EVENT_UNSHADED, ARIOVISTUS_SCENARIOS,
+    EVENT_SHADED, EVENT_UNSHADED, ARIOVISTUS_SCENARIOS, SA_ENLIST,
 )
 from fs_bot.engine.game_engine import (
     ACTION_COMMAND, ACTION_COMMAND_SA, ACTION_LIMITED_COMMAND,
@@ -1109,6 +1109,23 @@ def _preview_borrow(state, faction, action):
         begin_borrow(state, action)
 
 
+def _collect_borrowed_command(state, faction, cmd, stdin, stdout):
+    """Select the Enlist loan before planning the Command that uses it."""
+    regions, details = _collect_enlist(state, faction, stdin, stdout, borrow_only=True)
+    if regions is None:
+        return None
+    action = {"command": cmd, "regions": [], "sa": SA_ENLIST, "sa_regions": regions,
+              "details": details, "sa_timing": "before"}
+    sim = _planning_copy(state)
+    _preview_borrow(sim, faction, action)
+    command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
+    if command is None:
+        return None
+    action["regions"] = command["regions"]
+    action["details"].update(command["details"])
+    return action
+
+
 def _collect_sa_plan(state, faction, action, stdin, stdout, *, sa=None,
                      standalone=False, before_state=None, allowed_sas=None,
                      allowed_regions=None, borrow_allowed=True):
@@ -1245,20 +1262,7 @@ def _collect_command(state, faction, engine_action, stdin, stdout, *,
     cmd = prompt_choice(stdin, stdout, "Which Command?", choices)
     if cmd == "enlist_command_first":
         cmd = prompt_choice(stdin, stdout, "Which Command?", [(c, c) for c in commands])
-        regions, details = _collect_enlist(state, faction, stdin, stdout, borrow_only=True)
-        if regions is None:
-            return None
-        action = {"command": cmd, "regions": [], "sa": "Enlist", "sa_regions": regions,
-                  "details": details, "sa_timing": "before"}
-        from fs_bot.commands.sa_enlist import begin_borrow
-        sim = _planning_copy(state)
-        _preview_borrow(sim, faction, action)
-        command = _collect_command_plan(sim, faction, cmd, stdin, stdout)
-        if command is None:
-            return None
-        action["regions"] = command["regions"]
-        action["details"].update(command["details"])
-        return action
+        return _collect_borrowed_command(state, faction, cmd, stdin, stdout)
     if cmd == "sa_first":
         action = {"command": None, "regions": [], "sa": _SA_NONE,
                   "sa_regions": [], "details": {}, "sa_timing": "before"}

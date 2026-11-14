@@ -2267,6 +2267,9 @@ different board as equivalent.
 Winter Campaign requests include `remaining_actions` (initially 2). Return a
 normal Command plan, a standalone `{sa,sa_regions,details}` plan, or a combined
 Command+SA plan (two actions); `{decline:true}` ends the capability's actions.
+To borrow German Warbands for a Belgic Command, include `sa: "Enlist"` and
+`details.enlist.type: "borrow"` in the two-action plan. A standalone Enlist
+uses one action and selects a free German Command.
 Ambush/Besiege must be paired with Battle. Cards 63/A63 permit other SAs
 independently of their usual accompanying Commands and pay normal costs.
 A single action resolves before the second decision is requested. Select

@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 8,
-  "closed": 5,
-  "open": 3,
+  "closed": 6,
+  "open": 2,
   "severity_counts": {
     "medium": 8
   },
@@ -436,7 +436,8 @@
         "UI11-01"
       ],
       "scope": "Winter Campaign terminal choice for Command plus borrowed Enlist",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch4-2026-11-13.md"
     },
     {
       "batch": 5,
@@ -1207,7 +1208,8 @@
         "frontend/results.hash987.json",
         "frontend/report.md"
       ],
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch4-2026-11-13.md"
     },
     {
       "id": "NP11-01",

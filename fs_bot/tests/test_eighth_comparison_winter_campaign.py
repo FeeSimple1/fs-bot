@@ -7,8 +7,9 @@ from types import SimpleNamespace
 import pytest
 
 from fs_bot import rules_consts as rc
-from fs_bot.board.pieces import count_pieces, get_leader_in_region, place_piece
+from fs_bot.board.pieces import count_pieces, count_pieces_by_state, get_leader_in_region, place_piece
 from fs_bot.cli.reactive import make_cli_reactive
+from fs_bot.commands.sa_enlist import BORROW_KEY
 from fs_bot.engine.execute import execute_decision
 from fs_bot.engine.game_engine import ACTION_EVENT, draw_card, get_sop_factions
 from fs_bot.engine.march_choices import MARCH_DROPOFF
@@ -16,7 +17,7 @@ from fs_bot.engine.victory import check_any_victory
 from fs_bot.engine.winter_campaign import validate_human_plan, winter_campaign_after_harvest
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.setup import setup_scenario
-from fs_bot.state.state_schema import build_initial_state, check_structural_integrity
+from fs_bot.state.state_schema import build_initial_state, check_structural_integrity, validate_state
 from fs_bot.tests.test_action_window_frontends import leave_timing_unchanged
 from fs_bot.tools import llm_seat
 from fs_bot.tools.seat_session import SeatSession, board_copy
@@ -110,6 +111,130 @@ def test_terminal_campaign_march_offers_dropoff_and_charges_one_action():
     assert count_pieces(state, rc.MANDUBII, rc.ARVERNI, rc.WARBAND) == 2
     assert count_pieces(state, rc.SEQUANI, rc.ARVERNI, rc.WARBAND) == 2
     assert get_leader_in_region(state, rc.SEQUANI, rc.ARVERNI) == rc.VERCINGETORIX
+
+
+def _belgic_campaign_position(scenario):
+    expansion = scenario in rc.ARIOVISTUS_SCENARIOS
+    state = _campaign_position(rc.BELGAE, scenario, 'second-edition', 'A63' if expansion else 63)
+    place_piece(state, rc.CARNUTES, rc.BELGAE, rc.LEADER,
+                leader_name=rc.BODUOGNATUS if expansion else rc.AMBIORIX)
+    return state
+
+
+@pytest.mark.parametrize('scenario', rc.ALL_SCENARIOS)
+def test_terminal_campaign_uses_two_actions_to_raid_with_enlisted_warbands(scenario):
+    state = _belgic_campaign_position(scenario)
+    place_piece(state, rc.CARNUTES, rc.GERMANS, rc.WARBAND, 2)
+    before = encode(board_copy(state))
+    answers = ['Command + Enlist (both actions)', rc.CMD_RAID, rc.CARNUTES]
+    if scenario in rc.ARIOVISTUS_SCENARIOS:
+        answers.append('1')  # The first choice borrows both Hidden Warbands.
+    answers += [rc.CARNUTES, 'Gain 1 Resource', 'Gain 1 Resource']
+    stdin = StringIO('\n'.join([*answers, 'Finish Winter Campaign']) + '\n')
+    stdout = StringIO()
+    terminal = make_cli_reactive([rc.BELGAE], stdin, stdout)
+    collected = []
+
+    def agent(board, owner, request):
+        response = terminal(board, owner, request)
+        if request['kind'] == 'winter_campaign':
+            collected.append((request['remaining_actions'], encode(board_copy(board))))
+        return response
+
+    agent.supports_action_windows = True
+    state['decision_agent'] = agent
+    assert validate_state(state) == check_structural_integrity(state) == []
+
+    result = winter_campaign_after_harvest(state)
+
+    assert collected == [(2, before)]
+    assert result['remaining_actions'] == 0
+    action, = result['actions']
+    assert action['actions'] == 2
+    assert action['plan']['command'] == rc.CMD_RAID and action['plan']['sa'] == rc.SA_ENLIST
+    assert action['result']['sa_execution']['type'] == 'borrow'
+    assert action['result']['sa_execution']['executed']
+    assert state['resources'][rc.BELGAE] == 22
+    assert count_pieces_by_state(state, rc.CARNUTES, rc.GERMANS, rc.WARBAND, rc.REVEALED) == 2
+    assert count_pieces(state, rc.CARNUTES, rc.BELGAE, rc.WARBAND) == 0
+    assert BORROW_KEY not in state
+    assert stdin.read() == 'Finish Winter Campaign\n'
+    assert validate_state(state) == check_structural_integrity(state) == []
+
+
+@pytest.mark.parametrize('scenario', [rc.SCENARIO_GREAT_REVOLT, rc.SCENARIO_ARIOVISTUS])
+def test_terminal_campaign_standalone_enlist_leaves_one_action(scenario):
+    state = _belgic_campaign_position(scenario)
+    place_piece(state, rc.CARNUTES, rc.GERMANS, rc.WARBAND, 2)
+    stdin = StringIO('Special Ability: Enlist\nMarch\nCarnutes\nMandubii\n1\nFinish Winter Campaign\n')
+    stdout = StringIO()
+    state['decision_agent'] = make_cli_reactive([rc.BELGAE], stdin, stdout)
+    resources = dict(state['resources'])
+
+    result = winter_campaign_after_harvest(state)
+
+    action, = result['actions']
+    assert action['actions'] == 1 and result['remaining_actions'] == 1
+    assert action['result']['type'] == 'german_march'
+    assert count_pieces_by_state(state, rc.MANDUBII, rc.GERMANS, rc.WARBAND, rc.HIDDEN) == 2
+    assert state['resources'] == resources
+    transcript = stdout.getvalue()
+    assert 'lend Warbands to the Belgic Command' not in transcript
+    assert transcript.count('Command + Enlist (both actions)') == 1
+    assert 'Winter Campaign (1 actions left; pay costs)' in transcript
+    assert not stdin.read()
+    assert validate_state(state) == check_structural_integrity(state) == []
+
+
+def test_terminal_campaign_shares_ariovistus_enlist_limit_across_regions():
+    state = _belgic_campaign_position(rc.SCENARIO_ARIOVISTUS)
+    for region in (rc.CARNUTES, rc.MANDUBII):
+        place_piece(state, region, rc.GERMANS, rc.WARBAND, 3)
+    stdin = StringIO('\n'.join([
+        'Command + Enlist (both actions)', rc.CMD_RAID, rc.CARNUTES, rc.MANDUBII,
+        '1', '1',  # Borrow the maximum available in each Region, three then one.
+        rc.CARNUTES, rc.MANDUBII, 'Gain 1 Resource', 'Gain 1 Resource', 'Gain 1 Resource',
+        'Finish Winter Campaign',
+    ]) + '\n')
+    stdout = StringIO()
+    state['decision_agent'] = make_cli_reactive([rc.BELGAE], stdin, stdout)
+
+    result = winter_campaign_after_harvest(state)
+
+    action, = result['actions']
+    assert action['actions'] == 2 and result['remaining_actions'] == 0
+    loan = action['plan']['details']['enlist']['warbands']
+    assert {region: sum(cohorts.values()) for region, cohorts in loan.items()} == {
+        rc.CARNUTES: 3, rc.MANDUBII: 1}
+    assert count_pieces_by_state(state, rc.CARNUTES, rc.GERMANS, rc.WARBAND, rc.REVEALED) == 2
+    assert count_pieces_by_state(state, rc.MANDUBII, rc.GERMANS, rc.WARBAND, rc.REVEALED) == 1
+    assert state['resources'][rc.BELGAE] == 23
+    assert stdin.read() == 'Finish Winter Campaign\n'
+    assert validate_state(state) == check_structural_integrity(state) == []
+
+
+def test_terminal_campaign_pays_for_borrowed_march_into_britannia():
+    state = _campaign_position(rc.BELGAE, rc.SCENARIO_GREAT_REVOLT, 'second-edition', 63)
+    place_piece(state, rc.MORINI, rc.BELGAE, rc.LEADER, leader_name=rc.AMBIORIX)
+    place_piece(state, rc.MORINI, rc.GERMANS, rc.WARBAND, 2)
+    stdin = StringIO('\n'.join([
+        'Command + Enlist (both actions)', rc.CMD_MARCH, rc.MORINI, '(done)',
+        rc.MORINI, rc.BRITANNIA, 'all 2', 'y', '1', 'Finish Winter Campaign',
+    ]) + '\n')
+    state['decision_agent'] = make_cli_reactive([rc.BELGAE], stdin, StringIO())
+
+    result = winter_campaign_after_harvest(state)
+
+    action, = result['actions']
+    assert action['actions'] == 2 and result['remaining_actions'] == 0
+    assert action['result']['sa_execution']['executed']
+    assert action['result']['total_cost'] == 1 and state['resources'][rc.BELGAE] == 19
+    assert count_pieces(state, rc.BRITANNIA, rc.GERMANS, rc.WARBAND) == 2
+    assert count_pieces(state, rc.BRITANNIA, rc.BELGAE, rc.WARBAND) == 0
+    assert get_leader_in_region(state, rc.BRITANNIA, rc.BELGAE) == rc.AMBIORIX
+    assert BORROW_KEY not in state
+    assert stdin.read() == 'Finish Winter Campaign\n'
+    assert validate_state(state) == check_structural_integrity(state) == []
 
 
 def test_campaign_march_and_suborn_can_pair_across_britannia():

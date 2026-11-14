@@ -21,7 +21,7 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The eleventh comparison audit has **five of eight findings closed**.
+The eleventh comparison audit has **six of eight findings closed**.
 [Audit report](reviews/comparison-audit-round11-2026-11-13.md) · [Ledger](reviews/comparison-audit-round11-2026-11-13.json) · [Evidence](reviews/comparison-audit-round11-2026-11-13-evidence.zip)
 
 | Batch | Findings | Scope |
@@ -29,12 +29,11 @@ The eleventh comparison audit has **five of eight findings closed**.
 | 1 | EV11-01, EV11-02, EV11-03 | Closed. [Lucterius, Assembly of Gaul and Shifting Loyalties](reviews/eleventh-comparison-batch1-2026-11-13.md). |
 | 2 | BM11-01 | Closed. [Divination forecast with active Abatis](reviews/eleventh-comparison-batch2-2026-11-13.md). |
 | 3 | LC11-01 | Closed. [Arverni removal priorities at the Gallic War Interlude](reviews/eleventh-comparison-batch3-2026-11-13.md). |
-| 4 | UI11-01 | Winter Campaign terminal choice for Command plus borrowed Enlist |
+| 4 | UI11-01 | Closed. [Winter Campaign terminal choice for Command plus borrowed Enlist](reviews/eleventh-comparison-batch4-2026-11-13.md). |
 | 5 | NP11-01, NP11-02 | Belgic Enlist after March and German Leader movement |
 
-Batch 3 passes **10,426 tests**, 120 audited bot games and 20 mixed-player
-replay cases across two hash seeds. Both balance checks pass with the
-reviewed Interlude outcomes and their original thresholds.
+Batch 4 passes **10,435 tests**. The 120 audited bot games and 20 mixed-player
+replay cases match Batch 3. The 100-game balance check and the canary pass.
 
 ### Previous rounds
 
@@ -92,6 +91,13 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 13 November eleventh comparison repair Batch 4
+
+The Winter Campaign terminal offers the Belgae a two-action Command with
+borrowed German Warbands. Standalone Enlist uses one action for a free German
+Command.
+[Repairs and validation](reviews/eleventh-comparison-batch4-2026-11-13.md)
 
 ### 13 November eleventh comparison repair Batch 3
 

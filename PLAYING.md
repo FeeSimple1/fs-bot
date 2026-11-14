@@ -648,7 +648,11 @@ limits still apply. Paid grants, such as Winter Campaign and Frumentum,
 use their own action and Resource budgets.
 
 Winter Campaign gives its owner up to two paid actions after Harvest.
-Select each Battle Region once per Command. You can select it again in
+With both actions available, Belgae can choose **Command + Enlist (both
+actions)** to borrow German Warbands for Rally, March, Raid, or Battle.
+Choose the loan before planning the Command. **Special Ability: Enlist**
+uses one action to order a free German Command. Select each Battle Region
+once per Command. You can select it again in
 a second Battle Command. On a multi-Region March, choose which pieces
 to leave before the remaining group continues from an intermediate Region.
 

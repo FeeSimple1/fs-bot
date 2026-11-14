@@ -1,8 +1,9 @@
 # Eleventh Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Eight additional medium-priority findings. Batches 1–2 close four.**
+**13 November 2026. Eight additional medium-priority findings. Batches 1–3 close five.**
 [Batch 1 repairs and validation](eleventh-comparison-batch1-2026-11-13.md) ·
-[Batch 2 repairs and validation](eleventh-comparison-batch2-2026-11-13.md)
+[Batch 2 repairs and validation](eleventh-comparison-batch2-2026-11-13.md) ·
+[Batch 3 repairs and validation](eleventh-comparison-batch3-2026-11-13.md)
 
 The tenth audit is complete with all nine of its findings repaired.
 
@@ -49,7 +50,7 @@ The initial local test launcher rejected a relative pytest cache path before col
 |---|---|---|
 | 1 | EV11-01, EV11-02, EV11-03 | Closed. [Lucterius, Assembly of Gaul and Shifting Loyalties](eleventh-comparison-batch1-2026-11-13.md). |
 | 2 | BM11-01 | Closed. [Divination forecast with active Abatis](eleventh-comparison-batch2-2026-11-13.md). |
-| 3 | LC11-01 | Arverni removal priorities at the Gallic War Interlude |
+| 3 | LC11-01 | Closed. [Arverni removal priorities at the Gallic War Interlude](eleventh-comparison-batch3-2026-11-13.md). |
 | 4 | UI11-01 | Winter Campaign terminal choice for Command plus borrowed Enlist |
 | 5 | NP11-01, NP11-02 | Belgic Enlist after March and German Leader movement |
 
@@ -155,7 +156,7 @@ Evidence files are `battle/probe_battle.py`, `battle/results.json`, `battle/repo
 
 ### LC11-01 — Interlude non-player reductions give three extra Arverni Regions unprinted protection
 
-Open, medium priority.
+Closed in [Batch 3](eleventh-comparison-batch3-2026-11-13.md). Medium priority.
 
 The Gallic War Interlude specifically removes Arverni pieces from the Arverni Region last, with a separate early exception for Cadurci/Volcae Allies. Non-player removal order is random among otherwise equal Regions. Veneti, Carnutes and Pictones must compete with other non-Arverni Regions rather than receive an additional protected tier.
 

@@ -4,10 +4,10 @@ A Python engine for **Falling Sky: The Gallic Revolt Against Caesar** and
 **Ariovistus**, with interactive human play, published non-player flowcharts,
 assistant-controlled seats, and reproducible automated games.
 
-The eleventh audit has four of eight findings closed. Divination now
-accounts for legal defender Loss choices when the Aedui bot commands
-German Battle.
-[Repairs and validation](docs/reviews/eleventh-comparison-batch2-2026-11-13.md) ·
+The eleventh audit has five of eight findings closed. At the Gallic War
+Interlude, the German bot now randomizes Arverni removals outside the
+Arverni Region.
+[Repairs and validation](docs/reviews/eleventh-comparison-batch3-2026-11-13.md) ·
 [Audit and repair order](docs/reviews/comparison-audit-round11-2026-11-13.md)
 
 All nine tenth-audit repair groups are closed.
@@ -153,10 +153,11 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The second eleventh-audit repair batch passes **10,423 tests** and completes
-120 audited bot games and 20 mixed-player cases across two hash seeds. The
-100-game balance check matches the reviewed baseline on every game.
-[Batch 2 validation](docs/reviews/eleventh-comparison-batch2-2026-11-13.md#verification)
+The third eleventh-audit repair batch passes **10,426 tests** and completes
+120 audited bot games and 20 mixed-player replay cases across two hash seeds.
+The 100-game balance check and 15-game canary pass with the reviewed
+Interlude outcomes.
+[Batch 3 validation](docs/reviews/eleventh-comparison-batch3-2026-11-13.md#verification)
 
 The fifth tenth-audit batch passes **10,379 tests**, completes all 120
 audited bot games and 20 mixed-player replay cases, and passes the 100-game

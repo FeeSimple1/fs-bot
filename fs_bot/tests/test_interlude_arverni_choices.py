@@ -7,7 +7,7 @@ import pytest
 
 from fs_bot import rules_consts as rc
 from fs_bot.board import pieces
-from fs_bot.cards.card_effects import _ally_tribe
+from fs_bot.cards.card_effects import _ally_tribe, _unally_tribe
 from fs_bot.cli.display import HumanTurnDisplay, format_board
 from fs_bot.cli.reactive import make_cli_reactive
 from fs_bot.engine.game_engine import _action_transaction, resolve_winter_card
@@ -16,6 +16,8 @@ from fs_bot.engine.interlude_choices import (
     ARVERNI_CITADELS, CISALPINA_RELOCATION, arverni_citadel_request, choose_arverni_citadels,
 )
 from fs_bot.engine.interlude_reductions import ARVERNI_HALF, PERMANENT, QUARTER, reduction_request
+from fs_bot.engine.victory import check_any_victory
+from fs_bot.engine.winter import run_winter_round
 from fs_bot.state.serialize import decode, encode, load_game, save_game
 from fs_bot.state.setup import setup_scenario
 from fs_bot.state.state_schema import build_initial_state, check_structural_integrity, validate_state
@@ -157,6 +159,52 @@ def test_np_arverni_removes_the_exact_early_allies_and_keeps_home_warbands_last(
         assert state['tribes'][tribe]['allied_faction'] == ARVERNI
     assert pieces.count_pieces_by_state(state, HOME, ARVERNI, rc.WARBAND, rc.SCOUTED) == 4
     _validate_mid_interlude(state)
+
+
+@pytest.mark.parametrize('region,tribe', [
+    (rc.VENETI, rc.TRIBE_VENETI),
+    (rc.CARNUTES, rc.TRIBE_CARNUTES),
+    (rc.PICTONES, rc.TRIBE_PICTONES),
+])
+def test_third_winter_randomizes_arverni_reductions_outside_arverni_region(region, tribe):
+    """A2.1 puts both ordinary Regions in the same random removal tier."""
+    candidates = ((region, tribe), (rc.SEQUANI, rc.TRIBE_SEQUANI))
+    removed_regions = set()
+    for seed in range(1, 13):
+        state = setup_scenario(rc.SCENARIO_GALLIC_WAR, seed=seed)
+        state['non_player_factions'] = {rc.AEDUI, rc.BELGAE, GERMANS}
+        for space in state['spaces']:
+            count = pieces.count_pieces(state, space, ARVERNI, rc.WARBAND)
+            if count:
+                pieces.remove_piece(state, space, ARVERNI, rc.WARBAND, count)
+        for allied_tribe, info in state['tribes'].items():
+            if info['allied_faction'] == ARVERNI:
+                _unally_tribe(state, allied_tribe)
+        for space, candidate in candidates:
+            assert _ally_tribe(state, candidate, ARVERNI)
+            pieces.place_piece(state, space, ARVERNI, rc.WARBAND, 4)
+        # With Gergovia Subdued in this fixture, Rome needs another rival Ally.
+        assert _ally_tribe(state, rc.TRIBE_NAMNETES, rc.BELGAE)
+        state['winter_count'] = 2
+        state['current_card'] = state['current_card_id'] = rc.WINTER_CARD
+        assert check_any_victory(state) is None
+        assert validate_state(state) == check_structural_integrity(state) == []
+
+        result = run_winter_round(state, britannia_decision=False)
+
+        arverni = result['interlude']['step2_arverni']
+        assert arverni['allies_to_available'] == 1 and arverni['warbands_to_available'] == 4
+        assert arverni['gergovia_replaced'] and arverni['warbands_placed_in_arverni'] == 3
+        assert state['interlude_completed']
+        assert validate_state(state) == check_structural_integrity(state) == []
+        removed, = (space for space, candidate in candidates
+                    if state['tribes'][candidate]['allied_faction'] is None)
+        for space, _ in candidates:
+            assert pieces.count_pieces(state, space, ARVERNI, rc.WARBAND) == (
+                0 if space == removed else 4)
+        removed_regions.add(removed)
+
+    assert removed_regions == {region, rc.SEQUANI}
 
 
 def test_cadurci_does_not_prevent_gergovia_restoration_and_reinforcement():

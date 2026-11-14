@@ -1114,6 +1114,8 @@ Warbands to return to Available, rounding up. The Arverni Region goes
 last for each type. You may choose the Cadurci and Volcae Ally discs early.
 Use `b` or `board` to inspect the board, or delegate either choice to the
 bot. Saving at the later prompt retains the accepted Citadel choices.
+The bot randomizes the removal order outside the Arverni Region, including
+Veneti, Carnutes and Pictones.
 
 If Gergovia lacks an Arverni Ally or Citadel after the reductions, restore
 the Arverni Ally at that City. Other Forces and Tribe circles stay in place.

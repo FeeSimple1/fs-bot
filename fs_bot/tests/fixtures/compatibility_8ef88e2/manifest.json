@@ -22,7 +22,7 @@
     "pre-interlude.json": {
       "kind": "pre-interlude",
       "file_sha256": "1a540f03f52cc631f2223b9a9d5d5f9d6eefb55c107ee8c3ce5539c858662d02",
-      "continued_sha256": "dbd5658180163df95f4f2ccce49bc0153d5d62790b128867d5d681467726f3b8",
+      "continued_sha256": "29947750a1ca3af93f5883b032c34490e84d71819f23f868fb479c069dc57c85",
       "scenario": "The Gallic War",
       "seed": 3,
       "continuation_history": [
@@ -46,14 +46,27 @@
             "report": "docs/reviews/spring-leaders-2026-10-28.md",
             "evidence": "compatibility-review/causal-review.json in the Spring validation evidence archive"
           }
+        },
+        {
+          "continued_sha256": "dbd5658180163df95f4f2ccce49bc0153d5d62790b128867d5d681467726f3b8",
+          "verified_parent_commit": "fbd3126290df2794593847c9a4f4e30a6dfe97d3",
+          "verified_parent_source_sha256": "4bb6812831b996cdb8941c6684650ff1e6661e5db0963bd1733f802188711a31",
+          "status": "Superseded continuation expectation. The archived fixture and generator retain their original bytes.",
+          "continuation_revision": {
+            "base_commit": "b0d936c4c066565e6237818a8d1801389f5c8770",
+            "source_sha256": "31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341",
+            "reason": "The Interlude retires the Nori Tribe and deals from the corrected Event pool.",
+            "report": "docs/reviews/fourth-comparison-batch4-2026-11-11.md",
+            "evidence": "compatibility-review.json in the Batch 4 validation archive"
+          }
         }
       ],
       "continuation_revision": {
-        "base_commit": "b0d936c4c066565e6237818a8d1801389f5c8770",
-        "source_sha256": "31e50801e3a187cf7c9def52e09df7ef5b39a895f55d32a4abfe0a08a42d2341",
-        "reason": "The Interlude retires the Nori Tribe and deals from the corrected Event pool.",
-        "report": "docs/reviews/fourth-comparison-batch4-2026-11-11.md",
-        "evidence": "compatibility-review.json in the Batch 4 validation archive"
+        "base_commit": "fbd3126290df2794593847c9a4f4e30a6dfe97d3",
+        "source_sha256": "c22251669bf85ddc8726ffeb16b94f373be09abae5f10af6ae80ee41f02746c0",
+        "reason": "The corrected Interlude removal order takes three additional Arverni Warbands from Mandubii instead of Atrebates in this saved position.",
+        "report": "docs/reviews/eleventh-comparison-batch3-2026-11-13.md",
+        "evidence": "historical-parent.json and historical-repair0.json in the Batch 3 validation archive"
       }
     },
     "post-interlude.json": {

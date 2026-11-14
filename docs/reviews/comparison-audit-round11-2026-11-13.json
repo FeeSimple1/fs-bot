@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 8,
-  "closed": 4,
-  "open": 4,
+  "closed": 5,
+  "open": 3,
   "severity_counts": {
     "medium": 8
   },
@@ -427,7 +427,8 @@
         "LC11-01"
       ],
       "scope": "Arverni removal priorities at the Gallic War Interlude",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch3-2026-11-13.md"
     },
     {
       "batch": 4,
@@ -1050,7 +1051,8 @@
         ],
         "engineering_lesson": "Actual pick_by_priority groups explicit substantive priority keys and resolves equal-key candidates within those groups. Share the specific reduction-stage priority definition rather than silently adding a generic scenario-Home key. LOD game rules, table distribution and owner rulings are not Falling Sky authority."
       },
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch3-2026-11-13.md"
     },
     {
       "id": "UI11-01",

@@ -15,7 +15,7 @@ references and canonical constants remain read-only.
 | [Current status](current-status.md) | Corrected behavior, regression coverage, adopted provisional rulings, and limits |
 | [Human-choice repair progress](human-choice-progress.json) | Current dispositions of the audit's 50 grouped findings; historical inventory remains unchanged |
 | [Second Liberty or Death comparison](reviews/comparison-audit-2026-11-10.md) | 21 additional confirmed findings, source evidence, and repair order |
-| [Eleventh Liberty or Death comparison](reviews/comparison-audit-round11-2026-11-13.md) | Four of eight findings closed in Batches 1–2 |
+| [Eleventh Liberty or Death comparison](reviews/comparison-audit-round11-2026-11-13.md) | Five of eight findings closed in Batches 1–3 |
 | [Tenth Liberty or Death comparison](reviews/comparison-audit-round10-2026-11-13.md) | All nine findings closed in five batches |
 | [Ninth Liberty or Death comparison](reviews/comparison-audit-round9-2026-11-12.md) | All eight findings closed in four batches |
 | [Eighth Liberty or Death comparison](reviews/comparison-audit-round8-2026-11-12.md) | All 11 findings closed in five batches |
@@ -33,6 +33,9 @@ references and canonical constants remain read-only.
 | [Change history](../CHANGELOG.md) | Versioned engineering changes |
 
 ## Dated evidence and research
+
+- [13 November eleventh comparison repair Batch 3](reviews/eleventh-comparison-batch3-2026-11-13.md)
+  corrects non-player Arverni reductions at the Gallic War Interlude.
 
 - [13 November eleventh comparison repair Batch 2](reviews/eleventh-comparison-batch2-2026-11-13.md)
   corrects Divination's Aedui Battle forecast with active Abatis.

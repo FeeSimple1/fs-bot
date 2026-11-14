@@ -241,8 +241,8 @@
    "winner": "Romans"
   },
   "The Gallic War|1": {
-   "cards": 101,
-   "winner": "Arverni"
+   "cards": 85,
+   "winner": "Aedui"
   },
   "The Gallic War|10": {
    "cards": 29,
@@ -253,7 +253,7 @@
    "winner": "Romans"
   },
   "The Gallic War|12": {
-   "cards": 113,
+   "cards": 65,
    "winner": "Belgae"
   },
   "The Gallic War|13": {
@@ -274,7 +274,7 @@
   },
   "The Gallic War|17": {
    "cards": 70,
-   "winner": "Aedui"
+   "winner": "Romans"
   },
   "The Gallic War|18": {
    "cards": 43,
@@ -286,22 +286,22 @@
   },
   "The Gallic War|2": {
    "cards": 83,
-   "winner": "Romans"
+   "winner": "Belgae"
   },
   "The Gallic War|20": {
    "cards": 116,
    "winner": "Aedui"
   },
   "The Gallic War|3": {
-   "cards": 70,
-   "winner": "Romans"
+   "cards": 69,
+   "winner": "Belgae"
   },
   "The Gallic War|4": {
    "cards": 15,
    "winner": "Romans"
   },
   "The Gallic War|5": {
-   "cards": 73,
+   "cards": 85,
    "winner": "Belgae"
   },
   "The Gallic War|6": {

@@ -63,7 +63,6 @@ from fs_bot.rules_consts import (
     SEQUANI,
     # Home regions
     ROMAN_HOME_REGIONS,
-    ARVERNI_HOME_REGIONS_ARIOVISTUS,
     # Tribes (used for Cadurci/Volcae and Nori)
     BASE_TRIBES, TRIBE_AEDUI, TRIBE_ARVERNI, TRIBE_CATUVELLAUNI, TRIBE_NORI,
     # Markers
@@ -668,22 +667,15 @@ def _adjust_aedui_forces(state):
 
 def _np_arverni_reductions(state):
     from fs_bot.cards.card_effects import _unally_tribe
-    from fs_bot.engine.interlude_reductions import ARVERNI_EARLY_ALLIES
+    from fs_bot.engine.interlude_reductions import ARVERNI_EARLY_ALLIES, ARVERNI_HALF, STAGE_RULES
 
     rng = state["rng"]
     need_allies = _fraction_to_remove(
         sum(count_pieces(state, region, ARVERNI, ALLY) for region in state["spaces"]), 0.5)
     need_warbands = _fraction_to_remove(
         sum(count_pieces(state, region, ARVERNI, WARBAND) for region in state["spaces"]), 0.5)
-    # Preserve the bot's existing random order outside the Arverni Region.
-    other = [region for region in state["spaces"]
-             if region not in ARVERNI_HOME_REGIONS_ARIOVISTUS
-             and count_pieces(state, region, ARVERNI)]
-    home = [region for region in ARVERNI_HOME_REGIONS_ARIOVISTUS
-            if region != ARVERNI_REGION and count_pieces(state, region, ARVERNI)]
-    rng.shuffle(other)
-    rng.shuffle(home)
-    order = other + home + [ARVERNI_REGION]
+    order = _np_region_order(state, ARVERNI, home_last=True, rng=rng,
+                             home_regions=STAGE_RULES[ARVERNI_HALF]["home_regions"])
 
     early = [tribe for tribe in ARVERNI_EARLY_ALLIES
              if tribe_has_ally_disc(state, ARVERNI_REGION, tribe, ARVERNI)]

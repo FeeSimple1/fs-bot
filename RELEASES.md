@@ -135,6 +135,11 @@ loads retire the obsolete Nori Tribe and retain the dealt deck. An
 in-progress assistant journal completes its card on the saved board.
 The cleanup then takes effect before the next draw.
 
+The eleventh comparison repair records the pre-Interlude save's continuation
+under the corrected Arverni removal order. The continuation history retains
+the earlier digest.
+[Save comparison](docs/reviews/eleventh-comparison-batch3-2026-11-13.md#saved-game-continuation)
+
 Preserve old fixtures and manifests when adding coverage for a new version.
 Record any intentional incompatibility explicitly; do not regenerate old
 expected outcomes with new code and call that backward compatibility.

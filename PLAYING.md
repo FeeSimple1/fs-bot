@@ -614,6 +614,12 @@ allowance for another group, to hide selected Warbands in the origin, or
 choose **Finish March**. All groups together can affect up to four Warbands. Each moving
 group enters one adjacent Region. Base-game Enlist March moves one group.
 
+A Belgic bot can Enlist once its March has resolved and its Leader is in
+range. An ordinary crossing into or out of Britannia bars the accompanying
+Enlist. In Ariovistus, a German bot on an expansion March can advance its
+surrounded Leader one adjacent Region toward land outside German Control
+while leaving enough Warbands to hold its origin.
+
 An Enlist Raid can use three Hidden German Warbands when Germans own
 shaded Baggage Trains. Choose how each Warband raids. The menu counts
 Resources still available to steal after each choice.

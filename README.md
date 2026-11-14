@@ -153,10 +153,11 @@ all players' agreement at setup. The same flags are available to assistant
 
 ## Current validation
 
-The fourth eleventh-audit repair batch passes **10,435 tests**, and all
-120 audited bot games and 20 mixed-player replay cases match Batch 3.
-The 100-game balance check and 15-game canary pass.
-[Batch 4 validation](docs/reviews/eleventh-comparison-batch4-2026-11-13.md#verification)
+The eleventh comparison audit is complete. The final batch passes
+**10,449 tests** and completes 120 audited bot games and 20 mixed-player
+replay cases. The 100-game balance check and 15-game canary pass against
+the reviewed results.
+[Batch 5 validation](docs/reviews/eleventh-comparison-batch5-2026-11-13.md#verification)
 
 The fifth tenth-audit batch passes **10,379 tests**, completes all 120
 audited bot games and 20 mixed-player replay cases, and passes the 100-game

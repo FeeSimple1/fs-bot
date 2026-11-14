@@ -166,20 +166,22 @@ def _execute_post_command_sa(state, faction, action, result, *, with_sa, human=F
     """Resolve a flowchart's authorized Special Ability after its Command."""
     command = action.get("command")
     arverni = faction == _ARVERNI_F and command in (_CMD_MARCH, _CMD_RALLY, _CMD_RAID)
-    belgae = faction == _BELGAE_F and command in (_CMD_RALLY, _CMD_RAID)
+    belgae = faction == _BELGAE_F and command in (_CMD_MARCH, _CMD_RALLY, _CMD_RAID)
     details = action.get("details") or {}
     if (not human and (arverni or belgae) and faction in state.get("non_player_factions", ())
             and POST_COMMAND_SA in details):
         if not (with_sa and command_sa_allowed(state) and details[POST_COMMAND_SA]):
             return None
+        # A Britannia crossing stops the group, so the completed March
+        # records identify every crossing by origin or arrival.
+        if (command == _CMD_MARCH and not allow_britannia_sa
+                and any(BRITANNIA in (move["origin"], move["final_region"])
+                        for move in result["marches"])):
+            return None
         if arverni:
-            # A Britannia crossing stops the group, so the completed
-            # March records identify every crossing by origin or arrival.
-            if (command == _CMD_MARCH and not allow_britannia_sa
-                    and any(BRITANNIA in (move["origin"], move["final_region"])
-                            for move in result["marches"])):
-                return None
             return _execute_arverni_live_sa(state, faction, action, open_window=True)
+        if command == _CMD_MARCH:
+            return _execute_belgic_live_enlist(state, faction, action, open_window=True)
         return _execute_belgic_rally_raid_sa(state, faction, action, open_window=True)
     if grant is None:
         return _execute_sa(state, faction, action)

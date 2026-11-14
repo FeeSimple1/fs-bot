@@ -21,7 +21,7 @@ measurements have not been relabeled as results of later changes.
 
 ## Current audit backlog
 
-The eleventh comparison audit has **six of eight findings closed**.
+The eleventh comparison audit is complete with **all eight findings closed**.
 [Audit report](reviews/comparison-audit-round11-2026-11-13.md) · [Ledger](reviews/comparison-audit-round11-2026-11-13.json) · [Evidence](reviews/comparison-audit-round11-2026-11-13-evidence.zip)
 
 | Batch | Findings | Scope |
@@ -30,10 +30,11 @@ The eleventh comparison audit has **six of eight findings closed**.
 | 2 | BM11-01 | Closed. [Divination forecast with active Abatis](reviews/eleventh-comparison-batch2-2026-11-13.md). |
 | 3 | LC11-01 | Closed. [Arverni removal priorities at the Gallic War Interlude](reviews/eleventh-comparison-batch3-2026-11-13.md). |
 | 4 | UI11-01 | Closed. [Winter Campaign terminal choice for Command plus borrowed Enlist](reviews/eleventh-comparison-batch4-2026-11-13.md). |
-| 5 | NP11-01, NP11-02 | Belgic Enlist after March and German Leader movement |
+| 5 | NP11-01, NP11-02 | Closed. [Belgic Enlist after March and German Leader movement](reviews/eleventh-comparison-batch5-2026-11-13.md). |
 
-Batch 4 passes **10,435 tests**. The 120 audited bot games and 20 mixed-player
-replay cases match Batch 3. The 100-game balance check and the canary pass.
+Batch 5 passes **10,449 tests** and completes 120 audited bot games and 20
+mixed-player replay cases. The 100-game balance check and the canary pass
+against the reviewed Batch 5 outcomes.
 
 ### Previous rounds
 
@@ -91,6 +92,13 @@ The [sixth audit](reviews/comparison-audit-round6-2026-11-11.md)
 remains complete with **all 14 findings repaired** in Batches 1–5.
 
 ## Follow-up repairs
+
+### 13 November eleventh comparison repair Batch 5
+
+Belgic bots choose Enlist after resolving March. In Ariovistus, the German
+bot can advance a surrounded Leader one Region toward land outside German
+Control, or send an eligible away group toward the Leader.
+[Repairs and validation](reviews/eleventh-comparison-batch5-2026-11-13.md)
 
 ### 13 November eleventh comparison repair Batch 4
 

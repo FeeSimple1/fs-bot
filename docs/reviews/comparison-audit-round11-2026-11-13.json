@@ -9,8 +9,8 @@
   "comparator_repository": "FeeSimple1/lod-bot",
   "comparator_commit": "2991ea279062773548ec390a1da75f3e85381702",
   "total": 8,
-  "closed": 6,
-  "open": 2,
+  "closed": 8,
+  "open": 0,
   "severity_counts": {
     "medium": 8
   },
@@ -446,7 +446,8 @@
         "NP11-02"
       ],
       "scope": "Belgic Enlist after March and German Leader movement",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch5-2026-11-13.md"
     }
   ],
   "findings": [
@@ -1287,7 +1288,8 @@
         "bots/report.md"
       ],
       "limits": "Synthetic legal Pax Gallica board with named Ambiorix and five persistent base-game Devastated marker flags modeling prior Arverni actions; not a claimed full history or untouched setup. No Britannia or natural encounter-rate claim. Authored-SA control distinguished from natural dispatch. Canonical piece helpers throughout.",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch5-2026-11-13.md"
     },
     {
       "id": "NP11-02",
@@ -1323,7 +1325,8 @@
         "bots/report.md"
       ],
       "limits": "Constructed Ariovistus board with exhausted placement pools, no winner, Event, Capability, Drought, Battle or callback. Treveri is a legal intermediate step, not asserted to be the unique correct choice. Earlier multiple-Drought-marker sketch discarded. No natural frequency/balance claim.",
-      "status": "open"
+      "status": "closed",
+      "repair_report": "eleventh-comparison-batch5-2026-11-13.md"
     }
   ],
   "independent_review": {

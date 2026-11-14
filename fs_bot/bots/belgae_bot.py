@@ -32,7 +32,7 @@ from fs_bot.rules_consts import (
     # Leaders
     AMBIORIX, BODUOGNATUS, CAESAR, SUCCESSOR,
     # Regions
-    BRITANNIA, TREVERI, MORINI, NERVII,
+    TREVERI, MORINI, NERVII,
     # Region groups
     BELGICA, GERMANIA,
     BELGICA_REGIONS, GERMANIA_REGIONS,
@@ -54,7 +54,8 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions, get_tribes_in_region_for_state,
+    get_adjacent, get_adjacent_for_state, get_playable_regions, get_playable_regions_for_state,
+    get_tribes_in_region_for_state,
     get_region_group, is_city_tribe, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
@@ -804,27 +805,10 @@ def node_b_march_threat(state):
         if valid:
             march_plan["destinations"].append(random_select(state, valid))
 
-    # SA: Enlist after March — §8.5.1
-    sa = SA_ACTION_NONE
-    sa_regions = []
-    sa_details = {}
-
-    # Check Britannia restriction — §4.1.3
-    marched_britannia = (BRITANNIA in origins
-                         or BRITANNIA in march_plan["destinations"])
-    if not marched_britannia:
-        enlist_details = _check_enlist_after_command(state, scenario)
-        if enlist_details:
-            sa = SA_ACTION_ENLIST
-            sa_regions = enlist_details.get("regions", [])
-            sa_details = {"enlist": enlist_details}
-
     return _make_action(
         ACTION_MARCH,
         regions=march_plan["destinations"],
-        sa=sa,
-        sa_regions=sa_regions,
-        details={"march_plan": march_plan, **sa_details},
+        details={"march_plan": march_plan, POST_COMMAND_SA: command_sa_allowed(state)},
     )
 
 
@@ -1150,25 +1134,6 @@ def node_b_march(state):
     if not march_plan_has_effect(state, BELGAE, march_plan):
         return node_b_raid(state)
 
-    # SA: Enlist after March — §8.5.5
-    sa = SA_ACTION_NONE
-    sa_regions = []
-    sa_details = {}
-
-    # Check Britannia restriction — §4.1.3
-    all_origins = set(march_plan["origins"])
-    all_dests = set(march_plan["control_destinations"])
-    if march_plan["leader_destination"]:
-        all_dests.add(march_plan["leader_destination"])
-    marched_britannia = (BRITANNIA in all_origins or BRITANNIA in all_dests)
-
-    if not marched_britannia:
-        enlist_details = _check_enlist_after_command(state, scenario)
-        if enlist_details:
-            sa = SA_ACTION_ENLIST
-            sa_regions = enlist_details.get("regions", [])
-            sa_details = {"enlist": enlist_details}
-
     dest_list = list(march_plan["control_destinations"])
     if march_plan["leader_destination"]:
         dest_list.append(march_plan["leader_destination"])
@@ -1176,9 +1141,7 @@ def node_b_march(state):
     return _make_action(
         ACTION_MARCH,
         regions=dest_list,
-        sa=sa,
-        sa_regions=sa_regions,
-        details={"march_plan": march_plan, **sa_details},
+        details={"march_plan": march_plan, POST_COMMAND_SA: command_sa_allowed(state)},
     )
 
 
@@ -1383,7 +1346,7 @@ def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
     scope = state.get("_command_region_scope")
     if scope is not None:
         allowed_regions = set(scope) if allowed_regions is None else set(scope) & set(allowed_regions)
-    playable = get_playable_regions(scenario, state.get("capabilities"))
+    playable = get_playable_regions_for_state(state, GERMANS)
     if allowed_regions is not None:
         playable = [r for r in playable if r in allowed_regions]
     non_players = state.get("non_player_factions", set())
@@ -1453,7 +1416,7 @@ def _check_enlist_after_command(state, scenario, *, allowed_regions=None):
             german_wb = count_pieces(state, origin, GERMANS, WARBAND)
             if german_wb < 2:
                 continue
-            for dest in get_adjacent(origin, scenario):
+            for dest in get_adjacent_for_state(state, origin, GERMANS):
                 if dest not in playable:
                     continue
                 # A8.5.1: "move them OUT of a Belgica or Germania Region" —

@@ -1,10 +1,11 @@
 # Eleventh Falling Sky / Liberty or Death comparison audit
 
-**13 November 2026. Eight additional medium-priority findings. Batches 1–4 close six.**
+**13 November 2026. Batches 1–5 close all eight medium-priority findings.**
 [Batch 1 repairs and validation](eleventh-comparison-batch1-2026-11-13.md) ·
 [Batch 2 repairs and validation](eleventh-comparison-batch2-2026-11-13.md) ·
 [Batch 3 repairs and validation](eleventh-comparison-batch3-2026-11-13.md) ·
-[Batch 4 repairs and validation](eleventh-comparison-batch4-2026-11-13.md)
+[Batch 4 repairs and validation](eleventh-comparison-batch4-2026-11-13.md) ·
+[Batch 5 repairs and validation](eleventh-comparison-batch5-2026-11-13.md)
 
 The tenth audit is complete with all nine of its findings repaired.
 
@@ -53,7 +54,7 @@ The initial local test launcher rejected a relative pytest cache path before col
 | 2 | BM11-01 | Closed. [Divination forecast with active Abatis](eleventh-comparison-batch2-2026-11-13.md). |
 | 3 | LC11-01 | Closed. [Arverni removal priorities at the Gallic War Interlude](eleventh-comparison-batch3-2026-11-13.md). |
 | 4 | UI11-01 | Closed. [Winter Campaign terminal choice for Command plus borrowed Enlist](eleventh-comparison-batch4-2026-11-13.md). |
-| 5 | NP11-01, NP11-02 | Belgic Enlist after March and German Leader movement |
+| 5 | NP11-01, NP11-02 | Closed. [Belgic Enlist after March and German Leader movement](eleventh-comparison-batch5-2026-11-13.md). |
 
 Convert the directed failures into source-derived regressions with their controls. Run the full suite and relevant bot, human-session and replay checks after each repair. Explain changed game outcomes before considering any balance baseline refresh.
 
@@ -207,7 +208,7 @@ Evidence files are `frontend/probe_frontend.py`, `frontend/results.json`, `front
 
 ### NP11-01 — Belgic March omits Enlist newly enabled by the Leader's arrival
 
-Open, medium priority.
+Closed in [Batch 5](eleventh-comparison-batch5-2026-11-13.md). Medium priority.
 
 After March, evaluate Enlist using the resulting Leader range. Two Revealed Germans at Treveri become eligible when Ambiorix arrives in adjacent Atrebates and must March in place to Hide.
 
@@ -231,7 +232,7 @@ Evidence files are `bots/probe_bots.py`, `bots/results.json`, `bots/report.md`.
 
 ### NP11-02 — Surrounded German Leader never takes the required expansion advance
 
-Open, medium priority.
+Closed in [Batch 5](eleventh-comparison-batch5-2026-11-13.md). Medium priority.
 
 If the German Leader is in and adjacent only to German Control, expansion March advances him with the most movable Warbands toward a noncontrolled Region via a friendly adjacent step, retaining one origin Warband and Control.
 
@@ -257,4 +258,4 @@ Evidence files are `bots/probe_bots.py`, `bots/results.json`, `bots/report.md`.
 
 Extract the archive and run `python run_witnesses.py --repo /path/to/fs-bot` with the audited Python source bytes. The runner verifies source and protected-file hashes, runs all five probes in temporary directories at hash seeds 0 and 987, and compares each output with the preserved record. Its assertions characterize the observed defects and will need updating after repair. `SHA256SUMS` covers every other archive member. The README gives commands for the full test suite, audited games and mixed-player replay.
 
-The reports document excluded leads and tested boundaries. The lifecycle review inspected Winter gates, victory, automatic phases and Interlude conversion. The frontend review checked exact cohorts, grants and replay. Existing unresolved source questions retain their recorded status. These eight findings require no additional provisional ruling. The passing general suite and sampled games coexist with the failures reproduced by the directed probes. Two findings remain open in Batch 5.
+The reports document excluded leads and tested boundaries. The lifecycle review inspected Winter gates, victory, automatic phases and Interlude conversion. The frontend review checked exact cohorts, grants and replay. Existing unresolved source questions retain their recorded status. All eight findings were repaired using the supplied rules and existing project rulings. Each batch report records verification on its repaired revision.

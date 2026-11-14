@@ -53,7 +53,6 @@ from fs_bot.bots.german_bot import (
     _instruction_says_no_germans,
     _estimate_rally_settle_would_qualify,
     _would_raid_gain_enough,
-    _find_largest_german_warband_group_leaderless,
     # Winter
     node_g_quarters, node_g_spring,
     # Agreements

@@ -21,6 +21,8 @@ do. The dispatch loop calls execute_german_turn(state) which walks the
 flowchart.
 """
 
+from collections import deque
+
 from fs_bot.rules_consts import (
     # Factions
     ROMANS, ARVERNI, AEDUI, BELGAE, GERMANS,
@@ -65,7 +67,8 @@ from fs_bot.engine.victory import (
     calculate_victory_score, calculate_victory_margin, check_victory,
 )
 from fs_bot.map.map_data import (
-    get_adjacent, get_playable_regions_for_state, get_tribes_in_region_for_state,
+    get_adjacent, get_adjacent_for_state, get_playable_regions_for_state,
+    get_tribes_in_region_for_state,
     get_region_group, is_city_tribe, is_adjacent,
 )
 from fs_bot.bots.bot_common import (
@@ -350,29 +353,12 @@ def _has_settlement(state, region):
     return count_pieces(state, region, GERMANS, SETTLEMENT) > 0
 
 
-def _find_largest_german_warband_group_leaderless(state, scenario):
-    """Find the region with the largest Germanic Warband group that does
-    NOT have the Germanic Leader.
-
-    Per A8.7.5 step 2: "the largest group of Germanic Warbands on the map
-    that is not with the Germanic Leader".
-
-    Returns:
-        (region, count) or (None, 0).
-    """
-    playable = command_region_candidates(
-        state, get_playable_regions_for_state(state, GERMANS))
-    leader_region = _ariovistus_region(state)
-    best_region = None
-    best_count = 0
-    for region in playable:
-        if region == leader_region:
-            continue
-        wb = count_pieces(state, region, GERMANS, WARBAND)
-        if wb > best_count:
-            best_count = wb
-            best_region = region
-    return (best_region, best_count)
+def _largest_away_warband_regions(state, regions, leader_region):
+    """Return every largest German Warband group away from the Leader."""
+    counts = {region: count_pieces(state, region, GERMANS, WARBAND)
+              for region in sorted(regions) if region != leader_region}
+    most = max(counts.values(), default=0)
+    return [region for region, count in counts.items() if count == most] if most else []
 
 
 # ============================================================================
@@ -1368,6 +1354,72 @@ def _get_settle_destinations(state, scenario):
 # G_MARCH_EXPAND — March (to expand or mass)
 # ============================================================================
 
+def _can_advance_expansion_leader(state, origin, warbands_moving):
+    """The Leader and his group must leave any German Control intact."""
+    if not is_controlled_by(state, origin, GERMANS):
+        return True
+    remaining = count_pieces(state, origin, GERMANS) - warbands_moving - 1
+    enemies = sum(count_pieces(state, origin, f) for f in FACTIONS if f != GERMANS)
+    return remaining > enemies
+
+
+def _expansion_mass_move(state, leader_region, playable, control_moves):
+    """Select the origin, force and adjacent step for the extra A8.7.5 move."""
+    from fs_bot.commands.march import march_cost
+    from fs_bot.engine.execute import _control_keep_warbands, _select_affordable_march_moves
+
+    selected, costs, _, _ = _select_affordable_march_moves(state, GERMANS, control_moves)
+    used = set(costs)
+    taken = {move["path"][-1] for move in selected}
+    leader_destination = next((move["path"][-1] for move in selected if move["leader"]),
+                              leader_region)
+    available = state["resources"].get(GERMANS, 0) - sum(costs.values())
+    allowed = {region for region in command_region_candidates(state, playable)
+               if region not in used and march_cost(state, region, GERMANS) <= available}
+    leader_neighbors = get_adjacent_for_state(state, leader_region, GERMANS)
+    german_control = set(get_controlled_regions(state, GERMANS)) & playable
+
+    def moves_toward(origin, destinations, *, leader=None):
+        targets = sorted(set(destinations) & playable)
+        distances = dict.fromkeys(targets, 0)
+        pending = deque(targets)
+        while pending:
+            region = pending.popleft()
+            for neighbor in get_adjacent_for_state(state, region, GERMANS):
+                if neighbor in playable and neighbor not in distances:
+                    distances[neighbor] = distances[region] + 1
+                    pending.append(neighbor)
+        if origin not in distances:
+            return []
+        warbands = count_pieces(state, origin, GERMANS, WARBAND)
+        keep = _control_keep_warbands(state, GERMANS, origin, leader_leaving=bool(leader))
+        moving = warbands - keep
+        if leader and not _can_advance_expansion_leader(state, origin, moving):
+            return []
+        if not leader and not moving:
+            return []
+        steps = [region for region in sorted(get_adjacent_for_state(state, origin, GERMANS))
+                 if region not in taken and distances.get(region) == distances[origin] - 1]
+        return [{"origin": origin, "path": [step], "group": {LEADER: leader, WARBAND: moving},
+                 "leader": bool(leader), "warbands": moving} for step in steps]
+
+    # If several eligible Regions share the largest away group, retain every
+    # tied legal move for the flowchart's seeded random selection.
+    away = _largest_away_warband_regions(state, allowed, leader_destination)
+    group_moves = [move for origin in away
+                   for move in moves_toward(origin, [leader_destination])]
+    leader_moves = []
+    if (leader_region in allowed and leader_neighbors
+            and {leader_region, *leader_neighbors} <= german_control):
+        leader_moves = moves_toward(leader_region, playable - german_control,
+                                    leader=get_leader_in_region(state, leader_region, GERMANS))
+
+    options = [moves for moves in (group_moves, leader_moves) if moves]
+    if not options:
+        return None
+    return random_select(state, random_select(state, options))
+
+
 def node_g_march_expand(state):
     """G_MARCH_EXPAND: March into up to 3 Regions per A8.7.5.
 
@@ -1406,6 +1458,12 @@ def node_g_march_expand(state):
         "type": MARCH_EXPAND,
     }
 
+    from fs_bot.engine.execute import (
+        _control_keep_warbands, march_plan_has_effect, plan_expand_march_moves,
+    )
+    from fs_bot.commands.march import march_cost
+    allowed_origins = command_region_candidates(state, playable)
+    leader_region = _ariovistus_region(state)
     candidates = []
     for region in playable:
         if is_controlled_by(state, region, GERMANS):
@@ -1420,26 +1478,17 @@ def node_g_march_expand(state):
             wb_needed = 1
 
         origin_supply = []
-        for origin in command_region_candidates(state, playable):
+        for origin in allowed_origins:
             if origin == region:
                 continue
             if region not in get_adjacent(origin, scenario):
                 continue
-            origin_wb = count_pieces(state, origin, GERMANS, WARBAND)
-            keep = 1
-            if is_controlled_by(state, origin, GERMANS):
-                other_factions = sum(
-                    count_pieces(state, origin, f)
-                    for f in (ROMANS, ARVERNI, AEDUI, BELGAE)
-                )
-                germans_remaining_non_wb = (
-                    count_pieces(state, origin, GERMANS) - origin_wb)
-                wb_keep_for_control = max(
-                    0, other_factions - germans_remaining_non_wb + 1)
-                keep = max(keep, wb_keep_for_control)
-            available = max(0, origin_wb - keep)
-            if available > 0:
-                origin_supply.append((origin, available))
+            if march_cost(state, origin, GERMANS) > resources:
+                continue
+            warbands = count_pieces(state, origin, GERMANS, WARBAND)
+            keep = _control_keep_warbands(state, GERMANS, origin, leader_leaving=False)
+            if warbands > keep:
+                origin_supply.append((origin, warbands - keep))
 
         total = sum(s[1] for s in origin_supply)
         if total >= wb_needed:
@@ -1462,51 +1511,30 @@ def node_g_march_expand(state):
             if origin not in march_plan["origins"]:
                 march_plan["origins"].append(origin)
 
-    # Step 2: One more region to massify — A8.7.5
-    leader_region = _ariovistus_region(state)
+    # Step 2: one additional Region to mass the forces or advance the Leader.
+    # Retain the exact group's origin so an away Warband move cannot be
+    # mistaken for a Leader move by the general expansion executor.
+    control_moves = plan_expand_march_moves(state, GERMANS, march_plan)
+    # The expansion executor infers a Leader move even when the affected
+    # Region is outside the grant or the Leader is needed to retain Control.
+    retained_moves = [move for move in control_moves
+                      if move["origin"] in allowed_origins
+                      and (not move["leader"] or _can_advance_expansion_leader(
+                          state, move["origin"], move["warbands"]))]
+    if retained_moves != control_moves:
+        march_plan["explicit_moves"] = retained_moves
     if leader_region:
-        biggest_region, biggest_count = (
-            _find_largest_german_warband_group_leaderless(state, scenario))
-        option_a = None
-        if biggest_region and biggest_count > 0:
-            adj = get_adjacent(biggest_region, scenario)
-            if leader_region in adj:
-                option_a = leader_region
-            else:
-                forwards = [r for r in adj
-                            if r not in march_plan["control_destinations"]
-                            and r not in march_plan["origins"]]
-                if forwards:
-                    option_a = random_select(state, sorted(forwards))
-
-        option_b = None
-        leader_adj = get_adjacent(leader_region, scenario)
-        all_german_control = (
-            is_controlled_by(state, leader_region, GERMANS)
-            and all(is_controlled_by(state, a, GERMANS)
-                    for a in leader_adj if a in playable)
-        )
-        if all_german_control and command_region_candidates(state, [leader_region]):
-            non_control_adj = [
-                a for a in leader_adj
-                if a in playable
-                and not is_controlled_by(state, a, GERMANS)
-            ]
-            if non_control_adj:
-                option_b = random_select(state, sorted(non_control_adj))
-
-        options = [o for o in (option_a, option_b) if o is not None]
-        if options and len(march_plan["control_destinations"]) < 3:
-            choice = (random_select(state, options)
-                      if len(options) > 1 else options[0])
-            march_plan["leader_or_group_destination"] = choice
+        extra = _expansion_mass_move(state, leader_region, set(playable), retained_moves)
+        if extra:
+            march_plan["leader_or_group_destination"] = extra["path"][-1]
+            march_plan["explicit_moves"] = [*retained_moves, extra]
+            march_plan["origins"] = list(dict.fromkeys(m["origin"] for m in march_plan["explicit_moves"]))
 
     has_any_march = (march_plan["control_destinations"]
                      or march_plan["leader_or_group_destination"] is not None)
     if not has_any_march:
         return node_g_rally(state)
 
-    from fs_bot.engine.execute import march_plan_has_effect
     if not march_plan_has_effect(state, GERMANS, march_plan):
         return node_g_rally(state)
 

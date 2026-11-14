@@ -569,10 +569,10 @@ class TestSubornAndBuild:
             import fs_bot.engine.execute as _ex
             orig = _ex._execute_sa
 
-            def _tally(s, f, ba, _orig=orig, _seen=seen):
-                r = _orig(s, f, ba)
+            def _tally(s, f, ba, **kwargs):
+                r = orig(s, f, ba, **kwargs)
                 if r and r.get("sa") == "Build" and r.get("executed"):
-                    _seen["n"] += 1
+                    seen["n"] += 1
                 return r
             _ex._execute_sa = _tally
             try:

@@ -6,6 +6,7 @@ import pytest
 from fs_bot.board.control import refresh_all_control
 from fs_bot.board.pieces import place_piece, get_available
 from fs_bot.bots import roman_bot as roman, german_bot as german
+from fs_bot.bots.bot_common import command_region_candidates
 from fs_bot.commands.common import free_action_scope
 from fs_bot.map.map_data import get_tribes_in_region
 from fs_bot.rules_consts import (
@@ -104,8 +105,8 @@ def test_german_threat_and_largest_group_use_permitted_origins():
     refresh_all_control(state)
     assert german.node_g1(state) == ('No', [])
     assert german.node_g1b(state) == 'No'
-    assert german._find_largest_german_warband_group_leaderless(
-        state, state['scenario']) == (UBII, 4)
+    origins = command_region_candidates(state, [SEQUANI, SUGAMBRI, UBII])
+    assert german._largest_away_warband_regions(state, origins, SEQUANI) == [UBII]
 
 
 def test_german_free_command_cannot_take_strategic_sequence_pass():

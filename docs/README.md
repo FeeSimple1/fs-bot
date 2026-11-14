@@ -34,6 +34,9 @@ references and canonical constants remain read-only.
 
 ## Dated evidence and research
 
+- [13 November eleventh comparison repair Batch 5](reviews/eleventh-comparison-batch5-2026-11-13.md)
+  fixes Belgic Enlist after March and the German expansion March.
+
 - [13 November eleventh comparison repair Batch 4](reviews/eleventh-comparison-batch4-2026-11-13.md)
   enables borrowed Enlist Warbands in the Winter Campaign terminal.
 
